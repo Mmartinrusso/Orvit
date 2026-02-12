@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/* Dark mode: use .dark class on <html> instead of prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* AGX Brand Colors — Tailwind CSS 4 theme extension */
+@theme {
+  /* Primary brand: deep blue → teal gradient family */
+  --color-agx-primary: #1e40af;
+  --color-agx-primary-light: #3b82f6;
+  --color-agx-primary-dark: #1e3a8a;
+
+  /* Accent: vibrant teal/cyan */
+  --color-agx-accent: #06b6d4;
+  --color-agx-accent-light: #22d3ee;
+  --color-agx-accent-dark: #0891b2;
+
+  /* Success: green */
+  --color-agx-success: #22c55e;
+  --color-agx-success-light: #4ade80;
+  --color-agx-success-dark: #16a34a;
+
+  /* Warning: amber */
+  --color-agx-warning: #f59e0b;
+  --color-agx-warning-light: #fbbf24;
+  --color-agx-warning-dark: #d97706;
+
+  /* Danger: red */
+  --color-agx-danger: #ef4444;
+  --color-agx-danger-light: #f87171;
+  --color-agx-danger-dark: #dc2626;
+
+  /* Dark-mode surface palette (mirrors existing tailwind.config.js) */
+  --color-dark-bg: #0f172a;
+  --color-dark-surface: #1e293b;
+  --color-dark-hover: #334155;
+  --color-dark-border: #475569;
+  --color-dark-text: #f1f5f9;
+  --color-dark-text-secondary: #cbd5e1;
+}
+
+/* Smooth theme transitions */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* Base styles */
+body {
+  margin: 0;
+  min-height: 100vh;
+  @apply bg-gray-50 text-gray-900;
+}
+
+.dark body {
+  @apply bg-[#0f172a] text-[#f1f5f9];
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Selection colors */
+::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+.dark ::selection {
+  background-color: rgba(96, 165, 250, 0.3);
+}
+
+/* Pulsing dot animation for active tasks */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Gradient text helper */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent;
+}
+
+.dark .gradient-text {
+  @apply from-blue-400 to-purple-400;
+}
+
+/* Card hover lift effect */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Stagger animation for list items */
+.stagger-item {
+  animation: staggerFadeIn 0.3s ease-out both;
+}
+.stagger-item:nth-child(1) { animation-delay: 0ms; }
+.stagger-item:nth-child(2) { animation-delay: 50ms; }
+.stagger-item:nth-child(3) { animation-delay: 100ms; }
+.stagger-item:nth-child(4) { animation-delay: 150ms; }
+.stagger-item:nth-child(5) { animation-delay: 200ms; }
+.stagger-item:nth-child(6) { animation-delay: 250ms; }
+.stagger-item:nth-child(7) { animation-delay: 300ms; }
+.stagger-item:nth-child(8) { animation-delay: 350ms; }
+
+@keyframes staggerFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth page transition */
+.page-transition {
+  animation: pageIn 0.25s ease-out;
+}
+
+@keyframes pageIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Diff viewer colors */
+.diff-added {
+  @apply bg-green-50 text-green-800 border-l-2 border-green-500;
+}
+.dark .diff-added {
+  @apply bg-green-900/20 text-green-300;
+}
+.diff-removed {
+  @apply bg-red-50 text-red-800 border-l-2 border-red-500;
+}
+.dark .diff-removed {
+  @apply bg-red-900/20 text-red-300;
+}
+
+/* Collapse transitions */
+.collapse-transition {
+  transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+  overflow: hidden;
+}
+
+/* Gradient buttons */
+.btn-gradient-green {
+  background: linear-gradient(135deg, #22c55e 0%, #06b6d4 100%);
+  color: white;
+  border: none;
+}
+
+.btn-gradient-green:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #0891b2 100%);
+}
+
+.btn-gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  color: white;
+  border: none;
+}
+
+.btn-gradient-amber:hover {
+  background: linear-gradient(135deg, #d97706 0%, #dc2626 100%);
+}
+
+/* Enhanced card hover (interactive variant) */
+.card-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Priority border colors */
+.priority-critical { border-left: 4px solid #ef4444; }
+.priority-high { border-left: 4px solid #f97316; }
+.priority-medium { border-left: 4px solid #eab308; }
+.priority-low { border-left: 4px solid #d1d5db; }

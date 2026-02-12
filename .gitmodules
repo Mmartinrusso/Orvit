@@ -1,0 +1,7 @@
+[submodule "project"]
+	path = project
+	url = https://github.com/Mmartinrusso/Mawir-.git
+
+[submodule "AGX"]
+	path = AGX
+	url = https://github.com/Mmartinrusso/AGX.git

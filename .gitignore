@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.DS_Store
+nul
+
+# Temp/debug files
+tmp_tasks.json
+C:UsersUsuarioDesktopMawirtmp_tasks.json
+*.log
+
+# Claude local settings (per-machine)
+.claude/settings.local.json
+.claude/plans/
+.claude/projects/
+
+# Package lock (keep package-lock.json but ignore others)
+# yarn.lock - keep if using yarn
+
+# Coverage
+coverage/
+.nyc_output/
