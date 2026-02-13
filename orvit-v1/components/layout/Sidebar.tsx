@@ -267,46 +267,57 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   
   // Monitorear dropdowns abiertos SOLO DENTRO DEL SIDEBAR para evitar que se cierre
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === 'undefined' || !sidebarRef.current) return;
+
+    const sidebar = sidebarRef.current;
+
     const checkForOpenDropdowns = () => {
-      if (typeof document === 'undefined' || !sidebarRef.current) return;
-      
-      // Solo buscar menús abiertos DENTRO del sidebar
-      const openMenus = sidebarRef.current.querySelectorAll('[role="menu"][data-state="open"]');
+      const openMenus = sidebar.querySelectorAll('[role="menu"][data-state="open"]');
       const hasOpen = openMenus.length > 0;
       hasOpenDropdownRef.current = hasOpen;
-      
+
       // Si hay un dropdown abierto DENTRO del sidebar, mantener sidebar abierto
-      if (hasOpen) {
-        if (!isOpen && typeof window !== 'undefined' && window.innerWidth >= 768) {
-          setIsOpen(true);
-        }
+      if (hasOpen && !isOpen && window.innerWidth >= 768) {
+        setIsOpen(true);
       }
     };
-    
-    // Verificar periódicamente si hay dropdowns abiertos (muy frecuente para detección inmediata)
-    const interval = setInterval(checkForOpenDropdowns, 25);
-    
-    // También observar cambios en el DOM del sidebar
-    const observer = new MutationObserver(() => {
-      checkForOpenDropdowns();
+
+    // Event delegation: detectar clicks en triggers con data-state
+    const handleClick = (e: MouseEvent) => {
+      const trigger = (e.target as HTMLElement).closest('[data-state]');
+      if (trigger) {
+        // Defer para que el DOM se actualice con el nuevo data-state
+        requestAnimationFrame(checkForOpenDropdowns);
+      }
+    };
+
+    sidebar.addEventListener('click', handleClick);
+
+    // MutationObserver para cambios de data-state (cubre teclado, programático, etc.)
+    const observer = new MutationObserver((mutations) => {
+      // Solo reaccionar si alguna mutación cambió data-state a/desde "open"
+      const isRelevant = mutations.some((m) => {
+        if (m.type !== 'attributes' || m.attributeName !== 'data-state') return false;
+        const el = m.target as HTMLElement;
+        return el.dataset.state === 'open' || m.oldValue === 'open';
+      });
+      if (isRelevant) {
+        checkForOpenDropdowns();
+      }
     });
-    
-    if (sidebarRef.current) {
-      observer.observe(sidebarRef.current, {
-      childList: true,
+
+    observer.observe(sidebar, {
       subtree: true,
       attributes: true,
-      attributeFilter: ['data-state']
+      attributeFilter: ['data-state'],
+      attributeOldValue: true,
     });
-    }
-    
+
     // Verificación inicial
     checkForOpenDropdowns();
-    
+
     return () => {
-      clearInterval(interval);
+      sidebar.removeEventListener('click', handleClick);
       observer.disconnect();
     };
   }, [isOpen, setIsOpen]);
