@@ -78,11 +78,12 @@ export const POST = withGuards(async (request: NextRequest, { user, params: _p }
       return NextResponse.json({ error: 'ID de orden de trabajo inválido' }, { status: 400 });
     }
 
-    const { type = 'comment' } = body;
     const validation = validateRequest(CreateWorkOrderCommentSchema, body);
     if (!validation.success) return validation.response;
 
-    const { content, authorId } = validation.data;
+    const { content } = validation.data;
+    const type = body.type || 'comment';
+    const authorId = user.userId;
 
     // Verificar que la orden existe
     const workOrder = await prisma.workOrder.findUnique({

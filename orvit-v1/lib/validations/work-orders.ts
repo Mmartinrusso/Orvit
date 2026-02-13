@@ -66,7 +66,6 @@ export const UpdateWorkOrderSchema = z.object({
 
 export const CreateWorkOrderCommentSchema = z.object({
   content: boundedString('Contenido del comentario', 5000),
-  authorId: coercePositiveInt('ID del autor'),
 });
 
 // ─── Types ──────────────────────────────────────────────────────────────────
