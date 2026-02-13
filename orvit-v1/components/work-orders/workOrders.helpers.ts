@@ -1,0 +1,502 @@
+/**
+ * Work Orders Helpers - Mappers, formatters y estilos centralizados
+ * ================================================================
+ * Este archivo centraliza toda la lógica de transformación de datos,
+ * labels en español, estilos de badges y formateo de fechas.
+ */
+
+import { WorkOrderStatus, Priority, MaintenanceType } from '@/lib/types';
+import { formatDistanceToNow, format, isAfter, isBefore, differenceInDays } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// =============================================================================
+// LABELS EN ESPAÑOL (nunca mostrar enums crudos)
+// =============================================================================
+
+export const statusLabels: Record<WorkOrderStatus, string> = {
+  PENDING: 'Pendiente',
+  IN_PROGRESS: 'En proceso',
+  COMPLETED: 'Completada',
+  CANCELLED: 'Cancelada',
+  ON_HOLD: 'En espera',
+};
+
+export const priorityLabels: Record<Priority, string> = {
+  LOW: 'Baja',
+  MEDIUM: 'Media',
+  HIGH: 'Alta',
+  URGENT: 'Urgente',
+};
+
+export const maintenanceTypeLabels: Record<MaintenanceType, string> = {
+  PREVENTIVE: 'Preventivo',
+  CORRECTIVE: 'Correctivo',
+  PREDICTIVE: 'Predictivo',
+  EMERGENCY: 'Emergencia',
+};
+
+// Labels para el wizard de creación
+export const wizardTypeLabels = {
+  CORRECTIVE: {
+    title: 'Reparar algo que se rompió',
+    subtitle: 'Correctivo - Algo dejó de funcionar',
+    icon: 'wrench',
+  },
+  PREVENTIVE: {
+    title: 'Preparar para el futuro',
+    subtitle: 'Preventivo - Mantenimiento programado',
+    icon: 'calendar',
+  },
+  EMERGENCY: {
+    title: 'Urgente - Parar todo',
+    subtitle: 'Emergencia - Requiere atención inmediata',
+    icon: 'alertTriangle',
+  },
+  PREDICTIVE: {
+    title: 'Mejorar o actualizar',
+    subtitle: 'Predictivo - Basado en análisis',
+    icon: 'trendingUp',
+  },
+};
+
+// =============================================================================
+// FUNCIONES DE LABEL
+// =============================================================================
+
+export function getStatusLabel(status: WorkOrderStatus): string {
+  return statusLabels[status] || status;
+}
+
+export function getPriorityLabel(priority: Priority): string {
+  return priorityLabels[priority] || priority;
+}
+
+export function getMaintenanceTypeLabel(type: MaintenanceType): string {
+  return maintenanceTypeLabels[type] || type;
+}
+
+// =============================================================================
+// ESTILOS DE BADGES (suaves, sin colores chillones)
+// =============================================================================
+
+export const statusColors: Record<WorkOrderStatus, string> = {
+  PENDING: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+  IN_PROGRESS: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+  COMPLETED: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+  CANCELLED: 'bg-muted text-muted-foreground border-border',
+  ON_HOLD: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20',
+};
+
+export const priorityColors: Record<Priority, string> = {
+  LOW: 'bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20',
+  MEDIUM: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+  HIGH: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
+  URGENT: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+};
+
+export const maintenanceTypeColors: Record<MaintenanceType, string> = {
+  PREVENTIVE: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20',
+  CORRECTIVE: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
+  PREDICTIVE: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20',
+  EMERGENCY: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+};
+
+// Colores para indicadores laterales de estado (barra izquierda de cards)
+export const statusIndicatorColors: Record<WorkOrderStatus, string> = {
+  PENDING: 'bg-amber-500',
+  IN_PROGRESS: 'bg-blue-500',
+  COMPLETED: 'bg-emerald-500',
+  CANCELLED: 'bg-muted-foreground',
+  ON_HOLD: 'bg-violet-500',
+};
+
+// Colores para dots de KPIs
+export const kpiDotColors = {
+  total: 'bg-primary',
+  pending: 'bg-amber-500',
+  inProgress: 'bg-blue-500',
+  overdue: 'bg-rose-500',
+  unassigned: 'bg-slate-500',
+  completed: 'bg-emerald-500',
+};
+
+// =============================================================================
+// FORMATEO DE FECHAS
+// =============================================================================
+
+/**
+ * Formatea una fecha en formato legible
+ * @example formatDate(new Date()) => "15 Ene 2024"
+ */
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  try {
+    return format(new Date(date), 'dd MMM yyyy', { locale: es });
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Formatea una fecha en formato corto
+ * @example formatDateShort(new Date()) => "15 Ene"
+ */
+export function formatDateShort(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  try {
+    return format(new Date(date), 'dd MMM', { locale: es });
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Formatea una fecha en formato corto con hora (para Argentina)
+ * @example formatDateShortWithTime(new Date()) => "15 Ene, 14:30"
+ */
+export function formatDateShortWithTime(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  try {
+    return format(new Date(date), 'dd MMM, HH:mm', { locale: es });
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Formatea una fecha con hora
+ * @example formatDateTime(new Date()) => "15 Ene 2024, 14:30"
+ */
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  try {
+    return format(new Date(date), 'dd MMM yyyy, HH:mm', { locale: es });
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Retorna tiempo relativo
+ * @example relativeTime(new Date()) => "hace 2 días"
+ */
+export function relativeTime(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  try {
+    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: es });
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Retorna tiempo relativo sin "hace"
+ * @example relativeTimeShort(new Date()) => "2 días"
+ */
+export function relativeTimeShort(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  try {
+    return formatDistanceToNow(new Date(date), { locale: es });
+  } catch {
+    return '—';
+  }
+}
+
+// =============================================================================
+// LÓGICA DE NEGOCIO / HELPERS
+// =============================================================================
+
+/**
+ * Verifica si una orden está vencida
+ */
+export function isOverdue(
+  scheduledDate: Date | string | null | undefined,
+  status: WorkOrderStatus
+): boolean {
+  if (!scheduledDate) return false;
+  if (status === WorkOrderStatus.COMPLETED || status === WorkOrderStatus.CANCELLED) {
+    return false;
+  }
+  try {
+    return isBefore(new Date(scheduledDate), new Date());
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Calcula días hasta vencimiento
+ * @returns número positivo = días restantes, negativo = días vencidos, 0 = hoy
+ */
+export function daysUntilDue(date: Date | string | null | undefined): number | null {
+  if (!date) return null;
+  try {
+    return differenceInDays(new Date(date), new Date());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Retorna texto de vencimiento
+ * @example getDueText(date, status) => "Vence en 3 días" | "Vencida hace 2 días" | "Hoy"
+ */
+export function getDueText(
+  date: Date | string | null | undefined,
+  status: WorkOrderStatus
+): string | null {
+  if (!date) return null;
+  if (status === WorkOrderStatus.COMPLETED || status === WorkOrderStatus.CANCELLED) {
+    return null;
+  }
+
+  const days = daysUntilDue(date);
+  if (days === null) return null;
+
+  if (days === 0) return 'Vence hoy';
+  if (days === 1) return 'Vence mañana';
+  if (days > 1) return `Vence en ${days} días`;
+  if (days === -1) return 'Vencida ayer';
+  return `Vencida hace ${Math.abs(days)} días`;
+}
+
+/**
+ * Obtiene las iniciales de un nombre
+ * @example getInitials("Juan Pérez") => "JP"
+ */
+export function getInitials(name: string | null | undefined): string {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+/**
+ * Formatea horas (convierte minutos a formato legible)
+ * @example formatHours(90) => "1h 30m"
+ */
+export function formatHours(minutes: number | null | undefined): string {
+  if (!minutes && minutes !== 0) return '—';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
+
+/**
+ * Formatea costo
+ * @example formatCost(1500) => "$1.500"
+ */
+export function formatCost(amount: number | null | undefined, currency = '$'): string {
+  if (!amount && amount !== 0) return '—';
+  return `${currency}${amount.toLocaleString('es-AR')}`;
+}
+
+/**
+ * Remueve tags HTML y retorna solo texto plano
+ * @example stripHtml("<p>Hola mundo</p>") => "Hola mundo"
+ */
+export function stripHtml(html: string | null | undefined): string {
+  if (!html) return '';
+  // Reemplazar <br>, <p>, <div> por espacios para mantener separación
+  let text = html.replace(/<(br|p|div)[^>]*>/gi, ' ');
+  // Remover todos los tags HTML
+  text = text.replace(/<[^>]*>/g, '');
+  // Decodificar entidades HTML comunes
+  text = text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  // Limpiar espacios múltiples
+  text = text.replace(/\s+/g, ' ').trim();
+  return text || 'Sin descripción';
+}
+
+/**
+ * Formatea duración considerando el timeUnit de la WorkOrder
+ * Convierte actualHours (almacenado en horas) según timeUnit
+ * @example formatDuration(1.5, 'hours') => "1h 30m"
+ * @example formatDuration(0.5, 'hours') => "30m"
+ * @example formatDuration(30, 'minutes') => "30m"
+ */
+export function formatDuration(actualHours: number | null | undefined, timeUnit?: string | null): string {
+  if (!actualHours && actualHours !== 0) return '—';
+
+  // Si timeUnit es 'minutes', actualHours está en minutos
+  // Si timeUnit es 'hours' o undefined, actualHours está en horas
+  const minutes = timeUnit === 'minutes'
+    ? actualHours
+    : actualHours * 60;
+
+  return formatHours(minutes);
+}
+
+// =============================================================================
+// ACCIONES CONTEXTUALES POR ESTADO
+// =============================================================================
+
+export type ContextualAction = {
+  label: string;
+  icon: string;
+  targetStatus: WorkOrderStatus;
+  variant: 'default' | 'secondary' | 'outline' | 'ghost';
+};
+
+/**
+ * Obtiene la acción principal según el estado actual
+ */
+export function getPrimaryActionByStatus(status: WorkOrderStatus): ContextualAction | null {
+  switch (status) {
+    case WorkOrderStatus.PENDING:
+      return {
+        label: 'Iniciar',
+        icon: 'play',
+        targetStatus: WorkOrderStatus.IN_PROGRESS,
+        variant: 'default',
+      };
+    case WorkOrderStatus.IN_PROGRESS:
+      return {
+        label: 'Completar',
+        icon: 'checkCircle',
+        targetStatus: WorkOrderStatus.COMPLETED,
+        variant: 'default',
+      };
+    case WorkOrderStatus.COMPLETED:
+      return {
+        label: 'Reabrir',
+        icon: 'rotateCcw',
+        targetStatus: WorkOrderStatus.PENDING,
+        variant: 'outline',
+      };
+    case WorkOrderStatus.ON_HOLD:
+      return {
+        label: 'Reanudar',
+        icon: 'play',
+        targetStatus: WorkOrderStatus.IN_PROGRESS,
+        variant: 'default',
+      };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Obtiene acciones secundarias disponibles
+ */
+export function getSecondaryActionsByStatus(status: WorkOrderStatus): ContextualAction[] {
+  const actions: ContextualAction[] = [];
+
+  if (status === WorkOrderStatus.PENDING || status === WorkOrderStatus.IN_PROGRESS) {
+    actions.push({
+      label: 'Pausar',
+      icon: 'pause',
+      targetStatus: WorkOrderStatus.ON_HOLD,
+      variant: 'outline',
+    });
+  }
+
+  if (status !== WorkOrderStatus.CANCELLED && status !== WorkOrderStatus.COMPLETED) {
+    actions.push({
+      label: 'Cancelar',
+      icon: 'x',
+      targetStatus: WorkOrderStatus.CANCELLED,
+      variant: 'ghost',
+    });
+  }
+
+  return actions;
+}
+
+// =============================================================================
+// PRIORIDAD SUGERIDA POR TIPO DE MANTENIMIENTO
+// =============================================================================
+
+export function getSuggestedPriority(type: MaintenanceType): Priority {
+  switch (type) {
+    case MaintenanceType.EMERGENCY:
+      return Priority.URGENT;
+    case MaintenanceType.CORRECTIVE:
+      return Priority.HIGH;
+    case MaintenanceType.PREVENTIVE:
+      return Priority.MEDIUM;
+    case MaintenanceType.PREDICTIVE:
+      return Priority.LOW;
+    default:
+      return Priority.MEDIUM;
+  }
+}
+
+// =============================================================================
+// TIPOS EXPORTADOS
+// =============================================================================
+
+export interface WorkOrderFilters {
+  search: string;
+  status: WorkOrderStatus | 'ALL' | 'OVERDUE' | null;
+  priority: Priority | 'ALL' | null;
+  assignee: string; // 'all' | 'unassigned' | 'user-{id}' | 'worker-{id}'
+  machineId: number | null;
+  maintenanceType: MaintenanceType | 'ALL' | null;
+  dateRange: {
+    from?: Date;
+    to?: Date;
+  };
+  tags: string[];
+  sortBy: 'dueDate' | 'priority' | 'recent' | 'created' | undefined;
+  onlyOverdue?: boolean;
+  onlyUnassigned?: boolean;
+}
+
+export const defaultFilters: WorkOrderFilters = {
+  search: '',
+  status: null,
+  priority: null,
+  assignee: 'all',
+  machineId: null,
+  maintenanceType: null,
+  dateRange: {},
+  tags: [],
+  sortBy: undefined,
+  onlyOverdue: false,
+  onlyUnassigned: false,
+};
+
+// Labels para los selectores de filtros
+export const filterStatusLabels: Record<WorkOrderStatus | 'ALL', string> = {
+  ALL: 'Todos los estados',
+  PENDING: 'Pendiente',
+  IN_PROGRESS: 'En proceso',
+  COMPLETED: 'Completada',
+  CANCELLED: 'Cancelada',
+  ON_HOLD: 'En espera',
+};
+
+export const filterPriorityLabels: Record<Priority | 'ALL', string> = {
+  ALL: 'Todas las prioridades',
+  LOW: 'Baja',
+  MEDIUM: 'Media',
+  HIGH: 'Alta',
+  URGENT: 'Urgente',
+};
+
+export const filterMaintenanceTypeLabels: Record<MaintenanceType | 'ALL', string> = {
+  ALL: 'Todos los tipos',
+  PREVENTIVE: 'Preventivo',
+  CORRECTIVE: 'Correctivo',
+  PREDICTIVE: 'Predictivo',
+  EMERGENCY: 'Emergencia',
+};
+
+export const sortByLabels: Record<string, string> = {
+  dueDate: 'Vence primero',
+  priority: 'Mayor prioridad',
+  recent: 'Más reciente',
+  created: 'Fecha de creación',
+};
+

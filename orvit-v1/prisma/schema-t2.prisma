@@ -1,0 +1,306 @@
+// Schema para Base de Datos T2 (documentos internos)
+// Esta BD es independiente y solo accesible para usuarios autorizados
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-t2"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL_T2")
+  directUrl = env("DIRECT_URL_T2")
+}
+
+// ============================================================================
+// COMPRAS T2
+// ============================================================================
+
+model T2PurchaseReceipt {
+  id                Int       @id @default(autoincrement())
+  companyId         Int
+  supplierId        Int       // FK virtual a suppliers (BD principal)
+  tipoCuentaId      Int       // FK virtual a PurchaseAccount (BD principal)
+  createdBy         Int       // FK virtual a User (BD principal)
+
+  // Datos del comprobante
+  numeroSerie       String    @db.VarChar(10)
+  numeroFactura     String    @db.VarChar(50)
+  tipo              String    @default("X") @db.VarChar(50)
+  fechaEmision      DateTime  @db.Date
+  fechaVencimiento  DateTime? @db.Date
+  fechaImputacion   DateTime  @db.Date
+  tipoPago          String    @default("contado") @db.VarChar(20)
+  metodoPago        String?   @db.VarChar(50)
+
+  // Montos (sin IVA para T2)
+  neto              Decimal   @db.Decimal(15, 2)
+  total             Decimal   @db.Decimal(15, 2)
+
+  // Estado
+  estado            String    @default("pendiente") @db.VarChar(20)
+  observaciones     String?
+
+  // Remito / Ingreso
+  ingresoConfirmado    Boolean   @default(false)
+  ingresoConfirmadoPor Int?
+  ingresoConfirmadoAt  DateTime?
+  firmaIngreso         String?
+  remitoUrl            String?
+  fotoIngresoUrl       String?
+  depositoId           Int?      // FK virtual a Warehouse (BD principal)
+
+  // Auditoría
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relaciones internas T2
+  items             T2PurchaseReceiptItem[]
+  accountMovements  T2SupplierAccountMovement[]
+  stockMovements    T2StockMovement[]
+  paymentOrders     T2PaymentOrderReceipt[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([fechaEmision])
+  @@map("t2_purchase_receipt")
+}
+
+model T2PurchaseReceiptItem {
+  id                Int               @id @default(autoincrement())
+  receiptId         Int
+  supplierItemId    Int               // FK virtual a SupplierItem (BD principal)
+
+  cantidad          Decimal           @db.Decimal(15, 4)
+  precioUnitario    Decimal           @db.Decimal(15, 4)
+  subtotal          Decimal           @db.Decimal(15, 2)
+  descripcion       String?
+
+  createdAt         DateTime          @default(now())
+
+  receipt           T2PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@index([receiptId])
+  @@index([supplierItemId])
+  @@map("t2_purchase_receipt_item")
+}
+
+// ============================================================================
+// CUENTA CORRIENTE PROVEEDORES T2
+// ============================================================================
+
+model T2SupplierAccountMovement {
+  id                Int       @id @default(autoincrement())
+  companyId         Int
+  supplierId        Int       // FK virtual a suppliers (BD principal)
+
+  // Tipo de movimiento
+  tipo              String    @db.VarChar(50) // FACTURA, PAGO, NC, ND, AJUSTE
+
+  // Referencias opcionales
+  facturaId         Int?
+  pagoId            Int?
+
+  // Fechas
+  fecha             DateTime  @db.Date
+  fechaVencimiento  DateTime? @db.Date
+
+  // Montos
+  debe              Decimal   @default(0) @db.Decimal(15, 2)
+  haber             Decimal   @default(0) @db.Decimal(15, 2)
+  saldoMovimiento   Decimal   @default(0) @db.Decimal(15, 2)
+
+  // Info comprobante
+  comprobante       String?   @db.VarChar(100)
+  descripcion       String?
+
+  // Auditoría
+  createdBy         Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relaciones internas T2
+  factura           T2PurchaseReceipt? @relation(fields: [facturaId], references: [id])
+  pago              T2PaymentOrder?    @relation(fields: [pagoId], references: [id])
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([fecha])
+  @@map("t2_supplier_account_movement")
+}
+
+// ============================================================================
+// ORDENES DE PAGO T2
+// ============================================================================
+
+model T2PaymentOrder {
+  id                Int       @id @default(autoincrement())
+  companyId         Int
+  supplierId        Int       // FK virtual a suppliers (BD principal)
+  createdBy         Int       // FK virtual a User (BD principal)
+
+  fechaPago         DateTime  @db.Date
+  totalPago         Decimal   @db.Decimal(15, 2)
+
+  // Medios de pago
+  efectivo          Decimal   @default(0) @db.Decimal(15, 2)
+  transferencia     Decimal   @default(0) @db.Decimal(15, 2)
+
+  notas             String?
+
+  // Auditoría
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relaciones internas T2
+  recibos           T2PaymentOrderReceipt[]
+  accountMovements  T2SupplierAccountMovement[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([fechaPago])
+  @@map("t2_payment_order")
+}
+
+model T2PaymentOrderReceipt {
+  id              Int               @id @default(autoincrement())
+  paymentOrderId  Int
+  receiptId       Int
+  montoAplicado   Decimal           @db.Decimal(15, 2)
+
+  createdAt       DateTime          @default(now())
+
+  paymentOrder    T2PaymentOrder    @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+  receipt         T2PurchaseReceipt @relation(fields: [receiptId], references: [id])
+
+  @@index([paymentOrderId])
+  @@index([receiptId])
+  @@map("t2_payment_order_receipt")
+}
+
+// ============================================================================
+// STOCK T2
+// ============================================================================
+
+model T2StockMovement {
+  id                Int       @id @default(autoincrement())
+  companyId         Int
+  supplierItemId    Int       // FK virtual a SupplierItem (BD principal)
+  warehouseId       Int       // FK virtual a Warehouse (BD principal)
+  createdBy         Int       // FK virtual a User (BD principal)
+
+  // Tipo de movimiento
+  tipo              String    @db.VarChar(50) // ENTRADA_RECEPCION, AJUSTE_POSITIVO, etc.
+
+  // Cantidades
+  cantidad          Decimal   @db.Decimal(15, 4)
+  cantidadAnterior  Decimal   @db.Decimal(15, 4)
+  cantidadPosterior Decimal   @db.Decimal(15, 4)
+
+  // Costos
+  costoUnitario     Decimal?  @db.Decimal(15, 2)
+  costoTotal        Decimal?  @db.Decimal(15, 2)
+
+  // Códigos para trazabilidad
+  codigoPropio      String?   @db.VarChar(100)
+  codigoProveedor   String?   @db.VarChar(100)
+  descripcionItem   String?   @db.VarChar(255)
+
+  // Referencia al origen
+  receiptId         Int?
+  sourceNumber      String?   @db.VarChar(50)
+  motivo            String?
+  notas             String?
+
+  // Auditoría
+  createdAt         DateTime  @default(now())
+
+  // Relaciones internas T2
+  receipt           T2PurchaseReceipt? @relation(fields: [receiptId], references: [id])
+
+  @@index([companyId])
+  @@index([supplierItemId])
+  @@index([warehouseId])
+  @@index([createdAt])
+  @@map("t2_stock_movement")
+}
+
+// ============================================================================
+// VENTAS T2 (si aplica)
+// ============================================================================
+
+model T2Sale {
+  id                Int       @id @default(autoincrement())
+  companyId         Int
+  clientId          Int?      // FK virtual a Client (BD principal)
+  createdBy         Int       // FK virtual a User (BD principal)
+
+  fecha             DateTime  @db.Date
+  numero            String    @db.VarChar(50)
+  tipo              String    @default("NOTA_VENTA") @db.VarChar(50)
+
+  subtotal          Decimal   @db.Decimal(15, 2)
+  total             Decimal   @db.Decimal(15, 2)
+
+  estado            String    @default("pendiente") @db.VarChar(20)
+  observaciones     String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  items             T2SaleItem[]
+
+  @@index([companyId])
+  @@index([clientId])
+  @@index([fecha])
+  @@map("t2_sale")
+}
+
+model T2SaleItem {
+  id                Int       @id @default(autoincrement())
+  saleId            Int
+  productId         Int?      // FK virtual a Product (BD principal)
+
+  descripcion       String
+  cantidad          Decimal   @db.Decimal(15, 4)
+  precioUnitario    Decimal   @db.Decimal(15, 4)
+  subtotal          Decimal   @db.Decimal(15, 2)
+
+  createdAt         DateTime  @default(now())
+
+  sale              T2Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("t2_sale_item")
+}
+
+// ============================================================================
+// TESORERIA T2
+// ============================================================================
+
+model T2CashMovement {
+  id                Int       @id @default(autoincrement())
+  companyId         Int
+  cashBoxId         Int       // FK virtual a CashBox (BD principal)
+  createdBy         Int       // FK virtual a User (BD principal)
+
+  fecha             DateTime  @db.Date
+  tipo              String    @db.VarChar(50) // INGRESO, EGRESO
+  concepto          String    @db.VarChar(100)
+  descripcion       String?
+
+  monto             Decimal   @db.Decimal(15, 2)
+  saldoAnterior     Decimal   @db.Decimal(15, 2)
+  saldoPosterior    Decimal   @db.Decimal(15, 2)
+
+  // Referencia opcional a pago
+  paymentOrderId    Int?
+
+  createdAt         DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([cashBoxId])
+  @@index([fecha])
+  @@map("t2_cash_movement")
+}

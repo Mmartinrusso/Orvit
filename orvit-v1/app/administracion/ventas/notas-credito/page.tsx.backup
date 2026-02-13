@@ -1,0 +1,841 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  FileText,
+  Plus,
+  Search,
+  Eye,
+  Check,
+  X,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Filter,
+  RefreshCcw
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { DatePicker } from '@/components/ui/date-picker';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface NotaCreditoDebito {
+  id: number;
+  tipo: 'NOTA_CREDITO' | 'NOTA_DEBITO';
+  numero: string;
+  fecha: string;
+  motivo: string;
+  netoGravado: number;
+  iva21: number;
+  iva105: number;
+  iva27: number;
+  exento: number;
+  noGravado: number;
+  total: number;
+  fiscalStatus: string;
+  afectaStock: boolean;
+  cae?: string;
+  descripcion?: string;
+  client: { id: string; name: string; cuit?: string };
+  invoice?: { id: number; numero: string };
+  _count?: { items: number };
+}
+
+interface Client {
+  id: string;
+  name: string;
+  legalName?: string;
+  cuit?: string;
+}
+
+interface Invoice {
+  id: number;
+  numero: string;
+  total: number;
+  saldoPendiente: number;
+}
+
+const statusColors: Record<string, string> = {
+  'DRAFT': 'secondary',
+  'PENDING_AFIP': 'secondary',
+  'PROCESSING': 'secondary',
+  'AUTHORIZED': 'default',
+  'REJECTED': 'destructive',
+  'CANCELLED': 'destructive'
+};
+
+const statusLabels: Record<string, string> = {
+  'DRAFT': 'Borrador',
+  'PENDING_AFIP': 'Pendiente AFIP',
+  'PROCESSING': 'Procesando',
+  'AUTHORIZED': 'Autorizada',
+  'REJECTED': 'Rechazada',
+  'CANCELLED': 'Anulada'
+};
+
+const motivoLabels: Record<string, string> = {
+  'DEVOLUCION': 'Devolución',
+  'DIFERENCIA_CARGA': 'Diferencia de carga',
+  'DIFERENCIA_PRECIO': 'Diferencia de precio',
+  'BONIFICACION': 'Bonificación',
+  'AJUSTE_FINANCIERO': 'Ajuste financiero',
+  'REFACTURACION': 'Refacturación',
+  'FLETE': 'Flete',
+  'OTRO': 'Otro'
+};
+
+export default function NotasCreditoDebitoVentasPage() {
+  const { mode: viewMode } = useViewMode();
+  const { user } = useAuth();
+  const companyId = user?.companyId;
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTipo, setFilterTipo] = useState<string>('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
+  const [notas, setNotas] = useState<NotaCreditoDebito[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedNota, setSelectedNota] = useState<NotaCreditoDebito | null>(null);
+  const [formData, setFormData] = useState({
+    tipo: 'NOTA_CREDITO' as 'NOTA_CREDITO' | 'NOTA_DEBITO',
+    clientId: '',
+    invoiceId: '',
+    motivo: 'DEVOLUCION',
+    descripcion: '',
+    neto: '',
+    alicuotaIva: '21',
+    fecha: new Date().toISOString().split('T')[0],
+    afectaStock: false,
+    puntoVenta: 1
+  });
+  const [saving, setSaving] = useState(false);
+
+  const loadNotas = async () => {
+    if (!companyId) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('companyId', companyId.toString());
+      params.append('viewMode', viewMode);
+      if (filterTipo) params.append('tipo', filterTipo);
+      if (filterEstado) params.append('fiscalStatus', filterEstado);
+
+      const response = await fetch(`/api/ventas/notas-credito?${params}`);
+      if (!response.ok) throw new Error('Error al obtener notas');
+      const data = await response.json();
+      setNotas(data.data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al cargar notas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadClients = async () => {
+    if (!companyId) return;
+    try {
+      const response = await fetch(`/api/ventas/clientes?limit=100`);
+      if (response.ok) {
+        const data = await response.json();
+        setClients(data.data || data || []);
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+    }
+  };
+
+  const loadInvoices = async (clientId: string) => {
+    if (!clientId || !companyId) {
+      setInvoices([]);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/ventas/facturas?clienteId=${clientId}&status=EMITIDA&limit=50`);
+      if (response.ok) {
+        const data = await response.json();
+        setInvoices(data.data || data || []);
+      }
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotas();
+    loadClients();
+  }, [companyId, filterTipo, filterEstado, viewMode]);
+
+  useEffect(() => {
+    if (formData.clientId) {
+      loadInvoices(formData.clientId);
+    }
+  }, [formData.clientId]);
+
+  const handleOpenModal = () => {
+    setFormData({
+      tipo: 'NOTA_CREDITO',
+      clientId: '',
+      invoiceId: '',
+      motivo: 'DEVOLUCION',
+      descripcion: '',
+      neto: '',
+      alicuotaIva: '21',
+      fecha: new Date().toISOString().split('T')[0],
+      afectaStock: false,
+      puntoVenta: 1
+    });
+    setInvoices([]);
+    setIsModalOpen(true);
+  };
+
+  const handleViewDetail = async (nota: NotaCreditoDebito) => {
+    try {
+      const response = await fetch(`/api/ventas/notas-credito/${nota.id}?companyId=${companyId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedNota(data);
+        setIsDetailModalOpen(true);
+      }
+    } catch (error) {
+      toast.error('Error al cargar detalle');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.clientId || !formData.motivo || !formData.neto) {
+      toast.error('Cliente, motivo y monto neto son requeridos');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const netoValue = parseFloat(formData.neto);
+      const alicuota = parseFloat(formData.alicuotaIva);
+      const ivaValue = netoValue * (alicuota / 100);
+
+      const items = [{
+        descripcion: formData.descripcion || motivoLabels[formData.motivo] || formData.motivo,
+        cantidad: 1,
+        unidad: 'UN',
+        precioUnitario: netoValue,
+        alicuotaIva: alicuota
+      }];
+
+      const response = await fetch(`/api/ventas/notas-credito?companyId=${companyId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': `nc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        },
+        body: JSON.stringify({
+          tipo: formData.tipo,
+          motivo: formData.motivo,
+          clientId: formData.clientId,
+          invoiceId: formData.invoiceId ? parseInt(formData.invoiceId) : undefined,
+          fecha: formData.fecha,
+          descripcion: formData.descripcion,
+          items,
+          afectaStock: formData.afectaStock,
+          puntoVenta: formData.puntoVenta,
+          docType: viewMode === 'E' ? 'T2' : 'T1',
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al guardar');
+      }
+
+      toast.success('Nota creada exitosamente');
+      setIsModalOpen(false);
+      loadNotas();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAuthorize = async (nota: NotaCreditoDebito) => {
+    if (!confirm(`¿Autorizar ${nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'} ${nota.numero} en AFIP?`)) return;
+
+    try {
+      const response = await fetch(`/api/ventas/notas-credito/${nota.id}?companyId=${companyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'authorize' })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error en la operación');
+      }
+
+      toast.success('Nota enviada a AFIP para autorización');
+      loadNotas();
+      if (isDetailModalOpen) setIsDetailModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleCancel = async (nota: NotaCreditoDebito) => {
+    if (!confirm(`¿Anular ${nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'} ${nota.numero}?`)) return;
+
+    try {
+      const response = await fetch(`/api/ventas/notas-credito/${nota.id}?companyId=${companyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error en la operación');
+      }
+
+      toast.success('Nota anulada');
+      loadNotas();
+      if (isDetailModalOpen) setIsDetailModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS'
+    }).format(value);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('es-AR');
+  };
+
+  const filteredNotas = notas.filter(n =>
+    n.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    n.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (n.descripcion || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totales = {
+    creditos: notas.filter(n => n.tipo === 'NOTA_CREDITO').reduce((acc, n) => acc + n.total, 0),
+    debitos: notas.filter(n => n.tipo === 'NOTA_DEBITO').reduce((acc, n) => acc + n.total, 0),
+    pendientes: notas.filter(n => n.fiscalStatus === 'DRAFT').length
+  };
+
+  if (loading) {
+    return (
+      <PermissionGuard permission="ventas.notas.view">
+        <div className="space-y-6 p-4 md:p-6">
+          <Skeleton className="h-8 w-64" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </PermissionGuard>
+    );
+  }
+
+  return (
+    <PermissionGuard permission="ventas.notas.view">
+      <div className="space-y-6 p-4 md:p-6 pb-24 md:pb-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Notas de Credito/Debito</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Gestiona notas de credito y debito de clientes
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={loadNotas}>
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+            <Button onClick={handleOpenModal}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Nota
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Notas de Credito</p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totales.creditos)}</p>
+                </div>
+                <ArrowDownCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Notas de Debito</p>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totales.debitos)}</p>
+                </div>
+                <ArrowUpCircle className="w-8 h-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Borradores</p>
+                  <p className="text-2xl font-bold">{totales.pendientes}</p>
+                </div>
+                <FileText className="w-8 h-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filtros */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por numero, cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={filterTipo} onValueChange={setFilterTipo}>
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="NOTA_CREDITO">Nota de Credito</SelectItem>
+                  <SelectItem value="NOTA_DEBITO">Nota de Debito</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterEstado} onValueChange={setFilterEstado}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="DRAFT">Borrador</SelectItem>
+                  <SelectItem value="AUTHORIZED">Autorizada</SelectItem>
+                  <SelectItem value="CANCELLED">Anulada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabla */}
+        <Card>
+          <CardContent className="p-0">
+            {filteredNotas.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No hay notas registradas</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Numero</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Motivo</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredNotas.map((nota) => (
+                    <TableRow key={nota.id}>
+                      <TableCell>
+                        <Badge variant={nota.tipo === 'NOTA_CREDITO' ? 'default' : 'destructive'}>
+                          {nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono">{nota.numero}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{nota.client.name}</p>
+                          {nota.client.cuit && (
+                            <p className="text-xs text-muted-foreground">{nota.client.cuit}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(nota.fecha)}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {motivoLabels[nota.motivo] || nota.motivo}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(nota.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusColors[nota.fiscalStatus] as any}>
+                          {statusLabels[nota.fiscalStatus] || nota.fiscalStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleViewDetail(nota)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {nota.fiscalStatus === 'DRAFT' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600"
+                                onClick={() => handleAuthorize(nota)}
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                onClick={() => handleCancel(nota)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Modal Nueva Nota */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Nueva Nota de Credito/Debito</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo *</Label>
+                  <Select
+                    value={formData.tipo}
+                    onValueChange={(v: 'NOTA_CREDITO' | 'NOTA_DEBITO') => setFormData({ ...formData, tipo: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NOTA_CREDITO">Nota de Credito</SelectItem>
+                      <SelectItem value="NOTA_DEBITO">Nota de Debito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Emision</Label>
+                  <DatePicker
+                    value={formData.fecha}
+                    onChange={(date) => setFormData({ ...formData, fecha: date })}
+                    placeholder="Seleccionar fecha"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cliente *</Label>
+                <Select
+                  value={formData.clientId}
+                  onValueChange={(v) => setFormData({ ...formData, clientId: v, invoiceId: '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.legalName || c.name} {c.cuit ? `(${c.cuit})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {invoices.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Factura de Referencia (opcional)</Label>
+                  <Select
+                    value={formData.invoiceId}
+                    onValueChange={(v) => setFormData({ ...formData, invoiceId: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin referencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin referencia</SelectItem>
+                      {invoices.map((f) => (
+                        <SelectItem key={f.id} value={f.id.toString()}>
+                          {f.numero} ({formatCurrency(f.total)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Motivo *</Label>
+                <Select
+                  value={formData.motivo}
+                  onValueChange={(v) => setFormData({ ...formData, motivo: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DEVOLUCION">Devolucion</SelectItem>
+                    <SelectItem value="DIFERENCIA_CARGA">Diferencia de carga</SelectItem>
+                    <SelectItem value="DIFERENCIA_PRECIO">Diferencia de precio</SelectItem>
+                    <SelectItem value="BONIFICACION">Bonificacion</SelectItem>
+                    <SelectItem value="AJUSTE_FINANCIERO">Ajuste financiero</SelectItem>
+                    <SelectItem value="REFACTURACION">Refacturacion</SelectItem>
+                    <SelectItem value="FLETE">Flete</SelectItem>
+                    <SelectItem value="OTRO">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Descripcion</Label>
+                <Textarea
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                  placeholder="Descripcion de la nota..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Monto Neto *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.neto}
+                    onChange={(e) => setFormData({ ...formData, neto: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Alicuota IVA</Label>
+                  <Select
+                    value={formData.alicuotaIva}
+                    onValueChange={(v) => setFormData({ ...formData, alicuotaIva: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="21">21%</SelectItem>
+                      <SelectItem value="10.5">10.5%</SelectItem>
+                      <SelectItem value="27">27%</SelectItem>
+                      <SelectItem value="0">Exento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {formData.neto && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span>Neto:</span>
+                    <span>{formatCurrency(parseFloat(formData.neto) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>IVA {formData.alicuotaIva}%:</span>
+                    <span>{formatCurrency((parseFloat(formData.neto) || 0) * (parseFloat(formData.alicuotaIva) / 100))}</span>
+                  </div>
+                  <div className="flex justify-between font-bold mt-2 pt-2 border-t">
+                    <span>Total:</span>
+                    <span>{formatCurrency((parseFloat(formData.neto) || 0) * (1 + parseFloat(formData.alicuotaIva) / 100))}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="afectaStock"
+                  checked={formData.afectaStock}
+                  onChange={(e) => setFormData({ ...formData, afectaStock: e.target.checked })}
+                  className="rounded"
+                />
+                <Label htmlFor="afectaStock" className="cursor-pointer">
+                  Afecta stock (devuelve productos al inventario)
+                </Label>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? 'Guardando...' : 'Crear Nota'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Detalle */}
+        <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedNota?.tipo === 'NOTA_CREDITO' ? 'Nota de Credito' : 'Nota de Debito'} {selectedNota?.numero}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedNota && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cliente</p>
+                    <p className="font-medium">{selectedNota.client.name}</p>
+                    {selectedNota.client.cuit && (
+                      <p className="text-sm text-muted-foreground">{selectedNota.client.cuit}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fecha Emision</p>
+                    <p className="font-medium">{formatDate(selectedNota.fecha)}</p>
+                  </div>
+                </div>
+
+                {selectedNota.invoice && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Factura de Referencia</p>
+                    <p className="font-medium">{selectedNota.invoice.numero}</p>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-sm text-muted-foreground">Motivo</p>
+                  <p>{motivoLabels[selectedNota.motivo] || selectedNota.motivo}</p>
+                </div>
+
+                {selectedNota.descripcion && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Descripcion</p>
+                    <p>{selectedNota.descripcion}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-4 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Neto Gravado</p>
+                    <p className="font-medium">{formatCurrency(selectedNota.netoGravado)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">IVA 21%</p>
+                    <p className="font-medium">{formatCurrency(selectedNota.iva21)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">IVA 10.5%</p>
+                    <p className="font-medium">{formatCurrency(selectedNota.iva105)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total</p>
+                    <p className="text-xl font-bold">{formatCurrency(selectedNota.total)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">Estado:</p>
+                  <Badge variant={statusColors[selectedNota.fiscalStatus] as any}>
+                    {statusLabels[selectedNota.fiscalStatus] || selectedNota.fiscalStatus}
+                  </Badge>
+                  {selectedNota.afectaStock && (
+                    <Badge variant="outline">Afecta Stock</Badge>
+                  )}
+                </div>
+
+                {selectedNota.cae && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">CAE</p>
+                    <p className="font-mono">{selectedNota.cae}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <DialogFooter>
+              {selectedNota?.fiscalStatus === 'DRAFT' && (
+                <>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleCancel(selectedNota)}
+                  >
+                    Anular
+                  </Button>
+                  <Button onClick={() => handleAuthorize(selectedNota)}>
+                    Autorizar en AFIP
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </PermissionGuard>
+  );
+}

@@ -1,0 +1,2386 @@
+'use client';
+
+import React, { useEffect, useState, useMemo, useCallback, startTransition } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from '@/components/providers/ThemeProvider';
+import { useCompany } from '@/contexts/CompanyContext';
+import { cn } from '@/lib/utils';
+import {
+  Wrench,
+  LayoutDashboard,
+  Cog,
+  Truck,
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  User,
+  Calendar,
+  History,
+  Users,
+  ClipboardList,
+  Settings,
+  FileText,
+  BarChart3,
+  Shield,
+  Clock,
+  UserPlus,
+  Package,
+  Calculator,
+  TrendingUp,
+  LogOut,
+  DollarSign,
+  Zap,
+  BookOpen,
+  Target,
+  Sun,
+  Moon,
+  Factory,
+  ChevronDown,
+  ShoppingCart,
+  ShoppingBag,
+  Receipt,
+  FileCheck,
+  TrendingDown,
+  Search,
+  CircleUser,
+  Bell,
+  EllipsisVertical,
+  AlertTriangle,
+  Link2,
+  MapPin,
+  RefreshCw,
+  ListTodo,
+  CalendarClock,
+  Inbox,
+  CheckCircle2,
+  ClipboardCheck,
+  ArrowRightLeft,
+  Boxes,
+  Lightbulb,
+  Wallet,
+  // CMMS Icons
+  Activity,
+  Droplet,
+  HardHat,
+  Gauge,
+  Lock,
+  QrCode,
+  HeartPulse,
+  Thermometer,
+  GraduationCap,
+  // Production Icons
+  Tags,
+  ListChecks,
+  CheckSquare,
+  Pause,
+  // Additional CMMS Icons
+  ShieldCheck,
+  ShieldAlert,
+  Construction,
+  RouteIcon,
+  Smartphone,
+  ScanLine,
+  // Almacén
+  Warehouse,
+  PackageSearch,
+  PackageCheck,
+  PackageX,
+  ClipboardPen,
+  Database,
+  CreditCard,
+  AlertCircle,
+  MessageSquarePlus,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigationPermissions } from '@/hooks/use-navigation-permissions';
+import { useAreaPermissions } from '@/hooks/use-area-permissions';
+import { useNavigation } from '@/contexts/NavigationContext';
+import AreaSelector from './AreaSelector';
+import SectorSelector from './SectorSelector';
+import NotificationPanel from '@/components/notifications/NotificationPanel';
+import { PageSearch } from '@/components/layout/PageSearch';
+import { useSidebarContext } from '@/contexts/SidebarContext';
+import { ThemeSelector } from '@/components/ui/theme-selector';
+import { ModeIndicator } from '@/components/view-mode';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { useModules, SIDEBAR_MODULE_MAP } from '@/contexts/ModulesContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+interface SidebarItem {
+  name: string;
+  href?: string;
+  icon: any;
+  description: string;
+  children?: SidebarItem[];
+  badge?: number | string; // Contador o texto para badge
+  badgeVariant?: 'default' | 'destructive' | 'warning'; // Variante visual del badge
+}
+
+interface SidebarProps {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
+  const sidebarContext = useSidebarContext();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { currentCompany, currentArea, currentSector, sectors, setSector, areas, setArea } = useCompany();
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const { canAccessAdministration, canAccessMaintenance, canAccessProduction } = useAreaPermissions();
+  const [overlayClickable, setOverlayClickable] = React.useState(false);
+  const [showFeedback, setShowFeedback] = React.useState(false);
+  
+  // Permitir que el overlay sea clickeable solo después de que el sidebar esté completamente abierto (solo móvil)
+  React.useEffect(() => {
+    if (isOpen && typeof window !== 'undefined' && window.innerWidth < 768) {
+      const timer = setTimeout(() => setOverlayClickable(true), 300);
+      return () => clearTimeout(timer);
+    } else {
+      setOverlayClickable(false);
+    }
+  }, [isOpen]);
+  
+  // Filtrar sectores según el rol del usuario
+  // Si es supervisor, solo mostrar su sector asignado
+  const availableSectors = React.useMemo(() => {
+    if (!user || !sectors || sectors.length === 0) return [];
+    
+    const userRole = user.role?.toUpperCase() || '';
+    const isSupervisor = userRole === 'SUPERVISOR';
+    
+    // Si es supervisor y tiene un sectorId asignado, solo mostrar ese sector
+    if (isSupervisor && user.sectorId) {
+      const sectorId = String(user.sectorId);
+      return sectors.filter(sector => sector.id === sectorId);
+    }
+    
+    // Para administradores y otros roles, mostrar todos los sectores
+    return sectors;
+  }, [user, sectors]);
+
+  // Filtrar áreas según los permisos del usuario
+  const availableAreas = React.useMemo(() => {
+    if (!areas || areas.length === 0) return [];
+    
+    return areas.filter(area => {
+      if (area.name === 'Administración') {
+        return canAccessAdministration;
+      }
+      if (area.name === 'Mantenimiento') {
+        return canAccessMaintenance;
+      }
+      if (area.name === 'Producción') {
+        return canAccessProduction;
+      }
+      // Para otras áreas, permitir acceso por defecto
+      return true;
+    });
+  }, [areas, canAccessAdministration, canAccessMaintenance, canAccessProduction]);
+  
+  // Sincronizar el área del contexto con el pathname actual
+  // Esto corrige el caso donde localStorage tiene un área distinta a la URL actual (ej: recarga en /mantenimiento con área "Administración" en localStorage)
+  useEffect(() => {
+    if (!areas || areas.length === 0 || !pathname) return;
+
+    const areaNameByPath = pathname.startsWith('/mantenimiento')
+      ? 'Mantenimiento'
+      : pathname.startsWith('/administracion')
+        ? 'Administración'
+        : pathname.startsWith('/produccion')
+          ? 'Producción'
+          : null;
+
+    if (!areaNameByPath) return;
+
+    const currentName = currentArea?.name?.trim();
+    if (currentName === areaNameByPath) return;
+
+    const correctArea = areas.find(a => a.name.trim() === areaNameByPath);
+    if (correctArea) {
+      setArea(correctArea);
+    }
+  }, [pathname, areas, currentArea?.name, setArea]);
+
+  // Asegurar que el supervisor tenga su sector asignado seleccionado
+  useEffect(() => {
+    if (!user || !sectors || sectors.length === 0 || !currentArea) return;
+    
+    const userRole = user.role?.toUpperCase() || '';
+    const isSupervisor = userRole === 'SUPERVISOR';
+    
+    // Si es supervisor y tiene un sectorId asignado
+    if (isSupervisor && user.sectorId) {
+      const sectorId = String(user.sectorId);
+      // Si no hay sector seleccionado o el sector seleccionado no es el asignado
+      if (!currentSector || currentSector.id !== sectorId) {
+        const assignedSector = sectors.find(s => s.id === sectorId);
+        if (assignedSector) {
+          setSector(assignedSector);
+        }
+      }
+    }
+  }, [user, sectors, currentArea, currentSector, setSector]);
+  
+  // Módulos habilitados para la empresa
+  const { areAllModulesEnabled, loading: modulesLoading } = useModules();
+
+  // Helper para verificar si un item del sidebar está habilitado según módulos
+  const isModuleItemEnabled = useCallback((href: string | undefined): boolean => {
+    if (!href) return true; // Items sin href (grupos) siempre visibles
+    const requiredModules = SIDEBAR_MODULE_MAP[href];
+    if (!requiredModules) return true; // Sin restricción de módulo
+    return areAllModulesEnabled(requiredModules);
+  }, [areAllModulesEnabled]);
+
+  // Permisos de navegación
+  const {
+    canAccessTasks,
+    canAccessPermissions,
+    canAccessUsers,
+    canAccessReports,
+    canAccessSettings,
+    canAccessAdminDashboard,
+    canAccessWorkOrders,
+    canAccessMaintenances,
+    canAccessMaintenanceMachines,
+    canAccessMobileUnits,
+    canAccessWorkStations,
+    canAccessPanol,
+    canAccessMaintenanceReports,
+    canAccessSales,
+    canAccessSalesDashboard,
+    canAccessClients,
+    canAccessProducts,
+    canAccessQuotes,
+    canAccessSalesModule,
+    canAccessCosts,
+    canAccessControls,
+    canAccessCargas,
+    canAccessProductionMachines,
+    canAccessVehicles,
+    canAccessPersonalGroup,
+    canAccessVentasGroup,
+    canAccessCostosGroup,
+    // Producción
+    canAccessProductionDashboard,
+    canAccessProductionOrders,
+    canAccessProductionPartes,
+    canAccessProductionParadas,
+    canAccessProductionCalidad,
+    canAccessProductionRutinas,
+    canAccessProductionConfig,
+    canAccessWorkCenters,
+    canAccessShifts,
+    canAccessReasonCodes,
+    canAccessProductionReports,
+    // Almacén
+    canAccessAlmacen,
+    canAccessAlmacenDashboard,
+    canAccessAlmacenInventario,
+    canAccessAlmacenSolicitudes,
+    canAccessAlmacenDespachos,
+    canAccessAlmacenDevoluciones,
+    canAccessAlmacenReservas,
+    isLoading: permissionsLoading
+  } = useNavigationPermissions();
+
+  // Estado para controlar el grupo desplegable
+  const [openGroups, setOpenGroups] = useState<{[key:string]:boolean}>({});
+  
+  // Ref para trackear si hay dropdowns abiertos DENTRO del sidebar
+  const hasOpenDropdownRef = React.useRef(false);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+  
+  // Monitorear dropdowns abiertos SOLO DENTRO DEL SIDEBAR para evitar que se cierre
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const checkForOpenDropdowns = () => {
+      if (typeof document === 'undefined' || !sidebarRef.current) return;
+      
+      // Solo buscar menús abiertos DENTRO del sidebar
+      const openMenus = sidebarRef.current.querySelectorAll('[role="menu"][data-state="open"]');
+      const hasOpen = openMenus.length > 0;
+      hasOpenDropdownRef.current = hasOpen;
+      
+      // Si hay un dropdown abierto DENTRO del sidebar, mantener sidebar abierto
+      if (hasOpen) {
+        if (!isOpen && typeof window !== 'undefined' && window.innerWidth >= 768) {
+          setIsOpen(true);
+        }
+      }
+    };
+    
+    // Verificar periódicamente si hay dropdowns abiertos (muy frecuente para detección inmediata)
+    const interval = setInterval(checkForOpenDropdowns, 25);
+    
+    // También observar cambios en el DOM del sidebar
+    const observer = new MutationObserver(() => {
+      checkForOpenDropdowns();
+    });
+    
+    if (sidebarRef.current) {
+      observer.observe(sidebarRef.current, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-state']
+    });
+    }
+    
+    // Verificación inicial
+    checkForOpenDropdowns();
+    
+    return () => {
+      clearInterval(interval);
+      observer.disconnect();
+    };
+  }, [isOpen, setIsOpen]);
+  
+  // Prefetch todas las rutas disponibles al montar el sidebar
+  useEffect(() => {
+    const prefetchRoutes = [
+      '/mantenimiento/dashboard',
+      '/mantenimiento/ordenes',
+      '/mantenimiento/mantenimientos',
+      '/mantenimiento/maquinas',
+      '/mantenimiento/unidades-moviles',
+      '/mantenimiento/puestos-trabajo',
+      '/panol',
+      '/mantenimiento/reportes',
+      '/administracion/dashboard',
+      '/administracion/agenda',
+      '/administracion/permisos',
+      '/administracion/usuarios',
+      '/maquinas',
+      '/vehicles',
+      '/produccion/dashboard'
+    ];
+    
+    // Prefetch todas las rutas en paralelo después de un pequeño delay
+    const timer = setTimeout(() => {
+      prefetchRoutes.forEach(route => {
+        router.prefetch(route);
+      });
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [router]);
+
+  const { setNavigating } = useNavigation();
+
+  // Función para navegar inmediatamente y activar el indicador de carga
+  const handleNavigation = useCallback((href?: string, e?: React.MouseEvent) => {
+    if (!href || href === '#' || href === pathname) return;
+    
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    // Activar indicador de navegación ANTES de navegar
+    setNavigating(true);
+    
+    // Cerrar sidebar en móvil
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsOpen(false);
+    }
+    
+    // Navegar inmediatamente usando router.push
+    startTransition(() => {
+      router.push(href);
+    });
+  }, [pathname, setNavigating, router, setIsOpen]);
+  
+  // Función para cerrar el sidebar en móvil al hacer clic en un enlace (memoizada)
+  const handleLinkClick = useCallback((href?: string, e?: React.MouseEvent<HTMLAnchorElement>) => {
+    // Usar handleNavigation para navegación inmediata
+    handleNavigation(href, e);
+  }, [handleNavigation]);
+
+  // Handler para prefetch al hacer hover sobre un enlace
+  const handleLinkHover = useCallback((href: string) => {
+    if (href && href !== '#') {
+      router.prefetch(href);
+    }
+  }, [router]);
+
+  // Handler optimizado para cambio de área (memoizado)
+  const handleAreaChange = useCallback((area: any) => {
+    if (currentArea?.id === area.id) return;
+
+    // Intentar restaurar el último sector usado en esta área
+    let lastSector: any = null;
+    if (typeof window !== 'undefined' && area.id) {
+      const saved = localStorage.getItem(`lastSector_area_${area.id}`);
+      if (saved) {
+        try { lastSector = JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+
+    // Determinar la ruta de destino
+    let targetRoute = '/sectores';
+    if (area.name === 'Administración') {
+      targetRoute = '/administracion/dashboard';
+    } else if (area.name === 'Mantenimiento') {
+      targetRoute = lastSector ? '/mantenimiento/dashboard' : '/sectores';
+    } else if (area.name === 'Producción') {
+      targetRoute = lastSector ? '/produccion/dashboard' : '/sectores';
+    }
+
+    // Cambiar el área ANTES de redirigir para evitar flash del área anterior
+    setArea(area);
+
+    // Restaurar sector si había uno guardado, sino limpiar
+    if (lastSector) {
+      setSector(lastSector);
+    } else {
+      setSector(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentSector');
+      }
+    }
+
+    // Usar router.replace para evitar agregar al historial
+    router.replace(targetRoute);
+  }, [currentArea?.id, setSector, setArea, router]);
+
+  // Handler optimizado para cambio de sector (memoizado)
+  const handleSectorChange = useCallback((sector: any) => {
+    setSector(sector);
+    const areaName = currentArea?.name.trim().toUpperCase();
+    if (areaName === 'MANTENIMIENTO') {
+      router.replace('/mantenimiento/dashboard');
+    } else if (areaName === 'PRODUCCIÓN') {
+      router.replace('/produccion/dashboard');
+    }
+  }, [currentArea?.name, setSector, router]);
+  
+  // Cerrar el sidebar cuando cambia la ruta en móvil
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && isOpen) {
+      console.log('[SIDEBAR] pathname cambió, cerrando sidebar. pathname:', pathname);
+      setIsOpen(false);
+    }
+  }, [pathname]); // Solo ejecutar cuando cambia pathname, no cuando cambia isOpen
+  
+  // ========== NUEVA ESTRUCTURA SIDEBAR V2 ==========
+
+  // V2: Órdenes ahora es item único con vista unificada (Lista/Bandeja/Calendario)
+  // Las rutas viejas (/dispatcher, /mis-ots, /calendario) redirigen a ?view= params
+  // const ordenesItems - REMOVIDO - ya no se usa grupo colapsable
+
+  // ========== V2: ESTRUCTURA SIDEBAR MANTENIMIENTO ==========
+
+  // Grupo CORRECTIVO - contiene Fallas y Órdenes
+  // Fallas: vista unificada con tabs (Reportes | Reincidencias | Duplicados)
+  const fallasItems: SidebarItem[] = [
+    {
+      name: 'Reportes',
+      href: '/mantenimiento/fallas',
+      icon: AlertTriangle,
+      description: 'Registro y gestión de fallas reportadas'
+    },
+    {
+      name: 'Reincidencias',
+      href: '/mantenimiento/fallas?view=reincidencias',
+      icon: RefreshCw,
+      description: 'Análisis de fallas recurrentes'
+    },
+    {
+      name: 'Duplicados',
+      href: '/mantenimiento/fallas?view=duplicados',
+      icon: Link2,
+      description: 'Gestión de reportes duplicados'
+    },
+  ];
+
+  // Items del grupo CORRECTIVO (Fallas + Órdenes + Soluciones) - siempre visibles
+  const correctivoItems: SidebarItem[] = [
+    {
+      name: 'Fallas',
+      href: '/mantenimiento/fallas',
+      icon: AlertTriangle,
+      description: 'Reportes e incidentes'
+    },
+    {
+      name: 'Órdenes de trabajo',
+      href: '/mantenimiento/ordenes',
+      icon: ClipboardList,
+      description: 'Gestión de órdenes de trabajo (Lista/Bandeja/Calendario)'
+    },
+    {
+      name: 'Soluciones',
+      href: '/mantenimiento/soluciones',
+      icon: Lightbulb,
+      description: 'Base de conocimiento de soluciones'
+    },
+  ];
+
+  // PREVENTIVO - Item único con tabs internos (?view=)
+  // Tabs: Hoy | Calendario | Planes | Checklists | Métricas
+  // NO tiene children en sidebar - los tabs están dentro de la página
+
+  // Items del grupo "Activos" - siempre visibles en Mantenimiento
+  const activosItems: SidebarItem[] = [
+    {
+      name: 'Máquinas',
+      href: '/mantenimiento/maquinas',
+      icon: Cog,
+      description: 'Lista completa de máquinas'
+    },
+    {
+      name: 'Unidades Móviles',
+      href: '/mantenimiento/unidades-moviles',
+      icon: Truck,
+      description: 'Vehículos y equipos móviles'
+    },
+    {
+      name: 'Puestos de trabajo',
+      href: '/mantenimiento/puestos-trabajo',
+      icon: Building2,
+      description: 'Puestos de trabajo e instructivos'
+    },
+  ];
+
+  // Items del grupo PAÑOL - Inventario de herramientas y repuestos
+  const panolItems: SidebarItem[] = [
+    {
+      name: 'Inventario',
+      href: '/panol',
+      icon: Package,
+      description: 'Ver todos los items del pañol'
+    },
+    {
+      name: 'Repuestos',
+      href: '/panol/repuestos',
+      icon: Cog,
+      description: 'Gestión de repuestos'
+    },
+    {
+      name: 'Movimientos',
+      href: '/panol/movimientos',
+      icon: ArrowRightLeft,
+      description: 'Historial de entradas y salidas'
+    },
+    {
+      name: 'Dashboard',
+      href: '/panol/dashboard',
+      icon: BarChart3,
+      description: 'Métricas y analytics'
+    },
+    {
+      name: 'Conteo Físico',
+      href: '/panol/conteo',
+      icon: ClipboardCheck,
+      description: 'Auditoría de inventario'
+    },
+    {
+      name: 'Acciones Rápidas',
+      href: '/panol/rapido',
+      icon: ScanLine,
+      description: 'Escaneo QR y operaciones rápidas'
+    },
+  ];
+
+  // ========== GRUPOS CMMS AVANZADOS ==========
+
+  // Grupo CONFIABILIDAD: Health Score, FMEA, Criticidad, Monitoreo
+  const confiabilidadItems: SidebarItem[] = [
+    {
+      name: 'Health Score',
+      href: '/mantenimiento/health-score',
+      icon: HeartPulse,
+      description: 'Indicador de salud de máquinas'
+    },
+    {
+      name: 'FMEA',
+      href: '/mantenimiento/fmea',
+      icon: TrendingDown,
+      description: 'Análisis de modos de falla y efectos'
+    },
+    {
+      name: 'Criticidad',
+      href: '/mantenimiento/criticidad',
+      icon: Target,
+      description: 'Matriz de criticidad de activos'
+    },
+    {
+      name: 'Monitoreo',
+      href: '/mantenimiento/monitoreo',
+      icon: Activity,
+      description: 'Monitoreo de condición y sensores'
+    },
+  ];
+
+  // Grupo SEGURIDAD: PTW, LOTO, MOC
+  const seguridadItems: SidebarItem[] = [
+    {
+      name: 'PTW',
+      href: '/mantenimiento/ptw',
+      icon: Shield,
+      description: 'Permisos de trabajo (Permit to Work)'
+    },
+    {
+      name: 'LOTO',
+      href: '/mantenimiento/loto',
+      icon: Lock,
+      description: 'Bloqueo y etiquetado (Lockout-Tagout)'
+    },
+    {
+      name: 'MOC',
+      href: '/mantenimiento/moc',
+      icon: RefreshCw,
+      description: 'Gestión del cambio (Management of Change)'
+    },
+  ];
+
+  // Grupo GESTIÓN: Skills, Contadores, Calibración, Lubricación, Contratistas
+  const gestionItems: SidebarItem[] = [
+    {
+      name: 'Skills',
+      href: '/mantenimiento/skills',
+      icon: Target,
+      description: 'Matriz de habilidades y certificaciones'
+    },
+    {
+      name: 'Contadores',
+      href: '/mantenimiento/contadores',
+      icon: Clock,
+      description: 'Contadores de uso y mantenimiento'
+    },
+    {
+      name: 'Calibración',
+      href: '/mantenimiento/calibracion',
+      icon: Gauge,
+      description: 'Gestión de calibraciones de equipos'
+    },
+    {
+      name: 'Lubricación',
+      href: '/mantenimiento/lubricacion',
+      icon: Droplet,
+      description: 'Puntos y rutas de lubricación'
+    },
+    {
+      name: 'Contratistas',
+      href: '/mantenimiento/contratistas',
+      icon: HardHat,
+      description: 'Gestión de contratistas externos'
+    },
+  ];
+
+  // Grupo DOCUMENTACIÓN: Conocimiento, Lecciones, Garantías, Paradas, QR, Puntos Medición
+  const documentacionItems: SidebarItem[] = [
+    {
+      name: 'Conocimiento',
+      href: '/mantenimiento/conocimiento',
+      icon: BookOpen,
+      description: 'Base de conocimiento y documentación'
+    },
+    {
+      name: 'Lecciones',
+      href: '/mantenimiento/lecciones',
+      icon: GraduationCap,
+      description: 'Base de lecciones aprendidas'
+    },
+    {
+      name: 'Garantías',
+      href: '/mantenimiento/garantias',
+      icon: ShieldCheck,
+      description: 'Gestión de garantías y reclamos'
+    },
+    {
+      name: 'Paradas',
+      href: '/mantenimiento/paradas',
+      icon: Construction,
+      description: 'Gestión de paradas y turnarounds'
+    },
+    {
+      name: 'QR Codes',
+      href: '/mantenimiento/qr',
+      icon: QrCode,
+      description: 'Generación y gestión de códigos QR'
+    },
+    {
+      name: 'Puntos Medición',
+      href: '/mantenimiento/puntos-medicion',
+      icon: Thermometer,
+      description: 'Puntos de medición y rondas de inspección'
+    },
+  ];
+
+  // ========== ESTRUCTURA PRINCIPAL MANTENIMIENTO ==========
+  const mantenimientoItems: SidebarItem[] = [
+    // ===== CORE - Siempre visible =====
+    {
+      name: 'Dashboard',
+      href: '/mantenimiento/dashboard',
+      icon: LayoutDashboard,
+      description: 'KPIs, tareas urgentes, alertas del sector'
+    },
+    {
+      name: 'Correctivo',
+      icon: Zap,
+      description: 'Fallas, órdenes y soluciones',
+      children: correctivoItems
+    },
+    {
+      name: 'Preventivo',
+      href: '/mantenimiento/preventivo',
+      icon: CalendarClock,
+      description: 'Mantenimiento preventivo y programado'
+    },
+    {
+      name: 'Activos',
+      icon: Cog,
+      description: 'Máquinas, vehículos y puestos de trabajo',
+      children: activosItems
+    },
+    {
+      name: 'Pañol',
+      icon: Package,
+      description: 'Inventario de repuestos y herramientas',
+      children: panolItems
+    },
+    {
+      name: 'Ideas',
+      href: '/mantenimiento/ideas',
+      icon: Lightbulb,
+      description: 'Libro de ideas y sugerencias de mejora'
+    },
+    {
+      name: 'Costos',
+      href: '/mantenimiento/costos',
+      icon: DollarSign,
+      description: 'Análisis de costos de mantenimiento'
+    },
+    // ===== CMMS AVANZADO - Grupos colapsables =====
+    {
+      name: 'Confiabilidad',
+      icon: TrendingUp,
+      description: 'Health Score, FMEA, Criticidad, Monitoreo',
+      children: confiabilidadItems
+    },
+    {
+      name: 'Seguridad',
+      icon: ShieldAlert,
+      description: 'PTW, LOTO, MOC',
+      children: seguridadItems
+    },
+    {
+      name: 'Gestión',
+      icon: Users,
+      description: 'Skills, Contadores, Calibración, Lubricación',
+      children: gestionItems
+    },
+    {
+      name: 'Documentación',
+      icon: FileText,
+      description: 'Conocimiento, Lecciones, Garantías, QR',
+      children: documentacionItems
+    },
+  ];
+
+  // Grupo Personal desplegable para administración
+  // Tareas was moved into the unified Agenda page
+  const personalItems: SidebarItem[] = [
+    ...(canAccessPermissions ? [{
+      name: 'Permisos & Roles',
+      href: '/administracion/permisos',
+      icon: Shield,
+      description: 'Configurar roles de usuario y permisos del sistema'
+    }] : []),
+    ...(canAccessUsers ? [{
+      name: 'Gestión de Usuarios',
+      href: '/administracion/usuarios',
+      icon: Users,
+      description: 'Administrar usuarios, roles y permisos'
+    }] : []),
+  ];
+
+  // Grupo Ventas desplegable para administración
+  // Reorganizado con 4 subgrupos anidados para mejor UX:
+  // 1. Dashboard (Overview)
+  // 2. Maestros (Master Data) - GRUPO ANIDADO
+  // 3. Ciclo de Ventas (O2C Process) - GRUPO ANIDADO
+  // 4. Facturación (Billing & Collections) - GRUPO ANIDADO
+  // 5. Análisis (Analytics & Reports) - GRUPO ANIDADO
+  const ventasItems: SidebarItem[] = [
+    // Dashboard - siempre al inicio
+    ...(canAccessSalesDashboard ? [{
+      name: 'Resumen',
+      href: '/administracion/ventas',
+      icon: LayoutDashboard,
+      description: 'Panel de control y KPIs'
+    }] : []),
+
+    // 🗂️ GRUPO 1: MAESTROS (Master Data)
+    ...(canAccessClients || canAccessProducts || canAccessSalesModule ? [{
+      name: 'Maestros',
+      icon: Database,
+      description: 'Datos maestros del módulo',
+      children: [
+        ...(canAccessClients ? [{
+          name: 'Clientes',
+          href: '/administracion/ventas/clientes',
+          icon: Users,
+          description: 'Maestro de clientes'
+        }] : []),
+        ...(canAccessProducts ? [{
+          name: 'Productos',
+          href: '/administracion/ventas/productos',
+          icon: Package,
+          description: 'Catálogo de productos'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Listas de Precios',
+          href: '/administracion/ventas/listas-precios',
+          icon: DollarSign,
+          description: 'Gestión de precios'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Vendedores',
+          href: '/administracion/ventas/vendedores',
+          icon: User,
+          description: 'Equipo de ventas'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Zonas de Venta',
+          href: '/administracion/ventas/zonas',
+          icon: MapPin,
+          description: 'Territorios y zonas'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Condiciones de Pago',
+          href: '/administracion/ventas/condiciones-pago',
+          icon: Calendar,
+          description: 'Términos de pago'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Configuración',
+          href: '/administracion/ventas/configuracion',
+          icon: Settings,
+          description: 'Configuración del módulo'
+        }] : [])
+      ].filter(item => item !== undefined)
+    }] : []),
+
+    // 🔄 GRUPO 2: CICLO DE VENTAS (Order-to-Cash)
+    ...(canAccessQuotes || canAccessSalesModule ? [{
+      name: 'Ciclo de Ventas',
+      icon: RefreshCw,
+      description: 'Proceso Order-to-Cash completo',
+      children: [
+        ...(canAccessQuotes ? [{
+          name: 'Cotizaciones',
+          href: '/administracion/ventas/cotizaciones',
+          icon: FileText,
+          description: 'Cotizaciones y presupuestos'
+        }] : []),
+        ...(canAccessQuotes ? [{
+          name: 'Notas de Pedido',
+          href: '/administracion/ventas/cotizaciones?tipo=nota_pedido',
+          icon: ClipboardList,
+          description: 'Pedidos de clientes'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Órdenes de Venta',
+          href: '/administracion/ventas/ordenes',
+          icon: ShoppingBag,
+          description: 'Órdenes confirmadas'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Órdenes de Carga',
+          href: '/administracion/ventas/ordenes-carga',
+          icon: Boxes,
+          description: 'Preparación para despacho'
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Entregas',
+          icon: Truck,
+          description: 'Gestión de entregas',
+          children: [
+            {
+              name: 'Lista de Entregas',
+              href: '/administracion/ventas/entregas',
+              icon: Truck,
+              description: 'Ver todas las entregas'
+            },
+            {
+              name: 'Planificación de Rutas',
+              href: '/administracion/ventas/entregas/rutas',
+              icon: RouteIcon,
+              description: 'Optimizar rutas de entrega'
+            }
+          ]
+        }] : []),
+        ...(canAccessSalesModule ? [{
+          name: 'Turnos de Retiro',
+          href: '/administracion/ventas/turnos',
+          icon: CalendarClock,
+          description: 'Gestión de turnos pickup'
+        }] : [])
+      ].filter(item => item !== undefined)
+    }] : []),
+
+    // 💰 GRUPO 3: FACTURACIÓN (Billing & Collections)
+    ...(canAccessSalesModule ? [{
+      name: 'Facturación',
+      icon: Receipt,
+      description: 'Comprobantes y cobranzas',
+      children: [
+        {
+          name: 'Comprobantes',
+          href: '/administracion/ventas/comprobantes',
+          icon: FileCheck,
+          description: 'Facturas, NC, ND unificados'
+        },
+        {
+          name: 'Cobranzas',
+          href: '/administracion/ventas/cobranzas',
+          icon: Wallet,
+          description: 'Gestión de cobros'
+        },
+        {
+          name: 'Aprobación de Pagos',
+          href: '/administracion/ventas/aprobacion-pagos',
+          icon: ClipboardCheck,
+          description: 'Aprobación de cobros'
+        },
+        {
+          name: 'Gestión de Valores',
+          href: '/administracion/ventas/valores',
+          icon: CreditCard,
+          description: 'Cheques y echeqs'
+        },
+        {
+          name: 'Cuenta Corriente',
+          href: '/administracion/ventas/cuenta-corriente',
+          icon: BookOpen,
+          description: 'Estado de cuenta'
+        },
+        {
+          name: 'Disputas',
+          href: '/administracion/ventas/disputas',
+          icon: AlertTriangle,
+          description: 'Reclamos de clientes'
+        }
+      ]
+    }] : []),
+
+    // 📈 GRUPO 4: ANÁLISIS (Analytics & Reports)
+    ...(canAccessSalesModule ? [{
+      name: 'Análisis',
+      icon: BarChart3,
+      description: 'Reportes y análisis',
+      children: [
+        {
+          name: 'Alertas de Riesgo',
+          href: '/administracion/ventas/alertas',
+          icon: AlertCircle,
+          description: 'Alertas crediticias'
+        },
+        {
+          name: 'Reportes',
+          href: '/administracion/ventas/reportes',
+          icon: FileText,
+          description: 'Reportes de ventas'
+        }
+      ]
+    }] : [])
+  ];
+
+  // Módulo de Costos integrado
+  const costosItems: SidebarItem[] = [
+    ...(canAccessCosts ? [{
+      name: 'Módulo de Costos',
+      href: '/administracion/costos',
+      icon: Calculator,
+      description: 'Sistema completo de gestión, análisis y proyección de costos de fabricación'
+    }] : [])
+  ];
+
+  // Grupo Tesorería desplegable para administración
+  // Siempre visible - el filtrado T1/T2 se hace en las APIs según ViewMode
+  const tesoreriaItems: SidebarItem[] = [
+    {
+      name: 'Posición',
+      href: '/administracion/tesoreria',
+      icon: LayoutDashboard,
+      description: 'Posición consolidada de fondos'
+    },
+    {
+      name: 'Cajas',
+      href: '/administracion/tesoreria/cajas',
+      icon: DollarSign,
+      description: 'Gestión de cajas de efectivo'
+    },
+    {
+      name: 'Bancos',
+      href: '/administracion/tesoreria/bancos',
+      icon: Building2,
+      description: 'Cuentas bancarias y movimientos'
+    },
+    {
+      name: 'Cheques',
+      href: '/administracion/tesoreria/cheques',
+      icon: FileCheck,
+      description: 'Cartera de cheques'
+    },
+    {
+      name: 'Transferencias',
+      href: '/administracion/tesoreria/transferencias',
+      icon: ArrowRightLeft,
+      description: 'Transferencias internas'
+    },
+    {
+      name: 'Flujo de Caja',
+      href: '/administracion/tesoreria/flujo-caja',
+      icon: TrendingUp,
+      description: 'Proyección de flujo de caja'
+    },
+  ];
+
+  // Grupo Nóminas desplegable para administración
+  const nominasItems: SidebarItem[] = [
+    {
+      name: 'Dashboard',
+      href: '/administracion/nominas',
+      icon: LayoutDashboard,
+      description: 'Panel de control de nóminas y proyecciones'
+    },
+    {
+      name: 'Empleados',
+      href: '/administracion/nominas/empleados',
+      icon: UserPlus,
+      description: 'Gestión de empleados'
+    },
+    {
+      name: 'Gremios',
+      href: '/administracion/nominas/gremios',
+      icon: Users,
+      description: 'Gremios, categorías y tasas de convenio'
+    },
+    {
+      name: 'Sectores',
+      href: '/administracion/nominas/sectores',
+      icon: MapPin,
+      description: 'Sectores de trabajo'
+    },
+    {
+      name: 'Configuración',
+      href: '/administracion/nominas/configuracion',
+      icon: Settings,
+      description: 'Configuración de nóminas y feriados'
+    },
+    {
+      name: 'Componentes',
+      href: '/administracion/nominas/componentes',
+      icon: Calculator,
+      description: 'Fórmulas y componentes salariales'
+    },
+    {
+      name: 'Adelantos',
+      href: '/administracion/nominas/adelantos',
+      icon: DollarSign,
+      description: 'Adelantos de sueldo'
+    },
+    {
+      name: 'Liquidaciones',
+      href: '/administracion/nominas/liquidaciones',
+      icon: Receipt,
+      description: 'Liquidaciones de sueldos'
+    },
+  ];
+
+  // Grupo Almacén - Sistema de despachos, solicitudes y control de inventario operativo
+  const almacenItems: SidebarItem[] = [
+    ...(canAccessAlmacenDashboard ? [{
+      name: 'Dashboard',
+      href: '/almacen',
+      icon: LayoutDashboard,
+      description: 'Panel de control de almacén'
+    }] : []),
+    ...(canAccessAlmacenInventario ? [{
+      name: 'Inventario',
+      href: '/almacen/inventario',
+      icon: PackageSearch,
+      description: 'Vista unificada de inventario (suministros + herramientas)'
+    }] : []),
+    ...(canAccessAlmacenSolicitudes ? [{
+      name: 'Solicitudes',
+      href: '/almacen/solicitudes',
+      icon: ClipboardPen,
+      description: 'Solicitudes de material de OT, OP y áreas'
+    }] : []),
+    ...(canAccessAlmacenDespachos ? [{
+      name: 'Despachos',
+      href: '/almacen/despachos',
+      icon: PackageCheck,
+      description: 'Despachos y entregas de material'
+    }] : []),
+    ...(canAccessAlmacenDevoluciones ? [{
+      name: 'Devoluciones',
+      href: '/almacen/devoluciones',
+      icon: PackageX,
+      description: 'Devoluciones de material no utilizado'
+    }] : []),
+    ...(canAccessAlmacenReservas ? [{
+      name: 'Reservas',
+      href: '/almacen/reservas',
+      icon: Boxes,
+      description: 'Reservas activas de stock'
+    }] : []),
+    {
+      name: 'Movimientos',
+      href: '/almacen/movimientos',
+      icon: ArrowRightLeft,
+      description: 'Kardex y historial de movimientos'
+    },
+  ];
+
+  // Grupo Compras desplegable para administración
+  // Siempre visible - el filtrado T1/T2 se hace en las APIs según ViewMode
+  const comprasItems: SidebarItem[] = [
+    {
+      name: 'Dashboard',
+      href: '/administracion/compras',
+      icon: LayoutDashboard,
+      description: 'Panel de control de compras'
+    },
+    {
+      name: 'Torre de Control',
+      href: '/administracion/compras/torre-control',
+      icon: Gauge,
+      description: 'Control centralizado de compras y entregas'
+    },
+    {
+      name: 'Pedidos de Compra',
+      href: '/administracion/compras/pedidos',
+      icon: ClipboardList,
+      description: 'Solicitudes internas con cotizaciones'
+    },
+    {
+      name: 'Órdenes de Compra',
+      href: '/administracion/compras/ordenes',
+      icon: ShoppingCart,
+      description: 'Gestión de órdenes de compra'
+    },
+    {
+      name: 'Proveedores',
+      href: '/administracion/compras/proveedores',
+      icon: Building2,
+      description: 'Gestión de proveedores y contactos'
+    },
+    {
+      name: 'Cuentas Corrientes',
+      href: '/administracion/compras/cuentas-corrientes',
+      icon: Wallet,
+      description: 'Estados de cuenta y saldos de proveedores'
+    },
+    {
+      name: 'Comprobantes',
+      href: '/administracion/compras/comprobantes',
+      icon: Receipt,
+      description: 'Cargar comprobantes de compra'
+    },
+    {
+      name: 'Stock',
+      icon: Boxes,
+      description: 'Gestión de stock e inventario',
+      children: [
+        {
+          name: 'Inventario',
+          href: '/administracion/compras/stock',
+          icon: Package,
+          description: 'Stock por depósito y alertas'
+        },
+        {
+          name: 'Kardex',
+          href: '/administracion/compras/stock/kardex',
+          icon: FileText,
+          description: 'Historial de movimientos'
+        },
+        {
+          name: 'Ajustes',
+          href: '/administracion/compras/stock/ajustes',
+          icon: ClipboardCheck,
+          description: 'Ajustes de inventario'
+        },
+        {
+          name: 'Transferencias',
+          href: '/administracion/compras/stock/transferencias',
+          icon: ArrowRightLeft,
+          description: 'Transferencias entre depósitos'
+        },
+        {
+          name: 'Reposición',
+          href: '/administracion/compras/stock/reposicion',
+          icon: Lightbulb,
+          description: 'Sugerencias de reposición'
+        }
+      ]
+    },
+    {
+      name: 'Solicitudes',
+      href: '/administracion/compras/solicitudes',
+      icon: FileCheck,
+      description: 'Solicitudes de compra y aprobaciones'
+    },
+    {
+      name: 'Devoluciones',
+      href: '/administracion/compras/devoluciones',
+      icon: RefreshCw,
+      description: 'Gestión de devoluciones a proveedores'
+    },
+    {
+      name: 'Historial',
+      href: '/administracion/compras/historial',
+      icon: History,
+      description: 'Historial de compras realizadas'
+    }
+  ];
+
+  const administracionItems: SidebarItem[] = [
+    ...(canAccessAdminDashboard ? [{
+      name: 'Dashboard',
+      href: '/administracion/dashboard',
+      icon: LayoutDashboard,
+      description: 'Panel de control con estadísticas generales de la empresa'
+    }] : []),
+    // Agenda - Unifica agenda personal y gestión de tareas
+    {
+      name: 'Agenda',
+      href: '/administracion/agenda',
+      icon: CalendarClock,
+      description: 'Agenda personal, tareas, tareas fijas y seguimiento'
+    },
+    ...(canAccessPersonalGroup && personalItems.length > 0 ? [{
+      name: 'Personal',
+      icon: User,
+      description: 'Gestión de tareas, permisos y usuarios',
+      children: personalItems
+    }] : []),
+    ...(canAccessVentasGroup && ventasItems.length > 0 ? [{
+      name: 'Ventas',
+      icon: DollarSign,
+      description: 'Sistema completo de gestión de ventas',
+      children: ventasItems
+    }] : []),
+    ...(canAccessCostosGroup && costosItems.length > 0 ? [{
+      name: 'Costos',
+      icon: Calculator,
+      description: 'Sistema completo de gestión y análisis de costos',
+      children: costosItems
+    }] : []),
+    // Compras - siempre visible, el filtrado T1/T2 se hace en las APIs
+    ...(comprasItems.length > 0 ? [{
+      name: 'Compras',
+      icon: ShoppingCart,
+      description: 'Sistema completo de gestión de compras y proveedores',
+      children: comprasItems
+    }] : []),
+    // Tesorería - Gestión de cajas, bancos y cheques
+    ...(tesoreriaItems.length > 0 ? [{
+      name: 'Tesorería',
+      icon: Wallet,
+      description: 'Gestión de cajas, bancos y cheques',
+      children: tesoreriaItems
+    }] : []),
+    // Nóminas - Gestión de sueldos y liquidaciones
+    ...(nominasItems.length > 0 ? [{
+      name: 'Nóminas',
+      icon: Users,
+      description: 'Gestión de sueldos, liquidaciones y adelantos',
+      children: nominasItems
+    }] : []),
+    // Almacén - Sistema de despachos y control de inventario operativo
+    ...(canAccessAlmacen && almacenItems.length > 0 ? [{
+      name: 'Almacén',
+      icon: Warehouse,
+      description: 'Despachos, solicitudes y control de inventario',
+      children: almacenItems
+    }] : []),
+    // Automatizaciones - Motor de reglas y acciones automáticas
+    {
+      name: 'Automatizaciones',
+      href: '/administracion/automatizaciones',
+      icon: Zap,
+      description: 'Reglas y acciones automáticas del sistema'
+    },
+    ...(canAccessControls ? [{
+      name: 'Controles',
+      href: '/administracion/controles',
+      icon: Shield,
+      description: 'Dashboard de sistemas de control y gestión fiscal'
+    }] : []),
+    ...(canAccessCargas ? [{
+      name: 'Cargas',
+      href: '/administracion/cargas',
+      icon: Package,
+      description: 'Gestión de camiones y cargas de viguetas'
+    }] : []),
+  ];
+
+  const produccionItems: SidebarItem[] = [
+    // Dashboard siempre visible para quien tenga acceso a Producción
+    ...(canAccessProductionDashboard ? [{
+      name: 'Dashboard',
+      href: '/produccion/dashboard',
+      icon: LayoutDashboard,
+      description: 'KPIs, alertas y resumen de producción'
+    }] : []),
+
+    // Grupo Operaciones
+    ...((canAccessProductionOrders || canAccessProductionPartes || canAccessProductionParadas || canAccessProductionRutinas) ? [{
+      name: 'Operaciones',
+      icon: Factory,
+      description: 'Gestión operativa de producción',
+      children: [
+        ...(canAccessProductionOrders ? [{
+          name: 'Órdenes',
+          href: '/produccion/ordenes',
+          icon: ClipboardList,
+          description: 'Órdenes de producción'
+        }] : []),
+        ...(canAccessProductionPartes ? [{
+          name: 'Producción del Día',
+          href: '/produccion/registro-diario',
+          icon: Package,
+          description: 'Cargar producción diaria por sector'
+        }] : []),
+        ...(canAccessProductionParadas ? [{
+          name: 'Paradas',
+          href: '/produccion/paradas',
+          icon: Pause,
+          description: 'Registro y análisis de paradas'
+        }] : []),
+        ...(canAccessProductionRutinas ? [{
+          name: 'Rutinas',
+          href: '/produccion/rutinas',
+          icon: CheckSquare,
+          description: 'Checklists operativos'
+        }] : []),
+      ].filter(item => item !== undefined)
+    }] : []),
+
+    // Calidad
+    ...(canAccessProductionCalidad ? [{
+      name: 'Calidad',
+      href: '/produccion/calidad',
+      icon: CheckCircle2,
+      description: 'Control de calidad y lotes'
+    }] : []),
+
+    // Grupo Configuración
+    ...(canAccessProductionConfig ? [{
+      name: 'Configuración',
+      icon: Settings,
+      description: 'Maestros y configuración',
+      children: [
+        ...(canAccessWorkCenters ? [{
+          name: 'Centros de Trabajo',
+          href: '/produccion/configuracion/centros-trabajo',
+          icon: Building2,
+          description: 'Líneas, máquinas y estaciones'
+        }] : []),
+        ...(canAccessShifts ? [{
+          name: 'Turnos',
+          href: '/produccion/configuracion/turnos',
+          icon: Clock,
+          description: 'Configuración de turnos'
+        }] : []),
+        ...(canAccessReasonCodes ? [{
+          name: 'Códigos de Motivo',
+          href: '/produccion/configuracion/codigos-motivo',
+          icon: Tags,
+          description: 'Paradas, scrap y retrabajo'
+        }] : []),
+        ...(canAccessProductionRutinas ? [{
+          name: 'Plantillas Rutinas',
+          href: '/produccion/configuracion/rutinas',
+          icon: ListChecks,
+          description: 'Plantillas de checklists'
+        }] : []),
+        ...(canAccessProductionConfig ? [{
+          name: 'Recursos',
+          href: '/produccion/configuracion/recursos',
+          icon: Boxes,
+          description: 'Bancos, silos y recursos de producción'
+        }] : []),
+      ].filter(item => item !== undefined)
+    }] : []),
+
+    // Reportes
+    ...(canAccessProductionReports ? [{
+      name: 'Reportes',
+      href: '/produccion/reportes',
+      icon: BarChart3,
+      description: 'Reportes y tendencias'
+    }] : []),
+
+    // Items legacy (Máquinas y Vehículos)
+    ...(canAccessProductionMachines ? [{
+      name: 'Máquinas',
+      href: '/maquinas',
+      icon: Cog,
+      description: 'Gestión de máquinas de producción'
+    }] : []),
+    ...(canAccessVehicles ? [{
+      name: 'Vehículos',
+      href: '/vehicles',
+      icon: Truck,
+      description: 'Gestión de vehículos y transporte'
+    }] : []),
+  ];
+
+  // Memoizar los items de navegación para evitar recálculos innecesarios
+  const navItems = useMemo(() => {
+    const areaName = currentArea?.name.trim().toUpperCase();
+    switch (areaName) {
+      case 'MANTENIMIENTO':
+        return mantenimientoItems;
+      case 'ADMINISTRACIÓN':
+        return administracionItems;
+      case 'PRODUCCIÓN':
+        return produccionItems;
+      default:
+        return [];
+    }
+  }, [currentArea?.name, mantenimientoItems, administracionItems, produccionItems]);
+
+  // Si no hay área o compañía seleccionada, mostrar mensaje
+  if (!currentArea || !currentCompany) {
+    return null;
+  }
+
+  // Si los permisos están cargando, mostrar un estado de carga
+  if (permissionsLoading) {
+    return (
+      <aside className={`fixed top-0 left-0 z-30 h-full w-64 border-r shadow-sm ${
+        theme === 'light' ? 'bg-white border-gray-200' : 'bg-black border-white/5'
+      }`}>
+        <div className="flex flex-col h-full">
+          <div className="h-16 px-4 flex items-center justify-center border-b">
+            <div className={`animate-pulse h-6 w-32 rounded ${
+              theme === 'light' ? 'bg-gray-300' : 'bg-white/10'
+            }`}></div>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  return (
+      <TooltipProvider delayDuration={0} skipDelayDuration={0} disableHoverableContent={false}>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[90] bg-black/60 md:hidden"
+          style={{
+            height: '100dvh', 
+            pointerEvents: overlayClickable ? 'auto' : 'none'
+          }}
+          onClick={(e) => {
+            // No cerrar si hay un dropdown/select abierto dentro del sidebar
+            if (sidebarContext?.preventClose) return;
+            // Solo cerrar si se hace click directamente en el overlay y el overlay es clickeable
+            if (overlayClickable && e.target === e.currentTarget) {
+              setIsOpen(false);
+            }
+          }}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside
+        ref={sidebarRef}
+        className={cn(
+          "transition-all duration-100 ease-out flex-shrink-0",
+          // En desktop: siempre al lado, oculto con width 0
+          // En móvil: fixed overlay a pantalla completa
+          isOpen ? "w-60" : "w-0",
+          // Posicionamiento: fixed en móvil, relative en desktop
+          "fixed left-0 top-0 md:relative md:left-auto md:top-auto",
+          // En desktop: usar margin top y bottom para alinearse con el padding del contenedor
+          "md:mt-3 md:mb-3",
+          // Altura: en móvil 100dvh (full screen), en desktop con espacios
+          "h-[100dvh] md:h-[calc(100vh-1.5rem)]",
+          "overflow-hidden",
+          // En móvil: z-index MUY alto para estar sobre todo, en desktop: normal
+          "z-[100] md:z-auto",
+          // En móvil: translate para ocultar, en desktop: no translate
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          // En móvil: fondo sólido para evitar que se vea contenido detrás
+          "bg-sidebar md:bg-transparent"
+        )}
+        style={{
+          width: isOpen ? 'var(--sidebar-width, 240px)' : '0px',
+          transition: 'width 100ms ease-out, transform 100ms ease-out'
+        }}
+        onMouseLeave={() => {
+          // Solo cerrar si fue abierto por hover y no hay un dropdown abierto
+          if (sidebarContext?.isHoverOpen && !sidebarContext?.preventClose) {
+            sidebarContext.setIsHoverOpen(false);
+            setIsOpen(false);
+          }
+        }}
+        onClick={(e) => {
+          // Detener propagación para todos los clics dentro del sidebar
+          // Esto evita que el clic cierre el sidebar cuando se hace clic dentro
+          e.stopPropagation();
+        }}
+      >
+        <div
+          className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground overflow-visible pt-2 md:pt-0 md:rounded-xl"
+        >
+          <div className="flex flex-col h-full">
+            {/* Montaje oculto para poder abrir el modal de notificaciones desde el dropdown */}
+            <div className="hidden">
+              <NotificationPanel triggerClassName="hidden" />
+            </div>
+
+            {/* Buscador de páginas global */}
+            <PageSearch />
+
+            {/* Header con información de la empresa */}
+            {currentCompany && (
+              <div className="flex items-center gap-1 px-2 pt-0 pb-2 -mt-1 md:px-3 md:pt-0 md:pb-2">
+                <a
+                  href="/dashboard"
+                  className="flex flex-1 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left outline-none ring-sidebar-ring transition-colors focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  {(() => {
+                    const company = currentCompany as any;
+                    const isDark = theme === 'dark';
+                    const logoUrl = isDark
+                      ? (company?.logoDark || company?.logo)
+                      : (company?.logoLight || company?.logo);
+
+                    return logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt={`Logo de ${currentCompany.name}`}
+                        className="h-6 w-6 shrink-0 object-contain rounded-md"
+                      />
+                    ) : (
+                      <Building2 className="h-6 w-6 shrink-0 text-sidebar-foreground" />
+                    );
+                  })()}
+                  {isOpen && (
+                    <span className="flex-1 min-w-0 text-sm font-semibold text-sidebar-foreground truncate">
+                      {currentCompany.name}
+                    </span>
+                  )}
+                </a>
+              </div>
+            )}
+                
+            {/* Content area */}
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
+            {isOpen ? (
+              <div className="space-y-2 px-2 md:px-3">
+                {/* Selector de Sector Rápido - Integrado en el header */}
+                {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && (
+                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-between h-8 px-2 rounded-md transition-all duration-200 text-sm font-normal",
+                          "bg-sidebar-accent/50 border-sidebar-ring/30 hover:bg-sidebar-accent hover:border-sidebar-ring/50",
+                          "text-sidebar-foreground"
+                        )}
+                        disabled={availableSectors.length === 1 && user?.role?.toUpperCase() === 'SUPERVISOR'}
+                      >
+                        <span className="truncate">
+                          {currentSector ? currentSector.name : 'Seleccionar sector'}
+                        </span>
+                        {availableSectors.length > 1 && (
+                          <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50 ml-1.5" />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    {availableSectors.length > 1 && (
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel className="text-sm">Sectores disponibles</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {availableSectors.map((sector) => (
+                          <DropdownMenuItem
+                            key={sector.id}
+                            onClick={() => handleSectorChange(sector)}
+                            className={cn(
+                              "text-sm",
+                              currentSector?.id === sector.id && 'bg-accent'
+                            )}
+                          >
+                            {sector.name}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => router.push('/areas')}
+                          className="text-sm"
+                        >
+                          Cambiar de área
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                )}
+
+                {/* Selector de Área - Solo para Administración */}
+                {currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0 && (
+                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-between h-8 px-3 rounded-full text-sm font-normal",
+                          "bg-sidebar-accent/40 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                        aria-label="Cambiar área"
+                      >
+                        <span className="min-w-0 truncate flex items-baseline gap-1.5">
+                          <span className="text-xs text-sidebar-foreground/60 leading-none">Área:</span>
+                          <span className="truncate leading-none">{currentArea.name}</span>
+                        </span>
+                        {availableAreas.length > 1 && (
+                          <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50 ml-1.5" />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    {availableAreas.length > 1 && (
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel className="text-sm">Áreas disponibles</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {availableAreas.map((area) => (
+                          <DropdownMenuItem
+                            key={area.id}
+                            onClick={() => handleAreaChange(area)}
+                            className={cn(
+                              "text-sm",
+                              currentArea?.id === area.id && 'bg-accent'
+                            )}
+                          >
+                            {area.name}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => router.push('/areas')}
+                          className="text-sm"
+                        >
+                          Ver todas las áreas
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                )}
+
+                {/* Separador fino: contexto (selectores) vs navegación */}
+                {(
+                  (currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0) ||
+                  (currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0)
+                ) && (
+                  <div className="h-px w-full bg-sidebar-ring/20" />
+                )}
+
+                {/* Nav items - Después del selector de administración */}
+                <div className="relative flex w-full min-w-0 flex-col mt-2">
+                  <div className="w-full text-sm">
+                    <ul className="flex w-full min-w-0 flex-col gap-0.5">
+              {navItems.map((item) => {
+                // Función helper para determinar si un item está activo de forma precisa
+                const checkIsActive = (href: string | undefined): boolean => {
+                  if (!href) return false;
+                  // Comparación exacta primero
+                  if (pathname === href) return true;
+                  // Si la ruta actual empieza con el href, verificar que el siguiente carácter sea '/' o el final
+                  // Esto evita que '/administracion/costos' active '/administracion/compras'
+                  if (pathname.startsWith(href)) {
+                    const nextChar = pathname[href.length];
+                    return !nextChar || nextChar === '/' || nextChar === '?';
+                  }
+                  return false;
+                };
+
+                // Si el item tiene hijos y el sidebar está cerrado, mostrar como menú desplegable
+                if (item.children && Array.isArray(item.children) && !isOpen) {
+                  // Abrir automáticamente el grupo si un hijo está activo (pero SIN marcar el padre como activo)
+                  const hasActiveChild = item.children.some(child => checkIsActive(child.href));
+                  const isOpenGroup = openGroups[item.name] ?? hasActiveChild;
+                  
+                  return (
+                    <li key={item.name} className="flex flex-col items-center">
+                      {/* Botón del grupo padre */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className={cn(
+                              'h-8 w-8 flex items-center justify-center rounded-md',
+                              'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                            )}
+                            onClick={() => setOpenGroups((prev) => ({ ...prev, [item.name]: !isOpenGroup }))}
+                          >
+                            <item.icon className="h-4 w-4 shrink-0" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={8}>
+                          {item.name}
+                        </TooltipContent>
+                      </Tooltip>
+                      
+                      {/* Hijos del grupo (solo cuando está abierto) */}
+                      {isOpenGroup && (
+                        <ul className="mt-1 w-full flex flex-col items-center gap-0.5">
+                          {item.children.map((child: SidebarItem, childIndex: number) => {
+                            const isActive = checkIsActive(child.href);
+                            return (
+                              <li key={`${item.name}-${child.href || childIndex}`} className="flex justify-center">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Link
+                                      href={child.href || '#'}
+                                      prefetch={true}
+                                      onMouseEnter={() => handleLinkHover(child.href || '')}
+                                      onClick={() => handleLinkClick(child.href)}
+                                      className={cn(
+                                        'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                                        'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                        isActive && 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                      )}
+                                    >
+                                      <child.icon className="h-4 w-4" />
+                                    </Link>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" sideOffset={8}>
+                                    {child.name}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+
+                // Si el item tiene hijos (children), renderizar como grupo desplegable SOLO si isOpen
+                if (item.children && Array.isArray(item.children) && isOpen) {
+                  // Abrir automáticamente el grupo si un hijo está activo (pero SIN marcar el padre como activo)
+                  const hasActiveChild = item.children.some(child => {
+                    if (!child.href) return false;
+                    if (pathname === child.href) return true;
+                    if (pathname.startsWith(child.href)) {
+                      const nextChar = pathname[child.href.length];
+                      return !nextChar || nextChar === '/' || nextChar === '?';
+                    }
+                    return false;
+                  });
+                  const isOpenGroup = openGroups[item.name] ?? hasActiveChild;
+                  
+                  return (
+                    <li key={item.name}>
+                      <div className="flex items-center">
+                          <button
+                              type="button"
+                          className={cn(
+                                'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left',
+                                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          )}
+                          onClick={() => setOpenGroups((prev) => ({ ...prev, [item.name]: !isOpenGroup }))}
+                        >
+                              <item.icon className={cn('h-4 w-4 shrink-0 text-sidebar-foreground')} />
+                              <span>{item.name}</span>
+                            </button>
+                        <button
+                              className="ml-auto px-1.5 focus:outline-none"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setOpenGroups((prev) => ({ ...prev, [item.name]: !isOpenGroup }));
+                          }}
+                          tabIndex={-1}
+                          aria-label={isOpenGroup ? 'Cerrar grupo' : 'Abrir grupo'}
+                        >
+                              <ChevronRight
+                                className={cn(
+                                  'h-3.5 w-3.5 text-sidebar-foreground/70 transition-transform',
+                                  isOpenGroup ? 'rotate-90' : ''
+                                )}
+                              />
+                        </button>
+                      </div>
+                      {isOpenGroup && (
+                        <ul className="pl-6 flex flex-col gap-0.5 mt-1">
+                          {item.children.map((child: SidebarItem, childIdx: number) => {
+                            // Si el hijo tiene sus propios children, renderizar como subgrupo
+                            if (child.children && Array.isArray(child.children)) {
+                              const hasActiveSubchild = child.children.some((subchild: SidebarItem) => {
+                                if (!subchild.href) return false;
+                                if (pathname === subchild.href) return true;
+                                if (pathname.startsWith(subchild.href)) {
+                                  const nextChar = pathname[subchild.href.length];
+                                  return !nextChar || nextChar === '/' || nextChar === '?';
+                                }
+                                return false;
+                              });
+                              const isSubgroupOpen = openGroups[child.name] ?? hasActiveSubchild;
+
+                              return (
+                                <li key={`${item.name}-child-${child.name}`}>
+                                  <div className="flex items-center">
+                                    <button
+                                      type="button"
+                                      className={cn(
+                                        'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left',
+                                        'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                                      )}
+                                      onClick={() => setOpenGroups((prev) => ({ ...prev, [child.name]: !isSubgroupOpen }))}
+                                    >
+                                      <child.icon className="h-4 w-4 shrink-0" />
+                                      <span className="flex-1">{child.name}</span>
+                                    </button>
+                                    <button
+                                      className="ml-auto px-1.5 focus:outline-none"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setOpenGroups((prev) => ({ ...prev, [child.name]: !isSubgroupOpen }));
+                                      }}
+                                      tabIndex={-1}
+                                      aria-label={isSubgroupOpen ? 'Cerrar subgrupo' : 'Abrir subgrupo'}
+                                    >
+                                      <ChevronRight
+                                        className={cn(
+                                          'h-3.5 w-3.5 text-sidebar-foreground/70 transition-transform',
+                                          isSubgroupOpen ? 'rotate-90' : ''
+                                        )}
+                                      />
+                                    </button>
+                                  </div>
+                                  {isSubgroupOpen && (
+                                    <ul className="pl-6 flex flex-col gap-0.5 mt-1">
+                                      {child.children.map((subchild: SidebarItem, subchildIdx: number) => {
+                                        const isSubchildActive = checkIsActive(subchild.href);
+                                        return (
+                                          <li key={`${child.name}-subchild-${subchild.href || subchildIdx}`}>
+                                            <Link
+                                              href={subchild.href || '#'}
+                                              prefetch={true}
+                                              onMouseEnter={() => handleLinkHover(subchild.href || '')}
+                                              onClick={(e) => handleLinkClick(subchild.href, e)}
+                                              className={cn(
+                                                "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                                                "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                                isSubchildActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
+                                                isSubchildActive && "border-l-2 border-l-sidebar-primary-foreground"
+                                              )}
+                                            >
+                                              <subchild.icon className="h-4 w-4 shrink-0" />
+                                              <span className="flex-1">{subchild.name}</span>
+                                              {subchild.badge !== undefined && subchild.badge !== 0 && (
+                                                <span className={cn(
+                                                  "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
+                                                  subchild.badgeVariant === 'destructive' && "bg-red-500 text-white",
+                                                  subchild.badgeVariant === 'warning' && "bg-yellow-500 text-black",
+                                                  (!subchild.badgeVariant || subchild.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
+                                                )}>
+                                                  {subchild.badge}
+                                                </span>
+                                              )}
+                                            </Link>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  )}
+                                </li>
+                              );
+                            }
+
+                            // Si no tiene children, renderizar como link normal
+                            const isActive = checkIsActive(child.href);
+                            return (
+                              <li key={`${item.name}-child-${child.href || childIdx}`}>
+                                <Link
+                                  href={child.href || '#'}
+                                  prefetch={true}
+                                  onMouseEnter={() => handleLinkHover(child.href || '')}
+                                  onClick={(e) => handleLinkClick(child.href, e)}
+                                      className={cn(
+                                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                                        "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                        isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
+                                        isActive && "border-l-2 border-l-sidebar-primary-foreground"
+                                      )}
+                                  >
+                                      <child.icon className="h-4 w-4 shrink-0" />
+                                      <span className="flex-1">{child.name}</span>
+                                      {child.badge !== undefined && child.badge !== 0 && (
+                                        <span className={cn(
+                                          "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
+                                          child.badgeVariant === 'destructive' && "bg-red-500 text-white",
+                                          child.badgeVariant === 'warning' && "bg-yellow-500 text-black",
+                                          (!child.badgeVariant || child.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
+                                        )}>
+                                          {child.badge}
+                                        </span>
+                                      )}
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+                // Si no tiene hijos, renderizar como antes
+                // Si el item no tiene href, no marcarlo como activo
+                const isActive = item.href ? checkIsActive(item.href) : false;
+
+                if (!isOpen) {
+                  return (
+                    <li key={item.href} className="flex justify-center">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link
+                            href={item.href || '#'}
+                            prefetch={true}
+                            onMouseEnter={() => handleLinkHover(item.href || '')}
+                            onClick={(e) => handleLinkClick(item.href, e)}
+                            className={cn(
+                              'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                              'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                              isActive && 'bg-sidebar-primary text-sidebar-primary-foreground'
+                            )}
+                          >
+                            <item.icon className="h-4 w-4 shrink-0" />
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={8}>
+                          {item.name}
+                        </TooltipContent>
+                      </Tooltip>
+                    </li>
+                  );
+                }
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href || '#'}
+                      prefetch={true}
+                      onMouseEnter={() => handleLinkHover(item.href || '')}
+                      onClick={(e) => handleLinkClick(item.href, e)}
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
+                            isActive && "border-l-2 border-l-sidebar-primary-foreground"
+                          )}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="flex-1">{item.name}</span>
+                          {item.badge !== undefined && item.badge !== 0 && (
+                            <span className={cn(
+                              "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
+                              item.badgeVariant === 'destructive' && "bg-red-500 text-white",
+                              item.badgeVariant === 'warning' && "bg-yellow-500 text-black",
+                              (!item.badgeVariant || item.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
+                            )}>
+                              {item.badge}
+                            </span>
+                          )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1 px-2">
+                {/* Selector de Sector Compacto cuando sidebar está cerrado */}
+                {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && currentSector && (
+                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-8 h-8 p-0 rounded-md transition-colors",
+                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                        title={currentSector.name}
+                        disabled={availableSectors.length === 1 && user?.role?.toUpperCase() === 'SUPERVISOR'}
+                      >
+                        <Factory className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    {availableSectors.length > 1 && (
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel className="text-sm">Sectores disponibles</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {availableSectors.map((sector) => (
+                          <DropdownMenuItem
+                            key={sector.id}
+                            onClick={() => handleSectorChange(sector)}
+                              className={cn(
+                              "text-sm",
+                              currentSector?.id === sector.id && 'bg-accent'
+                            )}
+                          >
+                            {sector.name}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => router.push('/areas')}
+                          className="text-sm"
+                        >
+                          Cambiar de área
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                )}
+
+                {/* Selector de Área Compacto cuando sidebar está cerrado - Solo para Administración */}
+                {currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0 && (
+                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-8 h-8 p-0 rounded-md transition-colors",
+                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                        title="Cambiar área"
+                        aria-label="Cambiar área"
+                      >
+                        <Building2 className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    {availableAreas.length > 1 && (
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel className="text-sm">Áreas disponibles</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {availableAreas.map((area) => (
+                          <DropdownMenuItem
+                            key={area.id}
+                            onClick={() => handleAreaChange(area)}
+                              className={cn(
+                              "text-sm",
+                              currentArea?.id === area.id && 'bg-accent'
+                            )}
+                          >
+                            {area.name}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => router.push('/areas')}
+                          className="text-sm"
+                        >
+                          Ver todas las áreas
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom section: Configuración, Buscar y Perfil */}
+            <div className={cn(
+              "flex flex-col gap-1 p-2 md:p-3 mt-auto"
+            )}>
+                {isOpen ? (
+              <div className="flex flex-col gap-1">
+                {/* Feedback */}
+                <button
+                  type="button"
+                  onClick={() => setShowFeedback(true)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
+                >
+                  <MessageSquarePlus className="h-4 w-4 shrink-0" />
+                  <span>Feedback</span>
+                </button>
+
+                {/* Configuración */}
+                    {(() => {
+                  const configHref = currentArea?.name === 'Administración'
+                    ? '/administracion/configuracion'
+                    : currentArea?.name === 'Mantenimiento'
+                    ? '/mantenimiento/configuracion'
+                    : '/configuracion';
+                  
+                  const isConfigActive = pathname === configHref || 
+                    (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
+                      
+                  return (
+                    <Link 
+                      href={configHref}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                        "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm",
+                        isConfigActive && "border-l-2 border-l-sidebar-primary-foreground"
+                      )}
+                    >
+                      <Settings className="h-4 w-4 shrink-0" />
+                      <span>Configuración</span>
+                    </Link>
+                      );
+                    })()}
+                
+                {/* Buscar */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('orvit:search:open'));
+                    }
+                  }}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
+                >
+                  <Search className="h-4 w-4 shrink-0" />
+                  <span>Buscar</span>
+                  <kbd className="ml-auto text-[10px] text-sidebar-foreground/60 bg-sidebar-accent/50 border border-sidebar-ring/30 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+                </button>
+
+                {/* Notificaciones */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
+                    }
+                  }}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
+                >
+                  <Bell className="h-4 w-4 shrink-0" />
+                  <span>Notificaciones</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                {/* Feedback (collapsed) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setShowFeedback(true)}
+                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    >
+                      <MessageSquarePlus className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    Feedback
+                  </TooltipContent>
+                </Tooltip>
+
+                {(() => {
+                  const configHref = currentArea?.name === 'Administración'
+                    ? '/administracion/configuracion'
+                    : currentArea?.name === 'Mantenimiento'
+                    ? '/mantenimiento/configuracion'
+                    : '/configuracion';
+
+                  const isConfigActive = pathname === configHref ||
+                    (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
+
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={configHref}
+                          className={cn(
+                            "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
+                            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground"
+                          )}
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={8}>
+                        Configuración
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })()}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('orvit:search:open'));
+                        }
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    Buscar (⌘K)
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Notificaciones (collapsed) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
+                        }
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    >
+                      <Bell className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    Notificaciones
+                  </TooltipContent>
+                </Tooltip>
+                  </div>
+                )}
+              </div>
+
+          {/* Footer: User Profile */}
+          <div className="flex flex-col gap-2 p-2 md:p-3">
+            <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  data-sidebar="menu-button"
+                  data-size="lg"
+                  className={cn(
+                    "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm",
+                    isOpen ? "h-12" : "h-12 w-12 justify-center p-0"
+                  )}
+                >
+                  <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
+                      <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </span>
+                  {isOpen && (
+                    <>
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium text-sidebar-foreground">{user?.name || 'Usuario'}</span>
+                        <span className="text-sidebar-foreground/70 truncate text-xs">{user?.email || 'user@example.com'}</span>
+            </div>
+                      <ModeIndicator className="shrink-0" />
+                      <EllipsisVertical className="ml-auto h-4 w-4 text-sidebar-foreground/70 shrink-0" />
+                    </>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56">
+                <div className="text-sm p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
+                        <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+                          {user?.name?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </span>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">{user?.name || 'Usuario'}</span>
+                      <span className="text-muted-foreground truncate text-xs">{user?.email || 'user@example.com'}</span>
+                    </div>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <div role="group">
+                  <DropdownMenuItem onClick={() => {
+                    const configHref = currentArea?.name === 'Administración' 
+                      ? '/administracion/configuracion' 
+                      : currentArea?.name === 'Mantenimiento'
+                      ? '/mantenimiento/configuracion'
+                      : '/configuracion';
+                    router.push(`${configHref}?tab=profile`);
+                  }}>
+                    <CircleUser className="h-4 w-4" />
+                    <span>Cuenta</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    // Abrir el modal/panel de notificaciones (global)
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
+                    return;
+                  }
+
+                    // Fallback (SSR): ir a configuración -> notificaciones
+                    const configHref = currentArea?.name === 'Administración' 
+                      ? '/administracion/configuracion' 
+                      : currentArea?.name === 'Mantenimiento'
+                      ? '/mantenimiento/configuracion'
+                      : '/configuracion';
+                    router.push(`${configHref}?tab=notifications`);
+                  }}>
+                    <Bell className="h-4 w-4" />
+                    <span>Notificaciones</span>
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                    onClick={async () => {
+                      try {
+                        await logout();
+                      } catch (error) {
+                        console.error('Error al cerrar sesión:', error);
+                      }
+                    }}
+                  className="text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+              </div>
+        </div>
+        </div>
+      </aside>
+
+      <FeedbackModal open={showFeedback} onOpenChange={setShowFeedback} />
+    </TooltipProvider>
+  );
+}

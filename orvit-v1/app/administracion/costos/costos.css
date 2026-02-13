@@ -1,0 +1,46 @@
+/* Estilos personalizados para la página de costos */
+.costos-scroll-container {
+  /* Scrollbar personalizado para Webkit (Chrome, Safari, Edge) */
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.costos-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.costos-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.costos-scroll-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.costos-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+  background-clip: content-box;
+}
+
+/* Scrollbar para Firefox */
+.costos-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+/* Asegurar que el contenido tenga altura suficiente para scroll */
+.costos-content {
+  min-height: calc(100vh - 200px);
+}
+
+/* Mejorar la experiencia de scroll en dispositivos táctiles */
+@media (pointer: coarse) {
+  .costos-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}

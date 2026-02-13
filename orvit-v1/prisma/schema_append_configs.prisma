@@ -1,0 +1,243 @@
+// ════════════════════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN AVANZADA DE MÓDULOS ERP
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ═══ CONFIGURACIÓN AVANZADA DE COMPRAS ═══
+model PurchaseConfig {
+  id        Int @id @default(autoincrement())
+  companyId Int @unique
+
+  // Módulos habilitados
+  moduloContratosCompra      Boolean @default(false) @map("modulo_contratos_compra")
+  moduloSupplierPerformance  Boolean @default(false) @map("modulo_supplier_performance")
+  moduloRfqLicitaciones      Boolean @default(false) @map("modulo_rfq_licitaciones")
+  moduloImportaciones        Boolean @default(false) @map("modulo_importaciones")
+  moduloVmi                  Boolean @default(false) @map("modulo_vmi")
+  moduloMuestras             Boolean @default(false) @map("modulo_muestras")
+  moduloAutoPo               Boolean @default(false) @map("modulo_auto_po")
+  moduloDropShipping         Boolean @default(false) @map("modulo_drop_shipping")
+  moduloBlanketOrders        Boolean @default(false) @map("modulo_blanket_orders")
+
+  // Configuración RFQ
+  rfqDiasVigencia                 Int     @default(15) @map("rfq_dias_vigencia")
+  rfqMinimoProveedores            Int     @default(3) @map("rfq_minimo_proveedores")
+  rfqRequiereAprobacionAdjudicacion Boolean @default(true) @map("rfq_requiere_aprobacion_adjudicacion")
+
+  // Configuración Auto-PO
+  autoPoHabilitado              Boolean @default(false) @map("auto_po_habilitado")
+  autoPoStockMinimoTrigger      Boolean @default(true) @map("auto_po_stock_minimo_trigger")
+  autoPoRequiereAprobacion      Boolean @default(true) @map("auto_po_requiere_aprobacion")
+
+  // Configuración Supplier Performance
+  spmHabilitado              Boolean @default(false) @map("spm_habilitado")
+  spmPeriodoEvaluacionMeses  Int     @default(3) @map("spm_periodo_evaluacion_meses")
+  spmPesoCalidad             Decimal @default(40) @db.Decimal(5, 2) @map("spm_peso_calidad")
+  spmPesoEntrega             Decimal @default(40) @db.Decimal(5, 2) @map("spm_peso_entrega")
+  spmPesoPrecio              Decimal @default(20) @db.Decimal(5, 2) @map("spm_peso_precio")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_config")
+}
+
+// ═══ CONFIGURACIÓN AVANZADA DE TESORERÍA ═══
+model TreasuryConfig {
+  id        Int @id @default(autoincrement())
+  companyId Int @unique
+
+  // Módulos habilitados
+  moduloCashFlowForecast    Boolean @default(false) @map("modulo_cash_flow_forecast")
+  moduloMultiMoneda         Boolean @default(false) @map("modulo_multi_moneda")
+  moduloInversiones         Boolean @default(false) @map("modulo_inversiones")
+  moduloDeuda               Boolean @default(false) @map("modulo_deuda")
+  moduloReconciliacionAuto  Boolean @default(false) @map("modulo_reconciliacion_auto")
+  moduloPagosMasivos        Boolean @default(false) @map("modulo_pagos_masivos")
+  moduloGarantiasBancarias  Boolean @default(false) @map("modulo_garantias_bancarias")
+  moduloFactoring           Boolean @default(false) @map("modulo_factoring")
+
+  // Configuración Multi-moneda
+  monedaBase                 String  @default("ARS") @db.VarChar(10) @map("moneda_base")
+  multiMonedaHabilitado      Boolean @default(false) @map("multi_moneda_habilitado")
+  autoUpdateExchangeRates    Boolean @default(false) @map("auto_update_exchange_rates")
+  exchangeRateApiProvider    String? @db.VarChar(50) @map("exchange_rate_api_provider")
+
+  // Configuración Cash Flow Forecast
+  forecastPeriodoDias                 Int     @default(90) @map("forecast_periodo_dias")
+  forecastIncluirVentasProyectadas    Boolean @default(true) @map("forecast_incluir_ventas_proyectadas")
+  forecastIncluirComprasProyectadas   Boolean @default(true) @map("forecast_incluir_compras_proyectadas")
+
+  // Configuración Reconciliación Automática
+  reconciliacionAutoHabilitada Boolean @default(false) @map("reconciliacion_auto_habilitada")
+  reconciliacionMatchingThreshold Decimal @default(0.99) @db.Decimal(5, 2) @map("reconciliacion_matching_threshold")
+  reconciliacionMlEnabled     Boolean @default(false) @map("reconciliacion_ml_enabled")
+
+  // Configuración Pagos Masivos
+  pagosMasivosFormato            String  @default("AFIP") @db.VarChar(50) @map("pagos_masivos_formato")
+  pagosMasivosRequiereAprobacion Boolean @default(true) @map("pagos_masivos_requiere_aprobacion")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("treasury_config")
+}
+
+// ═══ CONFIGURACIÓN MÓDULOS GENERALES ═══
+model GeneralConfig {
+  id        Int @id @default(autoincrement())
+  companyId Int @unique
+
+  // Módulos habilitados
+  moduloCrm               Boolean @default(false) @map("modulo_crm")
+  moduloBiAvanzado        Boolean @default(false) @map("modulo_bi_avanzado")
+  moduloProyectos         Boolean @default(false) @map("modulo_proyectos")
+  moduloRrhhCompleto      Boolean @default(false) @map("modulo_rrhh_completo")
+  moduloDms               Boolean @default(false) @map("modulo_dms")
+  moduloQualityManagement Boolean @default(false) @map("modulo_quality_management")
+  moduloCompliance        Boolean @default(false) @map("modulo_compliance")
+  moduloActivosFijos      Boolean @default(false) @map("modulo_activos_fijos")
+  moduloMobility          Boolean @default(false) @map("modulo_mobility")
+
+  // Configuración CRM
+  crmPipelineEtapas    String? @map("crm_pipeline_etapas")
+  crmAutoSeguimiento   Boolean @default(false) @map("crm_auto_seguimiento")
+  crmDiasSeguimiento   Int     @default(7) @map("crm_dias_seguimiento")
+
+  // Configuración BI
+  biConstructorReportes Boolean @default(false) @map("bi_constructor_reportes")
+  biAlertasAutomaticas  Boolean @default(false) @map("bi_alertas_automaticas")
+  biReportesProgramados Boolean @default(false) @map("bi_reportes_programados")
+
+  // Configuración Proyectos
+  proyectosTimeTracking             Boolean @default(false) @map("proyectos_time_tracking")
+  proyectosFacturacion              Boolean @default(false) @map("proyectos_facturacion")
+  proyectosRequiereAprobacionPresupuesto Boolean @default(true) @map("proyectos_requiere_aprobacion_presupuesto")
+
+  // Configuración Quality
+  qualityIso9001       Boolean @default(false) @map("quality_iso9001")
+  qualityAutoNcr       Boolean @default(false) @map("quality_auto_ncr")
+  qualityRequiereCapa  Boolean @default(true) @map("quality_requiere_capa")
+
+  // Configuración RRHH
+  rrhhPortalEmpleado          Boolean @default(false) @map("rrhh_portal_empleado")
+  rrhhEvaluacionesDesempeno   Boolean @default(false) @map("rrhh_evaluaciones_desempeno")
+  rrhhGestionVacaciones       Boolean @default(false) @map("rrhh_gestion_vacaciones")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("general_config")
+}
+
+// ═══ CONFIGURACIÓN DE INTEGRACIONES ═══
+model IntegrationConfig {
+  id        Int @id @default(autoincrement())
+  companyId Int @unique
+
+  // Integraciones habilitadas
+  integracionAfip          Boolean @default(false) @map("integracion_afip")
+  integracionBancos        Boolean @default(false) @map("integracion_bancos")
+  integracionEcommerce     Boolean @default(false) @map("integracion_ecommerce")
+  integracionMarketplaces  Boolean @default(false) @map("integracion_marketplaces")
+  integracionTransportistas Boolean @default(false) @map("integracion_transportistas")
+  integracionContabilidad  Boolean @default(false) @map("integracion_contabilidad")
+  integracionPagos         Boolean @default(false) @map("integracion_pagos")
+  integracionCrmExterno    Boolean @default(false) @map("integracion_crm_externo")
+  integracionBiExterno     Boolean @default(false) @map("integracion_bi_externo")
+  integracionWhatsapp      Boolean @default(false) @map("integracion_whatsapp")
+
+  // Configuración AFIP
+  afipCuit      String? @db.VarChar(20) @map("afip_cuit")
+  afipWsUrl     String? @db.VarChar(500) @map("afip_ws_url")
+  afipAmbiente  String  @default("HOMOLOGACION") @db.VarChar(20) @map("afip_ambiente")
+
+  // Configuración Bancos
+  bancoProvider   String? @db.VarChar(50) @map("banco_provider")
+  bancoApiKey     String? @db.VarChar(500) @map("banco_api_key")
+  bancoAutoImport Boolean @default(false) @map("banco_auto_import")
+
+  // Configuración E-commerce
+  ecommercePlatform    String? @db.VarChar(50) @map("ecommerce_platform")
+  ecommerceApiUrl      String? @db.VarChar(500) @map("ecommerce_api_url")
+  ecommerceApiKey      String? @db.VarChar(500) @map("ecommerce_api_key")
+  ecommerceSyncStock   Boolean @default(true) @map("ecommerce_sync_stock")
+  ecommerceSyncPrecios Boolean @default(true) @map("ecommerce_sync_precios")
+
+  // Configuración Marketplaces
+  mercadolibreEnabled      Boolean @default(false) @map("mercadolibre_enabled")
+  mercadolibreClientId     String? @db.VarChar(200) @map("mercadolibre_client_id")
+  mercadolibreClientSecret String? @db.VarChar(200) @map("mercadolibre_client_secret")
+
+  // Configuración Transportistas
+  transportistaProvider  String? @db.VarChar(50) @map("transportista_provider")
+  transportistaApiKey    String? @db.VarChar(500) @map("transportista_api_key")
+  transportistaAutoLabel Boolean @default(false) @map("transportista_auto_label")
+
+  // Configuración WhatsApp
+  whatsappApiUrl      String? @db.VarChar(500) @map("whatsapp_api_url")
+  whatsappApiToken    String? @db.VarChar(500) @map("whatsapp_api_token")
+  whatsappTemplateIds String? @map("whatsapp_template_ids")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("integration_config")
+}
+
+// ═══ CONFIGURACIÓN DE INTELIGENCIA ARTIFICIAL ═══
+model AIConfig {
+  id        Int @id @default(autoincrement())
+  companyId Int @unique
+
+  // Funcionalidades de IA habilitadas
+  aiDemandForecasting      Boolean @default(false) @map("ai_demand_forecasting")
+  aiPriceOptimization      Boolean @default(false) @map("ai_price_optimization")
+  aiSmartReorder           Boolean @default(false) @map("ai_smart_reorder")
+  aiInvoiceOcr             Boolean @default(false) @map("ai_invoice_ocr")
+  aiDocumentClassification Boolean @default(false) @map("ai_document_classification")
+  aiChatbot                Boolean @default(false) @map("ai_chatbot")
+  aiFraudDetection         Boolean @default(false) @map("ai_fraud_detection")
+  aiSentimentAnalysis      Boolean @default(false) @map("ai_sentiment_analysis")
+  aiPredictiveMaintenance  Boolean @default(false) @map("ai_predictive_maintenance")
+  aiQualityPrediction      Boolean @default(false) @map("ai_quality_prediction")
+
+  // Configuración general de IA
+  aiProvider String  @default("OPENAI") @db.VarChar(50) @map("ai_provider")
+  aiApiKey   String? @db.VarChar(500) @map("ai_api_key")
+  aiModel    String  @default("gpt-4") @db.VarChar(100) @map("ai_model")
+
+  // Configuración Demand Forecasting
+  forecastPeriodoDias      Int     @default(90) @map("forecast_periodo_dias")
+  forecastAutoAjusteStock  Boolean @default(false) @map("forecast_auto_ajuste_stock")
+
+  // Configuración Price Optimization
+  priceOptimizationObjetivo           String  @default("MARGEN") @db.VarChar(50) @map("price_optimization_objetivo")
+  priceOptimizationCompetenciaEnabled Boolean @default(false) @map("price_optimization_competencia_enabled")
+
+  // Configuración OCR
+  ocrAutoProcesamiento     Boolean @default(false) @map("ocr_auto_procesamiento")
+  ocrRequiereValidacion    Boolean @default(true) @map("ocr_requiere_validacion")
+
+  // Configuración Chatbot
+  chatbotIdiomas            String? @default("es,en") @map("chatbot_idiomas")
+  chatbotHorarioDisponible  String? @db.VarChar(100) @map("chatbot_horario_disponible")
+
+  // Configuración Fraud Detection
+  fraudScoreThreshold Decimal @default(0.75) @db.Decimal(5, 2) @map("fraud_score_threshold")
+  fraudAutoBloqueo    Boolean @default(false) @map("fraud_auto_bloqueo")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("ai_config")
+}

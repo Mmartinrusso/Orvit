@@ -1,0 +1,14 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*", "sentry.*.config.*", "instrumentation*.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

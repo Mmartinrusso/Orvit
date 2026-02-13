@@ -1,0 +1,2420 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables CSS para temas */
+:root {
+  /* Tema Claro (como la foto) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f1f5f9;
+  --bg-accent: #f8fafc;
+  
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-accent: #3b82f6;
+  
+  --border-primary: #e2e8f0;
+  --border-secondary: #f1f5f9;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  
+  --kpi-bg: #f8fafc;
+  --kpi-icon-bg: #e2e8f0;
+  --kpi-text: #1e293b;
+  
+  --chart-bg: #ffffff;
+  --chart-border: #e2e8f0;
+  --chart-text: #64748b;
+  
+  --table-header: #f8fafc;
+  --table-row: #ffffff;
+  --table-row-hover: #f1f5f9;
+  --table-border: #e2e8f0;
+}
+
+/* Tema Oscuro (neutro, sin azules) */
+.dark {
+  --bg-primary: #101010;
+  --bg-secondary: #171717;
+  --bg-card: #1a1a1a;
+  --bg-sidebar: #101010;
+  --bg-accent: #1f1f1f;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --text-accent: #ffffff;
+  
+  --border-primary: #262626;
+  --border-secondary: #2e2e2e;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  
+  --kpi-bg: #1f1f1f;
+  --kpi-icon-bg: #262626;
+  --kpi-text: #ffffff;
+  
+  --chart-bg: #1a1a1a;
+  --chart-border: #262626;
+  --chart-text: #e5e5e5;
+  
+  --table-header: #1f1f1f;
+  --table-row: #1a1a1a;
+  --table-row-hover: #1f1f1f;
+  --table-border: #262626;
+}
+
+/* Clases utilitarias para temas */
+.theme-bg-primary { background-color: var(--bg-primary); }
+.theme-bg-secondary { background-color: var(--bg-secondary); }
+.theme-bg-card { background-color: var(--bg-card); }
+.theme-bg-sidebar { background-color: var(--bg-sidebar); }
+.theme-bg-accent { background-color: var(--bg-accent); }
+
+.theme-text-primary { color: var(--text-primary); }
+.theme-text-secondary { color: var(--text-secondary); }
+.theme-text-muted { color: var(--text-muted); }
+.theme-text-accent { color: var(--text-accent); }
+
+.theme-border-primary { border-color: var(--border-primary); }
+.theme-border-secondary { border-color: var(--border-secondary); }
+
+.theme-shadow-sm { box-shadow: var(--shadow-sm); }
+.theme-shadow-md { box-shadow: var(--shadow-md); }
+.theme-shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* Transiciones suaves para cambio de tema */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Estilos específicos del dashboard */
+.dashboard-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.kpi-card {
+  background-color: var(--kpi-bg);
+  border: 1px solid var(--border-secondary);
+}
+
+.kpi-icon {
+  background-color: var(--kpi-icon-bg);
+  color: var(--kpi-text);
+}
+
+.chart-container {
+  background-color: var(--chart-bg);
+  border: 1px solid var(--chart-border);
+}
+
+.table-header {
+  background-color: var(--table-header);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--table-border);
+}
+
+.table-row {
+  background-color: var(--table-row);
+  border-bottom: 1px solid var(--table-border);
+}
+
+.table-row:hover {
+  background-color: var(--table-row-hover);
+}
+
+/* Botón de toggle de tema */
+.theme-toggle {
+  background-color: var(--bg-accent);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+}
+
+.theme-toggle:hover {
+  background-color: var(--bg-secondary);
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+/* Reglas específicas para mejorar consistencia en diferentes frecuencias de refresco - SOLO TEMA CLARO */
+@media screen and (min-resolution: 75dpi) {
+  /* Para monitores de alta frecuencia (75Hz+) - solo en tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg,
+  :root:not(.dark):not(.metal) .navbar-bg {
+    background-color: #f8fafc !important; /* Gris muy claro y definido */
+    color: #0f172a !important; /* Texto oscuro sólido */
+  }
+  
+  /* Bordes más claros para 75Hz en tema claro */
+  :root:not(.dark):not(.black) .sidebar-bg {
+    border-right-color: #cbd5e1 !important; /* Gris más claro */
+  }
+  
+  :root:not(.dark):not(.black) .navbar-bg {
+    border-bottom-color: #cbd5e1 !important; /* Gris más claro */
+  }
+}
+
+/* Regla específica para problemas en 75Hz - SOLO TEMA CLARO */
+@media screen and (min-resolution: 75dpi) and (max-resolution: 76dpi) {
+  :root:not(.dark):not(.black) .sidebar-bg,
+  :root:not(.dark):not(.black) .navbar-bg {
+    background-color: #f1f5f9 !important; /* Gris más definido para 75Hz */
+    color: #0f172a !important;
+  }
+  
+  /* Bordes más claros para 75Hz específico */
+  :root:not(.dark):not(.black) .sidebar-bg {
+    border-right-color: #94a3b8 !important; /* Gris más claro */
+  }
+  
+  :root:not(.dark):not(.black) .navbar-bg {
+    border-bottom-color: #94a3b8 !important; /* Gris más claro */
+  }
+}
+
+/* Fallback general para problemas de renderizado - SOLO TEMA CLARO */
+@media screen and (max-resolution: 60dpi) {
+  /* Para monitores de baja frecuencia - solo en tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg,
+  :root:not(.dark):not(.metal) .navbar-bg {
+    background-color: #f8fafc !important; /* Gris muy claro */
+    color: #0f172a !important;
+  }
+}
+
+/* Reglas específicas para theme Metal */
+.metal .sidebar-bg,
+.metal .navbar-bg {
+  background-color: #182B31 !important;
+  color: #F4FEFE !important;
+}
+
+
+
+@layer base {
+  :root {
+    /* Light mode - Mejorado para monitores de 75Hz */
+    --background: 220 13% 98%; /* Gris muy claro/blanco */
+    --foreground: 220 13% 9%; /* Dark text más definido */
+    
+    --card: 0 0% 100%; /* Blanco puro para cards */
+    --card-foreground: 220 13% 9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 9%;
+    
+    --primary: 220 13% 9%; /* Negro más definido */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 13% 96%; /* Gris claro definido */
+    --secondary-foreground: 220 13% 9%;
+    
+    --muted: 220 13% 94%; /* Gris medio definido */
+    --muted-foreground: 220 13% 45%;
+    
+    --accent: 220 13% 96%; /* Gris claro definido */
+    --accent-foreground: 220 13% 9%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 90%; /* Gris más claro para mejor balance */
+    --input: 220 13% 90%; /* Gris definido */
+    --ring: 220 13% 9%; /* Negro definido */
+    
+    --radius: 0.5rem;
+    
+    /* Colores personalizados para sidebar y navbar en modo claro - Mejorados para 75Hz */
+    --sidebar-background: 220 13% 95%; /* Gris muy claro pero definido */
+    --sidebar-foreground: 220 13% 9%; /* Negro definido */
+    --sidebar-accent: 220 13% 90%; /* Gris claro para hover */
+    --sidebar-accent-foreground: 220 13% 9%; /* Negro para texto en hover */
+    --sidebar-primary: 220 13% 9%; /* Negro para item activo */
+    --sidebar-primary-foreground: 220 13% 95%; /* Blanco para texto activo */
+    --sidebar-ring: 220 13% 70%; /* Gris medio para ring */
+    --main-content-background: 220 13% 98%; /* Gris muy claro/blanco para el contenido */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    /* Dark mode neutro */
+    --background: 0 0% 9%; /* #171717 */
+    --foreground: 0 0% 95%; /* #f2f2f2 */
+    
+    --card: 0 0% 10%; /* #1a1a1a */
+    --card-foreground: 0 0% 95%;
+    
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    
+    --primary: 0 0% 95%; /* Blanco */
+    --primary-foreground: 0 0% 9%; /* Fondo */
+    
+    --secondary: 0 0% 14%; /* #232323 */
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 0 0% 40%; /* #666 */
+    --muted-foreground: 0 0% 85%;
+    
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 95%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 16%; /* #292929 */
+    --input: 0 0% 16%;
+    --ring: 0 0% 70%;
+    
+    /* Colores personalizados para sidebar y navbar en modo oscuro */
+    --sidebar-background: 0 0% 15%; /* más claro */
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-accent: 0 0% 18%; /* hover un poco más claro */
+    --sidebar-accent-foreground: 0 0% 95%; /* Blanco para texto en hover */
+    --sidebar-primary: 0 0% 95%; /* Blanco para item activo */
+    --sidebar-primary-foreground: 0 0% 10%; /* Negro para texto activo */
+    --sidebar-ring: 0 0% 30%; /* Gris medio para ring */
+    --main-content-background: 0 0% 9%; /* #171717 */
+    --chart-1: 0 0% 75%;
+    --chart-2: 0 0% 60%;
+    --chart-3: 0 0% 45%;
+    --chart-4: 0 0% 35%;
+    --chart-5: 0 0% 25%;
+  }
+
+  .black {
+    /* Black mode - un poquito más claro */
+    --background: 0 0% 8%; /* Negro suave */
+    --foreground: 0 0% 100%; /* Blanco puro */
+    
+    --card: 0 0% 12%; /* Negro oscuro suave */
+    --card-foreground: 0 0% 100%; /* Blanco puro */
+    
+    --popover: 0 0% 12%; /* Negro oscuro suave */
+    --popover-foreground: 0 0% 100%; /* Blanco puro */
+    
+    --primary: 0 0% 100%; /* Blanco puro */
+    --primary-foreground: 0 0% 8%; /* Negro suave */
+    
+    --secondary: 0 0% 15%; /* Negro medio suave */
+    --secondary-foreground: 0 0% 100%; /* Blanco puro */
+    
+    --muted: 0 0% 20%; /* Negro medio */
+    --muted-foreground: 0 0% 80%; /* Gris claro */
+    
+    --accent: 0 0% 15%; /* Negro medio suave */
+    --accent-foreground: 0 0% 100%; /* Blanco puro */
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 25%; /* Negro medio suave */
+    --input: 0 0% 25%; /* Negro medio suave */
+    --ring: 0 0% 60%; /* Gris medio */
+    
+    /* Colores personalizados para sidebar y navbar en modo negro */
+    --sidebar-background: 0 0% 17%; /* más claro */
+    --sidebar-foreground: 0 0% 100%; /* Blanco puro */
+    --sidebar-accent: 0 0% 20%; /* hover más claro */
+    --sidebar-accent-foreground: 0 0% 100%; /* Blanco para texto en hover */
+    --sidebar-primary: 0 0% 100%; /* Blanco para item activo */
+    --sidebar-primary-foreground: 0 0% 12%; /* Negro para texto activo */
+    --sidebar-ring: 0 0% 40%; /* Gris medio para ring */
+    --main-content-background: 0 0% 8%; /* Negro suave */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+
+  .metal {
+    /* Metal Theme - Based on #182B31, #1E3A46, #58717D, #B4C3CC palette */
+    --background: 201 40% 9%; /* #182B31 */
+    --foreground: 205 25% 95%; /* #F4FEFE */
+    
+    --card: 201 35% 14%; /* #1E3A46 */
+    --card-foreground: 205 25% 95%; /* #F4FEFE */
+    
+    --popover: 201 35% 14%; /* #1E3A46 */
+    --popover-foreground: 205 25% 95%; /* #F4FEFE */
+    
+    --primary: 205 25% 95%; /* #F4FEFE */
+    --primary-foreground: 201 40% 9%; /* #182B31 */
+    
+    --secondary: 205 20% 45%; /* #58717D */
+    --secondary-foreground: 205 25% 95%; /* #F4FEFE */
+    
+    --muted: 205 15% 55%; /* #7A8B94 */
+    --muted-foreground: 205 15% 75%; /* #B4C3CC */
+    
+    --accent: 205 20% 45%; /* #58717D */
+    --accent-foreground: 205 25% 95%; /* #F4FEFE */
+    
+    --destructive: 0 84% 60%; /* Red for destructive actions */
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 205 25% 25%; /* #3A4F5A */
+    --input: 205 25% 25%; /* #3A4F5A */
+    --ring: 205 20% 35%; /* #4A6068 */
+    
+    /* Custom colors for sidebar and main content in metal mode */
+    --sidebar-background: 201 40% 13%; /* más claro */
+    --sidebar-foreground: 205 25% 95%; /* #F4FEFE */
+    --sidebar-accent: 201 35% 17%; /* hover más claro */
+    --sidebar-accent-foreground: 205 25% 95%; /* #F4FEFE para texto en hover */
+    --sidebar-primary: 205 25% 95%; /* #F4FEFE para item activo */
+    --sidebar-primary-foreground: 201 40% 9%; /* #182B31 para texto activo */
+    --sidebar-ring: 205 20% 35%; /* #4A6068 para ring */
+    --main-content-background: 201 35% 14%; /* #1E3A46 */
+    
+    /* Accent colors for charts/status indicators */
+    --chart-1: 149 71% 39%; /* #10B981 (Green) */
+    --chart-2: 0 85% 60%; /* #EF4444 (Red) */
+    --chart-3: 40 96% 57%; /* #FBBF24 (Yellow) */
+    --chart-4: 205 70% 50%; /* Metal accent */
+    --chart-5: 195 75% 55%; /* Metal secondary accent */
+  }
+
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-sidebar text-foreground;
+  }
+}
+
+/* Clases personalizadas para sidebar y navbar */
+@layer components {
+  /* Surfaces unificadas (sidebar y dashboard) - Theme claro */
+  :root:not(.dark):not(.metal) .surface-card {
+    background-color: #ffffff !important; /* Blanco para sidebar en theme claro */
+    border: 1px solid #cbd5e1 !important; /* Borde más visible en theme claro */
+    border-radius: 16px !important;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06) !important; /* Sombra más definida */
+  }
+
+  /* Botones adaptados para el tema claro */
+  :root:not(.dark):not(.metal) .bg-card {
+    background-color: #ffffff !important;
+  }
+
+  :root:not(.dark):not(.metal) .text-card-foreground {
+    color: #1e293b !important;
+  }
+
+  :root:not(.dark):not(.metal) .border-border {
+    border-color: #cbd5e1 !important;
+  }
+
+  :root:not(.dark):not(.metal) .hover\:bg-accent\/50:hover {
+    background-color: rgba(226, 232, 240, 0.5) !important;
+  }
+
+  :root:not(.dark):not(.metal) .bg-accent\/30 {
+    background-color: rgba(226, 232, 240, 0.3) !important;
+  }
+
+  :root:not(.dark):not(.metal) .bg-accent\/50 {
+    background-color: rgba(226, 232, 240, 0.5) !important;
+  }
+
+  /* Estilos específicos para cards de áreas y sectores en tema claro */
+  :root:not(.dark):not(.metal) .surface-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  :root:not(.dark):not(.metal) .surface-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  /* Efectos de hover para botones en tema claro */
+  :root:not(.dark):not(.metal) .hover\:bg-primary\/10:hover {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+  }
+
+  :root:not(.dark):not(.metal) .hover\:bg-primary\/20:hover {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+  }
+
+  /* Colores de texto mejorados para tema claro */
+  :root:not(.dark):not(.metal) .text-foreground {
+    color: #1e293b !important;
+  }
+
+  :root:not(.dark):not(.metal) .text-muted-foreground {
+    color: #64748b !important;
+  }
+
+  /* Bordes mejorados para tema claro */
+  :root:not(.dark):not(.metal) .border-border\/30 {
+    border-color: rgba(203, 213, 225, 0.3) !important;
+  }
+
+  :root:not(.dark):not(.metal) .border-border\/50 {
+    border-color: rgba(203, 213, 225, 0.5) !important;
+  }
+
+  /* Surfaces unificadas (sidebar y dashboard) - Theme oscuro */
+  .dark .surface-card {
+    background-color: #0E0E0E !important;
+    border: 1px solid #1F1F1F !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Botones adaptados para el tema oscuro */
+  .dark .bg-card {
+    background-color: #1a1a1a !important;
+  }
+
+  .dark .text-card-foreground {
+    color: #ffffff !important;
+  }
+
+  .dark .border-border {
+    border-color: #1F1F1F !important;
+  }
+
+  .dark .hover\:bg-accent\/50:hover {
+    background-color: rgba(31, 31, 31, 0.5) !important;
+  }
+
+  .dark .bg-accent\/30 {
+    background-color: rgba(31, 31, 31, 0.3) !important;
+  }
+
+  .dark .bg-accent\/50 {
+    background-color: rgba(31, 31, 31, 0.5) !important;
+  }
+
+  /* Estilos específicos para cards de áreas y sectores en tema oscuro */
+  .dark .surface-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .dark .surface-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  /* Efectos de hover para botones en tema oscuro */
+  .dark .hover\:bg-primary\/10:hover {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+  }
+
+  .dark .hover\:bg-primary\/20:hover {
+    background-color: rgba(59, 130, 246, 0.25) !important;
+  }
+
+  /* Colores de texto mejorados para tema oscuro */
+  .dark .text-foreground {
+    color: #ffffff !important;
+  }
+
+  .dark .text-muted-foreground {
+    color: #a1a1aa !important;
+  }
+
+  /* Bordes mejorados para tema oscuro */
+  .dark .border-border\/30 {
+    border-color: rgba(31, 31, 31, 0.3) !important;
+  }
+
+  .dark .border-border\/50 {
+    border-color: rgba(31, 31, 31, 0.5) !important;
+  }
+
+  /* Surfaces unificadas (sidebar y dashboard) - Theme metal */
+  .metal .surface-card {
+    background-color: #1E3A46 !important;
+    border: 1px solid #3A4F5A !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Botones adaptados para el tema metal */
+  .metal .bg-card {
+    background-color: #2A4A56 !important;
+  }
+
+  .metal .text-card-foreground {
+    color: #F4FEFE !important;
+  }
+
+  .metal .border-border {
+    border-color: #3A4F5A !important;
+  }
+
+  .metal .hover\:bg-accent\/50:hover {
+    background-color: rgba(58, 79, 90, 0.5) !important;
+  }
+
+  /* Estilos específicos para cards de áreas y sectores en tema metal */
+  .metal .surface-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .metal .surface-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  /* Efectos de hover para botones en tema metal */
+  .metal .hover\:bg-primary\/10:hover {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+  }
+
+  .metal .hover\:bg-primary\/20:hover {
+    background-color: rgba(59, 130, 246, 0.25) !important;
+  }
+
+  /* Colores de texto mejorados para tema metal */
+  .metal .text-foreground {
+    color: #F4FEFE !important;
+  }
+
+  .metal .text-muted-foreground {
+    color: #B4C3CC !important;
+  }
+
+  /* Bordes mejorados para tema metal */
+  .metal .border-border\/30 {
+    border-color: rgba(58, 79, 90, 0.3) !important;
+  }
+
+  .metal .border-border\/50 {
+    border-color: rgba(58, 79, 90, 0.5) !important;
+  }
+
+
+
+  /* Variante un poco más clara para el contenedor del dashboard - Theme claro */
+  :root:not(.dark):not(.metal) .dashboard-surface {
+    background-color: #f8fafc !important; /* Gris muy claro para dashboard en theme claro */
+  }
+
+  /* Variante un poco más clara para el contenedor del dashboard - Theme oscuro */
+  .dark .dashboard-surface {
+    background-color: #141414 !important;
+  }
+
+  /* Variante un poco más clara para el contenedor del dashboard - Theme metal */
+  .metal .dashboard-surface {
+    background-color: #182B31 !important;
+  }
+
+  /* Estilos específicos para el fondo de páginas en tema metal */
+  .metal .dashboard-surface {
+    background: linear-gradient(135deg, #182B31 0%, #1E3A46 50%, #182B31 100%) !important;
+    min-height: 100vh !important;
+  }
+
+  /* Estilos específicos para el fondo de páginas en tema claro */
+  :root:not(.dark):not(.metal) .dashboard-surface {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%) !important;
+    min-height: 100vh !important;
+  }
+
+  /* Estilos específicos para el fondo de páginas en tema oscuro */
+  .dark .dashboard-surface {
+    background: linear-gradient(135deg, #141414 0%, #0B0B0B 50%, #141414 100%) !important;
+    min-height: 100vh !important;
+  }
+
+  /* CORRECCIÓN: Sobrescribir min-height cuando dashboard-surface está dentro de sidebar-shell */
+  .sidebar-shell .dashboard-surface {
+    min-height: unset !important;
+    height: calc(100vh - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    /* SOMBRA IGUAL AL SIDEBAR: Usar la misma sombra que el sidebar */
+    border: none !important;
+  }
+
+  /* CORRECCIÓN ESPECÍFICA PARA TEMA CLARO: Ocultar el fondo del sidebar-shell cuando hay dashboard-surface */
+  :root:not(.dark):not(.metal) .sidebar-shell .dashboard-surface {
+    min-height: unset !important;
+    height: calc(100vh - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    /* Asegurar que ocupe todo el espacio disponible */
+    width: calc(100% - 24px) !important;
+    margin: 12px !important;
+    /* SOMBRA IGUAL AL SIDEBAR: Usar la misma sombra que el sidebar en tema claro */
+    border: none !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* SOMBRA IGUAL AL SIDEBAR: Reglas específicas para cuando surface-card se usa con dashboard-surface */
+  .surface-card.dashboard-surface {
+    border: none !important;
+  }
+
+  /* TEMA OSCURO: Sombra igual al sidebar */
+  .dark .sidebar-shell .dashboard-surface {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* TEMA METAL: Sombra igual al sidebar */
+  .metal .sidebar-shell .dashboard-surface {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Estilos para inputs y elementos de formulario en tema metal */
+  .metal .bg-background {
+    background-color: #2A4A56 !important;
+    border-color: #3A4F5A !important;
+  }
+
+  .metal .border-input {
+    border-color: #3A4F5A !important;
+  }
+
+  .metal .placeholder\:text-muted-foreground::placeholder {
+    color: #B4C3CC !important;
+  }
+
+  /* Estilos para botones en tema metal */
+  .metal .bg-card {
+    background-color: #2A4A56 !important;
+  }
+
+  .metal .text-card-foreground {
+    color: #F4FEFE !important;
+  }
+
+  /* Estilos para hover en tema metal */
+  .metal .hover\:bg-accent:hover {
+    background-color: rgba(58, 79, 90, 0.5) !important;
+  }
+
+  .metal .hover\:text-primary:hover {
+    color: #60A5FA !important;
+  }
+
+
+
+  /* Casco del sidebar (fondo) - Theme claro */
+  :root:not(.dark):not(.metal) .sidebar-shell {
+    background: transparent !important; /* Sin fondo para dashboard */
+    position: relative;
+  }
+
+  /* Casco del sidebar (fondo) - Theme oscuro */
+  .dark .sidebar-shell {
+    background: #0B0B0B !important;
+    position: relative;
+  }
+
+  /* Casco del sidebar (fondo) - Theme metal */
+  .metal .sidebar-shell {
+    background: #182B31 !important;
+    position: relative;
+  }
+
+
+
+  /* Brillo ambiental muy sutil alrededor del borde - Theme claro */
+  :root:not(.dark):not(.metal) .ambient-glow {
+    box-shadow: 0 0 0 1px #e2e8f0 inset, 0 2px 8px rgba(0,0,0,.1);
+  }
+
+  /* Brillo ambiental muy sutil alrededor del borde - Theme oscuro */
+  .dark .ambient-glow {
+    box-shadow: 0 0 0 1px #1F1F1F inset, 0 8px 30px rgba(0,0,0,.4);
+  }
+
+  /* Brillo ambiental muy sutil alrededor del borde - Theme metal */
+  .metal .ambient-glow {
+    box-shadow: 0 0 0 1px #3A4F5A inset, 0 8px 30px rgba(0,0,0,.4);
+  }
+
+
+
+  /* Efecto de "sheen" (barrido de luz) muy suave */
+  .sidebar-shell.animated-sheen::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 20% 80%, rgba(255,255,255,0.06));
+    animation: rotateSheen 18s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes rotateSheen {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Hover sutil para items del sidebar */
+  .sidebar-item {
+    transition: background-color .2s ease, transform .2s ease;
+  }
+  .sidebar-item:hover { 
+    background-color: rgba(255,255,255,.06) !important; 
+    transform: translateY(-1px);
+  }
+  .sidebar-bg {
+    background-color: hsl(var(--sidebar-background));
+    color: hsl(var(--sidebar-foreground));
+    /* Forzar renderizado consistente */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Asegurar que el color se mantenga visible */
+    will-change: background-color;
+  }
+  
+  .navbar-bg {
+    background-color: hsl(var(--sidebar-background));
+    color: hsl(var(--sidebar-foreground));
+    /* Forzar renderizado consistente */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Asegurar que el color se mantenga visible */
+    will-change: background-color;
+  }
+  
+  /* Bordes específicos solo para tema claro */
+  :root:not(.dark):not(.black) .sidebar-bg {
+    border-right: 1px solid hsl(220 13% 85%);
+  }
+  
+  :root:not(.dark):not(.black) .navbar-bg {
+    border-bottom: 1px solid hsl(220 13% 85%);
+  }
+  
+  .main-content-bg {
+    background-color: hsl(var(--main-content-background));
+  }
+  
+  /* Clases para mejorar consistencia de colores en diferentes Hz */
+  .color-stable {
+    /* Forzar renderizado consistente en diferentes frecuencias */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Asegurar que los colores se rendericen correctamente */
+    color-rendering: optimizeQuality;
+    image-rendering: optimizeQuality;
+  }
+  
+  /* Fallback para colores que pueden desaparecer - SOLO TEMA CLARO */
+  :root:not(.dark):not(.black) .sidebar-fallback {
+    background-color: #f8fafc !important; /* Fallback gris claro */
+  }
+  
+  :root:not(.dark):not(.black) .navbar-fallback {
+    background-color: #f8fafc !important; /* Fallback gris claro */
+  }
+  
+  /* Fondo general gris claro para tema claro */
+  :root:not(.dark):not(.black) body {
+    background-color: #fafbfc !important; /* Gris muy claro para el fondo general */
+  }
+  
+  /* Fondo gris claro para el contenido principal */
+  :root:not(.dark):not(.black) .main-content-bg {
+    background-color: #fafbfc !important; /* Gris muy claro */
+  }
+  
+  /* Fondo gris claro para contenedores principales */
+  :root:not(.dark):not(.black) .bg-background {
+    background-color: #fafbfc !important; /* Gris muy claro */
+  }
+  
+  /* Fondo gris claro para páginas y contenedores */
+  :root:not(.dark):not(.black) main,
+  :root:not(.dark):not(.black) .min-h-screen {
+    background-color: #fafbfc !important; /* Gris muy claro */
+  }
+  
+  /* Fondo gris claro para secciones */
+  :root:not(.dark):not(.black) section,
+  :root:not(.dark):not(.black) .space-y-8 {
+    background-color: #fafbfc !important; /* Gris muy claro */
+  }
+  
+  /* Cards mantienen fondo blanco para contraste */
+  :root:not(.dark):not(.black) .bg-card {
+    background-color: #ffffff !important; /* Blanco puro para cards */
+  }
+  
+  /* Separadores más claros SOLO en tema claro */
+  :root:not(.dark):not(.black) .border,
+  :root:not(.dark):not(.black) [class*="border"] {
+    border-color: #cbd5e1 !important; /* Gris más claro */
+  }
+  
+  /* Separadores específicos más claros SOLO en tema claro */
+  :root:not(.dark):not(.black) .border-l,
+  :root:not(.dark):not(.black) .border-r,
+  :root:not(.dark):not(.black) .border-t,
+  :root:not(.dark):not(.black) .border-b {
+    border-color: #cbd5e1 !important; /* Gris más claro */
+  }
+  
+  /* Mejorar visibilidad de elementos seleccionados en sidebar - SOLO tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg .bg-secondary {
+    background-color: #e2e8f0 !important; /* Fondo más oscuro para elementos seleccionados */
+    color: #1e293b !important; /* Texto más oscuro */
+    border: 1px solid #cbd5e1 !important; /* Borde para mejor definición */
+  }
+
+  /* Elementos seleccionados en sidebar - Theme Metal */
+  .metal .sidebar-bg .bg-secondary {
+    background-color: #3A4F5A !important;
+    color: #F4FEFE !important;
+    border: 1px solid #58717D !important;
+  }
+
+
+  
+  /* Mejorar visibilidad de elementos seleccionados en sidebar - SOLO tema negro */
+  :root.black .sidebar-bg .bg-secondary {
+    background-color: #262626 !important; /* Fondo más claro para elementos seleccionados */
+    color: #ffffff !important; /* Texto blanco */
+    border: 1px solid #404040 !important; /* Borde para mejor definición */
+  }
+  
+  /* Mejorar visibilidad de botones seleccionados en sidebar - SOLO tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg button[data-variant="secondary"] {
+    background-color: #e2e8f0 !important; /* Fondo más oscuro */
+    color: #1e293b !important; /* Texto más oscuro */
+    border: 1px solid #e2e8f0 !important; /* Borde más claro */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important; /* Sombra sutil */
+  }
+
+  /* Botones seleccionados en sidebar - Theme Metal */
+  .metal .sidebar-bg button[data-variant="secondary"] {
+    background-color: #3A4F5A !important;
+    color: #F4FEFE !important;
+    border: 1px solid #58717D !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  }
+
+
+  
+  /* Mejorar visibilidad de botones seleccionados en sidebar - SOLO tema negro */
+  :root.black .sidebar-bg button[data-variant="secondary"] {
+    background-color: #262626 !important; /* Fondo más claro */
+    color: #ffffff !important; /* Texto blanco */
+    border: 1px solid #404040 !important; /* Borde para definición */
+    box-shadow: 0 1px 3px rgba(255, 255, 255, 0.1) !important; /* Sombra sutil */
+  }
+  
+  /* Mejorar visibilidad de iconos seleccionados - SOLO tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg button[data-variant="secondary"] svg {
+    color: #1e293b !important; /* Icono más oscuro */
+  }
+
+  /* Iconos seleccionados en sidebar - Theme Metal */
+  .metal .sidebar-bg button[data-variant="secondary"] svg {
+    color: #F4FEFE !important;
+  }
+
+
+  
+  /* Mejorar visibilidad de iconos seleccionados - SOLO tema negro */
+  :root.black .sidebar-bg button[data-variant="secondary"] svg {
+    color: #ffffff !important; /* Icono blanco */
+  }
+  
+  /* Hover mejorado para botones del sidebar - SOLO tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg button:hover:not([data-variant="secondary"]) {
+    background-color: #f1f5f9 !important; /* Hover más visible */
+    color: #334155 !important; /* Texto más oscuro en hover */
+  }
+
+  /* Hover para botones del sidebar - Theme Metal */
+  .metal .sidebar-bg button:hover:not([data-variant="secondary"]) {
+    background-color: #3A4F5A !important;
+    color: #F4FEFE !important;
+  }
+
+
+  
+  /* Hover mejorado para botones del sidebar - SOLO tema negro */
+  :root.black .sidebar-bg button:hover:not([data-variant="secondary"]) {
+    background-color: #333333 !important; /* Hover más visible */
+    color: #ffffff !important; /* Texto blanco en hover */
+  }
+  
+  /* Transiciones suaves para cambios de estado */
+  :root:not(.dark):not(.metal) .sidebar-bg button,
+  :root.black .sidebar-bg button,
+  .metal .sidebar-bg button {
+    transition: all 0.2s ease-in-out !important;
+  }
+  
+  /* Preservar colores rojos de botones de control de planta - SOLO tema claro */
+  :root:not(.dark):not(.black) .border-red-200 {
+    border-color: #fecaca !important; /* Rojo claro */
+  }
+  
+  :root:not(.dark):not(.black) .text-red-700 {
+    color: #b91c1c !important; /* Rojo oscuro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:bg-red-50:hover {
+    background-color: #fef2f2 !important; /* Rojo muy claro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:text-red-800:hover {
+    color: #991b1b !important; /* Rojo más oscuro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:border-red-300:hover {
+    border-color: #fca5a5 !important; /* Rojo medio */
+  }
+  
+  /* Preservar colores verdes de botones de reactivar planta - SOLO tema claro */
+  :root:not(.dark):not(.black) .border-green-200 {
+    border-color: #bbf7d0 !important; /* Verde claro */
+  }
+  
+  :root:not(.dark):not(.black) .text-green-700 {
+    color: #15803d !important; /* Verde oscuro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:bg-green-50:hover {
+    background-color: #f0fdf4 !important; /* Verde muy claro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:text-green-800:hover {
+    color: #166534 !important; /* Verde más oscuro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:border-green-300:hover {
+    border-color: #86efac !important; /* Verde medio */
+  }
+  
+  /* Preservar colores azules de botones de solicitar productos - SOLO tema claro */
+  :root:not(.dark):not(.black) .border-blue-200 {
+    border-color: #bfdbfe !important; /* Azul claro */
+  }
+  
+  :root:not(.dark):not(.black) .text-blue-700 {
+    color: #1d4ed8 !important; /* Azul oscuro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:bg-blue-50:hover {
+    background-color: #eff6ff !important; /* Azul muy claro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:text-blue-800:hover {
+    color: #1e40af !important; /* Azul más oscuro */
+  }
+  
+  :root:not(.dark):not(.black) .hover\:border-blue-300:hover {
+    border-color: #93c5fd !important; /* Azul medio */
+  }
+  
+  /* Elementos activos más visibles - SOLO tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg .text-foreground {
+    color: #1e293b !important; /* Texto más oscuro para elementos activos */
+    font-weight: 500 !important; /* Texto semi-bold */
+  }
+
+  /* Elementos activos más visibles - Theme Metal */
+  .metal .sidebar-bg .text-foreground {
+    color: #F4FEFE !important;
+    font-weight: 500 !important;
+  }
+
+
+  
+  /* Elementos activos más visibles - SOLO tema negro */
+  :root.black .sidebar-bg .text-foreground {
+    color: #ffffff !important; /* Texto blanco para elementos activos */
+    font-weight: 500 !important; /* Texto semi-bold */
+  }
+  
+  /* Indicador visual adicional para elementos seleccionados - SOLO tema claro */
+  :root:not(.dark):not(.metal) .sidebar-bg button[data-variant="secondary"]::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 3px !important;
+    background-color: #3b82f6 !important; /* Barra azul indicadora */
+    border-radius: 0 2px 2px 0 !important;
+  }
+
+  /* Indicador visual adicional para elementos seleccionados - Theme Metal */
+  .metal .sidebar-bg button[data-variant="secondary"]::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 3px !important;
+    background-color: #B4C3CC !important; /* Barra metal indicadora */
+    border-radius: 0 2px 2px 0 !important;
+  }
+
+
+  
+  /* Indicador visual adicional para elementos seleccionados - SOLO tema negro */
+  :root.black .sidebar-bg button[data-variant="secondary"]::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 3px !important;
+    background-color: #60a5fa !important; /* Barra azul clara indicadora */
+    border-radius: 0 2px 2px 0 !important;
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Shimmer animation for assistant header */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Pulse glow for active states */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--primary), 0.4); }
+  50% { box-shadow: 0 0 20px 10px rgba(var(--primary), 0); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Tree view styles */
+.tree-node {
+  @apply transition-all duration-200;
+}
+
+.tree-node-collapsed {
+  @apply h-0 overflow-hidden;
+}
+
+.tree-node-expanded {
+  @apply h-auto;
+}
+
+.tree-toggle {
+  @apply transition-transform duration-200;
+}
+
+.tree-toggle-expanded {
+  @apply rotate-90;
+}
+
+/* Sidebar transition */
+.sidebar-transition {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background/50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted/80;
+}
+
+/* Estilos específicos para el componente LogoUpload */
+@layer components {
+  .logo-container {
+    @apply flex-shrink-0 w-16 h-16 border rounded-lg bg-gray-50 dark:bg-gray-800 overflow-hidden;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .logo-image {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-width: 90% !important;
+    max-height: 90% !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    image-rendering: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+  }
+  
+  /* Asegurar que las imágenes no se desplacen nunca */
+  .logo-image:hover,
+  .logo-image:focus,
+  .logo-image:active,
+  .logo-image:visited {
+    transform: translate(-50%, -50%) !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+  }
+  
+  /* Prevenir cualquier desplazamiento en el contenedor */
+  .logo-container::before,
+  .logo-container::after {
+    content: none !important;
+  }
+  
+  /* Estilos para cards de máquinas */
+  .machine-card-button {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0;
+  }
+  
+  /* Estilos para cards de órdenes de trabajo */
+  .work-order-card-button {
+    @apply bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0;
+  }
+}
+
+/* Configuración de formato de fecha español */
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.metal {
+  color-scheme: dark;
+}
+
+
+
+/* Personalización para inputs de fecha en formato dd/mm/yyyy con 24 horas */
+input[type="date"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit {
+  font-family: inherit;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
+  font-family: inherit;
+}
+
+/* Ocultar indicadores AM/PM para forzar formato 24 horas */
+input[type="datetime-local"]::-webkit-datetime-edit-ampm-field {
+  display: none !important;
+}
+
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+  display: none !important;
+}
+
+/* Forzar formato europeo para fechas y 24 horas */
+:lang(es) input[type="date"],
+:lang(es) input[type="datetime-local"],
+:lang(es) input[type="time"] {
+  font-family: inherit;
+}
+
+/* Clase utilitaria para fechas en formato español con 24 horas */
+.date-format-es {
+  /* Configuración específica para formato español */
+}
+
+.date-format-es::-webkit-datetime-edit-ampm-field {
+  display: none !important;
+}
+
+/* Configuración adicional para Firefox */
+input[type="datetime-local"].date-format-es {
+  -moz-appearance: textfield;
+}
+
+/* Estilos específicos para diferentes navegadores */
+@-moz-document url-prefix() {
+  input[type="datetime-local"].date-format-es {
+    /* Firefox específico */
+    font-family: inherit;
+  }
+}
+
+/* Mejoras para dispositivos móviles */
+@layer utilities {
+  /* Asegurar que los elementos touch sean de al menos 44px */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Mejorar la legibilidad en pantallas pequeñas */
+  .mobile-readable {
+    @apply text-base leading-relaxed;
+  }
+  
+  /* Espaciado consistente para móviles */
+  .mobile-spacing {
+    @apply space-y-4 md:space-y-6;
+  }
+  
+  /* Grid responsivo optimizado */
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6;
+  }
+  
+  /* Cards responsivas */
+  .responsive-card {
+    @apply p-4 md:p-6 rounded-lg md:rounded-xl;
+  }
+  
+  /* Botones más grandes en móviles */
+  .mobile-button {
+    @apply h-12 px-4 text-base font-medium;
+  }
+  
+  /* Inputs más cómodos en móviles */
+  .mobile-input {
+    @apply h-12 px-4 text-base;
+  }
+  
+  /* Modales full-width en móviles */
+  .mobile-modal {
+    @apply w-[95vw] sm:max-w-lg;
+  }
+  
+  /* Navegación sticky para móviles */
+  .mobile-nav {
+    @apply sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b;
+  }
+  
+  /* Espaciado seguro para el bottom bar en móviles */
+  .mobile-safe-bottom {
+    @apply pb-20 md:pb-4;
+  }
+  
+  /* Scroll suave */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  /* Ocultar scrollbar en móviles pero mantener funcionalidad */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Mejor handling de overflow en móviles */
+  .mobile-overflow {
+    @apply overflow-x-hidden overflow-y-auto;
+  }
+  
+  /* Tipografía escalable */
+  .responsive-heading {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold;
+  }
+  
+  .responsive-subheading {
+    @apply text-lg sm:text-xl md:text-2xl font-semibold;
+  }
+  
+  /* Márgenes y padding responsivos */
+  .responsive-container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+  
+  /* Animaciones suaves para interacciones táctiles */
+  .touch-animation {
+    @apply transition-all duration-200 ease-in-out active:scale-95;
+  }
+  
+  /* Estados hover que también funcionen en touch */
+  .interactive-element {
+    @apply transition-colors duration-200 hover:bg-accent/50 active:bg-accent;
+  }
+}
+
+/* Optimizaciones específicas para Safari móvil */
+@supports (-webkit-touch-callout: none) {
+  .ios-safe-area {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible para navegación con teclado */
+.focus-visible:focus-visible {
+  @apply outline-2 outline-offset-2 outline-ring;
+}
+
+/* Mejor contraste en modo oscuro para legibilidad */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* Estilos específicos para scroll interno en páginas de máquinas */
+.machines-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground)) transparent;
+}
+
+.machines-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.machines-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.machines-scroll-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.machines-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.8);
+}
+
+/* Contenedor principal con scroll interno */
+.machines-main-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.machines-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-right: -8px;
+  min-height: 0; /* Importante para que flex-1 funcione correctamente */
+}
+
+/* Forzar scrollbar visible en contenedores de máquinas */
+.machines-content-scroll::-webkit-scrollbar {
+  width: 12px;
+  background: transparent;
+}
+
+.machines-content-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.1);
+  border-radius: 6px;
+  margin: 4px;
+}
+
+.machines-content-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.6);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s ease;
+}
+
+.machines-content-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.8);
+  background-clip: content-box;
+}
+
+/* Asegurar que el scroll sea funcional */
+.machines-content-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.6) transparent;
+}
+
+/* Forzar scroll en contenedores de máquinas */
+.machines-scroll-force {
+  overflow-y: auto !important;
+  height: 600px !important;
+  max-height: 600px !important;
+  background: #e3f2fd !important;
+  border-radius: 12px !important;
+  border: 3px solid #2196f3 !important;
+  position: relative !important;
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.4) !important;
+}
+
+/* DEBUG: Este CSS está siendo aplicado */
+.machines-scroll-force::before {
+  content: "🚨 CSS APLICADO - SCROLL FORZADO" !important;
+  position: absolute !important;
+  top: -30px !important;
+  left: 0 !important;
+  background: #ff0000 !important;
+  color: white !important;
+  padding: 5px 10px !important;
+  border-radius: 5px !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  z-index: 1000 !important;
+}
+
+/* Scrollbar personalizado */
+.machines-scroll-force::-webkit-scrollbar {
+  width: 20px !important;
+  background: #f0f0f0 !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar-track {
+  background: #e0e0e0 !important;
+  border-radius: 10px !important;
+  margin: 4px !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar-thumb {
+  background: #2196f3 !important;
+  border-radius: 10px !important;
+  border: 3px solid #e0e0e0 !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar-thumb:hover {
+  background: #1976d2 !important;
+}
+
+.machines-scroll-force::before {
+  content: "📜 ÁREA DE SCROLL" !important;
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  background: #2196f3 !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: bold !important;
+  z-index: 10 !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar {
+  width: 25px !important;
+  background: #f0f0f0 !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar-track {
+  background: #e0e0e0 !important;
+  border-radius: 12px !important;
+  margin: 4px !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar-thumb {
+  background: #2196f3 !important;
+  border-radius: 12px !important;
+  border: 3px solid #e0e0e0 !important;
+}
+
+.machines-scroll-force::-webkit-scrollbar-thumb:hover {
+  background: #1976d2 !important;
+}
+
+/* Mejoras para el navbar fijo */
+.machines-navbar-fixed {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: hsl(var(--background));
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Indicador de scroll */
+.scroll-indicator {
+  position: relative;
+}
+
+.scroll-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(transparent, hsl(var(--background)));
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Mejorar visibilidad del scroll */
+.machines-content-scroll {
+  box-shadow: inset 0 0 0 1px hsl(var(--muted) / 0.1);
+  border-radius: 8px;
+}
+
+/* Scrollbar siempre visible en hover */
+.machines-content-scroll:hover::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.8);
+  background-clip: content-box;
+}
+
+/* Fix Chrome autofill - eliminar fondo celeste */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
+  box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* ============================================
+   PRINT STYLES FOR A4 MAINTENANCE REPORTS
+   ============================================ */
+
+/* A4 Page Configuration */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+/* Print color support */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+/* Hide screen-only elements when printing */
+@media print {
+  .screen-only {
+    display: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Show print-only elements only when printing */
+.print-only-root {
+  display: none;
+}
+
+@media print {
+  .print-only-root {
+    display: block !important;
+  }
+}
+
+/* When printing-report class is active on body, hide everything except the report */
+@media print {
+  body.printing-report > *:not([role="dialog"]) {
+    display: none !important;
+  }
+  
+  body.printing-report [role="dialog"] {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Hide dialog overlay/backdrop */
+  body.printing-report [data-radix-dialog-overlay],
+  body.printing-report [data-state="open"] > div[data-radix-dialog-overlay] {
+    display: none !important;
+  }
+  
+  /* Fix positioning for dialog content */
+  body.printing-report [data-radix-dialog-content] {
+    position: static !important;
+    transform: none !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* Print document root styles */
+@media print {
+  .report-print-root {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+  
+  .report-print-root h1 {
+    font-size: 16px !important;
+  }
+  
+  .report-print-root h3 {
+    font-size: 13px !important;
+  }
+  
+  .report-print-root h4 {
+    font-size: 12px !important;
+  }
+  
+  .report-print-root h5 {
+    font-size: 11px !important;
+  }
+  
+  .report-print-root p,
+  .report-print-root span,
+  .report-print-root div {
+    font-size: 11px !important;
+  }
+}
+
+/* Avoid page breaks inside cards and important sections */
+.avoid-break {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.avoid-break-before {
+  break-before: auto;
+  page-break-before: auto;
+}
+
+.avoid-break-after {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+@media print {
+  .avoid-break,
+  .print-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Cards should not break across pages */
+  .report-print-root .border-l-4 {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Machine headers should not break */
+  .report-print-root .bg-gradient-to-r {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Summary cards should stay together */
+  .report-print-root .grid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+
+/* Print-specific typography adjustments */
+@media print {
+  .report-print-root .text-xs {
+    font-size: 10px !important;
+  }
+  
+  .report-print-root .text-sm {
+    font-size: 11px !important;
+  }
+  
+  .report-print-root .text-base {
+    font-size: 12px !important;
+  }
+  
+  .report-print-root .text-lg {
+    font-size: 13px !important;
+  }
+  
+  .report-print-root .text-xl {
+    font-size: 14px !important;
+  }
+}
+
+/* Remove shadows and minimize borders for print */
+@media print {
+  .report-print-root * {
+    box-shadow: none !important;
+  }
+  
+  .report-print-root .shadow-sm,
+  .report-print-root .shadow-md,
+  .report-print-root .shadow-lg {
+    box-shadow: none !important;
+  }
+  
+  /* Keep subtle borders for structure */
+  .report-print-root .border {
+    border-width: 1px !important;
+  }
+  
+  .report-print-root .border-l-4 {
+    border-left-width: 3px !important;
+  }
+}
+
+/* Print badge styles - ensure colors print correctly */
+@media print {
+  .report-print-root .bg-green-100 {
+    background-color: #dcfce7 !important;
+  }
+  
+  .report-print-root .bg-yellow-100 {
+    background-color: #fef9c3 !important;
+  }
+  
+  .report-print-root .bg-red-100 {
+    background-color: #fee2e2 !important;
+  }
+  
+  .report-print-root .bg-orange-100 {
+    background-color: #ffedd5 !important;
+  }
+  
+  .report-print-root .bg-amber-100 {
+    background-color: #fef3c7 !important;
+  }
+  
+  .report-print-root .bg-blue-50 {
+    background-color: #eff6ff !important;
+  }
+  
+  .report-print-root .bg-green-50 {
+    background-color: #f0fdf4 !important;
+  }
+  
+  .report-print-root .bg-purple-50 {
+    background-color: #faf5ff !important;
+  }
+  
+  .report-print-root .bg-orange-50 {
+    background-color: #fff7ed !important;
+  }
+  
+  .report-print-root .bg-gray-50 {
+    background-color: #f9fafb !important;
+  }
+  
+  /* Gradient backgrounds for machine headers */
+  .report-print-root .from-blue-50 {
+    background: linear-gradient(to right, #eff6ff, #eef2ff) !important;
+  }
+}
+
+/* Ensure proper spacing in print */
+@media print {
+  .report-print-root .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  .report-print-root .space-y-4 > * + * {
+    margin-top: 0.75rem !important;
+  }
+  
+  .report-print-root .space-y-3 > * + * {
+    margin-top: 0.5rem !important;
+  }
+  
+  .report-print-root .space-y-2 > * + * {
+    margin-top: 0.375rem !important;
+  }
+  
+  .report-print-root .gap-3 {
+    gap: 0.5rem !important;
+  }
+  
+  .report-print-root .gap-2 {
+    gap: 0.375rem !important;
+  }
+  
+  .report-print-root .p-3 {
+    padding: 0.5rem !important;
+  }
+  
+  .report-print-root .mb-4 {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+/* Print footer - always at bottom of last page */
+@media print {
+  .report-print-root > div:last-child {
+    margin-top: auto;
+  }
+}
+
+/* Orphan and widow control */
+@media print {
+  .report-print-root p,
+  .report-print-root h1,
+  .report-print-root h2,
+  .report-print-root h3,
+  .report-print-root h4,
+  .report-print-root h5 {
+    orphans: 3;
+    widows: 3;
+  }
+}
+
+/* Border left colors for print */
+@media print {
+  .border-l-green-500 {
+    border-left-color: #22c55e !important;
+  }
+  
+  .border-l-red-500 {
+    border-left-color: #ef4444 !important;
+  }
+  
+  .border-l-amber-500 {
+    border-left-color: #f59e0b !important;
+  }
+}
+
+/* Ensure borders print correctly */
+@media print {
+  .border,
+  .border-l-4,
+  .rounded-lg {
+    border-style: solid !important;
+  }
+}
+
+/* Hide dialog close button in print */
+@media print {
+  [data-radix-dialog-close],
+  button[type="button"]:has(svg.lucide-x) {
+    display: none !important;
+  }
+}
+
+/* Fix card backgrounds in print */
+@media print {
+  .bg-card,
+  [class*="bg-white"] {
+    background-color: white !important;
+  }
+}
+
+/* Ensure icons are visible in print */
+@media print {
+  svg {
+    display: inline-block !important;
+    visibility: visible !important;
+  }
+  
+  .lucide {
+    stroke: currentColor !important;
+  }
+}
+
+/* Print utility classes */
+.print\:hidden {
+  display: block;
+}
+
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  .print\:block {
+    display: block !important;
+  }
+  
+  .print\:flex {
+    display: flex !important;
+  }
+}
+
+/* ============================================
+   ENHANCED PRINT STYLES FOR MAINTENANCE REPORT MODAL
+   ============================================ */
+
+/* Ensure the report modal overlay is hidden in print */
+@media print {
+  /* Hide the fixed positioning overlay */
+  body.printing-report > div[class*="fixed"][class*="inset-0"]:not(.report-print-root),
+  body.printing-report > div[class*="fixed"][class*="z-[99999]"]:not(.report-print-root) > div[class*="bg-black"] {
+    display: none !important;
+  }
+  
+  /* Make the report content take full width */
+  body.printing-report .report-print-root {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  
+  /* Ensure parent containers don't clip content */
+  body.printing-report [data-radix-dialog-portal],
+  body.printing-report [data-radix-dialog-portal] > * {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Hide all other page content */
+  body.printing-report > *:not([data-radix-dialog-portal]) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Reset html/body for printing */
+  html.printing-report,
+  body.printing-report {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+}
+
+/* Additional badge color fixes for print */
+@media print {
+  .report-print-root .bg-blue-100 {
+    background-color: #dbeafe !important;
+  }
+  
+  .report-print-root .bg-purple-100 {
+    background-color: #f3e8ff !important;
+  }
+  
+  .report-print-root .text-green-700 {
+    color: #15803d !important;
+  }
+  
+  .report-print-root .text-yellow-700 {
+    color: #a16207 !important;
+  }
+  
+  .report-print-root .text-orange-700 {
+    color: #c2410c !important;
+  }
+  
+  .report-print-root .text-red-700 {
+    color: #b91c1c !important;
+  }
+  
+  .report-print-root .text-blue-700 {
+    color: #1d4ed8 !important;
+  }
+  
+  .report-print-root .text-purple-700 {
+    color: #7e22ce !important;
+  }
+  
+  .report-print-root .text-amber-700 {
+    color: #b45309 !important;
+  }
+  
+  .report-print-root .text-gray-700 {
+    color: #374151 !important;
+  }
+}
+
+/* Border colors for print */
+@media print {
+  .report-print-root .border-green-200 {
+    border-color: #bbf7d0 !important;
+  }
+  
+  .report-print-root .border-yellow-200 {
+    border-color: #fef08a !important;
+  }
+  
+  .report-print-root .border-orange-200 {
+    border-color: #fed7aa !important;
+  }
+  
+  .report-print-root .border-red-200 {
+    border-color: #fecaca !important;
+  }
+  
+  .report-print-root .border-blue-200 {
+    border-color: #bfdbfe !important;
+  }
+  
+  .report-print-root .border-purple-200 {
+    border-color: #e9d5ff !important;
+  }
+  
+  .report-print-root .border-amber-200 {
+    border-color: #fde68a !important;
+  }
+  
+  .report-print-root .border-gray-200 {
+    border-color: #e5e7eb !important;
+  }
+  
+  /* Left border colors for maintenance types */
+  .report-print-root .border-l-green-500 {
+    border-left-color: #22c55e !important;
+  }
+  
+  .report-print-root .border-l-yellow-500 {
+    border-left-color: #eab308 !important;
+  }
+  
+  .report-print-root .border-l-orange-500 {
+    border-left-color: #f97316 !important;
+  }
+  
+  .report-print-root .border-l-red-500 {
+    border-left-color: #ef4444 !important;
+  }
+  
+  .report-print-root .border-l-blue-500 {
+    border-left-color: #3b82f6 !important;
+  }
+  
+  .report-print-root .border-l-purple-500 {
+    border-left-color: #a855f7 !important;
+  }
+  
+  .report-print-root .border-l-amber-500 {
+    border-left-color: #f59e0b !important;
+  }
+  
+  .report-print-root .border-l-gray-500 {
+    border-left-color: #6b7280 !important;
+  }
+}
+
+/* Machine header gradient in print */
+@media print {
+  .report-print-root .bg-gradient-to-r.from-blue-50.to-indigo-50 {
+    background: linear-gradient(to right, #eff6ff, #eef2ff) !important;
+  }
+  
+  .report-print-root .bg-blue-500 {
+    background-color: #3b82f6 !important;
+  }
+  
+  .report-print-root .bg-blue-600 {
+    background-color: #2563eb !important;
+  }
+}
+
+/* Summary card colors for print */
+@media print {
+  .report-print-root .text-blue-600 {
+    color: #2563eb !important;
+  }
+  
+  .report-print-root .text-blue-800 {
+    color: #1e40af !important;
+  }
+  
+  .report-print-root .text-green-600 {
+    color: #16a34a !important;
+  }
+  
+  .report-print-root .text-green-800 {
+    color: #166534 !important;
+  }
+  
+  .report-print-root .text-purple-600 {
+    color: #9333ea !important;
+  }
+  
+  .report-print-root .text-purple-800 {
+    color: #6b21a8 !important;
+  }
+  
+  .report-print-root .text-orange-600 {
+    color: #ea580c !important;
+  }
+  
+  .report-print-root .text-orange-800 {
+    color: #9a3412 !important;
+  }
+}
+
+/* Ensure whitespace-pre-line works in print */
+@media print {
+  .report-print-root .whitespace-pre-line {
+    white-space: pre-line !important;
+  }
+}
+
+/* Fix flex layouts in print */
+@media print {
+  .report-print-root .flex {
+    display: flex !important;
+  }
+  
+  .report-print-root .flex-wrap {
+    flex-wrap: wrap !important;
+  }
+  
+  .report-print-root .flex-col {
+    flex-direction: column !important;
+  }
+  
+  .report-print-root .items-center {
+    align-items: center !important;
+  }
+  
+  .report-print-root .items-start {
+    align-items: flex-start !important;
+  }
+  
+  .report-print-root .justify-between {
+    justify-content: space-between !important;
+  }
+}
+
+/* Ensure proper grid layout in print */
+@media print {
+  .report-print-root .grid {
+    display: grid !important;
+  }
+  
+  .report-print-root .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  
+  .report-print-root .grid-cols-4,
+  .report-print-root .md\\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Page break helpers */
+@media print {
+  .report-print-root .space-y-3.avoid-break-before + .space-y-3.avoid-break-before {
+    break-before: auto;
+    page-break-before: auto;
+  }
+  
+  /* Keep machine sections together when possible */
+  .report-print-root > div > .space-y-6 > div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* Footer styling in print */
+@media print {
+  .report-print-root .border-t.bg-gray-50 {
+    background-color: white !important;
+    border-top: 1px solid #e5e7eb !important;
+    margin-top: 1rem !important;
+    padding-top: 0.5rem !important;
+  }
+}
+
+/* ==========================================
+   Google Drive Picker Styles
+   ========================================== */
+
+/* Z-index muy alto y pointer-events */
+.picker-dialog {
+  z-index: 2147483647 !important; /* Máximo z-index posible */
+  pointer-events: auto !important;
+  isolation: isolate !important;
+}
+
+.picker-dialog-bg {
+  z-index: 2147483646 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  pointer-events: auto !important;
+}
+
+.picker-dialog-content {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  pointer-events: auto !important;
+}
+
+.picker-dialog-frame {
+  overflow: auto !important;
+  pointer-events: auto !important;
+}
+
+.picker-dialog iframe {
+  overflow: auto !important;
+  pointer-events: auto !important;
+}
+
+/* Botón de cerrar visible */
+.picker-dialog-title span[role="button"] {
+  display: block !important;
+  width: 32px !important;
+  height: 32px !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+
+/* ===== MÓVIL: Picker pantalla completa ===== */
+@media (max-width: 767px) {
+  .picker-dialog {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    transform: none !important;
+  }
+
+  .picker-dialog-title {
+    padding: 12px 16px !important;
+    font-size: 16px !important;
+  }
+
+  .picker-dialog-content {
+    width: 100% !important;
+    height: calc(100vh - 56px) !important;
+    height: calc(100dvh - 56px) !important;
+    max-height: calc(100vh - 56px) !important;
+    max-height: calc(100dvh - 56px) !important;
+  }
+
+  .picker-dialog-frame,
+  .picker-dialog-frame iframe {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
+  .picker-dialog-bg {
+    background: rgba(0, 0, 0, 0.9) !important;
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts",
+
+    "db:migrate": "chmod +x scripts/migrate-all.sh && ./scripts/migrate-all.sh",
+    "db:reset": "prisma migrate reset",
+    "db:push": "prisma db push",
+
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+
+    "setup": "chmod +x scripts/setup.sh && ./scripts/setup.sh",
+    "check": "npm run lint && npm run test && npm run build",
+
+    "clean": "rm -rf .next node_modules",
+    "clean:install": "npm run clean && npm install",
+
+    "logs:dev": "tail -f logs/dev.log",
+    "logs:error": "tail -f logs/error.log"
+  }
+}
