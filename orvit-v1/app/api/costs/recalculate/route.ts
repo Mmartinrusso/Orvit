@@ -5,6 +5,7 @@ import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { invalidateCache } from '@/lib/cache/cache-manager';
 import { invalidationPatterns } from '@/lib/cache/cache-keys';
+import { trackCount } from '@/lib/metrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,12 @@ export const POST = withGuards(async (request: NextRequest, { user }) => {
     await invalidateCache(invalidationPatterns.costRecalculate(companyFilter));
 
     console.log(`Cost recalculation completed for month: ${month} (company: ${companyFilter})`);
+
+    // Métrica: costs_calculated (fire-and-forget)
+    trackCount('costs_calculated', companyFilter, {
+      tags: { month: validation.data.month },
+      userId: user.userId,
+    }).catch(() => {});
 
     return NextResponse.json({
       message: 'Recálculo de costos completado exitosamente',

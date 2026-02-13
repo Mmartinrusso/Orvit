@@ -17,6 +17,7 @@ import { loggers } from '@/lib/logger';
 import { getUserPermissions } from '@/lib/permissions-helpers';
 import { JWT_SECRET } from '@/lib/auth';
 import { SignJWT } from 'jose';
+import { trackCount } from '@/lib/metrics';
 
 // Importaciones directas para evitar problemas de exportación circular
 import { generateTokenPair, setAuthCookies } from '@/lib/auth/tokens';
@@ -189,6 +190,15 @@ export async function POST(request: NextRequest) {
       await incrementRateLimit(ipAddress, 'login');
       await logLoginAttempt(identifier, ipAddress, userAgent, false, 'invalid_password', user.id);
 
+      // Métrica: failed_logins (fire-and-forget, usa primera empresa del usuario)
+      const failedCompanyId = user.companies?.[0]?.company?.id;
+      if (failedCompanyId) {
+        trackCount('failed_logins', failedCompanyId, {
+          tags: { reason: 'invalid_password' },
+          userId: user.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
 
@@ -262,6 +272,13 @@ export async function POST(request: NextRequest) {
 
     // Registrar login exitoso
     await logLoginAttempt(identifier, ipAddress, userAgent, true, undefined, user.id);
+
+    // Métrica: successful_logins (fire-and-forget)
+    if (companyId) {
+      trackCount('successful_logins', companyId, {
+        userId: user.id,
+      }).catch(() => {});
+    }
 
     // Obtener permisos
     const permissions = await getUserPermissions(
