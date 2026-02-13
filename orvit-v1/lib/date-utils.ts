@@ -2,6 +2,27 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { loggers } from '@/lib/logger';
 
+// Re-exportar helpers de timezone para acceso centralizado
+export {
+  getClientTimezone,
+  getServerTimezone,
+  parseInTimezone,
+  formatInTimezone,
+  getCurrentTimezoneDate,
+  toUTC,
+  fromUTC,
+  formatDateTz,
+  formatDateTimeTz,
+  formatDateFullTz,
+  formatDateTimeFullTz,
+  formatTimeTz,
+  formatDateForInputTz,
+  formatDateRelativeTz,
+  isValidTimezone,
+  COMMON_TIMEZONES,
+  DEFAULT_TIMEZONE,
+} from '@/lib/date-helpers';
+
 // Configuración global de formatos de fecha
 export const DATE_FORMATS = {
   // Formato corto: dd/mm/yyyy
