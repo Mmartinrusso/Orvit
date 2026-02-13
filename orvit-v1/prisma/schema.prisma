@@ -331,6 +331,9 @@ model Company {
   salesReps    SalesRep[]
   paymentTerms PaymentTerm[]
 
+  // Feature Flags
+  featureFlags FeatureFlag[]
+
   @@index([subscriptionId])
   @@index([primaryAdminId])
   @@index([templateId])
@@ -695,6 +698,9 @@ model User {
 
   // Feedback del usuario
   feedbacks Feedback[]
+
+  // Feature Flags
+  featureFlags FeatureFlag[]
 
   @@index([role, isActive])
   @@index([isActive])
@@ -15607,4 +15613,27 @@ model Feedback {
   @@index([companyId, createdAt(sort: Desc)])
   @@index([userId])
   @@map("feedback")
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Feature Flags
+// ═════════════════════════════════════════════════════════════════
+
+model FeatureFlag {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  enabled   Boolean  @default(false)
+  companyId Int?     @map("company_id")
+  userId    Int?     @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([name, companyId, userId])
+  @@index([name])
+  @@index([companyId])
+  @@index([userId])
+  @@map("feature_flags")
 }

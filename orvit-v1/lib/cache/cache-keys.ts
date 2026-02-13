@@ -18,6 +18,10 @@ const PREFIXES = {
   CONFIG: 'cfg',
   AREAS: 'areas',
   SECTORS: 'sectors',
+  COMPANIES: 'companies',
+  ROLES: 'roles',
+  MODULES: 'modules',
+  FF: 'ff',
 } as const;
 
 // TTL values in seconds
@@ -173,6 +177,23 @@ export const tesoreriaKeys = {
 };
 
 /**
+ * Cache key generators for Feature Flags
+ */
+export const featureFlagKeys = {
+  /** Flag global (sin company ni user) */
+  global: (name: string) =>
+    `${PREFIXES.FF}:g:${name}`,
+
+  /** Flag a nivel de empresa */
+  company: (name: string, companyId: number) =>
+    `${PREFIXES.FF}:c:${companyId}:${name}`,
+
+  /** Flag a nivel de usuario */
+  user: (name: string, companyId: number, userId: number) =>
+    `${PREFIXES.FF}:u:${companyId}:${userId}:${name}`,
+};
+
+/**
  * Invalidation patterns - which keys to invalidate when data changes
  */
 export const invalidationPatterns = {
@@ -239,4 +260,16 @@ export const invalidationPatterns = {
   dashboardConfig: (userId: number, companyId: number) => [
     dashboardConfigKeys.userConfig(userId, companyId),
   ],
+
+  // When feature flags change
+  featureFlag: (name: string, companyId?: number, userId?: number) => {
+    const keys = [featureFlagKeys.global(name)];
+    if (companyId) {
+      keys.push(featureFlagKeys.company(name, companyId));
+    }
+    if (companyId && userId) {
+      keys.push(featureFlagKeys.user(name, companyId, userId));
+    }
+    return keys;
+  },
 };
