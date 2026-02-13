@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
+import { processImage, getContentType } from '@/lib/image-processing/sharp-processor';
+import { isProcessableImage } from '@/lib/image-processing/utils';
+import { ImageVariant, ImageMetadata } from '@/lib/image-processing/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +20,7 @@ const s3 = new S3Client({
 const BUCKET = process.env.AWS_S3_BUCKET!;
 
 // Tipos de archivo permitidos
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/tiff'];
 const ALLOWED_DOCUMENT_TYPES = [
   'application/pdf',
   'application/msword',
@@ -32,7 +35,7 @@ const ALLOWED_3D_TYPES = [
   'model/gltf+json',        // .gltf
   'application/octet-stream' // fallback for .glb files
 ];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'glb', 'gltf'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'tiff', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'glb', 'gltf'];
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,8 +65,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validar tamaño (máximo 50MB para 3D, 10MB para documentos, 5MB para imágenes)
-    const maxSize = isValid3D ? 50 * 1024 * 1024 : (isValidImage ? 5 * 1024 * 1024 : 10 * 1024 * 1024);
+    // Validar tamaño (máximo 50MB para 3D, 10MB para imágenes/documentos)
+    const maxSize = isValid3D ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       return NextResponse.json({ 
@@ -104,15 +107,60 @@ export async function POST(request: NextRequest) {
     // Generar URL más robusta
     const region = process.env.AWS_REGION;
     const url = `https://${BUCKET}.s3.${region}.amazonaws.com/${fileName}`;
-    
-    return NextResponse.json({ 
+
+    // Procesar variantes optimizadas para imágenes
+    let variants: Record<ImageVariant, string> | undefined;
+    let imageMetadata: ImageMetadata | undefined;
+
+    if (isValidImage && isProcessableImage(file.type)) {
+      try {
+        const result = await processImage(buffer, fileName);
+        imageMetadata = result.metadata;
+
+        if (result.variants.length > 0) {
+          // Subir todas las variantes a S3 en paralelo
+          await Promise.all(
+            result.variants.map(v =>
+              s3.send(new PutObjectCommand({
+                Bucket: BUCKET,
+                Key: v.key,
+                Body: v.buffer,
+                ContentType: getContentType(v.format),
+                Metadata: {
+                  'entity-type': entityType,
+                  'file-type': fileType,
+                  'entity-id': entityId || 'temp',
+                  'original-name': file.name,
+                  'variant': v.variant,
+                  'variant-width': v.width.toString(),
+                  'variant-height': v.height.toString(),
+                },
+              }))
+            )
+          );
+
+          // Construir mapa de URLs de variantes
+          variants = { original: url } as Record<ImageVariant, string>;
+          for (const v of result.variants) {
+            variants[v.variant] = v.url;
+          }
+        }
+      } catch (imgError) {
+        // Si falla el procesamiento de variantes, continuar sin ellas
+        console.warn('⚠️ Error procesando variantes de imagen (se mantiene original):', imgError);
+      }
+    }
+
+    return NextResponse.json({
       url,
       fileName,
       fileType,
       entityType,
       entityId,
       originalName: file.name,
-      size: file.size
+      size: file.size,
+      ...(variants && { variants }),
+      ...(imageMetadata && { imageMetadata }),
     });
     
   } catch (error) {
