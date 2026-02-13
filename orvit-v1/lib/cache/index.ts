@@ -17,6 +17,9 @@ export {
 } from './cache-manager';
 
 export {
+  companyKeys,
+  roleKeys,
+  permissionKeys,
   comprasKeys,
   ventasKeys,
   tesoreriaKeys,

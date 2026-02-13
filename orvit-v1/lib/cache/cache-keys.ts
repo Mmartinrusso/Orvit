@@ -18,6 +18,9 @@ const PREFIXES = {
   CONFIG: 'cfg',
   AREAS: 'areas',
   SECTORS: 'sectors',
+  COMPANIES: 'companies',
+  ROLES: 'roles',
+  MODULES: 'modules',
 } as const;
 
 // TTL values in seconds
@@ -62,6 +65,32 @@ export const sectorKeys = {
 
   forProduction: (companyId: number | string) =>
     `${PREFIXES.SECTORS}:production:${companyId}`,
+};
+
+/**
+ * Cache key generators for Companies
+ */
+export const companyKeys = {
+  /** Lista de empresas para un usuario (superadmin ve todas, otros ven las asignadas) */
+  listByUser: (userId: number) =>
+    `${PREFIXES.COMPANIES}:list:user:${userId}`,
+
+  /** Configuración/settings de una empresa */
+  settings: (companyId: number) =>
+    `${PREFIXES.CONFIG}:settings:${companyId}`,
+
+  /** Módulos habilitados de una empresa */
+  modules: (companyId: number) =>
+    `${PREFIXES.MODULES}:company:${companyId}`,
+};
+
+/**
+ * Cache key generators for Roles
+ */
+export const roleKeys = {
+  /** Lista de roles con permisos de una empresa */
+  listByCompany: (companyId: number) =>
+    `${PREFIXES.ROLES}:list:${companyId}`,
 };
 
 /**
@@ -219,6 +248,31 @@ export const invalidationPatterns = {
   userLogout: (userId: number, companyId: number) => [
     authKeys.me(userId),
     permissionKeys.userPermissions(userId, companyId),
+  ],
+
+  // When a company is created/updated/deleted
+  // Usa invalidateCachePattern('companies:list:*') en runtime
+  // porque depende de userId dinámico
+
+  // When roles change (create/update/delete/permission toggle)
+  roles: (companyId: number) => [
+    roleKeys.listByCompany(companyId),
+  ],
+
+  // When permissions are created/deleted (afecta a todos los roles)
+  permissions: (companyId: number) => [
+    permissionKeys.adminPermissions(),
+    roleKeys.listByCompany(companyId),
+  ],
+
+  // When company settings change
+  companySettings: (companyId: number) => [
+    companyKeys.settings(companyId),
+  ],
+
+  // When company modules change
+  companyModules: (companyId: number) => [
+    companyKeys.modules(companyId),
   ],
 
   // When costs are recalculated

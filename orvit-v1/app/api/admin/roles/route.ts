@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
 import { auditRoleChange, auditPermissionChange } from '@/lib/audit';
+import { cached, invalidateCache } from '@/lib/cache/cache-manager';
+import { roleKeys, TTL } from '@/lib/cache/cache-keys';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,47 +113,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
     }
 
-    // ✨ OPTIMIZADO: Consulta única con Prisma
-    const roles = await prisma.role.findMany({
-      where: { companyId },
-      include: {
-        permissions: {
-          where: { isGranted: true },
-          include: {
-            permission: {
-              select: {
-                id: true,
-                name: true,
-                description: true,
-                category: true,
-                isActive: true
+    const cacheKey = roleKeys.listByCompany(companyId);
+
+    const formattedRoles = await cached(cacheKey, async () => {
+      const roles = await prisma.role.findMany({
+        where: { companyId },
+        include: {
+          permissions: {
+            where: { isGranted: true },
+            include: {
+              permission: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  category: true,
+                  isActive: true
+                }
               }
             }
+          },
+          users: {
+            select: { id: true }
           }
-        },
-        users: {
-          select: { id: true }
         }
-      }
-    });
+      });
 
-    const formattedRoles = roles.reduce((acc, role) => {
-      acc[role.name] = {
-        name: role.name,
-        displayName: role.displayName || role.name,
-        description: role.description || `Rol ${role.name}`,
-        isSystem: false,
-        userCount: role.users.length,
-        permissions: role.permissions.map(rp => ({
-          id: rp.permission.id,
-          name: rp.permission.name,
-          description: rp.permission.description,
-          category: rp.permission.category,
-          isActive: rp.permission.isActive
-        }))
-      };
-      return acc;
-    }, {} as Record<string, any>);
+      return roles.reduce((acc, role) => {
+        acc[role.name] = {
+          name: role.name,
+          displayName: role.displayName || role.name,
+          description: role.description || `Rol ${role.name}`,
+          isSystem: false,
+          userCount: role.users.length,
+          permissions: role.permissions.map(rp => ({
+            id: rp.permission.id,
+            name: rp.permission.name,
+            description: rp.permission.description,
+            category: rp.permission.category,
+            isActive: rp.permission.isActive
+          }))
+        };
+        return acc;
+      }, {} as Record<string, any>);
+    }, TTL.MEDIUM); // 5 min - permisos de roles
 
     return NextResponse.json({
       success: true,
@@ -229,6 +234,9 @@ export async function POST(request: NextRequest) {
         companyId
       }
     });
+
+    // Invalidar caché de roles
+    await invalidateCache([roleKeys.listByCompany(companyId)]);
 
     // Audit log general
     auditPermissionChange(
@@ -317,6 +325,9 @@ export async function PUT(request: NextRequest) {
         }
       }
     });
+
+    // Invalidar caché de roles
+    await invalidateCache([roleKeys.listByCompany(companyId)]);
 
     // Audit log general
     auditRoleChange(
@@ -410,6 +421,9 @@ export async function DELETE(request: NextRequest) {
         }
       });
     });
+
+    // Invalidar caché de roles
+    await invalidateCache([roleKeys.listByCompany(companyId)]);
 
     // Audit log general (fire-and-forget, fuera de transacción)
     auditRoleChange(

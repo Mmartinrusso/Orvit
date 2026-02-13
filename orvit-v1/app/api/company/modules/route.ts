@@ -3,14 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth';
+import { cached, invalidateCache } from '@/lib/cache/cache-manager';
+import { companyKeys, TTL } from '@/lib/cache/cache-keys';
 
 export const dynamic = 'force-dynamic';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-// Caché en memoria para módulos (5 minutos TTL)
-const modulesCache = new Map<string, { data: any; timestamp: number }>();
-const MODULES_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 /**
  * GET /api/company/modules
@@ -92,61 +90,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ modules: [] });
     }
 
-    // Verificar caché
-    const cacheKey = `company-modules-${companyId}`;
-    const cached = modulesCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < MODULES_CACHE_TTL) {
-      return NextResponse.json(cached.data, {
-        headers: {
-          'Cache-Control': 'private, max-age=300',
-          'X-Cache': 'HIT'
-        }
-      });
-    }
+    const cacheKey = companyKeys.modules(companyId);
 
-    // Obtener módulos habilitados para la empresa
-    const companyModules = await prisma.companyModule.findMany({
-      where: {
-        companyId,
-        isEnabled: true
-      },
-      include: {
-        module: {
-          select: {
-            id: true,
-            key: true,
-            name: true,
-            category: true,
-            icon: true,
-            dependencies: true
+    const responseData = await cached(cacheKey, async () => {
+      const companyModules = await prisma.companyModule.findMany({
+        where: {
+          companyId,
+          isEnabled: true
+        },
+        include: {
+          module: {
+            select: {
+              id: true,
+              key: true,
+              name: true,
+              category: true,
+              icon: true,
+              dependencies: true
+            }
           }
         }
-      }
-    });
+      });
 
-    const responseData = {
-      modules: companyModules.map(cm => ({
-        moduleId: cm.module.id,
-        moduleKey: cm.module.key,
-        moduleName: cm.module.name,
-        category: cm.module.category,
-        icon: cm.module.icon,
-        isEnabled: cm.isEnabled,
-        config: cm.config,
-        dependencies: cm.module.dependencies
-      }))
-    };
-
-    // Guardar en caché
-    modulesCache.set(cacheKey, {
-      data: responseData,
-      timestamp: Date.now()
-    });
+      return {
+        modules: companyModules.map(cm => ({
+          moduleId: cm.module.id,
+          moduleKey: cm.module.key,
+          moduleName: cm.module.name,
+          category: cm.module.category,
+          icon: cm.module.icon,
+          isEnabled: cm.isEnabled,
+          config: cm.config,
+          dependencies: cm.module.dependencies
+        }))
+      };
+    }, TTL.MEDIUM); // 5 min
 
     return NextResponse.json(responseData, {
       headers: {
         'Cache-Control': 'private, max-age=300',
-        'X-Cache': 'MISS'
       }
     });
   } catch (error) {
@@ -158,8 +140,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Función para invalidar caché de una empresa
-export function invalidateCompanyModulesCache(companyId: number) {
-  const cacheKey = `company-modules-${companyId}`;
-  modulesCache.delete(cacheKey);
+// Función para invalidar caché de módulos de una empresa
+export async function invalidateCompanyModulesCache(companyId: number) {
+  await invalidateCache([companyKeys.modules(companyId)]);
 }

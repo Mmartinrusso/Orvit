@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { UserRole } from '@prisma/client';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
+import { cached, invalidateCache, invalidateCachePattern } from '@/lib/cache/cache-manager';
+import { permissionKeys, roleKeys, TTL } from '@/lib/cache/cache-keys';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,44 +113,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 
-    // ✨ OPTIMIZADO: Consulta única con Prisma
-    const [permissions, categoriesData] = await Promise.all([
-      prisma.permission.findMany({
-        where: { isActive: true },
-        orderBy: [{ category: 'asc' }, { name: 'asc' }],
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          category: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      }),
-      prisma.permission.findMany({
-        where: {
-          isActive: true,
-          category: { not: null }
-        },
-        select: { category: true },
-        distinct: ['category']
-      })
-    ]);
+    const cacheKey = permissionKeys.adminPermissions();
 
-    const categories = categoriesData
-      .map(c => c.category)
-      .filter((c): c is string => c !== null)
-      .sort();
+    const result = await cached(cacheKey, async () => {
+      const [permissions, categoriesData] = await Promise.all([
+        prisma.permission.findMany({
+          where: { isActive: true },
+          orderBy: [{ category: 'asc' }, { name: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            category: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }),
+        prisma.permission.findMany({
+          where: {
+            isActive: true,
+            category: { not: null }
+          },
+          select: { category: true },
+          distinct: ['category']
+        })
+      ]);
+
+      const categories = categoriesData
+        .map(c => c.category)
+        .filter((c): c is string => c !== null)
+        .sort();
+
+      return {
+        permissions,
+        categories,
+        stats: {
+          totalPermissions: permissions.length,
+          totalCategories: categories.length
+        }
+      };
+    }, TTL.LONG); // 15 min - permisos del sistema cambian muy poco
 
     return NextResponse.json({
       success: true,
-      permissions,
-      categories,
-      stats: {
-        totalPermissions: permissions.length,
-        totalCategories: categories.length
-      }
+      ...result
     });
   } catch (error) {
     console.error('Error obteniendo permisos:', error);
@@ -196,6 +205,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Invalidar caché de permisos
+    await invalidateCache([permissionKeys.adminPermissions()]);
+
     return NextResponse.json({
       success: true,
       message: 'Permiso creado exitosamente',
@@ -221,11 +233,16 @@ export async function DELETE(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // ✨ OPTIMIZADO: Eliminar en paralelo
     const [deletedRolePermissions, deletedUserPermissions, deletedPermissions] = await Promise.all([
       prisma.rolePermission.deleteMany({}),
       prisma.userPermission.deleteMany({}),
       prisma.permission.deleteMany({})
+    ]);
+
+    // Invalidar caché de permisos y roles (los roles incluyen permisos)
+    await Promise.all([
+      invalidateCache([permissionKeys.adminPermissions()]),
+      invalidateCachePattern('roles:list:*'),
     ]);
 
     return NextResponse.json({

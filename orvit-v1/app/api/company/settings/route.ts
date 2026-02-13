@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { cached, invalidateCache } from '@/lib/cache/cache-manager';
+import { companyKeys, TTL } from '@/lib/cache/cache-keys';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,11 +25,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const companyIdNum = parseInt(companyId);
+    const cacheKey = companyKeys.settings(companyIdNum);
+
     const company = await prisma.company.findUnique({
-      where: { id: parseInt(companyId) },
-      include: {
-        settings: true,
-      },
+      where: { id: companyIdNum },
     });
 
     if (!company) {
@@ -37,26 +39,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Si no tiene settings, crearlos con valores por defecto
-    let settings = company.settings;
-    if (!settings) {
-      settings = await prisma.companySettings.create({
-        data: {
-          companyId: company.id,
-          batchLabel: 'batea',
-          intermediateLabel: 'placa',
-          currency: 'ARS',
+    const result = await cached(cacheKey, async () => {
+      const companyWithSettings = await prisma.company.findUnique({
+        where: { id: companyIdNum },
+        include: {
+          settings: true,
         },
       });
-    }
 
-    return NextResponse.json({
-      company: {
-        id: company.id,
-        name: company.name,
-      },
-      settings,
-    });
+      // Si no tiene settings, crearlos con valores por defecto
+      let settings = companyWithSettings!.settings;
+      if (!settings) {
+        settings = await prisma.companySettings.create({
+          data: {
+            companyId: companyIdNum,
+            batchLabel: 'batea',
+            intermediateLabel: 'placa',
+            currency: 'ARS',
+          },
+        });
+      }
+
+      return {
+        company: {
+          id: companyIdNum,
+          name: companyWithSettings!.name,
+        },
+        settings,
+      };
+    }, TTL.LONG); // 15 min - configuración cambia poco
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching company settings:', error);
     return NextResponse.json(
@@ -105,6 +118,9 @@ export async function PUT(request: NextRequest) {
         currency: validatedData.currency || 'ARS',
       },
     });
+
+    // Invalidar caché de settings
+    await invalidateCache([companyKeys.settings(company.id)]);
 
     return NextResponse.json({
       company: {

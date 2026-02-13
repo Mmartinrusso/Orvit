@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { UserRole } from '@/lib/permissions';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
+import { cached, invalidateCachePattern } from '@/lib/cache/cache-manager';
+import { companyKeys, TTL } from '@/lib/cache/cache-keys';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,31 +49,32 @@ export async function GET(request: Request) {
     }
 
     console.log('✅ Usuario autenticado:', currentUser.name, '| ID:', currentUser.id, '| Rol:', currentUser.role);
-    
-    let companies = [];
-    
-    // SUPERADMIN puede ver todas las empresas
-    if (currentUser.role === 'SUPERADMIN') {
-      console.log('👑 SUPERADMIN - mostrando todas las empresas');
-      companies = await prisma.company.findMany({
-        orderBy: { id: 'asc' }
-      });
-    } else {
-      // Otros usuarios solo ven las empresas a las que están asociados
-      console.log('🔍 Buscando empresas del usuario...');
-      const userCompanies = await prisma.userOnCompany.findMany({
-        where: {
-          userId: currentUser.id,
-          isActive: true
-        },
-        include: {
-          company: true
-        }
-      });
-      
-      companies = userCompanies.map(uc => uc.company);
-      console.log(`✅ Usuario tiene ${companies.length} empresas asociadas`);
-    }
+
+    const cacheKey = companyKeys.listByUser(currentUser.id);
+
+    const companies = await cached(cacheKey, async () => {
+      // SUPERADMIN puede ver todas las empresas
+      if (currentUser.role === 'SUPERADMIN') {
+        console.log('👑 SUPERADMIN - mostrando todas las empresas');
+        return prisma.company.findMany({
+          orderBy: { id: 'asc' }
+        });
+      } else {
+        // Otros usuarios solo ven las empresas a las que están asociados
+        console.log('🔍 Buscando empresas del usuario...');
+        const userCompanies = await prisma.userOnCompany.findMany({
+          where: {
+            userId: currentUser.id,
+            isActive: true
+          },
+          include: {
+            company: true
+          }
+        });
+
+        return userCompanies.map(uc => uc.company);
+      }
+    }, TTL.LONG); // 15 min - lista de empresas cambia poco
 
     return NextResponse.json(companies, { status: 200 });
   } catch (error) {
@@ -230,6 +233,9 @@ export async function POST(request: Request) {
     } catch (areaError) {
       console.error('❌ Error creando áreas del sistema:', areaError);
     }
+
+    // Invalidar caché de listas de empresas (todos los usuarios)
+    await invalidateCachePattern('companies:list:*');
 
     console.log('✅ Empresa creada en la base de datos:', newCompany.name);
     return NextResponse.json(newCompany, { status: 201 });
