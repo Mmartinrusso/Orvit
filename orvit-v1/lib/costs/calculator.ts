@@ -171,17 +171,32 @@ export async function calculateRecipeCost(recipeId: string, month?: string): Pro
 
   let totalCost = 0;
 
-  for (const item of recipe.items) {
-    let unitPrice: number;
-    
-    if (month) {
-      // Use effective price for the specific month
-      unitPrice = await getEffectiveInputPrice(item.inputId, month);
-    } else {
-      // Use current price (backward compatibility)
-      unitPrice = item.input.currentPrice.toNumber();
+  // Pre-load all input prices in a single query to avoid N+1
+  let priceMap: Map<string, number> | null = null;
+  if (month) {
+    const [year, monthNum] = month.split('-');
+    const endOfMonth = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
+    const inputIds = recipe.items.map(i => i.inputId);
+
+    const allPrices = await prisma.inputPriceHistory.findMany({
+      where: {
+        inputId: { in: inputIds },
+        effectiveFrom: { lte: endOfMonth },
+      },
+      orderBy: { effectiveFrom: 'desc' },
+      select: { inputId: true, price: true },
+    });
+
+    priceMap = new Map<string, number>();
+    for (const p of allPrices) {
+      if (!priceMap.has(p.inputId)) {
+        priceMap.set(p.inputId, p.price.toNumber());
+      }
     }
-    
+  }
+
+  for (const item of recipe.items) {
+    const unitPrice = priceMap?.get(item.inputId) ?? item.input.currentPrice.toNumber();
     const itemCost = item.quantity.toNumber() * unitPrice;
     totalCost += itemCost;
   }
