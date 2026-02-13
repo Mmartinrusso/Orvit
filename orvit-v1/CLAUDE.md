@@ -285,5 +285,5 @@ Checklists are stored as JSON in `MaintenanceChecklist.checklistData`:
 4. **Caching**: CompanyContext implements aggressive caching; be aware of stale data
 5. **Mobile Support**: Mobile-specific components exist (e.g., `MobileBottomBar`, `MobileMachineNavbar`)
 6. **Print Layouts**: Special print layouts for checklists (see `app/maintenance/checklist-print/`)
-7. **Legacy Code**: Multiple permission systems exist (centralized, optimized, ultra-optimized); prefer `permissions-helpers.ts`
+7. **Permissions**: `lib/permissions-helpers.ts` is the single, official permission system. Legacy alternatives were removed (see `docs/AUTH_CONSOLIDATION.md`)
 8. **Cost Recalculation**: Heavy operation; use with caution in production
