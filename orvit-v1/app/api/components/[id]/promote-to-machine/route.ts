@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { JWT_SECRET } from '@/lib/auth';
+
+const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 // Validar token desde cookies
 async function validateTokenFromCookie() {
@@ -11,10 +14,7 @@ async function validateTokenFromCookie() {
   if (!token) return null;
 
   try {
-    const JWT_SECRET = new TextEncoder().encode(
-      process.env.JWT_SECRET || 'Messi'
-    );
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
     return payload as { id: number; companyId: number; role: string };
   } catch {
     return null;
@@ -385,17 +385,17 @@ export async function POST(
 
     return NextResponse.json({ success: true, ...result });
 
-  } catch (error: any) {
-    console.error('Error promoting component:', error);
+  } catch (error) {
+    console.error('Error al promover componente a máquina:', error);
 
     // Marcar operación como fallida
     await prisma.promotionOperation.update({
       where: { id: body.operationId },
-      data: { status: 'failed', error: error.message }
+      data: { status: 'failed', error: error instanceof Error ? error.message : 'Error desconocido' }
     }).catch(() => {}); // Ignorar error si ya no existe
 
     return NextResponse.json(
-      { error: error.message || 'Error interno al promover componente' },
+      { error: 'Error al promover componente a máquina' },
       { status: 500 }
     );
   }

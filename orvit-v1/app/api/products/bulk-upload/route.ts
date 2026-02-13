@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
 
       } catch (error: any) {
         console.error(`Error procesando línea ${i + 1}:`, error);
-        errors.push(`Línea ${i + 1}: Error interno - ${error.message}`);
+        errors.push(`Línea ${i + 1}: Error interno al procesar producto`);
         errorCount++;
       }
     }
@@ -203,13 +203,10 @@ export async function POST(request: NextRequest) {
       errors: errors.slice(0, 50)
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error en carga masiva de productos:', error);
     return NextResponse.json(
-      {
-        error: 'Error interno del servidor',
-        details: error.message
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
   }

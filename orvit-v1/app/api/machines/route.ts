@@ -115,6 +115,6 @@ export const POST = withGuards(async (request: NextRequest) => {
     return NextResponse.json(machine, { status: 201 });
   } catch (error) {
     console.error('Error al crear máquina:', error);
-    return NextResponse.json({ error: 'Error al crear máquina', details: error }, { status: 500 });
+    return NextResponse.json({ error: 'Error al crear máquina' }, { status: 500 });
   }
 }, { requiredPermissions: ['machines.create'], permissionMode: 'any' });

@@ -65,10 +65,10 @@ export async function POST(req: NextRequest) {
         ? 'Factura procesada pero requiere revisión manual'
         : 'Factura procesada correctamente',
     });
-  } catch (error: any) {
-    console.error('Error in OCR processing:', error);
+  } catch (error) {
+    console.error('Error al procesar factura con OCR:', error);
     return NextResponse.json(
-      { error: 'Error al procesar factura', details: error.message },
+      { error: 'Error al procesar factura' },
       { status: 500 }
     );
   }

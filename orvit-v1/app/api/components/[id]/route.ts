@@ -464,7 +464,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     
   } catch (error) {
     console.error('❌ Error al actualizar componente:', error);
-    return NextResponse.json({ error: 'Error al actualizar componente', details: error }, { status: 500 });
+    return NextResponse.json({ error: 'Error al actualizar componente' }, { status: 500 });
   }
 }
 
@@ -563,9 +563,6 @@ export async function DELETE(request: Request, context: { params: { id: string }
     
   } catch (error) {
     console.error('Error eliminando componente:', error);
-    return NextResponse.json({ 
-      error: 'Error al eliminar componente', 
-      details: error 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Error al eliminar componente' }, { status: 500 });
   }
 }

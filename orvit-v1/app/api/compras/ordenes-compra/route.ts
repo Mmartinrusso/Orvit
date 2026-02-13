@@ -228,7 +228,7 @@ export const GET = withComprasGuards(async (request: NextRequest) => {
     console.error('Message:', error instanceof Error ? error.message : String(error));
     console.error('='.repeat(60));
     return NextResponse.json(
-      { error: 'Error al obtener las órdenes de compra', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Error al obtener las órdenes de compra' },
       { status: 500 }
     );
   }

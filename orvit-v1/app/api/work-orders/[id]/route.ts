@@ -344,9 +344,9 @@ export const PUT = withGuards(async (request: NextRequest, { user, params: _p },
 
     return NextResponse.json(updatedWorkOrder);
   } catch (error) {
-    console.error('PUT /api/work-orders/[id] - error:', error);
+    console.error('Error al actualizar orden de trabajo:', error);
     return NextResponse.json(
-      { error: 'Error al actualizar orden de trabajo', details: error },
+      { error: 'Error al actualizar orden de trabajo' },
       { status: 500 }
     );
   }
@@ -378,9 +378,9 @@ export const DELETE = withGuards(async (request: NextRequest, { user, params: _p
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('DELETE /api/work-orders/[id] - error:', error);
+    console.error('Error al eliminar orden de trabajo:', error);
     return NextResponse.json(
-      { error: 'Error al eliminar orden de trabajo', details: error },
+      { error: 'Error al eliminar orden de trabajo' },
       { status: 500 }
     );
   }

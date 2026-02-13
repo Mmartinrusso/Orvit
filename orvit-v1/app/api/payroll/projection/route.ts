@@ -197,8 +197,7 @@ export async function GET(request: NextRequest) {
     console.error('Error obteniendo proyección:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json({
-      error: 'Error interno',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Error interno'
     }, { status: 500 });
   }
 }

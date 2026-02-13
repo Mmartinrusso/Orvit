@@ -16,6 +16,8 @@ import {
   invalidarCacheOrdenes,
   invalidarCacheRecepciones
 } from '@/lib/compras/cache';
+import { validateRequest } from '@/lib/validations/helpers';
+import { CreateRecepcionSchema } from '@/lib/validations/recepciones';
 
 export const dynamic = 'force-dynamic';
 
@@ -238,6 +240,12 @@ export async function POST(request: NextRequest) {
     const viewMode = getViewMode(request);
 
     const body = await request.json();
+
+    const validation = validateRequest(CreateRecepcionSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const {
       proveedorId,
       purchaseOrderId,
@@ -247,18 +255,15 @@ export async function POST(request: NextRequest) {
       esEmergencia,
       notas,
       items,
-      // Campos de evidencia
       adjuntos,
       firma,
       observacionesRecepcion,
-      docType, // T1 o T2
-      // Vinculacion con factura
+      docType,
       facturaId,
-      // Compra rapida
       isQuickPurchase,
       quickPurchaseReason,
       quickPurchaseJustification,
-    } = body;
+    } = validation.data;
 
     // Validar docType - T2 solo se puede crear en modo Extended
     const requestedDocType = docType === 'T2' ? 'T2' : 'T1';
@@ -269,14 +274,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validaciones
-    if (!proveedorId) {
-      return NextResponse.json({ error: 'El proveedor es requerido' }, { status: 400 });
-    }
-
     // ENFORCEMENT: Verificar proveedor bloqueado (T1 solamente)
     if (requestedDocType === 'T1') {
-      const proveedorCheck = await verificarProveedorBloqueado(Number(proveedorId), prisma);
+      const proveedorCheck = await verificarProveedorBloqueado(proveedorId, prisma);
       if (!proveedorCheck.eligible) {
         console.log('[RECEPCIONES] ❌ Proveedor bloqueado:', proveedorCheck);
         return NextResponse.json(
@@ -290,17 +290,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!warehouseId) {
-      return NextResponse.json({ error: 'El depósito es requerido' }, { status: 400 });
-    }
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Debe agregar al menos un item' }, { status: 400 });
-    }
-
-    // Verificar que el depósito existe y está activo
+    // Verificar que el depósito existe y está activo (warehouseId ya es number por z.coerce)
     const warehouse = await prisma.warehouse.findFirst({
-      where: { id: parseInt(warehouseId), companyId, isActive: true }
+      where: { id: warehouseId, companyId, isActive: true }
     });
 
     if (!warehouse) {
@@ -317,7 +309,7 @@ export async function POST(request: NextRequest) {
 
       ordenCompra = await prisma.purchaseOrder.findFirst({
         where: {
-          id: parseInt(purchaseOrderId),
+          id: purchaseOrderId,
           companyId,
           estado: { in: estadosPermitidos }
         },
@@ -339,19 +331,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Verificar que el proveedor coincide (solo si se encontró la OC)
-      if (ordenCompra && ordenCompra.proveedorId !== parseInt(proveedorId)) {
+      if (ordenCompra && ordenCompra.proveedorId !== proveedorId) {
         return NextResponse.json(
           { error: 'El proveedor no coincide con la orden de compra' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validar items
-    for (const item of items) {
-      if (!item.supplierItemId || !item.cantidadRecibida) {
-        return NextResponse.json(
-          { error: 'Cada item debe tener supplierItemId y cantidadRecibida' },
           { status: 400 }
         );
       }
@@ -364,11 +346,11 @@ export async function POST(request: NextRequest) {
     if (esCompraRapida) {
       const validacion = await validarCompraRapida(
         {
-          proveedorId: parseInt(proveedorId),
-          items: items.map((item: any) => ({
-            supplierItemId: parseInt(item.supplierItemId),
-            cantidadRecibida: parseFloat(item.cantidadRecibida),
-            precioUnitario: item.precioUnitario ? parseFloat(item.precioUnitario) : 0
+          proveedorId, // Ya es number por z.coerce
+          items: items.map((item) => ({
+            supplierItemId: item.supplierItemId, // Ya es number por z.coerce
+            cantidadRecibida: item.cantidadRecibida, // Ya es number por z.coerce
+            precioUnitario: item.precioUnitario ?? 0 // Ya es number por z.coerce
           })),
           quickPurchaseReason,
           quickPurchaseJustification,
@@ -400,11 +382,10 @@ export async function POST(request: NextRequest) {
       where: { companyId }
     });
 
-    // Calcular monto total para determinar estado de regularización
+    // Calcular monto total para determinar estado de regularización (ya son numbers por z.coerce)
     let montoTotal = 0;
     for (const item of items) {
-      const precioUnitario = item.precioUnitario ? parseFloat(item.precioUnitario) : 0;
-      montoTotal += parseFloat(item.cantidadRecibida) * precioUnitario;
+      montoTotal += item.cantidadRecibida * (item.precioUnitario ?? 0);
     }
 
     // Calcular estado de regularización y fecha límite
@@ -442,9 +423,9 @@ export async function POST(request: NextRequest) {
           const recepcion = await tx.goodsReceipt.create({
             data: {
               numero,
-              proveedorId: parseInt(proveedorId),
-              purchaseOrderId: purchaseOrderId ? parseInt(purchaseOrderId) : null,
-              warehouseId: parseInt(warehouseId),
+              proveedorId, // Ya es number por z.coerce
+              purchaseOrderId: purchaseOrderId ?? null,
+              warehouseId, // Ya es number por z.coerce
               estado: 'BORRADOR',
               fechaRecepcion: fechaRecepcion ? new Date(fechaRecepcion) : new Date(),
               numeroRemito: numeroRemito || null,
@@ -460,7 +441,7 @@ export async function POST(request: NextRequest) {
               observacionesRecepcion: observacionesRecepcion || null,
               docType: requestedDocType,  // T1 o T2 según el modo
               // Vinculacion con factura (solo T1 tiene FK real, T2 no tiene en BD principal)
-              facturaId: (facturaId && requestedDocType !== 'T2') ? parseInt(facturaId) : null,
+              facturaId: (facturaId && requestedDocType !== 'T2') ? facturaId : null,
               tieneFactura: !!facturaId,
               // Compra rapida
               isQuickPurchase: esCompraRapida,
@@ -481,7 +462,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Obtener código interno (supply.code) para cada supplierItem como fallback
-          const supplierItemIds = items.map((item: any) => parseInt(item.supplierItemId)).filter((id: number) => !isNaN(id));
+          const supplierItemIds = items.map((item) => item.supplierItemId);
           const supplierItemsWithSupply = supplierItemIds.length > 0
             ? await tx.supplierItem.findMany({
                 where: { id: { in: supplierItemIds } },
@@ -494,28 +475,22 @@ export async function POST(request: NextRequest) {
           }
 
           await tx.goodsReceiptItem.createMany({
-            data: items.map((item: any) => {
-              const cantidadRecibida = parseFloat(item.cantidadRecibida);
-              const cantidadAceptada = parseFloat(item.cantidadAceptada || item.cantidadRecibida);
-              const cantidadRechazada = parseFloat(item.cantidadRechazada || '0');
-              const supplierItemId = parseInt(item.supplierItemId);
-
-              // Buscar item de OC correspondiente para obtener codigoPropio y purchaseOrderItemId
-              const ocItem = ocItemsBySupplierId.get(supplierItemId);
-              // Fallback: código interno del insumo (supply.code)
-              const supplyData = supplyCodeMap.get(supplierItemId);
+            data: items.map((item) => {
+              // Todos los campos numéricos ya son numbers por z.coerce en el schema
+              const ocItem = ocItemsBySupplierId.get(item.supplierItemId);
+              const supplyData = supplyCodeMap.get(item.supplierItemId);
 
               return {
                 goodsReceiptId: recepcion.id,
-                purchaseOrderItemId: item.purchaseOrderItemId ? parseInt(item.purchaseOrderItemId) : (ocItem?.id || null),
-                supplierItemId,
+                purchaseOrderItemId: item.purchaseOrderItemId ?? (ocItem?.id || null),
+                supplierItemId: item.supplierItemId,
                 codigoPropio: item.codigoPropio || ocItem?.codigoPropio || supplyData?.code || null,
                 codigoProveedor: item.codigoProveedor || ocItem?.codigoProveedor || supplyData?.codigoProveedor || null,
                 descripcion: item.descripcion || '',
-                cantidadEsperada: item.cantidadEsperada ? parseFloat(item.cantidadEsperada) : null,
-                cantidadRecibida,
-                cantidadAceptada,
-                cantidadRechazada,
+                cantidadEsperada: item.cantidadEsperada ?? null,
+                cantidadRecibida: item.cantidadRecibida,
+                cantidadAceptada: item.cantidadAceptada ?? item.cantidadRecibida,
+                cantidadRechazada: item.cantidadRechazada ?? 0,
                 unidad: item.unidad || 'UN',
                 motivoRechazo: item.motivoRechazo || null,
                 lote: item.lote || null,
@@ -530,11 +505,11 @@ export async function POST(request: NextRequest) {
 
         // Si llegamos aquí, la transacción fue exitosa
         break;
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
 
         // P2002 es el código de Prisma para unique constraint violation
-        if (error.code === 'P2002' && attempt < MAX_RETRIES - 1) {
+        if ((error as any).code === 'P2002' && attempt < MAX_RETRIES - 1) {
           // Esperar un pequeño delay aleatorio antes de reintentar
           await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
           continue;
@@ -554,7 +529,7 @@ export async function POST(request: NextRequest) {
       try {
         const prismaT2 = getT2Client();
         await prismaT2.t2PurchaseReceipt.update({
-          where: { id: parseInt(facturaId) },
+          where: { id: facturaId },
           data: {
             ingresoConfirmado: true,
             ingresoConfirmadoPor: user.id,
@@ -562,8 +537,8 @@ export async function POST(request: NextRequest) {
           },
         });
         console.log(`[Recepciones] T2 receipt ${facturaId} marked as ingresoConfirmado`);
-      } catch (t2Error: any) {
-        console.error('[Recepciones] Error updating T2 receipt:', t2Error?.message);
+      } catch (t2Error) {
+        console.error('[Recepciones] Error updating T2 receipt:', t2Error);
         // No fallar la creación del GoodsReceipt por esto
       }
     }
@@ -595,7 +570,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       estadoInicial: 'BORRADOR',
       relatedIds: purchaseOrderId
-        ? [{ entity: 'purchase_order', id: parseInt(purchaseOrderId) }]
+        ? [{ entity: 'purchase_order', id: purchaseOrderId }]
         : undefined,
     });
 

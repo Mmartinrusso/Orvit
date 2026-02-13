@@ -125,10 +125,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[MACHINES_DETAIL_ERROR]', error);
     return NextResponse.json(
-      { 
-        error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
   }

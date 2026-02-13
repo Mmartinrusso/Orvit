@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error en verificación diaria de órdenes vencidas:', error);
     return NextResponse.json(
-      { error: 'Error en verificación diaria', details: error },
+      { error: 'Error en verificación diaria' },
       { status: 500 }
     );
   }

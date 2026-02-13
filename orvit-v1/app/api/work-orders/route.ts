@@ -5,6 +5,7 @@ import { notifyOTAssigned } from '@/lib/discord/notifications';
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateWorkOrderSchema } from '@/lib/validations/work-orders';
+import { trackCount } from '@/lib/metrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -321,6 +322,12 @@ export const POST = withGuards(async (request: NextRequest, { user }) => {
       },
     });
 
+    // Métrica: work_orders_created (fire-and-forget)
+    trackCount('work_orders_created', newWorkOrder.companyId, {
+      tags: { type: newWorkOrder.type, priority: newWorkOrder.priority, status: newWorkOrder.status },
+      userId: newWorkOrder.createdById,
+    }).catch(() => {});
+
     // ✅ OPTIMIZADO: Notificación fire-and-forget (no bloquea la respuesta)
     if (newWorkOrder.assignedToId && newWorkOrder.assignedToId !== newWorkOrder.createdById) {
       fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications`, {
@@ -387,9 +394,9 @@ export const POST = withGuards(async (request: NextRequest, { user }) => {
 
     return NextResponse.json(newWorkOrder, { status: 201 });
   } catch (error) {
-    console.error('Error en POST /api/work-orders:', error);
+    console.error('Error al crear orden de trabajo:', error);
     return NextResponse.json(
-      { error: 'Error al crear orden de trabajo', details: error },
+      { error: 'Error al crear orden de trabajo' },
       { status: 500 }
     );
   }
@@ -557,9 +564,9 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error en DELETE /api/work-orders:', error);
+    console.error('Error al eliminar orden de trabajo:', error);
     return NextResponse.json(
-      { error: 'Error al eliminar orden de trabajo', details: error },
+      { error: 'Error al eliminar orden de trabajo' },
       { status: 500 }
     );
   }

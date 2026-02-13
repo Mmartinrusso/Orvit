@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
     const validation = createTreasuryMovementSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Datos de entrada inválidos', details: validation.error.errors },
+        { error: 'Datos de entrada inválidos' },
         { status: 400 }
       );
     }
@@ -281,14 +281,15 @@ export async function POST(req: NextRequest) {
       headers: idempotencyHeaders(idempotencyResult.idempotencyKey, idempotencyResult.isReplay),
     });
   } catch (error) {
-    console.error('Error creating movement:', error);
+    console.error('Error al crear movimiento de tesorería:', error);
 
     // Handle idempotency conflict error
     const idempotencyError = handleIdempotencyError(error);
     if (idempotencyError) return idempotencyError;
 
-    const message =
-      error instanceof Error ? error.message : 'Error al crear movimiento';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Error al crear movimiento' },
+      { status: 500 }
+    );
   }
 }

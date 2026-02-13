@@ -295,8 +295,8 @@ export async function PUT(
 
   } catch (error) {
     console.error('Error actualizando checklist:', error);
-    
-    if (error.code === 'P2025') {
+
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
       return NextResponse.json(
         { error: 'Checklist no encontrado' },
         { status: 404 }
@@ -304,7 +304,7 @@ export async function PUT(
     }
 
     return NextResponse.json(
-      { error: 'Error interno del servidor al actualizar el checklist' },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
   }
@@ -362,8 +362,8 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error eliminando checklist:', error);
-    
-    if (error.code === 'P2025') {
+
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
       return NextResponse.json(
         { error: 'Checklist no encontrado' },
         { status: 404 }
@@ -371,7 +371,7 @@ export async function DELETE(
     }
 
     return NextResponse.json(
-      { error: 'Error interno del servidor al eliminar el checklist' },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
   }

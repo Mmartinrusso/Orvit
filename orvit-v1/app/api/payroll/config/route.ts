@@ -63,8 +63,7 @@ export async function GET(request: NextRequest) {
     console.error('Error obteniendo config de nómina:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json({
-      error: 'Error interno del servidor',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Error interno del servidor'
     }, { status: 500 });
   }
 }

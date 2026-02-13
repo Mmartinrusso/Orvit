@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error en GET /api/work-orders/dispatcher:', error);
     return NextResponse.json(
-      { error: 'Error al obtener dispatcher', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al obtener dispatcher' },
       { status: 500 }
     );
   }

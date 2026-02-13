@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { JWT_SECRET } from '@/lib/auth';
+
+const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 // Validar token desde cookies
 async function validateTokenFromCookie() {
@@ -11,10 +14,7 @@ async function validateTokenFromCookie() {
   if (!token) return null;
 
   try {
-    const JWT_SECRET = new TextEncoder().encode(
-      process.env.JWT_SECRET || 'Messi'
-    );
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
     return payload as { id: number; companyId: number; role: string };
   } catch {
     return null;
@@ -165,10 +165,10 @@ export async function GET(
       scopeComponentIds,
     });
 
-  } catch (error: any) {
-    console.error('Error getting promotion preview:', error);
+  } catch (error) {
+    console.error('Error al obtener vista previa de promoción:', error);
     return NextResponse.json(
-      { error: error.message || 'Error interno' },
+      { error: 'Error al obtener vista previa de promoción' },
       { status: 500 }
     );
   }

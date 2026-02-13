@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ [STOCK CHECK] Error en stock check:', error);
     return NextResponse.json(
-      { error: 'Error al verificar stock', details: error },
+      { error: 'Error al verificar stock' },
       { status: 500 }
     );
   }

@@ -304,7 +304,7 @@ export async function POST(request: Request) {
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error('Error al crear componente:', error);
-    return NextResponse.json({ error: 'Error al crear componente', details: error }, { status: 500 });
+    return NextResponse.json({ error: 'Error al crear componente' }, { status: 500 });
   }
 }
 

@@ -517,11 +517,10 @@ export async function GET(request: NextRequest) {
         'X-Cache': 'MISS'
       }
     });
-  } catch (error: any) {
-    console.error('Error fetching comprobantes:', error?.message || error);
-    console.error('Stack:', error?.stack);
+  } catch (error) {
+    console.error('Error al obtener los comprobantes:', error);
     return NextResponse.json(
-      { error: 'Error al obtener los comprobantes', details: error?.message },
+      { error: 'Error al obtener los comprobantes' },
       { status: 500 }
     );
   }
@@ -590,7 +589,6 @@ export async function POST(request: NextRequest) {
           {
             error: proveedorCheck.reason,
             code: proveedorCheck.code,
-            details: proveedorCheck.details,
           },
           { status: 403 }
         );
@@ -685,9 +683,9 @@ export async function POST(request: NextRequest) {
           _fromT2: true,
         }, { status: 201 });
       } catch (t2Error: any) {
-        console.error('[Comprobantes] ❌ Error creando en BD T2:', t2Error?.message);
+        console.error('[Comprobantes] ❌ Error creando en BD T2:', t2Error);
         return NextResponse.json(
-          { error: 'Error al crear documento T2', details: t2Error?.message },
+          { error: 'Error al crear documento T2' },
           { status: 500 }
         );
       }
