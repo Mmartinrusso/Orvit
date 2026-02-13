@@ -1069,62 +1069,8 @@ export default function ChecklistPrintPage() {
         }
       `}} />
       
-      {/* Script para ocultar elementos al imprimir */}
-      <script dangerouslySetInnerHTML={{__html: `
-        // Función para ocultar elementos
-        const hideElementsForPrint = () => {
-          // Ocultar MobileBottomBar
-          const bottomBars = document.querySelectorAll('[class*="bottom"], [class*="MobileBottomBar"], [id*="bottom"], nav, footer');
-          bottomBars.forEach(el => {
-            if (el) {
-              el.style.display = 'none';
-              el.style.visibility = 'hidden';
-            }
-          });
-          
-          // Ocultar elementos con "ORVIT" (excepto el contenido principal)
-          const allElements = document.querySelectorAll('body > *:not(.print-layout), header, [class*="header"]:not(.print-header)');
-          allElements.forEach(el => {
-            const text = (el.textContent || '').trim();
-            if (text === 'ORVIT' || (text.includes('ORVIT') && text.length < 10)) {
-              if (!el.closest('.print-header') && !el.classList.contains('print-header') && !el.closest('.max-w-4xl')) {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
-              }
-            }
-          });
-          
-          // Cambiar el título del documento para que no aparezca ORVIT
-          const checklistTitle = document.querySelector('h1')?.textContent || 'Checklist de Mantenimiento';
-          document.title = checklistTitle;
-          
-          // Asegurar fondo blanco
-          document.body.style.background = 'white';
-          document.body.style.backgroundColor = 'white';
-          document.documentElement.style.background = 'white';
-        };
-        
-        // Ocultar al cargar
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', hideElementsForPrint);
-        } else {
-          setTimeout(hideElementsForPrint, 100);
-        }
-        
-        // Ocultar antes de imprimir
-        window.addEventListener('beforeprint', hideElementsForPrint);
-        
-        // Restaurar después de imprimir
-        window.addEventListener('afterprint', function() {
-          const bottomBars = document.querySelectorAll('[class*="bottom"], [class*="MobileBottomBar"], [id*="bottom"], nav, footer');
-          bottomBars.forEach(el => {
-            if (el) {
-              el.style.display = '';
-              el.style.visibility = '';
-            }
-          });
-        });
-      `}} />
+      {/* Script de impresión eliminado: su funcionalidad ya está cubierta por
+          el useEffect (líneas 63-93) y los estilos CSS @media print de arriba */}
     </div>
   );
 }

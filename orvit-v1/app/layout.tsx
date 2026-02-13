@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { Toaster } from '@/components/ui/toaster';
@@ -31,11 +32,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Obtener nonce del middleware para CSP
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') || '';
+
   return (
     <html lang="es" suppressHydrationWarning className="h-full">
       <head>
@@ -43,16 +48,16 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <title>ORVIT</title>
-        
+
         {/* Optimizaciones de performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
+
         {/* Meta tags adicionales para SEO */}
         <meta name="description" content="Sistema integral de gestión de mantenimiento, tareas fijas, inventario y órdenes de trabajo" />
         <meta name="keywords" content="mantenimiento, gestión, tareas, inventario, órdenes de trabajo" />
         <meta name="author" content="Sistema de Gestión" />
-        
+
         {/* Meta tags para PWA */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1e40af" />
@@ -61,14 +66,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ORVIT" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        
+
         {/* Open Graph */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content="ORVIT" />
         <meta property="og:description" content="Gestión integral de mantenimiento y tareas" />
-        
-        {/* Configuración de zona horaria para tareas automáticas */}
+
+        {/* Configuración de zona horaria, service worker y supresión de errores de extensiones */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               // Configurar zona horaria del sistema
@@ -87,7 +93,7 @@ export default function RootLayout({
                   });
                 });
               }
-              
+
               // Suprimir errores de MetaMask y otras extensiones del navegador
               if (typeof window !== 'undefined') {
                 window.addEventListener('error', (event) => {
@@ -102,7 +108,7 @@ export default function RootLayout({
                     return false;
                   }
                 }, true);
-                
+
                 // Capturar errores no manejados de Promise
                 window.addEventListener('unhandledrejection', (event) => {
                   if (

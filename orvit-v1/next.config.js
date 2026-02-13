@@ -1,5 +1,36 @@
 /** @type {import('next').NextConfig} */
+
+// Headers de seguridad estáticos (no-CSP).
+// CSP se aplica dinámicamente en middleware.ts con nonce por request.
+const securityHeaders = [
+  {
+    key: 'X-Frame-Options',
+    value: 'DENY',
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin',
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=()',
+  },
+];
+
 const nextConfig = {
+  async headers() {
+    return [
+      {
+        // Aplicar a todas las rutas
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
