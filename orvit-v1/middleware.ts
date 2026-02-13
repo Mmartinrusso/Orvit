@@ -84,9 +84,94 @@ async function getViewModeFromCookie(
   }
 }
 
+// ============================================================================
+// CSRF: Origin/Referer validation for mutating requests
+// ============================================================================
+
+const CSRF_MUTATING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
+
+// Rutas exentas de CSRF:
+// - Tráfico externo legítimo (webhooks, bots)
+// - Endpoints llamados internamente server-to-server (sin Origin/Referer)
+const CSRF_EXEMPT_PATHS = [
+  // Tráfico externo
+  '/api/webhooks',
+  '/api/whatsapp',
+  '/api/telegram',
+  '/api/cron',
+  '/api/google-drive/credentials',
+  // Llamadas internas server-to-server (protegidos por auth propia)
+  '/api/notifications',
+  '/api/tasks/check-overdue',
+  '/api/tasks/history',
+  '/api/lista-precios-recetas',
+  '/api/sync-precios',
+];
+
+/**
+ * Verifica que el Origin/Referer de requests mutantes coincida con el host de la app.
+ * Previene CSRF asegurando que las requests provienen del mismo origen.
+ */
+function validateCsrfOrigin(request: NextRequest): boolean {
+  // Solo validar métodos mutantes
+  if (!CSRF_MUTATING_METHODS.has(request.method)) {
+    return true;
+  }
+
+  const pathname = request.nextUrl.pathname;
+
+  // Saltar rutas exentas (tráfico externo legítimo)
+  if (CSRF_EXEMPT_PATHS.some(p => pathname.startsWith(p))) {
+    return true;
+  }
+
+  // Obtener el origin esperado del host de la request
+  const host = request.headers.get('host');
+  if (!host) {
+    return false;
+  }
+
+  // Verificar Origin header (preferido)
+  const origin = request.headers.get('origin');
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      return originUrl.host === host;
+    } catch {
+      return false;
+    }
+  }
+
+  // Fallback: verificar Referer header
+  const referer = request.headers.get('referer');
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      return refererUrl.host === host;
+    } catch {
+      return false;
+    }
+  }
+
+  // Sin Origin ni Referer en request mutante → rechazar
+  return false;
+}
+
+// ============================================================================
+// MIDDLEWARE PRINCIPAL
+// ============================================================================
+
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const pathname = request.nextUrl.pathname;
+
+  // 🛡️ CSRF Protection: validar Origin/Referer en requests mutantes (API only)
+  if (pathname.startsWith('/api/') && !validateCsrfOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Forbidden: invalid origin' },
+      { status: 403 }
+    );
+  }
 
   // Helper to create response with ViewMode header injected
   const createResponseWithViewMode = async (
