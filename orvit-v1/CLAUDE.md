@@ -211,10 +211,25 @@ Required variables (see .env file):
 - **Images**: Optimized, with S3 remote patterns configured
 - **Sentry**: Automatic instrumentation enabled
 
-### Timezone Handling
-- Client timezone detected and stored in `window.__TIMEZONE__`
-- Date utilities in [lib/date-utils.ts](lib/date-utils.ts)
-- Uses `date-fns` and `date-fns-tz` for date manipulation
+### Timezone & Date Handling Policy
+
+**Principio:** Todas las fechas se almacenan en UTC en la DB. Se muestran en la timezone del usuario en el frontend.
+
+**Archivos clave:**
+- `lib/date-helpers.ts` - Wrappers de timezone (parseInTimezone, formatInTimezone, toUTC, fromUTC)
+- `lib/date-utils.ts` - Formateo de fechas (re-exporta date-helpers)
+- `window.__TIMEZONE__` - Timezone del cliente (detectada en layout.tsx)
+- `User.timezone` - Preferencia de timezone por usuario (campo en DB, nullable, default: America/Argentina/Buenos_Aires)
+
+**Reglas:**
+1. **DB → siempre UTC:** `DateTime` en Prisma guarda UTC. Prisma/Postgres lo manejan automáticamente con `@default(now())`
+2. **Input del usuario → convertir a UTC:** Usar `toUTC(localDate, timezone)` o `parseInTimezone(dateString, timezone)` antes de guardar
+3. **Mostrar al usuario → convertir desde UTC:** Usar `formatInTimezone(date, formato, timezone)` o los helpers `formatDateTz()`, `formatDateTimeTz()`, etc.
+4. **Comparaciones de "hoy/ayer/mañana":** Usar `formatDateRelativeTz()` que compara días calendario en la timezone del usuario
+5. **API routes:** Si necesitan timezone del usuario, leerla de `User.timezone` o recibir en query param
+6. **Client-side:** Obtener timezone con `getClientTimezone()` que lee `window.__TIMEZONE__`
+7. **`new Date()`:** Siempre da UTC. No usar `.getHours()` directamente para lógica de negocio; convertir primero con `fromUTC()`
+8. **DST:** `date-fns-tz` maneja transiciones DST automáticamente. No hacer math manual con offsets
 
 ## Common Development Workflows
 

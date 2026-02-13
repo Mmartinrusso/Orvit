@@ -371,6 +371,7 @@ model User {
   phone                   String? // Teléfono del usuario para billing/contacto
   discordUserId           String?                   @unique // ID de Discord del usuario para DMs
   sidebarPreferences      Json?                     @db.JsonB // User sidebar customization { ventas: { visible: [], pinned: [], order: [] } }
+  timezone                String?                   // IANA timezone del usuario (ej: 'America/Argentina/Buenos_Aires')
   createdCategories       Category[]                @relation("CategoryCreator")
   clientsSold             Client[]                  @relation("ClientSeller")
   clientsBlocked          Client[]                  @relation("ClientBlockedBy")
