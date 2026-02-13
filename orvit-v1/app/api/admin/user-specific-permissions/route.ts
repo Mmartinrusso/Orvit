@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { auditPermissionChange } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -135,10 +136,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'userId es requerido' }, { status: 400 });
     }
 
+    const userIdInt = parseInt(userId);
+    if (isNaN(userIdInt)) {
+      return NextResponse.json({ error: 'userId debe ser un número válido' }, { status: 400 });
+    }
+
     // ✨ ULTRA OPTIMIZADO: Usar Prisma con select en lugar de raw SQL
     const specificPermissions = await prisma.userPermission.findMany({
       where: {
-        userId: parseInt(userId),
+        userId: userIdInt,
         permission: { isActive: true },
         OR: [
           { expiresAt: null },
@@ -228,6 +234,10 @@ export async function POST(request: NextRequest) {
     const userIdInt = parseInt(userId);
     const permissionIdInt = parseInt(permissionId);
 
+    if (isNaN(userIdInt) || isNaN(permissionIdInt)) {
+      return NextResponse.json({ error: 'userId y permissionId deben ser números válidos' }, { status: 400 });
+    }
+
     // ✨ ULTRA OPTIMIZADO: Verificar usuario y permiso en paralelo
     const [targetUser, permission] = await Promise.all([
       prisma.user.findUnique({
@@ -274,7 +284,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Registrar en audit log
+    // Registrar en audit log (permissionAuditLog existente)
     await prisma.permissionAuditLog.create({
       data: {
         action: 'USER_PERMISSION_CHANGED',
@@ -293,6 +303,17 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Audit log general
+    auditPermissionChange(
+      user.id,
+      companyId,
+      userIdInt,
+      null,
+      { permissionName: permission.name, isGranted, reason: reason || null, expiresAt: expiresAt || null },
+      `Permiso "${permission.name}" ${isGranted ? 'otorgado a' : 'revocado de'} usuario "${targetUser.name}"`,
+      request
+    );
 
     return NextResponse.json({
       success: true,
@@ -340,18 +361,53 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // ✨ ULTRA OPTIMIZADO: Usar deleteMany con where (más eficiente que raw SQL)
-    const result = await prisma.userPermission.deleteMany({
+    const userIdInt = parseInt(userId);
+    const permissionIdInt = parseInt(permissionId);
+
+    if (isNaN(userIdInt) || isNaN(permissionIdInt)) {
+      return NextResponse.json({ error: 'userId y permissionId deben ser números válidos' }, { status: 400 });
+    }
+
+    // Obtener datos antes de eliminar para el audit log
+    const existing = await prisma.userPermission.findUnique({
       where: {
-        userId: parseInt(userId),
-        permissionId: parseInt(permissionId)
-      }
+        userId_permissionId: {
+          userId: userIdInt,
+          permissionId: permissionIdInt,
+        },
+      },
+      include: {
+        permission: { select: { name: true } },
+      },
     });
 
-    if (result.count === 0) {
-      return NextResponse.json({ 
-        error: 'Permiso específico no encontrado' 
+    if (!existing) {
+      return NextResponse.json({
+        error: 'Permiso específico no encontrado'
       }, { status: 404 });
+    }
+
+    await prisma.userPermission.delete({
+      where: {
+        userId_permissionId: {
+          userId: userIdInt,
+          permissionId: permissionIdInt,
+        },
+      },
+    });
+
+    // Audit log
+    const { companyId } = checkAdminAccess(user);
+    if (companyId) {
+      auditPermissionChange(
+        user.id,
+        companyId,
+        userIdInt,
+        { permissionName: existing.permission.name, isGranted: existing.isGranted },
+        {},
+        `Permiso específico "${existing.permission.name}" eliminado del usuario #${userIdInt}`,
+        request
+      );
     }
 
     return NextResponse.json({

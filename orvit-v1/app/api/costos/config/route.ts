@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { auditConfigChange, auditSensitiveAccess } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,9 @@ export async function GET(request: NextRequest) {
       // If SUPERADMIN, allow accessing any company
       if (isSuperAdmin) {
         companyId = parseInt(queryCompanyId);
+        if (isNaN(companyId)) {
+          return NextResponse.json({ error: 'companyId debe ser un número válido' }, { status: 400 });
+        }
       } else if (payload.companyId) {
         // Non-SUPERADMIN can only access their own company
         companyId = payload.companyId as number;
@@ -73,6 +77,16 @@ export async function GET(request: NextRequest) {
         }
       });
     }
+
+    // Audit: acceso a datos de costos
+    auditSensitiveAccess(
+      payload.userId as number,
+      companyId,
+      'CostosConfig',
+      companyId,
+      `Acceso a configuración de costos`,
+      request
+    );
 
     // Return flattened response for easier access
     return NextResponse.json({
@@ -138,6 +152,9 @@ export async function POST(request: NextRequest) {
     let finalCompanyId: number;
     if (isSuperAdmin && targetCompanyId) {
       finalCompanyId = parseInt(targetCompanyId);
+      if (isNaN(finalCompanyId)) {
+        return NextResponse.json({ error: 'targetCompanyId debe ser un número válido' }, { status: 400 });
+      }
     } else if (payload.companyId) {
       finalCompanyId = payload.companyId as number;
     } else if (isSuperAdmin) {
@@ -157,6 +174,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Obtener configuración actual para audit log (oldData)
+    const currentConfig = await prisma.costSystemConfig.findUnique({
+      where: { companyId: finalCompanyId }
+    });
+
     // Construir datos de actualización
     const updateData: any = {
       updatedAt: new Date()
@@ -167,10 +189,6 @@ export async function POST(request: NextRequest) {
 
       // Si se activa V2 o HYBRID por primera vez, registrar fecha
       if ((version === 'V2' || version === 'HYBRID')) {
-        const currentConfig = await prisma.costSystemConfig.findUnique({
-          where: { companyId: finalCompanyId }
-        });
-
         if (currentConfig?.version === 'V1' && !currentConfig?.v2EnabledAt) {
           updateData.v2EnabledAt = new Date();
         }
@@ -205,6 +223,27 @@ export async function POST(request: NextRequest) {
       },
       update: updateData
     });
+
+    // Audit log: cambio de configuración de costos
+    const oldData = currentConfig ? {
+      version: currentConfig.version,
+      usePayrollData: currentConfig.usePayrollData,
+      useComprasData: currentConfig.useComprasData,
+      useVentasData: currentConfig.useVentasData,
+      useProdData: currentConfig.useProdData,
+      useIndirectData: currentConfig.useIndirectData,
+      useMaintData: currentConfig.useMaintData,
+      enablePretensadosSim: currentConfig.enablePretensadosSim,
+    } : null;
+    auditConfigChange(
+      payload.userId as number,
+      finalCompanyId,
+      'CostosConfig',
+      config.id,
+      oldData,
+      updateData,
+      request
+    );
 
     return NextResponse.json({
       success: true,

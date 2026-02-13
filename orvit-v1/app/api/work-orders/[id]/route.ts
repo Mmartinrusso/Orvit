@@ -7,6 +7,7 @@ import {
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateWorkOrderSchema } from '@/lib/validations/work-orders';
+import { auditWorkOrderDelete } from '@/lib/audit';
 
 // ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
@@ -374,6 +375,20 @@ export const DELETE = withGuards(async (request: NextRequest, { user, params: _p
         deletedBy: `${user.userId}`,
       },
     });
+
+    // Audit log
+    auditWorkOrderDelete(
+      user.userId,
+      user.companyId!,
+      Number(id),
+      {
+        title: workOrder.title,
+        status: workOrder.status,
+        priority: workOrder.priority,
+        type: workOrder.type,
+      },
+      request
+    );
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

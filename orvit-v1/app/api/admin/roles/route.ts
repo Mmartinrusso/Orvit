@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { auditRoleChange, auditPermissionChange } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Registrar en audit log
+    // Registrar en audit log (permissionAuditLog existente)
     await prisma.permissionAuditLog.create({
       data: {
         action: isGranted ? 'PERMISSION_GRANTED' : 'PERMISSION_REVOKED',
@@ -228,6 +229,17 @@ export async function POST(request: NextRequest) {
         companyId
       }
     });
+
+    // Audit log general
+    auditPermissionChange(
+      user.id,
+      companyId,
+      role.id,
+      { roleName: role.name, permissionName: permission.name, wasGranted: !isGranted },
+      { roleName: role.name, permissionName: permission.name, isGranted },
+      `Permiso "${permission.name}" ${isGranted ? 'asignado a' : 'removido de'} rol "${role.displayName || role.name}"`,
+      request
+    );
 
     return NextResponse.json({
       success: true,
@@ -287,7 +299,7 @@ export async function PUT(request: NextRequest) {
       }
     });
 
-    // Registrar en audit log
+    // Registrar en audit log (permissionAuditLog existente)
     await prisma.permissionAuditLog.create({
       data: {
         action: 'ROLE_CREATED',
@@ -305,6 +317,17 @@ export async function PUT(request: NextRequest) {
         }
       }
     });
+
+    // Audit log general
+    auditRoleChange(
+      user.id,
+      companyId,
+      newRole.id,
+      null,
+      { name, displayName, description: description || '', sectorId: sectorId || null },
+      `Rol "${displayName}" creado`,
+      request
+    );
 
     return NextResponse.json({
       success: true,
@@ -387,6 +410,17 @@ export async function DELETE(request: NextRequest) {
         }
       });
     });
+
+    // Audit log general (fire-and-forget, fuera de transacción)
+    auditRoleChange(
+      user.id,
+      companyId,
+      roleInfo.id,
+      { name: roleInfo.name, displayName: roleInfo.displayName, permissionsCount: roleInfo.permissionsCount },
+      {},
+      `Rol "${roleInfo.displayName || roleInfo.name}" eliminado`,
+      request
+    );
 
     return NextResponse.json({
       success: true,

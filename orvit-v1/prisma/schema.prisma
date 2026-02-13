@@ -5272,6 +5272,10 @@ enum AuditAction {
   CLOSE_PTW
   LOGIN
   LOGOUT
+  ROLE_CHANGE
+  PERMISSION_CHANGE
+  ACCESS
+  CONFIG_CHANGE
 }
 
 // ============================================================
