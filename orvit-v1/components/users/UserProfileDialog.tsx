@@ -23,17 +23,19 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Lock, 
-  Upload, 
-  Eye, 
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Upload,
+  Eye,
   EyeOff,
   Save,
   X
 } from 'lucide-react';
+import PasswordStrengthIndicator from '@/components/common/PasswordStrengthIndicator';
+import { validatePasswordPolicy } from '@/lib/password-validation';
 
 interface UserProfileDialogProps {
   isOpen: boolean;
@@ -178,10 +180,11 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
+    const passwordCheck = validatePasswordPolicy(passwordForm.newPassword);
+    if (!passwordCheck.valid) {
       toast({
-        title: 'Error',
-        description: 'La contraseña debe tener al menos 6 caracteres',
+        title: 'Contraseña insegura',
+        description: passwordCheck.errors[0],
         variant: 'destructive',
       });
       return;
@@ -439,7 +442,7 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
                         value={passwordForm.newPassword}
                         onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                         className="pl-10 pr-10"
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder="Mínimo 8 caracteres"
                       />
                       <Button
                         type="button"
@@ -455,6 +458,7 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
                         )}
                       </Button>
                     </div>
+                    <PasswordStrengthIndicator password={passwordForm.newPassword} />
                   </div>
 
                   <div className="space-y-2">

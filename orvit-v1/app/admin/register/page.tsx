@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import PasswordStrengthIndicator from '@/components/common/PasswordStrengthIndicator';
+import { validatePasswordPolicy } from '@/lib/password-validation';
 
 export default function RegisterAdminPage() {
   const router = useRouter();
@@ -30,6 +32,12 @@ export default function RegisterAdminPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    const passwordCheck = validatePasswordPolicy(formData.password);
+    if (!passwordCheck.valid) {
+      setError(passwordCheck.errors[0]);
+      return;
+    }
 
     try {
       const response = await fetch('/api/admin/register', {
@@ -136,6 +144,7 @@ export default function RegisterAdminPage() {
               }
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
             />
+            <PasswordStrengthIndicator password={formData.password} />
           </div>
 
           <div>

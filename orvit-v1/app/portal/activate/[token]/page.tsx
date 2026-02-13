@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import PasswordStrengthIndicator from '@/components/common/PasswordStrengthIndicator';
+import { validatePasswordPolicy } from '@/lib/password-validation';
 
 interface TokenInfo {
   valid: boolean;
@@ -24,34 +26,6 @@ interface TokenInfo {
   };
 }
 
-interface PasswordValidation {
-  minLength: boolean;
-  hasUppercase: boolean;
-  hasLowercase: boolean;
-  hasNumber: boolean;
-}
-
-function validatePassword(password: string): PasswordValidation {
-  return {
-    minLength: password.length >= 8,
-    hasUppercase: /[A-Z]/.test(password),
-    hasLowercase: /[a-z]/.test(password),
-    hasNumber: /[0-9]/.test(password),
-  };
-}
-
-function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
-  return (
-    <div className={`flex items-center gap-2 text-xs ${met ? 'text-green-600' : 'text-muted-foreground'}`}>
-      {met ? (
-        <Check className="h-3.5 w-3.5" />
-      ) : (
-        <X className="h-3.5 w-3.5" />
-      )}
-      {label}
-    </div>
-  );
-}
 
 export default function ActivateAccountPage() {
   const params = useParams();
@@ -72,8 +46,8 @@ export default function ActivateAccountPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const passwordValidation = validatePassword(formData.password);
-  const allValid = Object.values(passwordValidation).every(Boolean);
+  const passwordCheck = validatePasswordPolicy(formData.password);
+  const allValid = passwordCheck.valid;
   const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0;
 
   // Verify token on mount
@@ -284,13 +258,8 @@ export default function ActivateAccountPage() {
                   </button>
                 </div>
 
-                {/* Password requirements */}
-                <div className="grid grid-cols-2 gap-1 mt-2">
-                  <PasswordRequirement met={passwordValidation.minLength} label="Mínimo 8 caracteres" />
-                  <PasswordRequirement met={passwordValidation.hasUppercase} label="Una mayúscula" />
-                  <PasswordRequirement met={passwordValidation.hasLowercase} label="Una minúscula" />
-                  <PasswordRequirement met={passwordValidation.hasNumber} label="Un número" />
-                </div>
+                {/* Password strength indicator */}
+                <PasswordStrengthIndicator password={formData.password} />
               </div>
 
               {/* Confirm Password */}

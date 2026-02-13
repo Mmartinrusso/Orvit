@@ -43,37 +43,8 @@ export async function verifyPassword(
   return bcrypt.compare(password, hash);
 }
 
-/**
- * Validar política de contraseñas
- * - Mínimo 8 caracteres
- * - Al menos 1 mayúscula
- * - Al menos 1 minúscula
- * - Al menos 1 número
- */
-export function validatePasswordPolicy(password: string): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-
-  if (password.length < 8) {
-    errors.push('La contraseña debe tener al menos 8 caracteres');
-  }
-  if (!/[A-Z]/.test(password)) {
-    errors.push('La contraseña debe tener al menos una mayúscula');
-  }
-  if (!/[a-z]/.test(password)) {
-    errors.push('La contraseña debe tener al menos una minúscula');
-  }
-  if (!/[0-9]/.test(password)) {
-    errors.push('La contraseña debe tener al menos un número');
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
+// Re-exportar validación centralizada de contraseñas
+export { validatePasswordPolicy } from '@/lib/password-validation';
 
 // =====================================================
 // TOKEN UTILITIES

@@ -44,6 +44,8 @@ import {
   Clock,
   Activity,
 } from 'lucide-react';
+import PasswordStrengthIndicator from '@/components/common/PasswordStrengthIndicator';
+import { validatePasswordPolicy } from '@/lib/password-validation';
 
 interface UserEditDialogProps {
   isOpen: boolean;
@@ -257,23 +259,17 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
 
     const trimmedPassword = formData.password.trim();
 
-    if (isCreateMode && trimmedPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'La contraseña debe tener al menos 6 caracteres',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // En modo editar, si se está cambiando la contraseña, validar también longitud mínima
-    if (!isCreateMode && trimmedPassword && trimmedPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'La nueva contraseña debe tener al menos 6 caracteres',
-        variant: 'destructive',
-      });
-      return;
+    // Validar fortaleza de contraseña
+    if (isCreateMode || trimmedPassword) {
+      const passwordCheck = validatePasswordPolicy(trimmedPassword);
+      if (!passwordCheck.valid) {
+        toast({
+          title: 'Contraseña insegura',
+          description: passwordCheck.errors[0],
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     // Verificar permisos
@@ -557,7 +553,7 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="pl-9 pr-9 h-9 text-sm"
-                    placeholder={isCreateMode ? "Mínimo 6 caracteres" : "Dejar vacío para no cambiar"}
+                    placeholder={isCreateMode ? "Mínimo 8 caracteres" : "Dejar vacío para no cambiar"}
                     required={isCreateMode}
                   />
                   <Button
@@ -574,6 +570,7 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
                     )}
                   </Button>
                 </div>
+                <PasswordStrengthIndicator password={formData.password} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

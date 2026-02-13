@@ -1,5 +1,6 @@
 import { z, ZodSchema, ZodError } from 'zod';
 import { NextResponse } from 'next/server';
+import { validatePasswordPolicy, MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '@/lib/password-validation';
 
 /**
  * Valida los datos de una request contra un schema Zod.
@@ -136,3 +137,30 @@ export const optionalUrl = z
 export const monthSchema = z
   .string()
   .regex(/^\d{4}-\d{2}$/, 'Formato de mes inválido (esperado: YYYY-MM)');
+
+/** Contraseña con validación de fortaleza (mín 8 chars, mayúscula, minúscula, número) */
+export const passwordSchema = (fieldName = 'Contraseña') =>
+  z.string({ required_error: `${fieldName} es requerida` })
+    .min(MIN_PASSWORD_LENGTH, `${fieldName} debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`)
+    .max(MAX_PASSWORD_LENGTH, `${fieldName} no puede superar los ${MAX_PASSWORD_LENGTH} caracteres`)
+    .refine(
+      (val) => validatePasswordPolicy(val).valid,
+      (val) => {
+        const { errors } = validatePasswordPolicy(val);
+        return { message: errors[0] || `${fieldName} no cumple los requisitos de seguridad` };
+      }
+    );
+
+/** Contraseña opcional (para campos de "nueva contraseña" en edición) */
+export const optionalPasswordSchema = (fieldName = 'Contraseña') =>
+  z.string()
+    .max(MAX_PASSWORD_LENGTH, `${fieldName} no puede superar los ${MAX_PASSWORD_LENGTH} caracteres`)
+    .refine(
+      (val) => val === '' || validatePasswordPolicy(val).valid,
+      (val) => {
+        if (val === '') return { message: '' };
+        const { errors } = validatePasswordPolicy(val);
+        return { message: errors[0] || `${fieldName} no cumple los requisitos de seguridad` };
+      }
+    )
+    .optional();

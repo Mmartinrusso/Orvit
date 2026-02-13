@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { JWT_SECRET } from '@/lib/auth';
+import { validatePasswordPolicy } from '@/lib/password-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,15 @@ export async function POST(request: Request) {
     if (!body.email || !body.password || !body.name) {
       return NextResponse.json(
         { error: 'Todos los campos son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Validar fortaleza de contraseña
+    const passwordValidation = validatePasswordPolicy(body.password);
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        { error: passwordValidation.errors[0], details: passwordValidation.errors },
         { status: 400 }
       );
     }
