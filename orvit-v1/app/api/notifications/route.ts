@@ -4,6 +4,8 @@ import { Priority } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { validateRequest } from '@/lib/validations/helpers';
+import { CreateNotificationSchema, MarkNotificationReadSchema } from '@/lib/validations/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -238,7 +240,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { notificationId, markAll } = body;
+
+    const validation = validateRequest(MarkNotificationReadSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const { notificationId, markAll } = validation.data;
 
     if (markAll) {
       // Marcar todas como leídas
@@ -250,12 +258,12 @@ export async function PUT(request: NextRequest) {
           AND "readAt" IS NULL
       `;
     } else if (notificationId) {
-      // Marcar una específica como leída
+      // Marcar una específica como leída (notificationId ya es number por z.coerce)
       await prisma.$executeRaw`
-        UPDATE "Notification" 
+        UPDATE "Notification"
         SET "readAt" = NOW()
-        WHERE id = ${parseInt(notificationId)}
-          AND "userId" = ${user.id} 
+        WHERE id = ${notificationId}
+          AND "userId" = ${user.id}
           AND "companyId" = ${companyId}
       `;
     }
@@ -313,8 +321,14 @@ export async function DELETE(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type } = body;
-    
+
+    const validation = validateRequest(CreateNotificationSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const { type, title, message, metadata } = validation.data;
+
     // Removido el bloqueo de notificaciones de stock bajo
     const user = await getUserFromToken(request);
     if (!user) {
@@ -324,12 +338,6 @@ export async function POST(request: NextRequest) {
     const companyId = getUserCompanyId(user);
     if (!companyId) {
       return NextResponse.json({ error: "Usuario sin empresa" }, { status: 401 });
-    }
-
-    const { title, message, metadata } = body;
-
-    if (!title || !message) {
-      return NextResponse.json({ error: "Título y mensaje son requeridos" }, { status: 400 });
     }
 
     const notification = await prisma.notification.create({

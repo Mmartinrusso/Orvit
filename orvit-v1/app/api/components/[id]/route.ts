@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { deleteEntityFiles, deleteMultipleEntityFiles, deleteS3File } from '@/lib/s3-utils';
+import { validateRequest } from '@/lib/validations/helpers';
+import { UpdateComponentSchema } from '@/lib/validations/components';
 
 // ============================================
 // OPTIMIZED HELPERS using Recursive CTEs
@@ -221,19 +223,24 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     console.log(`🔄 Body recibido:`, body);
     console.log(`🔄 Tipo de ID:`, typeof id, 'Valor:', id);
 
+    const validation = validateRequest(UpdateComponentSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     // Extraer datos de repuesto y campos problemáticos del body
-    const { 
-      spareAction, 
-      existingSpareId, 
-      initialStock = 0, 
-      spareMinStock = 5, 
+    const {
+      spareAction,
+      existingSpareId,
+      initialStock = 0,
+      spareMinStock = 5,
       spareCategory = 'Repuestos',
       companyId,
       machineId,    // Separar machineId que requiere sintaxis especial
       photo,        // Campo que no existe en Component model
       status,       // Campo que no existe en Component model
-      ...componentData 
-    } = body;
+      ...componentData
+    } = validation.data;
 
     // Obtener el componente actual para verificar si el logo cambió
     const currentComponent = await prisma.component.findUnique({
@@ -247,9 +254,10 @@ export async function PATCH(request: Request, context: { params: { id: string } 
 
     // ============ VALIDACIÓN DE CAMBIO DE PADRE ============
     if (componentData.parentId !== undefined) {
+      // parentId viene de UpdateComponentSchema: z.coerce.number | null | ''
       const newParentId = componentData.parentId === null || componentData.parentId === ''
         ? null
-        : Number(componentData.parentId);
+        : componentData.parentId as number;
 
       // Si se está asignando un nuevo padre
       if (newParentId !== null) {
@@ -304,8 +312,8 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     Object.keys(componentData).forEach(key => {
       if (validFields.includes(key)) {
         if (key === 'parentId') {
-          // Manejar parentId: puede ser null para quitar el padre, o un número para asignar uno
-          updateData.parentId = componentData[key] === null || componentData[key] === '' ? null : Number(componentData[key]);
+          // Manejar parentId: puede ser null para quitar el padre, o un número (ya coerced por Zod)
+          updateData.parentId = componentData[key] === null || componentData[key] === '' ? null : componentData[key];
         } else {
           updateData[key] = componentData[key];
         }
@@ -316,10 +324,10 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     
     console.log('🔄 Campos válidos para actualización:', updateData);
 
-    // Solo actualizar machine si machineId cambió
+    // Solo actualizar machine si machineId cambió (ya es number por z.coerce)
     if (machineId && machineId !== currentComponent.machineId) {
       updateData.machine = {
-        connect: { id: Number(machineId) }
+        connect: { id: machineId }
       };
     }
 
@@ -376,11 +384,11 @@ export async function PATCH(request: Request, context: { params: { id: string } 
               description: `Repuesto para componente: ${updated.name}`,
               itemType: 'SUPPLY',
               category: spareCategory,
-              stockQuantity: parseInt(initialStock),
+              stockQuantity: initialStock, // Ya es number por z.coerce
               minStockLevel: spareMinStock,
               status: 'AVAILABLE',
               notes: `Repuesto creado automáticamente para componente ID: ${updated.id}`,
-              companyId: parseInt(companyId)
+              companyId: companyId! // Ya es number por z.coerce
             }
           });
           // console.log(`✅ Repuesto creado: ID=${createdTool.id}, Nombre="${createdTool.name}"`) // Log reducido;
