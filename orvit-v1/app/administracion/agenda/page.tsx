@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CalendarClock, ClipboardList, Calendar, LayoutGrid, History, BarChart3 } from 'lucide-react';
+import { CalendarClock, Calendar, LayoutGrid, History, BarChart3, Inbox } from 'lucide-react';
 import { AgendaPage } from '@/components/agenda';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,7 @@ const TareasContent = dynamic(() => import('@/components/tasks/TareasContent'), 
   )
 });
 
-type AgendaTab = 'mi-agenda' | 'tareas' | 'fijas' | 'dashboard' | 'historial' | 'metricas';
+type AgendaTab = 'agenda' | 'tareas' | 'fijas' | 'dashboard' | 'historial' | 'metricas';
 type TareasTab = 'tareas' | 'fijas' | 'dashboard' | 'historial' | 'metricas';
 
 const TAREAS_TABS: TareasTab[] = ['tareas', 'fijas', 'dashboard', 'historial', 'metricas'];
@@ -33,20 +33,25 @@ interface TabDef {
 }
 
 export default function UnifiedAgendaPage() {
-  const [activeTab, setActiveTab] = useState<AgendaTab>('mi-agenda');
+  const [activeTab, setActiveTab] = useState<AgendaTab>('agenda');
   const searchParams = useSearchParams();
 
   const { hasPermission: canAccessTasks, isLoading: loadingTasksPerm } = usePermissionRobust('ingresar_tareas');
   const { hasPermission: canSeeHistorial, isLoading: loadingHistorialPerm } = usePermissionRobust('ver_historial_tareas');
   const { hasPermission: canSeeEstadisticas, isLoading: loadingEstadisticasPerm } = usePermissionRobust('ver_estadisticas');
 
-  // Handle URL params for navigation (e.g., from notifications)
+  // Handle URL params for navigation
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab) {
-      const validTabs: AgendaTab[] = ['mi-agenda', 'tareas', 'fijas', 'dashboard', 'historial', 'metricas'];
-      if (validTabs.includes(tab as AgendaTab)) {
-        setActiveTab(tab as AgendaTab);
+      // Compatibilidad: si alguien navega a ?tab=mi-agenda, redirigir a agenda
+      if (tab === 'mi-agenda') {
+        setActiveTab('agenda');
+      } else {
+        const validTabs: AgendaTab[] = ['agenda', 'tareas', 'fijas', 'dashboard', 'historial', 'metricas'];
+        if (validTabs.includes(tab as AgendaTab)) {
+          setActiveTab(tab as AgendaTab);
+        }
       }
     }
   }, [searchParams]);
@@ -54,12 +59,12 @@ export default function UnifiedAgendaPage() {
   // Build visible tabs based on permissions
   const tabs: TabDef[] = useMemo(() => {
     const result: TabDef[] = [
-      { value: 'mi-agenda', label: 'Mi Agenda', icon: CalendarClock },
+      { value: 'agenda', label: 'Agenda', icon: CalendarClock },
     ];
 
     if (!loadingTasksPerm && canAccessTasks) {
       result.push(
-        { value: 'tareas', label: 'Tareas', icon: ClipboardList, permission: 'tasks' },
+        { value: 'tareas', label: 'Tareas', icon: Inbox, permission: 'tasks' },
         { value: 'fijas', label: 'Fijas', icon: Calendar, permission: 'tasks' },
         { value: 'dashboard', label: 'Dashboard', icon: LayoutGrid, permission: 'tasks' },
       );
@@ -104,12 +109,12 @@ export default function UnifiedAgendaPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'mi-agenda' && (
+      {activeTab === 'agenda' && (
         <AgendaPage />
       )}
 
       {isTareasTab && (
-        <div className={activeTab === 'tareas' ? 'h-[calc(100vh-12rem)]' : 'px-4 md:px-6 pb-6'}>
+        <div className="px-4 md:px-6 pb-6">
           <TareasContent activeTab={activeTab as TareasTab} />
         </div>
       )}
