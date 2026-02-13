@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { startOfDay, endOfDay } from 'date-fns';
+import { getIntParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
+    const companyId = getIntParam(searchParams, 'companyId');
 
     if (!companyId) {
       return NextResponse.json({ error: 'CompanyId requerido' }, { status: 400 });

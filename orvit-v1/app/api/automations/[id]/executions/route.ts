@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { getIntParam, getStringParam, getPaginationParams } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +41,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const companyId = payload.companyId as number;
-    const ruleId = parseInt(id);
+    const idParams = new URLSearchParams();
+    idParams.set('id', id);
+    const ruleId = getIntParam(idParams, 'id');
 
-    if (isNaN(ruleId)) {
+    if (ruleId === null) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
@@ -60,9 +63,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { searchParams } = request.nextUrl;
-    const status = searchParams.get('status');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const status = getStringParam(searchParams, 'status');
+    const limit = getIntParam(searchParams, 'limit', 50) ?? 50;
+    const offset = getIntParam(searchParams, 'offset', 0) ?? 0;
 
     // Build where clause
     const where: any = { ruleId };

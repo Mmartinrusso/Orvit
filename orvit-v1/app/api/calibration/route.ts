@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { getIntParam, getStringParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,9 +23,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
-    const status = searchParams.get('status');
-    const machineId = searchParams.get('machineId');
+    const companyId = getIntParam(searchParams, 'companyId');
+    const status = getStringParam(searchParams, 'status');
+    const machineId = getIntParam(searchParams, 'machineId');
 
     if (!companyId) {
       return NextResponse.json({ error: 'companyId requerido' }, { status: 400 });
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = { companyId };
     if (status && status !== 'all') where.status = status;
-    if (machineId) where.machineId = parseInt(machineId);
+    if (machineId) where.machineId = machineId;
 
     const calibrations = await prisma.$queryRaw`
       SELECT
@@ -42,8 +44,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN "Machine" m ON c."machineId" = m.id
       LEFT JOIN "User" u ON c."calibratedById" = u.id
       WHERE c."companyId" = ${companyId}
-      ${status && status !== 'all' ? prisma.$queryRaw`AND c.status = ${status}` : prisma.$queryRaw``}
-      ${machineId ? prisma.$queryRaw`AND c."machineId" = ${parseInt(machineId)}` : prisma.$queryRaw``}
+      ${status && status !== 'all' ? Prisma.sql`AND c.status = ${status}` : Prisma.empty}
+      ${machineId ? Prisma.sql`AND c."machineId" = ${machineId}` : Prisma.empty}
       ORDER BY c."nextCalibrationDate" ASC NULLS LAST
     `;
 

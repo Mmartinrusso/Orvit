@@ -9,6 +9,7 @@ import { cached, invalidateCache } from '@/lib/cache/cache-manager';
 import { authKeys, permissionKeys, TTL } from '@/lib/cache/cache-keys';
 import { validateRequest } from '@/lib/validations/helpers';
 import { AuthMeSchema } from '@/lib/validations/auth';
+import { getBoolParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     // ✅ FIX: Permitir bypass de caché con query param o header
     const url = new URL(request.url);
-    const forceRefresh = url.searchParams.get('refresh') === 'true' ||
+    const forceRefresh = getBoolParam(url.searchParams, 'refresh', false) ||
                          request.headers.get('X-Force-Refresh') === 'true';
 
     try {

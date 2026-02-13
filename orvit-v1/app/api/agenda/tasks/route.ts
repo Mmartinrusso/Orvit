@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateAgendaTaskSchema } from '@/lib/validations/agenda-tasks';
+import { getIntParam, getStringParam, getDateParam, getPaginationParams } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,21 +16,21 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
+    const companyId = getIntParam(searchParams, 'companyId');
 
     if (!companyId) {
       return NextResponse.json({ error: 'CompanyId requerido' }, { status: 400 });
     }
 
     // Filtros
-    const status = searchParams.get('status');
-    const priority = searchParams.get('priority');
-    const assigneeId = searchParams.get('assigneeId');
-    const assigneeType = searchParams.get('assigneeType');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const search = searchParams.get('search');
-    const category = searchParams.get('category');
+    const status = getStringParam(searchParams, 'status');
+    const priority = getStringParam(searchParams, 'priority');
+    const assigneeId = getStringParam(searchParams, 'assigneeId');
+    const assigneeType = getStringParam(searchParams, 'assigneeType');
+    const startDate = getDateParam(searchParams, 'startDate');
+    const endDate = getDateParam(searchParams, 'endDate');
+    const search = getStringParam(searchParams, 'search');
+    const category = getStringParam(searchParams, 'category');
 
     // Construir where clause
     const where: any = {
@@ -46,22 +47,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (assigneeId && assigneeType) {
-      if (assigneeType === 'user') {
-        where.assignedToUserId = parseInt(assigneeId);
-      } else if (assigneeType === 'contact') {
-        where.assignedToContactId = parseInt(assigneeId);
+      const parsedAssigneeId = parseInt(assigneeId);
+      if (!isNaN(parsedAssigneeId)) {
+        if (assigneeType === 'user') {
+          where.assignedToUserId = parsedAssigneeId;
+        } else if (assigneeType === 'contact') {
+          where.assignedToContactId = parsedAssigneeId;
+        }
       }
     }
 
     if (startDate && endDate) {
       where.dueDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: startDate,
+        lte: endDate,
       };
     } else if (startDate) {
-      where.dueDate = { gte: new Date(startDate) };
+      where.dueDate = { gte: startDate };
     } else if (endDate) {
-      where.dueDate = { lte: new Date(endDate) };
+      where.dueDate = { lte: endDate };
     }
 
     if (search) {
@@ -77,8 +81,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Pagination
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const pageSize = Math.min(Math.max(1, parseInt(searchParams.get('pageSize') || '100')), 200);
+    const { page, pageSize } = getPaginationParams(searchParams, {
+      defaultPageSize: 100,
+      maxPageSize: 200,
+    });
 
     // Obtener tareas
     const [tasks, totalCount] = await Promise.all([

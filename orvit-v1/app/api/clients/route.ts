@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { getStringParam, getBoolParam, getPaginationParams } from '@/lib/api-utils';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -53,11 +54,13 @@ export async function GET(request: NextRequest) {
 
     // Leer parámetros de paginación y búsqueda
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)));
-    const search = searchParams.get('search')?.trim() || '';
-    const minimal = searchParams.get('minimal') === 'true';
-    const skip = (page - 1) * limit;
+    const { page, pageSize: limit, skip } = getPaginationParams(searchParams, {
+      defaultPageSize: 50,
+      maxPageSize: 200,
+      pageSizeParam: 'limit',
+    });
+    const search = getStringParam(searchParams, 'search') || '';
+    const minimal = getBoolParam(searchParams, 'minimal', false) ?? false;
 
     try {
       // Verificar primero si el modelo existe antes de intentar usarlo

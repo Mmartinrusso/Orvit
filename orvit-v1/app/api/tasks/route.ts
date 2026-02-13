@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 import { Prisma } from '@prisma/client';
+import { getStringParam, getPaginationParams } from '@/lib/api-utils';
 
 // Importar utilidades centralizadas
 import {
@@ -58,16 +59,15 @@ export async function GET(request: NextRequest) {
 
     // Obtener parámetros de filtro y paginación
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const priority = searchParams.get('priority');
-    const assignedTo = searchParams.get('assignedTo');
-    const dateRange = searchParams.get('dateRange');
-    const search = searchParams.get('search');
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const pageSize = Math.min(
-      PAGINATION.MAX_PAGE_SIZE,
-      Math.max(1, parseInt(searchParams.get('pageSize') || String(PAGINATION.DEFAULT_PAGE_SIZE)))
-    );
+    const status = getStringParam(searchParams, 'status');
+    const priority = getStringParam(searchParams, 'priority');
+    const assignedTo = getStringParam(searchParams, 'assignedTo');
+    const dateRange = getStringParam(searchParams, 'dateRange');
+    const search = getStringParam(searchParams, 'search');
+    const { page, pageSize } = getPaginationParams(searchParams, {
+      defaultPageSize: PAGINATION.DEFAULT_PAGE_SIZE,
+      maxPageSize: PAGINATION.MAX_PAGE_SIZE,
+    });
 
     logger.debug('Filtros recibidos', { status, priority, assignedTo, dateRange, search, page, pageSize });
 
@@ -233,9 +233,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    logger.error('Error fetching tasks', error);
+    logger.error('Error obteniendo tareas:', error);
     return NextResponse.json(
-      { error: "Error interno del servidor", details: process.env.NODE_ENV === 'development' ? String(error) : undefined },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }
@@ -397,9 +397,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(transformedTask, { status: 201 });
 
   } catch (error) {
-    logger.error('Error creating task', error);
+    logger.error('Error creando tarea:', error);
     return NextResponse.json(
-      { error: "Error interno del servidor", details: process.env.NODE_ENV === 'development' ? String(error) : undefined },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }

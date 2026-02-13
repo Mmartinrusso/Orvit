@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { getBoolParam, getStringParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,12 +41,12 @@ export async function GET(request: NextRequest) {
     // Build where clause
     const where: any = { companyId };
 
-    const isActive = searchParams.get('isActive');
+    const isActive = getBoolParam(searchParams, 'isActive');
     if (isActive !== null) {
-      where.isActive = isActive === 'true';
+      where.isActive = isActive;
     }
 
-    const triggerType = searchParams.get('triggerType');
+    const triggerType = getStringParam(searchParams, 'triggerType');
     if (triggerType) {
       where.triggerType = triggerType;
     }

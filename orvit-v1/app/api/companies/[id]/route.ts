@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth';
+import { auditConfigChange } from '@/lib/audit';
+import { getIntParam } from '@/lib/api-utils';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -34,9 +36,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const companyId = parseInt(params.id);
-    
-    if (isNaN(companyId)) {
+    const idParams = new URLSearchParams();
+    idParams.set('id', params.id);
+    const companyId = getIntParam(idParams, 'id');
+
+    if (companyId === null) {
       return NextResponse.json(
         { error: 'ID de empresa inválido' },
         { status: 400 }
@@ -86,9 +90,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const companyId = parseInt(params.id);
-    
-    if (isNaN(companyId)) {
+    const idParams = new URLSearchParams();
+    idParams.set('id', params.id);
+    const companyId = getIntParam(idParams, 'id');
+
+    if (companyId === null) {
       return NextResponse.json(
         { error: 'ID de empresa inválido' },
         { status: 400 }
@@ -403,6 +409,22 @@ export async function PUT(
       }
     }
 
+    // Audit log: cambio de configuración de empresa
+    auditConfigChange(
+      currentUser.id,
+      companyId,
+      'CompanySettings',
+      companyId,
+      {
+        name: existingCompany.name,
+        cuit: existingCompany.cuit,
+        address: existingCompany.address,
+        phone: existingCompany.phone,
+        email: existingCompany.email,
+      },
+      updateData
+    );
+
     console.log('✅ Empresa actualizada:', {
       id: updatedCompany.id,
       name: updatedCompany.name,
@@ -441,9 +463,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const companyId = parseInt(params.id);
-    
-    if (isNaN(companyId)) {
+    const idParams = new URLSearchParams();
+    idParams.set('id', params.id);
+    const companyId = getIntParam(idParams, 'id');
+
+    if (companyId === null) {
       return NextResponse.json(
         { error: 'ID de empresa inválido' },
         { status: 400 }

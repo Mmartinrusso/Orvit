@@ -6,6 +6,7 @@ import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateWorkOrderSchema } from '@/lib/validations/work-orders';
 import { trackCount } from '@/lib/metrics';
+import { getIntParam, getStringParam, getPaginationParams } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,22 +15,24 @@ export const dynamic = 'force-dynamic';
 export const GET = withGuards(async (request: NextRequest, { user }) => {
   try {
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const status = searchParams.get('status');
-    const priority = searchParams.get('priority');
-    const type = searchParams.get('type');
-    const machineId = searchParams.get('machineId');
-    const assignedToId = searchParams.get('assignedToId');
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const pageSize = Math.min(Math.max(1, parseInt(searchParams.get('pageSize') || '100')), 200);
+    const companyId = getIntParam(searchParams, 'companyId');
+    const status = getStringParam(searchParams, 'status');
+    const priority = getStringParam(searchParams, 'priority');
+    const type = getStringParam(searchParams, 'type');
+    const machineId = getIntParam(searchParams, 'machineId');
+    const assignedToId = getIntParam(searchParams, 'assignedToId');
+    const { page, pageSize } = getPaginationParams(searchParams, {
+      defaultPageSize: 100,
+      maxPageSize: 200,
+    });
 
     const where: any = {};
-    if (companyId) where.companyId = Number(companyId);
+    if (companyId) where.companyId = companyId;
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (type) where.type = type;
-    if (machineId) where.machineId = Number(machineId);
-    if (assignedToId) where.assignedToId = Number(assignedToId);
+    if (machineId) where.machineId = machineId;
+    if (assignedToId) where.assignedToId = assignedToId;
 
     const [workOrders, totalCount] = await Promise.all([
       prisma.workOrder.findMany({
@@ -406,10 +409,10 @@ export const POST = withGuards(async (request: NextRequest, { user }) => {
 export const DELETE = withGuards(async (request: NextRequest, { user }) => {
   try {
     const { searchParams } = new URL(request.url);
-    const workOrderId = searchParams.get('id');
+    const workOrderId = getIntParam(searchParams, 'id');
     const userId = user.userId;
 
-    if (!workOrderId) {
+    if (workOrderId === null) {
       return NextResponse.json(
         { error: 'ID de orden de trabajo es requerido' },
         { status: 400 }
@@ -432,7 +435,7 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
         },
       }),
       prisma.workOrder.findUnique({
-        where: { id: Number(workOrderId) },
+        where: { id: workOrderId },
         select: {
           id: true,
           title: true,
@@ -540,7 +543,7 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
 
     // Soft delete: marcar como eliminada sin borrar datos
     await prisma.workOrder.update({
-      where: { id: Number(workOrderId) },
+      where: { id: workOrderId },
       data: {
         deletedAt: new Date(),
         deletedBy: `${userId}`,
