@@ -33,4 +33,9 @@ export * from './agenda-tasks';
 export * from './auth';
 export * from './dashboard';
 export * from './daily-sessions';
+export * from './notifications';
+export * from './components';
+export * from './failures';
+export * from './contacts';
+export * from './recepciones';
 // costs.ts already exists with its own exports

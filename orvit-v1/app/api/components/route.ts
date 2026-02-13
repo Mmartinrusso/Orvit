@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { validateRequest } from '@/lib/validations/helpers';
+import { CreateComponentSchema } from '@/lib/validations/components';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +64,12 @@ async function getComponentBreadcrumb(componentId: number): Promise<string[]> {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
+    const validation = validateRequest(CreateComponentSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const {
       name,
       type,
@@ -71,29 +79,20 @@ export async function POST(request: Request) {
       machineId,
       logo,
       photo,
-      // Nuevo: usar spareAction en lugar de createSpare
-      spareAction = 'none',    // 'none' | 'link' | 'create'
-      existingSpareId,         // ID del repuesto existente (para 'link')
-      initialStock = 0,        // Stock inicial por defecto
-      spareMinStock = 5,       // Stock mínimo por defecto
-      spareCategory = 'Repuestos', // Categoría por defecto
-      spareName,               // Nombre específico del repuesto
-      spareDescription,        // Descripción técnica del repuesto
-      spareImage,              // Imagen del repuesto
-      companyId                // ID de la empresa
-    } = body;
+      spareAction,
+      existingSpareId,
+      initialStock,
+      spareMinStock,
+      spareCategory,
+      spareName,
+      spareDescription,
+      spareImage,
+      companyId,
+    } = validation.data;
 
     // Determinar si se debe crear repuesto basado en spareAction
     const shouldCreateSpare = spareAction === 'create';
     const shouldLinkSpare = spareAction === 'link' && existingSpareId;
-
-    if (!name || !machineId) {
-      return NextResponse.json({ error: 'Faltan campos obligatorios: name, machineId' }, { status: 400 });
-    }
-
-    if ((shouldCreateSpare || shouldLinkSpare) && !companyId) {
-      return NextResponse.json({ error: 'ID de empresa es requerido para gestionar repuestos' }, { status: 400 });
-    }
 
     // Tipo es opcional ahora - por defecto "component"
     const normalizedType = (type || 'component').toLowerCase();
@@ -105,9 +104,9 @@ export async function POST(request: Request) {
     let breadcrumb: string[] = [];
 
     if (parentId) {
-      // Verificar que el padre existe
+      // Verificar que el padre existe (parentId ya es number por z.coerce)
       const parent = await prisma.component.findUnique({
-        where: { id: Number(parentId) },
+        where: { id: parentId },
         select: { id: true, type: true, machineId: true, name: true }
       });
 
@@ -117,8 +116,8 @@ export async function POST(request: Request) {
         }, { status: 404 });
       }
 
-      // Validar que el padre pertenece a la misma máquina
-      if (parent.machineId !== Number(machineId)) {
+      // Validar que el padre pertenece a la misma máquina (machineId ya es number)
+      if (parent.machineId !== machineId) {
         return NextResponse.json({
           error: 'El componente padre debe pertenecer a la misma máquina',
           hint: `El padre "${parent.name}" pertenece a otra máquina`
@@ -139,17 +138,15 @@ export async function POST(request: Request) {
 
     // ============ VALIDACIÓN DE STOCK ============
     if (shouldCreateSpare) {
-      const numInitialStock = Number(initialStock) || 0;
-      const numMinStock = Number(spareMinStock) || 0;
-
-      if (numInitialStock < 0 || numMinStock < 0) {
+      // initialStock y spareMinStock ya son numbers por z.coerce
+      if (initialStock < 0 || spareMinStock < 0) {
         return NextResponse.json({
           error: 'Los valores de stock no pueden ser negativos'
         }, { status: 400 });
       }
 
-      if (numMinStock > numInitialStock) {
-        console.warn(`⚠️ Stock mínimo (${numMinStock}) mayor que stock inicial (${numInitialStock}) para "${name}"`);
+      if (spareMinStock > initialStock) {
+        console.warn(`⚠️ Stock mínimo (${spareMinStock}) mayor que stock inicial (${initialStock}) para "${name}"`);
       }
 
       if (spareName && spareName.trim().length < 2) {
@@ -159,10 +156,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // Validación para vincular repuesto existente
+    // Validación para vincular repuesto existente (existingSpareId ya es number)
     if (shouldLinkSpare) {
       const existingTool = await prisma.tool.findUnique({
-        where: { id: Number(existingSpareId) }
+        where: { id: existingSpareId! }
       });
       if (!existingTool) {
         return NextResponse.json({
@@ -180,8 +177,8 @@ export async function POST(request: Request) {
         type: normalizedType,
         system,
         technicalInfo,
-        machineId: Number(machineId),
-        parentId: parentId ? Number(parentId) : undefined,
+        machineId,
+        parentId: parentId ?? undefined,
         logo,
       },
       select: {
@@ -236,11 +233,11 @@ export async function POST(request: Request) {
             description: spareDescription || `Repuesto para componente: ${name}`,
             itemType: 'SUPPLY', // Es un repuesto que se consume
             category: spareCategory,
-            stockQuantity: parseInt(initialStock), // Stock inicial cargado
+            stockQuantity: initialStock, // Stock inicial (ya es number por z.coerce)
             minStockLevel: spareMinStock,
             status: 'AVAILABLE',
             notes: `Repuesto creado automáticamente para componente ID: ${component.id}`,
-            companyId: parseInt(companyId),
+            companyId: companyId!,
             // Agregar logo si se proporciona (el modelo no tiene campo image)
             ...(spareImage && { logo: spareImage })
           }
@@ -267,12 +264,12 @@ export async function POST(request: Request) {
         // Vincular el componente con el repuesto existente
         await prisma.$executeRaw`
           INSERT INTO "ComponentTool" ("componentId", "toolId", "quantityNeeded", "minStockLevel", "notes", "isOptional", "createdAt", "updatedAt")
-          VALUES (${component.id}, ${Number(existingSpareId)}, 1, ${spareMinStock}, 'Vinculación manual al crear componente', false, NOW(), NOW())
+          VALUES (${component.id}, ${existingSpareId!}, 1, ${spareMinStock}, 'Vinculación manual al crear componente', false, NOW(), NOW())
         `;
 
         // Obtener info del repuesto vinculado
         linkedTool = await prisma.tool.findUnique({
-          where: { id: Number(existingSpareId) },
+          where: { id: existingSpareId! },
           select: { id: true, name: true, stockQuantity: true, minStockLevel: true }
         });
 

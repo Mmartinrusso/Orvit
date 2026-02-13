@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { validateRequest } from '@/lib/validations/helpers';
+import { UpdateFailureSchema } from '@/lib/validations/failures';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -60,6 +62,12 @@ export async function PUT(
     }
 
     const body = await request.json();
+
+    const validation = validateRequest(UpdateFailureSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const {
       title,
       description,
@@ -75,7 +83,7 @@ export async function PUT(
       status,
       failureFiles,
       solutionAttachments
-    } = body;
+    } = validation.data;
 
     console.log(`📝 PUT /api/failures/${failureId} - Actualizando falla`);
 
@@ -110,8 +118,8 @@ export async function PUT(
         description: description || existingFailure.description,
         priority: priority || existingFailure.priority,
         status: status || existingFailure.status,
-        estimatedHours: estimatedHours ? parseFloat(estimatedHours) : existingFailure.estimatedHours,
-        actualHours: actualHours ? parseFloat(actualHours) : existingFailure.actualHours,
+        estimatedHours: estimatedHours !== undefined ? estimatedHours : existingFailure.estimatedHours,
+        actualHours: actualHours !== undefined ? actualHours : existingFailure.actualHours,
         notes: JSON.stringify(additionalData),
         updatedAt: new Date()
       },
