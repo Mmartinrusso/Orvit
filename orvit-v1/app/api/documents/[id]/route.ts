@@ -3,21 +3,21 @@ import { prisma } from '@/lib/prisma';
 import { deleteS3File } from '@/lib/s3-utils';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { JWT_SECRET } from '@/lib/auth';
+
+const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 // Función para validar JWT desde cookies
 async function validateTokenFromCookie() {
   const cookieStore = cookies();
   const token = cookieStore.get('token')?.value;
-  
+
   if (!token) {
     return null;
   }
-  
+
   try {
-    const JWT_SECRET = new TextEncoder().encode(
-      process.env.JWT_SECRET || 'Messi'
-    );
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
     return payload;
   } catch {
     return null;
@@ -127,20 +127,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Documento no encontrado' }, { status: 404 });
     }
 
-    // 2. Si tiene una URL de S3, eliminar el archivo
+    // 2. Eliminar el registro de la BD primero (rollback posible si falla)
+    await prisma.document.delete({
+      where: { id: documentId },
+    });
+
+    // 3. Si tiene una URL de S3, eliminar el archivo (fire-and-forget, DB ya está limpia)
     if (document.url) {
       try {
         await deleteS3File(document.url);
       } catch (s3Error) {
-        console.error('Error eliminando archivo de S3:', s3Error);
-        // Continuar con la eliminación del registro aunque falle S3
+        console.error('Error eliminando archivo de S3 (registro ya eliminado de BD):', s3Error);
       }
     }
-
-    // 3. Eliminar el registro de la BD
-    await prisma.document.delete({
-      where: { id: documentId },
-    });
 
     return NextResponse.json({ message: 'Documento eliminado exitosamente' }, { status: 200 });
   } catch (error) {

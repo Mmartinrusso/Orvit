@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { deleteEntityFiles, deleteMultipleEntityFiles, deleteS3File } from '@/lib/s3-utils';
+import { validateRequest } from '@/lib/validations/helpers';
+import { UpdateComponentSchema } from '@/lib/validations/components';
 
 // ============================================
 // OPTIMIZED HELPERS using Recursive CTEs
@@ -221,19 +223,24 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     console.log(`🔄 Body recibido:`, body);
     console.log(`🔄 Tipo de ID:`, typeof id, 'Valor:', id);
 
+    const validation = validateRequest(UpdateComponentSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     // Extraer datos de repuesto y campos problemáticos del body
-    const { 
-      spareAction, 
-      existingSpareId, 
-      initialStock = 0, 
-      spareMinStock = 5, 
+    const {
+      spareAction,
+      existingSpareId,
+      initialStock = 0,
+      spareMinStock = 5,
       spareCategory = 'Repuestos',
       companyId,
       machineId,    // Separar machineId que requiere sintaxis especial
       photo,        // Campo que no existe en Component model
       status,       // Campo que no existe en Component model
-      ...componentData 
-    } = body;
+      ...componentData
+    } = validation.data;
 
     // Obtener el componente actual para verificar si el logo cambió
     const currentComponent = await prisma.component.findUnique({
@@ -247,9 +254,10 @@ export async function PATCH(request: Request, context: { params: { id: string } 
 
     // ============ VALIDACIÓN DE CAMBIO DE PADRE ============
     if (componentData.parentId !== undefined) {
+      // parentId viene de UpdateComponentSchema: z.coerce.number | null | ''
       const newParentId = componentData.parentId === null || componentData.parentId === ''
         ? null
-        : Number(componentData.parentId);
+        : componentData.parentId as number;
 
       // Si se está asignando un nuevo padre
       if (newParentId !== null) {
@@ -304,8 +312,8 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     Object.keys(componentData).forEach(key => {
       if (validFields.includes(key)) {
         if (key === 'parentId') {
-          // Manejar parentId: puede ser null para quitar el padre, o un número para asignar uno
-          updateData.parentId = componentData[key] === null || componentData[key] === '' ? null : Number(componentData[key]);
+          // Manejar parentId: puede ser null para quitar el padre, o un número (ya coerced por Zod)
+          updateData.parentId = componentData[key] === null || componentData[key] === '' ? null : componentData[key];
         } else {
           updateData[key] = componentData[key];
         }
@@ -316,126 +324,98 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     
     console.log('🔄 Campos válidos para actualización:', updateData);
 
-    // Solo actualizar machine si machineId cambió
+    // Solo actualizar machine si machineId cambió (ya es number por z.coerce)
     if (machineId && machineId !== currentComponent.machineId) {
       updateData.machine = {
-        connect: { id: Number(machineId) }
+        connect: { id: machineId }
       };
     }
 
     console.log('🔄 Datos preparados para Prisma update:', updateData);
     console.log('🔄 ID a actualizar:', Number(id));
 
-    // Actualizar el componente (solo datos válidos para Prisma)
-    let updated;
-    try {
-      updated = await prisma.component.update({
+    // Transacción atómica: actualizar componente + gestionar repuestos
+    let spareResult = null;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      // 1. Actualizar el componente
+      const comp = await tx.component.update({
         where: { id: Number(id) },
         data: updateData,
       });
-      console.log('✅ Componente actualizado en Prisma:', updated);
-    } catch (prismaError: any) {
-      console.error('❌ Error de Prisma al actualizar:', prismaError);
-      console.error('❌ Código de error:', prismaError.code);
-      console.error('❌ Mensaje de error:', prismaError.message);
-      throw prismaError;
-    }
+      console.log('✅ Componente actualizado en Prisma:', comp);
 
-    // Eliminar logo anterior de S3 si se eliminó o reemplazó
+      // 2. Procesar lógica de repuestos dentro de la transacción
+      if (spareAction && companyId) {
+        console.log(`🔧 [API] Procesando spareAction: ${spareAction}`);
+
+        if (spareAction === 'create') {
+          console.log(`➕ Creando nuevo repuesto para componente "${comp.name}"`);
+
+          const createdTool = await tx.tool.create({
+            data: {
+              name: `Repuesto - ${comp.name}`,
+              description: `Repuesto para componente: ${comp.name}`,
+              itemType: 'SUPPLY',
+              category: spareCategory,
+              stockQuantity: initialStock,
+              minStockLevel: spareMinStock,
+              status: 'AVAILABLE',
+              notes: `Repuesto creado automáticamente para componente ID: ${comp.id}`,
+              companyId: companyId!
+            }
+          });
+
+          await tx.$executeRaw`
+            INSERT INTO "ComponentTool" ("componentId", "toolId", "quantityNeeded", "minStockLevel", "notes", "isOptional", "createdAt", "updatedAt")
+            VALUES (${comp.id}, ${createdTool.id}, 1, ${spareMinStock}, 'Vinculación automática al actualizar componente', false, NOW(), NOW())
+            ON CONFLICT ("componentId", "toolId") DO NOTHING
+          `;
+
+          spareResult = { action: 'created', tool: createdTool };
+
+        } else if (spareAction === 'link' && existingSpareId) {
+          // Eliminar associations antiguas antes de vincular nueva
+          await tx.componentTool.deleteMany({
+            where: { componentId: comp.id }
+          });
+
+          await tx.$executeRaw`
+            INSERT INTO "ComponentTool" ("componentId", "toolId", "quantityNeeded", "minStockLevel", "notes", "isOptional", "createdAt", "updatedAt")
+            VALUES (${comp.id}, ${existingSpareId}, 1, ${spareMinStock}, 'Vinculación manual al actualizar componente', false, NOW(), NOW())
+            ON CONFLICT ("componentId", "toolId") DO UPDATE SET
+              "minStockLevel" = ${spareMinStock},
+              "updatedAt" = NOW()
+          `;
+
+          spareResult = { action: 'linked', spareId: existingSpareId };
+
+        } else if (spareAction === 'none') {
+          console.log(`🚫 Eliminando vinculaciones existentes del componente ${comp.id}`);
+
+          await tx.componentTool.deleteMany({
+            where: { componentId: comp.id }
+          });
+
+          console.log(`✅ Vinculaciones eliminadas exitosamente`);
+          spareResult = { action: 'unlinked' };
+        }
+      }
+
+      return comp;
+    });
+
+    // Eliminar logo anterior de S3 si se eliminó o reemplazó (fire-and-forget, después de la transacción)
     if (currentComponent.logo && body.logo !== undefined) {
       const isDeleting = body.logo === null || body.logo === '';
       const isReplacing = !isDeleting && body.logo !== currentComponent.logo;
-      
+
       if (isDeleting || isReplacing) {
         try {
           await deleteS3File(currentComponent.logo);
           console.log(`✅ Logo anterior eliminado de S3: ${currentComponent.logo}`);
         } catch (error) {
           console.error('⚠️ Error eliminando logo anterior de componente de S3:', error);
-          // No fallar la operación si falla la eliminación de S3
-        }
-      }
-    }
-
-    let spareResult = null;
-
-    // Procesar lógica de repuestos
-    if (spareAction && companyId) {
-      console.log(`🔧 [API] Procesando spareAction: ${spareAction}`);
-      console.log(`🔧 [API] existingSpareId: ${existingSpareId}`);
-      console.log(`🔧 [API] companyId: ${companyId}`);
-
-      if (spareAction === 'create') {
-        // Crear nuevo repuesto automáticamente
-        try {
-          console.log(`➕ Creando nuevo repuesto para componente "${updated.name}"`);
-          
-          const createdTool = await prisma.tool.create({
-            data: {
-              name: `Repuesto - ${updated.name}`,
-              description: `Repuesto para componente: ${updated.name}`,
-              itemType: 'SUPPLY',
-              category: spareCategory,
-              stockQuantity: parseInt(initialStock),
-              minStockLevel: spareMinStock,
-              status: 'AVAILABLE',
-              notes: `Repuesto creado automáticamente para componente ID: ${updated.id}`,
-              companyId: parseInt(companyId)
-            }
-          });
-          // console.log(`✅ Repuesto creado: ID=${createdTool.id}, Nombre="${createdTool.name}"`) // Log reducido;
-
-          // Vincular el componente con el repuesto
-          // console.log(`🔗 Vinculando componente ${updated.id} con repuesto ${createdTool.id}`) // Log reducido;
-          await prisma.$executeRaw`
-            INSERT INTO "ComponentTool" ("componentId", "toolId", "quantityNeeded", "minStockLevel", "notes", "isOptional", "createdAt", "updatedAt")
-            VALUES (${updated.id}, ${createdTool.id}, 1, ${spareMinStock}, 'Vinculación automática al actualizar componente', false, NOW(), NOW())
-            ON CONFLICT ("componentId", "toolId") DO NOTHING
-          `;
-          // console.log(`✅ Vinculación ComponentTool creada exitosamente`) // Log reducido;
-
-          spareResult = { action: 'created', tool: createdTool };
-
-        } catch (spareError: any) {
-          console.error('❌ Error creando repuesto automático:', spareError);
-          spareResult = { action: 'create_error', error: spareError.message };
-        }
-
-      } else if (spareAction === 'link' && existingSpareId) {
-        // Vincular con repuesto existente
-        try {
-          // console.log(`🔗 Vinculando componente ${updated.id} con repuesto existente ${existingSpareId}`) // Log reducido;
-          
-          await prisma.$executeRaw`
-            INSERT INTO "ComponentTool" ("componentId", "toolId", "quantityNeeded", "minStockLevel", "notes", "isOptional", "createdAt", "updatedAt")
-            VALUES (${updated.id}, ${existingSpareId}, 1, ${spareMinStock}, 'Vinculación manual al actualizar componente', false, NOW(), NOW())
-            ON CONFLICT ("componentId", "toolId") DO UPDATE SET
-              "minStockLevel" = ${spareMinStock},
-              "updatedAt" = NOW()
-          `;
-          // console.log(`✅ Vinculación con repuesto existente creada exitosamente`) // Log reducido;
-
-          spareResult = { action: 'linked', spareId: existingSpareId };
-
-        } catch (linkError: any) {
-          console.error('❌ Error vinculando repuesto existente:', linkError);
-          spareResult = { action: 'link_error', error: linkError.message };
-        }
-
-      } else if (spareAction === 'none') {
-        // Eliminar vinculaciones existentes
-        try {
-          console.log(`🚫 Eliminando vinculaciones existentes del componente ${updated.id}`);
-          
-          await prisma.componentTool.deleteMany({
-            where: { componentId: updated.id }
-          });
-          
-          console.log(`✅ Vinculaciones eliminadas exitosamente`);
-          spareResult = { action: 'unlinked' };
-        } catch (unlinkError: any) {
-          console.error('❌ Error eliminando vinculaciones:', unlinkError);
-          spareResult = { action: 'unlink_error', error: unlinkError.message };
         }
       }
     }
@@ -525,31 +505,27 @@ export async function DELETE(request: Request, context: { params: { id: string }
       console.log(`✅ No hay tools para eliminar`);
     }
 
-    // Preparar entidades para eliminar archivos de S3
-    const entitiesToDelete = allComponentIds.map(componentId => ({ 
-      type: 'component', 
-      id: componentId.toString() 
+    // Transacción atómica: eliminar tool associations + component
+    await prisma.$transaction(async (tx) => {
+      // 1. Eliminar tool_component_associations de todos los componentes a eliminar
+      await tx.componentTool.deleteMany({
+        where: { componentId: { in: allComponentIds } }
+      });
+
+      // 2. Eliminar el componente (cascada automática eliminará los hijos)
+      await tx.component.delete({ where: { id: Number(id) } });
+    });
+
+    // Eliminar archivos de S3 (fire-and-forget, DB ya está limpia)
+    const entitiesToDelete = allComponentIds.map(componentId => ({
+      type: 'component',
+      id: componentId.toString()
     }));
 
-    // Eliminar archivos de S3 en paralelo con la eliminación de la base de datos
-    const [dbResult, s3Result] = await Promise.allSettled([
-      // Eliminar de la base de datos (cascada automática eliminará los hijos)
-      prisma.component.delete({ where: { id: Number(id) } }),
-      // Eliminar archivos de S3
-      deleteMultipleEntityFiles(entitiesToDelete)
-    ]);
-
-    if (dbResult.status === 'rejected') {
-      console.error('Error eliminando componente de la base de datos:', dbResult.reason);
-      return NextResponse.json({ 
-        error: 'Error al eliminar componente de la base de datos', 
-        details: dbResult.reason 
-      }, { status: 500 });
-    }
-
-    if (s3Result.status === 'rejected') {
-      console.error('Error eliminando archivos de S3:', s3Result.reason);
-      // No fallar la operación por errores de S3, solo logear
+    try {
+      await deleteMultipleEntityFiles(entitiesToDelete);
+    } catch (s3Error) {
+      console.error('Error eliminando archivos de S3 (registros ya eliminados de BD):', s3Error);
     }
 
     console.log(`Componente ${id} eliminado exitosamente`);

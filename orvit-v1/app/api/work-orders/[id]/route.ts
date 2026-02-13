@@ -7,6 +7,7 @@ import {
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateWorkOrderSchema } from '@/lib/validations/work-orders';
+import { trackCount, trackDuration } from '@/lib/metrics';
 
 // ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
@@ -285,9 +286,25 @@ export const PUT = withGuards(async (request: NextRequest, { user, params: _p },
       },
     });
 
+    // Métricas: completar OT y tiempo de resolución (fire-and-forget)
+    if (normalizedStatus === 'COMPLETED' && originalWorkOrder.status !== 'COMPLETED') {
+      trackCount('work_orders_completed', updatedWorkOrder.companyId, {
+        tags: { type: updatedWorkOrder.type, priority: updatedWorkOrder.priority },
+        userId: user.userId,
+      }).catch(() => {});
+
+      if (updatedWorkOrder.createdAt && updatedWorkOrder.completedDate) {
+        const resolutionMs = new Date(updatedWorkOrder.completedDate).getTime() - new Date(updatedWorkOrder.createdAt).getTime();
+        trackDuration('resolution_time', resolutionMs, updatedWorkOrder.companyId, {
+          tags: { type: updatedWorkOrder.type },
+          userId: user.userId,
+        }).catch(() => {});
+      }
+    }
+
     // Verificar si cambió la asignación para enviar notificación
-    if (assignedToId && 
-        originalWorkOrder?.assignedToId !== Number(assignedToId) && 
+    if (assignedToId &&
+        originalWorkOrder?.assignedToId !== Number(assignedToId) &&
         Number(assignedToId) !== originalWorkOrder.createdById) {
       try {
         await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications`, {
@@ -366,14 +383,17 @@ export const DELETE = withGuards(async (request: NextRequest, { user, params: _p
       return NextResponse.json({ error: 'Orden de trabajo no encontrada' }, { status: 404 });
     }
 
-    // Eliminar attachments primero (cascade debería manejarlo, pero por seguridad)
-    await prisma.workOrderAttachment.deleteMany({
-      where: { workOrderId: Number(id) },
-    });
+    // Transacción atómica: eliminar dependencias y la orden de trabajo
+    await prisma.$transaction(async (tx) => {
+      // Eliminar attachments primero (cascade debería manejarlo, pero por seguridad)
+      await tx.workOrderAttachment.deleteMany({
+        where: { workOrderId: Number(id) },
+      });
 
-    // Eliminar la orden de trabajo
-    await prisma.workOrder.delete({
-      where: { id: Number(id) },
+      // Eliminar la orden de trabajo
+      await tx.workOrder.delete({
+        where: { id: Number(id) },
+      });
     });
 
     return new NextResponse(null, { status: 204 });

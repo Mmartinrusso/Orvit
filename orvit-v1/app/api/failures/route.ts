@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { triggerFailureReported, triggerWorkOrderCreated } from '@/lib/automation/engine';
+import { validateRequest } from '@/lib/validations/helpers';
+import { CreateFailureSchema } from '@/lib/validations/failures';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,31 +10,27 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
-    console.log('🔧 [API] Recibiendo datos de falla:', data);
-    console.log('🔧 [API] Datos completos:', JSON.stringify(data, null, 2));
+    const body = await request.json();
+    console.log('🔧 [API] Recibiendo datos de falla:', body);
+    console.log('🔧 [API] Datos completos:', JSON.stringify(body, null, 2));
 
-    // Validar datos requeridos
-    if (!data.title || !data.machineId) {
-      return NextResponse.json(
-        { error: 'Título y ID de máquina son requeridos' },
-        { status: 400 }
-      );
+    const validation = validateRequest(CreateFailureSchema, body);
+    if (!validation.success) {
+      return validation.response;
     }
 
-    // Obtener companyId y createdById de los datos (convertir a números)
-    const companyIdFromData = data.companyId ? parseInt(String(data.companyId)) : null;
-    const createdByIdFromData = data.createdBy || data.createdById
-      ? parseInt(String(data.createdBy || data.createdById))
-      : null;
+    const data = validation.data;
+
+    // Obtener companyId y createdById (ya son números por z.coerce en el schema)
+    const companyIdFromData = data.companyId ?? null;
+    const createdByIdFromData = data.createdBy || data.createdById || null;
 
     console.log('🔧 [API] companyId from data:', companyIdFromData);
     console.log('🔧 [API] createdById from data:', createdByIdFromData);
 
-    // Verificar que la máquina existe
-    const machineIdParsed = parseInt(String(data.machineId));
+    // Verificar que la máquina existe (machineId ya es number por z.coerce)
     const machine = await prisma.machine.findUnique({
-      where: { id: machineIdParsed },
+      where: { id: data.machineId },
       select: { id: true, companyId: true }
     });
 
@@ -46,9 +44,7 @@ export async function POST(request: NextRequest) {
     console.log('🔧 [API] Máquina encontrada:', machine);
 
     // Usar el companyId de la máquina si no se proporciona uno válido
-    const finalCompanyId = (companyIdFromData && !isNaN(companyIdFromData))
-      ? companyIdFromData
-      : machine.companyId;
+    const finalCompanyId = companyIdFromData ?? machine.companyId;
     console.log('🔧 [API] Final companyId:', finalCompanyId);
 
     // Verificar que el usuario existe o obtener el primero disponible
@@ -56,8 +52,8 @@ export async function POST(request: NextRequest) {
     // Los usuarios están asociados a empresas via UserOnCompany
     let finalCreatedById: number;
 
-    // Primero intentar usar el createdBy/createdById si es un número válido
-    if (createdByIdFromData && !isNaN(createdByIdFromData)) {
+    // Primero intentar usar el createdBy/createdById si existe
+    if (createdByIdFromData) {
       const user = await prisma.user.findUnique({
         where: { id: createdByIdFromData }
       });
@@ -95,10 +91,8 @@ export async function POST(request: NextRequest) {
 
     console.log('🔧 [API] Final createdById:', finalCreatedById);
 
-    // ✅ Obtener nombres de componentes afectados
-    const componentIds = (data.selectedComponents || [])
-      .map((id: any) => typeof id === 'string' ? parseInt(id) : id)
-      .filter((id: number) => !isNaN(id));
+    // ✅ Obtener nombres de componentes afectados (ya son numbers por z.coerce)
+    const componentIds = data.selectedComponents || [];
 
     let componentNames: string[] = [];
     if (componentIds.length > 0) {
@@ -115,43 +109,43 @@ export async function POST(request: NextRequest) {
 
     console.log('🔧 [API] Componentes afectados:', { componentIds, componentNames });
 
-    // Crear la falla como WorkOrder (ya que la tabla failures no existe)
-    const result = await prisma.workOrder.create({
-      data: {
-        title: data.title,
-        description: data.description || '',
-        type: 'CORRECTIVE',
-        priority: data.priority || 'MEDIUM',
-        estimatedHours: parseFloat(String(data.estimatedHours)) || 0,
-        machineId: machineIdParsed,
-        status: 'PENDING',
-        companyId: finalCompanyId,
-        createdById: finalCreatedById,
-        notes: JSON.stringify({
-          failureType: data.failureType || 'MECANICA',
-          affectedComponents: componentIds, // ✅ Guardar como números
-          componentNames: componentNames, // ✅ Guardar nombres
-          attachments: data.failureAttachments?.map((file: any) => file.name || file) || [],
-          reportedDate: data.reportedDate ? new Date(data.reportedDate).toISOString() : new Date().toISOString(),
-          timeUnit: data.timeUnit || 'hours',
-          estimatedTime: data.estimatedHours || 0,
-          // ✅ Guardar información del reportador (empleado)
-          reportedById: data.createdById || null,
-          reportedByName: data.createdByName || null
-        })
-      }
-    });
-
-    console.log('✅ [API] WorkOrder de falla creado:', result.id);
-
-    // ✅ NUEVO: Crear FailureOccurrence asociada al WorkOrder
-    let failureOccurrence = null;
-    try {
-      failureOccurrence = await prisma.failureOccurrence.create({
+    // Transacción atómica: crear WorkOrder + FailureOccurrence
+    const { result, failureOccurrence } = await prisma.$transaction(async (tx) => {
+      // 1. Crear la falla como WorkOrder
+      const workOrder = await tx.workOrder.create({
         data: {
-          failureId: result.id, // WorkOrder ID
-          failureTypeId: data.failureTypeId ? parseInt(String(data.failureTypeId)) : null, // Link al catálogo
-          machineId: machineIdParsed,
+          title: data.title,
+          description: data.description || '',
+          type: 'CORRECTIVE',
+          priority: data.priority || 'MEDIUM',
+          estimatedHours: data.estimatedHours || 0,
+          machineId: data.machineId,
+          status: 'PENDING',
+          companyId: finalCompanyId,
+          createdById: finalCreatedById,
+          notes: JSON.stringify({
+            failureType: data.failureType || 'MECANICA',
+            affectedComponents: componentIds,
+            componentNames: componentNames,
+            attachments: data.failureAttachments?.map((file: any) => file.name || file) || [],
+            reportedDate: data.reportedDate ? new Date(data.reportedDate).toISOString() : new Date().toISOString(),
+            timeUnit: data.timeUnit || 'hours',
+            estimatedTime: data.estimatedHours || 0,
+            reportedById: data.createdById || null,
+            reportedByName: data.createdByName || null
+          })
+        }
+      });
+
+      console.log('✅ [API] WorkOrder de falla creado:', workOrder.id);
+
+      // 2. Crear FailureOccurrence asociada al WorkOrder
+      const occurrence = await tx.failureOccurrence.create({
+        data: {
+          failureId: workOrder.id,
+          failureTypeId: data.failureTypeId ?? null,
+          machineId: data.machineId,
+          companyId: finalCompanyId,
           reportedBy: finalCreatedById,
           reportedAt: data.reportedDate ? new Date(data.reportedDate) : new Date(),
           title: data.title,
@@ -163,11 +157,11 @@ export async function POST(request: NextRequest) {
           notes: null
         }
       });
-      console.log('✅ [API] FailureOccurrence creada:', failureOccurrence.id);
-    } catch (occError) {
-      // Si falla la creación de occurrence, loguear pero no fallar todo
-      console.error('⚠️ [API] Error creando FailureOccurrence (no crítico):', occError);
-    }
+
+      console.log('✅ [API] FailureOccurrence creada:', occurrence.id);
+
+      return { result: workOrder, failureOccurrence: occurrence };
+    });
 
     // Si se proporcionó un failureTypeId, crear/verificar el tipo de falla en el catálogo
     if (data.failureTypeId) {
@@ -178,7 +172,7 @@ export async function POST(request: NextRequest) {
         const existingType = await prisma.failure.findFirst({
           where: {
             title: { equals: data.title, mode: 'insensitive' },
-            machine_id: machineIdParsed
+            machine_id: data.machineId
           }
         });
 
@@ -187,11 +181,11 @@ export async function POST(request: NextRequest) {
             data: {
               title: data.title,
               description: data.description || null,
-              machine_id: machineIdParsed,
+              machine_id: data.machineId,
               companyId: finalCompanyId,
               failure_type: data.failureType || 'MECANICA',
               priority: data.priority || 'MEDIUM',
-              estimated_hours: parseFloat(String(data.estimatedHours)) || null,
+              estimated_hours: data.estimatedHours ?? null,
               affected_components: componentIds.length > 0 ? componentIds : null,
               isActive: true,
               status: 'ACTIVE'
@@ -220,7 +214,7 @@ export async function POST(request: NextRequest) {
       if (failureOccurrence) {
         await triggerFailureReported(
           finalCompanyId,
-          { ...failureOccurrence, machine: { id: machineIdParsed } } as unknown as Record<string, unknown>,
+          { ...failureOccurrence, machine: { id: data.machineId } } as unknown as Record<string, unknown>,
           finalCreatedById
         );
       }

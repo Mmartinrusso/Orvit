@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { validateRequest } from '@/lib/validations/helpers';
+import { UpdateFailureSchema } from '@/lib/validations/failures';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -60,6 +62,12 @@ export async function PUT(
     }
 
     const body = await request.json();
+
+    const validation = validateRequest(UpdateFailureSchema, body);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const {
       title,
       description,
@@ -75,7 +83,7 @@ export async function PUT(
       status,
       failureFiles,
       solutionAttachments
-    } = body;
+    } = validation.data;
 
     console.log(`📝 PUT /api/failures/${failureId} - Actualizando falla`);
 
@@ -102,76 +110,81 @@ export async function PUT(
       solution: solution || ''
     };
 
-    // Actualizar la falla
-    const updatedFailure = await prisma.workOrder.update({
-      where: { id: parseInt(failureId) },
-      data: {
-        title: title || existingFailure.title,
-        description: description || existingFailure.description,
-        priority: priority || existingFailure.priority,
-        status: status || existingFailure.status,
-        estimatedHours: estimatedHours ? parseFloat(estimatedHours) : existingFailure.estimatedHours,
-        actualHours: actualHours ? parseFloat(actualHours) : existingFailure.actualHours,
-        notes: JSON.stringify(additionalData),
-        updatedAt: new Date()
-      },
-      include: {
-        machine: {
-          select: {
-            id: true,
-            name: true
-          }
+    // Transacción atómica: actualizar falla + reemplazar adjuntos
+    const updatedFailure = await prisma.$transaction(async (tx) => {
+      // 1. Actualizar la falla
+      const updated = await tx.workOrder.update({
+        where: { id: parseInt(failureId) },
+        data: {
+          title: title || existingFailure.title,
+          description: description || existingFailure.description,
+          priority: priority || existingFailure.priority,
+          status: status || existingFailure.status,
+          estimatedHours: estimatedHours !== undefined ? estimatedHours : existingFailure.estimatedHours,
+          actualHours: actualHours !== undefined ? actualHours : existingFailure.actualHours,
+          notes: JSON.stringify(additionalData),
+          updatedAt: new Date()
         },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        attachments: {
-          select: {
-            id: true,
-            fileName: true,
-            url: true,
-            fileType: true
+        include: {
+          machine: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          attachments: {
+            select: {
+              id: true,
+              fileName: true,
+              url: true,
+              fileType: true
+            }
           }
         }
-      }
-    });
-
-    // Actualizar adjuntos si se proporcionaron nuevos
-    if (failureFiles && failureFiles.length > 0 || solutionAttachments && solutionAttachments.length > 0) {
-      // Eliminar adjuntos existentes
-      await prisma.workOrderAttachment.deleteMany({
-        where: { workOrderId: parseInt(failureId) }
       });
 
-      // Crear adjuntos de falla
-      if (failureFiles && failureFiles.length > 0) {
-        await prisma.workOrderAttachment.createMany({
-          data: failureFiles.map((attachment: any) => ({
-            workOrderId: parseInt(failureId),
-            fileName: attachment.name,
-            url: attachment.url,
-            fileType: attachment.type,
-            fileSize: attachment.size
-          }))
+      // 2. Actualizar adjuntos si se proporcionaron nuevos
+      if (failureFiles && failureFiles.length > 0 || solutionAttachments && solutionAttachments.length > 0) {
+        // Eliminar adjuntos existentes
+        await tx.workOrderAttachment.deleteMany({
+          where: { workOrderId: parseInt(failureId) }
         });
+
+        // Crear adjuntos de falla
+        if (failureFiles && failureFiles.length > 0) {
+          await tx.workOrderAttachment.createMany({
+            data: failureFiles.map((attachment: any) => ({
+              workOrderId: parseInt(failureId),
+              fileName: attachment.name,
+              url: attachment.url,
+              fileType: attachment.type,
+              fileSize: attachment.size
+            }))
+          });
+        }
+
+        // Crear adjuntos de solución
+        if (solutionAttachments && solutionAttachments.length > 0) {
+          await tx.workOrderAttachment.createMany({
+            data: solutionAttachments.map((attachment: any) => ({
+              workOrderId: parseInt(failureId),
+              fileName: attachment.name,
+              url: attachment.url,
+              fileType: `solution_${attachment.type}`,
+              fileSize: attachment.size
+            }))
+          });
+        }
       }
 
-      // Crear adjuntos de solución
-      if (solutionAttachments && solutionAttachments.length > 0) {
-        await prisma.workOrderAttachment.createMany({
-          data: solutionAttachments.map((attachment: any) => ({
-            workOrderId: parseInt(failureId),
-            fileName: attachment.name,
-            url: attachment.url,
-            fileType: `solution_${attachment.type}`, // Marcar como archivo de solución
-            fileSize: attachment.size
-          }))
-        });
-      }
-    }
+      return updated;
+    });
 
     console.log(`✅ Falla actualizada exitosamente: ${updatedFailure.id}`);
 
@@ -253,43 +266,43 @@ export async function DELETE(
       }
     }
 
-    if (relatedWorkOrderIds.length > 0) {
-      console.log(`🗑️ Eliminando ${relatedWorkOrderIds.length} WorkOrders de solución relacionados`);
-      // Eliminar adjuntos de los WorkOrders relacionados
-      await prisma.workOrderAttachment.deleteMany({
-        where: { workOrderId: { in: relatedWorkOrderIds } }
+    // Transacción atómica: eliminar toda la cascada de dependencias
+    await prisma.$transaction(async (tx) => {
+      // 1. Eliminar WorkOrders de solución relacionados y sus adjuntos
+      if (relatedWorkOrderIds.length > 0) {
+        console.log(`🗑️ Eliminando ${relatedWorkOrderIds.length} WorkOrders de solución relacionados`);
+        await tx.workOrderAttachment.deleteMany({
+          where: { workOrderId: { in: relatedWorkOrderIds } }
+        });
+        await tx.workOrder.deleteMany({
+          where: { id: { in: relatedWorkOrderIds } }
+        });
+      }
+
+      // 2. Eliminar FailureOccurrences y sus FailureSolutions (cascade via FK)
+      try {
+        await tx.failureOccurrence.deleteMany({
+          where: { failureId: failureIdNum }
+        });
+        console.log(`🗑️ Eliminadas ocurrencias de la falla ${failureIdNum}`);
+      } catch (e) {
+        console.log(`⚠️ No se pudieron eliminar ocurrencias (tabla puede no existir)`);
+      }
+
+      // 3. Eliminar adjuntos de la falla principal
+      await tx.workOrderAttachment.deleteMany({
+        where: { workOrderId: failureIdNum }
       });
-      // Eliminar los WorkOrders relacionados
-      await prisma.workOrder.deleteMany({
-        where: { id: { in: relatedWorkOrderIds } }
+
+      // 4. Eliminar comentarios de la falla
+      await tx.workOrderComment.deleteMany({
+        where: { workOrderId: failureIdNum }
       });
-    }
 
-    // 2. Eliminar FailureOccurrences y sus FailureSolutions (cascade via FK)
-    try {
-      // Las FailureSolutions se eliminan automáticamente por ON DELETE CASCADE
-      await prisma.failureOccurrence.deleteMany({
-        where: { failureId: failureIdNum }
+      // 5. Eliminar la falla principal
+      await tx.workOrder.delete({
+        where: { id: failureIdNum }
       });
-      console.log(`🗑️ Eliminadas ocurrencias de la falla ${failureIdNum}`);
-    } catch (e) {
-      // La tabla puede no existir, ignorar
-      console.log(`⚠️ No se pudieron eliminar ocurrencias (tabla puede no existir)`);
-    }
-
-    // 3. Eliminar adjuntos de la falla principal
-    await prisma.workOrderAttachment.deleteMany({
-      where: { workOrderId: failureIdNum }
-    });
-
-    // 4. Eliminar comentarios de la falla
-    await prisma.workOrderComment.deleteMany({
-      where: { workOrderId: failureIdNum }
-    });
-
-    // 5. Eliminar la falla principal
-    await prisma.workOrder.delete({
-      where: { id: failureIdNum }
     });
 
     console.log(`✅ Falla y sus soluciones eliminadas exitosamente: ${failureId}`);
