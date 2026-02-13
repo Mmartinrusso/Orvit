@@ -15,6 +15,7 @@ import MobileBottomBar from '@/components/layout/MobileBottomBar';
 import { ThemeForce } from '@/components/ThemeForce';
 import { AssistantWrapper } from '@/components/assistant';
 import { VerificationModal, ModeIndicator } from '@/components/view-mode';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Importar y inicializar el auto-scheduler solo en servidor
 if (typeof window === 'undefined') {
@@ -135,7 +136,9 @@ export default async function RootLayout({
                     <NotificationProvider>
                       <NavigationProvider>
                         <ViewModeProvider>
-                          {children}
+                          <ErrorBoundary>
+                            {children}
+                          </ErrorBoundary>
                           <MobileBottomBar />
                           <AssistantWrapper />
                           <VerificationModal />

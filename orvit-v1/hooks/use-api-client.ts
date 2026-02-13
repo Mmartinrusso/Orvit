@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
 
 interface ApiClientOptions {
   silent?: boolean;
@@ -35,6 +36,9 @@ export function useApiClient(options?: ApiClientOptions) {
         if (!silent) {
           toast.error(errorMsg);
         }
+        Sentry.captureException(new Error(errorMsg), {
+          extra: { url, status: res.status, method: init?.method },
+        });
         return { data: null, error: errorMsg };
       }
 
@@ -44,6 +48,9 @@ export function useApiClient(options?: ApiClientOptions) {
       if (!silent) {
         toast.error(errorMsg);
       }
+      Sentry.captureException(err, {
+        extra: { url, method: init?.method },
+      });
       return { data: null, error: errorMsg };
     }
   }, [silent]);
