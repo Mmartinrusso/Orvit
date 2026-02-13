@@ -1,18 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback, startTransition } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useCompany } from '@/contexts/CompanyContext';
 import { cn } from '@/lib/utils';
 import {
-  Wrench,
   LayoutDashboard,
   Cog,
   Truck,
-  ChevronLeft,
-  ChevronRight,
   Building2,
   User,
   Calendar,
@@ -28,31 +24,21 @@ import {
   Package,
   Calculator,
   TrendingUp,
-  LogOut,
   DollarSign,
   Zap,
   BookOpen,
   Target,
-  Sun,
-  Moon,
   Factory,
-  ChevronDown,
   ShoppingCart,
   ShoppingBag,
   Receipt,
   FileCheck,
   TrendingDown,
-  Search,
-  CircleUser,
-  Bell,
-  EllipsisVertical,
   AlertTriangle,
   Link2,
   MapPin,
   RefreshCw,
-  ListTodo,
   CalendarClock,
-  Inbox,
   CheckCircle2,
   ClipboardCheck,
   ArrowRightLeft,
@@ -79,7 +65,6 @@ import {
   ShieldAlert,
   Construction,
   RouteIcon,
-  Smartphone,
   ScanLine,
   // Almacén
   Warehouse,
@@ -90,53 +75,23 @@ import {
   Database,
   CreditCard,
   AlertCircle,
-  MessageSquarePlus,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigationPermissions } from '@/hooks/use-navigation-permissions';
 import { useAreaPermissions } from '@/hooks/use-area-permissions';
 import { useNavigation } from '@/contexts/NavigationContext';
-import AreaSelector from './AreaSelector';
-import SectorSelector from './SectorSelector';
 import NotificationPanel from '@/components/notifications/NotificationPanel';
 import { PageSearch } from '@/components/layout/PageSearch';
 import { useSidebarContext } from '@/contexts/SidebarContext';
-import { ThemeSelector } from '@/components/ui/theme-selector';
-import { ModeIndicator } from '@/components/view-mode';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useModules, SIDEBAR_MODULE_MAP } from '@/contexts/ModulesContext';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from '@/components/ui/tooltip';
-
-interface SidebarItem {
-  name: string;
-  href?: string;
-  icon: any;
-  description: string;
-  children?: SidebarItem[];
-  badge?: number | string; // Contador o texto para badge
-  badgeVariant?: 'default' | 'destructive' | 'warning'; // Variante visual del badge
-}
-
-interface SidebarProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-}
+import { SidebarNavSection } from './sidebar/SidebarNavSection';
+import { SidebarFooter } from './sidebar/SidebarFooter';
+import type { SidebarItem } from './sidebar/types';
+import type { SidebarProps } from './sidebar/types';
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const sidebarContext = useSidebarContext();
@@ -1598,784 +1553,35 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 
             {/* Content area */}
             <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
-            {isOpen ? (
-              <div className="space-y-2 px-2 md:px-3">
-                {/* Selector de Sector Rápido - Integrado en el header */}
-                {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-between h-8 px-2 rounded-md transition-all duration-200 text-sm font-normal",
-                          "bg-sidebar-accent/50 border-sidebar-ring/30 hover:bg-sidebar-accent hover:border-sidebar-ring/50",
-                          "text-sidebar-foreground"
-                        )}
-                        disabled={availableSectors.length === 1 && user?.role?.toUpperCase() === 'SUPERVISOR'}
-                      >
-                        <span className="truncate">
-                          {currentSector ? currentSector.name : 'Seleccionar sector'}
-                        </span>
-                        {availableSectors.length > 1 && (
-                          <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50 ml-1.5" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableSectors.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Sectores disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableSectors.map((sector) => (
-                          <DropdownMenuItem
-                            key={sector.id}
-                            onClick={() => handleSectorChange(sector)}
-                            className={cn(
-                              "text-sm",
-                              currentSector?.id === sector.id && 'bg-accent'
-                            )}
-                          >
-                            {sector.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Cambiar de área
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
-                )}
-
-                {/* Selector de Área - Solo para Administración */}
-                {currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0 && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-between h-8 px-3 rounded-full text-sm font-normal",
-                          "bg-sidebar-accent/40 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        aria-label="Cambiar área"
-                      >
-                        <span className="min-w-0 truncate flex items-baseline gap-1.5">
-                          <span className="text-xs text-sidebar-foreground/60 leading-none">Área:</span>
-                          <span className="truncate leading-none">{currentArea.name}</span>
-                        </span>
-                        {availableAreas.length > 1 && (
-                          <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50 ml-1.5" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableAreas.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Áreas disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableAreas.map((area) => (
-                          <DropdownMenuItem
-                            key={area.id}
-                            onClick={() => handleAreaChange(area)}
-                            className={cn(
-                              "text-sm",
-                              currentArea?.id === area.id && 'bg-accent'
-                            )}
-                          >
-                            {area.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Ver todas las áreas
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
-                )}
-
-                {/* Separador fino: contexto (selectores) vs navegación */}
-                {(
-                  (currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0) ||
-                  (currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0)
-                ) && (
-                  <div className="h-px w-full bg-sidebar-ring/20" />
-                )}
-
-                {/* Nav items - Después del selector de administración */}
-                <div className="relative flex w-full min-w-0 flex-col mt-2">
-                  <div className="w-full text-sm">
-                    <ul className="flex w-full min-w-0 flex-col gap-0.5">
-              {navItems.map((item) => {
-                // Función helper para determinar si un item está activo de forma precisa
-                const checkIsActive = (href: string | undefined): boolean => {
-                  if (!href) return false;
-                  // Comparación exacta primero
-                  if (pathname === href) return true;
-                  // Si la ruta actual empieza con el href, verificar que el siguiente carácter sea '/' o el final
-                  // Esto evita que '/administracion/costos' active '/administracion/compras'
-                  if (pathname.startsWith(href)) {
-                    const nextChar = pathname[href.length];
-                    return !nextChar || nextChar === '/' || nextChar === '?';
-                  }
-                  return false;
-                };
-
-                // Si el item tiene hijos y el sidebar está cerrado, mostrar como menú desplegable
-                if (item.children && Array.isArray(item.children) && !isOpen) {
-                  // Abrir automáticamente el grupo si un hijo está activo (pero SIN marcar el padre como activo)
-                  const hasActiveChild = item.children.some(child => checkIsActive(child.href));
-                  const isOpenGroup = openGroups[item.name] ?? hasActiveChild;
-                  
-                  return (
-                    <li key={item.name} className="flex flex-col items-center">
-                      {/* Botón del grupo padre */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className={cn(
-                              'h-8 w-8 flex items-center justify-center rounded-md',
-                              'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                            )}
-                            onClick={() => setOpenGroups((prev) => ({ ...prev, [item.name]: !isOpenGroup }))}
-                          >
-                            <item.icon className="h-4 w-4 shrink-0" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={8}>
-                          {item.name}
-                        </TooltipContent>
-                      </Tooltip>
-                      
-                      {/* Hijos del grupo (solo cuando está abierto) */}
-                      {isOpenGroup && (
-                        <ul className="mt-1 w-full flex flex-col items-center gap-0.5">
-                          {item.children.map((child: SidebarItem, childIndex: number) => {
-                            const isActive = checkIsActive(child.href);
-                            return (
-                              <li key={`${item.name}-${child.href || childIndex}`} className="flex justify-center">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Link
-                                      href={child.href || '#'}
-                                      prefetch={true}
-                                      onMouseEnter={() => handleLinkHover(child.href || '')}
-                                      onClick={() => handleLinkClick(child.href)}
-                                      className={cn(
-                                        'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                                        'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                                        isActive && 'bg-sidebar-primary text-sidebar-primary-foreground'
-                                      )}
-                                    >
-                                      <child.icon className="h-4 w-4" />
-                                    </Link>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" sideOffset={8}>
-                                    {child.name}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </li>
-                  );
-                }
-
-                // Si el item tiene hijos (children), renderizar como grupo desplegable SOLO si isOpen
-                if (item.children && Array.isArray(item.children) && isOpen) {
-                  // Abrir automáticamente el grupo si un hijo está activo (pero SIN marcar el padre como activo)
-                  const hasActiveChild = item.children.some(child => {
-                    if (!child.href) return false;
-                    if (pathname === child.href) return true;
-                    if (pathname.startsWith(child.href)) {
-                      const nextChar = pathname[child.href.length];
-                      return !nextChar || nextChar === '/' || nextChar === '?';
-                    }
-                    return false;
-                  });
-                  const isOpenGroup = openGroups[item.name] ?? hasActiveChild;
-                  
-                  return (
-                    <li key={item.name}>
-                      <div className="flex items-center">
-                          <button
-                              type="button"
-                          className={cn(
-                                'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left',
-                                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                          )}
-                          onClick={() => setOpenGroups((prev) => ({ ...prev, [item.name]: !isOpenGroup }))}
-                        >
-                              <item.icon className={cn('h-4 w-4 shrink-0 text-sidebar-foreground')} />
-                              <span>{item.name}</span>
-                            </button>
-                        <button
-                              className="ml-auto px-1.5 focus:outline-none"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setOpenGroups((prev) => ({ ...prev, [item.name]: !isOpenGroup }));
-                          }}
-                          tabIndex={-1}
-                          aria-label={isOpenGroup ? 'Cerrar grupo' : 'Abrir grupo'}
-                        >
-                              <ChevronRight
-                                className={cn(
-                                  'h-3.5 w-3.5 text-sidebar-foreground/70 transition-transform',
-                                  isOpenGroup ? 'rotate-90' : ''
-                                )}
-                              />
-                        </button>
-                      </div>
-                      {isOpenGroup && (
-                        <ul className="pl-6 flex flex-col gap-0.5 mt-1">
-                          {item.children.map((child: SidebarItem, childIdx: number) => {
-                            // Si el hijo tiene sus propios children, renderizar como subgrupo
-                            if (child.children && Array.isArray(child.children)) {
-                              const hasActiveSubchild = child.children.some((subchild: SidebarItem) => {
-                                if (!subchild.href) return false;
-                                if (pathname === subchild.href) return true;
-                                if (pathname.startsWith(subchild.href)) {
-                                  const nextChar = pathname[subchild.href.length];
-                                  return !nextChar || nextChar === '/' || nextChar === '?';
-                                }
-                                return false;
-                              });
-                              const isSubgroupOpen = openGroups[child.name] ?? hasActiveSubchild;
-
-                              return (
-                                <li key={`${item.name}-child-${child.name}`}>
-                                  <div className="flex items-center">
-                                    <button
-                                      type="button"
-                                      className={cn(
-                                        'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left',
-                                        'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                                      )}
-                                      onClick={() => setOpenGroups((prev) => ({ ...prev, [child.name]: !isSubgroupOpen }))}
-                                    >
-                                      <child.icon className="h-4 w-4 shrink-0" />
-                                      <span className="flex-1">{child.name}</span>
-                                    </button>
-                                    <button
-                                      className="ml-auto px-1.5 focus:outline-none"
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        setOpenGroups((prev) => ({ ...prev, [child.name]: !isSubgroupOpen }));
-                                      }}
-                                      tabIndex={-1}
-                                      aria-label={isSubgroupOpen ? 'Cerrar subgrupo' : 'Abrir subgrupo'}
-                                    >
-                                      <ChevronRight
-                                        className={cn(
-                                          'h-3.5 w-3.5 text-sidebar-foreground/70 transition-transform',
-                                          isSubgroupOpen ? 'rotate-90' : ''
-                                        )}
-                                      />
-                                    </button>
-                                  </div>
-                                  {isSubgroupOpen && (
-                                    <ul className="pl-6 flex flex-col gap-0.5 mt-1">
-                                      {child.children.map((subchild: SidebarItem, subchildIdx: number) => {
-                                        const isSubchildActive = checkIsActive(subchild.href);
-                                        return (
-                                          <li key={`${child.name}-subchild-${subchild.href || subchildIdx}`}>
-                                            <Link
-                                              href={subchild.href || '#'}
-                                              prefetch={true}
-                                              onMouseEnter={() => handleLinkHover(subchild.href || '')}
-                                              onClick={(e) => handleLinkClick(subchild.href, e)}
-                                              className={cn(
-                                                "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                                                "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                                isSubchildActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
-                                                isSubchildActive && "border-l-2 border-l-sidebar-primary-foreground"
-                                              )}
-                                            >
-                                              <subchild.icon className="h-4 w-4 shrink-0" />
-                                              <span className="flex-1">{subchild.name}</span>
-                                              {subchild.badge !== undefined && subchild.badge !== 0 && (
-                                                <span className={cn(
-                                                  "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
-                                                  subchild.badgeVariant === 'destructive' && "bg-red-500 text-white",
-                                                  subchild.badgeVariant === 'warning' && "bg-yellow-500 text-black",
-                                                  (!subchild.badgeVariant || subchild.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
-                                                )}>
-                                                  {subchild.badge}
-                                                </span>
-                                              )}
-                                            </Link>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  )}
-                                </li>
-                              );
-                            }
-
-                            // Si no tiene children, renderizar como link normal
-                            const isActive = checkIsActive(child.href);
-                            return (
-                              <li key={`${item.name}-child-${child.href || childIdx}`}>
-                                <Link
-                                  href={child.href || '#'}
-                                  prefetch={true}
-                                  onMouseEnter={() => handleLinkHover(child.href || '')}
-                                  onClick={(e) => handleLinkClick(child.href, e)}
-                                      className={cn(
-                                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                                        "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                        isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
-                                        isActive && "border-l-2 border-l-sidebar-primary-foreground"
-                                      )}
-                                  >
-                                      <child.icon className="h-4 w-4 shrink-0" />
-                                      <span className="flex-1">{child.name}</span>
-                                      {child.badge !== undefined && child.badge !== 0 && (
-                                        <span className={cn(
-                                          "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
-                                          child.badgeVariant === 'destructive' && "bg-red-500 text-white",
-                                          child.badgeVariant === 'warning' && "bg-yellow-500 text-black",
-                                          (!child.badgeVariant || child.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
-                                        )}>
-                                          {child.badge}
-                                        </span>
-                                      )}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </li>
-                  );
-                }
-                // Si no tiene hijos, renderizar como antes
-                // Si el item no tiene href, no marcarlo como activo
-                const isActive = item.href ? checkIsActive(item.href) : false;
-
-                if (!isOpen) {
-                  return (
-                    <li key={item.href} className="flex justify-center">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link
-                            href={item.href || '#'}
-                            prefetch={true}
-                            onMouseEnter={() => handleLinkHover(item.href || '')}
-                            onClick={(e) => handleLinkClick(item.href, e)}
-                            className={cn(
-                              'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                              'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                              isActive && 'bg-sidebar-primary text-sidebar-primary-foreground'
-                            )}
-                          >
-                            <item.icon className="h-4 w-4 shrink-0" />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={8}>
-                          {item.name}
-                        </TooltipContent>
-                      </Tooltip>
-                    </li>
-                  );
-                }
-
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href || '#'}
-                      prefetch={true}
-                      onMouseEnter={() => handleLinkHover(item.href || '')}
-                      onClick={(e) => handleLinkClick(item.href, e)}
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
-                            isActive && "border-l-2 border-l-sidebar-primary-foreground"
-                          )}
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1">{item.name}</span>
-                          {item.badge !== undefined && item.badge !== 0 && (
-                            <span className={cn(
-                              "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
-                              item.badgeVariant === 'destructive' && "bg-red-500 text-white",
-                              item.badgeVariant === 'warning' && "bg-yellow-500 text-black",
-                              (!item.badgeVariant || item.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
-                            )}>
-                              {item.badge}
-                            </span>
-                          )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-1 px-2">
-                {/* Selector de Sector Compacto cuando sidebar está cerrado */}
-                {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && currentSector && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-8 h-8 p-0 rounded-md transition-colors",
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        title={currentSector.name}
-                        disabled={availableSectors.length === 1 && user?.role?.toUpperCase() === 'SUPERVISOR'}
-                      >
-                        <Factory className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableSectors.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Sectores disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableSectors.map((sector) => (
-                          <DropdownMenuItem
-                            key={sector.id}
-                            onClick={() => handleSectorChange(sector)}
-                              className={cn(
-                              "text-sm",
-                              currentSector?.id === sector.id && 'bg-accent'
-                            )}
-                          >
-                            {sector.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Cambiar de área
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
-                )}
-
-                {/* Selector de Área Compacto cuando sidebar está cerrado - Solo para Administración */}
-                {currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0 && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-8 h-8 p-0 rounded-md transition-colors",
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        title="Cambiar área"
-                        aria-label="Cambiar área"
-                      >
-                        <Building2 className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableAreas.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Áreas disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableAreas.map((area) => (
-                          <DropdownMenuItem
-                            key={area.id}
-                            onClick={() => handleAreaChange(area)}
-                              className={cn(
-                              "text-sm",
-                              currentArea?.id === area.id && 'bg-accent'
-                            )}
-                          >
-                            {area.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Ver todas las áreas
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
-                )}
-              </div>
-            )}
+              <SidebarNavSection
+                isOpen={isOpen}
+                pathname={pathname}
+                navItems={navItems}
+                openGroups={openGroups}
+                setOpenGroups={setOpenGroups}
+                onLinkHover={handleLinkHover}
+                onLinkClick={handleLinkClick}
+                currentArea={currentArea}
+                currentSector={currentSector}
+                availableSectors={availableSectors}
+                availableAreas={availableAreas}
+                user={user}
+                sidebarContext={sidebarContext}
+                onSectorChange={handleSectorChange}
+                onAreaChange={handleAreaChange}
+              />
           </div>
 
-          {/* Bottom section: Configuración, Buscar y Perfil */}
-            <div className={cn(
-              "flex flex-col gap-1 p-2 md:p-3 mt-auto"
-            )}>
-                {isOpen ? (
-              <div className="flex flex-col gap-1">
-                {/* Feedback */}
-                <button
-                  type="button"
-                  onClick={() => setShowFeedback(true)}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-                >
-                  <MessageSquarePlus className="h-4 w-4 shrink-0" />
-                  <span>Feedback</span>
-                </button>
-
-                {/* Configuración */}
-                    {(() => {
-                  const configHref = currentArea?.name === 'Administración'
-                    ? '/administracion/configuracion'
-                    : currentArea?.name === 'Mantenimiento'
-                    ? '/mantenimiento/configuracion'
-                    : '/configuracion';
-                  
-                  const isConfigActive = pathname === configHref || 
-                    (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
-                      
-                  return (
-                    <Link 
-                      href={configHref}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                        "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm",
-                        isConfigActive && "border-l-2 border-l-sidebar-primary-foreground"
-                      )}
-                    >
-                      <Settings className="h-4 w-4 shrink-0" />
-                      <span>Configuración</span>
-                    </Link>
-                      );
-                    })()}
-                
-                {/* Buscar */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('orvit:search:open'));
-                    }
-                  }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-                >
-                  <Search className="h-4 w-4 shrink-0" />
-                  <span>Buscar</span>
-                  <kbd className="ml-auto text-[10px] text-sidebar-foreground/60 bg-sidebar-accent/50 border border-sidebar-ring/30 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
-                </button>
-
-                {/* Notificaciones */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
-                    }
-                  }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-                >
-                  <Bell className="h-4 w-4 shrink-0" />
-                  <span>Notificaciones</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-1">
-                {/* Feedback (collapsed) */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setShowFeedback(true)}
-                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                    >
-                      <MessageSquarePlus className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={12}>
-                    Feedback
-                  </TooltipContent>
-                </Tooltip>
-
-                {(() => {
-                  const configHref = currentArea?.name === 'Administración'
-                    ? '/administracion/configuracion'
-                    : currentArea?.name === 'Mantenimiento'
-                    ? '/mantenimiento/configuracion'
-                    : '/configuracion';
-
-                  const isConfigActive = pathname === configHref ||
-                    (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
-
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={configHref}
-                          className={cn(
-                            "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
-                            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground"
-                          )}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={8}>
-                        Configuración
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })()}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          window.dispatchEvent(new CustomEvent('orvit:search:open'));
-                        }
-                      }}
-                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                    >
-                      <Search className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={12}>
-                    Buscar (⌘K)
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Notificaciones (collapsed) */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
-                        }
-                      }}
-                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                    >
-                      <Bell className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={12}>
-                    Notificaciones
-                  </TooltipContent>
-                </Tooltip>
-                  </div>
-                )}
-              </div>
-
-          {/* Footer: User Profile */}
-          <div className="flex flex-col gap-2 p-2 md:p-3">
-            <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  data-sidebar="menu-button"
-                  data-size="lg"
-                  className={cn(
-                    "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm",
-                    isOpen ? "h-12" : "h-12 w-12 justify-center p-0"
-                  )}
-                >
-                  <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
-                      <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                        {user?.name?.charAt(0).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </span>
-                  {isOpen && (
-                    <>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-medium text-sidebar-foreground">{user?.name || 'Usuario'}</span>
-                        <span className="text-sidebar-foreground/70 truncate text-xs">{user?.email || 'user@example.com'}</span>
-            </div>
-                      <ModeIndicator className="shrink-0" />
-                      <EllipsisVertical className="ml-auto h-4 w-4 text-sidebar-foreground/70 shrink-0" />
-                    </>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56">
-                <div className="text-sm p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
-                        <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                          {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </span>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{user?.name || 'Usuario'}</span>
-                      <span className="text-muted-foreground truncate text-xs">{user?.email || 'user@example.com'}</span>
-                    </div>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <div role="group">
-                  <DropdownMenuItem onClick={() => {
-                    const configHref = currentArea?.name === 'Administración' 
-                      ? '/administracion/configuracion' 
-                      : currentArea?.name === 'Mantenimiento'
-                      ? '/mantenimiento/configuracion'
-                      : '/configuracion';
-                    router.push(`${configHref}?tab=profile`);
-                  }}>
-                    <CircleUser className="h-4 w-4" />
-                    <span>Cuenta</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    // Abrir el modal/panel de notificaciones (global)
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
-                    return;
-                  }
-
-                    // Fallback (SSR): ir a configuración -> notificaciones
-                    const configHref = currentArea?.name === 'Administración' 
-                      ? '/administracion/configuracion' 
-                      : currentArea?.name === 'Mantenimiento'
-                      ? '/mantenimiento/configuracion'
-                      : '/configuracion';
-                    router.push(`${configHref}?tab=notifications`);
-                  }}>
-                    <Bell className="h-4 w-4" />
-                    <span>Notificaciones</span>
-                  </DropdownMenuItem>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                    onClick={async () => {
-                      try {
-                        await logout();
-                      } catch (error) {
-                        console.error('Error al cerrar sesión:', error);
-                      }
-                    }}
-                  className="text-destructive focus:text-destructive"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Cerrar sesión</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-              </div>
+          {/* Bottom section: Configuración, Buscar, Perfil */}
+          <SidebarFooter
+            isOpen={isOpen}
+            pathname={pathname}
+            currentArea={currentArea}
+            user={user}
+            sidebarContext={sidebarContext}
+            onShowFeedback={() => setShowFeedback(true)}
+            onLogout={logout}
+          />
         </div>
         </div>
       </aside>
