@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+import { JWT_SECRET } from '@/lib/auth';
 
 // GET /api/maintenance/checklists/[id] - Obtener checklist por ID
 export async function GET(
@@ -263,7 +266,7 @@ export async function PUT(
       instructives = instructivesData || [];
     } catch (instructiveError) {
       console.error('⚠️ Error cargando instructivos:', instructiveError);
-      instructives = body.instructives || updatedChecklistData.instructives || [];
+      instructives = body.instructives || (updatedChecklist.instructives as any[]) || [];
     }
 
     console.log('✅ Checklist actualizado en tabla dedicada:', updatedChecklist.id);
@@ -310,14 +313,13 @@ export async function PUT(
   }
 }
 
-// DELETE /api/maintenance/checklists/[id] - Eliminar checklist
+// DELETE /api/maintenance/checklists/[id] - Soft delete checklist
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const checklistId = parseInt(params.id);
-    const body = await request.json();
 
     if (isNaN(checklistId)) {
       return NextResponse.json(
@@ -326,30 +328,39 @@ export async function DELETE(
       );
     }
 
-    console.log(`🗑️ Eliminando checklist con ID: ${checklistId}`);
-
-    // PRIMERO: Eliminar todas las ejecuciones del checklist
-    try {
-      const deletedExecutions = await prisma.checklistExecution.deleteMany({
-        where: {
-          checklistId: checklistId
-        }
-      });
-      
-      console.log('🗑️ Eliminadas ejecuciones del checklist:', deletedExecutions.count);
-    } catch (executionError) {
-      console.error('⚠️ Error eliminando ejecuciones del checklist:', executionError);
-      // Continuar con la eliminación del checklist aunque falle la limpieza del historial
-    }
-
-    // SEGUNDO: Eliminar el checklist de la tabla dedicada
-    const deletedChecklist = await prisma.maintenanceChecklist.delete({
-      where: {
-        id: checklistId
-      }
+    // Verificar que el checklist existe
+    const checklist = await prisma.maintenanceChecklist.findUnique({
+      where: { id: checklistId },
     });
 
-    console.log('✅ Checklist eliminado de tabla dedicada:', deletedChecklist.id);
+    if (!checklist) {
+      return NextResponse.json(
+        { error: 'Checklist no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Obtener usuario del JWT para auditoría
+    let deletedByUserId = 'system';
+    try {
+      const token = cookies().get('token')?.value;
+      if (token) {
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+        deletedByUserId = String(payload.userId);
+      }
+    } catch {
+      // Si no se puede obtener el usuario, usar 'system'
+    }
+
+    // Soft delete: marcar como eliminado sin borrar datos
+    // Las ejecuciones y registros hijos se limpiarán en la purga automática
+    const deletedChecklist = await prisma.maintenanceChecklist.update({
+      where: { id: checklistId },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: deletedByUserId,
+      },
+    });
 
     return NextResponse.json({
       success: true,
@@ -362,14 +373,6 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error eliminando checklist:', error);
-
-    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
-      return NextResponse.json(
-        { error: 'Checklist no encontrado' },
-        { status: 404 }
-      );
-    }
-
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

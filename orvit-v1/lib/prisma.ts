@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { loggers } from '@/lib/logger';
+import { softDeleteExtension } from '@/lib/prisma-extensions/soft-delete';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -51,8 +52,11 @@ const prismaBase = new PrismaClient({
 // Usar extensiones en lugar de middleware (Prisma 6.x+)
 const shouldIndex = process.env.OPENAI_API_KEY && process.env.NODE_ENV !== 'test';
 
+// Cliente con soft-delete + indexación (uso normal)
+const withSoftDelete = prismaBase.$extends(softDeleteExtension);
+
 export const prisma = shouldIndex
-  ? prismaBase.$extends({
+  ? withSoftDelete.$extends({
       query: {
         $allModels: {
           async create({ model, args, query }) {
@@ -68,7 +72,10 @@ export const prisma = shouldIndex
         },
       },
     })
-  : prismaBase;
+  : withSoftDelete;
+
+// Cliente SIN filtro de soft-delete: para operaciones admin (restaurar, purgar, listar eliminados)
+export const prismaUnfiltered = prismaBase;
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prismaBase;

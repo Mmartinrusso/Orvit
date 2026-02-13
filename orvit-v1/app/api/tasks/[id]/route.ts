@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
-import { deleteS3File } from '@/lib/s3-utils';
-import { cookies } from 'next/headers';
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 
 // Importar utilidades centralizadas
@@ -390,9 +388,9 @@ export async function PUT(
 
     return NextResponse.json(transformedTask);
   } catch (error) {
-    logger.error('Error updating task', error);
+    logger.error('Error actualizando tarea:', error);
     return NextResponse.json(
-      { error: "Error interno del servidor", details: process.env.NODE_ENV === 'development' ? String(error) : undefined },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }
@@ -437,156 +435,17 @@ export async function DELETE(
       }, { status: 403 });
     }
 
-    // **GUARDAR EN HISTORIAL ANTES DE ELIMINAR**
-    try {
-      // Obtener archivos adjuntos y comentarios antes de eliminar
-      const attachments = await (prisma as any).taskAttachment.findMany({
-        where: { taskId: taskId },
-        include: {
-          uploadedBy: {
-            select: { id: true, name: true, email: true }
-          }
-        }
-      });
-
-      const comments = await (prisma as any).taskComment.findMany({
-        where: { taskId: taskId },
-        include: {
-          user: {
-            select: { id: true, name: true, email: true }
-          }
-        },
-        orderBy: { createdAt: 'asc' }
-      });
-
-      // Transformar archivos para el historial
-      const formattedAttachments = attachments.map((attachment: any) => ({
-        id: attachment.id.toString(),
-        name: attachment.name,
-        url: attachment.url,
-        size: attachment.size,
-        type: attachment.type,
-        uploadedAt: attachment.uploadedAt.toISOString(),
-        uploadedBy: attachment.uploadedBy ? {
-          id: attachment.uploadedBy.id,
-          name: attachment.uploadedBy.name,
-          email: attachment.uploadedBy.email
-        } : null
-      }));
-
-      // Transformar comentarios para el historial
-      const formattedComments = comments.map((comment: any) => ({
-        id: comment.id.toString(),
-        content: comment.content,
-        userId: comment.user.id.toString(),
-        userName: comment.user.name,
-        userEmail: comment.user.email,
-        createdAt: comment.createdAt.toISOString()
-      }));
-
-      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tasks/history`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': `token=${cookies().get('token')?.value}`
-        },
-        body: JSON.stringify({
-          taskData: {
-            id: task.id,
-            title: task.title,
-            description: task.description,
-            status: task.status,
-            priority: task.priority,
-            dueDate: task.dueDate?.toISOString(),
-            assignedTo: task.assignedTo ? {
-              id: task.assignedTo.id,
-              name: task.assignedTo.name,
-              email: task.assignedTo.email
-            } : null,
-            createdBy: {
-              id: task.createdBy.id,
-              name: task.createdBy.name,
-              email: task.createdBy.email
-            },
-            company: {
-              id: task.company.id,
-              name: task.company.name
-            },
-            companyId: task.companyId,
-            tags: task.tags,
-            progress: task.progress,
-            createdAt: task.createdAt.toISOString(),
-            updatedAt: task.updatedAt.toISOString(),
-            // Incluir archivos y comentarios en el historial
-            files: formattedAttachments,
-            comments: formattedComments
-          }
-        })
-      });
-      logger.debug('Tarea guardada en historial');
-    } catch (error) {
-      logger.warn('Error guardando en historial, continuando con eliminación', error);
-      // Continuar con la eliminación aunque falle el historial
-    }
-
-    // Obtener attachments para eliminarlos de S3
-    const attachments = await (prisma as any).taskAttachment.findMany({
-      where: { taskId: taskId }
-    });
-
-    // Eliminar archivos de S3
-    if (attachments.length > 0) {
-      try {
-        await Promise.all(attachments.map(async (attachment: any) => {
-          if (attachment.url) {
-            await deleteS3File(attachment.url);
-          }
-        }));
-      } catch (error) {
-        logger.warn('Error eliminando archivos de S3', error);
-        // Continuar con la eliminación de la tarea aunque falle S3
-      }
-    }
-
-    // Eliminar comentarios
-    await (prisma as any).taskComment.deleteMany({
-      where: { taskId: taskId }
-    });
-
-    // Eliminar attachments
-    await (prisma as any).taskAttachment.deleteMany({
-      where: { taskId: taskId }
-    });
-
-    // Eliminar subtareas
-    await (prisma as any).subtask.deleteMany({
-      where: { taskId: taskId }
-    });
-
-    // **ELIMINAR NOTIFICACIONES RELACIONADAS CON LA TAREA**
-    try {
-      await prisma.$executeRaw`
-        DELETE FROM "Notification" 
-        WHERE "metadata"->>'taskId' = ${taskId.toString()}
-          AND "companyId" = ${task.companyId}
-      `;
-      logger.debug('Notificaciones relacionadas con la tarea eliminadas');
-    } catch (error) {
-      logger.warn('Error eliminando notificaciones de la tarea', error);
-      // Continuar con la eliminación aunque falle la limpieza de notificaciones
-    }
-
-    // Notificar instantáneamente a los involucrados antes de eliminar
+    // Notificar instantáneamente a los involucrados
     if (task.assignedTo && task.assignedTo.id !== user.id) {
       await createAndSendInstantNotification(
         'TASK_DELETED',
         task.assignedTo.id,
         task.companyId,
         taskId,
-        null, // no es reminder
+        null,
         'Tarea eliminada',
         `La tarea "${task.title}" que tenías asignada ha sido eliminada`,
-        'high', // Eliminar es alta prioridad
+        'high',
         {
           deletedBy: user.name,
           deletedById: user.id,
@@ -596,21 +455,27 @@ export async function DELETE(
       );
     }
 
-    // Eliminar la tarea
-    await prisma.task.delete({
-      where: { id: taskId }
+    // Soft delete: marcar como eliminada sin borrar datos
+    // Los registros hijos (comments, attachments, subtasks) y archivos S3
+    // se limpiarán en la purga automática después de 90 días
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: `${user.id}`,
+      },
     });
 
-    logger.info('Tarea eliminada exitosamente', { taskId });
+    logger.info('Tarea marcada como eliminada (soft delete)', { taskId });
 
     return NextResponse.json({
-      message: "Tarea eliminada exitosamente y guardada en el historial"
+      message: "Tarea eliminada exitosamente"
     });
 
   } catch (error) {
-    logger.error('Error deleting task', error);
+    logger.error('Error eliminando tarea:', error);
     return NextResponse.json(
-      { error: "Error interno del servidor", details: process.env.NODE_ENV === 'development' ? String(error) : undefined },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }

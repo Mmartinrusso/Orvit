@@ -336,52 +336,12 @@ export async function PUT(
   }
 }
 
-// DELETE /api/fixed-tasks/[id] - Eliminar tarea fija
+// DELETE /api/fixed-tasks/[id] - Soft delete tarea fija
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // console.log('🗑️ [API] DELETE /api/fixed-tasks/[id] iniciado') // Log reducido;
-    
-    const taskId = parseInt(params.id);
-    console.log('📋 [API] Eliminando tarea:', taskId);
-
-    // Verificar que la tarea existe
-    const taskExists = await prisma.$queryRaw`
-      SELECT id FROM "FixedTask" WHERE id = ${taskId}
-    ` as any[];
-
-    if (taskExists.length === 0) {
-      console.log('❌ [API] Tarea no encontrada');
-      return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
-    }
-
-    // Eliminar instructivos primero (por foreign key)
-    await prisma.$queryRaw`
-      DELETE FROM "FixedTaskInstructive" WHERE "fixedTaskId" = ${taskId}
-    `;
-
-    // **ELIMINAR NOTIFICACIONES RELACIONADAS CON LA TAREA FIJA**
-    try {
-      await prisma.$queryRaw`
-        DELETE FROM "Notification" 
-        WHERE "metadata"->>'taskId' = ${taskId.toString()}
-          OR "type" = 'TASK_AUTO_RESET' AND "metadata"->>'fixedTaskId' = ${taskId.toString()}
-      `;
-      console.log('✅ Notificaciones relacionadas con la tarea fija eliminadas');
-    } catch (error) {
-      console.error('⚠️ Error eliminando notificaciones de la tarea fija:', error);
-      // Continuar con la eliminación aunque falle la limpieza de notificaciones
-    }
-
-    // Eliminar la tarea
-    await prisma.$queryRaw`
-      DELETE FROM "FixedTask" WHERE id = ${taskId}
-    `;
-
-    console.log('✅ [API] Tarea fija eliminada exitosamente:', taskId);
-
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -390,13 +350,30 @@ export async function DELETE(
       return NextResponse.json({ error: 'No tienes permiso para eliminar tareas fijas' }, { status: 403 });
     }
 
+    const taskId = parseInt(params.id);
+
+    // Verificar que la tarea existe
+    const taskExists = await prisma.$queryRaw`
+      SELECT id FROM "FixedTask" WHERE id = ${taskId} AND "deletedAt" IS NULL
+    ` as any[];
+
+    if (taskExists.length === 0) {
+      return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
+    }
+
+    // Soft delete: marcar como eliminada sin borrar datos
+    // Los registros hijos (instructivos, notificaciones) se limpiarán en la purga automática
+    await prisma.$queryRaw`
+      UPDATE "FixedTask" SET "deletedAt" = NOW(), "deletedBy" = ${user.id.toString()} WHERE id = ${taskId}
+    `;
+
     return NextResponse.json({
       success: true,
       message: 'Tarea eliminada exitosamente'
     });
 
   } catch (error) {
-    console.error('❌ [API] Error en DELETE /api/fixed-tasks/[id]:', error);
+    console.error('Error en DELETE /api/fixed-tasks/[id]:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

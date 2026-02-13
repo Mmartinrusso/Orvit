@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+import { JWT_SECRET } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -582,30 +585,42 @@ export async function DELETE(request: NextRequest) {
 
     const numericChecklistId = parseInt(checklistId);
 
-    // PRIMERO: Eliminar todas las ejecuciones del checklist
-    let deletedExecutionsCount = 0;
-    try {
-      const deletedExecutions = await prisma.checklistExecution.deleteMany({
-        where: {
-          checklistId: numericChecklistId
-        }
-      });
-      
-      deletedExecutionsCount = deletedExecutions.count;
-    } catch (executionError) {
-      // Continuar con la eliminación del checklist aunque falle la limpieza del historial
-    }
-
-    // SEGUNDO: Eliminar el checklist de la tabla dedicada
-    const deletedChecklist = await prisma.maintenanceChecklist.delete({
-      where: {
-        id: numericChecklistId
-      }
+    // Verificar que el checklist existe
+    const checklist = await prisma.maintenanceChecklist.findUnique({
+      where: { id: numericChecklistId },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Checklist eliminado correctamente. Se eliminaron ${deletedExecutionsCount} ejecuciones del historial.` 
+    if (!checklist) {
+      return NextResponse.json(
+        { error: 'Checklist no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Obtener usuario del JWT para auditoría
+    let deletedByUserId = 'system';
+    try {
+      const token = cookies().get('token')?.value;
+      if (token) {
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+        deletedByUserId = String(payload.userId);
+      }
+    } catch {
+      // Si no se puede obtener el usuario, usar 'system'
+    }
+
+    // Soft delete: marcar como eliminado sin borrar datos
+    await prisma.maintenanceChecklist.update({
+      where: { id: numericChecklistId },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: deletedByUserId,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Checklist eliminado correctamente'
     });
   } catch (error) {
     console.error('Error deleting checklist:', error);

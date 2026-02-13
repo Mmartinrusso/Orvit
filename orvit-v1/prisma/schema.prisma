@@ -1563,6 +1563,8 @@ model WorkOrder {
   sectorId           Int?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
+  deletedBy          String?
   rootCause          String?
   correctiveActions  String?
   preventiveActions  String?
@@ -1923,6 +1925,8 @@ model Task {
   progress     Int              @default(0)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+  deletedBy    String?
   subtasks     Subtask[]
   assignedTo   User?            @relation("TaskAssignee", fields: [assignedToId], references: [id])
   company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -1993,6 +1997,8 @@ model FixedTask {
   executionTime    String?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
+  deletedAt        DateTime?
+  deletedBy        String?
   assignedTo       User?                  @relation("FixedTaskAssignee", fields: [assignedToId], references: [id])
   assignedWorker   Worker?                @relation("FixedTaskWorker", fields: [assignedWorkerId], references: [id])
   company          Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -3168,6 +3174,8 @@ model MaintenanceChecklist {
   sectorId           Int?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+  deletedBy          String?
   category           String?
   estimatedTotalTime Int?               @default(0)
   items              Json?

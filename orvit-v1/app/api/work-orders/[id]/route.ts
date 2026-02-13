@@ -352,7 +352,7 @@ export const PUT = withGuards(async (request: NextRequest, { user, params: _p },
   }
 }, { requiredPermissions: ['work_orders.edit'], permissionMode: 'any' });
 
-// DELETE /api/work-orders/[id]
+// DELETE /api/work-orders/[id] - Soft delete
 export const DELETE = withGuards(async (request: NextRequest, { user, params: _p }, routeContext) => {
   const { params } = routeContext!;
   try {
@@ -366,14 +366,13 @@ export const DELETE = withGuards(async (request: NextRequest, { user, params: _p
       return NextResponse.json({ error: 'Orden de trabajo no encontrada' }, { status: 404 });
     }
 
-    // Eliminar attachments primero (cascade debería manejarlo, pero por seguridad)
-    await prisma.workOrderAttachment.deleteMany({
-      where: { workOrderId: Number(id) },
-    });
-
-    // Eliminar la orden de trabajo
-    await prisma.workOrder.delete({
+    // Soft delete: marcar como eliminada sin borrar datos
+    await prisma.workOrder.update({
       where: { id: Number(id) },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: `${user.userId}`,
+      },
     });
 
     return new NextResponse(null, { status: 204 });

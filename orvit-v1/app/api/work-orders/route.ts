@@ -407,7 +407,7 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
   try {
     const { searchParams } = new URL(request.url);
     const workOrderId = searchParams.get('id');
-    const userId = searchParams.get('userId');
+    const userId = user.userId;
 
     if (!workOrderId) {
       return NextResponse.json(
@@ -416,17 +416,10 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
       );
     }
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'ID de usuario es requerido' },
-        { status: 400 }
-      );
-    }
-
     // Obtener usuario y orden en paralelo
     const [requestingUser, workOrder] = await Promise.all([
       prisma.user.findUnique({
-        where: { id: Number(userId) },
+        where: { id: userId },
         select: {
           id: true,
           role: true,
@@ -459,7 +452,7 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
 
     // Verificar permisos: SUPERADMIN, rol de sistema ADMIN, rol de empresa "Administrador"/"Admin", creador, o permisos específicos
     const isSystemAdmin = requestingUser.role === 'ADMIN' || requestingUser.role === 'SUPERADMIN';
-    const isCreator = workOrder.createdById === Number(userId);
+    const isCreator = workOrder.createdById === userId;
 
     // Verificar si tiene rol de empresa "Administrador" o "Admin" en la empresa de la orden
     const userCompany = requestingUser.companies.find(uc => uc.company.id === workOrder.companyId);
@@ -484,7 +477,7 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
       // Verificar permisos específicos del usuario
       const userPermission = await prisma.userPermission.findFirst({
         where: {
-          userId: Number(userId),
+          userId: userId,
           isGranted: true,
           permission: {
             name: 'work_orders.delete',
@@ -502,7 +495,7 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
         // Obtener el rol del usuario en la empresa de la orden
         const userOnCompany = await prisma.userOnCompany.findFirst({
           where: {
-            userId: Number(userId),
+            userId: userId,
             companyId: workOrder.companyId
           },
           include: {
@@ -545,22 +538,24 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
       }
     }
 
-    // Eliminar la orden de trabajo
-    await prisma.workOrder.delete({
-      where: { id: Number(workOrderId) }
+    // Soft delete: marcar como eliminada sin borrar datos
+    await prisma.workOrder.update({
+      where: { id: Number(workOrderId) },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: `${userId}`,
+      },
     });
 
-    // console.log(`✅ Orden de trabajo ${workOrderId} eliminada por usuario ${userId} (${user.name})`) // Log reducido;
-    
     return NextResponse.json(
-      { 
+      {
         message: 'Orden de trabajo eliminada exitosamente',
         deletedOrder: {
           id: workOrder.id,
           title: workOrder.title,
           machine: workOrder.machine?.name || 'Sin máquina'
         }
-      }, 
+      },
       { status: 200 }
     );
   } catch (error) {

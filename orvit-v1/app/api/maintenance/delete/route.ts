@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+import { JWT_SECRET } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,15 +85,41 @@ export async function DELETE(request: NextRequest) {
       });
 
     } else if (type === 'corrective') {
-      // Eliminar work order (mantenimiento correctivo)
+      // Soft delete work order (mantenimiento correctivo)
       const workOrderId = Number(maintenanceId);
 
-      // Eliminar el work order
-      const deletedWorkOrder = await prisma.workOrder.delete({
-        where: { id: workOrderId }
+      // Verificar que la work order existe antes de intentar soft delete
+      const existingWO = await prisma.workOrder.findUnique({
+        where: { id: workOrderId },
+        select: { id: true, title: true },
       });
 
-      console.log(`✅ Mantenimiento correctivo eliminado: ${deletedWorkOrder.title}`);
+      if (!existingWO) {
+        return NextResponse.json(
+          { error: 'Mantenimiento correctivo no encontrado' },
+          { status: 404 }
+        );
+      }
+
+      // Obtener usuario del JWT para auditoría
+      let deletedByUserId = 'system';
+      try {
+        const token = cookies().get('token')?.value;
+        if (token) {
+          const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+          deletedByUserId = String(payload.userId);
+        }
+      } catch {
+        // Si no se puede obtener el usuario, usar 'system'
+      }
+
+      const deletedWorkOrder = await prisma.workOrder.update({
+        where: { id: workOrderId },
+        data: {
+          deletedAt: new Date(),
+          deletedBy: deletedByUserId,
+        },
+      });
 
       return NextResponse.json({
         success: true,
@@ -111,7 +140,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error eliminando mantenimiento:', error);
     
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
       return NextResponse.json(
         { error: 'Mantenimiento no encontrado' },
         { status: 404 }
