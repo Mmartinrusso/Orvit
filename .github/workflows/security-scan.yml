@@ -1,0 +1,105 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop, 'feat/**']
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .gitleaks.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  check-exposed-secrets:
+    name: Check Exposed Client Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check NEXT_PUBLIC_AWS_* exposure
+        run: |
+          echo "🔍 Verificando que no haya NEXT_PUBLIC_AWS_* en el código..."
+          FOUND=$(grep -r "NEXT_PUBLIC_AWS_" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.env*" -l . 2>/dev/null | grep -v node_modules | grep -v .next | grep -v .env.example || true)
+          if [ -n "$FOUND" ]; then
+            echo "❌ ERROR: Se encontró NEXT_PUBLIC_AWS_* en los siguientes archivos:"
+            echo "$FOUND"
+            echo ""
+            echo "Las credenciales AWS NUNCA deben exponerse al cliente con NEXT_PUBLIC_."
+            exit 1
+          fi
+          echo "✅ No hay credenciales AWS expuestas al cliente."
+
+      - name: Check NEXT_PUBLIC_ sensitive vars
+        run: |
+          echo "🔍 Verificando variables sensibles en NEXT_PUBLIC_..."
+          PATTERNS="NEXT_PUBLIC_.*SECRET\|NEXT_PUBLIC_.*PASSWORD\|NEXT_PUBLIC_.*TOKEN\|NEXT_PUBLIC_.*KEY.*API\|NEXT_PUBLIC_DATABASE"
+          FOUND=$(grep -r "$PATTERNS" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.env*" -l . 2>/dev/null | grep -v node_modules | grep -v .next | grep -v .env.example || true)
+          if [ -n "$FOUND" ]; then
+            echo "❌ ERROR: Se encontraron variables sensibles expuestas al cliente:"
+            echo "$FOUND"
+            exit 1
+          fi
+          echo "✅ No hay variables sensibles expuestas al cliente."
+
+      - name: Check for hardcoded JWT fallbacks
+        run: |
+          echo "🔍 Verificando fallbacks hardcodeados de JWT_SECRET..."
+          FOUND=$(grep -rn "JWT_SECRET.*||.*['\"]" --include="*.ts" --include="*.tsx" --include="*.js" . 2>/dev/null | grep -v node_modules | grep -v .next | grep -v ".env.example" | grep -v ".gitleaks" || true)
+          if [ -n "$FOUND" ]; then
+            echo "⚠️ ADVERTENCIA: Se encontraron posibles fallbacks hardcodeados de JWT_SECRET:"
+            echo "$FOUND"
+            echo ""
+            echo "JWT_SECRET debe validarse en startup, no usar fallback inseguro."
+            exit 1
+          fi
+          echo "✅ No hay fallbacks hardcodeados de JWT_SECRET."
+
+  npm-audit:
+    name: NPM Dependency Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project:
+          - { name: 'orvit-v1', path: 'orvit-v1' }
+          - { name: 'agx-v1', path: 'agx-v1' }
+          - { name: 'agx-v1-client', path: 'agx-v1/client' }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project.path }}
+        run: npm ci --ignore-scripts
+
+      - name: Run npm audit
+        working-directory: ${{ matrix.project.path }}
+        run: |
+          echo "🔍 Auditando dependencias de ${{ matrix.project.name }}..."
+          npm audit --audit-level=high 2>&1 || {
+            echo "❌ Se encontraron vulnerabilidades high/critical en ${{ matrix.project.name }}"
+            exit 1
+          }
+          echo "✅ No hay vulnerabilidades high/critical en ${{ matrix.project.name }}"

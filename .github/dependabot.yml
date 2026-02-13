@@ -1,0 +1,119 @@
+version: 2
+
+updates:
+  # Orvit (Next.js app)
+  - package-ecosystem: "npm"
+    directory: "/orvit-v1"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Argentina/Buenos_Aires"
+    labels:
+      - "dependencies"
+    reviewers:
+      - "Mmartinrusso"
+    commit-message:
+      prefix: "deps(orvit):"
+    open-pull-requests-limit: 10
+    # Ignorar major bumps de frameworks core (requieren migración dedicada)
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+    groups:
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      testing:
+        patterns:
+          - "vitest"
+          - "@testing-library/*"
+          - "jsdom"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      shadcn-deps:
+        patterns:
+          - "class-variance-authority"
+          - "clsx"
+          - "tailwind-merge"
+          - "cmdk"
+      three-js:
+        patterns:
+          - "three"
+          - "@react-three/*"
+          - "@types/three"
+    security-updates-only: false
+
+  # AGX (backend)
+  - package-ecosystem: "npm"
+    directory: "/agx-v1"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Argentina/Buenos_Aires"
+    labels:
+      - "dependencies"
+    reviewers:
+      - "Mmartinrusso"
+    commit-message:
+      prefix: "deps(agx):"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+
+  # AGX Client (frontend)
+  - package-ecosystem: "npm"
+    directory: "/agx-v1/client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Argentina/Buenos_Aires"
+    labels:
+      - "dependencies"
+    reviewers:
+      - "Mmartinrusso"
+    commit-message:
+      prefix: "deps(agx-client):"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Argentina/Buenos_Aires"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci:"

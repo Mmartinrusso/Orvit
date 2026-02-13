@@ -1,0 +1,166 @@
+name: Monthly Dependency Review
+
+on:
+  schedule:
+    # Primer lunes del mes a las 9am UTC
+    - cron: '0 9 1-7 * 1'
+  workflow_dispatch: # Permitir ejecución manual
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  dependency-review:
+    name: Generate Dependency Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (orvit-v1)
+        working-directory: orvit-v1
+        run: npm ci --ignore-scripts
+
+      - name: Install dependencies (agx-v1)
+        working-directory: agx-v1
+        run: npm ci --ignore-scripts
+
+      - name: Install dependencies (agx-v1/client)
+        working-directory: agx-v1/client
+        run: npm ci --ignore-scripts
+
+      - name: Audit orvit-v1
+        id: audit_orvit
+        working-directory: orvit-v1
+        continue-on-error: true
+        run: |
+          echo "## orvit-v1" > /tmp/audit_orvit.md
+          echo '```' >> /tmp/audit_orvit.md
+          npm audit 2>&1 >> /tmp/audit_orvit.md || true
+          echo '```' >> /tmp/audit_orvit.md
+
+      - name: Audit agx-v1
+        id: audit_agx
+        working-directory: agx-v1
+        continue-on-error: true
+        run: |
+          echo "## agx-v1" > /tmp/audit_agx.md
+          echo '```' >> /tmp/audit_agx.md
+          npm audit 2>&1 >> /tmp/audit_agx.md || true
+          echo '```' >> /tmp/audit_agx.md
+
+      - name: Audit agx-v1/client
+        id: audit_agx_client
+        working-directory: agx-v1/client
+        continue-on-error: true
+        run: |
+          echo "## agx-v1/client" > /tmp/audit_agx_client.md
+          echo '```' >> /tmp/audit_agx_client.md
+          npm audit 2>&1 >> /tmp/audit_agx_client.md || true
+          echo '```' >> /tmp/audit_agx_client.md
+
+      - name: Check outdated (orvit-v1)
+        working-directory: orvit-v1
+        continue-on-error: true
+        run: |
+          echo "## orvit-v1 - Outdated" > /tmp/outdated_orvit.md
+          echo '```' >> /tmp/outdated_orvit.md
+          npm outdated 2>&1 >> /tmp/outdated_orvit.md || true
+          echo '```' >> /tmp/outdated_orvit.md
+
+      - name: Check outdated (agx-v1)
+        working-directory: agx-v1
+        continue-on-error: true
+        run: |
+          echo "## agx-v1 - Outdated" > /tmp/outdated_agx.md
+          echo '```' >> /tmp/outdated_agx.md
+          npm outdated 2>&1 >> /tmp/outdated_agx.md || true
+          echo '```' >> /tmp/outdated_agx.md
+
+      - name: Check outdated (agx-v1/client)
+        working-directory: agx-v1/client
+        continue-on-error: true
+        run: |
+          echo "## agx-v1/client - Outdated" > /tmp/outdated_agx_client.md
+          echo '```' >> /tmp/outdated_agx_client.md
+          npm outdated 2>&1 >> /tmp/outdated_agx_client.md || true
+          echo '```' >> /tmp/outdated_agx_client.md
+
+      - name: Create GitHub Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const auditOrvit = fs.readFileSync('/tmp/audit_orvit.md', 'utf8');
+            const auditAgx = fs.readFileSync('/tmp/audit_agx.md', 'utf8');
+            const auditAgxClient = fs.readFileSync('/tmp/audit_agx_client.md', 'utf8');
+            const outdatedOrvit = fs.readFileSync('/tmp/outdated_orvit.md', 'utf8');
+            const outdatedAgx = fs.readFileSync('/tmp/outdated_agx.md', 'utf8');
+            const outdatedAgxClient = fs.readFileSync('/tmp/outdated_agx_client.md', 'utf8');
+
+            const today = new Date().toISOString().split('T')[0];
+
+            const body = `# Revisión Mensual de Dependencias - ${today}
+
+            > Reporte generado automáticamente por el workflow de revisión mensual.
+
+            ---
+
+            # Auditoría de Seguridad
+
+            ${auditOrvit}
+
+            ${auditAgx}
+
+            ${auditAgxClient}
+
+            ---
+
+            # Dependencias Desactualizadas
+
+            ${outdatedOrvit}
+
+            ${outdatedAgx}
+
+            ${outdatedAgxClient}
+
+            ---
+
+            # Checklist de Revisión
+
+            - [ ] Revisar vulnerabilidades critical/high y aplicar fixes
+            - [ ] Evaluar vulnerabilidades moderate/low
+            - [ ] Revisar PRs pendientes de Dependabot
+            - [ ] Verificar que no hay dependencias deprecated
+            - [ ] Actualizar deuda técnica si hay major bumps pendientes
+            - [ ] Ejecutar test suite después de actualizaciones
+
+            ---
+
+            # Deuda Técnica (major bumps pendientes)
+
+            Documentar aquí dependencias que requieren migración dedicada:
+
+            | Dependencia | Versión actual | Versión disponible | Impacto | Prioridad |
+            |-------------|---------------|-------------------|---------|-----------|
+            | | | | | |
+
+            ---
+
+            📋 Ver [DEPENDENCY_MANAGEMENT.md](orvit-v1/docs/DEPENDENCY_MANAGEMENT.md) para la política completa.
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔍 Revisión mensual de dependencias - ${today}`,
+              body: body,
+              labels: ['dependencies', 'maintenance']
+            });
