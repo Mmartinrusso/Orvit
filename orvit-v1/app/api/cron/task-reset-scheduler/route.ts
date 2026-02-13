@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
 import { resetCompletedTask, shouldTaskReset } from '@/lib/task-scheduler';
 import { loggers } from '@/lib/logger';
+import { toUserTime, formatDateTz, DEFAULT_TIMEZONE } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   const startTime = new Date();
   
-  // Convertir a hora Argentina (UTC-3)
-  const argentinaTime = new Date(startTime.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"}));
-  
-  loggers.cron.info({ startTime: startTime.toISOString(), argentinaTime: argentinaTime.toLocaleString('es-AR') }, 'Starting automatic reset check');
+  // Convertir a hora Argentina
+  const argentinaTime = toUserTime(startTime, DEFAULT_TIMEZONE)!;
+
+  loggers.cron.info({ startTime: startTime.toISOString(), argentinaTime: formatDateTz(startTime, 'dd/MM/yyyy HH:mm:ss') }, 'Starting automatic reset check');
 
   try {
     // Validar que este endpoint se ejecute a las 8:00 AM Argentina (con tolerancia de 15 minutos)
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       executedAt: startTime.toISOString(),
-      argentinaTime: argentinaTime.toLocaleString('es-AR'),
+      argentinaTime: formatDateTz(startTime, 'dd/MM/yyyy HH:mm:ss'),
       executionTimeMs: executionTime,
       results: {
         tasksEvaluated: completedTasks.length,
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
       },
       resetTasks: resetResults,
       errors: errorResults,
-      message: `Proceso automático completado a las ${argentinaTime.toLocaleString('es-AR')}. ${totalReset} tareas reiniciadas de ${completedTasks.length} evaluadas.`
+      message: `Proceso automático completado a las ${formatDateTz(startTime, 'dd/MM/yyyy HH:mm:ss')}. ${totalReset} tareas reiniciadas de ${completedTasks.length} evaluadas.`
     });
 
   } catch (error) {
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
       error: 'Error crítico en el cron scheduler',
       details: error instanceof Error ? error.message : 'Error desconocido',
       executedAt: startTime.toISOString(),
-      argentinaTime: new Date(startTime.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"})).toLocaleString('es-AR'),
+      argentinaTime: formatDateTz(startTime, 'dd/MM/yyyy HH:mm:ss'),
       executionTimeMs: new Date().getTime() - startTime.getTime()
     }, { status: 500 });
   }
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const now = new Date();
-    const argentinaTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"}));
+    const argentinaTime = toUserTime(now, DEFAULT_TIMEZONE)!;
     
     // Obtener tareas que necesitan reiniciar
     const tasksNeedingReset = await prisma.fixedTask.findMany({
@@ -268,8 +269,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       currentTime: now.toISOString(),
-      argentinaTime: argentinaTime.toLocaleString('es-AR'),
-      nextCronExecution: nextCronExecution.toLocaleString('es-AR'),
+      argentinaTime: formatDateTz(now, 'dd/MM/yyyy HH:mm:ss'),
+      nextCronExecution: formatDateTz(nextCronExecution, 'dd/MM/yyyy HH:mm:ss'),
       nextCronExecutionUTC: nextCronExecution.toISOString(),
       statistics: stats,
       tasksNeedingReset: {

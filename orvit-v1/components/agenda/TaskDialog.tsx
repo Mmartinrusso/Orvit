@@ -22,23 +22,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Loader2, Plus, X, Bell } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Plus, X, Bell, CalendarClock, ClipboardList } from 'lucide-react';
 import { searchAssignees, type AssigneeOption } from '@/lib/agenda/api';
 import type { AgendaTask, Priority, CreateAgendaTaskInput } from '@/lib/agenda/types';
+import type { UnifiedTaskOrigin } from '@/types/unified-task';
+import { ORIGIN_CONFIG } from '@/types/unified-task';
+import { cn } from '@/lib/utils';
+import { toDateOnly, toUTC } from '@/lib/date-utils';
 
 interface TaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task?: AgendaTask | null;
   onSave: (data: CreateAgendaTaskInput) => Promise<void>;
+  onSaveRegular?: (data: { title: string; description?: string; priority?: string; dueDate?: string; assignedToId?: string | number }) => Promise<void>;
   isSaving: boolean;
+  /** Tipo de tarea por defecto al crear */
+  defaultTaskType?: UnifiedTaskOrigin;
 }
 
-export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskDialogProps) {
+export function TaskDialog({ open, onOpenChange, task, onSave, onSaveRegular, isSaving, defaultTaskType = 'agenda' }: TaskDialogProps) {
   const { currentCompany } = useCompany();
   const { user } = useAuth();
   const isEditing = !!task;
+
+  // Tipo de tarea (solo para creación, no para edición)
+  const [taskType, setTaskType] = useState<UnifiedTaskOrigin>(defaultTaskType);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -56,25 +66,27 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
   const [loadingAssignees, setLoadingAssignees] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
 
-  // Reminders
+  // Reminders (solo para agenda)
   const [reminders, setReminders] = useState<{ remindAt: string }[]>([]);
 
   // Reset form when dialog opens/closes or task changes
   useEffect(() => {
     if (open) {
       if (task) {
+        setTaskType('agenda'); // Si estamos editando una agenda task
         setTitle(task.title);
         setDescription(task.description || '');
-        setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+        setDueDate(task.dueDate ? toDateOnly(task.dueDate) : '');
         setPriority(task.priority);
         setCategory(task.category || '');
         setAssignedToUserId(task.assignedToUserId);
         setAssignedToContactId(task.assignedToContactId);
         setAssignedToName(task.assignedToName || '');
         setReminders(
-          task.reminders?.map((r) => ({ remindAt: r.remindAt.split('T')[0] })) || []
+          task.reminders?.map((r) => ({ remindAt: toDateOnly(r.remindAt) })) || []
         );
       } else {
+        setTaskType(defaultTaskType);
         setTitle('');
         setDescription('');
         setDueDate('');
@@ -88,7 +100,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
       setAssigneeSearch('');
       setShowAssigneeDropdown(false);
     }
-  }, [open, task]);
+  }, [open, task, defaultTaskType]);
 
   // Search assignees
   useEffect(() => {
@@ -130,10 +142,9 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
 
   const addReminder = () => {
     if (dueDate) {
-      // Por defecto, recordar el día anterior a las 9:00
       const reminderDate = new Date(dueDate);
       reminderDate.setDate(reminderDate.getDate() - 1);
-      setReminders([...reminders, { remindAt: reminderDate.toISOString().split('T')[0] }]);
+      setReminders([...reminders, { remindAt: toDateOnly(reminderDate) }]);
     } else {
       setReminders([...reminders, { remindAt: '' }]);
     }
@@ -145,28 +156,47 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!title.trim()) return;
 
-    const data: CreateAgendaTaskInput = {
-      title: title.trim(),
-      description: description.trim() || undefined,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-      priority,
-      category: category.trim() || undefined,
-      assignedToUserId: assignedToUserId || undefined,
-      assignedToContactId: assignedToContactId || undefined,
-      assignedToName: assignedToName || undefined,
-      reminders: reminders
-        .filter((r) => r.remindAt)
-        .map((r) => ({
-          remindAt: new Date(`${r.remindAt}T09:00:00`).toISOString(),
-          notifyVia: ['DISCORD'],
-        })),
-    };
-
-    await onSave(data);
+    if (taskType === 'regular' && onSaveRegular && !isEditing) {
+      // Crear tarea regular
+      const priorityMap: Record<Priority, string> = {
+        LOW: 'baja',
+        MEDIUM: 'media',
+        HIGH: 'alta',
+        URGENT: 'urgente',
+      };
+      await onSaveRegular({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority: priorityMap[priority],
+        dueDate: dueDate ? toUTC(dueDate).toISOString() : undefined,
+        assignedToId: assignedToUserId || undefined,
+      });
+    } else {
+      // Crear/editar tarea de agenda
+      const data: CreateAgendaTaskInput = {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        dueDate: dueDate ? toUTC(dueDate).toISOString() : undefined,
+        priority,
+        category: category.trim() || undefined,
+        assignedToUserId: assignedToUserId || undefined,
+        assignedToContactId: assignedToContactId || undefined,
+        assignedToName: assignedToName || undefined,
+        reminders: reminders
+          .filter((r) => r.remindAt)
+          .map((r) => ({
+            remindAt: toUTC(`${r.remindAt}T09:00:00`).toISOString(),
+            notifyVia: ['DISCORD'],
+          })),
+      };
+      await onSave(data);
+    }
   };
+
+  const agendaOriginConfig = ORIGIN_CONFIG.agenda;
+  const regularOriginConfig = ORIGIN_CONFIG.regular;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,11 +207,58 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
             <DialogDescription>
               {isEditing
                 ? 'Modifica los datos de la tarea'
-                : 'Crea una nueva tarea para asignar a alguien'}
+                : 'Crea una nueva tarea de agenda o una tarea regular'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Selector de tipo (solo para creación) */}
+            {!isEditing && onSaveRegular && (
+              <div className="space-y-2">
+                <Label>Tipo de tarea</Label>
+                <div className="flex gap-2" role="radiogroup" aria-label="Tipo de tarea">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={taskType === 'agenda'}
+                    aria-label="Tarea de agenda - Seguimiento personal"
+                    className={cn(
+                      'flex-1 flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                      taskType === 'agenda'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted hover:border-muted-foreground/30'
+                    )}
+                    onClick={() => setTaskType('agenda')}
+                  >
+                    <CalendarClock className="h-5 w-5" style={{ color: agendaOriginConfig.color }} />
+                    <div className="text-left">
+                      <p className="text-sm font-medium">Agenda</p>
+                      <p className="text-xs text-muted-foreground">Seguimiento personal</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={taskType === 'regular'}
+                    aria-label="Tarea regular - Tarea de equipo"
+                    className={cn(
+                      'flex-1 flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                      taskType === 'regular'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted hover:border-muted-foreground/30'
+                    )}
+                    onClick={() => setTaskType('regular')}
+                  >
+                    <ClipboardList className="h-5 w-5" style={{ color: regularOriginConfig.color }} />
+                    <div className="text-left">
+                      <p className="text-sm font-medium">Tarea</p>
+                      <p className="text-xs text-muted-foreground">Tarea de equipo</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Título */}
             <div className="space-y-2">
               <Label htmlFor="title">Título *</Label>
@@ -218,6 +295,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0"
+                      aria-label="Quitar asignación"
                       onClick={clearAssignee}
                     >
                       <X className="h-4 w-4" />
@@ -233,9 +311,12 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
                       }}
                       onFocus={() => setShowAssigneeDropdown(true)}
                       placeholder="Buscar usuario o contacto..."
+                      role="combobox"
+                      aria-expanded={showAssigneeDropdown}
+                      aria-label="Buscar persona para asignar"
                     />
                     {showAssigneeDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto" role="listbox" aria-label="Resultados de búsqueda de asignación">
                         {loadingAssignees ? (
                           <div className="p-2 text-center text-sm text-muted-foreground">
                             Buscando...
@@ -249,6 +330,8 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
                             <button
                               key={`${option.type}-${option.id}`}
                               type="button"
+                              role="option"
+                              aria-selected={false}
                               className="w-full p-2 text-left hover:bg-muted flex items-center justify-between"
                               onClick={() => handleAssigneeSelect(option)}
                             >
@@ -292,58 +375,63 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
               </div>
             </div>
 
-            {/* Categoría */}
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoría</Label>
-              <Input
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Ej: Compras, Administrativo, Técnico..."
-              />
-            </div>
-
-            {/* Recordatorios */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  Recordatorios por Discord
-                </Label>
-                <Button type="button" variant="outline" size="sm" onClick={addReminder}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
+            {/* Categoría (solo para agenda) */}
+            {taskType === 'agenda' && (
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoría</Label>
+                <Input
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Ej: Compras, Administrativo, Técnico..."
+                />
               </div>
-              {reminders.length > 0 && (
-                <div className="space-y-2">
-                  {reminders.map((reminder, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input
-                        type="date"
-                        value={reminder.remindAt}
-                        onChange={(e) => {
-                          const newReminders = [...reminders];
-                          newReminders[index].remindAt = e.target.value;
-                          setReminders(newReminders);
-                        }}
-                        className="flex-1"
-                      />
-                      <span className="text-xs text-muted-foreground">a las 9:00</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => removeReminder(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+            )}
+
+            {/* Recordatorios (solo para agenda) */}
+            {taskType === 'agenda' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Bell className="h-4 w-4" />
+                    Recordatorios por Discord
+                  </Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addReminder}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Agregar
+                  </Button>
                 </div>
-              )}
-            </div>
+                {reminders.length > 0 && (
+                  <div className="space-y-2">
+                    {reminders.map((reminder, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          value={reminder.remindAt}
+                          onChange={(e) => {
+                            const newReminders = [...reminders];
+                            newReminders[index].remindAt = e.target.value;
+                            setReminders(newReminders);
+                          }}
+                          className="flex-1"
+                        />
+                        <span className="text-xs text-muted-foreground">a las 9:00</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          aria-label="Eliminar recordatorio"
+                          onClick={() => removeReminder(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>

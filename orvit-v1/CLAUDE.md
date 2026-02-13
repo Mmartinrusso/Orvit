@@ -211,10 +211,35 @@ Required variables (see .env file):
 - **Images**: Optimized, with S3 remote patterns configured
 - **Sentry**: Automatic instrumentation enabled
 
-### Timezone Handling
-- Client timezone detected and stored in `window.__TIMEZONE__`
-- Date utilities in [lib/date-utils.ts](lib/date-utils.ts)
-- Uses `date-fns` and `date-fns-tz` for date manipulation
+### Timezone Handling — Convención Obligatoria
+
+**Principio:** Backend siempre UTC, frontend convierte con `lib/date-utils.ts`.
+
+**Almacenamiento (BD):**
+- Todas las fechas se almacenan en UTC (PostgreSQL `timestamptz` / Prisma `DateTime`)
+- Nunca guardar fechas en timezone local
+
+**Funciones centralizadas en `lib/date-utils.ts`:**
+- `toUTC(dateStr, tz?)` — Convierte fecha del formulario del usuario a UTC antes de enviar al backend
+- `toUserTime(date, tz?)` — Convierte fecha UTC a hora del usuario (solo para presentación)
+- `toDateOnly(date, tz?)` — Extrae `YYYY-MM-DD` en el timezone del usuario (reemplazo de `toISOString().split('T')[0]`)
+- `formatDateTz(date, format?, tz?)` — Formatea fecha UTC al timezone del usuario con formato personalizado
+- Timezone por defecto: `America/Argentina/Buenos_Aires` (`DEFAULT_TIMEZONE`)
+
+**Anti-patrones PROHIBIDOS:**
+- `date.toISOString().split('T')[0]` — Da fecha incorrecta cerca de medianoche UTC. Usar `toDateOnly(date)` en su lugar
+- `new Date().toLocaleString('en-US', {timeZone: ...})` — Frágil e inconsistente. Usar `toUserTime()` / `formatDateTz()`
+- Importar `date-fns-tz` directamente fuera de `date-utils.ts` — Centralizar en `date-utils.ts`
+- `new Date(dateStr).toISOString()` en formularios — Usar `toUTC(dateStr).toISOString()`
+
+**Formularios:**
+- Inputs `type="date"` dan strings `YYYY-MM-DD` (fecha local del usuario)
+- Antes de enviar al backend: `toUTC(inputValue).toISOString()`
+- Al mostrar fecha del backend en input: `toDateOnly(isoString)`
+
+**Componentes UI:**
+- `DateTimePicker` ya usa `toUserTime()` y `formatDateTz()` internamente
+- Componentes de agenda usan `formatDateTz()` para formateo timezone-aware
 
 ## Common Development Workflows
 

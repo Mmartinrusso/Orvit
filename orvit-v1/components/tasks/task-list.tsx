@@ -8,16 +8,13 @@ import { TaskCard } from "./task-card";
 import { EditTaskModal } from "./edit-task-modal";
 import { NewTaskModal } from "./new-task-modal";
 import { useTaskStore, Task } from "@/hooks/use-task-store";
-import { toZonedTime, format } from 'date-fns-tz';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+import { formatDateTz } from '@/lib/date-utils';
 
 function formatDateArg(dateStr: string): string {
   if (!dateStr) return "-";
-  const zoned = toZonedTime(new Date(dateStr), ARG_TIMEZONE);
-  return format(zoned, 'dd/MM/yyyy', { timeZone: ARG_TIMEZONE });
+  return formatDateTz(dateStr, 'dd/MM/yyyy');
 }
 
 interface TaskListProps {

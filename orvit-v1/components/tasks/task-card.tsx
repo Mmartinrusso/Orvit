@@ -26,16 +26,12 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useTaskStore, Task } from "@/hooks/use-task-store";
 import { EditTaskModal } from "./edit-task-modal";
-import { toZonedTime } from 'date-fns-tz';
 import { translateTag, getTagColor } from "@/lib/tag-utils";
-
-const ARG_TIMEZONE = 'America/Argentina/Buenos_Aires';
+import { toUserTime, formatDateTz } from '@/lib/date-utils';
 
 function formatDateArg(dateStr: string | undefined) {
   if (!dateStr) return "-";
-  const zoned = toZonedTime(new Date(dateStr), ARG_TIMEZONE);
-  zoned.setHours(0, 0, 0, 0);
-  return zoned.toLocaleDateString('es-AR');
+  return formatDateTz(dateStr, 'dd/MM/yyyy');
 }
 
 // Componente PriorityBadge simple
@@ -102,8 +98,8 @@ function dueChip(dueDate?: string, status?: string) {
   if (status === "realizada" || status === "cancelada") return null;
 
   const now = new Date();
-  const due = toZonedTime(new Date(dueDate), ARG_TIMEZONE);
-  const today = toZonedTime(now, ARG_TIMEZONE);
+  const due = toUserTime(dueDate)!;
+  const today = toUserTime(now)!;
   due.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
 

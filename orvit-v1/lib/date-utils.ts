@@ -1,27 +1,100 @@
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import { loggers } from '@/lib/logger';
 
+// Timezone por defecto (configurable por empresa)
+export const DEFAULT_TIMEZONE = 'America/Argentina/Buenos_Aires';
+
 // Configuración global de formatos de fecha
 export const DATE_FORMATS = {
-  // Formato corto: dd/mm/yyyy
   SHORT: 'dd/MM/yyyy',
-  
-  // Formato con hora: dd/mm/yyyy HH:mm
   WITH_TIME: 'dd/MM/yyyy HH:mm',
-  
-  // Formato completo: dd de MMMM de yyyy
   FULL: "dd 'de' MMMM 'de' yyyy",
-  
-  // Formato completo con hora: dd de MMMM de yyyy a las HH:mm
   FULL_WITH_TIME: "dd 'de' MMMM 'de' yyyy 'a las' HH:mm",
-  
-  // Para inputs datetime-local: yyyy-MM-ddTHH:mm
   INPUT: "yyyy-MM-dd'T'HH:mm",
-  
-  // Solo hora: HH:mm
   TIME_ONLY: 'HH:mm',
 };
+
+/**
+ * Convierte una fecha UTC a la hora del usuario en el timezone indicado.
+ * Úsalo solo en presentación (UI), nunca para almacenar.
+ */
+export function toUserTime(
+  date: Date | string | null | undefined,
+  timezone: string = DEFAULT_TIMEZONE
+): Date | null {
+  if (!date) return null;
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    if (!isValid(dateObj)) return null;
+    return toZonedTime(dateObj, timezone);
+  } catch (error) {
+    loggers.utils.error({ err: error }, 'Error converting to user time');
+    return null;
+  }
+}
+
+/**
+ * Convierte una fecha local del usuario a UTC para enviar al backend.
+ * Usar cuando el usuario ingresa una fecha en un formulario.
+ * @param dateStr - String de fecha del input (ej: '2026-02-13' o '2026-02-13T14:30')
+ * @param timezone - Timezone del usuario
+ */
+export function toUTC(
+  dateStr: string,
+  timezone: string = DEFAULT_TIMEZONE
+): Date {
+  // Si el string tiene 'T' es datetime, sino es date-only (mediodía para evitar saltos de día)
+  const hasTime = dateStr.includes('T');
+  const fullStr = hasTime ? dateStr : `${dateStr}T12:00:00`;
+
+  // new Date(str sin Z) interpreta como hora local del navegador/servidor.
+  // Calculamos el offset del timezone deseado para convertir a UTC.
+  const localDate = new Date(fullStr);
+  const zonedDate = toZonedTime(localDate, timezone);
+  const offsetMs = zonedDate.getTime() - localDate.getTime();
+  return new Date(localDate.getTime() - offsetMs);
+}
+
+/**
+ * Extrae la parte de fecha (YYYY-MM-DD) de una fecha UTC,
+ * convertida al timezone del usuario.
+ * Reemplazo seguro de toISOString().split('T')[0] que puede dar fecha incorrecta
+ * cerca de medianoche UTC.
+ */
+export function toDateOnly(
+  date: Date | string | null | undefined,
+  timezone: string = DEFAULT_TIMEZONE
+): string {
+  if (!date) return '';
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return formatInTimeZone(dateObj, timezone, 'yyyy-MM-dd');
+  } catch (error) {
+    loggers.utils.error({ err: error }, 'Error extracting date-only');
+    return '';
+  }
+}
+
+/**
+ * Formatea una fecha UTC al timezone del usuario con formato personalizado.
+ * Centraliza el uso de date-fns-tz para que los componentes no importen directamente.
+ */
+export function formatDateTz(
+  date: Date | string | null | undefined,
+  formatStr: string = DATE_FORMATS.SHORT,
+  timezone: string = DEFAULT_TIMEZONE
+): string {
+  if (!date) return '';
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return formatInTimeZone(dateObj, timezone, formatStr, { locale: es });
+  } catch (error) {
+    loggers.utils.error({ err: error }, 'Error formatting date with timezone');
+    return '';
+  }
+}
 
 /**
  * Formatea una fecha en formato dd/mm/yyyy

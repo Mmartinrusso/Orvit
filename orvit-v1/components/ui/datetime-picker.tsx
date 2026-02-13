@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { format, parse, isValid } from 'date-fns';
+import { isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toUserTime, formatDateTz, DATE_FORMATS } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,9 +36,9 @@ export function DateTimePicker({
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(() => {
     if (!value) return undefined;
     if (value instanceof Date) return value;
-    // Try to parse ISO string
-    const parsed = new Date(value);
-    return isValid(parsed) ? parsed : undefined;
+    // Convertir ISO string a hora del usuario
+    const zoned = toUserTime(value);
+    return zoned && isValid(zoned) ? zoned : undefined;
   });
   const [hours, setHours] = React.useState<string>(() => {
     if (!selectedDate) return '09';
@@ -48,14 +49,14 @@ export function DateTimePicker({
     return selectedDate.getMinutes().toString().padStart(2, '0');
   });
 
-  // Sync with external value
+  // Sync with external value (convertir a timezone del usuario)
   React.useEffect(() => {
     if (!value) {
       setSelectedDate(undefined);
       return;
     }
-    const date = value instanceof Date ? value : new Date(value);
-    if (isValid(date)) {
+    const date = value instanceof Date ? value : toUserTime(value);
+    if (date && isValid(date)) {
       setSelectedDate(date);
       setHours(date.getHours().toString().padStart(2, '0'));
       setMinutes(date.getMinutes().toString().padStart(2, '0'));
@@ -93,7 +94,7 @@ export function DateTimePicker({
   };
 
   const displayValue = selectedDate
-    ? format(selectedDate, "dd/MM/yyyy HH:mm", { locale: es })
+    ? formatDateTz(selectedDate, DATE_FORMATS.WITH_TIME)
     : '';
 
   return (

@@ -9,19 +9,8 @@ export function formatCurrency(amount: number, currency: string = 'ARS'): string
   }).format(amount);
 }
 
-export function formatDate(date: Date | string, format: 'short' | 'long' = 'short'): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-
-  if (format === 'short') {
-    return new Intl.DateTimeFormat('es-AR').format(d);
-  }
-
-  return new Intl.DateTimeFormat('es-AR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(d);
-}
+// Re-exportar desde date-utils (fuente canónica de formateo de fechas)
+export { formatDate, formatDateFull } from '@/lib/date-utils';
 
 export function formatNumber(num: number, decimals: number = 2): string {
   return new Intl.NumberFormat('es-AR', {
