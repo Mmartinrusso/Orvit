@@ -326,6 +326,9 @@ model Company {
   // Feedback de usuarios
   feedbacks Feedback[]
 
+  // Métricas de negocio
+  businessMetrics BusinessMetric[]
+
   // Ventas: Zonas, Vendedores, Condiciones de Pago
   salesZones   SalesZone[]
   salesReps    SalesRep[]
@@ -695,6 +698,9 @@ model User {
 
   // Feedback del usuario
   feedbacks Feedback[]
+
+  // Métricas de negocio
+  businessMetrics BusinessMetric[] @relation("UserBusinessMetrics")
 
   @@index([role, isActive])
   @@index([isActive])
@@ -15607,4 +15613,28 @@ model Feedback {
   @@index([companyId, createdAt(sort: Desc)])
   @@index([userId])
   @@map("feedback")
+}
+
+// ============================================================================
+// BUSINESS METRICS - Tracking de métricas históricas de negocio
+// ============================================================================
+
+model BusinessMetric {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100) // work_orders_created, work_orders_completed, etc.
+  value     Float    // Valor numérico de la métrica
+  unit      String?  @db.VarChar(30) // count, ms, currency, percentage
+  tags      Json?    // Tags opcionales: {costType: 'labor', reason: 'invalid_password'}
+  companyId Int      @map("company_id")
+  userId    Int?     @map("user_id") // Opcional: usuario que generó la métrica
+  timestamp DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?   @relation("UserBusinessMetrics", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, name, timestamp])
+  @@index([companyId, timestamp])
+  @@index([userId, timestamp])
+  @@index([timestamp]) // Para purgas eficientes (>90 días)
+  @@map("business_metrics")
 }

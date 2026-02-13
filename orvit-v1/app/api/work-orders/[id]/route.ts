@@ -7,6 +7,7 @@ import {
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateWorkOrderSchema } from '@/lib/validations/work-orders';
+import { trackCount, trackDuration } from '@/lib/metrics';
 
 // ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
@@ -285,9 +286,25 @@ export const PUT = withGuards(async (request: NextRequest, { user, params: _p },
       },
     });
 
+    // Métricas: completar OT y tiempo de resolución (fire-and-forget)
+    if (normalizedStatus === 'COMPLETED' && originalWorkOrder.status !== 'COMPLETED') {
+      trackCount('work_orders_completed', updatedWorkOrder.companyId, {
+        tags: { type: updatedWorkOrder.type, priority: updatedWorkOrder.priority },
+        userId: user.userId,
+      }).catch(() => {});
+
+      if (updatedWorkOrder.createdAt && updatedWorkOrder.completedDate) {
+        const resolutionMs = new Date(updatedWorkOrder.completedDate).getTime() - new Date(updatedWorkOrder.createdAt).getTime();
+        trackDuration('resolution_time', resolutionMs, updatedWorkOrder.companyId, {
+          tags: { type: updatedWorkOrder.type },
+          userId: user.userId,
+        }).catch(() => {});
+      }
+    }
+
     // Verificar si cambió la asignación para enviar notificación
-    if (assignedToId && 
-        originalWorkOrder?.assignedToId !== Number(assignedToId) && 
+    if (assignedToId &&
+        originalWorkOrder?.assignedToId !== Number(assignedToId) &&
         Number(assignedToId) !== originalWorkOrder.createdById) {
       try {
         await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications`, {
