@@ -102,8 +102,11 @@ export async function generateCashFlowForecast(
   // Get historical daily patterns for seasonality
   const seasonalPatterns = await getSeasonalPatterns(companyId);
 
-  // Calculate average daily outflow once (does not depend on specific date)
-  const avgDailyPayments = await getAverageDailyPayments(companyId);
+  // Calculate average daily outflow and salary cost once (do not depend on specific date)
+  const [avgDailyPayments, avgSalaryCost] = await Promise.all([
+    getAverageDailyPayments(companyId),
+    getAverageSalaryCost(companyId),
+  ]);
 
   // Generate daily predictions
   const predictions: CashFlowPrediction[] = [];
@@ -130,10 +133,10 @@ export async function generateCashFlowForecast(
     // Expected outflows (average daily outflow, pre-computed)
     const expectedPayments = avgDailyPayments;
 
-    // Salary payments typically on specific days (1st, 15th, last day of month)
+    // Salary payments typically on specific days (1st, 15th)
     const dayOfMonth = date.getDate();
     const expectedSalaries = (dayOfMonth === 1 || dayOfMonth === 15)
-      ? await getAverageSalaryCost(companyId)
+      ? avgSalaryCost
       : 0;
 
     const predictedInflow = (expectedCollections + expectedCheckDeposits) * seasonalFactor * margenFactor;
