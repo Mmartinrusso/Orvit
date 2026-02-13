@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { boundedString, optionalTrimmedString } from './helpers';
+import { boundedString, sanitizedBoundedString, sanitizedOptionalString, optionalTrimmedString } from './helpers';
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
@@ -21,13 +21,13 @@ export const VolumeUnitSchema = z.enum(
 // ─── Create ─────────────────────────────────────────────────────────────────
 
 export const CreateProductSchema = z.object({
-  name: boundedString('Nombre', 300),
-  code: boundedString('Código', 100),
+  name: sanitizedBoundedString('Nombre', 300),
+  code: sanitizedBoundedString('Código', 100),
   categoryId: z.union([
     z.number().int().positive('ID de categoría inválido'),
     z.string().min(1, 'ID de categoría es requerido'),
   ]),
-  description: z.string().trim().max(2000, 'Descripción muy larga').optional(),
+  description: sanitizedOptionalString(2000, 'Descripción'),
   unit: z.string().trim().max(50, 'Unidad muy larga').optional(),
   costPrice: z.coerce.number().min(0, 'Precio de costo no puede ser negativo').optional(),
   costCurrency: CurrencySchema.default('ARS'),
@@ -38,7 +38,7 @@ export const CreateProductSchema = z.object({
   currentStock: z.coerce.number().int().min(0, 'Stock actual no puede ser negativo').optional(),
   volume: z.coerce.number().min(0, 'Volumen no puede ser negativo').optional(),
   weight: z.coerce.number().min(0, 'Peso no puede ser negativo').optional(),
-  location: z.string().trim().max(200, 'Ubicación muy larga').optional(),
+  location: sanitizedOptionalString(200, 'Ubicación'),
   blocksPerM2: z.coerce.number().int().positive().nullable().optional(),
   isActive: z.boolean().default(true),
   images: z.array(z.string()).optional(),
@@ -47,8 +47,8 @@ export const CreateProductSchema = z.object({
   saleCurrency: CurrencySchema.default('ARS'),
   marginMin: z.coerce.number().min(0).nullable().optional(),
   marginMax: z.coerce.number().min(0).nullable().optional(),
-  barcode: z.string().trim().max(100, 'Código de barras muy largo').nullable().optional(),
-  sku: z.string().trim().max(100, 'SKU muy largo').nullable().optional(),
+  barcode: sanitizedOptionalString(100, 'Código de barras'),
+  sku: sanitizedOptionalString(100, 'SKU'),
   trackBatches: z.boolean().default(false),
   trackExpiration: z.boolean().default(false),
   tags: z.array(z.string()).optional(),
@@ -73,13 +73,13 @@ export const CreateProductSchema = z.object({
 
 export const UpdateProductSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
-  name: boundedString('Nombre', 300).optional(),
-  code: boundedString('Código', 100).optional(),
+  name: sanitizedBoundedString('Nombre', 300).optional(),
+  code: sanitizedBoundedString('Código', 100).optional(),
   categoryId: z.union([
     z.number().int().positive(),
     z.string().min(1),
   ]).optional(),
-  description: z.string().trim().max(2000, 'Descripción muy larga').optional(),
+  description: sanitizedOptionalString(2000, 'Descripción'),
   unit: z.string().trim().max(50, 'Unidad muy larga').optional(),
   costPrice: z.coerce.number().min(0, 'Precio de costo no puede ser negativo').optional(),
   costCurrency: CurrencySchema.optional(),
@@ -90,7 +90,7 @@ export const UpdateProductSchema = z.object({
   currentStock: z.coerce.number().int().min(0).optional(),
   volume: z.coerce.number().min(0).optional(),
   weight: z.coerce.number().min(0).optional(),
-  location: z.string().trim().max(200).optional(),
+  location: sanitizedOptionalString(200, 'Ubicación'),
   blocksPerM2: z.coerce.number().int().positive().nullable().optional(),
   isActive: z.boolean().optional(),
   images: z.array(z.string()).optional(),
@@ -100,8 +100,8 @@ export const UpdateProductSchema = z.object({
   saleCurrency: CurrencySchema.optional(),
   marginMin: z.coerce.number().min(0).nullable().optional(),
   marginMax: z.coerce.number().min(0).nullable().optional(),
-  barcode: z.string().trim().max(100).nullable().optional(),
-  sku: z.string().trim().max(100).nullable().optional(),
+  barcode: sanitizedOptionalString(100, 'Código de barras'),
+  sku: sanitizedOptionalString(100, 'SKU'),
   trackBatches: z.boolean().optional(),
   trackExpiration: z.boolean().optional(),
   alertStockEmail: z.boolean().optional(),

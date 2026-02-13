@@ -5,6 +5,7 @@ import { validateRequest } from '@/lib/validations/helpers';
 import { CreateProductSchema, UpdateProductSchema } from '@/lib/validations/products';
 import { cached, invalidateCache } from '@/lib/cache/cache-manager';
 import { comprasKeys, invalidationPatterns, TTL } from '@/lib/cache/cache-keys';
+import { purifyText } from '@/lib/validation/sanitization';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,13 +99,14 @@ export async function GET(request: NextRequest) {
         AND p.is_active = true
         ORDER BY p.name
       ` as any[];
-    } catch (error: any) {
+    } catch (error) {
       // Si falla porque no existen algunas columnas, intentar sin ellas
-      if (error.message?.includes('column')) {
+      const errMsg = error instanceof Error ? error.message : '';
+      if (errMsg.includes('column')) {
         console.log('⚠️ [PRODUCTS API] Algunas columnas no existen en products, obteniendo sin ellas');
         try {
           costosProducts = await prisma.$queryRaw`
-            SELECT 
+            SELECT
               p.id,
               p.name,
               p.description,
@@ -128,9 +130,10 @@ export async function GET(request: NextRequest) {
             AND p.is_active = true
             ORDER BY p.name
           ` as any[];
-        } catch (error2: any) {
+        } catch (error2) {
           // Si location tampoco existe, obtener sin location ni weight/volume
-          if (error2.message?.includes('column') && error2.message?.includes('location')) {
+          const err2Msg = error2 instanceof Error ? error2.message : '';
+          if (err2Msg.includes('column') && err2Msg.includes('location')) {
             console.log('⚠️ [PRODUCTS API] Columna location no existe, obteniendo sin location ni weight/volume');
             costosProducts = await prisma.$queryRaw`
               SELECT 
@@ -407,7 +410,10 @@ export async function PUT(request: NextRequest) {
 
     if (isCostosProduct) {
       // Actualizar producto de costos
-      const locationValue = (body.location || '').trim();
+      const locationValue = purifyText(body.location || '');
+      // Sanitizar campos de texto antes de $executeRaw
+      const sanitizedName = purifyText(body.name || '');
+      const sanitizedDescription = purifyText(body.description || '');
       console.log('💾 [PRODUCTS API] Actualizando producto de costos ID:', numericId);
       console.log('💾 [PRODUCTS API] Ubicación recibida:', body.location);
       console.log('💾 [PRODUCTS API] Ubicación procesada:', locationValue);
@@ -427,9 +433,9 @@ export async function PUT(request: NextRequest) {
         
         updated = await prisma.$executeRaw`
           UPDATE products
-          SET 
-            name = ${body.name},
-            description = ${body.description || ''},
+          SET
+            name = ${sanitizedName},
+            description = ${sanitizedDescription},
             unit_price = ${parseFloat(body.costPrice || 0)},
             stock_quantity = ${parseInt(body.currentStock || 0)},
             min_stock_level = ${parseInt(body.minStock || 0)},
@@ -443,17 +449,18 @@ export async function PUT(request: NextRequest) {
           WHERE id = ${numericId}
           AND company_id = ${companyId}
         `;
-      } catch (error: any) {
+      } catch (error) {
         // Si falla porque no existen las columnas, intentar actualizar solo con location
-        if (error.message?.includes('column') && (error.message?.includes('location') || error.message?.includes('weight') || error.message?.includes('volume') || error.message?.includes('volume_unit'))) {
+        const errMsg = error instanceof Error ? error.message : '';
+        if (errMsg.includes('column') && (errMsg.includes('location') || errMsg.includes('weight') || errMsg.includes('volume') || errMsg.includes('volume_unit'))) {
           console.log('⚠️ [PRODUCTS API] Algunas columnas no existen, intentando actualizar sin ellas');
           try {
             // Intentar con location pero sin weight/volume
             updated = await prisma.$executeRaw`
               UPDATE products
-              SET 
-                name = ${body.name},
-                description = ${body.description || ''},
+              SET
+                name = ${sanitizedName},
+                description = ${sanitizedDescription},
                 unit_price = ${parseFloat(body.costPrice || 0)},
                 stock_quantity = ${parseInt(body.currentStock || 0)},
                 min_stock_level = ${parseInt(body.minStock || 0)},
@@ -463,15 +470,16 @@ export async function PUT(request: NextRequest) {
               WHERE id = ${numericId}
               AND company_id = ${companyId}
             `;
-          } catch (error2: any) {
+          } catch (error2) {
             // Si location tampoco existe, actualizar sin location ni weight/volume
-            if (error2.message?.includes('column') && error2.message?.includes('location')) {
+            const err2Msg = error2 instanceof Error ? error2.message : '';
+            if (err2Msg.includes('column') && err2Msg.includes('location')) {
               console.log('⚠️ [PRODUCTS API] Columna location no existe, actualizando sin location ni weight/volume');
               updated = await prisma.$executeRaw`
                 UPDATE products
-                SET 
-                  name = ${body.name},
-                  description = ${body.description || ''},
+                SET
+                  name = ${sanitizedName},
+                  description = ${sanitizedDescription},
                   unit_price = ${parseFloat(body.costPrice || 0)},
                   stock_quantity = ${parseInt(body.currentStock || 0)},
                   min_stock_level = ${parseInt(body.minStock || 0)},
@@ -527,13 +535,14 @@ export async function PUT(request: NextRequest) {
           WHERE id = ${numericId}
           AND company_id = ${companyId}
         ` as any[];
-      } catch (error: any) {
+      } catch (error) {
         // Si falla porque no existen algunas columnas, intentar sin ellas
-        if (error.message?.includes('column')) {
+        const errMsg = error instanceof Error ? error.message : '';
+        if (errMsg.includes('column')) {
           console.log('⚠️ [PRODUCTS API] Algunas columnas no existen, obteniendo sin ellas');
           try {
             updatedProduct = await prisma.$queryRaw`
-              SELECT 
+              SELECT
                 id, name, description, sku, category_id, company_id,
                 unit_price, unit_cost, stock_quantity, min_stock_level,
                 is_active, created_at, updated_at, subcategory_id,
@@ -542,9 +551,10 @@ export async function PUT(request: NextRequest) {
               WHERE id = ${numericId}
               AND company_id = ${companyId}
             ` as any[];
-          } catch (error2: any) {
+          } catch (error2) {
             // Si location tampoco existe, obtener sin location ni weight/volume
-            if (error2.message?.includes('column') && error2.message?.includes('location')) {
+            const err2Msg = error2 instanceof Error ? error2.message : '';
+            if (err2Msg.includes('column') && err2Msg.includes('location')) {
               console.log('⚠️ [PRODUCTS API] Columna location no existe, obteniendo sin location ni weight/volume');
               updatedProduct = await prisma.$queryRaw`
                 SELECT 

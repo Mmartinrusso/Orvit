@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { validateRequest } from '@/lib/validations/helpers';
+import { CreateContactSchema } from '@/lib/validations/contacts';
+import { purifyText } from '@/lib/validation/sanitization';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,23 +94,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Construir consulta SQL
-    let sqlWhere = `WHERE "userId" = ${userId} AND "isActive" = true`;
-    
+    // Consulta parametrizada para evitar SQL injection
+    const params: any[] = [userId];
+    let paramIndex = 2;
+    let sqlWhere = `WHERE "userId" = $1 AND "isActive" = true`;
+
     if (category && category !== 'all') {
-      sqlWhere += ` AND category = '${category}'`;
+      sqlWhere += ` AND category = $${paramIndex}`;
+      params.push(category);
+      paramIndex++;
     }
 
     if (search) {
-      sqlWhere += ` AND (name ILIKE '%${search}%' OR email ILIKE '%${search}%' OR company ILIKE '%${search}%' OR position ILIKE '%${search}%')`;
+      const searchPattern = `%${search}%`;
+      sqlWhere += ` AND (name ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR company ILIKE $${paramIndex} OR position ILIKE $${paramIndex})`;
+      params.push(searchPattern);
+      paramIndex++;
     }
 
     // Consulta simplificada sin JOINs complejos
     const contacts = await prisma.$queryRawUnsafe(`
-      SELECT * FROM "Contact" 
+      SELECT * FROM "Contact"
       ${sqlWhere}
       ORDER BY name ASC
-    `) as any[];
+    `, ...params) as any[];
 
     // Transformar datos para el frontend
     const transformedContacts = contacts.map((contact) => ({
@@ -161,24 +171,21 @@ export async function POST(request: NextRequest) {
     const userId = user.id;
     const body = await request.json();
 
-    const {
-      name,
-      email,
-      phone,
-      company,
-      position,
-      notes,
-      avatar,
-      category,
-      tags
-    } = body;
-
-    if (!name) {
-      return NextResponse.json(
-        { error: 'El nombre es requerido' },
-        { status: 400 }
-      );
+    const validation = validateRequest(CreateContactSchema, body);
+    if (!validation.success) {
+      return validation.response;
     }
+
+    const data = validation.data;
+    const name = purifyText(data.name);
+    const email = data.email ? purifyText(data.email) : data.email;
+    const phone = data.phone ? purifyText(data.phone) : data.phone;
+    const company = data.company ? purifyText(data.company) : data.company;
+    const position = data.position ? purifyText(data.position) : data.position;
+    const notes = data.notes ? purifyText(data.notes) : data.notes;
+    const avatar = data.avatar;
+    const category = data.category;
+    const tags = data.tags;
 
     console.log('📝 [API] Creando contacto para usuario:', userId);
 

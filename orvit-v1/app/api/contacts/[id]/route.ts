@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { validateRequest } from '@/lib/validations/helpers';
+import { UpdateContactSchema } from '@/lib/validations/contacts';
+import { purifyText } from '@/lib/validation/sanitization';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -143,24 +146,22 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const {
-      name,
-      email,
-      phone,
-      company,
-      position,
-      notes,
-      avatar,
-      category,
-      tags
-    } = body;
 
-    if (!name) {
-      return NextResponse.json(
-        { error: 'El nombre es requerido' },
-        { status: 400 }
-      );
+    const validation = validateRequest(UpdateContactSchema, body);
+    if (!validation.success) {
+      return validation.response;
     }
+
+    const data = validation.data;
+    const name = purifyText(data.name);
+    const email = data.email ? purifyText(data.email) : data.email;
+    const phone = data.phone ? purifyText(data.phone) : data.phone;
+    const company = data.company ? purifyText(data.company) : data.company;
+    const position = data.position ? purifyText(data.position) : data.position;
+    const notes = data.notes ? purifyText(data.notes) : data.notes;
+    const avatar = data.avatar;
+    const category = data.category;
+    const tags = data.tags;
 
     console.log('📝 [API] Actualizando contacto:', contactId, 'para usuario:', user.id);
 

@@ -1,5 +1,6 @@
 import { z, ZodSchema, ZodError } from 'zod';
 import { NextResponse } from 'next/server';
+import { purifyText } from '@/lib/validation/sanitization';
 
 /**
  * Valida los datos de una request contra un schema Zod.
@@ -55,6 +56,22 @@ export const boundedString = (fieldName: string, max: number, min = 1) =>
     .trim()
     .min(min, `${fieldName} debe tener al menos ${min} caracteres`)
     .max(max, `${fieldName} no puede superar los ${max} caracteres`);
+
+/** String con longitud máxima y sanitización DOMPurify */
+export const sanitizedBoundedString = (fieldName: string, max: number, min = 1) =>
+  z.string({ required_error: `${fieldName} es requerido` })
+    .trim()
+    .min(min, `${fieldName} debe tener al menos ${min} caracteres`)
+    .max(max, `${fieldName} no puede superar los ${max} caracteres`)
+    .transform(val => purifyText(val));
+
+/** String opcional con sanitización DOMPurify y longitud máxima */
+export const sanitizedOptionalString = (max: number, fieldName?: string) =>
+  z.string()
+    .trim()
+    .max(max, fieldName ? `${fieldName} muy largo` : `No puede superar los ${max} caracteres`)
+    .transform(val => purifyText(val))
+    .optional();
 
 /** Email validado y normalizado */
 export const emailSchema = z

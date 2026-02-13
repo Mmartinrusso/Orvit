@@ -3,6 +3,7 @@
  */
 
 import { TASK_VALIDATION } from './constants';
+import { purifyText } from '@/lib/validation/sanitization';
 
 export interface ValidationError {
   field: string;
@@ -15,21 +16,11 @@ export interface ValidationResult {
 }
 
 /**
- * Sanitiza texto para prevenir XSS
- * Elimina tags HTML peligrosos pero permite formato básico
+ * Sanitiza texto para prevenir XSS usando DOMPurify.
+ * Wrapper sobre purifyText() para mantener retrocompatibilidad.
  */
 export function sanitizeText(text: string): string {
-  if (!text) return '';
-
-  // Eliminar scripts y tags peligrosos
-  return text
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-    .replace(/on\w+\s*=/gi, '')
-    .replace(/javascript:/gi, '')
-    .trim();
+  return purifyText(text);
 }
 
 /**

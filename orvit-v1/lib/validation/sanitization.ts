@@ -5,6 +5,16 @@
 import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
 
+/**
+ * Función pura para sanitizar texto con DOMPurify.
+ * Elimina HTML/scripts peligrosos, preserva caracteres Unicode (ñ, acentos, símbolos).
+ * Usar en endpoints que no pasan por validación Zod.
+ */
+export function purifyText(input: string): string {
+  if (!input) return '';
+  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim();
+}
+
 // Sanitized string schema
 export const sanitizedString = z.string().transform(val => DOMPurify.sanitize(val));
 

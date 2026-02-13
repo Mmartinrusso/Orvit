@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateWorkOrderCommentSchema } from '@/lib/validations/work-orders';
+import { purifyText } from '@/lib/validation/sanitization';
 
 // GET /api/work-orders/[id]/comments
 export const GET = withGuards(async (request: NextRequest, { user, params: _p }, routeContext) => {
@@ -82,7 +83,7 @@ export const POST = withGuards(async (request: NextRequest, { user, params: _p }
     if (!validation.success) return validation.response;
 
     const { content } = validation.data;
-    const type = body.type || 'comment';
+    const type = purifyText(body.type || 'comment');
     const authorId = user.userId;
 
     // Verificar que la orden existe
