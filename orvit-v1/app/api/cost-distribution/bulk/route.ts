@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/cost-distribution/bulk - Guardar múltiples distribuciones de costos
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const { distributions, companyId } = body;
 
@@ -23,10 +27,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Guardando distribuciones masivas:', {
-      companyId,
-      totalDistributions: distributions.length
-    });
+    // Validar tenant isolation: el usuario solo puede modificar datos de su empresa
+    if (parseInt(companyId) !== user!.companyId) {
+      return NextResponse.json(
+        { error: 'No autorizado para modificar datos de otra empresa' },
+        { status: 403 }
+      );
+    }
 
     // Validar que todas las distribuciones tengan los campos requeridos
     for (const dist of distributions) {
@@ -42,8 +49,8 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       // Eliminar distribuciones existentes para esta empresa
       await tx.$executeRaw`
-        DELETE FROM cost_distribution_config 
-        WHERE company_id = ${parseInt(companyId)}
+        DELETE FROM cost_distribution_config
+        WHERE company_id = ${user!.companyId}
       `;
 
       // Insertar nuevas distribuciones usando UPSERT para manejar conflictos
@@ -58,14 +65,14 @@ export async function POST(request: NextRequest) {
               percentage,
               company_id
             ) VALUES (
-              ${dist.costName},  -- Usar costName como cost_type para hacer único cada costo indirecto
+              ${dist.costName},
               ${dist.costName},
               ${parseInt(dist.categoryId)},
               ${parseFloat(dist.percentage)},
-              ${parseInt(companyId)}
+              ${user!.companyId}
             )
-            ON CONFLICT (company_id, cost_type, product_category_id) 
-            DO UPDATE SET 
+            ON CONFLICT (company_id, cost_type, product_category_id)
+            DO UPDATE SET
               percentage = EXCLUDED.percentage,
               cost_name = EXCLUDED.cost_name,
               updated_at = CURRENT_TIMESTAMP
@@ -73,22 +80,16 @@ export async function POST(request: NextRequest) {
           totalInserted++;
         } catch (error) {
           console.warn(`Error insertando distribución para ${dist.costName} - categoría ${dist.categoryId}:`, error);
-          // Continuar con las siguientes distribuciones
         }
       }
 
-      return {
-        success: true,
-        totalInserted
-      };
+      return { totalInserted };
     });
-
-    console.log('✅ Distribuciones guardadas exitosamente:', result);
 
     return NextResponse.json({
       success: true,
-      message: `${distributions.length} distribuciones guardadas exitosamente`,
-      totalInserted: distributions.length
+      message: `${result.totalInserted} distribuciones guardadas exitosamente`,
+      totalInserted: result.totalInserted
     });
 
   } catch (error) {
@@ -103,6 +104,9 @@ export async function POST(request: NextRequest) {
 // GET /api/cost-distribution/bulk - Obtener distribuciones existentes para la matriz
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
@@ -113,8 +117,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Validar tenant isolation
+    if (parseInt(companyId) !== user!.companyId) {
+      return NextResponse.json(
+        { error: 'No autorizado para ver datos de otra empresa' },
+        { status: 403 }
+      );
+    }
+
     const distributions = await prisma.$queryRaw`
-      SELECT 
+      SELECT
         cdc.id,
         cdc.cost_type as "costType",
         cdc.cost_name as "costName",
@@ -123,7 +135,7 @@ export async function GET(request: NextRequest) {
         pc.name as "productCategoryName"
       FROM cost_distribution_config cdc
       LEFT JOIN product_categories pc ON cdc.product_category_id = pc.id
-      WHERE cdc.company_id = ${parseInt(companyId)}
+      WHERE cdc.company_id = ${user!.companyId}
       ORDER BY cdc.cost_name, pc.name
     `;
 

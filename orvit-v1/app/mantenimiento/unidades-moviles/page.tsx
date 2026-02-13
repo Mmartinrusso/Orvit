@@ -632,16 +632,38 @@ export default function UnidadesMovilesPage() {
         body: JSON.stringify({ ids: idsToDelete })
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al eliminar');
+      const result = await response.json();
+
+      if (!response.ok && response.status !== 207) {
+        throw new Error(result.error || 'Error al eliminar');
       }
 
-      const result = await response.json();
-      toast({
-        title: 'Unidades eliminadas',
-        description: result.message
-      });
+      // Manejar respuesta parcial (207 Multi-Status)
+      const unauthorized = result.unauthorized?.length || 0;
+      const rejected = result.rejected?.length || 0;
+      const processed = result.processed?.length || 0;
+
+      if (unauthorized > 0 || rejected > 0) {
+        // Restaurar solo los no procesados
+        const processedSet = new Set(result.processed || []);
+        setUnidades(previousUnidades.filter(u => !processedSet.has(u.id)));
+
+        const details: string[] = [];
+        if (processed > 0) details.push(`${processed} eliminada(s)`);
+        if (rejected > 0) details.push(`${rejected} con OTs activas`);
+        if (unauthorized > 0) details.push(`${unauthorized} sin autorización`);
+
+        toast({
+          title: processed > 0 ? 'Eliminación parcial' : 'No se pudo eliminar',
+          description: details.join(', '),
+          variant: processed > 0 ? 'default' : 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Unidades eliminadas',
+          description: result.message
+        });
+      }
 
       setSelectedUnitIds([]);
       setSelectionMode(false);

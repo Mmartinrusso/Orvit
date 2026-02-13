@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/employee-cost-distribution/bulk - Guardar múltiples distribuciones de costos por empleados
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const { distributions, companyId } = body;
 
@@ -23,10 +27,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Guardando distribuciones de costos por empleados:', {
-      companyId,
-      totalDistributions: distributions.length
-    });
+    // Validar tenant isolation: el usuario solo puede modificar datos de su empresa
+    if (parseInt(companyId) !== user!.companyId) {
+      return NextResponse.json(
+        { error: 'No autorizado para modificar datos de otra empresa' },
+        { status: 403 }
+      );
+    }
 
     // Validar que todas las distribuciones tengan los campos requeridos
     for (const dist of distributions) {
@@ -42,8 +49,8 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       // Eliminar distribuciones existentes para esta empresa
       await tx.$executeRaw`
-        DELETE FROM employee_cost_distribution 
-        WHERE company_id = ${parseInt(companyId)}
+        DELETE FROM employee_cost_distribution
+        WHERE company_id = ${user!.companyId}
       `;
 
       // Insertar nuevas distribuciones usando UPSERT para manejar conflictos
@@ -59,15 +66,15 @@ export async function POST(request: NextRequest) {
               percentage,
               company_id
             ) VALUES (
-              ${dist.employeeCategoryName},  -- Usar employeeCategoryName como cost_type para hacer único cada categoría de empleado
+              ${dist.employeeCategoryName},
               ${dist.employeeCategoryName},
               ${parseInt(dist.employeeCategoryId)},
               ${parseInt(dist.productCategoryId)},
               ${parseFloat(dist.percentage)},
-              ${parseInt(companyId)}
+              ${user!.companyId}
             )
-            ON CONFLICT (company_id, cost_type, employee_category_id, product_category_id) 
-            DO UPDATE SET 
+            ON CONFLICT (company_id, cost_type, employee_category_id, product_category_id)
+            DO UPDATE SET
               percentage = EXCLUDED.percentage,
               cost_name = EXCLUDED.cost_name,
               updated_at = CURRENT_TIMESTAMP
@@ -75,21 +82,15 @@ export async function POST(request: NextRequest) {
           totalInserted++;
         } catch (error) {
           console.warn(`Error insertando distribución para ${dist.employeeCategoryName} - categoría producto ${dist.productCategoryId}:`, error);
-          // Continuar con las siguientes distribuciones
         }
       }
 
-      return {
-        success: true,
-        totalInserted
-      };
+      return { totalInserted };
     });
-
-    console.log('✅ Distribuciones de costos por empleados guardadas exitosamente:', result);
 
     return NextResponse.json({
       success: true,
-      message: `${distributions.length} distribuciones de costos por empleados guardadas exitosamente`,
+      message: `${result.totalInserted} distribuciones de costos por empleados guardadas exitosamente`,
       totalInserted: result.totalInserted
     });
 
@@ -105,6 +106,9 @@ export async function POST(request: NextRequest) {
 // GET /api/employee-cost-distribution/bulk - Obtener distribuciones existentes para la matriz
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
@@ -115,8 +119,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Validar tenant isolation
+    if (parseInt(companyId) !== user!.companyId) {
+      return NextResponse.json(
+        { error: 'No autorizado para ver datos de otra empresa' },
+        { status: 403 }
+      );
+    }
+
     const distributions = await prisma.$queryRaw`
-      SELECT 
+      SELECT
         ecd.id,
         ecd.cost_type as "costType",
         ecd.cost_name as "costName",
@@ -128,7 +140,7 @@ export async function GET(request: NextRequest) {
       FROM employee_cost_distribution ecd
       LEFT JOIN employee_categories ec ON ecd.employee_category_id = ec.id
       LEFT JOIN product_categories pc ON ecd.product_category_id = pc.id
-      WHERE ecd.company_id = ${parseInt(companyId)}
+      WHERE ecd.company_id = ${user!.companyId}
       ORDER BY ecd.cost_name, ec.name, pc.name
     `;
 

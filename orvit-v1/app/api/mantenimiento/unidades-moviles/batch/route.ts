@@ -7,9 +7,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/shared-helpers';
+import {
+  validateBulkTenantAccess,
+  buildBulkResponse,
+} from '@/lib/auth/bulk-authorization';
 
 // Schema para batch update
 const batchUpdateSchema = z.object({
@@ -32,20 +35,9 @@ export const dynamic = 'force-dynamic';
 // PUT - Actualizar múltiples unidades
 export async function PUT(request: NextRequest) {
   try {
-    // 1. Verificar autenticación
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // 2. Parsear y validar body
     const body = await request.json();
     const validation = batchUpdateSchema.safeParse(body);
 
@@ -58,23 +50,39 @@ export async function PUT(request: NextRequest) {
 
     const { ids, data } = validation.data;
 
-    // 3. Ejecutar actualización batch
-    const result = await prisma.unidadMovil.updateMany({
+    // Cargar items y validar tenant access
+    const items = await prisma.unidadMovil.findMany({
       where: { id: { in: ids } },
+      select: { id: true, companyId: true },
+    });
+
+    const { authorized, unauthorized } = validateBulkTenantAccess(items, ids, user!.companyId);
+
+    if (authorized.length === 0) {
+      return buildBulkResponse({
+        processed: [],
+        rejected: [],
+        unauthorized,
+        message: 'No se encontraron unidades autorizadas para actualizar',
+      });
+    }
+
+    const result = await prisma.unidadMovil.updateMany({
+      where: { id: { in: authorized }, companyId: user!.companyId },
       data: {
         ...data,
         updatedAt: new Date()
       }
     });
 
-    return NextResponse.json({
-      success: true,
-      updated: result.count,
-      message: `${result.count} unidades actualizadas correctamente`
+    return buildBulkResponse({
+      processed: authorized,
+      rejected: [],
+      unauthorized,
+      message: `${result.count} unidades actualizadas correctamente`,
     });
-
   } catch (error) {
-    console.error('❌ Error en PUT /api/mantenimiento/unidades-moviles/batch:', error);
+    console.error('Error en PUT /api/mantenimiento/unidades-moviles/batch:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
@@ -85,20 +93,9 @@ export async function PUT(request: NextRequest) {
 // DELETE - Eliminar múltiples unidades
 export async function DELETE(request: NextRequest) {
   try {
-    // 1. Verificar autenticación
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // 2. Parsear y validar body
     const body = await request.json();
     const validation = batchDeleteSchema.safeParse(body);
 
@@ -111,10 +108,31 @@ export async function DELETE(request: NextRequest) {
 
     const { ids } = validation.data;
 
-    // 3. Verificar si alguna tiene work orders activas
+    // Cargar items y validar tenant access
+    const items = await prisma.unidadMovil.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, companyId: true, nombre: true },
+    });
+
+    const { authorized, unauthorized } = validateBulkTenantAccess(
+      items.map((i) => ({ id: i.id, companyId: i.companyId })),
+      ids,
+      user!.companyId,
+    );
+
+    if (authorized.length === 0) {
+      return buildBulkResponse({
+        processed: [],
+        rejected: [],
+        unauthorized,
+        message: 'No se encontraron unidades autorizadas para eliminar',
+      });
+    }
+
+    // Verificar OTs activas solo en los autorizados
     const unitsWithActiveWO = await prisma.unidadMovil.findMany({
       where: {
-        id: { in: ids },
+        id: { in: authorized },
         workOrders: {
           some: {
             status: { in: ['PENDING', 'IN_PROGRESS'] }
@@ -124,26 +142,27 @@ export async function DELETE(request: NextRequest) {
       select: { id: true, nombre: true }
     });
 
-    if (unitsWithActiveWO.length > 0) {
-      return NextResponse.json({
-        error: 'Algunas unidades tienen órdenes de trabajo activas',
-        unitsWithActiveWO: unitsWithActiveWO.map(u => ({ id: u.id, nombre: u.nombre }))
-      }, { status: 400 });
+    const blockedIds = new Set(unitsWithActiveWO.map((u) => u.id));
+    const rejected = unitsWithActiveWO.map((u) => ({
+      id: u.id,
+      reason: `Tiene OTs activas: ${u.nombre}`,
+    }));
+    const deletableIds = authorized.filter((id) => !blockedIds.has(id));
+
+    if (deletableIds.length > 0) {
+      await prisma.unidadMovil.deleteMany({
+        where: { id: { in: deletableIds }, companyId: user!.companyId },
+      });
     }
 
-    // 4. Ejecutar eliminación batch
-    const result = await prisma.unidadMovil.deleteMany({
-      where: { id: { in: ids } }
+    return buildBulkResponse({
+      processed: deletableIds,
+      rejected,
+      unauthorized,
+      message: `${deletableIds.length} unidades eliminadas correctamente`,
     });
-
-    return NextResponse.json({
-      success: true,
-      deleted: result.count,
-      message: `${result.count} unidades eliminadas correctamente`
-    });
-
   } catch (error) {
-    console.error('❌ Error en DELETE /api/mantenimiento/unidades-moviles/batch:', error);
+    console.error('Error en DELETE /api/mantenimiento/unidades-moviles/batch:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
