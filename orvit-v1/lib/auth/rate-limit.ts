@@ -15,7 +15,7 @@ import { NextRequest } from 'next/server';
 // TIPOS
 // ============================================================================
 
-export type RateLimitAction = 'login' | '2fa' | 'api' | 'passwordReset';
+export type RateLimitAction = 'login' | 'loginByEmail' | '2fa' | 'api' | 'passwordReset';
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -87,7 +87,7 @@ export async function checkRateLimit(
   action: RateLimitAction
 ): Promise<RateLimitResult> {
   // Bypass rate limit en desarrollo para login
-  if (process.env.NODE_ENV !== 'production' && action === 'login') {
+  if (process.env.NODE_ENV !== 'production' && (action === 'login' || action === 'loginByEmail')) {
     return {
       allowed: true,
       remaining: 999,
@@ -213,6 +213,7 @@ export async function resetRateLimit(
 function getRateLimitConfig(action: RateLimitAction): RateLimitConfig {
   const configs: Record<RateLimitAction, RateLimitConfig> = {
     login: AUTH_CONFIG.rateLimit.login,
+    loginByEmail: AUTH_CONFIG.rateLimit.loginByEmail,
     '2fa': AUTH_CONFIG.rateLimit['2fa'],
     api: AUTH_CONFIG.rateLimit.api,
     passwordReset: AUTH_CONFIG.rateLimit.passwordReset,
@@ -385,6 +386,7 @@ export async function cleanupExpiredRateLimits(): Promise<number> {
   // Obtener todas las configuraciones de ventana
   const maxWindow = Math.max(
     AUTH_CONFIG.rateLimit.login.window,
+    AUTH_CONFIG.rateLimit.loginByEmail.window,
     AUTH_CONFIG.rateLimit['2fa'].window,
     AUTH_CONFIG.rateLimit.api.window,
     AUTH_CONFIG.rateLimit.passwordReset.window

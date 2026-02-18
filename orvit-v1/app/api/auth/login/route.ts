@@ -2,8 +2,10 @@
  * POST /api/auth/login
  *
  * Sistema de Login con Seguridad Avanzada:
- * - Rate limiting (5 intentos en 15 min)
- * - Registro de intentos de login
+ * - Rate limiting por IP (5 intentos/min, bloqueo 15 min)
+ * - Rate limiting por email (10 intentos/5min, bloqueo 15 min) - previene ataques distribuidos
+ * - Logging de intentos fallidos para detección de ataques
+ * - Registro de intentos de login en BD
  * - Sesiones multi-dispositivo
  * - Access + Refresh tokens
  * - Compatibilidad con sistema anterior
@@ -15,8 +17,8 @@ import * as bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { loggers } from '@/lib/logger';
 import { getUserPermissions } from '@/lib/permissions-helpers';
-import { JWT_SECRET } from '@/lib/auth';
 import { SignJWT } from 'jose';
+import { trackCount } from '@/lib/metrics';
 
 // Importaciones directas para evitar problemas de exportación circular
 import { generateTokenPair, setAuthCookies } from '@/lib/auth/tokens';
@@ -31,7 +33,16 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      'JWT_SECRET no está definido o es demasiado corto. ' +
+      'Debe tener al menos 32 caracteres.'
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 // ============================================================================
 // HELPERS
@@ -122,11 +133,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ====== RATE LIMITING ======
+    // ====== RATE LIMITING POR IP ======
     const rateLimitResult = await checkRateLimit(ipAddress, 'login');
 
     if (!rateLimitResult.allowed) {
-      await logLoginAttempt(identifier, ipAddress, userAgent, false, 'rate_limited');
+      loggers.auth.warn(
+        { ip: ipAddress, email: identifier, action: 'rate_limit_ip' },
+        `Rate limit por IP excedido: ${ipAddress} bloqueado hasta ${rateLimitResult.blockedUntil?.toISOString()}`
+      );
+      await logLoginAttempt(identifier, ipAddress, userAgent, false, 'rate_limited_ip');
 
       return NextResponse.json(
         {
@@ -138,6 +153,32 @@ export async function POST(request: NextRequest) {
           status: 429,
           headers: {
             'Retry-After': String(rateLimitResult.retryAfter || 60),
+          },
+        }
+      );
+    }
+
+    // ====== RATE LIMITING POR EMAIL (prevenir ataque distribuido a una cuenta) ======
+    const emailNormalized = identifier.toLowerCase();
+    const emailRateLimitResult = await checkRateLimit(emailNormalized, 'loginByEmail');
+
+    if (!emailRateLimitResult.allowed) {
+      loggers.auth.warn(
+        { ip: ipAddress, email: identifier, action: 'rate_limit_email' },
+        `Rate limit por email excedido: cuenta ${identifier} bloqueada hasta ${emailRateLimitResult.blockedUntil?.toISOString()}`
+      );
+      await logLoginAttempt(identifier, ipAddress, userAgent, false, 'rate_limited_email');
+
+      return NextResponse.json(
+        {
+          error: 'Demasiados intentos de inicio de sesión para esta cuenta. Intentá de nuevo más tarde.',
+          retryAfter: emailRateLimitResult.retryAfter,
+          blockedUntil: emailRateLimitResult.blockedUntil?.toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(emailRateLimitResult.retryAfter || 60),
           },
         }
       );
@@ -162,7 +203,9 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       await incrementRateLimit(ipAddress, 'login');
+      await incrementRateLimit(emailNormalized, 'loginByEmail');
       await logLoginAttempt(identifier, ipAddress, userAgent, false, 'user_not_found');
+      loggers.auth.warn({ ip: ipAddress, email: identifier, reason: 'user_not_found' }, 'Login fallido: usuario no encontrado');
 
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
@@ -170,7 +213,9 @@ export async function POST(request: NextRequest) {
     // Verificar si el usuario está activo
     if (!user.isActive) {
       await incrementRateLimit(ipAddress, 'login');
+      await incrementRateLimit(emailNormalized, 'loginByEmail');
       await logLoginAttempt(identifier, ipAddress, userAgent, false, 'inactive', user.id);
+      loggers.auth.warn({ ip: ipAddress, email: identifier, userId: user.id, reason: 'inactive' }, 'Login fallido: usuario inactivo');
 
       return NextResponse.json({ error: 'Usuario inactivo' }, { status: 401 });
     }
@@ -178,7 +223,9 @@ export async function POST(request: NextRequest) {
     // Verificar contraseña
     if (!user.password) {
       await incrementRateLimit(ipAddress, 'login');
+      await incrementRateLimit(emailNormalized, 'loginByEmail');
       await logLoginAttempt(identifier, ipAddress, userAgent, false, 'no_password', user.id);
+      loggers.auth.warn({ ip: ipAddress, email: identifier, userId: user.id, reason: 'no_password' }, 'Login fallido: sin contraseña configurada');
 
       return NextResponse.json({ error: 'Usuario sin contraseña configurada' }, { status: 401 });
     }
@@ -187,15 +234,27 @@ export async function POST(request: NextRequest) {
 
     if (!isValidPassword) {
       await incrementRateLimit(ipAddress, 'login');
+      await incrementRateLimit(emailNormalized, 'loginByEmail');
       await logLoginAttempt(identifier, ipAddress, userAgent, false, 'invalid_password', user.id);
+      loggers.auth.warn({ ip: ipAddress, email: identifier, userId: user.id, reason: 'invalid_password' }, 'Login fallido: contraseña inválida');
+
+      // Métrica: failed_logins (fire-and-forget, usa primera empresa del usuario)
+      const failedCompanyId = user.companies?.[0]?.company?.id;
+      if (failedCompanyId) {
+        trackCount('failed_logins', failedCompanyId, {
+          tags: { reason: 'invalid_password' },
+          userId: user.id,
+        }).catch(() => {});
+      }
 
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
 
     // ====== LOGIN EXITOSO ======
 
-    // Resetear rate limit después de login exitoso
+    // Resetear rate limits después de login exitoso (IP + email)
     await resetRateLimit(ipAddress, 'login');
+    await resetRateLimit(emailNormalized, 'loginByEmail');
 
     // Actualizar último acceso
     await prisma.user.update({
@@ -251,7 +310,7 @@ export async function POST(request: NextRequest) {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
-      .sign(JWT_SECRET_KEY);
+      .sign(getJwtSecretKey());
 
     cookies().set('token', legacyToken, {
       httpOnly: true,
@@ -262,6 +321,13 @@ export async function POST(request: NextRequest) {
 
     // Registrar login exitoso
     await logLoginAttempt(identifier, ipAddress, userAgent, true, undefined, user.id);
+
+    // Métrica: successful_logins (fire-and-forget)
+    if (companyId) {
+      trackCount('successful_logins', companyId, {
+        userId: user.id,
+      }).catch(() => {});
+    }
 
     // Obtener permisos
     const permissions = await getUserPermissions(

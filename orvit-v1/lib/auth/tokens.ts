@@ -11,9 +11,16 @@ import { prisma } from '@/lib/prisma';
 import { AUTH_CONFIG } from './config';
 import { createHash, randomBytes } from 'crypto';
 
-// Secret para JWT (usar variable de entorno en producción)
-const JWT_SECRET = process.env.JWT_SECRET || 'Messi';
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      'JWT_SECRET no está definido o es demasiado corto. ' +
+      'Debe tener al menos 32 caracteres.'
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 // ============================================================================
 // TIPOS
@@ -72,7 +79,7 @@ export async function generateTokenPair(
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(AUTH_CONFIG.accessToken.expiresIn)
-    .sign(JWT_SECRET_KEY);
+    .sign(getJwtSecretKey());
 
   // Generar Refresh Token (token opaco + almacenar en BD)
   const refreshTokenId = randomBytes(32).toString('hex');
@@ -122,7 +129,7 @@ export async function generateAccessToken(
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(AUTH_CONFIG.accessToken.expiresIn)
-    .sign(JWT_SECRET_KEY);
+    .sign(getJwtSecretKey());
 }
 
 // ============================================================================
@@ -134,7 +141,7 @@ export async function generateAccessToken(
  */
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
     return payload as unknown as AccessTokenPayload;
   } catch {
     return null;

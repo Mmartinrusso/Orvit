@@ -1,22 +1,32 @@
 /**
- * Auth Helper Centralizado para APIs de Compras
+ * Auth helpers para módulo Compras
  *
- * Elimina duplicación de código de autenticación JWT en todos los endpoints.
- * Incluye verificación de roles y extracción de companyId.
+ * Thin wrapper sobre shared-helpers.ts para retrocompatibilidad.
+ * Mantiene el patrón discriminated union (success/error) usado en compras.
+ *
+ * Los consumidores existentes siguen usando los mismos imports:
+ *   import { getUserAndCompany, APPROVAL_ROLES } from '@/lib/compras/auth-helper';
  */
 
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import {
+  getUserFromToken,
+  APPROVAL_ROLES as SHARED_APPROVAL_ROLES,
+  ALL_ROLES,
+} from '@/lib/auth/shared-helpers';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+// ============================================================================
+// CONSTANTES (re-exportadas desde shared-helpers + específicas del módulo)
+// ============================================================================
 
-// Roles que pueden aprobar operaciones sensibles
-export const APPROVAL_ROLES = ['SUPERADMIN', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERVISOR'] as const;
+/** Roles que pueden aprobar operaciones sensibles */
+export const APPROVAL_ROLES = SHARED_APPROVAL_ROLES;
 
-// Roles que pueden crear operaciones
-export const CREATOR_ROLES = ['SUPERADMIN', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERVISOR', 'USER'] as const;
+/** Roles que pueden crear operaciones */
+export const CREATOR_ROLES = ALL_ROLES;
+
+// ============================================================================
+// TIPOS (retrocompatibles con la interfaz original)
+// ============================================================================
 
 export interface AuthenticatedUser {
   id: number;
@@ -39,58 +49,24 @@ export interface AuthError {
 
 export type GetUserResult = AuthResult | AuthError;
 
+// ============================================================================
+// FUNCIONES
+// ============================================================================
+
 /**
- * Obtiene el usuario autenticado y su companyId desde el token JWT
+ * Obtiene el usuario autenticado y su companyId desde el token JWT.
+ * Wrapper sobre getUserFromToken() con patrón discriminated union.
  *
  * @param requiredRoles - Roles permitidos para esta operación (opcional)
- * @returns AuthResult si éxito, AuthError si falla
- *
- * @example
- * ```typescript
- * const auth = await getUserAndCompany();
- * if (!auth.success) {
- *   return NextResponse.json({ error: auth.error }, { status: auth.status });
- * }
- * const { user, companyId } = auth;
- * ```
- *
- * @example Con verificación de roles
- * ```typescript
- * const auth = await getUserAndCompany(APPROVAL_ROLES);
- * if (!auth.success) {
- *   return NextResponse.json({ error: auth.error }, { status: auth.status });
- * }
- * ```
  */
 export async function getUserAndCompany(
   requiredRoles?: readonly string[]
 ): Promise<GetUserResult> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return { success: false, error: 'No autorizado', status: 401 };
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        email: true,
-        companies: {
-          select: { companyId: true },
-          take: 1,
-        },
-      },
-    });
+    const user = await getUserFromToken();
 
     if (!user) {
-      return { success: false, error: 'Usuario no encontrado', status: 401 };
+      return { success: false, error: 'No autorizado', status: 401 };
     }
 
     // Verificar roles si se especificaron
@@ -102,27 +78,17 @@ export async function getUserAndCompany(
       };
     }
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return {
-        success: false,
-        error: 'Usuario no tiene empresa asignada',
-        status: 400,
-      };
-    }
-
     return {
       success: true,
       user: {
         id: user.id,
-        name: user.name,
+        name: user.name || '',
         role: user.role,
-        email: user.email || undefined,
+        email: user.email,
       },
-      companyId,
+      companyId: user.companyId,
     };
-  } catch (error) {
-    console.error('[AUTH HELPER] Error verificando token:', error);
+  } catch {
     return { success: false, error: 'Token inválido o expirado', status: 401 };
   }
 }
