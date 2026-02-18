@@ -357,6 +357,7 @@ export async function POST(request: NextRequest) {
       expiresAt: tokens.accessTokenExpires.toISOString(),
     });
   } catch (error) {
+    console.error('[LOGIN] Error:', error);
     loggers.auth.error({ err: error }, 'Login error');
     return NextResponse.json({ error: 'Error al iniciar sesión' }, { status: 500 });
   }
