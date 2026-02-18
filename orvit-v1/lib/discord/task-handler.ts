@@ -1,12 +1,18 @@
 /**
- * Handler de Tareas de Agenda por Discord
+ * Handler de Tareas por Discord
  *
  * Procesa comandos de tareas tanto por texto como por audio:
  * - "Tarea: [descripción]" - crea tarea directamente
  * - "Tarea" (sin texto) - inicia flujo para enviar audio
  * - Audio en sesión activa - transcribe y crea tarea
  *
+ * ROUTING INTELIGENTE:
+ * - Si el asignado es un usuario del sistema → crea Task (tarea con feedback)
+ * - Si el asignado es un contacto externo → crea AgendaTask (recordatorio)
+ * - Si no hay asignado → crea AgendaTask (recordatorio personal)
+ *
  * @updated 2026-01-23 - Fixed DM reactions issue
+ * @updated 2026-02-18 - Smart routing: usuario→Task, contacto→AgendaTask
  */
 
 import { prisma } from '@/lib/prisma';
@@ -564,12 +570,18 @@ async function findPersonCandidates(
 
 // Tipo de resultado de createTask
 type CreateTaskResult =
-  | { success: true; task: any; needsSelection: false; needsNewPerson: false }
+  | { success: true; task: any; needsSelection: false; needsNewPerson: false; taskType: 'task' | 'agenda' }
   | { success: false; needsSelection: true; needsNewPerson: false; candidates: PersonCandidate[]; searchedName: string }
   | { success: false; needsSelection: false; needsNewPerson: true; transcribedName: string };
 
 /**
- * Crea la tarea en la base de datos
+ * Crea una Task (sistema) o AgendaTask (agenda) según el tipo de asignado.
+ *
+ * ROUTING INTELIGENTE:
+ * - Asignado es usuario del sistema → Task (con feedback, notificaciones)
+ * - Asignado es contacto externo → AgendaTask (recordatorio)
+ * - Sin asignado → AgendaTask (recordatorio personal)
+ *
  * Si hay múltiples candidatos para el asignado, retorna { needsSelection: true, candidates }
  * Si no hay candidatos pero hay nombre, retorna { needsNewPerson: true } para pedir confirmación
  */
@@ -584,9 +596,11 @@ async function createTask(
   let assignedToUserId: number | null = null;
   let assignedToContactId: number | null = null;
   let assignedToName: string | undefined = data.assigneeName;
+  let resolvedPersonType: 'user' | 'contact' | null = null;
 
   // Si ya se seleccionó una persona específica
   if (selectedPerson) {
+    resolvedPersonType = selectedPerson.type;
     if (selectedPerson.type === 'user') {
       assignedToUserId = selectedPerson.id;
     } else {
@@ -624,6 +638,7 @@ async function createTask(
       };
     } else if (exactMatch) {
       // Solo una coincidencia exacta - asignar directamente
+      resolvedPersonType = exactMatch.type;
       if (exactMatch.type === 'user') {
         assignedToUserId = exactMatch.id;
       } else {
@@ -641,7 +656,66 @@ async function createTask(
     }
   }
 
-  const task = await prisma.agendaTask.create({
+  // ─── ROUTING INTELIGENTE ───
+  // Si el asignado es un usuario del sistema → crear Task (tarea con feedback)
+  // Si es contacto o sin asignar → crear AgendaTask (recordatorio/agenda)
+  if (resolvedPersonType === 'user' && assignedToUserId) {
+    console.log(`[TaskHandler] Routing → Task (usuario del sistema: ${assignedToName})`);
+
+    const task = await prisma.task.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        priority: data.priority,
+        status: 'TODO',
+        assignedToId: assignedToUserId,
+        createdById: userId,
+        companyId,
+        tags: source === 'DISCORD_VOICE' ? ['discord', 'audio'] : ['discord'],
+      },
+    });
+
+    // Enviar notificación al usuario asignado (si no es auto-asignación)
+    if (assignedToUserId !== userId) {
+      try {
+        const { createAndSendInstantNotification } = await import('@/lib/instant-notifications');
+        await createAndSendInstantNotification(
+          'TASK_ASSIGNED',
+          assignedToUserId,
+          companyId,
+          task.id,
+          null,
+          'Nueva tarea asignada',
+          `Se te ha asignado la tarea: ${task.title}`,
+          data.priority === 'URGENT' ? 'urgent' : data.priority === 'HIGH' ? 'high' : 'medium',
+          {
+            createdById: userId,
+            priority: data.priority,
+            dueDate: data.dueDate,
+            taskTitle: task.title,
+            source: source === 'DISCORD_VOICE' ? 'Discord (audio)' : 'Discord (texto)',
+          }
+        );
+      } catch (notifError) {
+        console.error('[TaskHandler] Error enviando notificación:', notifError);
+      }
+    }
+
+    // Retornar con assignedToName para el embed de confirmación
+    return {
+      success: true,
+      task: { ...task, assignedToName },
+      needsSelection: false,
+      needsNewPerson: false,
+      taskType: 'task',
+    };
+  }
+
+  // Contacto externo o sin asignar → AgendaTask (recordatorio/agenda)
+  console.log(`[TaskHandler] Routing → AgendaTask (${resolvedPersonType === 'contact' ? 'contacto externo' : 'sin asignar'})`);
+
+  const agendaTask = await prisma.agendaTask.create({
     data: {
       title: data.title,
       description: data.description,
@@ -658,7 +732,46 @@ async function createTask(
     },
   });
 
-  return { success: true, task, needsSelection: false, needsNewPerson: false };
+  return { success: true, task: agendaTask, needsSelection: false, needsNewPerson: false, taskType: 'agenda' };
+}
+
+/**
+ * Construye el embed de éxito para una tarea creada.
+ * Diferencia entre Task (tarea del sistema) y AgendaTask (recordatorio de agenda).
+ */
+function buildTaskSuccessEmbed(
+  task: any,
+  taskType: 'task' | 'agenda',
+  options?: { prefixFields?: any[]; suffixFields?: any[] }
+) {
+  const isSystemTask = taskType === 'task';
+  const typeLabel = isSystemTask ? '📋 Tarea del Sistema' : '📒 Recordatorio de Agenda';
+  const title = isSystemTask ? '✅ Tarea Creada' : '✅ Recordatorio Creado';
+
+  const fields = [
+    ...(options?.prefixFields || []),
+    ...(task.description
+      ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
+      : []),
+    { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
+    {
+      name: '📅 Vence',
+      value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
+      inline: true,
+    },
+    { name: '🎯 Prioridad', value: task.priority, inline: true },
+    { name: '📌 Tipo', value: typeLabel, inline: true },
+    ...(options?.suffixFields || []),
+  ];
+
+  return {
+    title,
+    description: `**${task.title}**`,
+    color: COLORS.SUCCESS,
+    fields,
+    footer: { text: `${isSystemTask ? 'Tarea' : 'Agenda'} #${task.id}` },
+    timestamp: new Date().toISOString(),
+  };
 }
 
 /**
@@ -753,7 +866,7 @@ export async function handleNewPersonName(message: any, session: TaskSession): P
       console.log(`[TaskHandler] Nuevo contacto creado: ${newContact.name} (ID: ${newContact.id})`);
     }
 
-    // Crear la tarea
+    // Nuevo contacto → siempre AgendaTask (recordatorio de agenda)
     const task = await prisma.agendaTask.create({
       data: {
         title: session.extractedData.title,
@@ -772,38 +885,12 @@ export async function handleNewPersonName(message: any, session: TaskSession): P
 
     await safeReact(message, '✅');
 
-    const fields = [
-      ...(task.description
-        ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
-        : []),
-      { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
-      {
-        name: '📅 Vence',
-        value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
-        inline: true,
-      },
-      { name: '🎯 Prioridad', value: task.priority, inline: true },
-    ];
-
-    if (newContact) {
-      fields.push({
-        name: '➕ Nuevo contacto',
-        value: `"${newContact.name}" agregado a tu agenda`,
-        inline: false,
-      });
-    }
+    const suffixFields = newContact
+      ? [{ name: '➕ Nuevo contacto', value: `"${newContact.name}" agregado a tu agenda`, inline: false }]
+      : [];
 
     await message.reply({
-      embeds: [
-        {
-          title: '✅ Tarea Creada',
-          description: `**${task.title}**`,
-          color: COLORS.SUCCESS,
-          fields,
-          footer: { text: `Tarea #${task.id}` },
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      embeds: [buildTaskSuccessEmbed(task, 'agenda', { suffixFields })],
     });
 
     deleteSession(message.author.id);
@@ -942,6 +1029,7 @@ export async function handlePersonSelection(
 
   try {
     let task: any;
+    let taskType: 'task' | 'agenda' = 'agenda';
 
     if (selectedPerson) {
       const result = await createTaskWithPerson(
@@ -956,6 +1044,7 @@ export async function handlePersonSelection(
         throw new Error('Error inesperado creando tarea');
       }
       task = result.task;
+      taskType = result.taskType;
     } else {
       // Crear sin persona específica (nuevo contacto o nombre sin match)
       const result = await createTask(
@@ -969,30 +1058,11 @@ export async function handlePersonSelection(
         throw new Error('Error inesperado creando tarea');
       }
       task = result.task;
+      taskType = result.taskType;
     }
 
     await interaction.update({
-      embeds: [
-        {
-          title: '✅ Tarea Creada',
-          description: `**${task.title}**`,
-          color: COLORS.SUCCESS,
-          fields: [
-            ...(task.description
-              ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
-              : []),
-            { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
-            {
-              name: '📅 Vence',
-              value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
-              inline: true,
-            },
-            { name: '🎯 Prioridad', value: task.priority, inline: true },
-          ],
-          footer: { text: `Tarea #${task.id}` },
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      embeds: [buildTaskSuccessEmbed(task, taskType)],
       components: [],
     });
   } catch (error) {
@@ -1084,27 +1154,7 @@ export async function handleTaskCommand(message: any): Promise<void> {
       await safeReact(message, '✅');
 
       await message.reply({
-        embeds: [
-          {
-            title: '✅ Tarea Creada',
-            description: `**${task.title}**`,
-            color: COLORS.SUCCESS,
-            fields: [
-              ...(task.description
-                ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
-                : []),
-              { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
-              {
-                name: '📅 Vence',
-                value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
-                inline: true,
-              },
-              { name: '🎯 Prioridad', value: task.priority, inline: true },
-            ],
-            footer: { text: `Tarea #${task.id}` },
-            timestamp: new Date().toISOString(),
-          },
-        ],
+        embeds: [buildTaskSuccessEmbed(task, result.taskType)],
       });
     } catch (error) {
       console.error('[TaskHandler] Error creando tarea desde texto:', error);
@@ -1287,51 +1337,39 @@ export async function handleTaskAudio(
     }
 
     const task = result.task;
+    const taskType = result.taskType;
 
-    // 5. Guardar log
-    await prisma.voiceTaskLog.create({
-      data: {
-        discordUserId: message.author.id,
-        discordMessageId: message.id,
-        discordAttachmentId: audioAttachment.id,
-        discordChannelId: message.channel.id,
-        audioUrl: audioAttachment.url,
-        transcription,
-        status: 'COMPLETED',
-        extractedData: extractedData as any,
-        taskId: task.id,
-        userId,
-        companyId,
-        processedAt: new Date(),
-      },
-    });
+    // 5. Guardar log de voz (solo para AgendaTask - el VoiceTaskLog tiene FK a AgendaTask)
+    if (taskType === 'agenda') {
+      await prisma.voiceTaskLog.create({
+        data: {
+          discordUserId: message.author.id,
+          discordMessageId: message.id,
+          discordAttachmentId: audioAttachment.id,
+          discordChannelId: message.channel.id,
+          audioUrl: audioAttachment.url,
+          transcription,
+          status: 'COMPLETED',
+          extractedData: extractedData as any,
+          taskId: task.id,
+          userId,
+          companyId,
+          processedAt: new Date(),
+        },
+      });
+    }
 
     // 6. Responder con éxito
     await safeReact(message, '✅');
 
-    await processingReply.edit({
-      embeds: [
-        {
-          title: '✅ Tarea Creada',
-          description: `**${task.title}**`,
-          color: COLORS.SUCCESS,
-          fields: [
-            { name: '🎤 Transcripción', value: transcription.substring(0, 300), inline: false },
-            ...(task.description
-              ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
-              : []),
-            { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
-            {
-              name: '📅 Vence',
-              value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
-              inline: true,
-            },
-            { name: '🎯 Prioridad', value: task.priority, inline: true },
-          ],
-          footer: { text: `Tarea #${task.id}` },
-          timestamp: new Date().toISOString(),
-        },
+    const embed = buildTaskSuccessEmbed(task, taskType, {
+      prefixFields: [
+        { name: '🎤 Transcripción', value: transcription.substring(0, 300), inline: false },
       ],
+    });
+
+    await processingReply.edit({
+      embeds: [embed],
     });
 
     // Limpiar sesión si existe
@@ -1434,27 +1472,7 @@ export async function handleTaskText(message: any, taskText: string): Promise<vo
     await safeReact(message, '✅');
 
     await message.reply({
-      embeds: [
-        {
-          title: '✅ Tarea Creada',
-          description: `**${task.title}**`,
-          color: COLORS.SUCCESS,
-          fields: [
-            ...(task.description
-              ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
-              : []),
-            { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
-            {
-              name: '📅 Vence',
-              value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
-              inline: true,
-            },
-            { name: '🎯 Prioridad', value: task.priority, inline: true },
-          ],
-          footer: { text: `Tarea #${task.id}` },
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      embeds: [buildTaskSuccessEmbed(task, result.taskType)],
     });
   } catch (error) {
     console.error('[TaskHandler] Error creando tarea desde texto:', error);
@@ -1539,27 +1557,7 @@ export async function handleTaskTextInSession(message: any, session: TaskSession
     await safeReact(message, '✅');
 
     await message.reply({
-      embeds: [
-        {
-          title: '✅ Tarea Creada',
-          description: `**${task.title}**`,
-          color: COLORS.SUCCESS,
-          fields: [
-            ...(task.description
-              ? [{ name: '📝 Descripción', value: task.description.substring(0, 200), inline: false }]
-              : []),
-            { name: '👤 Asignado a', value: task.assignedToName || 'Sin asignar', inline: true },
-            {
-              name: '📅 Vence',
-              value: task.dueDate ? formatDueDate(task.dueDate) : 'Sin fecha',
-              inline: true,
-            },
-            { name: '🎯 Prioridad', value: task.priority, inline: true },
-          ],
-          footer: { text: `Tarea #${task.id}` },
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      embeds: [buildTaskSuccessEmbed(task, result.taskType)],
     });
 
     deleteSession(message.author.id);
