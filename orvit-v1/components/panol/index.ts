@@ -8,7 +8,6 @@ export { ResponsiveToolTable } from './ResponsiveToolTable';
 export { StockAlertsPanel } from './StockAlertsPanel';
 export { ToolFilterBar } from './ToolFilterBar';
 export { default as ToolDialog } from './ToolDialog';
-export { ToolFileUpload } from './ToolFileUpload';
 export { ToolQRLabel, BatchQRPrint } from './ToolQRLabel';
 export { ToolGrid } from './ToolGrid';
 export type { Tool as ToolType, ViewMode } from './ToolGrid';

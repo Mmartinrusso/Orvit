@@ -114,11 +114,11 @@ export function PedidoCompraFormModal({
  };
  }
 
- const words = firstLine.split(');
+ const words = firstLine.split(' ');
  let titulo = '';
  for (const word of words) {
- if ((titulo + ' + word).length > 80) break;
- titulo = titulo ? titulo + ' + word : word;
+ if ((titulo + ' ' + word).length > 80) break;
+ titulo = titulo ? titulo + ' ' + word : word;
  }
 
  return {
