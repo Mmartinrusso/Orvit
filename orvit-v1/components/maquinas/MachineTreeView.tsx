@@ -132,14 +132,14 @@ function MachineTreeNode({
   const getStatusIndicator = () => {
     if (failureCount > 0) {
       return (
-        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded-full text-xs">
+        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-destructive/10 text-destructive rounded-full text-xs">
           <AlertTriangle className="h-3 w-3" />
           <span>{failureCount}</span>
         </div>
       );
     }
     return (
-      <div className="w-2 h-2 rounded-full bg-green-500" title="Sin fallas" />
+      <div className="w-2 h-2 rounded-full bg-success" title="Sin fallas" />
     );
   };
 

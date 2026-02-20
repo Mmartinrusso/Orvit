@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
+import { cached } from '@/lib/cache/cache-manager';
 import { startOfDay, endOfDay } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -24,114 +25,91 @@ export async function GET(request: NextRequest) {
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
 
-    // Base query - solo tareas creadas por el usuario
+    // Base query — tareas creadas por o asignadas al usuario (consistente con GET)
     const baseWhere = {
       companyId,
-      createdById: user.id,
+      OR: [
+        { createdById: user.id },
+        { assignedToUserId: user.id },
+      ],
     };
 
-    // Obtener conteos en paralelo
-    const [
-      total,
-      pending,
-      inProgress,
-      waiting,
-      completed,
-      cancelled,
-      overdue,
-      dueToday,
-      completedToday,
-      urgentPending,
-      tasksByAssignee,
-    ] = await Promise.all([
-      // Total
-      prisma.agendaTask.count({ where: baseWhere }),
+    // Obtener conteos con caché de 30 segundos
+    const stats = await cached(
+      `agenda-stats:${user.id}:${companyId}`,
+      async () => {
+        const [
+          total,
+          pending,
+          inProgress,
+          waiting,
+          completed,
+          cancelled,
+          overdue,
+          dueToday,
+          completedToday,
+          urgentPending,
+          tasksByAssignee,
+        ] = await Promise.all([
+          prisma.agendaTask.count({ where: baseWhere }),
+          prisma.agendaTask.count({ where: { ...baseWhere, status: 'PENDING' } }),
+          prisma.agendaTask.count({ where: { ...baseWhere, status: 'IN_PROGRESS' } }),
+          prisma.agendaTask.count({ where: { ...baseWhere, status: 'WAITING' } }),
+          prisma.agendaTask.count({ where: { ...baseWhere, status: 'COMPLETED' } }),
+          prisma.agendaTask.count({ where: { ...baseWhere, status: 'CANCELLED' } }),
+          prisma.agendaTask.count({
+            where: {
+              ...baseWhere,
+              status: { notIn: ['COMPLETED', 'CANCELLED'] },
+              dueDate: { lt: todayStart },
+            },
+          }),
+          prisma.agendaTask.count({
+            where: {
+              ...baseWhere,
+              status: { notIn: ['COMPLETED', 'CANCELLED'] },
+              dueDate: { gte: todayStart, lte: todayEnd },
+            },
+          }),
+          prisma.agendaTask.count({
+            where: {
+              ...baseWhere,
+              status: 'COMPLETED',
+              completedAt: { gte: todayStart, lte: todayEnd },
+            },
+          }),
+          prisma.agendaTask.count({
+            where: {
+              ...baseWhere,
+              status: { notIn: ['COMPLETED', 'CANCELLED'] },
+              priority: 'URGENT',
+            },
+          }),
+          prisma.agendaTask.groupBy({
+            by: ['assignedToName', 'assignedToUserId', 'assignedToContactId'],
+            where: {
+              ...baseWhere,
+              status: { notIn: ['COMPLETED', 'CANCELLED'] },
+              assignedToName: { not: null },
+            },
+            _count: true,
+            orderBy: { _count: { id: 'desc' } },
+            take: 5,
+          }),
+        ]);
 
-      // Pendiente
-      prisma.agendaTask.count({ where: { ...baseWhere, status: 'PENDING' } }),
+        const topAssignees = tasksByAssignee.map((item) => ({
+          name: item.assignedToName || 'Sin asignar',
+          count: item._count,
+          type: item.assignedToUserId ? 'user' : item.assignedToContactId ? 'contact' : ('unknown' as const),
+        }));
 
-      // En progreso
-      prisma.agendaTask.count({ where: { ...baseWhere, status: 'IN_PROGRESS' } }),
+        return { total, pending, inProgress, waiting, completed, cancelled, overdue, dueToday, completedToday, urgentPending, topAssignees };
+      },
+      30 // TTL: 30 segundos
+    );
 
-      // Esperando
-      prisma.agendaTask.count({ where: { ...baseWhere, status: 'WAITING' } }),
-
-      // Completada
-      prisma.agendaTask.count({ where: { ...baseWhere, status: 'COMPLETED' } }),
-
-      // Cancelada
-      prisma.agendaTask.count({ where: { ...baseWhere, status: 'CANCELLED' } }),
-
-      // Vencidas (no completadas ni canceladas, con fecha pasada)
-      prisma.agendaTask.count({
-        where: {
-          ...baseWhere,
-          status: { notIn: ['COMPLETED', 'CANCELLED'] },
-          dueDate: { lt: todayStart },
-        },
-      }),
-
-      // Vencen hoy
-      prisma.agendaTask.count({
-        where: {
-          ...baseWhere,
-          status: { notIn: ['COMPLETED', 'CANCELLED'] },
-          dueDate: { gte: todayStart, lte: todayEnd },
-        },
-      }),
-
-      // Completadas hoy
-      prisma.agendaTask.count({
-        where: {
-          ...baseWhere,
-          status: 'COMPLETED',
-          completedAt: { gte: todayStart, lte: todayEnd },
-        },
-      }),
-
-      // Urgentes pendientes
-      prisma.agendaTask.count({
-        where: {
-          ...baseWhere,
-          status: { notIn: ['COMPLETED', 'CANCELLED'] },
-          priority: 'URGENT',
-        },
-      }),
-
-      // Top asignados
-      prisma.agendaTask.groupBy({
-        by: ['assignedToName', 'assignedToUserId', 'assignedToContactId'],
-        where: {
-          ...baseWhere,
-          status: { notIn: ['COMPLETED', 'CANCELLED'] },
-          assignedToName: { not: null },
-        },
-        _count: true,
-        orderBy: { _count: { id: 'desc' } },
-        take: 5,
-      }),
-    ]);
-
-    // Transformar top asignados
-    const topAssignees = tasksByAssignee.map((item) => ({
-      name: item.assignedToName || 'Sin asignar',
-      count: item._count,
-      type: item.assignedToUserId ? 'user' : item.assignedToContactId ? 'contact' : ('unknown' as const),
-    }));
-
-    return NextResponse.json({
-      total,
-      pending,
-      inProgress,
-      waiting,
-      completed,
-      cancelled,
-      overdue,
-      dueToday,
-      completedToday,
-      urgentPending,
-      topAssignees,
-    });
+    return NextResponse.json(stats);
   } catch (error) {
     console.error('[API] Error fetching agenda stats:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { Upload, X, File, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -217,27 +218,26 @@ export function TaskFileUpload({
     <div className="space-y-4">
       {/* Área de drop */}
       <div
-        className={`
-          border-2 border-dashed rounded-lg p-6 text-center transition-colors
-          ${isDragging 
-            ? 'border-primary bg-primary/5' 
-            : 'border-gray-300 hover:border-primary/50'
-          }
-          ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-        `}
+        className={cn(
+          'border-2 border-dashed rounded-lg p-6 text-center transition-colors',
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : 'border-border hover:border-primary/50',
+          isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+        )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-sm text-gray-600 mb-2">
+        <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-sm text-foreground mb-2">
           Arrastra archivos aquí o haz click para seleccionar
         </p>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Máximo {maxFiles} archivos, {Math.round(maxSizePerFile / 1024 / 1024)}MB cada uno
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           PDF, DOC, DOCX, XLS, XLSX, TXT, Imágenes
         </p>
       </div>
@@ -282,22 +282,22 @@ export function TaskFileUpload({
       {/* Lista de archivos */}
       {attachments.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">
+          <h4 className="text-sm font-medium text-foreground">
             Archivos adjuntos ({attachments.length}/{maxFiles})
           </h4>
           <div className="space-y-2">
             {attachments.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                className="flex items-center justify-between p-3 bg-muted rounded-lg border"
               >
                 <div className="flex items-center space-x-3 min-w-0 flex-1">
                   <span className="text-lg">{getFileIcon(file.type)}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {file.name}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {formatFileSize(file.size)}
                     </p>
                   </div>
@@ -307,7 +307,7 @@ export function TaskFileUpload({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeFile(index)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <X className="h-4 w-4" />
                 </Button>

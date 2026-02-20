@@ -61,22 +61,22 @@ interface Certification {
 const statusConfig = {
   ACTIVE: {
     label: 'Activa',
-    color: 'bg-green-100 text-green-800',
+    color: 'bg-success-muted text-success',
     icon: CheckCircle,
   },
   EXPIRED: {
     label: 'Expirada',
-    color: 'bg-red-100 text-red-800',
+    color: 'bg-destructive/10 text-destructive',
     icon: XCircle,
   },
   PENDING: {
     label: 'Pendiente',
-    color: 'bg-yellow-100 text-yellow-800',
+    color: 'bg-warning-muted text-warning-muted-foreground',
     icon: Clock,
   },
   REVOKED: {
     label: 'Revocada',
-    color: 'bg-gray-100 text-gray-800',
+    color: 'bg-muted text-muted-foreground',
     icon: XCircle,
   },
 };
@@ -134,7 +134,7 @@ export function CertificationTracker({
 
     if (days <= 30) {
       return (
-        <Badge variant="warning" className="text-xs bg-amber-100 text-amber-800">
+        <Badge variant="warning" className="text-xs bg-warning-muted text-warning-muted-foreground">
           <AlertTriangle className="h-3 w-3 mr-1" />
           Expira en {days} días
         </Badge>
@@ -186,24 +186,24 @@ export function CertificationTracker({
         {/* Summary cards */}
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-4">
-            <div className="p-3 rounded-lg bg-gray-50">
+            <div className="p-3 rounded-lg bg-muted">
               <p className="text-2xl font-bold">{summary.total}</p>
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-50">
-              <p className="text-2xl font-bold text-green-600">{summary.active}</p>
+            <div className="p-3 rounded-lg bg-success-muted">
+              <p className="text-2xl font-bold text-success">{summary.active}</p>
               <p className="text-xs text-muted-foreground">Activas</p>
             </div>
-            <div className="p-3 rounded-lg bg-amber-50">
-              <p className="text-2xl font-bold text-amber-600">{summary.expiringSoon}</p>
+            <div className="p-3 rounded-lg bg-warning-muted">
+              <p className="text-2xl font-bold text-warning-muted-foreground">{summary.expiringSoon}</p>
               <p className="text-xs text-muted-foreground">Por vencer</p>
             </div>
-            <div className="p-3 rounded-lg bg-red-50">
-              <p className="text-2xl font-bold text-red-600">{summary.expired}</p>
+            <div className="p-3 rounded-lg bg-destructive/10">
+              <p className="text-2xl font-bold text-destructive">{summary.expired}</p>
               <p className="text-xs text-muted-foreground">Expiradas</p>
             </div>
-            <div className="p-3 rounded-lg bg-yellow-50">
-              <p className="text-2xl font-bold text-yellow-600">{summary.pending}</p>
+            <div className="p-3 rounded-lg bg-warning-muted">
+              <p className="text-2xl font-bold text-warning-muted-foreground">{summary.pending}</p>
               <p className="text-xs text-muted-foreground">Pendientes</p>
             </div>
           </div>

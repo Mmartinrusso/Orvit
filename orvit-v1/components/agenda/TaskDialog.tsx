@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -23,9 +24,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Loader2, Plus, X, Bell } from 'lucide-react';
+import { Loader2, Plus, X, Bell, Layers } from 'lucide-react';
 import { searchAssignees, type AssigneeOption } from '@/lib/agenda/api';
 import type { AgendaTask, Priority, CreateAgendaTaskInput } from '@/lib/agenda/types';
+import { useQuery } from '@tanstack/react-query';
 
 interface TaskDialogProps {
   open: boolean;
@@ -33,9 +35,10 @@ interface TaskDialogProps {
   task?: AgendaTask | null;
   onSave: (data: CreateAgendaTaskInput) => Promise<void>;
   isSaving: boolean;
+  defaultGroupId?: number | null;
 }
 
-export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskDialogProps) {
+export function TaskDialog({ open, onOpenChange, task, onSave, isSaving, defaultGroupId }: TaskDialogProps) {
   const { currentCompany } = useCompany();
   const { user } = useAuth();
   const isEditing = !!task;
@@ -46,6 +49,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
   const [dueDate, setDueDate] = useState<string>('');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
   const [category, setCategory] = useState('');
+  const [groupId, setGroupId] = useState<number | null>(null);
   const [assignedToUserId, setAssignedToUserId] = useState<number | null>(null);
   const [assignedToContactId, setAssignedToContactId] = useState<number | null>(null);
   const [assignedToName, setAssignedToName] = useState('');
@@ -59,6 +63,23 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
   // Reminders
   const [reminders, setReminders] = useState<{ remindAt: string }[]>([]);
 
+  // Grupos disponibles
+  const { data: groups = [] } = useQuery<any[]>({
+    queryKey: ['task-groups', currentCompany?.id],
+    queryFn: async () => {
+      if (!currentCompany?.id) return [];
+      const res = await fetch(`/api/task-groups?companyId=${currentCompany.id}`, {
+        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.data || [];
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 30 * 1000,
+  });
+
   // Reset form when dialog opens/closes or task changes
   useEffect(() => {
     if (open) {
@@ -68,6 +89,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
         setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
         setPriority(task.priority);
         setCategory(task.category || '');
+        setGroupId((task as any).groupId ?? null);
         setAssignedToUserId(task.assignedToUserId);
         setAssignedToContactId(task.assignedToContactId);
         setAssignedToName(task.assignedToName || '');
@@ -80,6 +102,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
         setDueDate('');
         setPriority('MEDIUM');
         setCategory('');
+        setGroupId(defaultGroupId ?? null);
         setAssignedToUserId(null);
         setAssignedToContactId(null);
         setAssignedToName('');
@@ -88,7 +111,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
       setAssigneeSearch('');
       setShowAssigneeDropdown(false);
     }
-  }, [open, task]);
+  }, [open, task, defaultGroupId]);
 
   // Search assignees
   useEffect(() => {
@@ -154,6 +177,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       priority,
       category: category.trim() || undefined,
+      groupId: groupId ?? undefined,
       assignedToUserId: assignedToUserId || undefined,
       assignedToContactId: assignedToContactId || undefined,
       assignedToName: assignedToName || undefined,
@@ -170,8 +194,8 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <form onSubmit={handleSubmit}>
+      <DialogContent size="default">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Editar Tarea' : 'Nueva Tarea'}</DialogTitle>
             <DialogDescription>
@@ -181,7 +205,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <DialogBody className="space-y-4">
             {/* Título */}
             <div className="space-y-2">
               <Label htmlFor="title">Título *</Label>
@@ -292,6 +316,38 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
               </div>
             </div>
 
+            {/* Grupo */}
+            {groups.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  Grupo
+                </Label>
+                <Select
+                  value={groupId?.toString() ?? 'none'}
+                  onValueChange={(v) => setGroupId(v === 'none' ? null : parseInt(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin grupo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin grupo</SelectItem>
+                    {groups.map((g: any) => (
+                      <SelectItem key={g.id} value={g.id.toString()}>
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: g.color }}
+                          />
+                          {g.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Categoría */}
             <div className="space-y-2">
               <Label htmlFor="category">Categoría</Label>
@@ -344,7 +400,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, isSaving }: TaskD
                 </div>
               )}
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

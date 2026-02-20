@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -296,7 +297,7 @@ export function SkillList({
                     </TableCell>
                     <TableCell>
                       {skill.isCertificationRequired ? (
-                        <Badge className="bg-blue-100 text-blue-800">
+                        <Badge className="bg-info-muted text-info-muted-foreground">
                           <FileCheck className="h-3 w-3 mr-1" />
                           Requerida
                         </Badge>
@@ -333,7 +334,7 @@ export function SkillList({
                             {canDelete && (
                               <DropdownMenuItem
                                 onClick={() => setDeletingSkill(skill)}
-                                className="text-red-600"
+                                className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Eliminar
@@ -361,12 +362,13 @@ export function SkillList({
           }
         }}
       >
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>
               {editingSkill ? 'Editar Habilidad' : 'Nueva Habilidad'}
             </DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <SkillForm
             skill={editingSkill}
             categories={categories}
@@ -377,6 +379,7 @@ export function SkillList({
             }}
             isLoading={createMutation.isPending || updateMutation.isPending}
           />
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -397,7 +400,7 @@ export function SkillList({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingSkill && deleteMutation.mutate(deletingSkill.id)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               Eliminar
             </AlertDialogAction>

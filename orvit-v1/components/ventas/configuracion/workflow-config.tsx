@@ -60,19 +60,19 @@ const ENFORCEMENT_LEVELS = {
   STRICT: {
     label: 'Estricto',
     description: 'Bloquea la operación',
-    color: 'bg-red-100 text-red-700 border-red-300',
+    color: 'bg-destructive/10 text-destructive border-destructive',
     icon: ShieldAlert,
   },
   WARNING: {
     label: 'Advertencia',
     description: 'Alerta pero permite continuar',
-    color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+    color: 'bg-warning-muted text-warning-muted-foreground border-warning',
     icon: AlertTriangle,
   },
   DISABLED: {
     label: 'Deshabilitado',
     description: 'Sin control',
-    color: 'bg-gray-100 text-gray-700 border-gray-300',
+    color: 'bg-muted text-foreground border-border',
     icon: CheckCircle2,
   },
 };
@@ -369,7 +369,7 @@ export function WorkflowConfig() {
               </Label>
               <p className="text-sm text-muted-foreground">
                 Al confirmar una orden de venta, se descuenta automáticamente el stock físico del producto.
-                <span className="block mt-1 font-medium text-yellow-600">
+                <span className="block mt-1 font-medium text-warning-muted-foreground">
                   ⚠️ Desactivar solo si gestionas stock manualmente o usas otro sistema.
                 </span>
               </p>

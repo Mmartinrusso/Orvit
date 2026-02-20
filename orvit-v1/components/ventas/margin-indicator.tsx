@@ -60,10 +60,10 @@ export function MarginIndicator({
   }
 
   const statusColors = {
-    danger: 'text-red-600 bg-red-50 border-red-200',
-    warning: 'text-amber-600 bg-amber-50 border-amber-200',
-    success: 'text-green-600 bg-green-50 border-green-200',
-    high: 'text-blue-600 bg-blue-50 border-blue-200',
+    danger: 'text-destructive bg-destructive/10 border-destructive/30',
+    warning: 'text-warning-muted-foreground bg-warning-muted border-warning-muted',
+    success: 'text-success bg-success-muted border-success-muted',
+    high: 'text-info-muted-foreground bg-info-muted border-info-muted',
   };
 
   const statusIcons = {
@@ -161,7 +161,7 @@ export function MarginValue({
     <span
       className={cn(
         'font-mono',
-        margin < 0 ? 'text-red-600' : margin > 30 ? 'text-green-600' : 'text-foreground',
+        margin < 0 ? 'text-destructive' : margin > 30 ? 'text-success' : 'text-foreground',
         className
       )}
     >
@@ -194,13 +194,13 @@ export function MarginBar({
   const maxPos = max !== undefined ? (max / scaleMax) * 100 : undefined;
 
   // Determinar color
-  let barColor = 'bg-green-500';
+  let barColor = 'bg-success';
   if (min !== undefined && current < min) {
-    barColor = 'bg-red-500';
+    barColor = 'bg-destructive';
   } else if (max !== undefined && current > max) {
-    barColor = 'bg-blue-500';
+    barColor = 'bg-info';
   } else if (min !== undefined && current < min * 1.2) {
-    barColor = 'bg-amber-500';
+    barColor = 'bg-warning-muted-foreground';
   }
 
   return (
@@ -208,7 +208,7 @@ export function MarginBar({
       {/* Zona mínima */}
       {minPos !== undefined && (
         <div
-          className="absolute top-0 h-full bg-red-200 opacity-50"
+          className="absolute top-0 h-full bg-destructive/20 opacity-50"
           style={{ width: `${minPos}%` }}
         />
       )}
@@ -216,7 +216,7 @@ export function MarginBar({
       {/* Zona máxima */}
       {maxPos !== undefined && (
         <div
-          className="absolute top-0 h-full bg-blue-200 opacity-50"
+          className="absolute top-0 h-full bg-info-muted opacity-50"
           style={{ left: `${maxPos}%`, right: 0 }}
         />
       )}
@@ -224,7 +224,7 @@ export function MarginBar({
       {/* Marcador mínimo */}
       {minPos !== undefined && (
         <div
-          className="absolute top-0 w-0.5 h-full bg-red-600"
+          className="absolute top-0 w-0.5 h-full bg-destructive"
           style={{ left: `${minPos}%` }}
         />
       )}
@@ -232,7 +232,7 @@ export function MarginBar({
       {/* Marcador máximo */}
       {maxPos !== undefined && (
         <div
-          className="absolute top-0 w-0.5 h-full bg-blue-600"
+          className="absolute top-0 w-0.5 h-full bg-info"
           style={{ left: `${maxPos}%` }}
         />
       )}

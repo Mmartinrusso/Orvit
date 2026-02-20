@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -118,10 +119,10 @@ export function ApproveRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
+            <CheckCircle className="h-5 w-5 text-success" />
             Aprobar Solicitud {requestNumber}
           </DialogTitle>
           <DialogDescription>
@@ -129,7 +130,7 @@ export function ApproveRequestDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Items Table */}
           <div className="border rounded-lg max-h-[300px] overflow-y-auto">
             <Table>
@@ -182,14 +183,14 @@ export function ApproveRequestDialog({
 
           {/* Warning if quantities adjusted */}
           {Object.keys(adjustedQuantities).length > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-amber-50 text-amber-800 rounded-lg text-sm">
+            <div className="flex items-center gap-2 p-3 bg-warning-muted text-warning-muted-foreground rounded-lg text-sm">
               <AlertTriangle className="h-4 w-4" />
               <span>
                 Se han ajustado {Object.keys(adjustedQuantities).length} cantidades
               </span>
             </div>
           )}
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -268,7 +269,7 @@ export function RejectRequestDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-500" />
+            <XCircle className="h-5 w-5 text-destructive" />
             Rechazar Solicitud {requestNumber}
           </DialogTitle>
           <DialogDescription>
@@ -276,7 +277,7 @@ export function RejectRequestDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           <div className="space-y-2">
             <Label>Motivo del Rechazo *</Label>
             <Textarea
@@ -287,7 +288,7 @@ export function RejectRequestDialog({
               required
             />
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -363,7 +364,7 @@ export function CancelRequestDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Ban className="h-5 w-5 text-orange-500" />
+            <Ban className="h-5 w-5 text-warning-muted-foreground" />
             Cancelar Solicitud {requestNumber}
           </DialogTitle>
           <DialogDescription>
@@ -371,7 +372,7 @@ export function CancelRequestDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           <div className="space-y-2">
             <Label>Motivo de Cancelación (Opcional)</Label>
             <Textarea
@@ -382,7 +383,7 @@ export function CancelRequestDialog({
             />
           </div>
 
-          <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm">
+          <div className="p-3 bg-warning-muted text-warning-muted-foreground rounded-lg text-sm">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               <span className="font-medium">Atención</span>
@@ -391,7 +392,7 @@ export function CancelRequestDialog({
               Si hay reservas de stock activas, serán liberadas automáticamente.
             </p>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -480,10 +481,10 @@ export function ConfirmDispatchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5 text-blue-500" />
+            <Truck className="h-5 w-5 text-primary" />
             Confirmar Despacho {despachoNumber}
           </DialogTitle>
           <DialogDescription>
@@ -491,7 +492,7 @@ export function ConfirmDispatchDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Warehouse info */}
           <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -531,11 +532,11 @@ export function ConfirmDispatchDialog({
                       </TableCell>
                       <TableCell className="text-center">
                         {insufficient ? (
-                          <Badge className="bg-red-100 text-red-800">
+                          <Badge className="bg-destructive/10 text-destructive">
                             Insuficiente
                           </Badge>
                         ) : (
-                          <Badge className="bg-green-100 text-green-800">OK</Badge>
+                          <Badge className="bg-success-muted text-success">OK</Badge>
                         )}
                       </TableCell>
                     </TableRow>
@@ -547,7 +548,7 @@ export function ConfirmDispatchDialog({
 
           {/* Warning */}
           {hasInsufficientStock && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-800 rounded-lg text-sm">
+            <div className="flex items-start gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
               <AlertTriangle className="h-4 w-4 mt-0.5" />
               <div>
                 <p className="font-medium">Stock Insuficiente</p>
@@ -559,7 +560,7 @@ export function ConfirmDispatchDialog({
             </div>
           )}
 
-          <div className="p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+          <div className="p-3 bg-info-muted text-info-muted-foreground rounded-lg text-sm">
             <p>
               <strong>Al confirmar se realizarán las siguientes acciones:</strong>
             </p>
@@ -569,7 +570,7 @@ export function ConfirmDispatchDialog({
               <li>Se actualizará el estado del despacho a "Despachado"</li>
             </ul>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -644,7 +645,7 @@ export function CancelDispatchDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Ban className="h-5 w-5 text-red-500" />
+            <Ban className="h-5 w-5 text-destructive" />
             Cancelar Despacho {despachoNumber}
           </DialogTitle>
           <DialogDescription>
@@ -653,7 +654,7 @@ export function CancelDispatchDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           <div className="space-y-2">
             <Label>Motivo de Cancelación (Opcional)</Label>
             <Textarea
@@ -663,7 +664,7 @@ export function CancelDispatchDialog({
               rows={2}
             />
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

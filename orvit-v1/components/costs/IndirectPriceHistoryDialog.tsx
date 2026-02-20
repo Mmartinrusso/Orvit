@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -301,9 +302,7 @@ export function IndirectPriceHistoryDialog({
                   {priceHistory.map((entry, index) => (
                     <div 
                       key={entry.id}
-                      className={`p-3 rounded-lg border ${
-                        index === 0 ? 'bg-primary/5 border-primary/20' : 'bg-muted/30 border-border/40'
-                      }`}
+                      className={cn('p-3 rounded-lg border', index === 0 ? 'bg-primary/5 border-primary/20' : 'bg-muted/30 border-border/40')}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -313,14 +312,11 @@ export function IndirectPriceHistoryDialog({
                           {entry.changePct !== null && entry.changePct !== undefined && (
                             <div className="flex items-center gap-1">
                               {entry.changePct > 0 ? (
-                                <TrendingUp className="h-3 w-3 text-green-600" />
+                                <TrendingUp className="h-3 w-3 text-success" />
                               ) : entry.changePct < 0 ? (
-                                <TrendingDown className="h-3 w-3 text-red-600" />
+                                <TrendingDown className="h-3 w-3 text-destructive" />
                               ) : null}
-                              <span className={`text-xs ${
-                                entry.changePct > 0 ? 'text-green-600' : 
-                                entry.changePct < 0 ? 'text-red-600' : 'text-gray-500'
-                              }`}>
+                              <span className={cn('text-xs', entry.changePct > 0 ? 'text-success' : entry.changePct < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {entry.changePct > 0 ? '+' : ''}{entry.changePct.toFixed(1)}%
                               </span>
                             </div>

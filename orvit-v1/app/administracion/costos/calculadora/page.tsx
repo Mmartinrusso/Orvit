@@ -275,7 +275,7 @@ export default function CalculadoraCostosPage() {
                 <div className="surface-card p-3 md:p-6 rounded-lg md:rounded-xl hover:shadow-lg transition-all duration-200 border border-border/30">
                     <div className="text-xs md:text-sm mb-1 md:mb-2 text-muted-foreground">Total Productos</div>
                     <div className="text-lg md:text-3xl font-bold mb-1 md:mb-2 text-foreground">{stats.totalProducts}</div>
-                    <div className="flex items-center text-blue-500 text-xs md:text-sm">
+                    <div className="flex items-center text-info-muted-foreground text-xs md:text-sm">
                         <Package className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         {stats.productsWithRecipe} con receta
                     </div>
@@ -288,7 +288,7 @@ export default function CalculadoraCostosPage() {
                     <div className="text-base md:text-2xl font-bold mb-1 md:mb-2 text-foreground">
                         {activeTab === 'produccion' ? stats.productsWithProduction : stats.productsWithoutRecipe}
                     </div>
-                    <div className="flex items-center text-green-500 text-xs md:text-sm">
+                    <div className="flex items-center text-success text-xs md:text-sm">
                         {activeTab === 'produccion' ? (
                             <CheckCircle className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         ) : (
@@ -301,7 +301,7 @@ export default function CalculadoraCostosPage() {
                 <div className="surface-card p-3 md:p-6 rounded-lg md:rounded-xl hover:shadow-lg transition-all duration-200 border border-border/30">
                     <div className="text-xs md:text-sm mb-1 md:mb-2 text-muted-foreground">Costo Promedio</div>
                     <div className="text-base md:text-2xl font-bold mb-1 md:mb-2 text-foreground">{formatCurrency(stats.averageCost)}</div>
-                    <div className="flex items-center text-blue-500 text-xs md:text-sm">
+                    <div className="flex items-center text-info-muted-foreground text-xs md:text-sm">
                         <TrendingUp className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         Por producto
                     </div>
@@ -330,7 +330,7 @@ export default function CalculadoraCostosPage() {
 
             {/* Tabs principales */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="w-full justify-start overflow-x-auto">
                     <TabsTrigger value="calculadora">Por Ventas</TabsTrigger>
                     <TabsTrigger value="produccion">Por Producción</TabsTrigger>
                     <TabsTrigger value="comparativo">Comparativo</TabsTrigger>
@@ -481,9 +481,9 @@ export default function CalculadoraCostosPage() {
 
                     {/* Información de producción */}
                     {stats.totalProduction > 0 && (
-                        <Card className="bg-blue-50 border-blue-200">
+                        <Card className="bg-info-muted border-info-muted">
                             <CardHeader>
-                                <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+                                <CardTitle className="text-lg text-info-muted-foreground flex items-center gap-2">
                                     <Info className="h-5 w-5" />
                                     Información de Producción - {new Date(selectedMonth + '-01').toLocaleDateString('es-AR', { year: 'numeric', month: 'long' })}
                                 </CardTitle>
@@ -491,21 +491,21 @@ export default function CalculadoraCostosPage() {
                             <CardContent>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-900">{formatNumber(stats.totalProduction)}</div>
-                                        <div className="text-sm text-blue-700">Total Unidades Producidas</div>
+                                        <div className="text-2xl font-bold text-info-muted-foreground">{formatNumber(stats.totalProduction)}</div>
+                                        <div className="text-sm text-info-muted-foreground">Total Unidades Producidas</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-900">{stats.productsWithProduction}</div>
-                                        <div className="text-sm text-blue-700">Productos con Producción</div>
+                                        <div className="text-2xl font-bold text-info-muted-foreground">{stats.productsWithProduction}</div>
+                                        <div className="text-sm text-info-muted-foreground">Productos con Producción</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-900">
+                                        <div className="text-2xl font-bold text-info-muted-foreground">
                                             {stats.productsWithProduction > 0
                                                 ? Math.round(stats.totalProduction / stats.productsWithProduction)
                                                 : 0
                                             }
                                         </div>
-                                        <div className="text-sm text-blue-700">Promedio por Producto</div>
+                                        <div className="text-sm text-info-muted-foreground">Promedio por Producto</div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -573,24 +573,24 @@ export default function CalculadoraCostosPage() {
                                     <h3 className="text-lg font-semibold">Comparación Por Ventas vs Por Producción</h3>
 
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                                             <span className="text-sm font-medium">Total Productos</span>
                                             <div className="flex gap-4">
-                                                <span className="text-blue-600">Ventas: {productPrices.length}</span>
-                                                <span className="text-green-600">Producción: {productionPrices.length}</span>
+                                                <span className="text-info-muted-foreground">Ventas: {productPrices.length}</span>
+                                                <span className="text-success">Producción: {productionPrices.length}</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                                             <span className="text-sm font-medium">Costo Promedio</span>
                                             <div className="flex gap-4">
-                                                <span className="text-blue-600">
+                                                <span className="text-info-muted-foreground">
                                                     {formatCurrency(productPrices.length > 0
                                                         ? productPrices.reduce((sum, p) => sum + p.calculated_cost, 0) / productPrices.length
                                                         : 0
                                                     )}
                                                 </span>
-                                                <span className="text-green-600">
+                                                <span className="text-success">
                                                     {formatCurrency(productionPrices.length > 0
                                                         ? productionPrices.reduce((sum, p) => sum + p.calculated_cost, 0) / productionPrices.length
                                                         : 0
@@ -605,16 +605,16 @@ export default function CalculadoraCostosPage() {
                                     <h3 className="text-lg font-semibold">Estadísticas del Período</h3>
 
                                     <div className="space-y-3">
-                                        <div className="p-3 bg-blue-50 rounded-lg">
-                                            <div className="text-sm text-blue-600">Mes Seleccionado</div>
-                                            <div className="text-lg font-bold text-blue-700">
+                                        <div className="p-3 bg-info-muted rounded-lg">
+                                            <div className="text-sm text-info-muted-foreground">Mes Seleccionado</div>
+                                            <div className="text-lg font-bold text-info-muted-foreground">
                                                 {new Date(selectedMonth + '-01').toLocaleDateString('es-AR', { year: 'numeric', month: 'long' })}
                                             </div>
                                         </div>
 
-                                        <div className="p-3 bg-green-50 rounded-lg">
-                                            <div className="text-sm text-green-600">Productos con Producción</div>
-                                            <div className="text-lg font-bold text-green-700">{stats.productsWithProduction}</div>
+                                        <div className="p-3 bg-success-muted rounded-lg">
+                                            <div className="text-sm text-success">Productos con Producción</div>
+                                            <div className="text-lg font-bold text-success">{stats.productsWithProduction}</div>
                                         </div>
 
                                         <div className="p-3 bg-purple-50 rounded-lg">
@@ -697,8 +697,8 @@ export default function CalculadoraCostosPage() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                                        <div className="text-sm text-gray-600">Resumen de Exportación</div>
+                                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                                        <div className="text-sm text-muted-foreground">Resumen de Exportación</div>
                                         <div className="text-sm">
                                             <div>Productos por ventas: {productPrices.length}</div>
                                             <div>Productos por producción: {productionPrices.length}</div>

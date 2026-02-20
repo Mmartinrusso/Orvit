@@ -34,7 +34,7 @@ export function NodeCard({
     <div
       onClick={onClick}
       className={cn(
-        "relative bg-white dark:bg-background",
+        "relative bg-background",
         "border border-border/60",
         "rounded-2xl",
         "shadow-[0_6px_18px_rgba(15,23,42,0.08)]",

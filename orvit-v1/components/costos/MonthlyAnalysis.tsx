@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, Calendar, BarChart3, PieChart, Users, Building2, Calculator, RefreshCw, ShoppingCart } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Calendar, BarChart3, PieChart, Users, Building2, Calculator, RefreshCw, ShoppingCart, Loader2 } from "lucide-react";
 
 interface MonthlyData {
   supplies: any[];
@@ -56,8 +57,6 @@ interface ComparisonData {
 }
 
 export default function MonthlyAnalysis() {
-  console.log('🎯 MonthlyAnalysis component rendering...');
-  
   const [selectedYear, setSelectedYear] = useState(2025);
   const [selectedMonth, setSelectedMonth] = useState(9);
   const [compareYear, setCompareYear] = useState<number | null>(null);
@@ -90,7 +89,6 @@ export default function MonthlyAnalysis() {
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   const loadMonthlyData = async () => {
-    console.log('🔄 Cargando datos mensuales...', { selectedYear, selectedMonth });
     setLoading(true);
     try {
       const response = await fetch(
@@ -99,7 +97,6 @@ export default function MonthlyAnalysis() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Datos cargados:', data);
         setMonthlyData(data.summary);
       } else {
         console.error('❌ Error cargando datos mensuales:', response.status);
@@ -207,15 +204,15 @@ export default function MonthlyAnalysis() {
   };
 
   const getTrendIcon = (value: number) => {
-    if (value > 0) return <TrendingUp className="h-4 w-4 text-green-600" />;
-    if (value < 0) return <TrendingDown className="h-4 w-4 text-red-600" />;
-    return <Minus className="h-4 w-4 text-gray-600" />;
+    if (value > 0) return <TrendingUp className="h-4 w-4 text-success" />;
+    if (value < 0) return <TrendingDown className="h-4 w-4 text-destructive" />;
+    return <Minus className="h-4 w-4 text-muted-foreground" />;
   };
 
   const getTrendColor = (value: number) => {
-    if (value > 0) return "text-green-600";
-    if (value < 0) return "text-red-600";
-    return "text-gray-600";
+    if (value > 0) return "text-success";
+    if (value < 0) return "text-destructive";
+    return "text-muted-foreground";
   };
 
   const handlePurchaseInputChange = (monthNumber: number, value: string) => {
@@ -394,7 +391,7 @@ export default function MonthlyAnalysis() {
 
       {/* Contenido principal */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="insumos">Insumos</TabsTrigger>
           <TabsTrigger value="empleados">Empleados</TabsTrigger>
@@ -407,7 +404,7 @@ export default function MonthlyAnalysis() {
           {loading ? (
             <div className="flex items-center justify-center p-8">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">Cargando datos mensuales...</p>
               </div>
             </div>
@@ -497,7 +494,7 @@ export default function MonthlyAnalysis() {
                           {getTrendIcon(comparisonData.differences.supplies)}
                           <span className="font-medium">Insumos</span>
                         </div>
-                        <div className={`text-lg font-bold ${getTrendColor(comparisonData.differences.supplies)}`}>
+                        <div className={cn('text-lg font-bold', getTrendColor(comparisonData.differences.supplies))}>
                           {formatCurrency(comparisonData.differences.supplies)}
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -510,7 +507,7 @@ export default function MonthlyAnalysis() {
                           {getTrendIcon(comparisonData.differences.employees)}
                           <span className="font-medium">Empleados</span>
                         </div>
-                        <div className={`text-lg font-bold ${getTrendColor(comparisonData.differences.employees)}`}>
+                        <div className={cn('text-lg font-bold', getTrendColor(comparisonData.differences.employees))}>
                           {formatCurrency(comparisonData.differences.employees)}
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -523,7 +520,7 @@ export default function MonthlyAnalysis() {
                           {getTrendIcon(comparisonData.differences.indirect)}
                           <span className="font-medium">Indirectos</span>
                         </div>
-                        <div className={`text-lg font-bold ${getTrendColor(comparisonData.differences.indirect)}`}>
+                        <div className={cn('text-lg font-bold', getTrendColor(comparisonData.differences.indirect))}>
                           {formatCurrency(comparisonData.differences.indirect)}
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -536,7 +533,7 @@ export default function MonthlyAnalysis() {
                           {getTrendIcon(comparisonData.differences.total)}
                           <span className="font-medium">Total</span>
                         </div>
-                        <div className={`text-lg font-bold ${getTrendColor(comparisonData.differences.total)}`}>
+                        <div className={cn('text-lg font-bold', getTrendColor(comparisonData.differences.total))}>
                           {formatCurrency(comparisonData.differences.total)}
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -702,7 +699,7 @@ export default function MonthlyAnalysis() {
             </CardHeader>
             <CardContent>
               {purchasesError && (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                   {purchasesError}
                 </div>
               )}
@@ -714,7 +711,7 @@ export default function MonthlyAnalysis() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border rounded-lg">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-muted">
                       <tr>
                         <th className="text-left p-3 border-b">Mes</th>
                         <th className="text-right p-3 border-b">Monto registrado</th>
@@ -728,7 +725,7 @@ export default function MonthlyAnalysis() {
                         const inputValue = purchaseInputs[month.value] ?? '';
                         const isCurrentMonth = month.value === selectedMonth;
                         const rowClass =
-                          `border-b ${isCurrentMonth ? 'bg-blue-50' : index % 2 === 0 ? 'bg-white' : 'bg-muted/20'}`;
+                          `border-b ${isCurrentMonth ? 'bg-info-muted' : index % 2 === 0 ? 'bg-card' : 'bg-muted/20'}`;
                         return (
                           <tr key={month.value} className={rowClass}>
                             <td className="p-3 font-medium">
@@ -772,7 +769,7 @@ export default function MonthlyAnalysis() {
                       })}
                     </tbody>
                     <tfoot>
-                      <tr className="font-semibold bg-gray-100">
+                      <tr className="font-semibold bg-muted">
                         <td className="p-3 text-right" colSpan={2}>
                           Total anual registrado
                         </td>

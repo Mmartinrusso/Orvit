@@ -331,7 +331,7 @@ function BudgetProgress({ actual, budget, label }: { actual: number; budget: num
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className={cn("font-medium", isOver ? "text-red-500" : "text-foreground")}>
+        <span className={cn("font-medium", isOver ? "text-destructive" : "text-foreground")}>
           {formatCompact(actual)} / {formatCompact(budget)}
         </span>
       </div>
@@ -339,20 +339,20 @@ function BudgetProgress({ actual, budget, label }: { actual: number; budget: num
         <div
           className={cn(
             "absolute h-full rounded-full transition-all duration-500",
-            isOver ? "bg-red-500" : percentage > 80 ? "bg-amber-500" : "bg-primary"
+            isOver ? "bg-destructive" : percentage > 80 ? "bg-warning" : "bg-primary"
           )}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
         {isOver && (
           <div
-            className="absolute h-full bg-red-600 animate-pulse"
+            className="absolute h-full bg-destructive animate-pulse"
             style={{ left: '100%', width: `${Math.min(overPercentage, 20)}%`, transform: 'translateX(-100%)' }}
           />
         )}
       </div>
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
         <span>{percentage.toFixed(0)}% utilizado</span>
-        {isOver && <span className="text-red-500">+{overPercentage.toFixed(0)}% sobre presupuesto</span>}
+        {isOver && <span className="text-destructive">+{overPercentage.toFixed(0)}% sobre presupuesto</span>}
       </div>
     </div>
   );
@@ -373,7 +373,7 @@ function TrendIndicator({ trend, value }: { trend: 'up' | 'down' | 'stable'; val
   return (
     <span className={cn(
       "inline-flex items-center gap-1",
-      isUp ? "text-red-500" : "text-green-500"
+      isUp ? "text-destructive" : "text-success"
     )}>
       {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {value !== undefined && <span className="text-xs font-medium">{formatPercent(value)}</span>}
@@ -405,17 +405,17 @@ function AlertCard({ alert, onClick }: {
 
   const getBgColor = () => {
     switch (alert.prioridad) {
-      case 'alta': return 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20';
-      case 'media': return 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20';
-      default: return 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20';
+      case 'alta': return 'bg-destructive/10 border-destructive/30/20 hover:bg-destructive/20';
+      case 'media': return 'bg-warning/10 border-warning-muted/20 hover:bg-warning/20';
+      default: return 'bg-info/10 border-info-muted/20 hover:bg-info/20';
     }
   };
 
   const getTextColor = () => {
     switch (alert.prioridad) {
-      case 'alta': return 'text-red-600 dark:text-red-400';
-      case 'media': return 'text-amber-600 dark:text-amber-400';
-      default: return 'text-blue-600 dark:text-blue-400';
+      case 'alta': return 'text-destructive';
+      case 'media': return 'text-warning-muted-foreground';
+      default: return 'text-info-muted-foreground';
     }
   };
 
@@ -465,9 +465,9 @@ function MetricCard({
 }) {
   const colorClasses = {
     default: 'bg-card',
-    success: 'bg-green-500/5 border-green-500/20',
-    warning: 'bg-amber-500/5 border-amber-500/20',
-    danger: 'bg-red-500/5 border-red-500/20'
+    success: 'bg-success/5 border-success-muted/20',
+    warning: 'bg-warning/5 border-warning-muted/20',
+    danger: 'bg-destructive/5 border-destructive/30/20'
   };
 
   return (
@@ -723,29 +723,29 @@ export default function ComprasPage() {
 
                 {/* Health Factors Grid */}
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-success-muted/20">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={ejecutivo.healthFactors.pagosPuntuales} max={100} size={28} strokeWidth={3} color={COLORS.success} />
                       <div>
-                        <div className="text-sm font-bold text-green-600">{ejecutivo.healthFactors.pagosPuntuales}%</div>
+                        <div className="text-sm font-bold text-success">{ejecutivo.healthFactors.pagosPuntuales}%</div>
                         <div className="text-[9px] text-muted-foreground leading-tight">Pagos puntuales</div>
                       </div>
                     </div>
                   </div>
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-info-muted/20">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={ejecutivo.eficiencia.tasaCumplimiento} max={100} size={28} strokeWidth={3} color="#3B82F6" />
                       <div>
-                        <div className="text-sm font-bold text-blue-600">{ejecutivo.eficiencia.tasaCumplimiento}%</div>
+                        <div className="text-sm font-bold text-info-muted-foreground">{ejecutivo.eficiencia.tasaCumplimiento}%</div>
                         <div className="text-[9px] text-muted-foreground leading-tight">OC completadas</div>
                       </div>
                     </div>
                   </div>
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20">
+                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-warning-muted/20">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={100 - ejecutivo.eficiencia.tasaRechazo} max={100} size={28} strokeWidth={3} color={COLORS.warning} />
                       <div>
-                        <div className="text-sm font-bold text-amber-600">{ejecutivo.healthFactors.deudaSaludable}%</div>
+                        <div className="text-sm font-bold text-warning-muted-foreground">{ejecutivo.healthFactors.deudaSaludable}%</div>
                         <div className="text-[9px] text-muted-foreground leading-tight">Deuda saludable</div>
                       </div>
                     </div>
@@ -798,8 +798,8 @@ export default function ComprasPage() {
                   className={cn(
                     "cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all",
                     data.admin.facturasVencidas > 0
-                      ? "bg-gradient-to-br from-red-500/10 to-transparent border-red-500/30"
-                      : "bg-gradient-to-br from-green-500/5 to-transparent border-green-500/20"
+                      ? "bg-gradient-to-br from-red-500/10 to-transparent border-destructive/30/30"
+                      : "bg-gradient-to-br from-green-500/5 to-transparent border-success-muted/20"
                   )}
                   onClick={() => openStatsDetail('deuda')}
                 >
@@ -809,7 +809,7 @@ export default function ComprasPage() {
                         <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Deuda Total</p>
                         <p className={cn(
                           "text-2xl font-bold tabular-nums mt-1",
-                          data.admin.facturasVencidas > 0 ? "text-red-600" : "text-foreground"
+                          data.admin.facturasVencidas > 0 ? "text-destructive" : "text-foreground"
                         )}>
                           {formatCompact(data.admin.deudaTotal)}
                         </p>
@@ -818,18 +818,18 @@ export default function ComprasPage() {
                             {data.admin.facturasVencidas} vencidas
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] h-5 mt-1 text-green-600 border-green-500/30">
+                          <Badge variant="outline" className="text-[10px] h-5 mt-1 text-success border-success-muted/30">
                             Al día
                           </Badge>
                         )}
                       </div>
                       <div className={cn(
                         "p-1.5 rounded-lg",
-                        data.admin.facturasVencidas > 0 ? "bg-red-500/10" : "bg-green-500/10"
+                        data.admin.facturasVencidas > 0 ? "bg-destructive/10" : "bg-success/10"
                       )}>
                         <AlertTriangle className={cn(
                           "h-4 w-4",
-                          data.admin.facturasVencidas > 0 ? "text-red-500" : "text-green-500"
+                          data.admin.facturasVencidas > 0 ? "text-destructive" : "text-success"
                         )} />
                       </div>
                     </div>
@@ -841,7 +841,7 @@ export default function ComprasPage() {
                   className={cn(
                     "cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all",
                     data.admin.aprobacionesPendientes > 5
-                      ? "bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/30"
+                      ? "bg-gradient-to-br from-amber-500/10 to-transparent border-warning-muted/30"
                       : ""
                   )}
                   onClick={() => openStatsDetail('ordenes')}
@@ -852,7 +852,7 @@ export default function ComprasPage() {
                         <p className="text-[11px] text-muted-foreground uppercase tracking-wide">OC Pendientes</p>
                         <p className="text-2xl font-bold tabular-nums mt-1">{data.basico.ordenesPendientes}</p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <Badge variant="secondary" className="text-[10px] h-5 bg-amber-500/10 text-amber-600 border-0">
+                          <Badge variant="secondary" className="text-[10px] h-5 bg-warning/10 text-warning-muted-foreground border-0">
                             {data.admin.aprobacionesPendientes} aprobar
                           </Badge>
                         </div>
@@ -876,11 +876,11 @@ export default function ComprasPage() {
                         <p className="text-2xl font-bold tabular-nums mt-1">{data.basico.solicitudesPendientes}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           {data.basico.stockBajo > 0 ? (
-                            <Badge variant="secondary" className="text-[10px] h-5 bg-amber-500/10 text-amber-600 border-0">
+                            <Badge variant="secondary" className="text-[10px] h-5 bg-warning/10 text-warning-muted-foreground border-0">
                               {data.basico.stockBajo} stock bajo
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px] h-5 bg-green-500/10 text-green-600 border-0">
+                            <Badge variant="secondary" className="text-[10px] h-5 bg-success/10 text-success border-0">
                               Stock OK
                             </Badge>
                           )}
@@ -904,18 +904,18 @@ export default function ComprasPage() {
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "p-1 rounded",
-                      ejecutivo.yoy.variacionAnual >= 0 ? "bg-red-500/10" : "bg-green-500/10"
+                      ejecutivo.yoy.variacionAnual >= 0 ? "bg-destructive/10" : "bg-success/10"
                     )}>
                       {ejecutivo.yoy.variacionAnual >= 0 ? (
-                        <ArrowUpRight className="h-3 w-3 text-red-500" />
+                        <ArrowUpRight className="h-3 w-3 text-destructive" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-green-500" />
+                        <ArrowDownRight className="h-3 w-3 text-success" />
                       )}
                     </div>
                     <div>
                       <p className={cn(
                         "text-sm font-semibold",
-                        ejecutivo.yoy.variacionAnual >= 0 ? "text-red-600" : "text-green-600"
+                        ejecutivo.yoy.variacionAnual >= 0 ? "text-destructive" : "text-success"
                       )}>
                         {formatPercent(ejecutivo.yoy.variacionAnual)}
                       </p>
@@ -927,8 +927,8 @@ export default function ComprasPage() {
                 {/* Ciclo */}
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-2">
-                    <div className="p-1 rounded bg-blue-500/10">
-                      <Timer className="h-3 w-3 text-blue-500" />
+                    <div className="p-1 rounded bg-info/10">
+                      <Timer className="h-3 w-3 text-info-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{ejecutivo.eficiencia.tiempoPromedioCiclo}d</p>
@@ -942,7 +942,7 @@ export default function ComprasPage() {
                   className={cn(
                     "p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors",
                     ejecutivo.concentracion.riesgoConcentracion === 'alto'
-                      ? "bg-amber-500/10"
+                      ? "bg-warning/10"
                       : "bg-muted/50"
                   )}
                   onClick={() => openFullView('proveedores')}
@@ -963,19 +963,19 @@ export default function ComprasPage() {
                   className={cn(
                     "p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors",
                     data.admin.devolucionesPendientes > 0
-                      ? "bg-amber-500/10"
-                      : "bg-green-500/10"
+                      ? "bg-warning/10"
+                      : "bg-success/10"
                   )}
                   onClick={() => router.push('/administracion/compras/devoluciones')}
                 >
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "p-1 rounded",
-                      data.admin.devolucionesPendientes > 0 ? "bg-amber-500/10" : "bg-green-500/10"
+                      data.admin.devolucionesPendientes > 0 ? "bg-warning/10" : "bg-success/10"
                     )}>
                       <Archive className={cn(
                         "h-3 w-3",
-                        data.admin.devolucionesPendientes > 0 ? "text-amber-500" : "text-green-500"
+                        data.admin.devolucionesPendientes > 0 ? "text-warning-muted-foreground" : "text-success"
                       )} />
                     </div>
                     <div>
@@ -994,11 +994,11 @@ export default function ComprasPage() {
                   <span className="flex items-center gap-2">
                     <div className={cn(
                       "p-1.5 rounded-lg",
-                      ejecutivo.alertasCriticas.length > 0 ? "bg-red-500/10" : "bg-green-500/10"
+                      ejecutivo.alertasCriticas.length > 0 ? "bg-destructive/10" : "bg-success/10"
                     )}>
                       <Bell className={cn(
                         "h-4 w-4",
-                        ejecutivo.alertasCriticas.length > 0 ? "text-red-500" : "text-green-500"
+                        ejecutivo.alertasCriticas.length > 0 ? "text-destructive" : "text-success"
                       )} />
                     </div>
                     Alertas
@@ -1014,12 +1014,12 @@ export default function ComprasPage() {
                 {ejecutivo.alertasCriticas.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-6 text-center">
                     <div className="relative">
-                      <div className="absolute inset-0 animate-ping bg-green-500/20 rounded-full" />
-                      <div className="relative p-3 rounded-full bg-green-500/10">
-                        <CheckCircle2 className="h-8 w-8 text-green-500" />
+                      <div className="absolute inset-0 animate-ping bg-success/20 rounded-full" />
+                      <div className="relative p-3 rounded-full bg-success/10">
+                        <CheckCircle2 className="h-8 w-8 text-success" />
                       </div>
                     </div>
-                    <p className="text-sm font-medium text-green-600 mt-3">Todo bajo control</p>
+                    <p className="text-sm font-medium text-success mt-3">Todo bajo control</p>
                     <p className="text-xs text-muted-foreground">Sin alertas críticas</p>
                   </div>
                 ) : (
@@ -1074,7 +1074,7 @@ export default function ComprasPage() {
                 <div className="pt-2 border-t">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Ahorro estimado</span>
-                    <span className="font-medium text-green-600">
+                    <span className="font-medium text-success">
                       {formatCompact(data.admin.totalAnual * 0.03)}
                     </span>
                   </div>
@@ -1104,21 +1104,21 @@ export default function ComprasPage() {
                       key={idx}
                       className={cn(
                         "flex items-center justify-between p-2.5 rounded-lg transition-colors cursor-pointer hover:bg-muted/50",
-                        idx === 0 ? "bg-red-500/10 border border-red-500/20" : "bg-muted/30"
+                        idx === 0 ? "bg-destructive/10 border border-destructive/30/20" : "bg-muted/30"
                       )}
                       onClick={() => openStatsDetail('flujo')}
                     >
                       <div className="flex items-center gap-2">
                         <div className={cn(
                           "w-2 h-2 rounded-full",
-                          idx === 0 ? "bg-red-500" : idx === 1 ? "bg-amber-500" : "bg-blue-500"
+                          idx === 0 ? "bg-destructive" : idx === 1 ? "bg-warning" : "bg-info"
                         )} />
                         <span className="text-sm">{item.day}</span>
                         <Badge variant="secondary" className="text-[10px] h-4">{item.count}</Badge>
                       </div>
                       <span className={cn(
                         "text-sm font-medium",
-                        idx === 0 ? "text-red-600" : ""
+                        idx === 0 ? "text-destructive" : ""
                       )}>
                         {formatCompact(item.amount)}
                       </span>
@@ -1147,20 +1147,20 @@ export default function ComprasPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                    <div className="text-2xl font-bold text-blue-600">{ejecutivo.concentracion.proveedoresActivos30d}</div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-info-muted/20">
+                    <div className="text-2xl font-bold text-info-muted-foreground">{ejecutivo.concentracion.proveedoresActivos30d}</div>
                     <div className="text-[10px] text-muted-foreground">Proveedores activos (30d)</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
-                    <div className="text-2xl font-bold text-green-600">{data.admin.recepcionesMes.cantidad}</div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-success-muted/20">
+                    <div className="text-2xl font-bold text-success">{data.admin.recepcionesMes.cantidad}</div>
                     <div className="text-[10px] text-muted-foreground">Recepciones del mes</div>
                   </div>
                   <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
                     <div className="text-2xl font-bold text-purple-600">{100 - ejecutivo.eficiencia.tasaRechazo}%</div>
                     <div className="text-[10px] text-muted-foreground">Tasa aceptación</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20">
-                    <div className="text-2xl font-bold text-amber-600">{ejecutivo.eficiencia.tiempoPromedioCiclo}d</div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-warning-muted/20">
+                    <div className="text-2xl font-bold text-warning-muted-foreground">{ejecutivo.eficiencia.tiempoPromedioCiclo}d</div>
                     <div className="text-[10px] text-muted-foreground">Lead time prom.</div>
                   </div>
                 </div>
@@ -1234,7 +1234,7 @@ export default function ComprasPage() {
                     <div className="text-right pl-4 border-l">
                       <p className={cn(
                         "text-lg font-semibold",
-                        ejecutivo && ejecutivo.yoy.variacionAnual >= 0 ? "text-red-500" : "text-green-500"
+                        ejecutivo && ejecutivo.yoy.variacionAnual >= 0 ? "text-destructive" : "text-success"
                       )}>
                         {ejecutivo && formatPercent(ejecutivo.yoy.variacionAnual)}
                       </p>
@@ -1304,7 +1304,7 @@ export default function ComprasPage() {
                                   <div className="pt-1 border-t">
                                     <span className={cn(
                                       "text-xs font-medium",
-                                      diff >= 0 ? "text-red-500" : "text-green-500"
+                                      diff >= 0 ? "text-destructive" : "text-success"
                                     )}>
                                       {diff >= 0 ? '+' : ''}{diff.toFixed(1)}% variación
                                     </span>
@@ -1451,8 +1451,8 @@ export default function ComprasPage() {
                       <div className={cn(
                         "p-2 rounded-lg text-xs flex items-center gap-2",
                         ejecutivo.concentracion.riesgoConcentracion === 'alto'
-                          ? "bg-amber-500/10 text-amber-600"
-                          : "bg-blue-500/10 text-blue-600"
+                          ? "bg-warning/10 text-warning-muted-foreground"
+                          : "bg-info/10 text-info-muted-foreground"
                       )}>
                         <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
                         <span>
@@ -1494,8 +1494,8 @@ export default function ComprasPage() {
                     <div className="text-2xl font-semibold">{categorias.total}</div>
                     <div className="text-[10px] text-muted-foreground">Total</div>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-green-500/10">
-                    <div className="text-2xl font-semibold text-green-600">{categorias.conGasto}</div>
+                  <div className="text-center p-3 rounded-lg bg-success/10">
+                    <div className="text-2xl font-semibold text-success">{categorias.conGasto}</div>
                     <div className="text-[10px] text-muted-foreground">Con gasto</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/20">
@@ -1547,11 +1547,11 @@ export default function ComprasPage() {
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div className={cn(
                     "text-center p-2 rounded-lg",
-                    servicios.proximosVencimientos > 0 ? "bg-amber-500/10" : "bg-green-500/10"
+                    servicios.proximosVencimientos > 0 ? "bg-warning/10" : "bg-success/10"
                   )}>
                     <div className={cn(
                       "text-lg font-semibold",
-                      servicios.proximosVencimientos > 0 ? "text-amber-600" : "text-green-600"
+                      servicios.proximosVencimientos > 0 ? "text-warning-muted-foreground" : "text-success"
                     )}>
                       {servicios.proximosVencimientos}
                     </div>
@@ -1559,11 +1559,11 @@ export default function ComprasPage() {
                   </div>
                   <div className={cn(
                     "text-center p-2 rounded-lg",
-                    servicios.contratosCriticos > 0 ? "bg-red-500/10" : "bg-green-500/10"
+                    servicios.contratosCriticos > 0 ? "bg-destructive/10" : "bg-success/10"
                   )}>
                     <div className={cn(
                       "text-lg font-semibold",
-                      servicios.contratosCriticos > 0 ? "text-red-600" : "text-green-600"
+                      servicios.contratosCriticos > 0 ? "text-destructive" : "text-success"
                     )}>
                       {servicios.contratosCriticos}
                     </div>
@@ -1593,16 +1593,16 @@ export default function ComprasPage() {
               </CardHeader>
               <CardContent className="pb-3">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-2 rounded bg-red-500/10">
+                  <div className="flex items-center justify-between p-2 rounded bg-destructive/10">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-red-500" />
+                      <Clock className="h-4 w-4 text-destructive" />
                       <span className="text-sm">Próx. 7 días</span>
                     </div>
                     <span className="font-semibold">{formatCompact(data.admin.flujoPagos.proximos7)}</span>
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded bg-amber-500/10">
+                  <div className="flex items-center justify-between p-2 rounded bg-warning/10">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-amber-500" />
+                      <Clock className="h-4 w-4 text-warning-muted-foreground" />
                       <span className="text-sm">Próx. 15 días</span>
                     </div>
                     <span className="font-semibold">{formatCompact(data.admin.flujoPagos.proximos15)}</span>
@@ -1696,7 +1696,7 @@ export default function ComprasPage() {
               <CardContent className="pb-3">
                 {data.admin.ordenesProximasVencer.length === 0 ? (
                   <div className="text-center py-4">
-                    <CheckCircle2 className="h-6 w-6 text-green-500 mx-auto mb-1" />
+                    <CheckCircle2 className="h-6 w-6 text-success mx-auto mb-1" />
                     <p className="text-sm text-muted-foreground">Sin entregas próximas</p>
                   </div>
                 ) : (

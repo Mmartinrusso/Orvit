@@ -64,11 +64,11 @@ export const HealthScore = memo(function HealthScore({
   const marginChange = previousMargin ? marginPercentage - previousMargin : 0;
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-500';
-    if (score >= 60) return 'text-emerald-500';
-    if (score >= 40) return 'text-amber-500';
-    if (score >= 20) return 'text-orange-500';
-    return 'text-red-500';
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-success';
+    if (score >= 40) return 'text-warning-muted-foreground';
+    if (score >= 20) return 'text-warning-muted-foreground';
+    return 'text-destructive';
   };
 
   const getScoreLabel = (score: number) => {
@@ -80,11 +80,11 @@ export const HealthScore = memo(function HealthScore({
   };
 
   const getScoreRingColor = (score: number) => {
-    if (score >= 80) return 'stroke-green-500';
-    if (score >= 60) return 'stroke-emerald-500';
-    if (score >= 40) return 'stroke-amber-500';
-    if (score >= 20) return 'stroke-orange-500';
-    return 'stroke-red-500';
+    if (score >= 80) return 'stroke-success';
+    if (score >= 60) return 'stroke-success';
+    if (score >= 40) return 'stroke-warning';
+    if (score >= 20) return 'stroke-warning';
+    return 'stroke-destructive';
   };
 
   const circumference = 2 * Math.PI * 40; // Radio de 40
@@ -141,13 +141,13 @@ export const HealthScore = memo(function HealthScore({
             {marginChange !== 0 && (
               <div className="flex items-center gap-1 mt-1">
                 {marginChange > 0 ? (
-                  <TrendingUp className="h-3 w-3 text-green-500" />
+                  <TrendingUp className="h-3 w-3 text-success" />
                 ) : (
-                  <TrendingDown className="h-3 w-3 text-red-500" />
+                  <TrendingDown className="h-3 w-3 text-destructive" />
                 )}
                 <span className={cn(
                   "text-xs font-medium",
-                  marginChange > 0 ? "text-green-500" : "text-red-500"
+                  marginChange > 0 ? "text-success" : "text-destructive"
                 )}>
                   {marginChange > 0 ? '+' : ''}{marginChange.toFixed(1)}% margen
                 </span>

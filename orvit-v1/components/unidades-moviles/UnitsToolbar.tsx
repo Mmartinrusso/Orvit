@@ -200,7 +200,7 @@ export function UnitsToolbar({
               <Button
                 onClick={onCreateUnit}
                 size="lg"
-                className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-black hover:bg-gray-800 text-white hidden sm:inline-flex text-xs"
+                className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:inline-flex text-xs"
               >
                 <Plus className="h-3 w-3 mr-2" />
                 Nueva Unidad

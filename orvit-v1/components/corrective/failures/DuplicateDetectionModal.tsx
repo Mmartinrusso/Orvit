@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -64,10 +65,10 @@ export function DuplicateDetectionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
             Posibles Duplicados Detectados
           </DialogTitle>
           <DialogDescription>
@@ -78,7 +79,7 @@ export function DuplicateDetectionModal({
         </DialogHeader>
 
         {/* Lista de duplicados potenciales */}
-        <div className="space-y-3 max-h-[400px] overflow-y-auto">
+        <DialogBody className="space-y-3">
           {duplicates.map((duplicate) => (
             <div
               key={duplicate.id}
@@ -135,10 +136,9 @@ export function DuplicateDetectionModal({
               </div>
             </div>
           ))}
-        </div>
 
-        {/* Explicación */}
-        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
+          {/* Explicación */}
+          <div className="rounded-lg bg-info-muted p-4 text-sm text-info-muted-foreground">
           <p className="font-medium mb-2">¿Qué significa "Vincular"?</p>
           <ul className="space-y-1 text-xs">
             <li>• Agrega tu reporte al timeline de la falla existente</li>
@@ -146,7 +146,8 @@ export function DuplicateDetectionModal({
             <li>• Mantiene toda la historia del problema en un solo lugar</li>
             <li>• Tus fotos y notas se agregan automáticamente</li>
           </ul>
-        </div>
+          </div>
+        </DialogBody>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button

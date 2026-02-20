@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
+import {
   Save,
   Tag,
-  Palette
+  Palette,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -145,7 +147,7 @@ export default function CategoryDialog({ isOpen, onClose, category, mode, onSave
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
-            <Tag className="h-6 w-6 text-blue-600" />
+            <Tag className="h-6 w-6 text-info-muted-foreground" />
             {title}
           </DialogTitle>
         </DialogHeader>
@@ -153,22 +155,22 @@ export default function CategoryDialog({ isOpen, onClose, category, mode, onSave
         <DialogBody>
         <div className="space-y-6">
           {/* Vista previa */}
-          <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border dark:border-gray-700/50">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Vista Previa</h3>
+          <div className="bg-muted p-4 rounded-lg border">
+            <h3 className="font-semibold text-foreground mb-3">Vista Previa</h3>
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-lg ${getColorClass(formData.color)} flex items-center justify-center text-white text-xl`}>
+              <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl', getColorClass(formData.color))}>
                 {formData.icon}
               </div>
               <div>
-                <h4 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{formData.name || 'Nombre de categoría'}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{formData.description || 'Descripción de la categoría'}</p>
+                <h4 className="font-semibold text-lg text-foreground">{formData.name || 'Nombre de categoría'}</h4>
+                <p className="text-sm text-foreground">{formData.description || 'Descripción de la categoría'}</p>
               </div>
             </div>
           </div>
 
           {/* Información básica */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border dark:border-blue-800/30">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+          <div className="bg-info-muted p-4 rounded-lg border">
+            <h3 className="font-semibold text-info-muted-foreground mb-3 flex items-center gap-2">
               <Tag className="h-4 w-4" />
               Información Básica
             </h3>
@@ -228,8 +230,8 @@ export default function CategoryDialog({ isOpen, onClose, category, mode, onSave
           </div>
 
           {/* Apariencia */}
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border dark:border-green-800/30">
-            <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
+          <div className="bg-success-muted p-4 rounded-lg border">
+            <h3 className="font-semibold text-success mb-3 flex items-center gap-2">
               <Palette className="h-4 w-4" />
               Apariencia
             </h3>
@@ -302,7 +304,7 @@ export default function CategoryDialog({ isOpen, onClose, category, mode, onSave
                     {AVAILABLE_COLORS.map((color) => (
                       <SelectItem key={color.value} value={color.value}>
                         <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded ${color.class}`}></div>
+                          <div className={cn('w-4 h-4 rounded', color.class)}></div>
                           <span>{color.label}</span>
                         </div>
                       </SelectItem>
@@ -323,7 +325,7 @@ export default function CategoryDialog({ isOpen, onClose, category, mode, onSave
           <Button size="sm" onClick={handleSave} disabled={isLoading}>
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Guardando...
               </>
             ) : (

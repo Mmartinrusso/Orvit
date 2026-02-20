@@ -33,6 +33,7 @@ interface FixedTask {
   estimatedTime: number; // en minutos
   priority: 'baja' | 'media' | 'alta';
   isActive: boolean;
+  executionTime?: string;
   lastExecuted?: string;
   nextExecution: string;
   createdAt: string;
@@ -270,8 +271,8 @@ const mockFixedTasks: FixedTask[] = [
 
 function getPriorityColor(priority: string) {
   switch (priority) {
-    case 'alta': return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800';
-    case 'media': return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800';
+    case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
+    case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
     case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800';
     default: return 'bg-muted text-muted-foreground border-border';
   }
@@ -412,6 +413,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                           variant="ghost"
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
                           onClick={() => onCreateTask(column.key)}
+                          aria-label="Agregar"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -470,6 +472,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                                   className="h-6 w-6 p-0 text-primary hover:bg-primary/10"
                                   onClick={(e) => { e.stopPropagation(); onExecuteTask(task); }}
                                   title="Completar"
+                                  aria-label="Ejecutar"
                                 >
                                   <Play className="h-3 w-3" />
                                 </Button>
@@ -480,6 +483,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                                   variant="ghost"
                                   className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
                                   onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
+                                  aria-label="Editar"
                                 >
                                   <Edit className="h-3 w-3" />
                                 </Button>
@@ -490,6 +494,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                                   variant="ghost"
                                   className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                   onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                  aria-label="Eliminar"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
@@ -517,7 +522,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                           <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              <span>{formatTime(task.estimatedTime)}</span>
+                              <span>{task.executionTime || formatTime(task.estimatedTime)}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <FileText className="h-3 w-3" />

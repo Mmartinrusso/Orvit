@@ -231,13 +231,13 @@ export function DocumentFolderViewer({
     const fileType = getFileType(fileName);
     switch (fileType) {
       case 'pdf':
-        return <FileText className="h-4 w-4 text-red-500" />;
+        return <FileText className="h-4 w-4 text-destructive" />;
       case 'docx':
-        return <File className="h-4 w-4 text-blue-500" />;
+        return <File className="h-4 w-4 text-info" />;
       case 'image':
-        return <ImageIcon className="h-4 w-4 text-green-500" />;
+        return <ImageIcon className="h-4 w-4 text-success" />;
       case 'excel':
-        return <FileSpreadsheet className="h-4 w-4 text-emerald-600" />;
+        return <FileSpreadsheet className="h-4 w-4 text-success" />;
       default:
         return <FileText className="h-4 w-4 text-muted-foreground" />;
     }
@@ -609,9 +609,9 @@ export function DocumentFolderViewer({
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
                 {isExpanded ? (
-                  <FolderOpen className="h-4 w-4 text-amber-500" />
+                  <FolderOpen className="h-4 w-4 text-warning" />
                 ) : (
-                  <Folder className="h-4 w-4 text-amber-500" />
+                  <Folder className="h-4 w-4 text-warning" />
                 )}
                 <span className="mr-1">{folder.icon}</span>
 
@@ -863,7 +863,7 @@ export function DocumentFolderViewer({
 
         {/* Modal de mover a carpeta */}
         <Dialog open={!!movingDoc} onOpenChange={() => setMovingDoc(null)}>
-          <DialogContent className="max-w-sm">
+          <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle className="text-sm flex items-center gap-2">
                 <FolderInput className="h-4 w-4" />
@@ -897,7 +897,7 @@ export function DocumentFolderViewer({
                     onClick={() => movingDoc && handleMoveDoc(movingDoc.id, folder.id)}
                   >
                     <span>{folder.icon}</span>
-                    <Folder className="h-4 w-4 text-amber-500" />
+                    <Folder className="h-4 w-4 text-warning" />
                     {folder.name}
                   </button>
                 ))}
@@ -908,7 +908,7 @@ export function DocumentFolderViewer({
 
         {/* Dialog nueva carpeta */}
         <Dialog open={showNewFolderDialog} onOpenChange={setShowNewFolderDialog}>
-          <DialogContent className="max-w-sm">
+          <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle className="text-sm flex items-center gap-2">
                 <FolderPlus className="h-4 w-4" />

@@ -289,7 +289,7 @@ export default function ImportarMaquinaPage() {
                       className={`
                         flex items-center gap-2 px-4 py-2 rounded-full transition-colors
                         ${isActive ? 'bg-primary text-primary-foreground' : ''}
-                        ${isCompleted ? 'bg-green-100 text-green-700' : ''}
+                        ${isCompleted ? 'bg-success-muted text-success' : ''}
                         ${!isActive && !isCompleted ? 'bg-muted text-muted-foreground' : ''}
                       `}
                     >
@@ -303,7 +303,7 @@ export default function ImportarMaquinaPage() {
                     {index < steps.length - 1 && (
                       <div
                         className={`w-8 h-0.5 mx-1 ${
-                          index < currentStepIndex ? 'bg-green-500' : 'bg-muted'
+                          index < currentStepIndex ? 'bg-success' : 'bg-muted'
                         }`}
                       />
                     )}
@@ -356,8 +356,8 @@ export default function ImportarMaquinaPage() {
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <FileText className="h-5 w-5 text-blue-600" />
+                          <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center flex-shrink-0">
+                            <FileText className="h-5 w-5 text-info-muted-foreground" />
                           </div>
                           <div>
                             <p className="font-medium text-sm">Formatos soportados</p>
@@ -388,8 +388,8 @@ export default function ImportarMaquinaPage() {
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
-                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="h-5 w-5 text-success" />
                           </div>
                           <div>
                             <p className="font-medium text-sm">Revisión humana</p>
@@ -403,13 +403,13 @@ export default function ImportarMaquinaPage() {
                   </div>
 
                   {/* Tips */}
-                  <Card className="border-blue-200 bg-blue-50">
+                  <Card className="border-info-muted bg-info-muted">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                        <AlertTriangle className="h-5 w-5 text-info-muted-foreground flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-blue-800 text-sm">Tips para mejores resultados</p>
-                          <ul className="mt-2 space-y-1 text-xs text-blue-700">
+                          <p className="font-medium text-info-muted-foreground text-sm">Tips para mejores resultados</p>
+                          <ul className="mt-2 space-y-1 text-xs text-info-muted-foreground">
                             <li>• Incluye el manual de usuario o servicio completo</li>
                             <li>• Los planos de despiece ayudan a identificar componentes</li>
                             <li>• Las hojas de datos técnicos mejoran la información extraída</li>
@@ -544,13 +544,13 @@ export default function ImportarMaquinaPage() {
                   </Card>
 
                   {/* Info */}
-                  <Card className="border-amber-200 bg-amber-50">
+                  <Card className="border-warning-muted bg-warning-muted">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                        <AlertTriangle className="h-5 w-5 text-warning-muted-foreground flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-amber-800 text-sm">Cómo usar IA externa</p>
-                          <ol className="mt-2 space-y-1 text-xs text-amber-700 list-decimal list-inside">
+                          <p className="font-medium text-warning-muted-foreground text-sm">Cómo usar IA externa</p>
+                          <ol className="mt-2 space-y-1 text-xs text-warning-muted-foreground list-decimal list-inside">
                             <li>Copiá el prompt de arriba</li>
                             <li>Andá a ChatGPT, Gemini o Claude</li>
                             <li>Subí tus documentos técnicos (PDF, imágenes)</li>
@@ -595,8 +595,8 @@ export default function ImportarMaquinaPage() {
             <div className="max-w-lg mx-auto text-center">
               <Card>
                 <CardContent className="py-12">
-                  <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="h-10 w-10 text-green-600" />
+                  <div className="h-20 w-20 rounded-full bg-success-muted flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="h-10 w-10 text-success" />
                   </div>
 
                   <h2 className="text-2xl font-bold mb-2">¡Máquina creada!</h2>

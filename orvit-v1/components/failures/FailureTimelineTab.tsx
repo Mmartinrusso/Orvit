@@ -82,166 +82,166 @@ const EVENT_CONFIG: Record<string, {
   // Falla
   FAILURE_REPORTED: {
     icon: AlertTriangle,
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
     label: 'Falla reportada'
   },
   FAILURE_ASSIGNED: {
     icon: User,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
     label: 'Falla asignada'
   },
   FAILURE_RESOLVED: {
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'Falla resuelta'
   },
   FAILURE_CANCELLED: {
     icon: XCircle,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
+    color: 'text-foreground',
+    bgColor: 'bg-muted',
     label: 'Falla cancelada'
   },
   FAILURE_REOPENED: {
     icon: RefreshCw,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
+    color: 'text-warning-muted-foreground',
+    bgColor: 'bg-warning-muted',
     label: 'Falla reabierta'
   },
   DUPLICATE_LINKED: {
     icon: Flag,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: 'text-primary',
+    bgColor: 'bg-muted',
     label: 'Duplicado vinculado'
   },
 
   // OT
   WORK_ORDER_CREATED: {
     icon: FileText,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
     label: 'OT creada'
   },
   WORK_ORDER_STARTED: {
     icon: PlayCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'OT iniciada'
   },
   WORK_ORDER_PAUSED: {
     icon: PauseCircle,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
+    color: 'text-warning-muted-foreground',
+    bgColor: 'bg-warning-muted',
     label: 'OT pausada'
   },
   WORK_ORDER_WAITING: {
     icon: Clock,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
+    color: 'text-warning-muted-foreground',
+    bgColor: 'bg-warning-muted',
     label: 'OT en espera'
   },
   WORK_ORDER_COMPLETED: {
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'OT completada'
   },
   STATUS_CHANGED: {
     icon: RefreshCw,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
     label: 'Estado cambiado'
   },
 
   // Downtime
   DOWNTIME_STARTED: {
     icon: Timer,
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
     label: 'Downtime iniciado'
   },
   DOWNTIME_ENDED: {
     icon: PlayCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'Downtime finalizado'
   },
   RETURN_TO_PRODUCTION: {
     icon: PlayCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'Retorno a producción'
   },
 
   // Checklists
   CHECKLIST_STARTED: {
     icon: ClipboardList,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
     label: 'Checklist iniciado'
   },
   CHECKLIST_COMPLETED: {
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'Checklist completado'
   },
 
   // RCA
   RCA_CREATED: {
     icon: AlertCircle,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: 'text-primary',
+    bgColor: 'bg-muted',
     label: 'RCA iniciado'
   },
   RCA_UPDATED: {
     icon: AlertCircle,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: 'text-primary',
+    bgColor: 'bg-muted',
     label: 'RCA actualizado'
   },
   RCA_COMPLETED: {
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'RCA completado'
   },
 
   // Soluciones
   SOLUTION_APPLIED: {
     icon: Wrench,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
     label: 'Solución aplicada'
   },
   SOLUTION_SUGGESTED: {
     icon: Wrench,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
     label: 'Solución sugerida'
   },
 
   // Comentarios
   COMMENT_ADDED: {
     icon: MessageSquare,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
+    color: 'text-foreground',
+    bgColor: 'bg-muted',
     label: 'Comentario agregado'
   },
   MENTION_ADDED: {
     icon: User,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
     label: 'Mención'
   },
 
   // Default
   DEFAULT: {
     icon: Clock,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
+    color: 'text-foreground',
+    bgColor: 'bg-muted',
     label: 'Evento'
   }
 };
@@ -261,7 +261,7 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
   return (
     <div className="relative flex gap-4 pb-6 last:pb-0">
       {/* Línea vertical */}
-      <div className="absolute left-5 top-10 bottom-0 w-px bg-gray-200 last:hidden" />
+      <div className="absolute left-5 top-10 bottom-0 w-px bg-muted last:hidden" />
 
       {/* Icono */}
       <div className={cn(
@@ -275,19 +275,19 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900">{event.title}</p>
+            <p className="font-medium text-foreground">{event.title}</p>
             {event.description && (
-              <p className="text-sm text-gray-600 mt-0.5">{event.description}</p>
+              <p className="text-sm text-foreground mt-0.5">{event.description}</p>
             )}
 
             {/* Cambio de valor */}
             {event.previousValue && event.newValue && (
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs bg-gray-50">
+                <Badge variant="outline" className="text-xs bg-muted">
                   {event.previousValue}
                 </Badge>
-                <span className="text-gray-400">→</span>
-                <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                <span className="text-muted-foreground">→</span>
+                <Badge variant="outline" className="text-xs bg-success-muted text-success">
                   {event.newValue}
                 </Badge>
               </div>
@@ -296,13 +296,13 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
 
           {/* Tiempo */}
           <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(event.occurredAt), {
                 addSuffix: true,
                 locale: es
               })}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {format(new Date(event.occurredAt), 'dd/MM/yyyy HH:mm', { locale: es })}
             </span>
           </div>
@@ -319,7 +319,7 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
                 {event.performedBy.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-gray-600">{event.performedBy.name}</span>
+            <span className="text-sm text-foreground">{event.performedBy.name}</span>
           </div>
         )}
 
@@ -329,7 +329,7 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-gray-500 hover:text-gray-700 px-2"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground px-2"
               onClick={() => setExpanded(!expanded)}
             >
               {expanded ? (
@@ -346,14 +346,14 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
             </Button>
 
             {expanded && event.metadata && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm">
+              <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
                 <dl className="space-y-1">
                   {Object.entries(event.metadata).map(([key, value]) => (
                     <div key={key} className="flex gap-2">
-                      <dt className="text-gray-500 capitalize">
+                      <dt className="text-muted-foreground capitalize">
                         {key.replace(/([A-Z])/g, ' $1').toLowerCase()}:
                       </dt>
-                      <dd className="text-gray-900">
+                      <dd className="text-foreground">
                         {typeof value === 'object' ? JSON.stringify(value) : String(value)}
                       </dd>
                     </div>
@@ -378,11 +378,11 @@ function TimelineGroupHeader({ date }: { date: string }) {
   if (isYesterday) label = 'Ayer';
 
   return (
-    <div className="sticky top-0 z-20 bg-white py-2 mb-2">
+    <div className="sticky top-0 z-20 bg-background py-2 mb-2">
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-sm font-medium text-gray-600 capitalize">{label}</span>
-        <div className="h-px flex-1 bg-gray-200" />
+        <div className="h-px flex-1 bg-muted" />
+        <span className="text-sm font-medium text-foreground capitalize">{label}</span>
+        <div className="h-px flex-1 bg-muted" />
       </div>
     </div>
   );
@@ -495,8 +495,8 @@ export function FailureTimelineTab({
     return (
       <div className={cn('p-4', className)}>
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-          <p className="text-gray-600 mb-4">Error al cargar el timeline</p>
+          <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+          <p className="text-foreground mb-4">Error al cargar el timeline</p>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -509,9 +509,9 @@ export function FailureTimelineTab({
   return (
     <div className={cn('flex flex-col h-full', className)}>
       {/* Filtros */}
-      <div className="flex items-center justify-between gap-4 p-4 border-b bg-gray-50/50">
+      <div className="flex items-center justify-between gap-4 p-4 border-b bg-muted/50">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Filtrar:</span>
+          <span className="text-sm text-foreground">Filtrar:</span>
           <div className="flex gap-1">
             {[
               { value: 'all', label: 'Todo' },
@@ -534,7 +534,7 @@ export function FailureTimelineTab({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             {filter === 'all'
               ? `${totalEvents} eventos`
               : `${filteredEvents} de ${totalEvents}`}
@@ -554,9 +554,9 @@ export function FailureTimelineTab({
       <div className="flex-1 overflow-y-auto p-4">
         {sortedDates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Clock className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-gray-600 font-medium">Sin actividad</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <Clock className="h-12 w-12 text-muted-foreground mb-3" />
+            <p className="text-foreground font-medium">Sin actividad</p>
+            <p className="text-sm text-muted-foreground mt-1">
               {filter === 'all'
                 ? 'No hay eventos registrados aún'
                 : 'No hay eventos que coincidan con el filtro'}

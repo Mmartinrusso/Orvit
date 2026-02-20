@@ -58,7 +58,7 @@ export function MaintenanceTrendsWidget({
             height={150}
             showDots={true}
             showArea={false}
-            color="#3b82f6"
+            color="hsl(var(--primary))"
           />
         );
       
@@ -81,7 +81,7 @@ export function MaintenanceTrendsWidget({
             height={150}
             showLabels={true}
             showGrid={true}
-            color="#3b82f6"
+            color="hsl(var(--primary))"
           />
         );
     }
@@ -90,7 +90,7 @@ export function MaintenanceTrendsWidget({
   return (
     <WidgetWrapper
       title="Tendencia de Mantenimientos"
-      icon={<TrendingUp className="h-4 w-4 text-blue-500" />}
+      icon={<TrendingUp className="h-4 w-4 text-info-muted-foreground" />}
       isLoading={isLoading}
       isError={isError}
       onRefresh={() => refetch()}

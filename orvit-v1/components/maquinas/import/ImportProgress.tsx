@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { Loader2, CheckCircle2, XCircle, FileText, Cpu, Merge, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -41,7 +42,7 @@ const STAGE_ICONS: Record<string, React.ReactNode> = {
   extracting: <Cpu className="h-5 w-5" />,
   merging: <Merge className="h-5 w-5" />,
   finalizing: <Package className="h-5 w-5" />,
-  complete: <CheckCircle2 className="h-5 w-5 text-green-600" />,
+  complete: <CheckCircle2 className="h-5 w-5 text-success" />,
   error: <XCircle className="h-5 w-5 text-destructive" />,
 };
 
@@ -60,6 +61,7 @@ const STAGE_LABELS: Record<string, string> = {
 const POLL_INTERVAL = 2000; // 2 seconds
 
 export function ImportProgress({ jobId, onComplete, onError, onCancel }: ImportProgressProps) {
+  const confirm = useConfirm();
   const [status, setStatus] = useState<JobStatus | null>(null);
   const [isPolling, setIsPolling] = useState(true);
 
@@ -102,15 +104,20 @@ export function ImportProgress({ jobId, onComplete, onError, onCancel }: ImportP
   }, [fetchStatus, isPolling]);
 
   const handleCancel = async () => {
-    if (confirm('¿Cancelar la importación? Los archivos ya subidos serán eliminados.')) {
-      try {
-        await fetch(`/api/maquinas/import/${jobId}`, {
-          method: 'DELETE',
-        });
-        onCancel();
-      } catch (error) {
-        console.error('Error canceling:', error);
-      }
+    const ok = await confirm({
+      title: 'Cancelar importación',
+      description: '¿Cancelar la importación? Los archivos ya subidos serán eliminados.',
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
+    try {
+      await fetch(`/api/maquinas/import/${jobId}`, {
+        method: 'DELETE',
+      });
+      onCancel();
+    } catch (error) {
+      console.error('Error canceling:', error);
     }
   };
 
@@ -176,7 +183,7 @@ export function ImportProgress({ jobId, onComplete, onError, onCancel }: ImportP
                   className={cn(
                     "flex flex-col items-center gap-1",
                     isActive && "text-primary",
-                    isCompleted && "text-green-600",
+                    isCompleted && "text-success",
                     isError && "text-destructive",
                     !isActive && !isCompleted && "text-muted-foreground"
                   )}
@@ -185,7 +192,7 @@ export function ImportProgress({ jobId, onComplete, onError, onCancel }: ImportP
                     className={cn(
                       "h-10 w-10 rounded-full flex items-center justify-center border-2",
                       isActive && "border-primary bg-primary/10",
-                      isCompleted && "border-green-600 bg-green-50",
+                      isCompleted && "border-success bg-success-muted",
                       isError && "border-destructive bg-destructive/10",
                       !isActive && !isCompleted && !isError && "border-muted"
                     )}
@@ -207,7 +214,7 @@ export function ImportProgress({ jobId, onComplete, onError, onCancel }: ImportP
                   <div
                     className={cn(
                       "h-0.5 w-8 mx-1",
-                      index < currentStageIndex ? "bg-green-600" : "bg-muted"
+                      index < currentStageIndex ? "bg-success" : "bg-muted"
                     )}
                   />
                 )}
@@ -239,7 +246,7 @@ export function ImportProgress({ jobId, onComplete, onError, onCancel }: ImportP
                       </Badge>
                     ))}
                     {file.isProcessed ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <CheckCircle2 className="h-4 w-4 text-success" />
                     ) : (
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     )}

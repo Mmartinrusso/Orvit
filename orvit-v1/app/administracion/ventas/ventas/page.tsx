@@ -206,15 +206,15 @@ export default function SalesPage() {
 
   const getStatusBadge = (sale: Sale) => {
     const config = {
-      confirmed: { variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
-      delivered: { variant: 'secondary' as const, icon: Truck, color: 'text-blue-600' },
-      cancelled: { variant: 'destructive' as const, icon: XCircle, color: 'text-red-600' }
+      confirmed: { variant: 'default' as const, icon: CheckCircle, color: 'text-success' },
+      delivered: { variant: 'secondary' as const, icon: Truck, color: 'text-info-muted-foreground' },
+      cancelled: { variant: 'destructive' as const, icon: XCircle, color: 'text-destructive' }
     };
     
     // Si tiene paidDate, mostrar como pagada
     if (sale.paidDate) {
       return (
-        <Badge variant="default" className="flex items-center gap-1 text-xs text-green-600">
+        <Badge variant="default" className="flex items-center gap-1 text-xs text-success">
           <DollarSign className="w-3 h-3" />
           Pagada
         </Badge>
@@ -254,7 +254,7 @@ export default function SalesPage() {
           size="sm"
           variant="outline"
           onClick={() => handleStatusChange(sale.id, 'mark_paid')}
-          className="text-green-600 hover:text-green-600"
+          className="text-success hover:text-success"
         >
           <DollarSign className="w-4 h-4 mr-1" />
           Marcar Pagada
@@ -305,7 +305,7 @@ export default function SalesPage() {
                   <p className="text-sm text-muted-foreground">Confirmadas</p>
                   <p className="text-2xl font-bold">{sales.filter(s => s.status === 'confirmed').length}</p>
                 </div>
-                <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
+                <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-success" />
               </div>
             </CardContent>
           </Card>
@@ -316,7 +316,7 @@ export default function SalesPage() {
                   <p className="text-sm text-muted-foreground">Entregadas</p>
                   <p className="text-2xl font-bold">{sales.filter(s => s.status === 'delivered').length}</p>
                 </div>
-                <Truck className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+                <Truck className="w-6 h-6 md:w-8 md:h-8 text-info-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -327,7 +327,7 @@ export default function SalesPage() {
                   <p className="text-sm text-muted-foreground">Pagadas</p>
                   <p className="text-2xl font-bold">{sales.filter(s => s.paidDate !== undefined).length}</p>
                 </div>
-                <DollarSign className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
+                <DollarSign className="w-6 h-6 md:w-8 md:h-8 text-success" />
               </div>
             </CardContent>
           </Card>

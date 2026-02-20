@@ -165,15 +165,15 @@ export function ApplySolutionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent size="lg">
+        <DialogHeader>
           <DialogTitle>Aplicar Solución</DialogTitle>
           <DialogDescription>
             {failureTitle || 'Seleccione una solución previa o cree una nueva para completar esta orden de trabajo'}
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto space-y-6 min-h-0">
+        <DialogBody className="space-y-6">
           {/* Selector: Solución existente o nueva */}
           <div className="space-y-2">
             <Label>Tipo de solución</Label>
@@ -389,7 +389,7 @@ export function ApplySolutionDialog({
           )}
         </DialogBody>
 
-        <DialogFooter className="flex-shrink-0">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={applyMutation.isPending}>
             Cancelar
           </Button>

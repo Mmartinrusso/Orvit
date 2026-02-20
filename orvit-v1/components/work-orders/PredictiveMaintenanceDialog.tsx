@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,8 @@ import {
   Plus,
   Trash2,
   Save,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 
 interface PredictiveMaintenanceDialogProps {
@@ -436,20 +438,20 @@ export default function PredictiveMaintenanceDialog({
 
   const getRiskLevelColor = (level: string) => {
     switch (level) {
-      case 'LOW': return 'bg-green-100 text-green-800';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
-      case 'HIGH': return 'bg-orange-100 text-orange-800';
-      case 'CRITICAL': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'LOW': return 'bg-success-muted text-success';
+      case 'MEDIUM': return 'bg-warning-muted text-warning-muted-foreground';
+      case 'HIGH': return 'bg-warning-muted text-warning-muted-foreground';
+      case 'CRITICAL': return 'bg-destructive/10 text-destructive';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-purple-600" />
+            <TrendingUp className="h-6 w-6 text-primary" />
             {mode === 'create' ? 'Crear Mantenimiento Predictivo' : 'Editar Mantenimiento Predictivo'}
           </DialogTitle>
           <DialogDescription>
@@ -457,9 +459,10 @@ export default function PredictiveMaintenanceDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <form id="predictive-maintenance-form" onSubmit={handleSubmit} className="space-y-6">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="monitoring">Monitoreo</TabsTrigger>
               <TabsTrigger value="prediction">Predicción</TabsTrigger>
@@ -1195,6 +1198,7 @@ export default function PredictiveMaintenanceDialog({
             </TabsContent>
           </Tabs>
         </form>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={handleClose}>
@@ -1203,7 +1207,7 @@ export default function PredictiveMaintenanceDialog({
           <Button type="submit" form="predictive-maintenance-form" disabled={loading}>
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Creando...
               </>
             ) : (

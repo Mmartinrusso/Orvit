@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supplies = await prisma.$queryRaw`
-      SELECT 
+    const cid = parseInt(companyId);
+    const supplies = await prisma.$queryRawUnsafe(`
+      SELECT
         s.id,
         s.name,
         s.unit_measure as "unitMeasure",
@@ -28,12 +29,40 @@ export async function GET(request: NextRequest) {
         sup.name as "supplierName",
         sup.contact_person as "supplierContactPerson",
         sup.phone as "supplierPhone",
-        sup.email as "supplierEmail"
+        sup.email as "supplierEmail",
+        s."categoryId" as "categoryId",
+        sc.name as "categoryName",
+        COALESCE(stock_agg.stock_cantidad, 0) as "stockCantidad",
+        COALESCE(stock_agg.supplier_item_count, 0) as "supplierItemCount",
+        smp_last.month_year as "ultimaCompraMonth"
       FROM supplies s
       LEFT JOIN suppliers sup ON s.supplier_id = sup.id
-      WHERE s.company_id = ${parseInt(companyId)}
-      ORDER BY s.name
-    `;
+      LEFT JOIN supply_categories sc ON sc.id = s."categoryId"
+      LEFT JOIN (
+        SELECT
+          si."supplyId",
+          CAST(SUM(COALESCE(st.cantidad, 0)) AS FLOAT) as stock_cantidad,
+          CAST(COUNT(si.id) AS INTEGER) as supplier_item_count
+        FROM "SupplierItem" si
+        LEFT JOIN "Stock" st ON st."supplierItemId" = si.id
+        WHERE si."companyId" = ${cid}
+        GROUP BY si."supplyId"
+      ) stock_agg ON stock_agg."supplyId" = s.id
+      LEFT JOIN (
+        SELECT DISTINCT ON (supply_id)
+          supply_id,
+          month_year
+        FROM supply_monthly_prices
+        WHERE company_id = ${cid}
+        ORDER BY supply_id, month_year DESC
+      ) smp_last ON smp_last.supply_id = s.id
+      WHERE s.company_id = ${cid}
+      ORDER BY
+        CASE WHEN COALESCE(stock_agg.stock_cantidad, 0) > 0 THEN 0
+             WHEN COALESCE(stock_agg.supplier_item_count, 0) > 0 THEN 1
+             ELSE 2 END,
+        s.name
+    `);
 
     return NextResponse.json(supplies);
 

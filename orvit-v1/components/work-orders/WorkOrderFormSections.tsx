@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { DateInput } from '@/components/ui/DateInput';
+import { DatePicker } from '@/components/ui/date-picker';
 import { WorkOrder, WorkOrderStatus, Priority, MaintenanceType, Machine } from '@/lib/types';
 
 interface WorkOrderFormSectionsProps {
@@ -234,8 +234,7 @@ export function WorkOrderFormSections({
               <Label htmlFor="scheduledDate" className="text-xs text-muted-foreground">
                 Fecha Programada
               </Label>
-              <DateInput
-                id="scheduledDate"
+              <DatePicker
                 value={formatDateForInput(formData.scheduledDate)}
                 onChange={(value) => handleDateChange('scheduledDate', value)}
                 placeholder="dd/mm/yyyy"
@@ -248,8 +247,7 @@ export function WorkOrderFormSections({
                 <Label htmlFor="startedDate" className="text-xs text-muted-foreground">
                   Fecha de Inicio
                 </Label>
-                <DateInput
-                  id="startedDate"
+                <DatePicker
                   value={formatDateForInput(formData.startedDate)}
                   onChange={(value) => handleDateChange('startedDate', value)}
                   placeholder="dd/mm/yyyy"
@@ -263,8 +261,7 @@ export function WorkOrderFormSections({
                 <Label htmlFor="completedDate" className="text-xs text-muted-foreground">
                   Fecha de Finalización
                 </Label>
-                <DateInput
-                  id="completedDate"
+                <DatePicker
                   value={formatDateForInput(formData.completedDate)}
                   onChange={(value) => handleDateChange('completedDate', value)}
                   placeholder="dd/mm/yyyy"

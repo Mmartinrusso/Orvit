@@ -227,26 +227,26 @@ export default function RecepcionesPage() {
           {/* KPIs compactos */}
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-gray-500" />
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Borr:</span>
               <span className="font-medium">{borradores}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+              <CheckCircle className="w-3.5 h-3.5 text-success" />
               <span className="text-muted-foreground">Conf:</span>
               <span className="font-medium">{confirmadas}</span>
             </div>
             {emergencias > 0 && (
               <div className="flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
+                <AlertTriangle className="w-3.5 h-3.5 text-warning-muted-foreground" />
                 <span className="text-muted-foreground">Emerg:</span>
-                <span className="font-medium text-orange-600">{emergencias}</span>
+                <span className="font-medium text-warning-muted-foreground">{emergencias}</span>
               </div>
             )}
             {pendRegularizar > 0 && (
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">Pend. Reg:</span>
-                <span className="font-medium text-yellow-600">{pendRegularizar}</span>
+                <span className="font-medium text-warning-muted-foreground">{pendRegularizar}</span>
               </div>
             )}
           </div>
@@ -293,7 +293,7 @@ export default function RecepcionesPage() {
                             </Badge>
                           )}
                           {recepcion.requiereRegularizacion && !recepcion.regularizada && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 text-yellow-600">
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 text-warning-muted-foreground">
                               Reg
                             </Badge>
                           )}
@@ -336,7 +336,7 @@ export default function RecepcionesPage() {
                               <>
                                 <DropdownMenuItem
                                   onClick={() => handleAbrirConfirmar(recepcion)}
-                                  className="text-green-600 focus:text-green-600"
+                                  className="text-success focus:text-success"
                                 >
                                   <FileCheck className="w-3.5 h-3.5 mr-2" />
                                   Confirmar con evidencia

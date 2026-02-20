@@ -302,7 +302,7 @@ export function QuoteModal({
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-6 w-6 text-blue-600" />
+            <Calculator className="h-6 w-6 text-primary" />
             {mode === 'edit' ? 'Editar Cotizacion' : 'Nueva Cotizacion'}
           </DialogTitle>
           <DialogDescription>
@@ -353,7 +353,7 @@ export function QuoteModal({
                     </SelectContent>
                   </Select>
                   {errors.clientId && (
-                    <p className="text-sm text-red-500 mt-1">{errors.clientId.message}</p>
+                    <p className="text-sm text-destructive mt-1">{errors.clientId.message}</p>
                   )}
                 </div>
 
@@ -365,7 +365,7 @@ export function QuoteModal({
                     placeholder="Selecciona una fecha"
                   />
                   {errors.validUntil && (
-                    <p className="text-sm text-red-500 mt-1">{errors.validUntil.message}</p>
+                    <p className="text-sm text-destructive mt-1">{errors.validUntil.message}</p>
                   )}
                 </div>
               </div>
@@ -378,7 +378,7 @@ export function QuoteModal({
                   className="min-h-[80px]"
                 />
                 {errors.description && (
-                  <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
                 )}
               </div>
             </CardContent>
@@ -404,7 +404,7 @@ export function QuoteModal({
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -442,7 +442,7 @@ export function QuoteModal({
                           </SelectContent>
                         </Select>
                         {errors.items?.[index]?.productId && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].productId.message}
                           </p>
                         )}
@@ -457,7 +457,7 @@ export function QuoteModal({
                           {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                         />
                         {errors.items?.[index]?.quantity && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].quantity.message}
                           </p>
                         )}
@@ -472,7 +472,7 @@ export function QuoteModal({
                           {...register(`items.${index}.unitPrice`, { valueAsNumber: true })}
                         />
                         {errors.items?.[index]?.unitPrice && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].unitPrice.message}
                           </p>
                         )}
@@ -488,7 +488,7 @@ export function QuoteModal({
                           {...register(`items.${index}.discount`, { valueAsNumber: true })}
                         />
                         {errors.items?.[index]?.discount && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].discount.message}
                           </p>
                         )}
@@ -559,7 +559,7 @@ export function QuoteModal({
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal:</span>
                       <span>${calculations.subtotal}</span>

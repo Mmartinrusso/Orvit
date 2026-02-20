@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Product, Category } from '@/lib/types/sales';
 import { toast } from 'sonner';
 import { Save, X } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface ProductBulkEditGridProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ interface EditableProduct extends Partial<Product> {
 }
 
 export function ProductBulkEditGrid({ isOpen, onClose, products, categories, onSave }: ProductBulkEditGridProps) {
+  const confirm = useConfirm();
   const [editableProducts, setEditableProducts] = useState<EditableProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -110,11 +112,15 @@ export function ProductBulkEditGrid({ isOpen, onClose, products, categories, onS
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (hasChanges) {
-      if (!confirm('¿Estás seguro de que quieres descartar los cambios?')) {
-        return;
-      }
+      const ok = await confirm({
+        title: 'Descartar cambios',
+        description: '¿Estás seguro de que quieres descartar los cambios?',
+        confirmText: 'Confirmar',
+        variant: 'default',
+      });
+      if (!ok) return;
     }
     onClose();
   };

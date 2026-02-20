@@ -64,37 +64,37 @@ function getStatusInfo(type: StatusType, status: string): { label: string; color
     case 'solicitud':
       return {
         label: MaterialRequestStatusLabels[status as MaterialRequestStatus] || status,
-        colorClass: MaterialRequestStatusColors[status as MaterialRequestStatus] || 'bg-gray-100 text-gray-800',
+        colorClass: MaterialRequestStatusColors[status as MaterialRequestStatus] || 'bg-muted text-foreground',
       };
 
     case 'despacho':
       return {
         label: DespachoStatusLabels[status as DespachoStatus] || status,
-        colorClass: DespachoStatusColors[status as DespachoStatus] || 'bg-gray-100 text-gray-800',
+        colorClass: DespachoStatusColors[status as DespachoStatus] || 'bg-muted text-foreground',
       };
 
     case 'devolucion':
       return {
         label: DevolucionStatusLabels[status as DevolucionStatus] || status,
-        colorClass: DevolucionStatusColors[status as DevolucionStatus] || 'bg-gray-100 text-gray-800',
+        colorClass: DevolucionStatusColors[status as DevolucionStatus] || 'bg-muted text-foreground',
       };
 
     case 'reserva':
       return {
         label: ReservaStatusLabels[status as ReservaStatus] || status,
-        colorClass: ReservaStatusColors[status as ReservaStatus] || 'bg-gray-100 text-gray-800',
+        colorClass: ReservaStatusColors[status as ReservaStatus] || 'bg-muted text-foreground',
       };
 
     case 'priority':
       return {
         label: PriorityLabels[status as Priority] || status,
-        colorClass: PriorityColors[status as Priority] || 'bg-gray-100 text-gray-800',
+        colorClass: PriorityColors[status as Priority] || 'bg-muted text-foreground',
       };
 
     default:
       return {
         label: status,
-        colorClass: 'bg-gray-100 text-gray-800',
+        colorClass: 'bg-muted text-foreground',
       };
   }
 }

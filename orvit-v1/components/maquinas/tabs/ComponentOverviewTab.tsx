@@ -225,7 +225,7 @@ export function ComponentOverviewTab({ component, onTabChange }: ComponentOvervi
           title="Fallas Abiertas"
           value={statsData?.stats?.openFailures ?? 0}
           icon={AlertTriangle}
-          iconColor="text-red-500"
+          iconColor="text-destructive"
           trend={statsData?.stats?.openFailures === 0 ? 'positive' : 'negative'}
           onClick={() => onTabChange?.('failures')}
         />
@@ -233,21 +233,21 @@ export function ComponentOverviewTab({ component, onTabChange }: ComponentOvervi
           title="Subcomponentes"
           value={statsData?.stats?.totalSubcomponents ?? 0}
           icon={Wrench}
-          iconColor="text-blue-500"
+          iconColor="text-info"
           onClick={() => onTabChange?.('subcomponents')}
         />
         <StatCard
           title="Mantenimientos"
           value={statsData?.stats?.totalMaintenanceRecords ?? 0}
           icon={History}
-          iconColor="text-green-500"
+          iconColor="text-success"
           onClick={() => onTabChange?.('history')}
         />
         <StatCard
           title="Documentos"
           value={statsData?.stats?.totalDocuments ?? 0}
           icon={FileText}
-          iconColor="text-purple-500"
+          iconColor="text-primary"
           onClick={() => onTabChange?.('info')}
         />
       </div>
@@ -296,7 +296,7 @@ export function ComponentOverviewTab({ component, onTabChange }: ComponentOvervi
                       key={spare.id}
                       className={cn(
                         "flex items-center justify-between p-2 rounded-lg border",
-                        isLowStock && "border-amber-300 bg-amber-50"
+                        isLowStock && "border-warning/30 bg-warning-muted"
                       )}
                     >
                       <span className="text-sm font-medium">{spare.name}</span>
@@ -325,7 +325,7 @@ export function ComponentOverviewTab({ component, onTabChange }: ComponentOvervi
           <CardContent>
             {(statsData?.recentFailures?.length ?? 0) === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50 text-green-500" />
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50 text-success" />
                 <p className="text-sm">Sin fallas recientes</p>
               </div>
             ) : (
@@ -369,8 +369,8 @@ export function ComponentOverviewTab({ component, onTabChange }: ComponentOvervi
               <div className="space-y-2">
                 {statsData?.recentMaintenance?.map((record, idx) => (
                   <div key={idx} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
-                    <div className="p-1.5 rounded-full bg-green-100">
-                      <Wrench className="h-3 w-3 text-green-600" />
+                    <div className="p-1.5 rounded-full bg-success-muted">
+                      <Wrench className="h-3 w-3 text-success" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{record.title}</p>
@@ -397,19 +397,19 @@ export function ComponentOverviewTab({ component, onTabChange }: ComponentOvervi
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{statsData?.stats?.resolvedFailures ?? 0}</p>
+              <p className="text-2xl font-bold text-success">{statsData?.stats?.resolvedFailures ?? 0}</p>
               <p className="text-xs text-muted-foreground">Fallas Resueltas</p>
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{statsData?.stats?.totalFailures ?? 0}</p>
+              <p className="text-2xl font-bold text-info">{statsData?.stats?.totalFailures ?? 0}</p>
               <p className="text-xs text-muted-foreground">Total Fallas</p>
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">{statsData?.stats?.totalMaintenanceRecords ?? 0}</p>
+              <p className="text-2xl font-bold text-primary">{statsData?.stats?.totalMaintenanceRecords ?? 0}</p>
               <p className="text-xs text-muted-foreground">Mantenimientos</p>
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">{statsData?.stats?.totalDocuments ?? 0}</p>
+              <p className="text-2xl font-bold text-warning">{statsData?.stats?.totalDocuments ?? 0}</p>
               <p className="text-xs text-muted-foreground">Documentos</p>
             </div>
           </div>
@@ -429,7 +429,7 @@ interface StatCardProps {
   onClick?: () => void;
 }
 
-function StatCard({ title, value, icon: Icon, iconColor = 'text-gray-500', trend, onClick }: StatCardProps) {
+function StatCard({ title, value, icon: Icon, iconColor = 'text-muted-foreground', trend, onClick }: StatCardProps) {
   return (
     <Card
       className={cn("cursor-pointer hover:shadow-md transition-shadow", onClick && "hover:border-primary/50")}
@@ -449,13 +449,13 @@ function StatCard({ title, value, icon: Icon, iconColor = 'text-gray-500', trend
           <div className="mt-2 flex items-center text-xs">
             {trend === 'positive' ? (
               <>
-                <ArrowDownRight className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-green-600">Óptimo</span>
+                <ArrowDownRight className="h-3 w-3 text-success mr-1" />
+                <span className="text-success">Óptimo</span>
               </>
             ) : trend === 'negative' ? (
               <>
-                <ArrowUpRight className="h-3 w-3 text-red-500 mr-1" />
-                <span className="text-red-600">Requiere atención</span>
+                <ArrowUpRight className="h-3 w-3 text-destructive mr-1" />
+                <span className="text-destructive">Requiere atención</span>
               </>
             ) : null}
           </div>

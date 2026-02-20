@@ -40,23 +40,23 @@ export function FailuresSummaryWidget({
   });
 
   const failureData = [
-    { 
-      label: 'Abiertas', 
-      value: data?.overdueMaintenance || 0, 
-      color: '#ef4444',
-      icon: <AlertTriangle className="h-4 w-4 text-red-500" />
+    {
+      label: 'Abiertas',
+      value: data?.overdueMaintenance || 0,
+      color: 'hsl(var(--destructive))',
+      icon: <AlertTriangle className="h-4 w-4 text-destructive" />
     },
-    { 
-      label: 'En Proceso', 
-      value: Math.floor((data?.totalMaintenances || 0) * 0.3), 
-      color: '#eab308',
-      icon: <Clock className="h-4 w-4 text-yellow-500" />
+    {
+      label: 'En Proceso',
+      value: Math.floor((data?.totalMaintenances || 0) * 0.3),
+      color: 'hsl(var(--warning))',
+      icon: <Clock className="h-4 w-4 text-warning-muted-foreground" />
     },
-    { 
-      label: 'Resueltas', 
-      value: data?.completedOnTime || 0, 
-      color: '#22c55e',
-      icon: <CheckCircle className="h-4 w-4 text-green-500" />
+    {
+      label: 'Resueltas',
+      value: data?.completedOnTime || 0,
+      color: 'hsl(var(--success))',
+      icon: <CheckCircle className="h-4 w-4 text-success" />
     },
   ];
 
@@ -110,7 +110,7 @@ export function FailuresSummaryWidget({
   return (
     <WidgetWrapper
       title="Resumen de Fallas"
-      icon={<AlertOctagon className="h-4 w-4 text-red-500" />}
+      icon={<AlertOctagon className="h-4 w-4 text-destructive" />}
       isLoading={isLoading}
       isError={isError}
       onRefresh={() => refetch()}

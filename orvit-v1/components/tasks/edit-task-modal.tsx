@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CalendarIcon, Plus, X } from "lucide-react";
+import { CalendarIcon, Plus, X, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -256,7 +256,7 @@ export function EditTaskModal({ task, isOpen, onClose, onTaskUpdated }: EditTask
         onClose();
       }
     }}>
-      <DialogContent size="md" className="flex flex-col">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Editar Tarea</DialogTitle>
         </DialogHeader>
@@ -538,7 +538,7 @@ export function EditTaskModal({ task, isOpen, onClose, onTaskUpdated }: EditTask
           >
             {updating ? (
               <>
-                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Actualizando...
               </>
             ) : (

@@ -34,6 +34,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface ImportRow {
   rowNumber: number;
@@ -62,6 +63,7 @@ const tipoOptions = [
 ];
 
 export default function ImportarPage() {
+  const confirm = useConfirm();
   const [selectedTipo, setSelectedTipo] = useState('proveedores');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -152,9 +154,13 @@ export default function ImportarPage() {
     }
 
     if (previewResult.errors > 0) {
-      if (!confirm('Hay errores en los datos. ¿Deseas importar solo las filas válidas?')) {
-        return;
-      }
+      const ok = await confirm({
+        title: 'Errores en los datos',
+        description: 'Hay errores en los datos. ¿Deseas importar solo las filas válidas?',
+        confirmText: 'Confirmar',
+        variant: 'default',
+      });
+      if (!ok) return;
     }
 
     setLoading(true);
@@ -287,7 +293,7 @@ export default function ImportarPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <FileSpreadsheet className="w-8 h-8 text-green-600" />
+                  <FileSpreadsheet className="w-8 h-8 text-success" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{file.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -330,14 +336,14 @@ export default function ImportarPage() {
         {/* Panel derecho - Resultados */}
         <div className="lg:col-span-2 space-y-4">
           {importResult && (
-            <Alert className={importResult.success ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}>
+            <Alert className={importResult.success ? 'border-success-muted bg-success-muted' : 'border-destructive/30 bg-destructive/10'}>
               <AlertDescription className="flex items-center gap-2">
                 {importResult.success ? (
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <CheckCircle className="w-5 h-5 text-success" />
                 ) : (
-                  <XCircle className="w-5 h-5 text-red-600" />
+                  <XCircle className="w-5 h-5 text-destructive" />
                 )}
-                <span className={importResult.success ? 'text-green-800' : 'text-red-800'}>
+                <span className={importResult.success ? 'text-success' : 'text-destructive'}>
                   Importación completada: {importResult.imported} registros importados
                   {importResult.errors > 0 && `, ${importResult.errors} errores`}
                 </span>
@@ -385,7 +391,7 @@ export default function ImportarPage() {
                     </TableHeader>
                     <TableBody>
                       {currentResult.details.map((row) => (
-                        <TableRow key={row.rowNumber} className={!row.valid ? 'bg-red-50' : ''}>
+                        <TableRow key={row.rowNumber} className={!row.valid ? 'bg-destructive/10' : ''}>
                           <TableCell>{row.rowNumber}</TableCell>
                           <TableCell>
                             <div className="text-xs space-y-1 max-w-[300px]">
@@ -399,7 +405,7 @@ export default function ImportarPage() {
                           </TableCell>
                           <TableCell>
                             {row.valid ? (
-                              <Badge variant="default" className="bg-green-100 text-green-800">
+                              <Badge variant="default" className="bg-success-muted text-success">
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 OK
                               </Badge>
@@ -413,13 +419,13 @@ export default function ImportarPage() {
                           <TableCell>
                             <div className="space-y-1 text-xs">
                               {row.errors.map((err, i) => (
-                                <p key={i} className="text-red-600">
+                                <p key={i} className="text-destructive">
                                   <XCircle className="w-3 h-3 inline mr-1" />
                                   {err}
                                 </p>
                               ))}
                               {row.warnings.map((warn, i) => (
-                                <p key={i} className="text-yellow-600">
+                                <p key={i} className="text-warning-muted-foreground">
                                   <AlertTriangle className="w-3 h-3 inline mr-1" />
                                   {warn}
                                 </p>

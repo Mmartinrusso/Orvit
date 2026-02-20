@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,14 +39,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { BankStatementItem, TreasuryMovement } from '@/hooks/use-bank-reconciliation';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart5: '#10b981',
-  chart4: '#f59e0b',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 interface BankReconciliationProps {
   items: BankStatementItem[];
@@ -105,7 +99,7 @@ export default function BankReconciliation({
   onSearchChange,
   isLoadingUnmatched,
 }: BankReconciliationProps) {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
   const [showConciliados, setShowConciliados] = useState(false);
 
   // Filtrar items bancarios
@@ -283,8 +277,8 @@ export default function BankReconciliation({
                           key={item.id}
                           className={cn(
                             'cursor-pointer transition-colors',
-                            item.conciliado && 'bg-green-50/50 dark:bg-green-900/10',
-                            item.esSuspense && !item.conciliado && 'bg-yellow-50/50 dark:bg-yellow-900/10',
+                            item.conciliado && 'bg-success-muted/50',
+                            item.esSuspense && !item.conciliado && 'bg-warning-muted/50',
                             selectedBankItems.includes(item.id) && 'ring-2 ring-inset ring-primary bg-primary/5',
                           )}
                           onClick={() => {
@@ -304,7 +298,7 @@ export default function BankReconciliation({
                             {item.conciliado ? (
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  <CheckCircle2 className="h-4 w-4 text-success" />
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   Conciliado
@@ -314,7 +308,7 @@ export default function BankReconciliation({
                             ) : item.esSuspense ? (
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                  <AlertCircle className="h-4 w-4 text-warning-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   Suspense{item.suspenseNotas ? `: ${item.suspenseNotas}` : ''}
@@ -335,10 +329,10 @@ export default function BankReconciliation({
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs text-right font-mono text-red-600">
+                          <TableCell className="text-xs text-right font-mono text-destructive">
                             {item.debito > 0 ? formatCurrency(item.debito) : '-'}
                           </TableCell>
-                          <TableCell className="text-xs text-right font-mono text-green-600">
+                          <TableCell className="text-xs text-right font-mono text-success">
                             {item.credito > 0 ? formatCurrency(item.credito) : '-'}
                           </TableCell>
                           <TableCell className="p-2">
@@ -436,9 +430,9 @@ export default function BankReconciliation({
                           <TableCell className="text-xs">
                             <div className="flex items-center gap-1">
                               {mov.tipo === 'INGRESO' ? (
-                                <ArrowUpCircle className="h-3 w-3 text-green-600" />
+                                <ArrowUpCircle className="h-3 w-3 text-success" />
                               ) : (
-                                <ArrowDownCircle className="h-3 w-3 text-red-600" />
+                                <ArrowDownCircle className="h-3 w-3 text-destructive" />
                               )}
                               <span className="truncate">{mov.tipo}</span>
                             </div>
@@ -446,7 +440,7 @@ export default function BankReconciliation({
                           <TableCell
                             className={cn(
                               'text-xs text-right font-mono',
-                              mov.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'
+                              mov.tipo === 'INGRESO' ? 'text-success' : 'text-destructive'
                             )}
                           >
                             {formatCurrency(mov.monto)}

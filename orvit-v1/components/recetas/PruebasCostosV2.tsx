@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Recipe, RecipeIngredient } from '@/hooks/use-recetas';
@@ -562,7 +562,7 @@ export default function PruebasCostosV2({
                       <div className="flex items-center gap-2">
                         <span>{recipe.name} (v{recipe.version})</span>
                         {recipe.isActive && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-700">
+                          <Badge variant="secondary" className="bg-success-muted text-success">
                             Activa
                           </Badge>
                         )}
@@ -597,7 +597,7 @@ export default function PruebasCostosV2({
                       <div className="flex items-center gap-2">
                         <span>{recipe.name} - {recipe.productName} (v{recipe.version})</span>
                         {recipe.isActive && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-700">
+                          <Badge variant="secondary" className="bg-success-muted text-success">
                             Activa
                           </Badge>
                         )}
@@ -782,7 +782,7 @@ export default function PruebasCostosV2({
                             variant="ghost"
                             size="sm"
                             onClick={() => removeIngredient(index)}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -898,7 +898,7 @@ export default function PruebasCostosV2({
 
       {/* Ingredient Changes Summary */}
       {ingredientChanges.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50/50">
+        <Card className="border-info-muted bg-info-muted/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Package className="h-4 w-4" />
@@ -912,21 +912,21 @@ export default function PruebasCostosV2({
                   key={idx}
                   className={cn(
                     "p-3 rounded-lg border",
-                    change.isNew && "bg-green-50 border-green-200",
-                    change.isRemoved && "bg-red-50 border-red-200",
-                    !change.isNew && !change.isRemoved && "bg-white border-gray-200"
+                    change.isNew && "bg-success-muted border-success-muted",
+                    change.isRemoved && "bg-destructive/10 border-destructive/30",
+                    !change.isNew && !change.isRemoved && "bg-card border-border"
                   )}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{change.name}</span>
-                      {change.isNew && <Badge className="bg-green-100 text-green-700">Nuevo</Badge>}
-                      {change.isRemoved && <Badge className="bg-red-100 text-red-700">Eliminado</Badge>}
-                      {change.priceChanged && <Badge className="bg-blue-100 text-blue-700">Precio modificado</Badge>}
+                      {change.isNew && <Badge className="bg-success-muted text-success">Nuevo</Badge>}
+                      {change.isRemoved && <Badge className="bg-destructive/10 text-destructive">Eliminado</Badge>}
+                      {change.priceChanged && <Badge className="bg-info-muted text-info-muted-foreground">Precio modificado</Badge>}
                     </div>
                     <div className={cn(
                       "font-semibold",
-                      change.costDiff < 0 ? "text-green-600" : change.costDiff > 0 ? "text-orange-600" : ""
+                      change.costDiff < 0 ? "text-success" : change.costDiff > 0 ? "text-warning-muted-foreground" : ""
                     )}>
                       {change.costDiff >= 0 ? '+' : ''}{formatCurrency(change.costDiff)}
                     </div>
@@ -936,7 +936,7 @@ export default function PruebasCostosV2({
                     <ArrowRight className="h-3 w-3" />
                     <span>Nuevo: {change.newQty.toFixed(4)} TN</span>
                     <span className={cn(
-                      change.qtyPercent < 0 ? "text-green-600" : change.qtyPercent > 0 ? "text-orange-600" : ""
+                      change.qtyPercent < 0 ? "text-success" : change.qtyPercent > 0 ? "text-warning-muted-foreground" : ""
                     )}>
                       ({change.qtyPercent >= 0 ? '+' : ''}{change.qtyPercent.toFixed(1)}%)
                     </span>
@@ -991,9 +991,9 @@ export default function PruebasCostosV2({
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     {comparisonData.isSaving ? (
-                      <TrendingDown className="h-5 w-5 text-green-600" />
+                      <TrendingDown className="h-5 w-5 text-success" />
                     ) : (
-                      <TrendingUp className="h-5 w-5 text-orange-600" />
+                      <TrendingUp className="h-5 w-5 text-warning-muted-foreground" />
                     )}
                     <span className="font-semibold">
                       {comparisonData.isSaving ? 'Ahorro' : 'Incremento'}
@@ -1001,7 +1001,7 @@ export default function PruebasCostosV2({
                   </div>
                   <div className={cn(
                     "text-2xl font-bold",
-                    comparisonData.isSaving ? "text-green-600" : "text-orange-600"
+                    comparisonData.isSaving ? "text-success" : "text-warning-muted-foreground"
                   )}>
                     {comparisonData.isSaving ? '-' : '+'}{formatCurrency(Math.abs(comparisonData.totalDiffPerUnit))}
                   </div>
@@ -1095,7 +1095,7 @@ export default function PruebasCostosV2({
                     <td className="p-3 text-right">{formatCurrency(testResults.materialsCost)}</td>
                     <td className={cn(
                       "p-3 text-right font-medium",
-                      testResults.materialsCost - originalResults.materialsCost < 0 ? "text-green-600" : "text-orange-600"
+                      testResults.materialsCost - originalResults.materialsCost < 0 ? "text-success" : "text-warning-muted-foreground"
                     )}>
                       {testResults.materialsCost - originalResults.materialsCost < 0 ? '-' : '+'}
                       {formatCurrency(Math.abs(testResults.materialsCost - originalResults.materialsCost))}
@@ -1119,7 +1119,7 @@ export default function PruebasCostosV2({
                     <td className="p-3 text-right">{formatCurrency(testResults.totalCost)}</td>
                     <td className={cn(
                       "p-3 text-right",
-                      comparisonData.isSaving ? "text-green-600" : "text-orange-600"
+                      comparisonData.isSaving ? "text-success" : "text-warning-muted-foreground"
                     )}>
                       {comparisonData.isSaving ? '-' : '+'}
                       {formatCurrency(Math.abs(comparisonData.totalDiff))}
@@ -1141,7 +1141,7 @@ export default function PruebasCostosV2({
               Selecciona un insumo y define la cantidad
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <DialogBody className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Insumo</label>
               <Select
@@ -1204,7 +1204,8 @@ export default function PruebasCostosV2({
               </p>
             )}
 
-            <div className="flex justify-end gap-2 pt-4">
+          </DialogBody>
+          <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                 Cancelar
               </Button>
@@ -1215,8 +1216,7 @@ export default function PruebasCostosV2({
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar
               </Button>
-            </div>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

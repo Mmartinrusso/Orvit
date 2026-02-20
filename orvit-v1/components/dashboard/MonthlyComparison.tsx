@@ -37,11 +37,11 @@ export function MonthlyComparison({ currentMonth, previousMonth, monthLabel }: M
   // Determinar si el cambio es positivo (verde) o negativo (rojo)
   // Para costos, menor es mejor, así que invertimos la lógica
   const getChangeColor = (change: number | null, invertLogic = false) => {
-    if (change === null) return 'text-gray-500';
+    if (change === null) return 'text-muted-foreground';
     if (invertLogic) {
-      return change > 0 ? 'text-red-600 dark:text-red-400' : change < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500';
+      return change > 0 ? 'text-destructive' : change < 0 ? 'text-success' : 'text-muted-foreground';
     }
-    return change > 0 ? 'text-green-600 dark:text-green-400' : change < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500';
+    return change > 0 ? 'text-success' : change < 0 ? 'text-destructive' : 'text-muted-foreground';
   };
 
   const getChangeIcon = (change: number | null) => {

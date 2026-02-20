@@ -23,8 +23,8 @@ export function ProgressBar({
   showValue = true,
   showPercentage = true,
   size = 'md',
-  color = 'bg-blue-500',
-  bgColor = 'bg-gray-100',
+  color = 'bg-info',
+  bgColor = 'bg-muted',
   animated = true,
   className,
 }: ProgressBarProps) {
@@ -81,7 +81,7 @@ export function CircularProgress({
   max = 100,
   size = 80,
   strokeWidth = 8,
-  color = '#3b82f6',
+  color = 'hsl(var(--primary))',
   showValue = true,
   label,
   className,
@@ -101,7 +101,7 @@ export function CircularProgress({
           cy={center}
           r={radius}
           fill="none"
-          stroke="#e5e7eb"
+          stroke="hsl(var(--border))"
           strokeWidth={strokeWidth}
         />
         

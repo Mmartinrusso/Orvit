@@ -84,7 +84,7 @@ export function ProductAnalyticsTab({ productId }: ProductAnalyticsTabProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <ProductKPICard
           icon={TrendingUp}
-          iconColor="bg-blue-500"
+          iconColor="bg-primary"
           label="Ventas del Período"
           value={`$${data.salesMetrics.totalRevenue.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle={`${data.salesMetrics.totalQuantitySold} unidades vendidas`}
@@ -94,7 +94,7 @@ export function ProductAnalyticsTab({ productId }: ProductAnalyticsTabProps) {
 
         <ProductKPICard
           icon={DollarSign}
-          iconColor="bg-green-500"
+          iconColor="bg-success"
           label="Margen Promedio"
           value={`${data.marginMetrics.realMargin.toFixed(1)}%`}
           subtitle={
@@ -160,7 +160,7 @@ export function ProductAnalyticsTab({ productId }: ProductAnalyticsTabProps) {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-success">
                   ${data.topClient.totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-muted-foreground">Total comprado</p>

@@ -513,24 +513,24 @@ export default function CierresPage() {
                         {/* Difference */}
                         <Card className={cn(
                           "border-2",
-                          diferencia === 0 ? "border-green-500 bg-green-50 dark:bg-green-900/10" :
-                          Math.abs(diferencia) < 100 ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10" :
-                          "border-red-500 bg-red-50 dark:bg-red-900/10"
+                          diferencia === 0 ? "border-success-muted bg-success-muted" :
+                          Math.abs(diferencia) < 100 ? "border-warning-muted bg-warning-muted" :
+                          "border-destructive/30 bg-destructive/10"
                         )}>
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 {diferencia === 0 ? (
-                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                  <CheckCircle2 className="h-5 w-5 text-success" />
                                 ) : (
-                                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                                  <AlertCircle className="h-5 w-5 text-warning-muted-foreground" />
                                 )}
                                 <span className="font-medium">Diferencia</span>
                               </div>
                               <span className={cn(
                                 "text-2xl font-bold",
-                                diferencia === 0 ? "text-green-600" :
-                                diferencia > 0 ? "text-blue-600" : "text-red-600"
+                                diferencia === 0 ? "text-success" :
+                                diferencia > 0 ? "text-info-muted-foreground" : "text-destructive"
                               )}>
                                 {diferencia > 0 ? '+' : ''}{formatCurrency(diferencia)}
                               </span>
@@ -610,11 +610,11 @@ export default function CierresPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Aprobados</p>
-                  <p className="text-2xl font-bold mt-1 text-green-600">{aprobados}</p>
+                  <p className="text-2xl font-bold mt-1 text-success">{aprobados}</p>
                   <p className="text-xs text-muted-foreground mt-1">Sin diferencias</p>
                 </div>
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <div className="p-2 rounded-lg bg-success-muted">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -625,11 +625,11 @@ export default function CierresPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Con Diferencia</p>
-                  <p className="text-2xl font-bold mt-1 text-yellow-600">{conDiferencia}</p>
+                  <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{conDiferencia}</p>
                   <p className="text-xs text-muted-foreground mt-1">Diferencias aprobadas</p>
                 </div>
-                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <div className="p-2 rounded-lg bg-warning-muted">
+                  <AlertCircle className="h-4 w-4 text-warning-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -640,11 +640,11 @@ export default function CierresPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Pendientes</p>
-                  <p className="text-2xl font-bold mt-1 text-blue-600">{pendientes}</p>
+                  <p className="text-2xl font-bold mt-1 text-info-muted-foreground">{pendientes}</p>
                   <p className="text-xs text-muted-foreground mt-1">Por aprobar</p>
                 </div>
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <Clock className="h-4 w-4 text-blue-600" />
+                <div className="p-2 rounded-lg bg-info-muted">
+                  <Clock className="h-4 w-4 text-info-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -731,8 +731,8 @@ export default function CierresPage() {
                         </TableCell>
                         <TableCell className={cn(
                           "text-sm text-right font-mono",
-                          closing.diferencia === 0 ? "text-green-600" :
-                          closing.diferencia > 0 ? "text-blue-600" : "text-red-600"
+                          closing.diferencia === 0 ? "text-success" :
+                          closing.diferencia > 0 ? "text-info-muted-foreground" : "text-destructive"
                         )}>
                           {closing.diferencia > 0 ? '+' : ''}{formatCurrency(closing.diferencia)}
                         </TableCell>

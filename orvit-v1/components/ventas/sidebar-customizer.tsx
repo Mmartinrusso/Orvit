@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -55,10 +56,10 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
 
   const getCategoryColor = (category: keyof typeof MODULE_CATEGORIES) => {
     const colors = {
-      core: 'bg-blue-100 text-blue-700',
-      optional: 'bg-gray-100 text-gray-700',
+      core: 'bg-info-muted text-info-muted-foreground',
+      optional: 'bg-muted text-foreground',
       advanced: 'bg-purple-100 text-purple-700',
-      future: 'bg-green-100 text-green-700',
+      future: 'bg-success-muted text-success-muted-foreground',
     };
     return colors[category];
   };
@@ -73,7 +74,7 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           <Badge variant="outline" className={getCategoryColor(category)}>
             {modules.length} módulos
           </Badge>
@@ -82,7 +83,7 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
           {modules.map((module) => (
             <div
               key={module.id}
-              className="flex items-start space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-accent transition-colors"
             >
               <Checkbox
                 id={module.id}
@@ -95,9 +96,7 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
                 <div className="flex items-center gap-2">
                   <Label
                     htmlFor={module.id}
-                    className={`text-sm font-medium cursor-pointer ${
-                      module.isCore ? 'text-gray-500' : ''
-                    }`}
+                    className={cn('text-sm font-medium cursor-pointer', module.isCore && 'text-muted-foreground')}
                   >
                     {module.name}
                   </Label>
@@ -107,13 +106,13 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
                     </Badge>
                   )}
                   {module.isNew && (
-                    <Badge variant="outline" className="text-xs bg-green-100 text-green-700">
+                    <Badge variant="outline" className="text-xs bg-success-muted text-success-muted-foreground">
                       NUEVO
                     </Badge>
                   )}
                 </div>
                 {module.description && (
-                  <p className="text-xs text-gray-500 mt-1">{module.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{module.description}</p>
                 )}
               </div>
             </div>
@@ -125,7 +124,7 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" className="max-h-[90vh] flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
@@ -133,9 +132,9 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
+        <DialogBody className="space-y-6">
+          <div className="bg-info-muted border border-info rounded-lg p-4">
+            <p className="text-sm text-foreground">
               Selecciona los módulos que deseas ver en tu sidebar. Los módulos marcados como{' '}
               <strong>&quot;Requerido&quot;</strong> no pueden ser desactivados.
             </p>
@@ -171,8 +170,8 @@ export function SidebarCustomizer({ open, onOpenChange }: SidebarCustomizerProps
         </DialogFooter>
 
         {isUpdating && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-lg">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-lg">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         )}
       </DialogContent>

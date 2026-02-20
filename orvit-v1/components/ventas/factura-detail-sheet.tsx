@@ -134,13 +134,13 @@ interface Invoice {
 }
 
 const estadoConfig: Record<string, { label: string; color: string; icon: any }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700', icon: FileText },
-  EMITIDA: { label: 'Emitida', color: 'bg-blue-100 text-blue-700', icon: Send },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground', icon: FileText },
+  EMITIDA: { label: 'Emitida', color: 'bg-info-muted text-info-muted-foreground', icon: Send },
   ENVIADA: { label: 'Enviada', color: 'bg-cyan-100 text-cyan-700', icon: Send },
-  PARCIALMENTE_COBRADA: { label: 'Parcial', color: 'bg-amber-100 text-amber-700', icon: CreditCard },
-  COBRADA: { label: 'Cobrada', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  VENCIDA: { label: 'Vencida', color: 'bg-red-100 text-red-700', icon: AlertTriangle },
-  ANULADA: { label: 'Anulada', color: 'bg-gray-100 text-gray-500', icon: XCircle },
+  PARCIALMENTE_COBRADA: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground', icon: CreditCard },
+  COBRADA: { label: 'Cobrada', color: 'bg-success-muted text-success', icon: CheckCircle },
+  VENCIDA: { label: 'Vencida', color: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
+  ANULADA: { label: 'Anulada', color: 'bg-muted text-muted-foreground', icon: XCircle },
 };
 
 function formatCurrency(amount: number, currency: string = 'ARS'): string {
@@ -281,7 +281,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
   if (loading) {
     return (
       <Sheet open={open} onOpenChange={onClose}>
-        <SheetContent className="sm:max-w-4xl overflow-y-auto">
+        <SheetContent size="xl" className="overflow-y-auto">
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
@@ -293,7 +293,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
   if (!invoice) {
     return (
       <Sheet open={open} onOpenChange={onClose}>
-        <SheetContent className="sm:max-w-4xl overflow-y-auto">
+        <SheetContent size="xl" className="overflow-y-auto">
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">Factura no encontrada</p>
           </div>
@@ -311,7 +311,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
   return (
     <>
       <Sheet open={open} onOpenChange={onClose}>
-        <SheetContent className="sm:max-w-4xl overflow-y-auto">
+        <SheetContent size="xl" className="overflow-y-auto">
           <SheetHeader className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => handleAction('anular')}
-                        className="text-red-600"
+                        className="text-destructive"
                       >
                         <Ban className="w-4 h-4 mr-2" />
                         Anular factura
@@ -396,9 +396,9 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
 
             {/* Alert for overdue */}
             {isOverdue && (
-              <Card className="border-red-200 bg-red-50">
+              <Card className="border-destructive/30 bg-destructive/10">
                 <CardContent className="py-3">
-                  <div className="flex items-center gap-2 text-red-700">
+                  <div className="flex items-center gap-2 text-destructive">
                     <AlertTriangle className="w-5 h-5" />
                     <span className="font-medium">
                       Factura vencida hace {daysOverdue} día{daysOverdue !== 1 ? 's' : ''}
@@ -410,7 +410,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
           </SheetHeader>
 
           <Tabs defaultValue="general" className="mt-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="items">Items ({invoice._count?.items || 0})</TabsTrigger>
               <TabsTrigger value="pagos">Pagos ({invoice._count?.payments || 0})</TabsTrigger>
@@ -479,7 +479,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                         <p className="font-medium">
                           {format(new Date(invoice.fechaVencimiento), "d 'de' MMMM, yyyy", { locale: es })}
                           {isOverdue && (
-                            <span className="text-red-600 text-xs ml-2">
+                            <span className="text-destructive text-xs ml-2">
                               (Vencida)
                             </span>
                           )}
@@ -522,8 +522,8 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
 
                   {invoice.motivoAnulacion && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-red-600 mb-1">Motivo de Anulación</p>
-                      <p className="text-sm bg-red-50 text-red-900 p-3 rounded-md border border-red-200">
+                      <p className="text-sm font-medium text-destructive mb-1">Motivo de Anulación</p>
+                      <p className="text-sm bg-destructive/10 text-destructive p-3 rounded-md border border-destructive/30">
                         {invoice.motivoAnulacion}
                       </p>
                     </div>
@@ -548,7 +548,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                     {invoice.descuento && invoice.descuento > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Descuento</span>
-                        <span className="font-medium text-red-600">
+                        <span className="font-medium text-destructive">
                           -{formatCurrency(invoice.descuento, invoice.moneda)}
                         </span>
                       </div>
@@ -566,13 +566,13 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                       <>
                         <div className="flex justify-between text-lg">
                           <span className="font-semibold">Cobrado</span>
-                          <span className="font-bold text-green-600">
+                          <span className="font-bold text-success">
                             {formatCurrency(invoice.total - invoice.saldoPendiente, invoice.moneda)}
                           </span>
                         </div>
                         <div className="flex justify-between text-lg">
-                          <span className="font-semibold text-red-600">Saldo Pendiente</span>
-                          <span className="font-bold text-red-600">
+                          <span className="font-semibold text-destructive">Saldo Pendiente</span>
+                          <span className="font-bold text-destructive">
                             {formatCurrency(invoice.saldoPendiente, invoice.moneda)}
                           </span>
                         </div>
@@ -709,14 +709,14 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                           </p>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md">
+                      <div className="flex items-center gap-2 text-success bg-success-muted p-3 rounded-md">
                         <CheckCircle className="w-5 h-5" />
                         <span className="font-medium">Factura autorizada por AFIP</span>
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <AlertTriangle className="w-12 h-12 mx-auto mb-2 text-amber-500" />
+                      <AlertTriangle className="w-12 h-12 mx-auto mb-2 text-warning-muted-foreground" />
                       <p className="text-muted-foreground">
                         {invoice.estado === 'BORRADOR'
                           ? 'La factura debe ser emitida para obtener autorización de AFIP'

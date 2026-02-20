@@ -495,7 +495,7 @@ export default function RecepcionDetallePage() {
                   <PenTool className="w-4 h-4" />
                   Firma de Conformidad
                 </h3>
-                <div className="bg-white border rounded-lg p-4 max-w-sm">
+                <div className="bg-background border rounded-lg p-4 max-w-sm">
                   <img
                     src={recepcion.firma}
                     alt="Firma"

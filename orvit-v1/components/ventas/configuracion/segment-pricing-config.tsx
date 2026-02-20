@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -111,13 +113,13 @@ const SEGMENT_ICONS = [
 
 const SEGMENT_COLORS = [
   { value: 'purple', label: 'Púrpura', class: 'bg-purple-100 text-purple-700' },
-  { value: 'blue', label: 'Azul', class: 'bg-blue-100 text-blue-700' },
-  { value: 'green', label: 'Verde', class: 'bg-green-100 text-green-700' },
-  { value: 'yellow', label: 'Amarillo', class: 'bg-yellow-100 text-yellow-700' },
-  { value: 'red', label: 'Rojo', class: 'bg-red-100 text-red-700' },
+  { value: 'blue', label: 'Azul', class: 'bg-info-muted text-info-muted-foreground' },
+  { value: 'green', label: 'Verde', class: 'bg-success-muted text-success-muted-foreground' },
+  { value: 'yellow', label: 'Amarillo', class: 'bg-warning-muted text-warning-muted-foreground' },
+  { value: 'red', label: 'Rojo', class: 'bg-destructive/10 text-destructive' },
   { value: 'orange', label: 'Naranja', class: 'bg-orange-100 text-orange-700' },
   { value: 'pink', label: 'Rosa', class: 'bg-pink-100 text-pink-700' },
-  { value: 'gray', label: 'Gris', class: 'bg-gray-100 text-gray-700' },
+  { value: 'gray', label: 'Gris', class: 'bg-muted text-foreground' },
 ];
 
 const PRICING_TYPES: { value: PricingType; label: string; description: string }[] = [
@@ -153,7 +155,7 @@ function getIconComponent(iconName: string) {
 
 function getColorClass(colorName: string): string {
   const found = SEGMENT_COLORS.find((c) => c.value === colorName);
-  return found?.class || 'bg-gray-100 text-gray-700';
+  return found?.class || 'bg-muted text-foreground';
 }
 
 // =====================================================
@@ -461,7 +463,7 @@ export function SegmentPricingConfig({
                       Agregar Segmento
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-lg">
+                  <DialogContent size="default">
                     <DialogHeader>
                       <DialogTitle>
                         {editingSegment ? 'Editar Segmento' : 'Nuevo Segmento'}
@@ -471,7 +473,7 @@ export function SegmentPricingConfig({
                       </DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid gap-4 py-4">
+                    <DialogBody className="grid gap-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Nombre *</Label>
@@ -545,7 +547,7 @@ export function SegmentPricingConfig({
                               {SEGMENT_COLORS.map((color) => (
                                 <SelectItem key={color.value} value={color.value}>
                                   <div className="flex items-center gap-2">
-                                    <div className={`w-4 h-4 rounded ${color.class}`} />
+                                    <div className={cn('w-4 h-4 rounded', color.class)} />
                                     {color.label}
                                   </div>
                                 </SelectItem>
@@ -671,7 +673,7 @@ export function SegmentPricingConfig({
                           />
                         </div>
                       </div>
-                    </div>
+                    </DialogBody>
 
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -724,9 +726,9 @@ export function SegmentPricingConfig({
                               <span
                                 className={
                                   segment.pricingType === 'DISCOUNT_PERCENT'
-                                    ? 'text-green-600'
+                                    ? 'text-success'
                                     : segment.pricingType === 'MARKUP_PERCENT'
-                                    ? 'text-red-600'
+                                    ? 'text-destructive'
                                     : ''
                                 }
                               >
@@ -750,9 +752,7 @@ export function SegmentPricingConfig({
                                   }
                                 >
                                   <Star
-                                    className={`w-4 h-4 ${
-                                      segment.isDefault ? 'fill-yellow-400 text-yellow-400' : ''
-                                    }`}
+                                    className={cn('w-4 h-4', segment.isDefault && 'fill-warning-muted-foreground text-warning-muted-foreground')}
                                   />
                                 </Button>
                                 <Button
@@ -766,7 +766,7 @@ export function SegmentPricingConfig({
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleDeleteSegment(segment.id)}
-                                  className="text-red-500 hover:text-red-600"
+                                  className="text-destructive hover:text-destructive"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>

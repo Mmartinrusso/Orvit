@@ -144,7 +144,7 @@ export function ToolQRLabel({ toolId, toolName, trigger }: ToolQRLabelProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>Código QR</DialogTitle>
           <DialogDescription>{toolName}</DialogDescription>
@@ -157,7 +157,7 @@ export function ToolQRLabel({ toolId, toolName, trigger }: ToolQRLabelProps) {
             <p className="text-destructive">Error al generar QR</p>
           ) : data ? (
             <>
-              <div className="border rounded-lg p-4 bg-white">
+              <div className="border rounded-lg p-4 bg-background">
                 <img
                   src={data.qr.data}
                   alt={`QR de ${data.tool.name}`}

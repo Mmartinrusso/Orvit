@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -193,7 +194,7 @@ export function QRPrintSheet({ machines, open, onClose }: QRPrintSheetProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <QrCode className="h-5 w-5" />
@@ -201,6 +202,7 @@ export function QRPrintSheet({ machines, open, onClose }: QRPrintSheetProps) {
           </DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         <div className="space-y-4">
           {/* Layout Selector */}
           <div className="flex items-center gap-4">
@@ -239,7 +241,7 @@ export function QRPrintSheet({ machines, open, onClose }: QRPrintSheetProps) {
                 {machines.map((machine) => (
                   <div
                     key={machine.id}
-                    className="flex items-center gap-3 p-2 rounded hover:bg-gray-50"
+                    className="flex items-center gap-3 p-2 rounded hover:bg-muted"
                   >
                     <Checkbox
                       id={`machine-${machine.id}`}
@@ -273,6 +275,7 @@ export function QRPrintSheet({ machines, open, onClose }: QRPrintSheetProps) {
             Los códigos incluirán el nombre y código de activo de cada máquina.
           </p>
         </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

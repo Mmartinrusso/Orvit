@@ -18,6 +18,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -192,12 +193,12 @@ export function DiscountTiersConfig({ config, onSave }: DiscountTiersConfigProps
         {enabled && (
           <CardContent className="space-y-4">
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-info-muted border border-info-muted rounded-lg p-4">
               <div className="flex items-start gap-2">
-                <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900">
+                <Info className="w-5 h-5 text-info-muted-foreground flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-foreground">
                   <p className="font-medium">¿Cómo funcionan los descuentos escalonados?</p>
-                  <ul className="mt-2 space-y-1 text-blue-800">
+                  <ul className="mt-2 space-y-1 text-foreground">
                     <li>• Se aplica el descuento del nivel más alto alcanzado</li>
                     <li>• Ejemplo: Si el total es $75,000 y hay niveles en $50,000 (5%) y $100,000 (8%), se aplica 5%</li>
                     <li>• Los descuentos se pueden combinar con descuentos manuales (según configuración)</li>
@@ -236,7 +237,7 @@ export function DiscountTiersConfig({ config, onSave }: DiscountTiersConfigProps
                           {tier.maxAmount ? formatCurrency(tier.maxAmount) : 'Sin límite'}
                         </TableCell>
                         <TableCell>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success-muted text-success">
                             {tier.discountPercent}%
                           </span>
                         </TableCell>
@@ -257,7 +258,7 @@ export function DiscountTiersConfig({ config, onSave }: DiscountTiersConfigProps
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-red-600">
+                                <Button variant="ghost" size="icon" className="text-destructive">
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -272,7 +273,7 @@ export function DiscountTiersConfig({ config, onSave }: DiscountTiersConfigProps
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => handleDeleteTier(tier.id)}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-destructive hover:bg-destructive/90"
                                   >
                                     Eliminar
                                   </AlertDialogAction>
@@ -306,7 +307,7 @@ export function DiscountTiersConfig({ config, onSave }: DiscountTiersConfigProps
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
+                <DialogBody className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="minAmount">Monto Mínimo ($) *</Label>
@@ -371,7 +372,7 @@ export function DiscountTiersConfig({ config, onSave }: DiscountTiersConfigProps
                       onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     />
                   </div>
-                </div>
+                </DialogBody>
 
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>

@@ -294,8 +294,6 @@ export default function LoadSolutionDialog({
     try {
       // ✅ NUEVO: Si tenemos occurrenceId, crear FailureSolution en la nueva tabla
       if (occurrenceId) {
-        console.log('🔧 [LoadSolutionDialog] Creando FailureSolution para occurrence:', occurrenceId);
-
         await addSolution.mutateAsync({
           title: solutionData.title.trim(),
           description: solutionData.solution,
@@ -341,8 +339,6 @@ export default function LoadSolutionDialog({
       }
 
       // ✅ FALLBACK: Si no hay occurrenceId (datos legacy), usar el método anterior
-      console.log('🔧 [LoadSolutionDialog] Sin occurrenceId, usando método legacy');
-
       const completedDate = new Date().toISOString();
 
       // Obtener notas existentes para preservar datos de la falla
@@ -354,7 +350,7 @@ export default function LoadSolutionDialog({
             : failureData.notes;
         }
       } catch (e) {
-        console.log('No se pudieron parsear notas existentes');
+        // Failed to parse existing notes
       }
 
       const updateData = {
@@ -397,8 +393,6 @@ export default function LoadSolutionDialog({
         sectorId: currentSector?.id || null
       };
 
-      console.log('🔧 [LoadSolutionDialog] Actualizando falla existente ID:', failureData.id);
-
       const response = await fetch(`/api/work-orders/${failureData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -411,7 +405,6 @@ export default function LoadSolutionDialog({
       }
 
       const result = await response.json();
-      console.log('✅ Falla actualizada exitosamente:', result);
 
       toast({
         title: "Solución Registrada",
@@ -533,12 +526,12 @@ export default function LoadSolutionDialog({
               />
               <label
                 htmlFor="solution-files-input"
-                className="flex items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors bg-gray-50 hover:bg-gray-100"
+                className="flex items-center justify-center w-full h-28 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground/50 transition-colors bg-muted hover:bg-accent"
               >
                 <div className="text-center">
-                  <CloudUpload className="w-6 h-6 mx-auto text-gray-400 mb-1.5" />
-                  <p className="text-xs text-gray-600">Haz clic o arrastra archivos aquí</p>
-                  <p className="text-[10px] text-gray-500">PDF, DOC, XLS, imágenes hasta 10MB cada una</p>
+                  <CloudUpload className="w-6 h-6 mx-auto text-muted-foreground mb-1.5" />
+                  <p className="text-xs text-foreground">Haz clic o arrastra archivos aquí</p>
+                  <p className="text-[10px] text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB cada una</p>
                 </div>
               </label>
             </div>
@@ -547,9 +540,9 @@ export default function LoadSolutionDialog({
             {solutionData.files.length > 0 && (
               <div className="mt-2 space-y-1.5">
                 {solutionData.files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <File className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                      <File className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="text-xs truncate">{file.name}</span>
                     </div>
                     <Button
@@ -717,8 +710,8 @@ export default function LoadSolutionDialog({
                       className={cn(
                         'h-5 w-5',
                         solutionData.effectiveness && rating <= solutionData.effectiveness
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300 hover:text-yellow-200'
+                          ? 'fill-warning-muted-foreground text-warning-muted-foreground'
+                          : 'text-muted-foreground hover:text-warning-muted-foreground/50'
                       )}
                     />
                   </button>

@@ -66,8 +66,8 @@ function KpiCard({
   const badgeColorClass = cn(
     'inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold text-xs transition-colors',
     {
-      'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400': isGood,
-      'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400': isBad,
+      'bg-success-muted border-success-muted text-success': isGood,
+      'bg-destructive/10 border-destructive/30 text-destructive': isBad,
       'bg-muted border-border text-muted-foreground': neutral,
     }
   );
@@ -78,7 +78,7 @@ function KpiCard({
     <TooltipProvider>
       <Card
         className={cn(
-          "h-full rounded-lg border border-gray-300/90 shadow-sm bg-gradient-to-t from-black/5 via-gray-100/50 to-white dark:border-gray-600/90 dark:from-black/10 dark:via-gray-800/50 dark:to-gray-900",
+          "h-full rounded-lg border border-border shadow-sm bg-gradient-to-t from-black/5 via-muted/50 to-background",
           onClick && "cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
         )}
         onClick={onClick}
@@ -109,7 +109,7 @@ function KpiCard({
         <CardContent className="px-4 pb-1.5 pt-0">
           <div className="text-3xl font-normal leading-none tabular-nums mb-0.5">{value}</div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5 leading-tight">
-            <Icon className={cn("h-3 w-3", { 'text-green-600': isGood, 'text-red-600': isBad })} />
+            <Icon className={cn("h-3 w-3", { 'text-success': isGood, 'text-destructive': isBad })} />
             <span className="font-medium">{subtitle}</span>
           </div>
           <Tooltip>

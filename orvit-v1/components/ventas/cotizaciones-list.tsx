@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +55,7 @@ import {
   Copy,
   BarChart3,
   CheckSquare,
+  FileX,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -113,13 +116,13 @@ type EstadoCotizacion =
   | 'VENCIDA';
 
 const ESTADOS_CONFIG: Record<EstadoCotizacion, { label: string; color: string; icon: React.ElementType }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: FileText },
-  ENVIADA: { label: 'Enviada', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Send },
-  EN_NEGOCIACION: { label: 'Negociación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
-  ACEPTADA: { label: 'Aceptada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  CONVERTIDA: { label: 'Convertida', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: ArrowRight },
-  PERDIDA: { label: 'Perdida', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
-  VENCIDA: { label: 'Vencida', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Clock },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground border-border', icon: FileText },
+  ENVIADA: { label: 'Enviada', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: Send },
+  EN_NEGOCIACION: { label: 'Negociación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Clock },
+  ACEPTADA: { label: 'Aceptada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  CONVERTIDA: { label: 'Convertida', color: 'bg-primary/10 text-primary border-primary/30', icon: ArrowRight },
+  PERDIDA: { label: 'Perdida', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: XCircle },
+  VENCIDA: { label: 'Vencida', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Clock },
 };
 
 interface CotizacionesListProps {
@@ -465,7 +468,7 @@ export function CotizacionesList({
     const config = ESTADOS_CONFIG[(estado || 'BORRADOR') as EstadoCotizacion] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={`${config.color} border text-[10px] px-1.5 py-0.5 font-medium`}>
+      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -546,13 +549,13 @@ export function CotizacionesList({
       {showKPIs && (
         <div className="grid grid-cols-5 gap-3">
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'BORRADOR' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'BORRADOR' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'BORRADOR' ? 'all' : 'BORRADOR')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-gray-100">
-                  <FileText className="w-3.5 h-3.5 text-gray-600" />
+                <div className="p-1.5 rounded-md bg-muted">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.borradores}</p>
@@ -563,13 +566,13 @@ export function CotizacionesList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'ENVIADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'ENVIADA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'ENVIADA' ? 'all' : 'ENVIADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-blue-100">
-                  <Send className="w-3.5 h-3.5 text-blue-600" />
+                <div className="p-1.5 rounded-md bg-info-muted">
+                  <Send className="w-3.5 h-3.5 text-info-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.enviadas}</p>
@@ -580,13 +583,13 @@ export function CotizacionesList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'ACEPTADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'ACEPTADA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'ACEPTADA' ? 'all' : 'ACEPTADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-green-100">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                <div className="p-1.5 rounded-md bg-success-muted">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.aceptadas}</p>
@@ -597,13 +600,13 @@ export function CotizacionesList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'PERDIDA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'PERDIDA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'PERDIDA' ? 'all' : 'PERDIDA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-red-100">
-                  <XCircle className="w-3.5 h-3.5 text-red-600" />
+                <div className="p-1.5 rounded-md bg-destructive/10">
+                  <XCircle className="w-3.5 h-3.5 text-destructive" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.perdidas}</p>
@@ -614,16 +617,16 @@ export function CotizacionesList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'VENCIDA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'VENCIDA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'VENCIDA' ? 'all' : 'VENCIDA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-orange-100">
-                  <Clock className="w-3.5 h-3.5 text-orange-600" />
+                <div className="p-1.5 rounded-md bg-warning-muted">
+                  <Clock className="w-3.5 h-3.5 text-warning-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-orange-600">{kpis.vencidas}</p>
+                  <p className="text-xl font-bold text-warning-muted-foreground">{kpis.vencidas}</p>
                   <p className="text-[10px] text-muted-foreground">Vencidas</p>
                 </div>
               </div>
@@ -678,7 +681,7 @@ export function CotizacionesList({
           onClick={() => { loadCotizaciones(); loadKPIs(); }}
           disabled={loading}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
         </Button>
       </div>
 
@@ -702,7 +705,7 @@ export function CotizacionesList({
             size="sm"
             onClick={() => handleBulkAction('eliminar')}
             disabled={bulkLoading}
-            className="text-red-600 hover:text-red-700"
+            className="text-destructive hover:text-destructive/80"
           >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
             Eliminar
@@ -719,15 +722,14 @@ export function CotizacionesList({
 
       {/* Tabla */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <SkeletonTable rows={5} cols={9} />
       ) : cotizaciones.length === 0 ? (
         <div className="text-center py-12">
-          <Calculator className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No se encontraron cotizaciones</p>
+          <FileX className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm font-medium">No hay cotizaciones</p>
+          <p className="text-xs text-muted-foreground mt-1">Crea una nueva cotización para enviar a tus clientes</p>
           {hasActiveFilters && (
-            <Button variant="link" size="sm" onClick={clearFilters}>
+            <Button variant="link" size="sm" onClick={clearFilters} className="mt-2">
               Limpiar filtros
             </Button>
           )}
@@ -762,7 +764,7 @@ export function CotizacionesList({
                   return (
                     <TableRow
                       key={cot.id}
-                      className={`hover:bg-muted/30 cursor-pointer ${isSelected ? 'bg-muted/50' : ''}`}
+                      className={cn('hover:bg-muted/30 cursor-pointer', isSelected && 'bg-muted/50')}
                       onClick={() => handleViewDetail(cot)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -781,7 +783,7 @@ export function CotizacionesList({
                         {cot.fechaEmision ? format(new Date(cot.fechaEmision), 'dd/MM/yy', { locale: es }) : '-'}
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className={vencida ? 'text-red-600 font-medium' : ''}>
+                        <div className={vencida ? 'text-destructive font-medium' : ''}>
                           {cot.fechaValidez ? format(new Date(cot.fechaValidez), 'dd/MM/yy', { locale: es }) : '-'}
                           {vencida && <span className="ml-1 text-[10px]">({Math.abs(diasVenc!)}d)</span>}
                         </div>
@@ -834,7 +836,7 @@ export function CotizacionesList({
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-red-600"
+                                  className="text-destructive"
                                   onClick={() => {
                                     setCotizacionToDelete(cot);
                                     setDeleteDialogOpen(true);
@@ -907,7 +909,7 @@ export function CotizacionesList({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Eliminar'}
             </AlertDialogAction>

@@ -13,8 +13,10 @@ import MachineDialog from '@/components/maquinas/MachineDialog';
 import MobileMachineNavbar from '@/components/layout/MobileMachineNavbar';
 import { Machine } from '@/lib/types';
 import { Plus, Search, LayoutGrid, LayoutList, Loader2 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 export default function MaquinasPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const { currentCompany, currentSector } = useCompany();
 
@@ -49,7 +51,13 @@ export default function MaquinasPage() {
   };
 
   const handleDeleteMachine = async (machine: Machine) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta máquina?')) return;
+    const ok = await confirm({
+      title: 'Eliminar máquina',
+      description: '¿Estás seguro de que quieres eliminar esta máquina?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     
     try {
       const response = await fetch(`/api/maquinas/${machine.id}`, {

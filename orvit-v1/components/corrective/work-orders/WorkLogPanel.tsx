@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -54,14 +55,14 @@ interface WorkLog {
 }
 
 const activityTypeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  EXECUTION: { label: 'Ejecución', icon: <Wrench className="h-4 w-4" />, color: 'bg-green-100 text-green-800' },
-  DIAGNOSIS: { label: 'Diagnóstico', icon: <Search className="h-4 w-4" />, color: 'bg-blue-100 text-blue-800' },
-  WAITING: { label: 'Espera', icon: <Timer className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-800' },
-  TRAVEL: { label: 'Desplazamiento', icon: <Truck className="h-4 w-4" />, color: 'bg-purple-100 text-purple-800' },
-  DOCUMENTATION: { label: 'Documentación', icon: <FileText className="h-4 w-4" />, color: 'bg-gray-100 text-gray-800' },
-  INSPECTION: { label: 'Inspección', icon: <Search className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-800' },
-  PARTS_PICKUP: { label: 'Retiro repuestos', icon: <Package className="h-4 w-4" />, color: 'bg-orange-100 text-orange-800' },
-  OTHER: { label: 'Otro', icon: <HelpCircle className="h-4 w-4" />, color: 'bg-gray-100 text-gray-800' },
+  EXECUTION: { label: 'Ejecución', icon: <Wrench className="h-4 w-4" />, color: 'bg-success-muted text-success' },
+  DIAGNOSIS: { label: 'Diagnóstico', icon: <Search className="h-4 w-4" />, color: 'bg-info-muted text-info-muted-foreground' },
+  WAITING: { label: 'Espera', icon: <Timer className="h-4 w-4" />, color: 'bg-warning-muted text-warning-muted-foreground' },
+  TRAVEL: { label: 'Desplazamiento', icon: <Truck className="h-4 w-4" />, color: 'bg-primary/10 text-primary' },
+  DOCUMENTATION: { label: 'Documentación', icon: <FileText className="h-4 w-4" />, color: 'bg-muted text-foreground' },
+  INSPECTION: { label: 'Inspección', icon: <Search className="h-4 w-4" />, color: 'bg-info-muted text-info-muted-foreground' },
+  PARTS_PICKUP: { label: 'Retiro repuestos', icon: <Package className="h-4 w-4" />, color: 'bg-warning-muted text-warning-muted-foreground' },
+  OTHER: { label: 'Otro', icon: <HelpCircle className="h-4 w-4" />, color: 'bg-muted text-foreground' },
 };
 
 export function WorkLogPanel({ workOrderId, className }: WorkLogPanelProps) {
@@ -140,7 +141,7 @@ export function WorkLogPanel({ workOrderId, className }: WorkLogPanelProps) {
   if (error) {
     return (
       <Card className={cn('p-4', className)}>
-        <p className="text-red-500 text-sm">Error al cargar registros de trabajo</p>
+        <p className="text-destructive text-sm">Error al cargar registros de trabajo</p>
       </Card>
     );
   }
@@ -224,7 +225,8 @@ export function WorkLogPanel({ workOrderId, className }: WorkLogPanelProps) {
             <DialogTitle>Agregar Registro de Trabajo</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} id="work-log-form">
+          <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label>Tipo de Actividad</Label>
               <Select
@@ -268,19 +270,21 @@ export function WorkLogPanel({ workOrderId, className }: WorkLogPanelProps) {
               />
             </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Guardando...' : 'Guardar'}
-              </Button>
-            </DialogFooter>
+          </DialogBody>
           </form>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" form="work-log-form" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

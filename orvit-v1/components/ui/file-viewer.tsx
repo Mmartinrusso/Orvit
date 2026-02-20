@@ -61,11 +61,11 @@ export function getFileIcon(fileName: string) {
   const fileType = getFileType(fileName);
   switch (fileType) {
     case 'pdf':
-      return <FileText className="h-5 w-5 text-red-500" />;
+      return <FileText className="h-5 w-5 text-destructive" />;
     case 'image':
-      return <ImageIcon className="h-5 w-5 text-green-500" />;
+      return <ImageIcon className="h-5 w-5 text-success" />;
     case 'office':
-      return <File className="h-5 w-5 text-blue-500" />;
+      return <File className="h-5 w-5 text-primary" />;
     default:
       return <File className="h-5 w-5 text-muted-foreground" />;
   }

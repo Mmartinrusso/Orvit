@@ -480,7 +480,7 @@ export default function ComponentesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-green-600" />
+                <TrendingUp className="w-4 h-4 text-success" />
                 Haberes
               </CardTitle>
               <CardDescription className="text-xs">Conceptos que suman al sueldo</CardDescription>
@@ -493,7 +493,7 @@ export default function ComponentesPage() {
                   earnings.map((c) => (
                     <div
                       key={c.id}
-                      className="flex justify-between items-center p-3 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/50"
+                      className="flex justify-between items-center p-3 rounded-lg bg-success-muted/50 border border-success-muted"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -532,7 +532,7 @@ export default function ComponentesPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-red-600" />
+                <TrendingDown className="w-4 h-4 text-destructive" />
                 Descuentos
               </CardTitle>
               <CardDescription className="text-xs">Conceptos que se deducen del sueldo</CardDescription>
@@ -545,7 +545,7 @@ export default function ComponentesPage() {
                   deductions.map((c) => (
                     <div
                       key={c.id}
-                      className="flex justify-between items-center p-3 rounded-lg bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50"
+                      className="flex justify-between items-center p-3 rounded-lg bg-destructive/10 border border-destructive/20"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

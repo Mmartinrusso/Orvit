@@ -2,7 +2,7 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Machine, MachineComponent, MachineStatus, MachineType } from '@/lib/types';
@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogOverlay,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -59,6 +60,7 @@ import {
 } from '@/components/ui/dialog';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/hooks/use-auth';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useMachineDetail } from '@/hooks/use-machine-detail';
 import { useMachineWorkOrders, useMachineFailures, useDocuments } from '@/hooks/maintenance'; // ✨ OPTIMIZACIÓN: Hooks centralizados
@@ -136,13 +138,13 @@ const MachineHistoryContent: React.FC<{
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'PLANT_RESUME':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+        return 'bg-success-muted text-success';
       case 'MAINTENANCE':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'REPAIR':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+        return 'bg-warning-muted text-warning-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -185,7 +187,7 @@ const MachineHistoryContent: React.FC<{
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2 text-sm text-muted-foreground">Cargando historial...</span>
       </div>
     );
@@ -248,7 +250,7 @@ const MachineHistoryContent: React.FC<{
                   <h4 className="text-xs text-muted-foreground mb-1">Herramientas Utilizadas del Pañol:</h4>
                   <div className="flex flex-wrap gap-2">
                     {record.toolsUsed.map((tool, index) => (
-                      <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                      <Badge key={index} variant="outline" className="bg-info-muted text-info-muted-foreground border-info-muted">
                         {tool}
                       </Badge>
                     ))}
@@ -389,8 +391,8 @@ const MachineSolutionsContent: React.FC<{
     return (
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <div className="p-4 rounded-full bg-amber-100 dark:bg-amber-900/20 mb-4">
-            <Lightbulb className="h-10 w-10 text-amber-500" />
+          <div className="p-4 rounded-full bg-warning-muted mb-4">
+            <Lightbulb className="h-10 w-10 text-warning" />
           </div>
           <h3 className="text-base font-semibold mb-2">Sin soluciones documentadas</h3>
           <p className="text-sm text-muted-foreground text-center max-w-md">
@@ -535,30 +537,30 @@ const MachineMaintenanceContent: React.FC<{
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'LOW':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        return 'bg-muted text-foreground';
       case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'HIGH':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'URGENT':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        return 'bg-muted text-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pendiente':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'en_progreso':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'completado':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+        return 'bg-success-muted text-success';
       case 'cancelado':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -581,7 +583,7 @@ const MachineMaintenanceContent: React.FC<{
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Cargando información de mantenimiento...</span>
       </div>
     );
@@ -596,9 +598,9 @@ const MachineMaintenanceContent: React.FC<{
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Mantenimientos Preventivos</p>
-                <p className="text-2xl font-bold text-blue-600">{preventiveMaintenance.length}</p>
+                <p className="text-2xl font-bold text-info-muted-foreground">{preventiveMaintenance.length}</p>
               </div>
-              <Settings className="h-8 w-8 text-blue-600" />
+              <Settings className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -608,9 +610,9 @@ const MachineMaintenanceContent: React.FC<{
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Órdenes Pendientes</p>
-                <p className="text-2xl font-bold text-orange-600">{workOrders.filter(wo => wo.status === 'pendiente').length}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{workOrders.filter(wo => wo.status === 'pendiente').length}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-orange-600" />
+              <AlertTriangle className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -620,9 +622,9 @@ const MachineMaintenanceContent: React.FC<{
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Órdenes Completadas</p>
-                <p className="text-2xl font-bold text-green-600">{workOrders.filter(wo => wo.status === 'completado').length}</p>
+                <p className="text-2xl font-bold text-success">{workOrders.filter(wo => wo.status === 'completado').length}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -632,7 +634,7 @@ const MachineMaintenanceContent: React.FC<{
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-blue-600" />
+            <Settings className="h-5 w-5 text-info-muted-foreground" />
             Mantenimientos Preventivos Programados
           </CardTitle>
         </CardHeader>
@@ -682,7 +684,7 @@ const MachineMaintenanceContent: React.FC<{
                       <p className="text-sm font-medium mb-2">Herramientas requeridas:</p>
                       <div className="flex flex-wrap gap-2">
                         {maintenance.toolsRequired.map((tool: any, index: number) => (
-                          <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          <Badge key={index} variant="outline" className="bg-info-muted text-info-muted-foreground border-info-muted">
                             {tool.name} x{tool.quantity}
                           </Badge>
                         ))}
@@ -700,7 +702,7 @@ const MachineMaintenanceContent: React.FC<{
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-orange-600" />
+            <ClipboardList className="h-5 w-5 text-warning-muted-foreground" />
             Órdenes de Trabajo de Mantenimiento
           </CardTitle>
         </CardHeader>
@@ -875,7 +877,7 @@ const MachinePreventiveMaintenanceContent: React.FC<{
       case 'HIGH':
         return <Badge variant="destructive">Alta</Badge>;
       case 'MEDIUM':
-        return <Badge variant="default" className="bg-blue-500">Media</Badge>;
+        return <Badge variant="default" className="bg-info">Media</Badge>;
       case 'LOW':
         return <Badge variant="secondary">Baja</Badge>;
       default:
@@ -897,10 +899,10 @@ const MachinePreventiveMaintenanceContent: React.FC<{
     }
     
     if (diffDays <= 7) {
-      return <Badge variant="default" className="bg-orange-500">Próximo</Badge>;
+      return <Badge variant="default" className="bg-warning">Próximo</Badge>;
     }
     
-    return <Badge variant="default" className="bg-green-500">Programado</Badge>;
+    return <Badge variant="default" className="bg-success">Programado</Badge>;
   };
 
   return (
@@ -1020,7 +1022,7 @@ const MachinePreventiveMaintenanceContent: React.FC<{
 
       {/* Selector de Tipo de Mantenimiento */}
       <Dialog open={isTypeSelectorOpen} onOpenChange={setIsTypeSelectorOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="text-xl">Tipo de Mantenimiento</DialogTitle>
             <DialogDescription>
@@ -1030,11 +1032,11 @@ const MachinePreventiveMaintenanceContent: React.FC<{
           <div className="grid grid-cols-1 gap-4 mt-4">
             <Button
               variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:border-green-300"
+              className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-success-muted hover:border-success-muted"
               onClick={() => handleSelectMaintenanceType('preventive')}
             >
-              <div className="bg-green-100 p-2 rounded-lg">
-                <Settings className="h-6 w-6 text-green-600" />
+              <div className="bg-success-muted p-2 rounded-lg">
+                <Settings className="h-6 w-6 text-success" />
               </div>
               <div className="text-center">
                 <div className="font-semibold">Preventivo</div>
@@ -1043,11 +1045,11 @@ const MachinePreventiveMaintenanceContent: React.FC<{
             </Button>
             <Button
               variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-300"
+              className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-warning-muted hover:border-warning-muted"
               onClick={() => handleSelectMaintenanceType('corrective')}
             >
-              <div className="bg-orange-100 p-2 rounded-lg">
-                <Wrench className="h-6 w-6 text-orange-600" />
+              <div className="bg-warning-muted p-2 rounded-lg">
+                <Wrench className="h-6 w-6 text-warning-muted-foreground" />
               </div>
               <div className="text-center">
                 <div className="font-semibold">Correctivo</div>
@@ -1076,9 +1078,10 @@ const MachineFailuresContent: React.FC<{
   components: MachineComponent[];
 }> = ({ machineId, machineName, components }) => {
   const { currentCompany } = useCompany();
+  const confirm = useConfirm();
   // 🔍 PERMISOS
   const { hasPermission: canRegisterFailure } = usePermissionRobust('registrar_falla');
-  
+
   const [failures, setFailures] = useState<any[]>([]);
   const [loadingFailures, setLoadingFailures] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -1269,7 +1272,7 @@ const MachineFailuresContent: React.FC<{
       case 'HIGH':
         return <Badge variant="destructive">Alta</Badge>;
       case 'MEDIUM':
-        return <Badge variant="default" className="bg-blue-500">Media</Badge>;
+        return <Badge variant="default" className="bg-info">Media</Badge>;
       case 'LOW':
         return <Badge variant="secondary">Baja</Badge>;
       default:
@@ -1299,15 +1302,15 @@ const MachineFailuresContent: React.FC<{
   const getFailureTypeBadge = (type: string) => {
     switch (type) {
       case 'MECANICA':
-        return <Badge variant="outline" className="border-blue-500 text-blue-500">Mecánica</Badge>;
+        return <Badge variant="outline" className="border-info text-info">Mecánica</Badge>;
       case 'ELECTRICA':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">Eléctrica</Badge>;
+        return <Badge variant="outline" className="border-warning text-warning">Eléctrica</Badge>;
       case 'HIDRAULICA':
-        return <Badge variant="outline" className="border-purple-500 text-purple-500">Hidráulica</Badge>;
+        return <Badge variant="outline" className="border-primary text-primary">Hidráulica</Badge>;
       case 'NEUMATICA':
-        return <Badge variant="outline" className="border-cyan-500 text-cyan-500">Neumática</Badge>;
+        return <Badge variant="outline" className="border-info text-info">Neumática</Badge>;
       case 'AUTOMATIZACION':
-        return <Badge variant="outline" className="border-green-500 text-green-500">Automatización</Badge>;
+        return <Badge variant="outline" className="border-success text-success">Automatización</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
@@ -1631,7 +1634,7 @@ const MachineFailuresContent: React.FC<{
                           e.stopPropagation();
                           handleFailureOccurred(failure);
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0 text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
                         title="Ocurrió falla"
                       >
                         <AlertTriangle className="h-3 w-3" />
@@ -1639,11 +1642,16 @@ const MachineFailuresContent: React.FC<{
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          if (window.confirm(`¿Estás seguro de que quieres eliminar la falla "${failure.title}"?`)) {
-                            handleDeleteFailure(failure);
-                          }
+                          const ok = await confirm({
+                            title: 'Eliminar falla',
+                            description: `¿Estás seguro de que quieres eliminar la falla "${failure.title}"?`,
+                            confirmText: 'Eliminar',
+                            variant: 'destructive',
+                          });
+                          if (!ok) return;
+                          handleDeleteFailure(failure);
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive h-7 w-7 p-0"
                       >
@@ -1807,9 +1815,9 @@ export const DocumentListViewer: React.FC<{
     const fileType = getFileType(fileName);
     switch (fileType) {
       case 'pdf':
-        return <FileText className="h-4 w-4 text-red-500" />;
+        return <FileText className="h-4 w-4 text-destructive" />;
       case 'docx':
-        return <File className="h-4 w-4 text-blue-500" />;
+        return <File className="h-4 w-4 text-info" />;
       default:
         return <FileText className="h-4 w-4 text-muted-foreground" />;
     }
@@ -1860,7 +1868,7 @@ export const DocumentListViewer: React.FC<{
                   </button>
                   {showDelete && onDelete && (
                     <button
-                      className="text-destructive hover:text-red-700 transition p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20"
+                      className="text-destructive hover:text-destructive transition p-1 rounded hover:bg-destructive/10"
                       title="Eliminar"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1878,7 +1886,7 @@ export const DocumentListViewer: React.FC<{
       )}
       {error && <div className="text-xs text-destructive mt-2">{error}</div>}
       <PdfDialog open={showDocumentModal} onOpenChange={setShowDocumentModal}>
-        <PdfDialogContent className="max-w-[99vw] w-[99vw] h-[98vh] flex flex-col p-3 md:p-6" aria-describedby="document-viewer-description">
+        <PdfDialogContent size="full" className="p-3 md:p-6" aria-describedby="document-viewer-description">
           <span id="document-viewer-description" className="sr-only">
             Visor de documentos PDF y DOCX en pantalla completa
           </span>
@@ -1929,6 +1937,7 @@ export const DocumentListViewer: React.FC<{
 
 const DocumentacionTab: React.FC<{ machineId: string; canEditMachine: boolean }> = ({ machineId, canEditMachine }) => {
   const { user } = useAuth();
+  const confirm = useConfirm();
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -2010,7 +2019,13 @@ const DocumentacionTab: React.FC<{ machineId: string; canEditMachine: boolean }>
   };
 
   const handleDeleteDocument = async (docId: string | number) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este documento?')) return;
+    const ok = await confirm({
+      title: 'Eliminar documento',
+      description: '¿Seguro que deseas eliminar este documento?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     if (!user) {
       setError('Debes estar autenticado para eliminar documentos');
@@ -2133,7 +2148,7 @@ const DocumentacionTab: React.FC<{ machineId: string; canEditMachine: boolean }>
         onMoveToFolder={canEditMachine ? handleMoveToFolder : undefined}
         storageKey={`machine_${machineId}`}
       />
-      {success && <div className="text-xs text-green-600 mt-2">{success}</div>}
+      {success && <div className="text-xs text-success mt-2">{success}</div>}
     </div>
   );
 };
@@ -2167,7 +2182,8 @@ export default function MachineDetailDialog({
   selectedComponentId
 }: MachineDetailDialogProps) {
   const { sectors } = useCompany();
-  
+  const confirm = useConfirm();
+
   // 🔍 PERMISOS DE MÁQUINAS
   const { hasPermission: canCreateMachine } = usePermissionRobust('crear_maquina');
   const { hasPermission: canEditMachine } = usePermissionRobust('editar_maquina');
@@ -2280,8 +2296,10 @@ export default function MachineDetailDialog({
     });
   }, []);
 
+  const [showPreventiveDialog, setShowPreventiveDialog] = useState(false);
   const [showCorrectiveDialog, setShowCorrectiveDialog] = useState(false);
   const [showWorkOrderWizard, setShowWorkOrderWizard] = useState(false);
+  const [workOrderWizardType, setWorkOrderWizardType] = useState<string | null>(null);
   const [showFailureReportDialog, setShowFailureReportDialog] = useState(false);
   const [showDisassembleDialog, setShowDisassembleDialog] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState<MachineComponent | null>(null);
@@ -2595,9 +2613,9 @@ export default function MachineDetailDialog({
   const getMachineStatusBadge = (status: MachineStatus) => {
     switch (status) {
       case MachineStatus.ACTIVE:
-        return <Badge variant="default" className="bg-green-500">Activo</Badge>;
+        return <Badge variant="default" className="bg-success">Activo</Badge>;
       case MachineStatus.OUT_OF_SERVICE:
-        return <Badge variant="secondary" className="bg-amber-500">Fuera de servicio</Badge>;
+        return <Badge variant="secondary" className="bg-warning">Fuera de servicio</Badge>;
       case MachineStatus.DECOMMISSIONED:
         return <Badge variant="destructive">Baja</Badge>;
       default:
@@ -2691,7 +2709,13 @@ export default function MachineDetailDialog({
   };
 
   const handleDeleteComponent = async (componentId: number) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este componente y todos sus subcomponentes?')) return;
+    const ok = await confirm({
+      title: 'Eliminar componente',
+      description: '¿Seguro que deseas eliminar este componente y todos sus subcomponentes?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/components/${componentId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar el componente');
@@ -2796,11 +2820,15 @@ export default function MachineDetailDialog({
 
   const handleDeleteMachine = async (machineToDelete: Machine) => {
     log('🔍 [MACHINE DETAIL] handleDeleteMachine llamado con:', machineToDelete.id);
-    
+
     // Confirmar eliminación
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar la máquina "${machineToDelete.name}"? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar máquina',
+      description: `¿Estás seguro de que quieres eliminar la máquina "${machineToDelete.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     
     try {
       // Cerrar el modal inmediatamente para evitar conflictos
@@ -2847,7 +2875,9 @@ export default function MachineDetailDialog({
                 onEdit={onEdit && canEditMachine ? () => onEdit(machine) : undefined}
                 onDelete={onDelete && canDeleteMachine ? () => handleDeleteMachine(machine) : undefined}
                 onDisassemble={canDisassembleMachine ? () => setShowDisassembleDialog(true) : undefined}
-                onNewOrder={() => setShowWorkOrderWizard(true)}
+                onNewPreventive={() => setShowPreventiveDialog(true)}
+                onNewCorrective={() => { setWorkOrderWizardType('CORRECTIVE'); setShowWorkOrderWizard(true); }}
+                onNewOrder={() => { setWorkOrderWizardType(null); setShowWorkOrderWizard(true); }}
                 onReportFailure={() => setShowFailureReportDialog(true)}
                 canEdit={canEditMachine}
                 canDelete={canDeleteMachine}
@@ -2862,47 +2892,47 @@ export default function MachineDetailDialog({
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col flex-1 overflow-x-hidden">
               <div className="mb-2 flex-shrink-0 px-1 sm:flex sm:justify-center">
                 <TabsList className="relative items-center justify-start text-muted-foreground w-full sm:w-fit gap-0.5 inline-flex h-9 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden">
-                  <TabsTrigger value="overview" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="overview" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <BarChart3 className="h-3.5 w-3.5 shrink-0" />
                     <span>Resumen</span>
                   </TabsTrigger>
-                  <TabsTrigger value="info" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="info" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Info className="h-3.5 w-3.5 shrink-0" />
                     <span>Info</span>
                   </TabsTrigger>
-                  <TabsTrigger value="schema" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="schema" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Network className="h-3.5 w-3.5 shrink-0" />
                     <span>Esquema</span>
                   </TabsTrigger>
-                  <TabsTrigger value="3d-viewer" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="3d-viewer" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Box className="h-3.5 w-3.5 shrink-0" />
                     <span>3D</span>
                   </TabsTrigger>
-                  <TabsTrigger value="maintenance" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="maintenance" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Settings className="h-3.5 w-3.5 shrink-0" />
-                    <span>Mant.</span>
+                    <span>Mantenimiento</span>
                     {headerWorkOrders?.length > 0 ? (
-                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px] bg-info-muted text-info-muted-foreground">
                         {headerWorkOrders.length}
                       </Badge>
                     ) : null}
                   </TabsTrigger>
-                  <TabsTrigger value="failures" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="failures" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                     <span>Fallas</span>
                     {headerFailures?.length > 0 ? (
-                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px] bg-destructive/10 text-destructive">
                         {headerFailures.length}
                       </Badge>
                     ) : null}
                   </TabsTrigger>
-                  <TabsTrigger value="solutions" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="solutions" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                    <span>Soluc.</span>
+                    <span>Soluciones</span>
                   </TabsTrigger>
-                  <TabsTrigger value="components" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="components" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Wrench className="h-3.5 w-3.5 shrink-0" />
-                    <span>Comp.</span>
+                    <span>Componentes</span>
                     {componentList?.length ? (
                       <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">
                         {componentList.length}
@@ -2910,19 +2940,19 @@ export default function MachineDetailDialog({
                     ) : null}
                   </TabsTrigger>
                   {canViewMachineHistory && (
-                    <TabsTrigger value="history" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                    <TabsTrigger value="history" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                       <History className="h-3.5 w-3.5 shrink-0" />
-                      <span>Hist.</span>
+                      <span>Historial</span>
                     </TabsTrigger>
                   )}
-                  <TabsTrigger value="docs" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="docs" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span>Docs</span>
+                    <span>Documentos</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              <div className={`flex-1 min-h-0 ${activeTab === 'schema' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+              <div className={cn('flex-1 min-h-0', activeTab === 'schema' ? 'overflow-hidden' : 'overflow-y-auto')}>
               <TabsContent value="overview" className="mt-0">
                 {visitedTabs.has('overview') && (
                   <MachineOverviewTab
@@ -3143,7 +3173,7 @@ export default function MachineDetailDialog({
                                   {component.parentId === null || component.parentId === undefined ? 'Parte Principal' : getComponentTypeLabel(component.type)}
                                 </Badge>
                                 {component.system && (
-                                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-200 px-1.5 py-0">
+                                  <Badge variant="outline" className="text-[10px] bg-info-muted text-info-muted-foreground border-info-muted px-1.5 py-0">
                                     {getSystemLabel(component.system)}
                                   </Badge>
                                 )}
@@ -3342,6 +3372,16 @@ export default function MachineDetailDialog({
         </>
       )}
 
+      {/* Diálogo de Nuevo Preventivo */}
+      {showPreventiveDialog && (
+        <PreventiveMaintenanceDialog
+          isOpen={showPreventiveDialog}
+          onClose={() => setShowPreventiveDialog(false)}
+          preselectedMachineId={machine.id}
+          onSave={() => setShowPreventiveDialog(false)}
+        />
+      )}
+
       {/* Diálogo de Nueva OT Correctiva */}
       {showCorrectiveDialog && (
         <CorrectiveMaintenanceDialog
@@ -3358,11 +3398,12 @@ export default function MachineDetailDialog({
       {showWorkOrderWizard && (
         <WorkOrderWizard
           isOpen={showWorkOrderWizard}
-          onClose={() => setShowWorkOrderWizard(false)}
+          onClose={() => { setShowWorkOrderWizard(false); setWorkOrderWizardType(null); }}
           preselectedMachine={{ id: machine.id, name: machine.name }}
+          preselectedType={workOrderWizardType}
           onSubmit={async (data) => {
             setShowWorkOrderWizard(false);
-            // Refresh data
+            setWorkOrderWizardType(null);
             refetchMachineDetail?.();
           }}
         />
@@ -4118,7 +4159,7 @@ const FailureDialog: React.FC<{
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Registrar Nueva Falla</DialogTitle>
           <DialogDescription>
@@ -4158,15 +4199,15 @@ const FailureDialog: React.FC<{
               {formData.selectedComponents.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-info rounded-full"></div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Componentes Principales ({formData.selectedComponents.length})</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {formData.selectedComponents.map((componentId) => {
                       const component = components.find(c => Number(c.id) === componentId);
                       return component ? (
-                        <div key={componentId} className="group flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200">
-                          <Cog className="h-3 w-3 text-blue-600" />
+                        <div key={componentId} className="group flex items-center gap-2 bg-info-muted border border-info-muted text-info-muted-foreground px-3 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200">
+                          <Cog className="h-3 w-3 text-info-muted-foreground" />
                           <span>{component.name}</span>
                           <button
                             type="button"
@@ -4178,7 +4219,7 @@ const FailureDialog: React.FC<{
                                 return !subcomponent;
                               })
                             })}
-                            className="opacity-0 group-hover:opacity-100 hover:bg-blue-200 rounded-full w-5 h-5 flex items-center justify-center transition-all duration-200 text-blue-600 hover:text-blue-800"
+                            className="opacity-0 group-hover:opacity-100 hover:bg-info-muted rounded-full w-5 h-5 flex items-center justify-center transition-all duration-200 text-info-muted-foreground hover:text-info-muted-foreground"
                           >
                             ×
                           </button>
@@ -4200,7 +4241,7 @@ const FailureDialog: React.FC<{
                 return level1Subcomponents.length > 0 ? (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-success rounded-full"></div>
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Subcomponentes ({level1Subcomponents.length})</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -4208,10 +4249,10 @@ const FailureDialog: React.FC<{
                         const subcomponent = components
                           .flatMap(comp => comp.children || [])
                           .find(child => Number(child.id) === subcomponentId);
-                        
+
                         return subcomponent ? (
-                          <div key={subcomponentId} className="group flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200">
-                            <Wrench className="h-3 w-3 text-green-600" />
+                          <div key={subcomponentId} className="group flex items-center gap-2 bg-success-muted border border-success-muted text-success px-3 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200">
+                            <Wrench className="h-3 w-3 text-success" />
                             <span>{subcomponent.name}</span>
                             <button
                               type="button"
@@ -4219,7 +4260,7 @@ const FailureDialog: React.FC<{
                                 ...formData,
                                 selectedSubcomponents: formData.selectedSubcomponents.filter(id => id !== subcomponentId)
                               })}
-                              className="opacity-0 group-hover:opacity-100 hover:bg-green-200 rounded-full w-5 h-5 flex items-center justify-center transition-all duration-200 text-green-600 hover:text-green-800"
+                              className="opacity-0 group-hover:opacity-100 hover:bg-success-muted rounded-full w-5 h-5 flex items-center justify-center transition-all duration-200 text-success hover:text-success"
                             >
                               ×
                             </button>
@@ -4244,7 +4285,7 @@ const FailureDialog: React.FC<{
                 return level2Subcomponents.length > 0 ? (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sub-subcomponentes ({level2Subcomponents.length})</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -4262,8 +4303,8 @@ const FailureDialog: React.FC<{
                           );
                         
                         return subSubcomponent ? (
-                          <div key={subcomponentId} className="group flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-700 px-3 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200">
-                            <Wrench className="h-3 w-3 text-purple-600" />
+                          <div key={subcomponentId} className="group flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary px-3 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200">
+                            <Wrench className="h-3 w-3 text-primary" />
                             <span>{subSubcomponent.name}</span>
                             <span className="text-xs opacity-70">({parentSubcomponent?.name})</span>
                             <button
@@ -4272,7 +4313,7 @@ const FailureDialog: React.FC<{
                                 ...formData,
                                 selectedSubcomponents: formData.selectedSubcomponents.filter(id => id !== subcomponentId)
                               })}
-                              className="opacity-0 group-hover:opacity-100 hover:bg-purple-200 rounded-full w-5 h-5 flex items-center justify-center transition-all duration-200 text-purple-600 hover:text-purple-800"
+                              className="opacity-0 group-hover:opacity-100 hover:bg-primary/15 rounded-full w-5 h-5 flex items-center justify-center transition-all duration-200 text-primary hover:text-primary"
                             >
                               ×
                             </button>
@@ -4381,14 +4422,14 @@ const FailureDialog: React.FC<{
               />
               <label
                 htmlFor="failure-files-input"
-                className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors bg-background"
+                className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors bg-background"
               >
                 <div className="text-center">
-                  <UploadCloud className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">
+                  <UploadCloud className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
                     Haz clic o arrastra archivos aquí
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     PDF, DOC, XLS, imágenes hasta 10MB
                   </p>
                 </div>
@@ -4404,7 +4445,7 @@ const FailureDialog: React.FC<{
                     <button
                       type="button"
                       onClick={() => removeFailureFile(index)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-destructive hover:text-destructive"
                     >
                       ×
                     </button>
@@ -4428,7 +4469,7 @@ const FailureDialog: React.FC<{
             >
               {isSavingFailure ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Guardando...
                 </>
               ) : (
@@ -4442,7 +4483,7 @@ const FailureDialog: React.FC<{
             >
               {isSavingFailure ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Creando...
                 </>
               ) : (
@@ -4455,7 +4496,7 @@ const FailureDialog: React.FC<{
 
       {/* Modal para cargar solución */}
       <Dialog open={showSolutionDialog} onOpenChange={setShowSolutionDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Cargar Solución para la Falla</DialogTitle>
             <DialogDescription>
@@ -4465,12 +4506,12 @@ const FailureDialog: React.FC<{
           
           {/* Validación de failureId */}
           {!failureId && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-                <span className="font-medium text-red-800">Error: No hay falla seleccionada</span>
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <span className="font-medium text-destructive">Error: No hay falla seleccionada</span>
               </div>
-              <p className="text-sm text-red-700 mt-2">
+              <p className="text-sm text-destructive mt-2">
                 No se pudo obtener el ID de la falla. Por favor, cierra este modal y vuelve a intentar.
               </p>
             </div>
@@ -4503,14 +4544,14 @@ const FailureDialog: React.FC<{
                 />
                 <label
                   htmlFor="solution-files-input"
-                  className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors bg-background"
+                  className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors bg-background"
                 >
                   <div className="text-center">
-                    <UploadCloud className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">
+                    <UploadCloud className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
                       Haz clic o arrastra archivos aquí
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       PDF, DOC, XLS, imágenes hasta 10MB
                     </p>
                   </div>
@@ -4526,7 +4567,7 @@ const FailureDialog: React.FC<{
                       <button
                         type="button"
                         onClick={() => removeSolutionFile(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-destructive hover:text-destructive"
                       >
                         ×
                       </button>
@@ -4657,7 +4698,7 @@ const FailureDialog: React.FC<{
                 {formData.sparePartsUsed.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">
                     {formData.sparePartsUsed.map((part) => (
-                      <div key={part.id} className="flex items-center gap-1 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                      <div key={part.id} className="flex items-center gap-1 bg-destructive/10 text-destructive px-2 py-1 rounded-full text-xs">
                         <span>{part.name}</span>
                         <button
                           type="button"
@@ -4665,7 +4706,7 @@ const FailureDialog: React.FC<{
                             ...formData,
                             sparePartsUsed: formData.sparePartsUsed.filter(p => p.id !== part.id)
                           })}
-                          className="ml-1 hover:bg-red-200 rounded-full w-4 h-4 flex items-center justify-center"
+                          className="ml-1 hover:bg-destructive/20 rounded-full w-4 h-4 flex items-center justify-center"
                         >
                           ×
                         </button>
@@ -4676,7 +4717,7 @@ const FailureDialog: React.FC<{
                 
                 {/* Selector de repuestos filtrados por componentes con búsqueda */}
                 <div>
-                  <label className="text-sm font-medium text-gray-600 mb-2 block">
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
                     🔧 Repuestos utilizados {formData.selectedComponents.length > 0 || formData.selectedSubcomponents.length > 0 ? '(solo repuestos de componentes seleccionados)' : '(selecciona componentes primero)'}
                   </label>
                   <Popover>
@@ -4746,7 +4787,7 @@ const FailureDialog: React.FC<{
               >
                 {isSavingSolution ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Guardando Solución...
                   </>
                 ) : !failureId ? (
@@ -4762,7 +4803,7 @@ const FailureDialog: React.FC<{
 
       {/* Modal del selector de esquema */}
       <Dialog open={showSchemaSelector} onOpenChange={setShowSchemaSelector}>
-        <DialogContent className="max-w-[99vw] max-h-[90vh] overflow-y-auto" style={{ width: '99vw', maxWidth: '99vw' }}>
+        <DialogContent size="full">
           <DialogHeader className="border-b pb-4">
             <div className="flex items-center justify-between">
               <div>
@@ -4902,11 +4943,11 @@ const FailureDialog: React.FC<{
                         .map((component) => (
                           <Card 
                             key={component.id}
-                            className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                              formData.selectedComponents.includes(Number(component.id)) 
-                                ? 'ring-2 ring-primary bg-primary/5' 
+                            className={cn('cursor-pointer transition-all hover:shadow-lg hover:scale-105',
+                              formData.selectedComponents.includes(Number(component.id))
+                                ? 'ring-2 ring-primary bg-primary/5'
                                 : 'hover:bg-muted/50'
-                            }`}
+                            )}
                             onClick={() => {
                               const componentId = Number(component.id);
                               if (formData.selectedComponents.includes(componentId)) {
@@ -4958,11 +4999,11 @@ const FailureDialog: React.FC<{
                         .map((child: any) => (
                           <Card 
                             key={`${child.parentName}-${child.id}-${child.level}`}
-                            className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                              formData.selectedSubcomponents.includes(Number(child.id)) 
-                                ? 'ring-2 ring-primary bg-primary/5' 
+                            className={cn('cursor-pointer transition-all hover:shadow-lg hover:scale-105',
+                              formData.selectedSubcomponents.includes(Number(child.id))
+                                ? 'ring-2 ring-primary bg-primary/5'
                                 : 'hover:bg-muted/50'
-                            }`}
+                            )}
                             onClick={() => {
                               const subcomponentId = Number(child.id);
                               if (formData.selectedSubcomponents.includes(subcomponentId)) {
@@ -5019,11 +5060,11 @@ const FailureDialog: React.FC<{
                         .map((child: any) => (
                           <Card 
                             key={`${child.grandParentName}-${child.parentName}-${child.id}-${child.level}`}
-                            className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                              formData.selectedSubcomponents.includes(Number(child.id)) 
-                                ? 'ring-2 ring-primary bg-primary/5' 
+                            className={cn('cursor-pointer transition-all hover:shadow-lg hover:scale-105',
+                              formData.selectedSubcomponents.includes(Number(child.id))
+                                ? 'ring-2 ring-primary bg-primary/5'
                                 : 'hover:bg-muted/50'
-                            }`}
+                            )}
                             onClick={() => {
                               const subcomponentId = Number(child.id);
                               if (formData.selectedSubcomponents.includes(subcomponentId)) {
@@ -5251,15 +5292,15 @@ const FailureDialog: React.FC<{
 
     {/* Modal para visualizar archivos */}
     <Dialog open={showFileViewer} onOpenChange={setShowFileViewer}>
-      <DialogContent className="max-w-5xl max-h-[95vh]">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <File className="h-5 w-5 text-blue-600" />
+            <div className="w-10 h-10 bg-info-muted rounded-lg flex items-center justify-center">
+              <File className="h-5 w-5 text-info-muted-foreground" />
             </div>
             <div>
               <div className="text-lg font-bold">{viewingFile?.name}</div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 Visualizando archivo de solución
               </div>
             </div>
@@ -5268,10 +5309,10 @@ const FailureDialog: React.FC<{
         
         <div className="py-6">
           {viewingFile && (
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-muted rounded-xl p-6">
               {/* PDF */}
               {viewingFile.type === 'application/pdf' && (
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="bg-background rounded-lg shadow-lg overflow-hidden">
                   <iframe
                     src={viewingFile.url}
                     className="w-full h-[70vh] border-0"
@@ -5282,7 +5323,7 @@ const FailureDialog: React.FC<{
               
               {/* Imágenes */}
               {(viewingFile.type.startsWith('image/')) && (
-                <div className="flex items-center justify-center h-[70vh] bg-white rounded-lg shadow-lg">
+                <div className="flex items-center justify-center h-[70vh] bg-background rounded-lg shadow-lg">
                   <img
                     src={viewingFile.url}
                     alt={viewingFile.name}
@@ -5294,18 +5335,18 @@ const FailureDialog: React.FC<{
               {/* Otros documentos */}
               {!viewingFile.type.startsWith('image/') && 
                viewingFile.type !== 'application/pdf' && (
-                <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg shadow-lg p-12">
-                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                    <File className="h-10 w-10 text-blue-600" />
+                <div className="flex flex-col items-center justify-center h-[70vh] bg-background rounded-lg shadow-lg p-12">
+                  <div className="w-20 h-20 bg-info-muted rounded-full flex items-center justify-center mb-6">
+                    <File className="h-10 w-10 text-info-muted-foreground" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{viewingFile.name}</h3>
-                  <p className="text-gray-600 mb-6 text-center max-w-md">
+                  <h3 className="text-xl font-bold text-foreground mb-3">{viewingFile.name}</h3>
+                  <p className="text-muted-foreground mb-6 text-center max-w-md">
                     Este tipo de archivo no se puede previsualizar directamente. 
                     Puedes descargarlo para verlo en tu aplicación predeterminada.
                   </p>
                   <Button
                     onClick={() => window.open(viewingFile.url, '_blank')}
-                    className="flex items-center gap-3 px-6 py-3 bg-black hover:bg-gray-800"
+                    className="flex items-center gap-3 px-6 py-3 bg-foreground hover:bg-foreground/90 text-background"
                   >
                     <Download className="h-5 w-5" />
                     Descargar archivo
@@ -5316,8 +5357,8 @@ const FailureDialog: React.FC<{
           )}
         </div>
         
-        <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-          <div className="text-sm text-gray-500">
+        <div className="flex justify-between items-center pt-6 border-t border-border">
+          <div className="text-sm text-muted-foreground">
             {viewingFile && (
               <span>
                 Tamaño: {(viewingFile.size / 1024 / 1024).toFixed(2)} MB • 
@@ -5336,7 +5377,7 @@ const FailureDialog: React.FC<{
             {viewingFile && (
               <Button
                 onClick={() => window.open(viewingFile.url, '_blank')}
-                className="flex items-center gap-2 px-6 bg-black hover:bg-gray-800"
+                className="flex items-center gap-2 px-6 bg-foreground hover:bg-foreground/90 text-background"
               >
                 <ExternalLink className="h-4 w-4" />
                 Abrir en nueva pestaña
@@ -5349,7 +5390,7 @@ const FailureDialog: React.FC<{
 
       {/* Modal para crear herramienta */}
       <Dialog open={showCreateToolDialog} onOpenChange={setShowCreateToolDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" />
@@ -5443,7 +5484,7 @@ const FailureDialog: React.FC<{
                 />
                 <label
                   htmlFor="tool-photo-upload"
-                  className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors bg-background"
+                  className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors bg-background"
                 >
                   {newToolData.photo ? (
                     <div className="text-center">
@@ -5459,20 +5500,20 @@ const FailureDialog: React.FC<{
                             e.preventDefault();
                             setNewToolData({...newToolData, photo: null});
                           }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-destructive/90"
                         >
                           ×
                         </button>
                       </div>
-                      <p className="text-sm text-gray-600">{newToolData.photo.name}</p>
+                      <p className="text-sm text-muted-foreground">{newToolData.photo.name}</p>
                     </div>
                   ) : (
                     <div className="text-center">
-                      <UploadCloud className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600">
+                      <UploadCloud className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
                         Haz clic para subir una foto
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         PNG, JPG hasta 5MB
                       </p>
                     </div>
@@ -5496,7 +5537,7 @@ const FailureDialog: React.FC<{
             >
               {uploadingToolPhoto ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Creando...
                 </>
               ) : (
@@ -5524,6 +5565,7 @@ const FailureDetailModal: React.FC<{
   components: MachineComponent[];
   onRefresh?: () => void;
 }> = ({ failure, isOpen, onClose, onEditFailure, onEditSolution, onFailureOccurred, components, onRefresh }) => {
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<'falla' | 'soluciones'>('falla');
   const [occurrences, setOccurrences] = useState<any[]>([]);
   const [loadingOccurrences, setLoadingOccurrences] = useState(false);
@@ -5635,7 +5677,7 @@ const FailureDetailModal: React.FC<{
       case 'HIDRAULICA':
         return <Badge variant="outline">Hidráulica</Badge>;
       case 'AUTOMATIZACION':
-        return <Badge variant="outline" className="border-green-500 text-green-500">Automatización</Badge>;
+        return <Badge variant="outline" className="border-success text-success">Automatización</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
@@ -5677,12 +5719,15 @@ const FailureDetailModal: React.FC<{
   };
 
   const handleDeleteDocument = async (document: any) => {
-    try {
-      // Mostrar confirmación antes de eliminar
-      if (!confirm(`¿Estás seguro de que quieres eliminar el documento "${document.name}"?`)) {
-        return;
-      }
+    const ok = await confirm({
+      title: 'Eliminar documento',
+      description: `¿Estás seguro de que quieres eliminar el documento "${document.name}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
+    try {
       log('Eliminando documento:', document);
       
       let response;
@@ -5723,10 +5768,10 @@ const FailureDetailModal: React.FC<{
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <AlertTriangle className="h-5 w-5 text-destructive" />
             Detalles de Falla
           </DialogTitle>
         </DialogHeader>
@@ -5783,14 +5828,14 @@ const FailureDetailModal: React.FC<{
                     {failure.selectedComponents && failure.selectedComponents.length > 0 && (
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <Cog className="h-3 w-3 text-blue-600" />
+                          <Cog className="h-3 w-3 text-info-muted-foreground" />
                           <span className="text-xs font-medium text-foreground">Componentes Principales:</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {failure.selectedComponents.map((componentId: number, index: number) => {
                             const component = components.find(comp => Number(comp.id) === componentId);
                             return component ? (
-                              <Badge key={index} variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                              <Badge key={index} variant="outline" className="text-xs bg-info-muted border-info-muted text-info-muted-foreground">
                                 {component.name}
                               </Badge>
                             ) : null;
@@ -5803,7 +5848,7 @@ const FailureDetailModal: React.FC<{
                     {failure.selectedSubcomponents && failure.selectedSubcomponents.length > 0 && (
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <Wrench className="h-3 w-3 text-green-600" />
+                          <Wrench className="h-3 w-3 text-success" />
                           <span className="text-xs font-medium text-foreground">Subcomponentes:</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -5812,7 +5857,7 @@ const FailureDetailModal: React.FC<{
                               .flatMap(comp => comp.children || [])
                               .find(child => Number(child.id) === subcomponentId);
                             return subcomponent ? (
-                              <Badge key={index} variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                              <Badge key={index} variant="outline" className="text-xs bg-success-muted border-success-muted text-success">
                                 {subcomponent.name}
                               </Badge>
                             ) : null;
@@ -5937,11 +5982,11 @@ const FailureDetailModal: React.FC<{
                       <div key={`attachment-${index}`} className="flex items-center justify-between p-2 bg-background rounded border">
                         <div className="flex items-center gap-2">
                           {attachment.fileType?.includes('pdf') ? (
-                            <FileText className="h-3 w-3 text-red-500" />
+                            <FileText className="h-3 w-3 text-destructive" />
                           ) : attachment.fileType?.includes('image') ? (
-                            <ImageIcon className="h-3 w-3 text-green-500" />
+                            <ImageIcon className="h-3 w-3 text-success" />
                           ) : (
-                            <File className="h-3 w-3 text-blue-500" />
+                            <File className="h-3 w-3 text-info" />
                           )}
                           <span className="text-xs text-muted-foreground truncate max-w-32">
                             {attachment.fileName || attachment.name}
@@ -5968,7 +6013,7 @@ const FailureDetailModal: React.FC<{
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteDocument(attachment)}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -5994,7 +6039,7 @@ const FailureDetailModal: React.FC<{
               {/* Lista de soluciones aplicadas */}
               {loadingSolutions ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : solutions.length > 0 ? (
                 <div className="space-y-4">
@@ -6002,7 +6047,7 @@ const FailureDetailModal: React.FC<{
                     <div key={solution.id} className="bg-muted/30 border rounded-lg p-4">
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-start gap-3">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                           <div>
                             <h4 className="font-medium text-foreground mb-1">
                               Mantenimiento Correctivo #{index + 1}
@@ -6013,7 +6058,7 @@ const FailureDetailModal: React.FC<{
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          <span className="bg-success-muted text-success text-xs px-2 py-1 rounded-full">
                             Completado
                           </span>
                         </div>
@@ -6155,11 +6200,11 @@ const FailureDetailModal: React.FC<{
                       <div key={`solution-attachment-${index}`} className="flex items-center justify-between p-2 bg-background rounded border">
                         <div className="flex items-center gap-2">
                           {attachment.fileType?.includes('pdf') ? (
-                            <FileText className="h-3 w-3 text-red-500" />
+                            <FileText className="h-3 w-3 text-destructive" />
                           ) : attachment.fileType?.includes('image') ? (
-                            <ImageIcon className="h-3 w-3 text-green-500" />
+                            <ImageIcon className="h-3 w-3 text-success" />
                           ) : (
-                            <File className="h-3 w-3 text-blue-500" />
+                            <File className="h-3 w-3 text-info" />
                           )}
                           <span className="text-xs text-muted-foreground truncate max-w-32">
                             {attachment.fileName || attachment.name}
@@ -6186,7 +6231,7 @@ const FailureDetailModal: React.FC<{
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteDocument(attachment)}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -6251,7 +6296,7 @@ const FailureDetailModal: React.FC<{
 
       {/* Visor de documentos integrado */}
       <Dialog open={showDocumentViewer} onOpenChange={handleCloseDocumentViewer}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -6456,7 +6501,7 @@ const SolutionEditDialog: React.FC<{
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Editar Solución</DialogTitle>
           <DialogDescription>
@@ -6782,7 +6827,7 @@ const FailureEditDialog: React.FC<{
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Editar Falla</DialogTitle>
           <DialogDescription>
@@ -7108,10 +7153,7 @@ const ComponentSelectionModal: React.FC<{
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
-        className="!w-[95vw] !max-w-[95vw] !max-h-[90vh] overflow-y-auto"
-        style={{ width: '95vw', maxWidth: '95vw' }}
-      >
+      <DialogContent size="full">
         <DialogHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -7237,19 +7279,19 @@ const ComponentSelectionModal: React.FC<{
                       return (
                         <div
                           key={component.id}
-                          className={`rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50 ${
-                            isSelected ? 'ring-2 ring-primary border-primary bg-primary/10' : ''
-                          }`}
+                          className={cn('rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50',
+                            isSelected && 'ring-2 ring-primary border-primary bg-primary/10'
+                          )}
                           onClick={() => handleComponentToggle(Number(component.id))}
                         >
                           <div className="p-3">
                             <div className="flex items-center gap-2 mb-1">
-                              <Cog className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-foreground'}`} />
+                              <Cog className={cn('h-4 w-4', isSelected ? 'text-primary' : 'text-foreground')} />
                               <h4 className="font-medium text-xs line-clamp-2">{component.name}</h4>
                             </div>
                             <p className="text-xs text-muted-foreground">Componente</p>
                             {component.system && (
-                              <p className="text-xs text-blue-600 font-medium mt-1">
+                              <p className="text-xs text-info-muted-foreground font-medium mt-1">
                                 {getSystemLabel(component.system)}
                               </p>
                             )}
@@ -7270,19 +7312,19 @@ const ComponentSelectionModal: React.FC<{
                         return (
                           <div
                             key={subcomponent.id}
-                            className={`rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50 ${
-                              isSelected ? 'ring-2 ring-primary border-primary bg-primary/10' : ''
-                            }`}
+                            className={cn('rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50',
+                              isSelected && 'ring-2 ring-primary border-primary bg-primary/10'
+                            )}
                             onClick={() => handleSubcomponentToggle(Number(subcomponent.id))}
                           >
                             <div className="p-3">
                               <div className="flex items-center gap-2 mb-1">
-                                <Wrench className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-foreground'}`} />
+                                <Wrench className={cn('h-4 w-4', isSelected ? 'text-primary' : 'text-foreground')} />
                                 <h4 className="font-medium text-xs line-clamp-2">{subcomponent.name}</h4>
                               </div>
                               <p className="text-xs text-muted-foreground">de {component.name}</p>
                               {subcomponent.system && (
-                                <p className="text-xs text-blue-600 font-medium mt-1">
+                                <p className="text-xs text-info-muted-foreground font-medium mt-1">
                                   {getSystemLabel(subcomponent.system)}
                                 </p>
                               )}

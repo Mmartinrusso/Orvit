@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -44,9 +45,10 @@ import {
   FileText,
   Download,
   Ban,
+  Receipt,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,10 +114,10 @@ type EstadoPago =
   | 'ANULADO';
 
 const ESTADOS_CONFIG: Record<EstadoPago, { label: string; color: string; icon: React.ElementType }> = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Clock },
-  CONFIRMADO: { label: 'Confirmado', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  RECHAZADO: { label: 'Rechazado', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
-  ANULADO: { label: 'Anulado', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: XCircle },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: Clock },
+  CONFIRMADO: { label: 'Confirmado', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  RECHAZADO: { label: 'Rechazado', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: XCircle },
+  ANULADO: { label: 'Anulado', color: 'bg-muted text-muted-foreground border-border', icon: XCircle },
 };
 
 const METODOS_PAGO = [
@@ -340,7 +342,7 @@ export function CobranzasList({
     const config = ESTADOS_CONFIG[estado as EstadoPago] || ESTADOS_CONFIG.PENDIENTE;
     const Icon = config.icon;
     return (
-      <Badge className={`${config.color} border text-[10px] px-1.5 py-0.5 font-medium`}>
+      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -418,13 +420,13 @@ export function CobranzasList({
       {showKPIs && (
         <div className="grid grid-cols-5 gap-3">
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'PENDIENTE' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'PENDIENTE' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'PENDIENTE' ? 'all' : 'PENDIENTE')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-blue-100">
-                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                <div className="p-1.5 rounded-md bg-info-muted">
+                  <Clock className="w-3.5 h-3.5 text-info-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.pendientes}</p>
@@ -435,13 +437,13 @@ export function CobranzasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'CONFIRMADO' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'CONFIRMADO' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'CONFIRMADO' ? 'all' : 'CONFIRMADO')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-green-100">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                <div className="p-1.5 rounded-md bg-success-muted">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.confirmados}</p>
@@ -452,13 +454,13 @@ export function CobranzasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'RECHAZADO' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'RECHAZADO' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'RECHAZADO' ? 'all' : 'RECHAZADO')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-red-100">
-                  <XCircle className="w-3.5 h-3.5 text-red-600" />
+                <div className="p-1.5 rounded-md bg-destructive/10">
+                  <XCircle className="w-3.5 h-3.5 text-destructive" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.rechazados}</p>
@@ -469,13 +471,13 @@ export function CobranzasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'ANULADO' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'ANULADO' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'ANULADO' ? 'all' : 'ANULADO')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-gray-100">
-                  <XCircle className="w-3.5 h-3.5 text-gray-600" />
+                <div className="p-1.5 rounded-md bg-muted">
+                  <XCircle className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.anulados}</p>
@@ -488,11 +490,11 @@ export function CobranzasList({
           <Card className="hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-green-100">
-                  <DollarSign className="w-3.5 h-3.5 text-green-600" />
+                <div className="p-1.5 rounded-md bg-success-muted">
+                  <DollarSign className="w-3.5 h-3.5 text-success" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-green-600">{formatCurrency(kpis.totalMes)}</p>
+                  <p className="text-lg font-bold text-success">{formatCurrency(kpis.totalMes)}</p>
                   <p className="text-[10px] text-muted-foreground">Total Mes</p>
                 </div>
               </div>
@@ -559,37 +561,20 @@ export function CobranzasList({
           onClick={() => { loadPagos(); loadKPIs(); }}
           disabled={loading}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
         </Button>
       </div>
 
       {/* Tabla */}
       {loading ? (
-        <div className="space-y-3">
-          <div className="border rounded-lg">
-            <div className="p-3 bg-muted/30">
-              <Skeleton className="h-4 w-full" />
-            </div>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="p-3 border-t">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-32 hidden sm:block" />
-                  <Skeleton className="h-4 w-16 hidden md:block" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20 ml-auto" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <SkeletonTable rows={5} cols={10} />
       ) : pagos.length === 0 ? (
         <div className="text-center py-12">
-          <Wallet className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No se encontraron pagos</p>
+          <Receipt className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm font-medium">No hay cobranzas</p>
+          <p className="text-xs text-muted-foreground mt-1">Registra un pago para comenzar a gestionar las cobranzas</p>
           {hasActiveFilters && (
-            <Button variant="link" size="sm" onClick={clearFilters}>
+            <Button variant="link" size="sm" onClick={clearFilters} className="mt-2">
               Limpiar filtros
             </Button>
           )}
@@ -644,7 +629,7 @@ export function CobranzasList({
                         <div>
                           <span className="font-medium">{pago.numero}</span>
                           {pago.docType === 'T2' && (
-                            <Badge variant="outline" className="ml-2 text-[9px] px-1 bg-amber-50 text-amber-700 border-amber-200">
+                            <Badge variant="outline" className="ml-2 text-[9px] px-1 bg-warning-muted text-warning-muted-foreground border-warning-muted">
                               NV
                             </Badge>
                           )}
@@ -668,7 +653,7 @@ export function CobranzasList({
                         {formatCurrency(Number(pago.totalPago))}
                       </TableCell>
                       <TableCell className="text-right text-xs hidden sm:table-cell">
-                        <span className={montoAplicado < Number(pago.totalPago) ? 'text-orange-600' : 'text-green-600'}>
+                        <span className={montoAplicado < Number(pago.totalPago) ? 'text-warning-muted-foreground' : 'text-success'}>
                           {formatCurrency(montoAplicado)}
                         </span>
                       </TableCell>
@@ -695,7 +680,7 @@ export function CobranzasList({
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-red-600"
+                                  className="text-destructive"
                                   onClick={() => setAnularDialog({ open: true, pagoId: pago.id, pagoNumero: pago.numero, motivo: '' })}
                                 >
                                   <XCircle className="w-4 h-4 mr-2" />
@@ -770,7 +755,7 @@ export function CobranzasList({
             <AlertDialogCancel onClick={() => setAnularDialog({ open: false, pagoId: null, pagoNumero: '', motivo: '' })}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleAnular}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
               disabled={!anularDialog.motivo.trim()}
             >
               Anular
@@ -792,7 +777,7 @@ export function CobranzasList({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleBulkAction(bulkActionDialog.action)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               Confirmar
             </AlertDialogAction>

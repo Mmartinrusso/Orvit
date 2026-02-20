@@ -247,7 +247,7 @@ export function InstructiveFileUpload({
                     variant="ghost"
                     size="sm"
                     onClick={() => removeAttachment(index)}
-                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                    className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -313,13 +313,13 @@ export function InstructiveFileUpload({
 
         {/* Mensajes de estado */}
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/30 p-2 rounded">
+          <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
             {error}
           </div>
         )}
         
         {success && (
-          <div className="text-sm text-green-600 bg-green-50 dark:bg-green-900/30 p-2 rounded">
+          <div className="text-sm text-success bg-success-muted p-2 rounded">
             {success}
           </div>
         )}

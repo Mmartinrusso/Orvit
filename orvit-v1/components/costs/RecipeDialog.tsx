@@ -648,7 +648,7 @@ export function RecipeDialog({ children, onRecipeCreated }: RecipeDialogProps) {
                     )}
                   </div>
                 </div>
-                <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-300">
+                <div className="mt-3 p-2 bg-info-muted rounded text-xs text-info-muted-foreground">
                   <strong>Información:</strong> Este es el costo de materias primas por batea de producción.
                   El rendimiento configurado permitirá calcular el costo unitario final.
                 </div>

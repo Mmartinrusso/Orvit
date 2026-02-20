@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Loader2, List, Package, Users, ChevronRight } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Company {
   id: number;
@@ -62,6 +63,7 @@ interface DiscountList {
 }
 
 export default function DiscountListsPage() {
+  const confirm = useConfirm();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [discountLists, setDiscountLists] = useState<DiscountList[]>([]);
@@ -190,7 +192,13 @@ export default function DiscountListsPage() {
   };
 
   const handleDeleteList = async (list: DiscountList) => {
-    if (!confirm(`¿Eliminar lista "${list.name}"?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar lista',
+      description: `¿Eliminar lista "${list.name}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`/api/superadmin/discount-lists/${list.id}`, {
@@ -267,7 +275,13 @@ export default function DiscountListsPage() {
   };
 
   const handleDeleteRubro = async (rubro: DiscountListRubro) => {
-    if (!confirm('¿Eliminar este descuento?')) return;
+    const ok = await confirm({
+      title: 'Eliminar descuento',
+      description: '¿Eliminar este descuento?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(
@@ -334,7 +348,13 @@ export default function DiscountListsPage() {
   };
 
   const handleDeleteProduct = async (product: DiscountListProduct) => {
-    if (!confirm('¿Eliminar este descuento?')) return;
+    const ok = await confirm({
+      title: 'Eliminar descuento',
+      description: '¿Eliminar este descuento?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(

@@ -45,11 +45,11 @@ interface Shutdown {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PLANNING: { label: 'Planificación', color: 'bg-blue-100 text-blue-800', icon: Clock },
+  PLANNING: { label: 'Planificación', color: 'bg-info-muted text-info-muted-foreground', icon: Clock },
   APPROVED: { label: 'Aprobada', color: 'bg-purple-100 text-purple-800', icon: CheckCircle2 },
-  IN_PROGRESS: { label: 'En Curso', color: 'bg-yellow-100 text-yellow-800', icon: PlayCircle },
-  COMPLETED: { label: 'Completada', color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
-  CANCELLED: { label: 'Cancelada', color: 'bg-red-100 text-red-800', icon: AlertCircle },
+  IN_PROGRESS: { label: 'En Curso', color: 'bg-warning-muted text-warning-muted-foreground', icon: PlayCircle },
+  COMPLETED: { label: 'Completada', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  CANCELLED: { label: 'Cancelada', color: 'bg-destructive/10 text-destructive', icon: AlertCircle },
 };
 
 export default function ParadasPage() {
@@ -126,7 +126,7 @@ export default function ParadasPage() {
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <PauseCircle className="h-8 w-8 text-blue-500" />
+              <PauseCircle className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -135,9 +135,9 @@ export default function ParadasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Planificación</p>
-                <p className="text-2xl font-bold text-blue-600">{summary.planning || 0}</p>
+                <p className="text-2xl font-bold text-info-muted-foreground">{summary.planning || 0}</p>
               </div>
-              <Clock className="h-8 w-8 text-blue-500" />
+              <Clock className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -157,9 +157,9 @@ export default function ParadasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En Curso</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.inProgress || 0}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{summary.inProgress || 0}</p>
               </div>
-              <PlayCircle className="h-8 w-8 text-yellow-500" />
+              <PlayCircle className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -168,9 +168,9 @@ export default function ParadasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completadas</p>
-                <p className="text-2xl font-bold text-green-600">{summary.completed || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.completed || 0}</p>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>

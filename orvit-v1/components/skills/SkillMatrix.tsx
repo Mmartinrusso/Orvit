@@ -113,11 +113,11 @@ export function SkillMatrix({ companyId }: SkillMatrixProps) {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
               Verificado
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
               Por vencer
             </div>
           </div>
@@ -166,7 +166,7 @@ export function SkillMatrix({ companyId }: SkillMatrixProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-white z-10 min-w-[200px]">
+                  <TableHead className="sticky left-0 bg-background z-10 min-w-[200px]">
                     Usuario
                   </TableHead>
                   {filteredSkills.map((skill: { id: number; name: string; code?: string }) => (
@@ -195,7 +195,7 @@ export function SkillMatrix({ companyId }: SkillMatrixProps) {
                 ) : (
                   filteredUsers.map((user: UserSkillData) => (
                     <TableRow key={user.userId}>
-                      <TableCell className="sticky left-0 bg-white z-10 font-medium">
+                      <TableCell className="sticky left-0 bg-background z-10 font-medium">
                         {user.userName}
                       </TableCell>
                       {filteredSkills.map((skill: { id: number }) => {
@@ -210,15 +210,15 @@ export function SkillMatrix({ companyId }: SkillMatrixProps) {
                                 <SkillLevelIndicator level={userSkill.level} />
                                 <div className="flex gap-0.5">
                                   {userSkill.isVerified && (
-                                    <CheckCircle className="h-3 w-3 text-green-500" />
+                                    <CheckCircle className="h-3 w-3 text-success" />
                                   )}
                                   {isExpiringSoon && (
-                                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                    <AlertTriangle className="h-3 w-3 text-warning-muted-foreground" />
                                   )}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-gray-300">-</span>
+                              <span className="text-border">-</span>
                             )}
                           </TableCell>
                         );

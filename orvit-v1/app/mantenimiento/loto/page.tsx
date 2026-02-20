@@ -264,8 +264,8 @@ export default function LOTOPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <Lock className="h-6 w-6 text-red-600" />
+            <div className="p-2 bg-destructive/10 rounded-lg">
+              <Lock className="h-6 w-6 text-destructive" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">LOTO (Bloqueo/Etiquetado)</h1>
@@ -276,13 +276,13 @@ export default function LOTOPage() {
 
         {/* Active LOTO Alert */}
         {activeExecutions.length > 0 && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-destructive/30 bg-destructive/10">
             <CardHeader className="pb-2">
-              <CardTitle className="text-red-700 flex items-center gap-2">
+              <CardTitle className="text-destructive flex items-center gap-2">
                 <Lock className="h-5 w-5" />
                 LOTO Activos ({activeExecutions.length})
               </CardTitle>
-              <CardDescription className="text-red-600">
+              <CardDescription className="text-destructive">
                 Los siguientes equipos estan actualmente bloqueados
               </CardDescription>
             </CardHeader>
@@ -291,7 +291,7 @@ export default function LOTOPage() {
                 {activeExecutions.slice(0, 5).map((exec) => (
                   <div
                     key={exec.id}
-                    className="flex items-center justify-between p-2 bg-white rounded-lg border cursor-pointer hover:bg-gray-50"
+                    className="flex items-center justify-between p-2 bg-background rounded-lg border cursor-pointer hover:bg-muted"
                     onClick={() => {
                       const proc = procedures.find(p => p.id === exec.procedureId);
                       if (proc) {
@@ -311,12 +311,12 @@ export default function LOTOPage() {
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       {exec.zeroEnergyVerified ? (
-                        <Badge variant="outline" className="border-green-300 text-green-700">
+                        <Badge variant="outline" className="border-success-muted text-success">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Verificado
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-yellow-300 text-yellow-700">
+                        <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground">
                           Pendiente verificacion
                         </Badge>
                       )}

@@ -210,10 +210,10 @@ export default function FlujoCajaPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Ingresos Proyectados</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               +{formatCurrency(totalIngresosProyectados)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -225,10 +225,10 @@ export default function FlujoCajaPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Egresos Proyectados</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               -{formatCurrency(totalEgresosProyectados)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -237,13 +237,13 @@ export default function FlujoCajaPage() {
           </CardContent>
         </Card>
 
-        <Card className={saldoProyectado >= 0 ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'}>
+        <Card className={saldoProyectado >= 0 ? 'bg-success-muted' : 'bg-destructive/10'}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Saldo Proyectado</CardTitle>
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${saldoProyectado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${saldoProyectado >= 0 ? 'text-success' : 'text-destructive'}`}>
               {formatCurrency(saldoProyectado)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -283,7 +283,7 @@ export default function FlujoCajaPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {dia.ingresos > 0 ? (
-                      <span className="text-green-600 flex items-center justify-end gap-1">
+                      <span className="text-success flex items-center justify-end gap-1">
                         <ArrowUpCircle className="h-3 w-3" />
                         +{formatCurrency(dia.ingresos)}
                       </span>
@@ -293,7 +293,7 @@ export default function FlujoCajaPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {dia.egresos > 0 ? (
-                      <span className="text-red-600 flex items-center justify-end gap-1">
+                      <span className="text-destructive flex items-center justify-end gap-1">
                         <ArrowDownCircle className="h-3 w-3" />
                         -{formatCurrency(dia.egresos)}
                       </span>
@@ -302,7 +302,7 @@ export default function FlujoCajaPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    <span className={dia.saldoAcumulado >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    <span className={dia.saldoAcumulado >= 0 ? 'text-success' : 'text-destructive'}>
                       {formatCurrency(dia.saldoAcumulado)}
                     </span>
                   </TableCell>
@@ -311,7 +311,7 @@ export default function FlujoCajaPage() {
                       <Badge variant="destructive">Déficit</Badge>
                     )}
                     {dia.saldoAcumulado >= 0 && dia.saldoAcumulado < posicionActual * 0.2 && (
-                      <Badge variant="outline" className="text-yellow-600">Bajo</Badge>
+                      <Badge variant="outline" className="text-warning-muted-foreground">Bajo</Badge>
                     )}
                   </TableCell>
                 </TableRow>
@@ -327,7 +327,7 @@ export default function FlujoCajaPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-green-600" />
+              <FileCheck className="h-5 w-5 text-success" />
               Cheques por Cobrar
             </CardTitle>
             <CardDescription>Próximos {periodoProyeccion} días</CardDescription>
@@ -346,7 +346,7 @@ export default function FlujoCajaPage() {
                       <p className="text-xs text-muted-foreground">{cheque.banco}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-sm text-green-600">
+                      <p className="font-bold text-sm text-success">
                         +{formatCurrency(Number(cheque.importe))}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -364,7 +364,7 @@ export default function FlujoCajaPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-red-600" />
+              <Receipt className="h-5 w-5 text-destructive" />
               Pagos Pendientes
             </CardTitle>
             <CardDescription>Próximos {periodoProyeccion} días</CardDescription>
@@ -383,7 +383,7 @@ export default function FlujoCajaPage() {
                       <p className="text-xs text-muted-foreground">{factura.numeroFactura}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-sm text-red-600">
+                      <p className="font-bold text-sm text-destructive">
                         -{formatCurrency(Number(factura.total))}
                       </p>
                       <p className="text-xs text-muted-foreground">

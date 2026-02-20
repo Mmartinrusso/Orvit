@@ -11,7 +11,7 @@ export function KpiCardFrame({
   children: ReactNode;
 }) {
   return (
-    <Card className="h-full rounded-lg border border-gray-300/90 shadow-sm bg-gradient-to-t from-black/5 via-gray-100/50 to-white dark:border-gray-600/90 dark:from-black/10 dark:via-gray-800/50 dark:to-gray-900">
+    <Card className="h-full rounded-lg border border-border shadow-sm bg-gradient-to-t from-muted/50 via-muted/20 to-background">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 pt-1.5 px-4">
         <div className="text-muted-foreground text-xs font-normal">{title}</div>
         {pill}

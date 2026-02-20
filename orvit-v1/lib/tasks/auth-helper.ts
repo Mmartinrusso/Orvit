@@ -1,15 +1,18 @@
 /**
- * Helper centralizado para autenticación en APIs de tareas
- * Evita duplicación del código getUserFromToken
+ * Auth helpers para módulo Tareas
+ *
+ * Thin wrapper sobre shared-helpers.ts para retrocompatibilidad.
+ * Re-exporta funciones centralizadas + helpers específicos del módulo.
+ *
+ * Los consumidores existentes siguen usando los mismos imports:
+ *   import { getUserFromToken, getUserCompanyId } from '@/lib/tasks/auth-helper';
  */
 
-import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { getUserFromTokenFull } from '@/lib/auth/shared-helpers';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+// ============================================================================
+// TIPOS (retrocompatibles con la interfaz original)
+// ============================================================================
 
 export interface AuthenticatedUser {
   id: number;
@@ -17,61 +20,39 @@ export interface AuthenticatedUser {
   email: string;
   role: string;
   companies: {
-    company: {
-      id: number;
-      name: string;
-    };
+    company: { id: number; name: string };
     companyId: number;
   }[];
-  ownedCompanies: {
-    id: number;
-    name: string;
-  }[];
+  ownedCompanies: { id: number; name: string }[];
 }
+
+export interface AuthResult {
+  user: AuthenticatedUser | null;
+  companyId: number | null;
+  error: string | null;
+  status: number;
+}
+
+// ============================================================================
+// FUNCIONES RE-EXPORTADAS DESDE SHARED-HELPERS
+// ============================================================================
 
 /**
- * Obtiene el usuario autenticado desde el token JWT
- * @param request - NextRequest (opcional, para compatibilidad)
- * @returns Usuario autenticado o null si no está autenticado
+ * Obtiene el usuario autenticado desde el token JWT (formato completo con empresas).
+ * Wrapper sobre getUserFromTokenFull() para retrocompatibilidad.
  */
-export async function getUserFromToken(_request?: NextRequest): Promise<AuthenticatedUser | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return null;
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      include: {
-        companies: {
-          include: {
-            company: true
-          }
-        },
-        ownedCompanies: true
-      }
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return user as unknown as AuthenticatedUser;
-  } catch (error) {
-    console.error('[Auth Helper] Error obteniendo usuario desde JWT:', error);
-    return null;
-  }
+export async function getUserFromToken(): Promise<AuthenticatedUser | null> {
+  const user = await getUserFromTokenFull();
+  if (!user) return null;
+  return user as unknown as AuthenticatedUser;
 }
+
+// ============================================================================
+// HELPERS ESPECÍFICOS DEL MÓDULO
+// ============================================================================
 
 /**
  * Obtiene el ID de la empresa del usuario
- * @param user - Usuario autenticado
- * @returns ID de la empresa o null
  */
 export function getUserCompanyId(user: AuthenticatedUser): number | null {
   if (user.ownedCompanies && user.ownedCompanies.length > 0) {
@@ -84,68 +65,39 @@ export function getUserCompanyId(user: AuthenticatedUser): number | null {
 
 /**
  * Obtiene todos los IDs de empresas a las que el usuario tiene acceso
- * @param user - Usuario autenticado
- * @returns Array de IDs de empresas
  */
 export function getUserCompanyIds(user: AuthenticatedUser): number[] {
   const ids: number[] = [];
-
   if (user.ownedCompanies) {
     ids.push(...user.ownedCompanies.map(c => c.id));
   }
-
   if (user.companies) {
     ids.push(...user.companies.map(c => c.company.id));
   }
-
-  return [...new Set(ids)]; // Eliminar duplicados
+  return [...new Set(ids)];
 }
 
 /**
  * Verifica si el usuario tiene acceso a una empresa específica
- * @param user - Usuario autenticado
- * @param companyId - ID de la empresa a verificar
- * @returns true si tiene acceso
  */
 export function hasAccessToCompany(user: AuthenticatedUser, companyId: number): boolean {
   return getUserCompanyIds(user).includes(companyId);
 }
 
 /**
- * Resultado de autenticación con información de error
+ * Autentica y valida acceso a empresa en un solo paso.
+ * Wrapper sobre getUserFromTokenFull() con lógica de SUPERADMIN/ADMIN.
  */
-export interface AuthResult {
-  user: AuthenticatedUser | null;
-  companyId: number | null;
-  error: string | null;
-  status: number;
-}
-
-/**
- * Autentica y valida acceso a empresa en un solo paso
- * @param request - NextRequest
- * @returns Resultado de autenticación
- */
-export async function authenticateAndGetCompany(request?: NextRequest): Promise<AuthResult> {
-  const user = await getUserFromToken(request);
+export async function authenticateAndGetCompany(): Promise<AuthResult> {
+  const user = await getUserFromToken();
 
   if (!user) {
-    return {
-      user: null,
-      companyId: null,
-      error: 'No autorizado',
-      status: 401
-    };
+    return { user: null, companyId: null, error: 'No autorizado', status: 401 };
   }
 
   // SUPERADMIN no tiene empresa específica
   if (user.role === 'SUPERADMIN') {
-    return {
-      user,
-      companyId: null,
-      error: null,
-      status: 200
-    };
+    return { user, companyId: null, error: null, status: 200 };
   }
 
   const companyId = getUserCompanyId(user);
@@ -153,26 +105,10 @@ export async function authenticateAndGetCompany(request?: NextRequest): Promise<
   if (!companyId) {
     // ADMIN sin empresa - caso especial
     if (user.role === 'ADMIN') {
-      return {
-        user,
-        companyId: null,
-        error: null,
-        status: 200
-      };
+      return { user, companyId: null, error: null, status: 200 };
     }
-
-    return {
-      user,
-      companyId: null,
-      error: 'Usuario sin empresa',
-      status: 403
-    };
+    return { user, companyId: null, error: 'Usuario sin empresa', status: 403 };
   }
 
-  return {
-    user,
-    companyId,
-    error: null,
-    status: 200
-  };
+  return { user, companyId, error: null, status: 200 };
 }

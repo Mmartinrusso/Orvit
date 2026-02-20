@@ -83,7 +83,7 @@ export function MarginMatrixChart({
     if (active && payload && payload.length) {
       const point = payload[0].payload as ProductPoint;
       return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+        <div className="bg-card border border-border rounded-lg shadow-lg p-3 text-sm">
           <p className="font-semibold mb-1">
             {point.code} - {point.name}
           </p>
@@ -206,7 +206,7 @@ export function MarginMatrixChart({
       {/* Leyenda */}
       <div className="mt-4 flex flex-wrap gap-4 justify-center text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
+          <div className="w-3 h-3 rounded-full bg-destructive" />
           <span>Negativo</span>
         </div>
         <div className="flex items-center gap-2">
@@ -214,11 +214,11 @@ export function MarginMatrixChart({
           <span>Bajo Mínimo</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
+          <div className="w-3 h-3 rounded-full bg-success" />
           <span>Óptimo</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
+          <div className="w-3 h-3 rounded-full bg-primary" />
           <span>Sobre Máximo</span>
         </div>
         <div className="ml-4 text-muted-foreground">

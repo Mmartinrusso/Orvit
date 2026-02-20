@@ -263,11 +263,11 @@ export function ModulesConfig() {
       </Card>
 
       {/* Warning */}
-      <Card className="border-yellow-300 bg-yellow-50">
+      <Card className="border-warning-muted bg-warning-muted">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-900">
+            <AlertCircle className="w-5 h-5 text-warning-muted-foreground flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-foreground">
               <p className="font-medium mb-1">Importante</p>
               <p>
                 Los módulos deshabilitados no estarán disponibles en el sistema. Asegúrate de que tu

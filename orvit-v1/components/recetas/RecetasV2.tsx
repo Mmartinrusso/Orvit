@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -32,6 +33,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // Import sub-components
 import RecetaFormV2 from './RecetaFormV2';
@@ -39,31 +41,9 @@ import RecetaDetailSheet from './RecetaDetailSheet';
 import PruebasCostosV2 from './PruebasCostosV2';
 
 // Color preferences interface
-interface UserColorPreferences {
-  themeName: string;
-  chart1: string;
-  chart2: string;
-  chart3: string;
-  chart4: string;
-  chart5: string;
-  chart6: string;
-  kpiPositive: string;
-  kpiNegative: string;
-  kpiNeutral: string;
-}
 
-const DEFAULT_COLORS: UserColorPreferences = {
-  themeName: 'Predeterminado',
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
+
 
 // Helper function to format currency
 const formatCurrency = (value: number) => {
@@ -79,6 +59,7 @@ type ViewMode = 'grid' | 'list' | 'compact';
 type ActiveSection = 'recipes' | 'simulator';
 
 export default function RecetasV2() {
+  const confirm = useConfirm();
   const { currentCompany } = useCompany();
   const { recipes, loading, error, fetchRecipeDetail, createRecipe, updateRecipe, deleteRecipe, refreshData } = useRecetas();
   const { products, categories } = useProductos();
@@ -321,7 +302,13 @@ export default function RecetasV2() {
     const recipe = recipes.find(r => r.id === recipeId);
     if (!recipe) return;
 
-    if (!confirm(`¿Eliminar la receta "${recipe.name}"?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar receta',
+      description: `¿Eliminar la receta "${recipe.name}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       await deleteRecipe(recipeId);
@@ -461,7 +448,13 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
   const handleBulkDelete = async () => {
     if (selectedRecipes.length === 0) return;
 
-    if (!confirm(`¿Eliminar ${selectedRecipes.length} recetas? Esta acción no se puede deshacer.`)) return;
+    const ok = await confirm({
+      title: 'Eliminar recetas',
+      description: `¿Eliminar ${selectedRecipes.length} recetas? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     toast.loading(`Eliminando ${selectedRecipes.length} recetas...`, { id: 'bulk' });
     try {
@@ -531,13 +524,13 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
   const getBaseTypeInfo = (baseType: string) => {
     switch (baseType) {
       case 'PER_BATCH':
-        return { label: 'Batea', icon: Boxes, color: 'bg-blue-500/10 text-blue-600 border-blue-200' };
+        return { label: 'Batea', icon: Boxes, color: 'bg-info-muted text-info-muted-foreground border-info-muted' };
       case 'PER_BANK':
-        return { label: 'Banco', icon: Layers, color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' };
+        return { label: 'Banco', icon: Layers, color: 'bg-info-muted text-info-muted-foreground border-info-muted' };
       case 'PER_M3':
-        return { label: 'M³', icon: Scale, color: 'bg-cyan-500/10 text-cyan-600 border-cyan-200' };
+        return { label: 'M³', icon: Scale, color: 'bg-info-muted text-info-muted-foreground border-info-muted' };
       default:
-        return { label: baseType, icon: Package, color: 'bg-gray-500/10 text-gray-600 border-gray-200' };
+        return { label: baseType, icon: Package, color: 'bg-muted text-foreground border-border' };
     }
   };
 
@@ -1124,14 +1117,14 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                 {selectedRecipes.length > 0 && (
                   <div className="flex items-center gap-2 ml-auto">
                     <Button variant="outline" size="sm" className="gap-1" onClick={handleBulkActivate}>
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <CheckCircle2 className="h-4 w-4 text-success" />
                       Activar
                     </Button>
                     <Button variant="outline" size="sm" className="gap-1" onClick={handleBulkDeactivate}>
-                      <XCircle className="h-4 w-4 text-amber-600" />
+                      <XCircle className="h-4 w-4 text-warning-muted-foreground" />
                       Desactivar
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1 text-red-600 hover:bg-red-50" onClick={handleBulkDelete}>
+                    <Button variant="outline" size="sm" className="gap-1 text-destructive hover:bg-destructive/10" onClick={handleBulkDelete}>
                       <Trash2 className="h-4 w-4" />
                       Eliminar
                     </Button>
@@ -1215,7 +1208,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                           {/* Left border accent */}
                           <div className={cn(
                             "absolute left-0 top-0 bottom-0 w-1",
-                            recipe.isActive ? "bg-green-500" : "bg-gray-300"
+                            recipe.isActive ? "bg-success" : "bg-muted-foreground/30"
                           )} />
 
                           <CardContent className="p-4">
@@ -1273,7 +1266,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={() => handleDeleteRecipe(recipe.id)}
-                                    className="text-red-600"
+                                    className="text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                                   </DropdownMenuItem>
@@ -1291,7 +1284,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                 {recipe.ingredientCount || 0} insumos
                               </Badge>
                               {recipe.isActive ? (
-                                <Badge className="bg-green-500/10 text-green-600 border-green-200 text-xs">
+                                <Badge className="bg-success-muted text-success border-success-muted text-xs">
                                   Activa
                                 </Badge>
                               ) : (
@@ -1301,9 +1294,9 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
 
                             {/* Bank info */}
                             {recipe.baseType === 'PER_BANK' && recipe.metrosUtiles && (
-                              <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                                <Layers className="h-4 w-4 text-blue-500" />
-                                <span className="text-xs text-blue-700 dark:text-blue-300">
+                              <div className="flex items-center gap-2 mb-3 p-2 bg-info-muted rounded-lg">
+                                <Layers className="h-4 w-4 text-info-muted-foreground" />
+                                <span className="text-xs text-info-muted-foreground">
                                   {recipe.metrosUtiles}m útiles
                                   {recipe.cantidadPastones && ` • ${recipe.cantidadPastones} pastones`}
                                 </span>
@@ -1315,7 +1308,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                               <span className="text-xs text-muted-foreground">
                                 {recipe.baseType === 'PER_BANK' ? 'Costo/metro' : 'Costo/unidad'}
                               </span>
-                              <span className="font-bold text-lg text-green-600">
+                              <span className="font-bold text-lg text-success">
                                 {formatCurrency(cost)}
                               </span>
                             </div>
@@ -1362,15 +1355,11 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                               {/* Icon */}
                               <div className={cn(
                                 "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
-                                typeInfo.color.includes('blue') ? "bg-blue-100" :
-                                typeInfo.color.includes('purple') ? "bg-indigo-100" :
-                                typeInfo.color.includes('cyan') ? "bg-cyan-100" : "bg-gray-100"
+                                "bg-info-muted"
                               )}>
                                 <TypeIcon className={cn(
                                   "h-6 w-6",
-                                  typeInfo.color.includes('blue') ? "text-blue-600" :
-                                  typeInfo.color.includes('purple') ? "text-indigo-600" :
-                                  typeInfo.color.includes('cyan') ? "text-cyan-600" : "text-gray-600"
+                                  "text-info-muted-foreground"
                                 )} />
                               </div>
 
@@ -1379,14 +1368,14 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                 <div className="flex items-center gap-2 mb-1">
                                   <h3 className="font-semibold truncate">{recipe.name}</h3>
                                   {recipe.isActive ? (
-                                    <Badge className="bg-green-500/10 text-green-600 border-green-200 text-xs shrink-0">
+                                    <Badge className="bg-success-muted text-success border-success-muted text-xs shrink-0">
                                       Activa
                                     </Badge>
                                   ) : (
                                     <Badge variant="secondary" className="text-xs shrink-0">Inactiva</Badge>
                                   )}
                                   {recipe.notes && (
-                                    <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-xs shrink-0">
+                                    <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning-muted text-xs shrink-0">
                                       <FileText className="h-3 w-3 mr-1" />
                                       Notas
                                     </Badge>
@@ -1415,7 +1404,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                 <p className="text-xs text-muted-foreground">
                                   {recipe.baseType === 'PER_BANK' ? 'Costo/metro' : 'Costo/unidad'}
                                 </p>
-                                <p className="font-bold text-xl text-green-600">{formatCurrency(cost)}</p>
+                                <p className="font-bold text-xl text-success">{formatCurrency(cost)}</p>
                               </div>
 
                               {/* Actions */}
@@ -1433,7 +1422,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className={cn("h-8 w-8 p-0", recipe.isActive ? "text-green-600" : "text-muted-foreground")}
+                                      className={cn("h-8 w-8 p-0", recipe.isActive ? "text-success" : "text-muted-foreground")}
                                       onClick={() => handleToggleRecipeActive(recipe)}
                                     >
                                       {recipe.isActive ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
@@ -1462,7 +1451,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                       <Send className="h-4 w-4 mr-2" /> Enviar
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleDeleteRecipe(recipe.id)} className="text-red-600">
+                                    <DropdownMenuItem onClick={() => handleDeleteRecipe(recipe.id)} className="text-destructive">
                                       <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
@@ -1506,20 +1495,20 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                                 />
                               </div>
                             )}
-                            <div className={cn("h-2 w-2 rounded-full shrink-0", recipe.isActive ? "bg-green-500" : "bg-gray-300")} />
+                            <div className={cn("h-2 w-2 rounded-full shrink-0", recipe.isActive ? "bg-success" : "bg-muted-foreground/30")} />
                             <span className="font-medium flex-1 truncate">{recipe.name}</span>
                             <Badge variant="outline" className={cn("text-xs shrink-0", typeInfo.color)}>
                               {typeInfo.label}
                             </Badge>
                             <span className="text-xs text-muted-foreground shrink-0 w-20">{recipe.ingredientCount} insumos</span>
-                            <span className="font-semibold text-green-600 shrink-0 w-24 text-right">{formatCurrency(cost)}</span>
+                            <span className="font-semibold text-success shrink-0 w-24 text-right">{formatCurrency(cost)}</span>
                             {!selectionMode && (
                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={(e) => e.stopPropagation()}>
                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditRecipe(recipe)}>
                                   <Edit className="h-3 w-3" />
                                 </Button>
                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleToggleRecipeActive(recipe)}>
-                                  {recipe.isActive ? <ToggleRight className="h-3 w-3 text-green-600" /> : <ToggleLeft className="h-3 w-3" />}
+                                  {recipe.isActive ? <ToggleRight className="h-3 w-3 text-success" /> : <ToggleLeft className="h-3 w-3" />}
                                 </Button>
                               </div>
                             )}
@@ -1573,7 +1562,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
 
         {/* Notes Dialog */}
         <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -1583,7 +1572,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                 {selectedRecipe?.name}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <DialogBody className="space-y-4">
               {isEditingNotes ? (
                 <Textarea
                   value={notesContent}
@@ -1600,7 +1589,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                   )}
                 </div>
               )}
-            </div>
+            </DialogBody>
             <DialogFooter className="flex gap-2">
               {isEditingNotes ? (
                 <>

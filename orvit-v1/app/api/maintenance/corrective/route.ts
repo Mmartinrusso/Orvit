@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const dynamic = 'force-dynamic';
 
-
 // Configuración de S3
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
@@ -17,28 +16,43 @@ const s3 = new S3Client({
 
 const BUCKET = process.env.AWS_S3_BUCKET!;
 
+// Tipos MIME permitidos y tamaño máximo de archivo
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain'
+]);
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function validateFile(file: File): { valid: boolean; error?: string } {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return { valid: false, error: `El archivo "${file.name}" supera el límite de 10 MB` };
+  }
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return { valid: false, error: `Tipo de archivo no permitido: ${file.type}. Se aceptan PDF, imágenes, Word y Excel.` };
+  }
+  return { valid: true };
+}
+
 // Función para subir archivo a S3
 async function uploadFileToS3(file: File, entityType: string, entityId: string, fileType: string): Promise<string> {
   try {
-    console.log('🔧 Iniciando upload a S3:', {
-      fileName: file.name,
-      fileSize: file.size,
-      entityType,
-      entityId,
-      fileType
-    });
     
     const timestamp = Date.now();
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const fileName = `${entityType}/${fileType}/${entityId}/${timestamp}-${uuidv4()}.${fileExt}`;
-    
-    console.log('📁 Nombre del archivo en S3:', fileName);
-    
+
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     const buffer = Buffer.from(uint8Array);
 
-    console.log('📤 Enviando a S3...');
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
       Key: fileName,
@@ -55,7 +69,6 @@ async function uploadFileToS3(file: File, entityType: string, entityId: string, 
     
     const region = process.env.AWS_REGION;
     const url = `https://${BUCKET}.s3.${region}.amazonaws.com/${fileName}`;
-    console.log('✅ Upload exitoso, URL:', url);
     return url;
   } catch (error) {
     console.error('❌ Error en uploadFileToS3:', error);
@@ -66,11 +79,9 @@ async function uploadFileToS3(file: File, entityType: string, entityId: string, 
 // POST /api/maintenance/corrective - Crear mantenimiento correctivo
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 API corrective llamado');
     
     // Verificar si es FormData o JSON
     const contentType = request.headers.get('content-type') || '';
-    console.log('📋 Content-Type:', contentType);
     
     let data: any;
     let instructivesFiles: File[] = [];
@@ -79,7 +90,6 @@ export async function POST(request: NextRequest) {
     if (contentType.includes('multipart/form-data')) {
       // Manejar FormData
       const formData = await request.formData();
-      console.log('📋 FormData recibido para mantenimiento correctivo');
       
       // Extraer datos del formulario
       data = {
@@ -100,29 +110,25 @@ export async function POST(request: NextRequest) {
         notes: formData.get('notes')
       };
 
-      // Extraer archivos
+      // Extraer y validar archivos
       instructivesFiles = (formData.getAll('instructivesFiles') as File[]).filter(file => file && file.size > 0);
       failureFiles = (formData.getAll('failureFiles') as File[]).filter(file => file && file.size > 0);
-      
-      console.log(`📎 Archivos instructivos recibidos: ${instructivesFiles.length}`);
-      console.log(`📎 Archivos de falla recibidos: ${failureFiles.length}`);
+
+      // Validar tipo y tamaño de cada archivo
+      for (const file of [...instructivesFiles, ...failureFiles]) {
+        const validation = validateFile(file);
+        if (!validation.valid) {
+          return NextResponse.json({ error: validation.error }, { status: 400 });
+        }
+      }
     } else {
       // Manejar JSON (fallback)
       data = await request.json();
-      console.log('📋 JSON recibido para mantenimiento correctivo');
     }
 
-    console.log('🔧 Datos recibidos para crear mantenimiento correctivo:', data);
-
     // Validar datos requeridos
-    console.log('🔍 Validando datos...');
-    console.log('🔍 title:', data.title);
-    console.log('🔍 description:', data.description);
-    console.log('🔍 machineId:', data.machineId);
-    console.log('🔍 companyId:', data.companyId);
     
     if (!data.title?.trim()) {
-      console.log('❌ Error: Título faltante');
       return NextResponse.json(
         { error: 'El título del mantenimiento es obligatorio' },
         { status: 400 }
@@ -130,7 +136,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data.description?.trim()) {
-      console.log('❌ Error: Descripción faltante');
       return NextResponse.json(
         { error: 'La descripción del mantenimiento es obligatoria' },
         { status: 400 }
@@ -138,7 +143,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data.machineId) {
-      console.log('❌ Error: MachineId faltante');
       return NextResponse.json(
         { error: 'Debe seleccionar una máquina' },
         { status: 400 }
@@ -146,24 +150,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data.companyId) {
-      console.log('❌ Error: CompanyId faltante');
       return NextResponse.json(
         { error: 'El ID de la empresa es obligatorio' },
         { status: 400 }
       );
     }
-    
-    console.log('✅ Validación pasada, procediendo con la creación...');
 
     // Procesar archivos de instructivos y subirlos a S3
-    console.log('📎 Procesando instructivos:', instructivesFiles);
     const processedInstructives = [];
     const uploadedInstructiveFiles = [];
     
     if (instructivesFiles && instructivesFiles.length > 0) {
       for (const file of instructivesFiles) {
         if (file && file.size > 0) {
-          console.log('📋 Procesando instructivo individual:', file.name);
           
           try {
             const tempId = `temp_${Date.now()}_${Math.random()}`;
@@ -171,13 +170,11 @@ export async function POST(request: NextRequest) {
             let s3Url;
             try {
               s3Url = await uploadFileToS3(file, 'MAINTENANCE', tempId, 'INSTRUCTIVE');
-              console.log('✅ Instructivo subido a S3:', s3Url);
             } catch (s3Error) {
               console.error('❌ Error subiendo instructivo a S3, usando fallback:', s3Error);
               const arrayBuffer = await file.arrayBuffer();
               const base64 = Buffer.from(arrayBuffer).toString('base64');
               s3Url = `data:${file.type};base64,${base64}`;
-              console.log('📄 Usando fallback base64 para instructivo:', file.name);
             }
             
             uploadedInstructiveFiles.push({
@@ -205,14 +202,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Procesar archivos de falla y subirlos a S3
-    console.log('📎 Procesando archivos de falla:', failureFiles);
     const processedFailureFiles = [];
     const uploadedFailureFiles = [];
     
     if (failureFiles && failureFiles.length > 0) {
       for (const file of failureFiles) {
         if (file && file.size > 0) {
-          console.log('📋 Procesando archivo de falla individual:', file.name);
           
           try {
             const tempId = `temp_${Date.now()}_${Math.random()}`;
@@ -220,13 +215,11 @@ export async function POST(request: NextRequest) {
             let s3Url;
             try {
               s3Url = await uploadFileToS3(file, 'MAINTENANCE', tempId, 'FAILURE');
-              console.log('✅ Archivo de falla subido a S3:', s3Url);
             } catch (s3Error) {
               console.error('❌ Error subiendo archivo de falla a S3, usando fallback:', s3Error);
               const arrayBuffer = await file.arrayBuffer();
               const base64 = Buffer.from(arrayBuffer).toString('base64');
               s3Url = `data:${file.type};base64,${base64}`;
-              console.log('📄 Usando fallback base64 para archivo de falla:', file.name);
             }
             
             uploadedFailureFiles.push({
@@ -254,12 +247,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear el work order (mantenimiento correctivo)
-    console.log('🚀 Creando WorkOrder con los siguientes datos:');
-    console.log('📝 Title:', data.title);
-    console.log('📝 Description:', data.description);
-    console.log('📝 MachineId:', data.machineId);
-    console.log('📝 CompanyId:', data.companyId);
-    console.log('📝 CreatedBy:', data.createdBy);
     
     let workOrder;
     try {
@@ -305,7 +292,6 @@ export async function POST(request: NextRequest) {
           sector: true
         }
       });
-      console.log('✅ WorkOrder creado exitosamente:', workOrder.id);
     } catch (prismaError) {
       console.error('❌ Error de Prisma al crear WorkOrder:', prismaError);
       console.error('❌ Detalles del error:', {
@@ -315,8 +301,6 @@ export async function POST(request: NextRequest) {
       });
       throw prismaError;
     }
-
-    console.log('✅ Mantenimiento correctivo creado:', workOrder);
 
     // Crear documentos para los instructivos
     const finalInstructives = [];
@@ -346,7 +330,6 @@ export async function POST(request: NextRequest) {
           description: ''
         });
         
-        console.log('✅ Documento creado para instructivo:', document.id);
       } catch (error) {
         console.error('❌ Error creando documento para instructivo:', error);
       }
@@ -380,7 +363,6 @@ export async function POST(request: NextRequest) {
           description: ''
         });
         
-        console.log('✅ Documento creado para archivo de falla:', document.id);
       } catch (error) {
         console.error('❌ Error creando documento para archivo de falla:', error);
       }

@@ -21,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -307,12 +307,12 @@ export function DashboardBuilder({
                       Agregar
                     </Button>
                   </DialogTrigger>
-                  <DialogContent size="md" className="max-h-[80vh]">
+                  <DialogContent size="md">
                     <DialogHeader>
                       <DialogTitle>Agregar Widget</DialogTitle>
                     </DialogHeader>
-                    
-                    <div className="flex gap-4">
+
+                    <DialogBody className="flex gap-4">
                       {/* Categorías */}
                       <div className="w-44 border-r pr-4">
                         <p className="text-xs font-medium text-muted-foreground mb-2">Categorías</p>
@@ -385,7 +385,7 @@ export function DashboardBuilder({
                           })}
                         </div>
                       </ScrollArea>
-                    </div>
+                    </DialogBody>
                   </DialogContent>
                 </Dialog>
                 <Button
@@ -408,14 +408,14 @@ export function DashboardBuilder({
 
         {/* Indicadores */}
         {hasUnsavedChanges && isEditMode && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+          <div className="bg-warning-muted border border-warning-muted text-warning-muted-foreground px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+            <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
             Cambios sin guardar
           </div>
         )}
 
         {isEditMode && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+          <div className="bg-info-muted border border-info-muted text-info-muted-foreground px-4 py-2 rounded-lg text-sm flex items-center gap-2">
             <Move className="h-4 w-4" />
             Arrastra los widgets para reordenarlos
           </div>

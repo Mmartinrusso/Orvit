@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,15 +13,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { 
-  Package, 
+import {
+  Package,
   Plus,
   Search,
   CheckCircle2,
   X,
   AlertTriangle,
   Clock,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 
 interface ToolRequestDialogProps {
@@ -183,10 +185,10 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
   };
 
   const urgencyOptions = [
-    { id: 'baja', name: 'Baja', color: 'bg-gray-100 text-gray-700', description: 'Puede esperar' },
-    { id: 'media', name: 'Media', color: 'bg-blue-100 text-blue-700', description: 'Necesario pronto' },
-    { id: 'alta', name: 'Alta', color: 'bg-orange-100 text-orange-700', description: 'Urgente' },
-    { id: 'critica', name: 'Crítica', color: 'bg-red-100 text-red-700', description: 'Inmediato' },
+    { id: 'baja', name: 'Baja', color: 'bg-muted text-foreground', description: 'Puede esperar' },
+    { id: 'media', name: 'Media', color: 'bg-info-muted text-info-muted-foreground', description: 'Necesario pronto' },
+    { id: 'alta', name: 'Alta', color: 'bg-warning-muted text-warning-muted-foreground', description: 'Urgente' },
+    { id: 'critica', name: 'Crítica', color: 'bg-destructive/10 text-destructive', description: 'Inmediato' },
   ];
 
   return (
@@ -194,19 +196,19 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
-            <Package className="h-6 w-6 text-blue-600" />
+            <Package className="h-6 w-6 text-primary" />
             Solicitar Productos - {currentSector?.name}
           </DialogTitle>
           <div className="flex flex-col gap-2 text-sm">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
               <span className="text-muted-foreground">
                 Planta en parada - Solicitud prioritaria al pañolero
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-blue-500" />
-              <span className="text-blue-600 font-medium">
+              <Package className="h-4 w-4 text-primary" />
+              <span className="text-primary font-medium">
                 Registro obligatorio: Las herramientas solicitadas se guardarán en el historial de reparación
               </span>
             </div>
@@ -216,21 +218,21 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
         <DialogBody>
         <div className="space-y-6">
           {/* Alert de planta parada */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-destructive/10 border border-border rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                              <span className="font-semibold text-red-800">Parada de Planta Activa</span>
+              <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
+                              <span className="font-semibold text-destructive">Parada de Planta Activa</span>
             </div>
-            <p className="text-red-700 text-sm">
+            <p className="text-destructive text-sm">
               Las solicitudes de herramientas durante paradas de planta tienen máxima prioridad y se notificarán inmediatamente al pañolero.
             </p>
-            <p className="text-red-600 text-sm font-medium mt-2">
+            <p className="text-destructive text-sm font-medium mt-2">
                               Debes solicitar al menos una herramienta para registrar en el historial de la reparación.
             </p>
           </div>
 
           {/* Formulario para agregar herramientas */}
-          <Card className="border-2 border-dashed border-blue-200">
+          <Card className="border-2 border-dashed border-border">
             <CardContent className="p-6">
               <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                 <Plus className="h-5 w-5" />
@@ -368,7 +370,7 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveToolRequest(index)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -387,22 +389,23 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
                   {urgencyOptions.map((urgency) => (
                     <Card 
                       key={urgency.id}
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                        requestForm.urgency === urgency.id 
-                          ? 'ring-2 ring-blue-500 shadow-lg' 
+                      className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg',
+                        requestForm.urgency === urgency.id
+                          ? 'ring-2 ring-primary shadow-lg'
                           : 'hover:shadow-md'
-                      }`}
+                      )}
                       onClick={() => setRequestForm(prev => ({ ...prev, urgency: urgency.id as any }))}
                     >
                       <CardContent className="p-3 text-center">
-                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${urgency.color}`}>
+                        <span className={cn('inline-block px-3 py-1 rounded-full text-sm font-medium', urgency.color)}>
                           {urgency.name}
                         </span>
                         <p className="text-xs text-muted-foreground mt-1">
                           {urgency.description}
                         </p>
                         {requestForm.urgency === urgency.id && (
-                          <CheckCircle2 className="h-4 w-4 text-blue-600 mx-auto mt-2" />
+                          <CheckCircle2 className="h-4 w-4 text-primary mx-auto mt-2" />
+
                         )}
                       </CardContent>
                     </Card>
@@ -414,14 +417,14 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
 
           {/* Mensaje cuando no hay herramientas agregadas */}
           {toolRequests.length === 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="bg-warning-muted border border-border rounded-lg p-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-amber-800 text-sm">
+                  <p className="font-semibold text-warning-muted-foreground text-sm">
                     No has agregado ninguna herramienta
                   </p>
-                  <p className="text-amber-700 text-sm">
+                  <p className="text-warning-muted-foreground text-sm">
                     Agrega al menos una herramienta usando el formulario de arriba para poder enviar la solicitud al pañolero.
                   </p>
                 </div>
@@ -440,15 +443,15 @@ export default function ToolRequestDialog({ isOpen, onClose, plantStopId }: Tool
             size="sm"
             onClick={handleSubmitRequests}
             disabled={toolRequests.length === 0 || isLoading}
-            className={`${
+            className={cn(
               toolRequests.length === 0
-                ? 'bg-gray-400 cursor-not-allowed text-white opacity-50'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
+                ? 'bg-muted cursor-not-allowed text-muted-foreground opacity-50'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+            )}
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Enviando Solicitud...
               </>
             ) : toolRequests.length === 0 ? (

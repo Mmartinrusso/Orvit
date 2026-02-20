@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ import {
   Cog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DEFAULT_COLORS } from '@/lib/colors';
 
 export interface Tool {
   id: number;
@@ -88,9 +89,9 @@ export interface ResponsiveToolTableProps {
 }
 
 const defaultColors = {
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  chart4: '#f59e0b',
+  kpiPositive: DEFAULT_COLORS.kpiPositive,
+  kpiNegative: DEFAULT_COLORS.kpiNegative,
+  chart4: DEFAULT_COLORS.chart4,
 };
 
 const ITEM_TYPE_ICONS: Record<string, React.ElementType> = {
@@ -132,11 +133,11 @@ export function ResponsiveToolTable({
   );
 
   // Update on resize
-  if (typeof window !== 'undefined') {
-    window.addEventListener('resize', () => {
-      setIsMobile(window.innerWidth < 768);
-    });
-  }
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getStockStatus = (tool: Tool) => {
     if (tool.stockQuantity === 0) {
@@ -208,7 +209,7 @@ export function ResponsiveToolTable({
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold truncate">{tool.name}</h3>
                       {tool.isCritical && (
-                        <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                        <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
                       )}
                     </div>
 
@@ -255,13 +256,13 @@ export function ResponsiveToolTable({
                                 <DropdownMenuSeparator />
                                 {onStockIn && (
                                   <DropdownMenuItem onClick={() => onStockIn(tool)}>
-                                    <ArrowUp className="h-4 w-4 mr-2 text-green-600" />
+                                    <ArrowUp className="h-4 w-4 mr-2 text-success" />
                                     Entrada de stock
                                   </DropdownMenuItem>
                                 )}
                                 {onStockOut && tool.stockQuantity > 0 && (
                                   <DropdownMenuItem onClick={() => onStockOut(tool)}>
-                                    <ArrowDown className="h-4 w-4 mr-2 text-red-600" />
+                                    <ArrowDown className="h-4 w-4 mr-2 text-destructive" />
                                     Salida de stock
                                   </DropdownMenuItem>
                                 )}
@@ -272,7 +273,7 @@ export function ResponsiveToolTable({
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => onDelete(tool)}
-                                  className="text-red-600"
+                                  className="text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Eliminar
@@ -355,7 +356,7 @@ export function ResponsiveToolTable({
                     {tool.isCritical && (
                       <Tooltip>
                         <TooltipTrigger>
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                          <AlertTriangle className="h-4 w-4 text-destructive" />
                         </TooltipTrigger>
                         <TooltipContent>Item crítico</TooltipContent>
                       </Tooltip>
@@ -431,13 +432,13 @@ export function ResponsiveToolTable({
                             <DropdownMenuSeparator />
                             {onStockIn && (
                               <DropdownMenuItem onClick={() => onStockIn(tool)}>
-                                <ArrowUp className="h-4 w-4 mr-2 text-green-600" />
+                                <ArrowUp className="h-4 w-4 mr-2 text-success" />
                                 Entrada
                               </DropdownMenuItem>
                             )}
                             {onStockOut && tool.stockQuantity > 0 && (
                               <DropdownMenuItem onClick={() => onStockOut(tool)}>
-                                <ArrowDown className="h-4 w-4 mr-2 text-red-600" />
+                                <ArrowDown className="h-4 w-4 mr-2 text-destructive" />
                                 Salida
                               </DropdownMenuItem>
                             )}
@@ -448,7 +449,7 @@ export function ResponsiveToolTable({
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => onDelete(tool)}
-                              className="text-red-600"
+                              className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Eliminar

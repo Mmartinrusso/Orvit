@@ -97,12 +97,12 @@ interface Warehouse {
 }
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', icon: Clock },
-  SOLICITADO: { label: 'Solicitado', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300', icon: Clock },
-  EN_TRANSITO: { label: 'En Tránsito', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300', icon: Truck },
-  COMPLETADO: { label: 'Completado', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300', icon: CheckCircle },
-  RECIBIDO_PARCIAL: { label: 'Parcial', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300', icon: PackageCheck },
-  CANCELADO: { label: 'Cancelado', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300', icon: Clock },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground', icon: Clock },
+  SOLICITADO: { label: 'Solicitado', color: 'bg-info-muted text-info-muted-foreground', icon: Clock },
+  EN_TRANSITO: { label: 'En Tránsito', color: 'bg-warning-muted text-warning-muted-foreground', icon: Truck },
+  COMPLETADO: { label: 'Completado', color: 'bg-success-muted text-success', icon: CheckCircle },
+  RECIBIDO_PARCIAL: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground', icon: PackageCheck },
+  CANCELADO: { label: 'Cancelado', color: 'bg-destructive/10 text-destructive', icon: Clock },
 };
 
 export default function TransferenciasPage() {
@@ -328,9 +328,9 @@ export default function TransferenciasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Borradores</p>
-                <p className="text-2xl font-bold text-gray-600">{kpis.borradores}</p>
+                <p className="text-2xl font-bold text-muted-foreground">{kpis.borradores}</p>
               </div>
-              <Clock className="h-8 w-8 text-gray-400" />
+              <Clock className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -339,9 +339,9 @@ export default function TransferenciasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En Tránsito</p>
-                <p className="text-2xl font-bold text-yellow-600">{kpis.enTransito}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{kpis.enTransito}</p>
               </div>
-              <Truck className="h-8 w-8 text-yellow-400" />
+              <Truck className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -350,9 +350,9 @@ export default function TransferenciasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completados</p>
-                <p className="text-2xl font-bold text-green-600">{kpis.completados}</p>
+                <p className="text-2xl font-bold text-success">{kpis.completados}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>

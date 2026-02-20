@@ -53,10 +53,10 @@ interface RecurrencePanelProps {
 }
 
 const priorityColors: Record<string, string> = {
-  P1: 'bg-red-100 text-red-800',
-  P2: 'bg-orange-100 text-orange-800',
-  P3: 'bg-yellow-100 text-yellow-800',
-  P4: 'bg-blue-100 text-blue-800',
+  P1: 'bg-destructive/10 text-destructive',
+  P2: 'bg-warning-muted text-warning-muted-foreground',
+  P3: 'bg-warning-muted text-warning-muted-foreground',
+  P4: 'bg-info-muted text-info-muted-foreground',
 };
 
 /**
@@ -130,17 +130,17 @@ export function RecurrencePanel({ failureId }: RecurrencePanelProps) {
       {effectiveSolutions.length > 0 && (
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success" />
             Soluciones Efectivas
           </h4>
           <div className="space-y-2">
             {effectiveSolutions.map((solution) => (
               <div
                 key={solution.id}
-                className="rounded-lg border border-green-200 bg-green-50 p-3"
+                className="rounded-lg border border-success-muted bg-success-muted p-3"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <Badge variant="outline" className="bg-green-100">
+                  <Badge variant="outline" className="bg-success-muted">
                     Efectividad: {solution.effectiveness}/5
                   </Badge>
                 </div>

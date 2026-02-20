@@ -72,11 +72,11 @@ const actionIcons: Record<string, any> = {
 };
 
 const actionColors: Record<string, string> = {
-  LOGIN: 'bg-green-500/10 text-green-500 border-green-500/20',
+  LOGIN: 'bg-success/10 text-success border-success-muted/20',
   LOGOUT: 'bg-muted text-muted-foreground border-border',
-  CREATE: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  UPDATE: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  DELETE: 'bg-red-500/10 text-red-500 border-red-500/20',
+  CREATE: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
+  UPDATE: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
+  DELETE: 'bg-destructive/10 text-destructive border-destructive/30/20',
   VIEW: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   SETTINGS: 'bg-muted text-muted-foreground border-border',
 };
@@ -243,8 +243,8 @@ export default function ActivityPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Activity className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                <Activity className="h-6 w-6 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -256,8 +256,8 @@ export default function ActivityPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <Calendar className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.today}</p>
@@ -282,8 +282,8 @@ export default function ActivityPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Edit className="h-6 w-6 text-orange-500" />
+              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Edit className="h-6 w-6 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.updates}</p>

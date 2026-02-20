@@ -3,31 +3,20 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function GET(request: NextRequest) {
   try {
-    console.log('🚀 Iniciando smart checklists API...');
     
     const { searchParams } = new URL(request.url);
     const companyId = parseInt(searchParams.get('companyId') || '0');
     const sectorId = searchParams.get('sectorId') ? parseInt(searchParams.get('sectorId')!) : null;
     const machineId = searchParams.get('machineId') ? parseInt(searchParams.get('machineId')!) : null;
 
-    console.log('📋 Parámetros recibidos:', { companyId, sectorId, machineId });
-
     if (!companyId) {
-      console.log('❌ companyId no proporcionado');
       return NextResponse.json(
         { error: 'companyId es requerido' },
         { status: 400 }
       );
     }
-
-    console.log('🔍 Generando smart checklists para:', {
-      companyId,
-      sectorId,
-      machineId
-    });
 
     // 1. Obtener mantenimientos pendientes (hoy y mañana)
     const today = new Date();
@@ -35,9 +24,20 @@ export async function GET(request: NextRequest) {
     const dayAfterTomorrow = new Date(today);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
-    console.log('🔍 Buscando work orders y templates en paralelo...');
-    
-    // ✅ OPTIMIZADO: Ejecutar ambas queries en paralelo
+    // ✅ MIGRADO: Queries directas a preventiveTemplate en lugar de JSON-in-Document
+
+    // Construir filtro para templates preventivos
+    const templateWhere: any = {
+      companyId,
+      isActive: true,
+      nextMaintenanceDate: {
+        gte: today,
+        lt: dayAfterTomorrow,
+      },
+    };
+    if (sectorId) templateWhere.sectorId = sectorId;
+    if (machineId) templateWhere.machineId = machineId;
+
     const [pendingWorkOrders, preventiveTemplates] = await Promise.all([
       // Obtener work orders pendientes
       prisma.workOrder.findMany({
@@ -52,61 +52,31 @@ export async function GET(request: NextRequest) {
           assignedTo: { select: { id: true, name: true, email: true } }
         }
       }),
-      // Obtener mantenimientos preventivos pendientes
-      prisma.document.findMany({
-        where: {
-          entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE',
-          url: { contains: `"companyId":${companyId}` }
-        }
+      // Obtener mantenimientos preventivos pendientes directamente de la tabla
+      prisma.preventiveTemplate.findMany({
+        where: templateWhere,
       })
     ]);
 
-    console.log('✅ Work orders pendientes:', pendingWorkOrders.length, '| Templates preventivos:', preventiveTemplates.length);
-
-    const pendingPreventiveMaintenances = [];
-    
-    console.log('🔍 Procesando templates preventivos...');
-    
-    for (const template of preventiveTemplates) {
-      try {
-        const templateData = JSON.parse(template.url);
-        
-        if (templateData.isActive && templateData.nextMaintenanceDate) {
-          const nextDate = new Date(templateData.nextMaintenanceDate);
-          
-          // Solo incluir si vence hoy o mañana
-          if (nextDate >= today && nextDate < dayAfterTomorrow) {
-            // Aplicar filtros adicionales
-            if (sectorId && templateData.sectorId !== sectorId) continue;
-            if (machineId && templateData.machineId !== machineId) continue;
-            
-            pendingPreventiveMaintenances.push({
-              id: template.id,
-              title: templateData.title,
-              description: templateData.description,
-              priority: templateData.priority,
-              type: 'PREVENTIVE',
-              machineId: templateData.machineId,
-              machineName: templateData.machineName,
-              assignedToId: templateData.assignedToId,
-              assignedToName: templateData.assignedToName,
-              nextMaintenanceDate: templateData.nextMaintenanceDate,
-              frequencyDays: templateData.frequencyDays,
-              estimatedHours: templateData.estimatedHours,
-              estimatedValue: templateData.estimatedValue,
-              timeUnit: templateData.timeUnit,
-              notes: templateData.notes || '',
-              componentIds: templateData.componentIds || [],
-              subcomponentIds: templateData.subcomponentIds || []
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing preventive template:', template.id, error);
-      }
-    }
-
-    console.log('✅ Mantenimientos preventivos pendientes procesados:', pendingPreventiveMaintenances.length);
+    const pendingPreventiveMaintenances = preventiveTemplates.map((tpl) => ({
+      id: tpl.id,
+      title: tpl.title,
+      description: tpl.description,
+      priority: tpl.priority,
+      type: 'PREVENTIVE' as const,
+      machineId: tpl.machineId,
+      machineName: tpl.machineName,
+      assignedToId: tpl.assignedToId,
+      assignedToName: tpl.assignedToName,
+      nextMaintenanceDate: tpl.nextMaintenanceDate?.toISOString() || null,
+      frequencyDays: tpl.frequencyDays,
+      estimatedHours: tpl.estimatedHours,
+      estimatedValue: tpl.timeValue,
+      timeUnit: tpl.timeUnit,
+      notes: tpl.notes || '',
+      componentIds: tpl.componentIds || [],
+      subcomponentIds: tpl.subcomponentIds || []
+    }));
 
     // 3. Agrupar mantenimientos por frecuencia
     const groupedMaintenances = {
@@ -186,14 +156,6 @@ export async function GET(request: NextRequest) {
         'ANNUAL': 7
       };
       return priorityOrder[a.frequency] - priorityOrder[b.frequency];
-    });
-
-    console.log('✅ Smart checklists generados:', {
-      totalChecklists: smartChecklists.length,
-      breakdown: smartChecklists.map(c => ({ 
-        frequency: c.frequency, 
-        count: c.totalMaintenances 
-      }))
     });
 
     return NextResponse.json({

@@ -7,6 +7,32 @@ import { createTemplateSchema } from '@/lib/cargas/validations';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
+// Flag de módulo: DDL se ejecuta solo una vez por proceso del servidor
+let loadTemplateTableInitialized = false;
+
+async function ensureLoadTemplateTable() {
+  if (loadTemplateTableInitialized) return;
+  try {
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS "LoadTemplate" (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        "companyId" INTEGER NOT NULL REFERENCES "Company"(id),
+        "truckId" INTEGER REFERENCES "Truck"(id),
+        items JSONB NOT NULL DEFAULT '[]',
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await prisma.$executeRaw`
+      CREATE INDEX IF NOT EXISTS "LoadTemplate_companyId_idx" ON "LoadTemplate"("companyId")
+    `;
+    loadTemplateTableInitialized = true;
+  } catch {
+    // La tabla puede ya existir
+  }
+}
+
 async function getUserFromToken(request: NextRequest) {
   try {
     const token = cookies().get('token')?.value;
@@ -101,27 +127,7 @@ export async function POST(request: NextRequest) {
 
     const { name, truckId, items } = validation.data;
 
-    // Verificar si la tabla existe, si no, crearla
-    try {
-      await prisma.$executeRaw`
-        CREATE TABLE IF NOT EXISTS "LoadTemplate" (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(100) NOT NULL,
-          "companyId" INTEGER NOT NULL REFERENCES "Company"(id),
-          "truckId" INTEGER REFERENCES "Truck"(id),
-          items JSONB NOT NULL DEFAULT '[]',
-          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `;
-
-      // Crear índice si no existe
-      await prisma.$executeRaw`
-        CREATE INDEX IF NOT EXISTS "LoadTemplate_companyId_idx" ON "LoadTemplate"("companyId")
-      `;
-    } catch (createTableError) {
-      // Ignorar si ya existe
-    }
+    await ensureLoadTemplateTable();
 
     // Crear el template
     const result = await prisma.$queryRaw`

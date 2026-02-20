@@ -61,8 +61,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error obteniendo datos de ventas:', error);
+    const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: 'Error al obtener datos de ventas' },
+      { error: 'Error al obtener datos de ventas', detail: message },
       { status: 500 }
     );
   }

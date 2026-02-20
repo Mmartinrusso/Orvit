@@ -388,7 +388,7 @@ export default function BancosPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Diferencia Conciliación</p>
-                  <p className={`text-2xl font-bold mt-1 ${diferenciaTotal !== 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                  <p className={`text-2xl font-bold mt-1 ${diferenciaTotal !== 0 ? 'text-warning-muted-foreground' : 'text-success'}`}>
                     {formatCurrency(diferenciaTotal)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -491,7 +491,7 @@ export default function BancosPage() {
                         </TableCell>
                         <TableCell className="text-sm text-right font-mono">
                           {banco.saldoBancario !== banco.saldoContable ? (
-                            <span className="text-yellow-600">
+                            <span className="text-warning-muted-foreground">
                               {formatCurrency(banco.saldoBancario, banco.moneda)}
                             </span>
                           ) : (

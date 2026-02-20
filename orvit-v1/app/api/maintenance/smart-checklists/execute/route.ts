@@ -3,16 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    
-    console.log('🔧 Ejecutando smart checklist:', {
-      checklistId: data.checklistId,
-      executedById: data.executedById,
-      maintenancesToExecute: data.maintenances?.length || 0
-    });
 
     if (!data.checklistId || !data.executedById || !data.maintenances) {
       return NextResponse.json(
@@ -27,11 +20,6 @@ export async function POST(request: NextRequest) {
     // Ejecutar cada mantenimiento individualmente
     for (const maintenance of data.maintenances) {
       try {
-        console.log('🔄 Ejecutando mantenimiento:', {
-          id: maintenance.id,
-          type: maintenance.type,
-          title: maintenance.title
-        });
 
         let executionResult;
 
@@ -81,13 +69,6 @@ export async function POST(request: NextRequest) {
         hasIssue: errors.length > 0,
         issueDescription: errors.length > 0 ? JSON.stringify(errors) : null
       }
-    });
-
-    console.log('✅ Smart checklist ejecutado:', {
-      checklistExecutionId: checklistExecution.id,
-      completedMaintenances: executionResults.length,
-      failedMaintenances: errors.length,
-      totalMaintenances: data.maintenances.length
     });
 
     return NextResponse.json({

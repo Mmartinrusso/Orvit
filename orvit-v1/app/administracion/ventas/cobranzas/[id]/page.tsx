@@ -153,10 +153,10 @@ const ESTADOS_CONFIG: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-blue-100 text-blue-700', icon: Clock },
-  CONFIRMADO: { label: 'Confirmado', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  RECHAZADO: { label: 'Rechazado', color: 'bg-red-100 text-red-700', icon: XCircle },
-  ANULADO: { label: 'Anulado', color: 'bg-gray-100 text-gray-500', icon: XCircle },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-info-muted text-info-muted-foreground', icon: Clock },
+  CONFIRMADO: { label: 'Confirmado', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  RECHAZADO: { label: 'Rechazado', color: 'bg-destructive/10 text-destructive', icon: XCircle },
+  ANULADO: { label: 'Anulado', color: 'bg-muted text-muted-foreground', icon: XCircle },
 };
 
 export default function PaymentDetailPage({ params }: { params: { id: string } }) {
@@ -278,7 +278,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
   if (!payment) {
     return (
       <div className="container mx-auto py-6">
-        <div className="text-center text-gray-500">Pago no encontrado</div>
+        <div className="text-center text-muted-foreground">Pago no encontrado</div>
       </div>
     );
   }
@@ -313,7 +313,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Cobro {payment.numero}</h1>
-            <p className="text-sm text-gray-500">Cliente: {clientName}</p>
+            <p className="text-sm text-muted-foreground">Cliente: {clientName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -348,7 +348,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <Label className="text-xs text-gray-500">Estado</Label>
+              <Label className="text-xs text-muted-foreground">Estado</Label>
               <div className="mt-1">
                 <Badge className={statusConfig.color}>
                   <StatusIcon className="w-3 h-3 mr-1" />
@@ -357,22 +357,22 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
               </div>
             </div>
             <div>
-              <Label className="text-xs text-gray-500">Fecha de Pago</Label>
+              <Label className="text-xs text-muted-foreground">Fecha de Pago</Label>
               <div className="mt-1 flex items-center gap-1">
-                <Calendar className="w-4 h-4 text-gray-400" />
+                <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="font-medium">
                   {format(new Date(payment.fechaPago), 'dd/MM/yyyy HH:mm', { locale: es })}
                 </span>
               </div>
             </div>
             <div>
-              <Label className="text-xs text-gray-500">Monto Total</Label>
-              <div className="mt-1 text-2xl font-bold text-green-600">
+              <Label className="text-xs text-muted-foreground">Monto Total</Label>
+              <div className="mt-1 text-2xl font-bold text-success">
                 {formatCurrency(payment.totalPago)}
               </div>
             </div>
             <div>
-              <Label className="text-xs text-gray-500">Tipo</Label>
+              <Label className="text-xs text-muted-foreground">Tipo</Label>
               <div className="mt-1">
                 <Badge variant="outline">{payment.docType}</Badge>
               </div>
@@ -396,7 +396,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                   return (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-gray-500" />
+                        <Icon className="w-4 h-4 text-muted-foreground" />
                         <span>{method.label}</span>
                       </div>
                       <span className="font-semibold">{formatCurrency(method.value)}</span>
@@ -410,12 +410,12 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                   <Separator className="my-4" />
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Banco Origen:</span>
+                      <span className="text-muted-foreground">Banco Origen:</span>
                       <span>{payment.bancoOrigen}</span>
                     </div>
                     {payment.numeroOperacion && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-500">Nro. Operación:</span>
+                        <span className="text-muted-foreground">Nro. Operación:</span>
                         <span>{payment.numeroOperacion}</span>
                       </div>
                     )}
@@ -427,11 +427,11 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                 <>
                   <Separator className="my-4" />
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-500">Retenciones</Label>
+                    <Label className="text-xs text-muted-foreground">Retenciones</Label>
                     {retentions.map((ret, index) => (
                       <div key={index} className="flex items-center justify-between text-sm">
                         <span>{ret.label}</span>
-                        <span className="font-semibold text-orange-600">
+                        <span className="font-semibold text-warning-muted-foreground">
                           {formatCurrency(ret.value)}
                         </span>
                       </div>
@@ -457,15 +457,15 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                     >
                       <div>
                         <div className="font-medium">{allocation.invoice.numero}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                           Saldo actual: {formatCurrency(allocation.invoice.saldoPendiente)}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold text-green-600">
+                        <div className="font-semibold text-success">
                           {formatCurrency(allocation.montoAplicado)}
                         </div>
-                        <div className="text-xs text-gray-500">Aplicado</div>
+                        <div className="text-xs text-muted-foreground">Aplicado</div>
                       </div>
                     </div>
                   ))}
@@ -492,27 +492,27 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-gray-500">Banco:</span> {cheque.banco}
+                          <span className="text-muted-foreground">Banco:</span> {cheque.banco}
                         </div>
                         {cheque.titular && (
                           <div>
-                            <span className="text-gray-500">Titular:</span> {cheque.titular}
+                            <span className="text-muted-foreground">Titular:</span> {cheque.titular}
                           </div>
                         )}
                         {cheque.cuit && (
                           <div>
-                            <span className="text-gray-500">CUIT:</span> {cheque.cuit}
+                            <span className="text-muted-foreground">CUIT:</span> {cheque.cuit}
                           </div>
                         )}
                         <div>
-                          <span className="text-gray-500">Importe:</span>{' '}
+                          <span className="text-muted-foreground">Importe:</span>{' '}
                           <span className="font-semibold">
                             {formatCurrency(cheque.importe)}
                           </span>
                         </div>
                       </div>
                       {cheque.fechaVencimiento && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           Vencimiento:{' '}
                           {format(new Date(cheque.fechaVencimiento), 'dd/MM/yyyy', {
                             locale: es,
@@ -542,52 +542,52 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                   {payment.cashMovements?.map((movement) => (
                     <div
                       key={`cash-${movement.id}`}
-                      className="p-3 border rounded-md space-y-2 bg-green-50"
+                      className="p-3 border rounded-md space-y-2 bg-success-muted"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Banknote className="w-4 h-4 text-green-600" />
+                          <Banknote className="w-4 h-4 text-success" />
                           <div>
                             <div className="font-medium text-sm">
                               {movement.cashAccount.nombre}
                             </div>
-                            <div className="text-xs text-gray-500">Caja</div>
+                            <div className="text-xs text-muted-foreground">Caja</div>
                           </div>
                         </div>
-                        <Badge variant="outline" className="bg-green-100 text-green-700">
+                        <Badge variant="outline" className="bg-success-muted text-success">
                           {movement.tipo}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-gray-500">Fecha:</span>{' '}
+                          <span className="text-muted-foreground">Fecha:</span>{' '}
                           {format(new Date(movement.fecha), 'dd/MM/yyyy', { locale: es })}
                         </div>
                         {movement.comprobante && (
                           <div>
-                            <span className="text-gray-500">Comprobante:</span>{' '}
+                            <span className="text-muted-foreground">Comprobante:</span>{' '}
                             {movement.comprobante}
                           </div>
                         )}
                         {movement.ingreso > 0 && (
                           <div>
-                            <span className="text-gray-500">Ingreso:</span>{' '}
-                            <span className="font-semibold text-green-600">
+                            <span className="text-muted-foreground">Ingreso:</span>{' '}
+                            <span className="font-semibold text-success">
                               {formatCurrency(movement.ingreso)}
                             </span>
                           </div>
                         )}
                         {movement.egreso > 0 && (
                           <div>
-                            <span className="text-gray-500">Egreso:</span>{' '}
-                            <span className="font-semibold text-red-600">
+                            <span className="text-muted-foreground">Egreso:</span>{' '}
+                            <span className="font-semibold text-destructive">
                               {formatCurrency(movement.egreso)}
                             </span>
                           </div>
                         )}
                       </div>
                       {movement.descripcion && (
-                        <div className="text-xs text-gray-600 italic">
+                        <div className="text-xs text-muted-foreground italic">
                           {movement.descripcion}
                         </div>
                       )}
@@ -598,54 +598,54 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                   {payment.bankMovements?.map((movement) => (
                     <div
                       key={`bank-${movement.id}`}
-                      className="p-3 border rounded-md space-y-2 bg-blue-50"
+                      className="p-3 border rounded-md space-y-2 bg-info-muted"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-blue-600" />
+                          <Building className="w-4 h-4 text-info-muted-foreground" />
                           <div>
                             <div className="font-medium text-sm">
                               {movement.bankAccount.nombre}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                               {movement.bankAccount.banco}
                             </div>
                           </div>
                         </div>
-                        <Badge variant="outline" className="bg-blue-100 text-blue-700">
+                        <Badge variant="outline" className="bg-info-muted text-info-muted-foreground">
                           {movement.tipo}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-gray-500">Fecha:</span>{' '}
+                          <span className="text-muted-foreground">Fecha:</span>{' '}
                           {format(new Date(movement.fecha), 'dd/MM/yyyy', { locale: es })}
                         </div>
                         {movement.comprobante && (
                           <div>
-                            <span className="text-gray-500">Comprobante:</span>{' '}
+                            <span className="text-muted-foreground">Comprobante:</span>{' '}
                             {movement.comprobante}
                           </div>
                         )}
                         {movement.ingreso > 0 && (
                           <div>
-                            <span className="text-gray-500">Ingreso:</span>{' '}
-                            <span className="font-semibold text-green-600">
+                            <span className="text-muted-foreground">Ingreso:</span>{' '}
+                            <span className="font-semibold text-success">
                               {formatCurrency(movement.ingreso)}
                             </span>
                           </div>
                         )}
                         {movement.egreso > 0 && (
                           <div>
-                            <span className="text-gray-500">Egreso:</span>{' '}
-                            <span className="font-semibold text-red-600">
+                            <span className="text-muted-foreground">Egreso:</span>{' '}
+                            <span className="font-semibold text-destructive">
                               {formatCurrency(movement.egreso)}
                             </span>
                           </div>
                         )}
                       </div>
                       {movement.descripcion && (
-                        <div className="text-xs text-gray-600 italic">
+                        <div className="text-xs text-muted-foreground italic">
                           {movement.descripcion}
                         </div>
                       )}
@@ -681,18 +681,18 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                 {/* Creation */}
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="rounded-full bg-blue-100 p-2">
-                      <Receipt className="w-4 h-4 text-blue-600" />
+                    <div className="rounded-full bg-info-muted p-2">
+                      <Receipt className="w-4 h-4 text-info-muted-foreground" />
                     </div>
-                    <div className="w-px h-full bg-gray-200 mt-2" />
+                    <div className="w-px h-full bg-muted mt-2" />
                   </div>
                   <div className="flex-1 pb-4">
                     <div className="text-sm font-medium">Cobro Registrado</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       {format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
                     </div>
                     {payment.createdByUser && (
-                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                         <User className="w-3 h-3" />
                         {payment.createdByUser.name}
                       </div>
@@ -704,26 +704,26 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                 {auditLogs.map((log, index) => (
                   <div key={log.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="rounded-full bg-gray-100 p-2">
-                        <Clock className="w-4 h-4 text-gray-600" />
+                      <div className="rounded-full bg-muted p-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
                       </div>
                       {index < auditLogs.length - 1 && (
-                        <div className="w-px h-full bg-gray-200 mt-2" />
+                        <div className="w-px h-full bg-muted mt-2" />
                       )}
                     </div>
                     <div className="flex-1 pb-4">
                       <div className="text-sm font-medium">{log.action}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm', { locale: es })}
                       </div>
                       {log.userName && (
-                        <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                           <User className="w-3 h-3" />
                           {log.userName}
                         </div>
                       )}
                       {log.detalles && (
-                        <div className="text-xs text-gray-600 mt-1">{log.detalles}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{log.detalles}</div>
                       )}
                     </div>
                   </div>
@@ -740,7 +740,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs text-gray-500">Razón Social</Label>
+                  <Label className="text-xs text-muted-foreground">Razón Social</Label>
                   <div className="font-medium">{clientName}</div>
                 </div>
                 <Button
@@ -763,7 +763,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
                 <CardTitle className="text-base">Movimientos de Tesorería</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   {payment.treasuryMovementIds.length} movimiento(s) de tesorería creado(s)
                 </div>
               </CardContent>

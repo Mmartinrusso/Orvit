@@ -119,17 +119,17 @@ interface BatchLot {
 }
 
 const RESULT_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  APPROVED: { label: 'Aprobado', color: 'bg-green-500', icon: <CheckCircle2 className="h-3 w-3" /> },
-  REJECTED: { label: 'Rechazado', color: 'bg-red-500', icon: <XCircle className="h-3 w-3" /> },
-  HOLD: { label: 'En Espera', color: 'bg-yellow-500', icon: <Clock className="h-3 w-3" /> },
-  PENDING: { label: 'Pendiente', color: 'bg-gray-500', icon: <Clock className="h-3 w-3" /> },
+  APPROVED: { label: 'Aprobado', color: 'bg-success', icon: <CheckCircle2 className="h-3 w-3" /> },
+  REJECTED: { label: 'Rechazado', color: 'bg-destructive', icon: <XCircle className="h-3 w-3" /> },
+  HOLD: { label: 'En Espera', color: 'bg-warning', icon: <Clock className="h-3 w-3" /> },
+  PENDING: { label: 'Pendiente', color: 'bg-muted-foreground', icon: <Clock className="h-3 w-3" /> },
 };
 
 const LOT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendiente', color: 'bg-gray-500' },
-  APPROVED: { label: 'Aprobado', color: 'bg-green-500' },
-  BLOCKED: { label: 'Bloqueado', color: 'bg-red-500' },
-  REJECTED: { label: 'Rechazado', color: 'bg-red-700' },
+  PENDING: { label: 'Pendiente', color: 'bg-muted-foreground' },
+  APPROVED: { label: 'Aprobado', color: 'bg-success' },
+  BLOCKED: { label: 'Bloqueado', color: 'bg-destructive' },
+  REJECTED: { label: 'Rechazado', color: 'bg-destructive' },
 };
 
 export default function QualityPage() {
@@ -566,7 +566,7 @@ export default function QualityPage() {
                               {statusConfig.label}
                             </Badge>
                             {lot.blockedReason && (
-                              <p className="text-xs text-red-500 mt-1">{lot.blockedReason}</p>
+                              <p className="text-xs text-destructive mt-1">{lot.blockedReason}</p>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -586,7 +586,7 @@ export default function QualityPage() {
 
                                 {canApprove && lot.qualityStatus === 'PENDING' && (
                                   <DropdownMenuItem onClick={() => handleApproveLot(lot)}>
-                                    <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                                    <CheckCircle2 className="h-4 w-4 mr-2 text-success" />
                                     Aprobar
                                   </DropdownMenuItem>
                                 )}
@@ -595,7 +595,7 @@ export default function QualityPage() {
                                   <DropdownMenuItem
                                     onClick={() => setBlockDialog({ open: true, lot, reason: '' })}
                                   >
-                                    <Lock className="h-4 w-4 mr-2 text-red-500" />
+                                    <Lock className="h-4 w-4 mr-2 text-destructive" />
                                     Bloquear
                                   </DropdownMenuItem>
                                 )}
@@ -604,7 +604,7 @@ export default function QualityPage() {
                                   <DropdownMenuItem
                                     onClick={() => setReleaseDialog({ open: true, lot })}
                                   >
-                                    <Unlock className="h-4 w-4 mr-2 text-green-500" />
+                                    <Unlock className="h-4 w-4 mr-2 text-success" />
                                     Liberar
                                   </DropdownMenuItem>
                                 )}

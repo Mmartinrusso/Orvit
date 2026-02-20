@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/contexts/CompanyContext';
-import { Plus, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Save, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface IndirectCost {
   id: number;
@@ -170,12 +171,10 @@ export default function EmployeeCostDistributionMatrix({
   const calculateRowTotal = (employeeCategoryId: string): number => {
     const row = matrix[employeeCategoryId] || {};
     const values = Object.values(row);
-    console.log(`🔍 Calculando total fila ${employeeCategoryId}:`, values);
     const total = values.reduce((sum, value) => {
       const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
       return sum + numValue;
     }, 0);
-    console.log(`✅ Total calculado:`, total);
     return isNaN(total) ? 0 : total;
   };
 
@@ -247,16 +246,16 @@ export default function EmployeeCostDistributionMatrix({
   };
 
   const getRowTotalColor = (total: number): string => {
-    if (total === 100) return 'text-green-600 bg-green-50';
-    if (total > 100) return 'text-red-600 bg-red-50';
-    return 'text-yellow-600 bg-yellow-50';
+    if (total === 100) return 'text-success bg-success-muted';
+    if (total > 100) return 'text-destructive bg-destructive/10';
+    return 'text-warning-muted-foreground bg-warning-muted';
   };
 
   if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="full" className="max-h-[90vh] overflow-hidden">
+      <DialogContent size="full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -264,34 +263,35 @@ export default function EmployeeCostDistributionMatrix({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 overflow-auto max-h-[70vh]">
+        <DialogBody>
+        <div className="space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <Loader2 className="h-8 w-8 animate-spin text-info" />
               <span className="ml-2">Cargando datos...</span>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
+              <table className="w-full border-collapse border border-border">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 p-2 text-left font-semibold min-w-[200px]">
+                  <tr className="bg-muted">
+                    <th className="border border-border p-2 text-left font-semibold min-w-[200px]">
                       Categorías de Empleados
                     </th>
                     {productCategories.map(category => {
                       const columnTotal = calculateColumnTotal(category.id.toString());
                       return (
-                        <th key={category.id} className="border border-gray-300 p-2 text-center font-semibold min-w-[120px]">
+                        <th key={category.id} className="border border-border p-2 text-center font-semibold min-w-[120px]">
                           <div className="flex flex-col">
                             <span className="text-sm">{category.name}</span>
-                            <span className="text-xs text-gray-500 font-normal">
+                            <span className="text-xs text-muted-foreground font-normal">
                               Total: {(typeof columnTotal === 'number' ? columnTotal : 0).toFixed(1)}%
                             </span>
                           </div>
                         </th>
                       );
                     })}
-                    <th className="border border-gray-300 p-2 text-center font-semibold bg-blue-50 min-w-[100px]">
+                    <th className="border border-border p-2 text-center font-semibold bg-info-muted min-w-[100px]">
                       Total Fila
                     </th>
                   </tr>
@@ -300,19 +300,19 @@ export default function EmployeeCostDistributionMatrix({
                   {employeeCategories.map(employeeCategory => {
                     const rowTotal = calculateRowTotal(employeeCategory.id.toString());
                     return (
-                      <tr key={employeeCategory.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 font-medium">
+                      <tr key={employeeCategory.id} className="hover:bg-muted">
+                        <td className="border border-border p-2 font-medium">
                           <div className="flex flex-col">
                             <span className="text-sm">{employeeCategory.name}</span>
                             {employeeCategory.description && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-muted-foreground">
                                 {employeeCategory.description}
                               </span>
                             )}
                           </div>
                         </td>
                         {productCategories.map(productCategory => (
-                          <td key={productCategory.id} className="border border-gray-300 p-1">
+                          <td key={productCategory.id} className="border border-border p-1">
                             <Input
                               type="number"
                               min="0"
@@ -328,10 +328,10 @@ export default function EmployeeCostDistributionMatrix({
                             />
                           </td>
                         ))}
-                        <td className={`border border-gray-300 p-2 text-center font-semibold ${getRowTotalColor(rowTotal)}`}>
+                        <td className={cn('border border-border p-2 text-center font-semibold', getRowTotalColor(rowTotal))}>
                           <div className="flex items-center justify-center gap-1">
                             {rowTotal === 100 ? (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-success" />
                             ) : (
                               <AlertCircle className="h-4 w-4" />
                             )}
@@ -347,7 +347,7 @@ export default function EmployeeCostDistributionMatrix({
           )}
 
           {/* Resumen de validación */}
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-muted p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Resumen de Validación:</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
@@ -358,33 +358,34 @@ export default function EmployeeCostDistributionMatrix({
               </div>
               <div>
                 <span className="font-medium">Filas Válidas (100%):</span> 
-                <span className="ml-1 text-green-600 font-semibold">
+                <span className="ml-1 text-success font-semibold">
                   {employeeCategories.filter(category => calculateRowTotal(category.id.toString()) === 100).length}
                 </span>
               </div>
               <div>
                 <span className="font-medium">Filas con Errores:</span> 
-                <span className="ml-1 text-red-600 font-semibold">
+                <span className="ml-1 text-destructive font-semibold">
                   {employeeCategories.filter(category => calculateRowTotal(category.id.toString()) !== 100).length}
                 </span>
               </div>
             </div>
           </div>
         </div>
+        </DialogBody>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
             <X className="h-4 w-4 mr-2" />
             Cancelar
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={saving || loading}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-info hover:bg-info/90"
           >
             {saving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Guardando...
               </>
             ) : (
@@ -394,7 +395,7 @@ export default function EmployeeCostDistributionMatrix({
               </>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

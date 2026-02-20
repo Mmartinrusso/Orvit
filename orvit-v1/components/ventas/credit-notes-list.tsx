@@ -71,13 +71,14 @@ import {
   FileCheck,
   Ban,
   Send,
+  FileX,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 
 interface CreditNote {
   id: number;
@@ -113,12 +114,12 @@ interface CreditNotesListProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; variant: any }> = {
-  DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-700', variant: 'secondary' },
-  PENDING_AFIP: { label: 'Pendiente AFIP', color: 'bg-yellow-100 text-yellow-700', variant: 'default' },
-  PROCESSING: { label: 'Procesando', color: 'bg-blue-100 text-blue-700', variant: 'default' },
-  AUTHORIZED: { label: 'Autorizada', color: 'bg-green-100 text-green-700', variant: 'default' },
-  REJECTED: { label: 'Rechazada', color: 'bg-red-100 text-red-700', variant: 'destructive' },
-  CANCELLED: { label: 'Anulada', color: 'bg-gray-100 text-gray-500', variant: 'outline' },
+  DRAFT: { label: 'Borrador', color: 'bg-muted text-foreground', variant: 'secondary' },
+  PENDING_AFIP: { label: 'Pendiente AFIP', color: 'bg-warning-muted text-warning-muted-foreground', variant: 'default' },
+  PROCESSING: { label: 'Procesando', color: 'bg-info-muted text-info-muted-foreground', variant: 'default' },
+  AUTHORIZED: { label: 'Autorizada', color: 'bg-success-muted text-success', variant: 'default' },
+  REJECTED: { label: 'Rechazada', color: 'bg-destructive/10 text-destructive', variant: 'destructive' },
+  CANCELLED: { label: 'Anulada', color: 'bg-muted text-muted-foreground', variant: 'outline' },
 };
 
 const MOTIVO_LABELS: Record<string, string> = {
@@ -295,19 +296,6 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
     autorizadas: notes.filter((n) => n.fiscalStatus === 'AUTHORIZED').length,
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-        <Skeleton className="h-96" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -317,11 +305,11 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Notas de Crédito</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-success">
                   {formatCurrency(stats.totalCreditos)}
                 </p>
               </div>
-              <ArrowDownCircle className="w-8 h-8 text-green-500" />
+              <ArrowDownCircle className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -331,11 +319,11 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Notas de Débito</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-2xl font-bold text-destructive">
                   {formatCurrency(stats.totalDebitos)}
                 </p>
               </div>
-              <ArrowUpCircle className="w-8 h-8 text-red-500" />
+              <ArrowUpCircle className="w-8 h-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -347,7 +335,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
                 <p className="text-sm text-muted-foreground">Borradores</p>
                 <p className="text-2xl font-bold">{stats.borradores}</p>
               </div>
-              <FileText className="w-8 h-8 text-orange-500" />
+              <FileText className="w-8 h-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -359,7 +347,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
                 <p className="text-sm text-muted-foreground">Autorizadas</p>
                 <p className="text-2xl font-bold">{stats.autorizadas}</p>
               </div>
-              <FileCheck className="w-8 h-8 text-green-500" />
+              <FileCheck className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -454,7 +442,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
 
       {/* Actions */}
       {selectedNotes.length > 0 && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-info-muted border-info-muted">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="font-medium">
@@ -481,10 +469,15 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {filteredNotes.length === 0 ? (
+          {loading ? (
+            <div className="p-4">
+              <SkeletonTable rows={5} cols={9} />
+            </div>
+          ) : filteredNotes.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No hay notas registradas</p>
+              <FileX className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm font-medium">No hay notas de crédito</p>
+              <p className="text-xs text-muted-foreground mt-1">Las notas de crédito y débito aparecerán aquí</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -547,7 +540,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
                         {MOTIVO_LABELS[note.motivo] || note.motivo}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        <span className={note.tipo === 'NOTA_CREDITO' ? 'text-green-600' : 'text-red-600'}>
+                        <span className={note.tipo === 'NOTA_CREDITO' ? 'text-success' : 'text-destructive'}>
                           {formatCurrency(Number(note.total))}
                         </span>
                       </TableCell>
@@ -574,7 +567,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
                               <>
                                 <DropdownMenuItem
                                   onClick={() => setEmitDialog({ open: true, noteId: note.id, numero: note.numero })}
-                                  className="text-green-600"
+                                  className="text-success"
                                 >
                                   <Send className="w-4 h-4 mr-2" />
                                   Emitir / Autorizar
@@ -626,7 +619,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleEmit} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogAction onClick={handleEmit} className="bg-success hover:bg-success/90">
               Sí, Emitir
             </AlertDialogAction>
           </AlertDialogFooter>

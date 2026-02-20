@@ -96,13 +96,13 @@ export default function AreaSelector() {
       >
         <SelectTrigger className={cn(
           "w-auto min-w-[180px] bg-card/70 hover:bg-card/90 transition-all !border !border-white/10 !shadow-[0_0_0_1.5px_rgba(255,255,255,0.08)] !outline-none !ring-0 focus:!ring-0 focus:!outline-none focus:!border-white/20 focus:!shadow-[0_0_0_2px_rgba(255,255,255,0.15)] active:!border-white/20 active:!shadow-[0_0_0_2px_rgba(255,255,255,0.15)] px-4 py-2 rounded-full font-medium text-foreground flex items-center gap-2",
-          isStale && "!border-amber-500/30"
+          isStale && "!border-warning-muted"
         )}>
           <div className="flex items-center">
             <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
             <span className="font-semibold">{currentArea.name}</span>
             {isStale && (
-              <span className="ml-2 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="ml-2 h-1.5 w-1.5 rounded-full bg-warning-muted-foreground animate-pulse" />
             )}
           </div>
         </SelectTrigger>
@@ -134,7 +134,7 @@ export default function AreaSelector() {
               className={cn(
                 "h-7 w-7 flex items-center justify-center rounded-full transition-colors",
                 "text-muted-foreground hover:text-foreground hover:bg-card/90",
-                isStale && "text-amber-500 hover:text-amber-400",
+                isStale && "text-warning-muted-foreground hover:text-warning-muted-foreground",
                 isRefreshing && "opacity-70 cursor-not-allowed"
               )}
             >

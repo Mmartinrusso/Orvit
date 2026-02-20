@@ -3,15 +3,13 @@
  */
 
 import { z } from 'zod';
-import DOMPurify from 'isomorphic-dompurify';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 // Sanitized string schema
-export const sanitizedString = z.string().transform(val => DOMPurify.sanitize(val));
+export const sanitizedString = z.string().transform(val => sanitizeHtml(val));
 
 // Safe HTML (allows basic tags)
-export const safeHTML = z.string().transform(val => 
-  DOMPurify.sanitize(val, { ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'] })
-);
+export const safeHTML = z.string().transform(val => sanitizeHtml(val));
 
 // SQL-safe string (basic protection)
 export const sqlSafeString = z.string().refine(

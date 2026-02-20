@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { TasksInboxHeader } from "./TasksInboxHeader";
+import { TasksInboxHeader, type TasksViewMode } from "./TasksInboxHeader";
+import { TasksKanbanView } from "./TasksKanbanView";
 import { TasksInboxTabs } from "./TasksInboxTabs";
 import { TasksQuickFilters } from "./TasksQuickFilters";
 import { TasksSearchBar } from "./TasksSearchBar";
@@ -55,6 +56,7 @@ export function TasksInbox({
   const { selectedTask: storeSelectedTask, setSelectedTask, updateTask, deleteTask } = useTaskStore();
   const { toast } = useToast();
 
+  const [viewMode, setViewMode] = useState<TasksViewMode>("list");
   const [activeTab, setActiveTab] = useState<InboxTab>("recibidas");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("");
   const [includeCompleted, setIncludeCompleted] = useState(false);
@@ -414,7 +416,11 @@ export function TasksInbox({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="shrink-0 px-4 md:px-6 pb-2 pt-0">
-        <TasksInboxHeader onNewTask={onNewTask} />
+        <TasksInboxHeader
+          onNewTask={onNewTask}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
       </div>
 
       {/* Tabs */}
@@ -455,76 +461,89 @@ export function TasksInbox({
         />
       </div>
 
-      {/* Master-Detail Layout */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(500px,600px)] gap-4 px-4 sm:px-6 pb-2">
-        {/* List (Master) */}
-        <div className="min-h-0 hidden lg:block">
-          <TasksList
+      {/* Content: Kanban or Master-Detail */}
+      {viewMode === 'kanban' ? (
+        <div className="flex-1 min-h-0 px-4 sm:px-6 pb-2">
+          <TasksKanbanView
             tasks={tasks}
-            activeTab={activeTab}
-            quickFilter={quickFilter}
-            includeCompleted={includeCompleted}
-            currentUserId={user?.id}
-            selectedTaskId={selectedTaskId || undefined}
-            onTaskSelect={handleTaskSelect}
-            onTaskDoubleClick={handleTaskDoubleClick}
-            onTaskComplete={handleTaskComplete}
-            onTaskEdit={onEditTask}
-            onTaskDelete={handleTaskDelete}
-            canEdit={canEdit}
-            canDelete={canDelete}
-            searchQuery={searchQuery}
-            advancedFilters={advancedFilters}
-            sortOption={sortOption}
-            onSortChange={setSortOption}
-            selectionMode={selectionMode}
-            selectedTaskIds={selectedTaskIds}
-            onSelectionChange={handleSelectionChange}
-            onToggleSelectionMode={handleToggleSelectionMode}
+            onSelect={(task) => {
+              handleTaskSelect(task);
+              setIsMobileDetailOpen(true);
+            }}
+            onStatusChange={handleTaskComplete}
           />
         </div>
+      ) : (
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(500px,600px)] gap-4 px-4 sm:px-6 pb-2">
+          {/* List (Master) */}
+          <div className="min-h-0 hidden lg:block">
+            <TasksList
+              tasks={tasks}
+              activeTab={activeTab}
+              quickFilter={quickFilter}
+              includeCompleted={includeCompleted}
+              currentUserId={user?.id}
+              selectedTaskId={selectedTaskId || undefined}
+              onTaskSelect={handleTaskSelect}
+              onTaskDoubleClick={handleTaskDoubleClick}
+              onTaskComplete={handleTaskComplete}
+              onTaskEdit={onEditTask}
+              onTaskDelete={handleTaskDelete}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              searchQuery={searchQuery}
+              advancedFilters={advancedFilters}
+              sortOption={sortOption}
+              onSortChange={setSortOption}
+              selectionMode={selectionMode}
+              selectedTaskIds={selectedTaskIds}
+              onSelectionChange={handleSelectionChange}
+              onToggleSelectionMode={handleToggleSelectionMode}
+            />
+          </div>
 
-        {/* Detail Panel (Desktop) */}
-        <div className="min-h-0 flex-1 hidden lg:block">
-          <TaskDetailPanel
-            task={selectedTask}
-            onComplete={() => selectedTask && handleTaskComplete(selectedTask)}
-            onReopen={() => selectedTask && handleTaskComplete(selectedTask)}
-            onEdit={() => selectedTask && onEditTask?.(selectedTask)}
-            onDelete={() => selectedTask && handleTaskDelete(selectedTask)}
-            canEdit={selectedTask ? canEdit(selectedTask) : false}
-            canDelete={selectedTask ? canDelete(selectedTask) : false}
-            onUpdateSubtask={handleUpdateSubtask}
-          />
-        </div>
+          {/* Detail Panel (Desktop) */}
+          <div className="min-h-0 flex-1 hidden lg:block">
+            <TaskDetailPanel
+              task={selectedTask}
+              onComplete={() => selectedTask && handleTaskComplete(selectedTask)}
+              onReopen={() => selectedTask && handleTaskComplete(selectedTask)}
+              onEdit={() => selectedTask && onEditTask?.(selectedTask)}
+              onDelete={() => selectedTask && handleTaskDelete(selectedTask)}
+              canEdit={selectedTask ? canEdit(selectedTask) : false}
+              canDelete={selectedTask ? canDelete(selectedTask) : false}
+              onUpdateSubtask={handleUpdateSubtask}
+            />
+          </div>
 
-        {/* Mobile: List only */}
-        <div className="min-h-0 lg:hidden">
-          <TasksList
-            tasks={tasks}
-            activeTab={activeTab}
-            quickFilter={quickFilter}
-            includeCompleted={includeCompleted}
-            currentUserId={user?.id}
-            selectedTaskId={selectedTaskId || undefined}
-            onTaskSelect={handleTaskSelect}
-            onTaskDoubleClick={handleTaskDoubleClick}
-            onTaskComplete={handleTaskComplete}
-            onTaskEdit={onEditTask}
-            onTaskDelete={handleTaskDelete}
-            canEdit={canEdit}
-            canDelete={canDelete}
-            searchQuery={searchQuery}
-            advancedFilters={advancedFilters}
-            sortOption={sortOption}
-            onSortChange={setSortOption}
-            selectionMode={selectionMode}
-            selectedTaskIds={selectedTaskIds}
-            onSelectionChange={handleSelectionChange}
-            onToggleSelectionMode={handleToggleSelectionMode}
-          />
+          {/* Mobile: List only */}
+          <div className="min-h-0 lg:hidden">
+            <TasksList
+              tasks={tasks}
+              activeTab={activeTab}
+              quickFilter={quickFilter}
+              includeCompleted={includeCompleted}
+              currentUserId={user?.id}
+              selectedTaskId={selectedTaskId || undefined}
+              onTaskSelect={handleTaskSelect}
+              onTaskDoubleClick={handleTaskDoubleClick}
+              onTaskComplete={handleTaskComplete}
+              onTaskEdit={onEditTask}
+              onTaskDelete={handleTaskDelete}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              searchQuery={searchQuery}
+              advancedFilters={advancedFilters}
+              sortOption={sortOption}
+              onSortChange={setSortOption}
+              selectionMode={selectionMode}
+              selectedTaskIds={selectedTaskIds}
+              onSelectionChange={handleSelectionChange}
+              onToggleSelectionMode={handleToggleSelectionMode}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Mobile: Detail Sheet */}
       <Sheet open={isMobileDetailOpen} onOpenChange={setIsMobileDetailOpen}>

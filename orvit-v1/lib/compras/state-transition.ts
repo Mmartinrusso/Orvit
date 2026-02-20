@@ -412,7 +412,7 @@ async function checkIdempotency(
     if (existing[0].status === 'COMPLETED' && existing[0].response) {
       return {
         exists: true,
-        previousResult: JSON.parse(existing[0].response) as TransitionResult,
+        previousResult: (() => { try { return JSON.parse(existing[0].response) as TransitionResult; } catch { return null as any; } })(),
       };
     }
     // Si está en PROCESSING, es un retry concurrente

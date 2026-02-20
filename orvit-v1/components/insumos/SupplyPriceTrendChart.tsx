@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -102,22 +103,22 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
   const getTrendIcon = () => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
+        return <TrendingUp className="h-4 w-4 text-success" />;
       case 'down':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
+        return <TrendingDown className="h-4 w-4 text-destructive" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getTrendColor = () => {
     switch (trend) {
       case 'up':
-        return 'text-green-600';
+        return 'text-success';
       case 'down':
-        return 'text-red-600';
+        return 'text-destructive';
       default:
-        return 'text-gray-600';
+        return 'text-muted-foreground';
     }
   };
 
@@ -126,14 +127,14 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+            <BarChart3 className="h-5 w-5 text-info-muted-foreground" />
             Tendencia de Precios - {supplyName}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-center gap-2 text-yellow-800">
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="bg-warning-muted border border-warning-muted rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-center gap-2 text-warning-muted-foreground">
                 <AlertTriangle className="h-5 w-5" />
                 <span className="font-medium">Se necesitan al menos 2 precios para calcular tendencias</span>
               </div>
@@ -156,7 +157,7 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
             {getTrendIcon()}
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getTrendColor()}`}>
+            <div className={cn('text-2xl font-bold', getTrendColor())}>
               {formatCurrency(processedData[processedData.length - 1].price)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -168,10 +169,10 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tendencia</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <TrendingUp className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getTrendColor()}`}>
+            <div className={cn('text-2xl font-bold', getTrendColor())}>
               {trendPercentage > 0 ? '+' : ''}{trendPercentage.toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground">
@@ -183,10 +184,10 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Precio Máximo</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {formatCurrency(maxPrice)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -198,10 +199,10 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Precio Mínimo</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatCurrency(minPrice)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -304,7 +305,7 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
               </thead>
               <tbody>
                 {processedData.map((record, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
+                  <tr key={index} className="border-b hover:bg-accent">
                     <td className="p-2 font-mono text-sm">{record.index}</td>
                     <td className="p-2 text-sm">{record.month}</td>
                     <td className="p-2 font-medium">
@@ -314,16 +315,16 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
                       {index > 0 && (
                         <div className="flex items-center gap-1">
                           {record.priceChange > 0 ? (
-                            <TrendingUp className="h-3 w-3 text-green-600" />
+                            <TrendingUp className="h-3 w-3 text-success" />
                           ) : record.priceChange < 0 ? (
-                            <TrendingDown className="h-3 w-3 text-red-600" />
+                            <TrendingDown className="h-3 w-3 text-destructive" />
                           ) : (
-                            <Minus className="h-3 w-3 text-gray-600" />
+                            <Minus className="h-3 w-3 text-muted-foreground" />
                           )}
-                          <span className={`text-sm ${
-                            record.priceChange > 0 ? 'text-green-600' : 
-                            record.priceChange < 0 ? 'text-red-600' : 'text-gray-600'
-                          }`}>
+                          <span className={cn('text-sm',
+                            record.priceChange > 0 ? 'text-success' :
+                            record.priceChange < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          )}>
                             {record.priceChange > 0 ? '+' : ''}{formatCurrency(record.priceChange)}
                           </span>
                         </div>
@@ -341,7 +342,7 @@ export function SupplyPriceTrendChart({ supplyName, unitMeasure, priceRecords }:
                         {record.changeType === 'precio_actualizado' || record.changeType === 'precio_actualizado_masivo' ? 'Actualizado' : 'Nuevo'}
                       </Badge>
                     </td>
-                    <td className="p-2 text-sm text-gray-600">{record.date}</td>
+                    <td className="p-2 text-sm text-muted-foreground">{record.date}</td>
                   </tr>
                 ))}
               </tbody>

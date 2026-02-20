@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { Machine, MachineStatus, MachineType } from '@/lib/types';
 import {
   Dialog,
@@ -12,12 +13,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Cog, 
-  X, 
-  Network, 
-  Building, 
-  MapPin, 
+import {
+  Cog,
+  X,
+  Network,
+  Building,
+  MapPin,
+  Loader2, 
   Activity,
   ZoomIn,
   ZoomOut,
@@ -199,30 +201,30 @@ export default function SectorHierarchicalSchema({
     if (node.type === 'machine') {
       switch (node.machineStatus) {
         case MachineStatus.ACTIVE:
-          return 'border-green-500 bg-green-50';
+          return 'border-success bg-success-muted';
         case MachineStatus.OUT_OF_SERVICE:
-          return 'border-amber-500 bg-amber-50';
+          return 'border-warning bg-warning-muted';
         case MachineStatus.DECOMMISSIONED:
-          return 'border-red-500 bg-red-50';
+          return 'border-destructive bg-destructive/10';
         default:
-          return 'border-gray-300 bg-gray-50';
-      }
-    }
-    
-    if (node.type === 'component' || node.type === 'subcomponent') {
-      switch (node.status) {
-        case 'ACTIVE':
-          return 'border-green-500 bg-green-50';
-        case 'MAINTENANCE':
-          return 'border-amber-500 bg-amber-50';
-        case 'INACTIVE':
-          return 'border-red-500 bg-red-50';
-        default:
-          return 'border-gray-300 bg-gray-50';
+          return 'border-border bg-muted';
       }
     }
 
-    return 'border-blue-500 bg-blue-50';
+    if (node.type === 'component' || node.type === 'subcomponent') {
+      switch (node.status) {
+        case 'ACTIVE':
+          return 'border-success bg-success-muted';
+        case 'MAINTENANCE':
+          return 'border-warning bg-warning-muted';
+        case 'INACTIVE':
+          return 'border-destructive bg-destructive/10';
+        default:
+          return 'border-border bg-muted';
+      }
+    }
+
+    return 'border-info bg-info-muted';
   };
 
   const getNodeIcon = (node: SchemaNode) => {
@@ -247,28 +249,28 @@ export default function SectorHierarchicalSchema({
     return (
       <div key={node.id} className="w-full">
         <div 
-          className={`
-            flex items-center p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md cursor-pointer
-            ${getNodeStatusColor(node)}
-            ${depth > 0 ? 'ml-6' : ''}
-          `}
+          className={cn(
+            'flex items-center p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md cursor-pointer',
+            getNodeStatusColor(node),
+            depth > 0 && 'ml-6'
+          )}
           onClick={() => hasChildren && toggleNode(node.id)}
         >
           <div className="flex items-center space-x-3 flex-1">
             {hasChildren && (
-              <div className="text-gray-500">
+              <div className="text-muted-foreground">
                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
             )}
             {!hasChildren && <div className="w-4" />}
             
-            <div className="text-gray-600">
+            <div className="text-muted-foreground">
               {getNodeIcon(node)}
             </div>
             
             <div className="flex-1">
-              <div className="font-medium text-gray-900">{node.name}</div>
-              <div className="text-sm text-gray-500 capitalize">
+              <div className="font-medium text-foreground">{node.name}</div>
+              <div className="text-sm text-muted-foreground capitalize">
                 {node.type === 'sector' && 'Sector'}
                 {node.type === 'machine' && 'Máquina'}
                 {node.type === 'component' && 'Componente'}
@@ -281,7 +283,7 @@ export default function SectorHierarchicalSchema({
             {node.type === 'machine' && node.machineStatus && (
               <Badge 
                 variant={node.machineStatus === MachineStatus.ACTIVE ? 'default' : 'secondary'}
-                className={node.machineStatus === MachineStatus.ACTIVE ? 'bg-green-500' : 'bg-amber-500'}
+                className={node.machineStatus === MachineStatus.ACTIVE ? 'bg-success' : 'bg-warning'}
               >
                 {node.machineStatus === MachineStatus.ACTIVE ? 'Activo' : 
                  node.machineStatus === MachineStatus.OUT_OF_SERVICE ? 'Fuera de servicio' : 'Baja'}
@@ -314,7 +316,7 @@ export default function SectorHierarchicalSchema({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="full" className="max-h-[90vh] overflow-hidden">
+      <DialogContent size="full">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -335,7 +337,7 @@ export default function SectorHierarchicalSchema({
         </DialogHeader>
 
         {/* Barra de herramientas */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" onClick={expandAll}>
               <ChevronDown className="h-4 w-4 mr-1" />
@@ -369,8 +371,8 @@ export default function SectorHierarchicalSchema({
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-gray-600">Cargando esquema...</p>
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+                <p className="text-muted-foreground">Cargando esquema...</p>
               </div>
             </div>
           ) : schemaData ? (
@@ -386,7 +388,7 @@ export default function SectorHierarchicalSchema({
         </div>
 
         {/* Barra de estado */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg text-sm">
+        <div className="flex items-center justify-between p-4 bg-muted rounded-lg text-sm">
           <div className="flex items-center space-x-4">
             <span>Zoom: {zoom}%</span>
             <span>{totalComponents} componentes</span>
@@ -394,19 +396,19 @@ export default function SectorHierarchicalSchema({
           
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-info rounded-full"></div>
               <span>Sector</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-success rounded-full"></div>
               <span>Operacional</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-warning rounded-full"></div>
               <span>Mantenimiento</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-destructive rounded-full"></div>
               <span>Error</span>
             </div>
           </div>

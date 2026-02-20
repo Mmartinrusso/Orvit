@@ -39,8 +39,8 @@ export function ProductKPICard({
               {trend && (
                 <div className={cn(
                   "flex items-center gap-0.5 text-xs font-medium",
-                  trend === 'up' && "text-green-600",
-                  trend === 'down' && "text-red-600",
+                  trend === 'up' && "text-success",
+                  trend === 'down' && "text-destructive",
                   trend === 'stable' && "text-muted-foreground"
                 )}>
                   {trend === 'up' && <TrendingUp className="h-3 w-3" />}
@@ -63,9 +63,9 @@ export function ProductKPICard({
                 variant={velocityBadge === 'ALTA' ? 'default' : velocityBadge === 'MEDIA' ? 'secondary' : 'outline'}
                 className={cn(
                   "mt-2 text-xs",
-                  velocityBadge === 'ALTA' && "bg-green-500 hover:bg-green-600",
-                  velocityBadge === 'MEDIA' && "bg-blue-500 hover:bg-blue-600 text-white",
-                  velocityBadge === 'BAJA' && "bg-gray-100 text-gray-700"
+                  velocityBadge === 'ALTA' && "bg-success hover:bg-success/90",
+                  velocityBadge === 'MEDIA' && "bg-primary hover:bg-primary/90 text-primary-foreground",
+                  velocityBadge === 'BAJA' && "bg-muted text-foreground"
                 )}
               >
                 {velocityBadge}

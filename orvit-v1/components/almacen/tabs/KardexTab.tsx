@@ -184,7 +184,7 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
                       <span
                         className={cn(
                           'font-medium',
-                          isPositiveMovement(mov.tipo) ? 'text-green-600' : 'text-red-600'
+                          isPositiveMovement(mov.tipo) ? 'text-success' : 'text-destructive'
                         )}
                       >
                         {isPositiveMovement(mov.tipo) ? '+' : '-'}
@@ -242,7 +242,7 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
 
 function MovementTypeBadge({ tipo }: { tipo: MovementType }) {
   const Icon = getMovementIcon(tipo);
-  const colorClass = MovementTypeColors[tipo] || 'bg-gray-100 text-gray-800';
+  const colorClass = MovementTypeColors[tipo] || 'bg-muted text-foreground';
 
   return (
     <Badge variant="outline" className={cn('gap-1', colorClass)}>

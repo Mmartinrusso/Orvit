@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, AlertTriangle, Check } from 'lucide-react';
+import { Plus, AlertTriangle, Check, Loader2 } from 'lucide-react';
 import { Product, QuoteItem } from '@/lib/types/sales';
 import { toast } from 'sonner';
 
@@ -209,7 +209,7 @@ export function QuickProductInput({ onAddItem, products = [] }: QuickProductInpu
           {isLoading && (
             <div className="border rounded-lg p-3 bg-muted/50">
               <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm text-muted-foreground">Buscando producto...</span>
               </div>
             </div>
@@ -233,7 +233,7 @@ export function QuickProductInput({ onAddItem, products = [] }: QuickProductInpu
                   <p className="text-sm text-muted-foreground mb-2">
                     Stock: {foundProduct.currentStock} {foundProduct.unit}
                     {foundProduct.blocksPerM2 && (
-                      <span className="text-blue-600 ml-2">
+                      <span className="text-info-muted-foreground ml-2">
                         • {foundProduct.blocksPerM2} bloques/m²
                       </span>
                     )}
@@ -246,7 +246,7 @@ export function QuickProductInput({ onAddItem, products = [] }: QuickProductInpu
                     </div>
                     <div>
                       <span className="text-muted-foreground">Precio c/margen:</span>
-                      <p className="font-medium text-green-600">
+                      <p className="font-medium text-success">
                         {formatCurrency(calculatePrice(foundProduct.costPrice, marginPercentage))}
                       </p>
                     </div>
@@ -256,7 +256,7 @@ export function QuickProductInput({ onAddItem, products = [] }: QuickProductInpu
                     </div>
                     <div>
                       <span className="text-muted-foreground">Subtotal:</span>
-                      <p className="font-medium text-blue-600">
+                      <p className="font-medium text-primary">
                         {formatCurrency(calculatePrice(foundProduct.costPrice, marginPercentage) * quantity)}
                       </p>
                     </div>

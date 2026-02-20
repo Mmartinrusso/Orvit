@@ -131,25 +131,18 @@ export function WorkOrderDetailDialog({
   // Verificar si la OT viene de una ocurrencia de falla
   const isFromFailureOccurrence = () => {
     if (!workOrder) {
-      console.log('🔍 isFromFailureOccurrence: No workOrder');
       return false;
     }
 
-    console.log('🔍 isFromFailureOccurrence: workOrder.type =', workOrder.type);
-
     if (workOrder.type !== 'CORRECTIVE') {
-      console.log('🔍 isFromFailureOccurrence: NOT CORRECTIVE, returning false');
       return false;
     }
 
     try {
       const notes = typeof workOrder.notes === 'string' ? JSON.parse(workOrder.notes) : workOrder.notes;
-      console.log('🔍 isFromFailureOccurrence: notes =', notes);
       const result = !!(notes?.isOccurrenceSolution === true && notes?.relatedFailureId);
-      console.log('🔍 isFromFailureOccurrence: result =', result);
       return result;
     } catch (e) {
-      console.log('🔍 isFromFailureOccurrence: ERROR parsing notes', e);
       return false;
     }
   };
@@ -165,7 +158,6 @@ export function WorkOrderDetailDialog({
             label: 'Iniciar',
             icon: Play,
             onClick: () => {
-              console.log('🚀 Abriendo FailureOccurrenceDialog...');
               setShowFailureOccurrenceDialog(true);
             },
             variant: 'default' as const,
@@ -176,7 +168,6 @@ export function WorkOrderDetailDialog({
           label: 'Iniciar',
           icon: Play,
           onClick: () => {
-            console.log('🚀 Cambiando estado a IN_PROGRESS...');
             handleStatusChange(WorkOrderStatus.IN_PROGRESS);
           },
           variant: 'default' as const,
@@ -218,9 +209,9 @@ export function WorkOrderDetailDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         size="xl"
-        className="p-0 overflow-hidden rounded-2xl border border-border bg-card shadow-xl [&>button:last-child]:hidden"
+        className="p-0 rounded-2xl border border-border bg-card shadow-xl [&>button:last-child]:hidden"
       >
-        <div className="flex h-full flex-col max-h-[min(90vh,800px)]">
+        <div className="flex h-full flex-col">
           {/* Header sticky premium */}
           <div className="flex-shrink-0 border-b border-border bg-card px-6 py-4">
             <div className="flex items-start justify-between gap-4">
@@ -252,7 +243,7 @@ export function WorkOrderDetailDialog({
                       <span className="text-border">·</span>
                       <span className={cn(
                         'flex items-center gap-1',
-                        orderIsOverdue && 'text-rose-600 dark:text-rose-400 font-medium'
+                        orderIsOverdue && 'text-destructive font-medium'
                       )}>
                         <Calendar className="h-3 w-3" />
                         {dueText || formatDate(workOrder.scheduledDate)}
@@ -438,13 +429,13 @@ export function WorkOrderDetailDialog({
 
                     {/* Alerta de vencimiento */}
                     {orderIsOverdue && (
-                      <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20">
-                        <AlertCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
+                      <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                        <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-rose-700 dark:text-rose-400">
+                          <p className="text-sm font-medium text-destructive">
                             Orden vencida
                           </p>
-                          <p className="text-xs text-rose-600 dark:text-rose-400/80">
+                          <p className="text-xs text-destructive/80">
                             {dueText}
                           </p>
                         </div>
@@ -493,7 +484,7 @@ export function WorkOrderDetailDialog({
                             <dt className="text-xs text-muted-foreground">Responsable</dt>
                             <dd className="text-xs text-foreground truncate max-w-[120px]">
                               {workOrder.assignedTo?.name || (
-                                <span className="text-amber-600 dark:text-amber-400">Sin asignar</span>
+                                <span className="text-warning-muted-foreground">Sin asignar</span>
                               )}
                             </dd>
                           </div>
@@ -593,7 +584,7 @@ export function WorkOrderDetailDialog({
                       {/* Botón RCA */}
                       <div className="rounded-xl border border-border bg-background p-4">
                         <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <Target className="h-4 w-4 text-purple-600" />
+                          <Target className="h-4 w-4 text-primary" />
                           Análisis de Causa Raíz
                         </h4>
                         <p className="text-xs text-muted-foreground mb-3">
@@ -680,11 +671,7 @@ export function WorkOrderDetailDialog({
     )}
 
     {/* Diálogo para aplicar solución a órdenes que vienen de ocurrencias de fallas */}
-    {(() => {
-      const shouldRender = workOrder && isFromFailureOccurrence();
-      console.log('🎨 Renderizando FailureOccurrenceDialog?', shouldRender);
-      return shouldRender;
-    })() && (
+    {workOrder && isFromFailureOccurrence() && (
       <FailureOccurrenceDialog
         isOpen={showFailureOccurrenceDialog}
         onClose={() => setShowFailureOccurrenceDialog(false)}

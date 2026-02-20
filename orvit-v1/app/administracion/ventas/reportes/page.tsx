@@ -230,9 +230,9 @@ export default function ReportesPage() {
   };
 
   const getVariacionIcon = (variacion: number) => {
-    if (variacion > 0) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (variacion < 0) return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <Minus className="w-4 h-4 text-gray-500" />;
+    if (variacion > 0) return <TrendingUp className="w-4 h-4 text-success" />;
+    if (variacion < 0) return <TrendingDown className="w-4 h-4 text-destructive" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
   if (loading) {
@@ -512,13 +512,13 @@ function ResumenEjecutivoView({ data, formatCurrency, getVariacionIcon }: any) {
               <p className="text-xs text-muted-foreground">Cobrado</p>
               {getVariacionIcon(data.kpis.cobrado.variacion)}
             </div>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(data.kpis.cobrado.valor)}</p>
+            <p className="text-xl font-bold text-success">{formatCurrency(data.kpis.cobrado.valor)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Pendiente</p>
-            <p className="text-xl font-bold text-orange-600">{formatCurrency(data.kpis.pendiente.valor)}</p>
+            <p className="text-xl font-bold text-warning-muted-foreground">{formatCurrency(data.kpis.pendiente.valor)}</p>
             <p className="text-xs text-muted-foreground">{data.kpis.pendiente.facturas} facturas</p>
           </CardContent>
         </Card>
@@ -581,11 +581,11 @@ function VentasClienteView({ data, formatCurrency }: any) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Pagado</p>
-              <p className="text-lg font-bold text-green-600">{formatCurrency(data.totales.pagosTotal)}</p>
+              <p className="text-lg font-bold text-success">{formatCurrency(data.totales.pagosTotal)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Deuda Actual</p>
-              <p className="text-lg font-bold text-orange-600">{formatCurrency(data.totales.deudaActual)}</p>
+              <p className="text-lg font-bold text-warning-muted-foreground">{formatCurrency(data.totales.deudaActual)}</p>
             </div>
           </div>
         </CardContent>
@@ -767,7 +767,7 @@ function VentasPeriodoView({ data, formatCurrency }: any) {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Variación</p>
-            <p className={`text-xl font-bold ${data.variacion.porcentaje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xl font-bold ${data.variacion.porcentaje >= 0 ? 'text-success' : 'text-destructive'}`}>
               {data.variacion.porcentaje >= 0 ? '+' : ''}{data.variacion.porcentaje}%
             </p>
           </CardContent>
@@ -794,7 +794,7 @@ function VentasPeriodoView({ data, formatCurrency }: any) {
                 <TableCell className="text-right">{formatCurrency(d.ordenesTotal)}</TableCell>
                 <TableCell className="text-center">{d.facturas}</TableCell>
                 <TableCell className="text-right">{formatCurrency(d.facturasTotal)}</TableCell>
-                <TableCell className="text-right text-green-600">{formatCurrency(d.cobrado)}</TableCell>
+                <TableCell className="text-right text-success">{formatCurrency(d.cobrado)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -824,7 +824,7 @@ function CobranzasPendientesView({ data, formatCurrency }: any) {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total Pendiente</p>
-            <p className="text-xl font-bold text-orange-600">{formatCurrency(data.totales.montoTotal)}</p>
+            <p className="text-xl font-bold text-warning-muted-foreground">{formatCurrency(data.totales.montoTotal)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -1036,7 +1036,7 @@ function EstadoCuentaView({ data, formatCurrency }: any) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Saldo Actual</p>
-              <p className={`text-lg font-bold ${Number(data.totales.saldoActual) > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+              <p className={`text-lg font-bold ${Number(data.totales.saldoActual) > 0 ? 'text-warning-muted-foreground' : 'text-success'}`}>
                 {formatCurrency(data.totales.saldoActual)}
               </p>
             </div>
@@ -1046,13 +1046,13 @@ function EstadoCuentaView({ data, formatCurrency }: any) {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Crédito Disponible</p>
-              <p className={`text-lg font-bold ${(data.totales.creditoDisponible || 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <p className={`text-lg font-bold ${(data.totales.creditoDisponible || 0) < 0 ? 'text-destructive' : 'text-success'}`}>
                 {data.totales.creditoDisponible !== null ? formatCurrency(data.totales.creditoDisponible) : '-'}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Pendiente</p>
-              <p className="text-lg font-bold text-orange-600">{formatCurrency(data.totales.totalPendiente)}</p>
+              <p className="text-lg font-bold text-warning-muted-foreground">{formatCurrency(data.totales.totalPendiente)}</p>
             </div>
           </div>
         </CardContent>
@@ -1089,8 +1089,8 @@ function EstadoCuentaView({ data, formatCurrency }: any) {
                     <TableCell><Badge variant="outline">{m.tipo}</Badge></TableCell>
                     <TableCell>{m.comprobante}</TableCell>
                     <TableCell className="text-right">{Number(m.debe) > 0 ? formatCurrency(Number(m.debe)) : '-'}</TableCell>
-                    <TableCell className="text-right text-green-600">{Number(m.haber) > 0 ? formatCurrency(Number(m.haber)) : '-'}</TableCell>
-                    <TableCell className={`text-right font-medium ${m.saldoAcumulado > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    <TableCell className="text-right text-success">{Number(m.haber) > 0 ? formatCurrency(Number(m.haber)) : '-'}</TableCell>
+                    <TableCell className={`text-right font-medium ${m.saldoAcumulado > 0 ? 'text-warning-muted-foreground' : 'text-success'}`}>
                       {formatCurrency(m.saldoAcumulado)}
                     </TableCell>
                   </TableRow>
@@ -1118,7 +1118,7 @@ function EstadoCuentaView({ data, formatCurrency }: any) {
                     <TableCell>{format(new Date(f.fechaEmision), 'dd/MM/yyyy', { locale: es })}</TableCell>
                     <TableCell>{f.fechaVencimiento ? format(new Date(f.fechaVencimiento), 'dd/MM/yyyy', { locale: es }) : '-'}</TableCell>
                     <TableCell className="text-right">{formatCurrency(Number(f.total))}</TableCell>
-                    <TableCell className="text-right font-medium text-orange-600">{formatCurrency(Number(f.saldoPendiente))}</TableCell>
+                    <TableCell className="text-right font-medium text-warning-muted-foreground">{formatCurrency(Number(f.saldoPendiente))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1142,7 +1142,7 @@ function EstadoCuentaView({ data, formatCurrency }: any) {
                     <TableCell className="font-medium">{p.numero}</TableCell>
                     <TableCell>{format(new Date(p.fechaPago), 'dd/MM/yyyy', { locale: es })}</TableCell>
                     <TableCell><Badge variant="secondary">{p.estado}</Badge></TableCell>
-                    <TableCell className="text-right font-medium text-green-600">{formatCurrency(Number(p.totalPago))}</TableCell>
+                    <TableCell className="text-right font-medium text-success">{formatCurrency(Number(p.totalPago))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

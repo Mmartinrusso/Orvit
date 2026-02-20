@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
 import { useState, useEffect } from 'react';
 import { usePortalAuth, PortalAuthGuard } from '@/contexts/PortalAuthContext';
 import { usePathname } from 'next/navigation';
@@ -32,31 +33,9 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 // Color preferences interface
-interface UserColorPreferences {
-  themeName: string;
-  chart1: string;
-  chart2: string;
-  chart3: string;
-  chart4: string;
-  chart5: string;
-  chart6: string;
-  kpiPositive: string;
-  kpiNegative: string;
-  kpiNeutral: string;
-}
 
-const DEFAULT_COLORS: UserColorPreferences = {
-  themeName: 'Predeterminado',
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
+
 
 type PermissionKey = 'canViewPrices' | 'canViewQuotes' | 'canAcceptQuotes' | 'canCreateOrders' | 'canViewHistory' | 'canViewDocuments';
 

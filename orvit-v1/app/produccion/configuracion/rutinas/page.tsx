@@ -52,11 +52,11 @@ interface RoutineTemplate {
 }
 
 const ROUTINE_TYPES: Record<string, { label: string; color: string }> = {
-  SHIFT_START: { label: 'Inicio de Turno', color: 'bg-blue-500' },
+  SHIFT_START: { label: 'Inicio de Turno', color: 'bg-info' },
   SHIFT_END: { label: 'Fin de Turno', color: 'bg-indigo-500' },
   SETUP: { label: 'Setup/Cambio', color: 'bg-purple-500' },
-  SAFETY: { label: 'Seguridad', color: 'bg-red-500' },
-  '5S': { label: '5S', color: 'bg-green-500' },
+  SAFETY: { label: 'Seguridad', color: 'bg-destructive' },
+  '5S': { label: '5S', color: 'bg-success' },
 };
 
 const FREQUENCIES: Record<string, string> = {
@@ -140,7 +140,7 @@ export default function RoutineTemplatesConfigPage() {
   );
 
   const getTypeInfo = (type: string) => {
-    return ROUTINE_TYPES[type] || { label: type, color: 'bg-gray-500' };
+    return ROUTINE_TYPES[type] || { label: type, color: 'bg-muted-foreground' };
   };
 
   return (
@@ -237,11 +237,11 @@ export default function RoutineTemplatesConfigPage() {
                         </TableCell>
                         <TableCell>
                           {template.isActive ? (
-                            <Badge variant="secondary" className="text-green-600 bg-green-100">
+                            <Badge variant="secondary" className="text-success bg-success-muted">
                               Activa
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-muted-foreground bg-gray-100">
+                            <Badge variant="secondary" className="text-muted-foreground bg-muted">
                               Inactiva
                             </Badge>
                           )}
@@ -258,7 +258,7 @@ export default function RoutineTemplatesConfigPage() {
                                 }}
                                 title="Ejecutar rutina"
                               >
-                                <Play className="h-4 w-4 text-green-600" />
+                                <Play className="h-4 w-4 text-success" />
                               </Button>
                             )}
                             <Button
@@ -278,7 +278,7 @@ export default function RoutineTemplatesConfigPage() {
                               }}
                               title="Eliminar"
                             >
-                              <Trash2 className="h-4 w-4 text-red-500" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </TableCell>
@@ -334,7 +334,7 @@ export default function RoutineTemplatesConfigPage() {
             <DialogDescription>
               ¿Estás seguro de eliminar "{selectedTemplate?.name}"?
               {selectedTemplate?._count?.executions ? (
-                <span className="block mt-2 text-yellow-600">
+                <span className="block mt-2 text-warning-muted-foreground">
                   Esta plantilla tiene {selectedTemplate._count.executions} ejecuciones.
                   Solo se desactivará.
                 </span>

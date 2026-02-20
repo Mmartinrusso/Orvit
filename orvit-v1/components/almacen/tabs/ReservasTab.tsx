@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -153,11 +153,11 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
 
       {/* Tabla */}
       {isLoading ? (
-        <TableSkeleton />
+        <SkeletonTable rows={5} cols={11} />
       ) : reservations.length === 0 ? (
         <EmptyState type="reservas" />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -194,8 +194,8 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
                   <TableRow
                     key={reserva.id}
                     className={cn(
-                      expiringSoon && 'bg-yellow-50',
-                      reserva.estado === 'EXPIRADA' && 'bg-red-50'
+                      expiringSoon && 'bg-warning-muted',
+                      reserva.estado === 'EXPIRADA' && 'bg-destructive/10'
                     )}
                   >
                     <TableCell>
@@ -239,7 +239,7 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
                         reserva.workOrder?.orderNumber ||
                         '-'}
                     </TableCell>
-                    <TableCell className={cn(expiringSoon && 'text-yellow-600 font-medium')}>
+                    <TableCell className={cn(expiringSoon && 'text-warning-muted-foreground font-medium')}>
                       {reserva.fechaExpiracion
                         ? format(new Date(reserva.fechaExpiracion), 'dd/MM/yyyy', { locale: es })
                         : '-'}
@@ -272,43 +272,3 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
   );
 }
 
-function TableSkeleton() {
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-10"><Skeleton className="h-4 w-4" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-32" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-            <TableHead className="w-10"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}

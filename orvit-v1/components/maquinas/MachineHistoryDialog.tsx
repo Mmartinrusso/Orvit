@@ -6,16 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  History, 
-  Calendar, 
-  User, 
-  Camera, 
-  MapPin, 
+import {
+  History,
+  Calendar,
+  User,
+  Camera,
+  MapPin,
   Wrench,
   CheckCircle,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -96,13 +97,13 @@ export default function MachineHistoryDialog({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'PLANT_RESUME':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-muted text-success';
       case 'MAINTENANCE':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'REPAIR':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -148,7 +149,7 @@ export default function MachineHistoryDialog({
         <DialogContent size="full">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-blue-600" />
+              <History className="h-5 w-5 text-info" />
               Historial de Mantenimiento
             </DialogTitle>
             <div className="text-muted-foreground">
@@ -162,14 +163,14 @@ export default function MachineHistoryDialog({
           <DialogBody>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Cargando historial...</span>
             </div>
           ) : historyRecords.length === 0 ? (
             <div className="text-center py-8">
-              <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No hay registros de mantenimiento</p>
-              <p className="text-sm text-gray-400 mt-2">
+              <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No hay registros de mantenimiento</p>
+              <p className="text-sm text-muted-foreground mt-2">
                 Los registros aparecerán aquí cuando se realicen trabajos de mantenimiento
               </p>
             </div>
@@ -216,7 +217,7 @@ export default function MachineHistoryDialog({
                           <h4 className="font-semibold text-sm mb-1">Herramientas Utilizadas del Pañol:</h4>
                           <div className="flex flex-wrap gap-2">
                             {record.toolsUsed.map((tool, index) => (
-                              <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              <Badge key={index} variant="outline" className="bg-info-muted text-info-muted-foreground border-info-muted">
                                 {tool}
                               </Badge>
                             ))}

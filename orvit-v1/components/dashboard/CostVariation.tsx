@@ -59,20 +59,20 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
   const biggestDecrease = sortedByVariation.reverse().find(c => (c.variation || 0) < 0);
 
   const getVariationIcon = (variation: number | null) => {
-    if (variation === null) return <Minus className="h-3 w-3 text-gray-400" />;
-    if (variation > 0) return <TrendingUp className="h-3 w-3 text-red-500" />;
-    if (variation < 0) return <TrendingDown className="h-3 w-3 text-green-500" />;
-    return <Minus className="h-3 w-3 text-gray-400" />;
+    if (variation === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
+    if (variation > 0) return <TrendingUp className="h-3 w-3 text-destructive" />;
+    if (variation < 0) return <TrendingDown className="h-3 w-3 text-success" />;
+    return <Minus className="h-3 w-3 text-muted-foreground" />;
   };
 
   const getVariationColor = (variation: number | null) => {
-    if (variation === null) return 'text-gray-500';
+    if (variation === null) return 'text-muted-foreground';
     // Para costos: incremento es malo (rojo), reducción es buena (verde)
-    if (variation > 5) return 'text-red-600 dark:text-red-400';
-    if (variation > 0) return 'text-amber-600 dark:text-amber-400';
-    if (variation < -5) return 'text-green-600 dark:text-green-400';
-    if (variation < 0) return 'text-green-600 dark:text-green-400';
-    return 'text-gray-500';
+    if (variation > 5) return 'text-destructive';
+    if (variation > 0) return 'text-warning-muted-foreground';
+    if (variation < -5) return 'text-success';
+    if (variation < 0) return 'text-success';
+    return 'text-muted-foreground';
   };
 
   return (
@@ -98,9 +98,9 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
           <div className={cn(
             "p-3 rounded-lg border",
             totalVariation === null ? "bg-muted/50 border-border" :
-            totalVariation > 5 ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50" :
-            totalVariation > 0 ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50" :
-            totalVariation < -5 ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50" :
+            totalVariation > 5 ? "bg-destructive/10 border-destructive/30" :
+            totalVariation > 0 ? "bg-warning-muted border-warning-muted" :
+            totalVariation < -5 ? "bg-success-muted border-success-muted" :
             "bg-muted/50 border-border"
           )}>
             <div className="flex items-center justify-between">
@@ -158,17 +158,17 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
           {(biggestIncrease || biggestDecrease) && previousCosts && (
             <div className="pt-3 border-t border-border space-y-2">
               {biggestIncrease && (biggestIncrease.variation || 0) > 5 && (
-                <div className="flex items-start gap-2 p-2 rounded-md bg-red-50 dark:bg-red-950/30">
-                  <TrendingUp className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-red-700 dark:text-red-400">
+                <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10">
+                  <TrendingUp className="h-3 w-3 text-destructive mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-destructive">
                     <strong>{biggestIncrease.label}</strong> subió {biggestIncrease.variation?.toFixed(1)}%
                   </p>
                 </div>
               )}
               {biggestDecrease && (biggestDecrease.variation || 0) < -5 && (
-                <div className="flex items-start gap-2 p-2 rounded-md bg-green-50 dark:bg-green-950/30">
-                  <TrendingDown className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-green-700 dark:text-green-400">
+                <div className="flex items-start gap-2 p-2 rounded-md bg-success-muted">
+                  <TrendingDown className="h-3 w-3 text-success mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-success">
                     <strong>{biggestDecrease.label}</strong> bajó {Math.abs(biggestDecrease.variation || 0).toFixed(1)}%
                   </p>
                 </div>

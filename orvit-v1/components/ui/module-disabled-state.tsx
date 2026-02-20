@@ -69,9 +69,9 @@ export function ModuleDisabledState({
   return (
     <div className="flex flex-col items-center justify-center min-h-[300px] p-6">
       <div className="w-full max-w-md">
-        <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-          <Lock className="h-5 w-5 text-amber-500" />
-          <AlertTitle className="text-amber-600 dark:text-amber-400">
+        <Alert variant="default" className="border-warning-muted bg-warning-muted">
+          <Lock className="h-5 w-5 text-warning-muted-foreground" />
+          <AlertTitle className="text-warning-muted-foreground">
             Módulo no habilitado
           </AlertTitle>
           <AlertDescription className="mt-2 space-y-3">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -21,6 +22,7 @@ import {
   Settings
 } from 'lucide-react';
 import { FinancialDictionary } from './FinancialDictionary';
+import { cn } from '@/lib/utils';
 import { formatCurrency, formatPercentage } from './utils/metrics';
 
 interface CurrentMetricsMTDProps {
@@ -66,12 +68,9 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
       try {
         setIsLoading(true);
         const currentMonth = selectedMonth || new Date().toISOString().slice(0, 7);
-        console.log(`🔄 Cargando datos MTD para mes: ${currentMonth}`);
-        
         const response = await fetch(`/api/dashboard/metrics?companyId=${companyId}&month=${currentMonth}`);
         if (response.ok) {
           const metricsData = await response.json();
-          console.log(`✅ Datos MTD cargados para ${currentMonth}:`, metricsData);
           setData(metricsData);
         } else {
           console.error('Error fetching dashboard data:', response.status);
@@ -145,10 +144,10 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
   const todayDeltaPct = yesterdayValue > 0 ? (todayDelta / yesterdayValue) * 100 : 0;
 
   const getPerformanceColor = (percentage: number) => {
-    if (percentage > 5) return 'text-green-600 bg-green-50 border-green-200';
-    if (percentage > 0) return 'text-blue-600 bg-blue-50 border-blue-200';
-    if (percentage > -5) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    return 'text-red-600 bg-red-50 border-red-200';
+    if (percentage > 5) return 'text-success bg-success-muted border-success-muted';
+    if (percentage > 0) return 'text-info-muted-foreground bg-info-muted border-info-muted';
+    if (percentage > -5) return 'text-warning-muted-foreground bg-warning-muted border-warning-muted';
+    return 'text-destructive bg-destructive/10 border-destructive/30';
   };
 
   const getPerformanceIcon = (percentage: number) => {
@@ -160,10 +159,10 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              <div key={i} className="h-32 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -183,26 +182,26 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
       <Card className="mb-6">
         <CardContent className="p-8">
           <div className="text-center">
-            <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Sin datos de ventas disponibles</h3>
-            <p className="text-gray-600 mb-6">
+            <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">Sin datos de ventas disponibles</h3>
+            <p className="text-muted-foreground mb-6">
               No se encontraron registros de ventas para <strong>{selectedMonth}</strong>.
               {data?.metrics?.totalCosts > 0 && (
-                <span className="block mt-2 text-sm text-amber-600">
+                <span className="block mt-2 text-sm text-warning-muted-foreground">
                   ⚠️ Se detectaron costos (${data.metrics.totalCosts.toLocaleString()}) pero sin ventas correspondientes.
                 </span>
               )}
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+            <div className="bg-info-muted border border-info-muted rounded-lg p-4 max-w-md mx-auto">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-sm">💡</span>
+                  <div className="w-8 h-8 bg-info-muted rounded-full flex items-center justify-center">
+                    <span className="text-info-muted-foreground text-sm">💡</span>
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm text-blue-800 font-medium mb-1">Sugerencias:</p>
-                  <ul className="text-sm text-blue-700 space-y-1">
+                  <p className="text-sm text-info-muted-foreground font-medium mb-1">Sugerencias:</p>
+                  <ul className="text-sm text-info-muted-foreground space-y-1">
                     <li>• Registra ventas para este mes en el módulo de Ventas</li>
                     <li>• Selecciona un mes diferente con datos de ventas</li>
                     <li>• Verifica que los productos estén correctamente configurados</li>
@@ -223,14 +222,14 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
         {/* Header con nota especial */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Mes Actual — Estado & Progreso (MTD)
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Rendimiento acumulado del mes y previsión al cierre
             </p>
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800">
+            <div className="mt-2 p-3 bg-warning-muted border border-warning-muted rounded-lg">
+              <p className="text-sm text-warning-muted-foreground">
                 ⚠️ <strong>Nota:</strong> Se detectaron costos (${data.metrics.totalCosts.toLocaleString()}) pero sin ventas registradas para este mes.
               </p>
             </div>
@@ -243,25 +242,11 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Ventas MTD</p>
-                  <p className="text-2xl font-bold text-gray-900">$0</p>
+                  <p className="text-sm font-medium text-muted-foreground">Ventas MTD</p>
+                  <p className="text-2xl font-bold text-foreground">$0</p>
                 </div>
-                <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <span className="text-gray-400">📊</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Costos MTD</p>
-                  <p className="text-2xl font-bold text-red-600">${data.metrics.totalCosts.toLocaleString()}</p>
-                </div>
-                <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-400">💰</span>
+                <div className="h-8 w-8 bg-muted rounded-full flex items-center justify-center">
+                  <span className="text-muted-foreground">📊</span>
                 </div>
               </div>
             </CardContent>
@@ -271,11 +256,11 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Margen Neto</p>
-                  <p className="text-2xl font-bold text-red-600">-${data.metrics.totalCosts.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Costos MTD</p>
+                  <p className="text-2xl font-bold text-destructive">${data.metrics.totalCosts.toLocaleString()}</p>
                 </div>
-                <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-400">📉</span>
+                <div className="h-8 w-8 bg-destructive/10 rounded-full flex items-center justify-center">
+                  <span className="text-destructive">💰</span>
                 </div>
               </div>
             </CardContent>
@@ -285,11 +270,25 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Días Trabajados</p>
-                  <p className="text-2xl font-bold text-gray-900">{data.monthSummary?.daysWorked || 0}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Margen Neto</p>
+                  <p className="text-2xl font-bold text-destructive">-${data.metrics.totalCosts.toLocaleString()}</p>
                 </div>
-                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-400">📅</span>
+                <div className="h-8 w-8 bg-destructive/10 rounded-full flex items-center justify-center">
+                  <span className="text-destructive">📉</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Días Trabajados</p>
+                  <p className="text-2xl font-bold text-foreground">{data.monthSummary?.daysWorked || 0}</p>
+                </div>
+                <div className="h-8 w-8 bg-info-muted rounded-full flex items-center justify-center">
+                  <span className="text-info-muted-foreground">📅</span>
                 </div>
               </div>
             </CardContent>
@@ -304,23 +303,23 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Mes Actual — Estado & Progreso (MTD)
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Rendimiento acumulado del mes y previsión al cierre
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground border-info-muted">
             <Calendar className="h-3 w-3 mr-1" />
             Hoy {today}
           </Badge>
-          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+          <Badge variant="secondary" className="bg-success-muted text-success border-success-muted">
             <Clock className="h-3 w-3 mr-1" />
             Actualizado hace {lastUpdated} min
           </Badge>
-          <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-200">
+          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground border-info-muted">
             <RefreshCw className="h-3 w-3 mr-1" />
             Autosync ON
           </Badge>
@@ -347,9 +346,9 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
       {/* KPIs MTD */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Ingresos MTD */}
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Ingresos MTD
             </CardTitle>
@@ -357,7 +356,7 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-foreground">
                   {formatCurrency(monthSummary.mtd)}
                 </span>
                 <Badge className={getPerformanceColor(monthSummary.yoyPct)}>
@@ -368,25 +367,25 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
               
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Hoy:</span>
+                  <span className="text-muted-foreground">Hoy:</span>
                   <span className="font-medium">{formatCurrency(todayValue)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Δ día:</span>
-                  <span className={`font-medium ${todayDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className="text-muted-foreground">Δ día:</span>
+                  <span className={cn('font-medium', todayDelta >= 0 ? 'text-success' : 'text-destructive')}>
                     {todayDelta >= 0 ? '+' : ''}{formatCurrency(todayDelta)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Run-rate:</span>
+                  <span className="text-muted-foreground">Run-rate:</span>
                   <span className="font-medium">{formatCurrency(monthSummary.runRate)}/día</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Forecast EOM:</span>
-                  <span className="font-medium text-blue-600">{formatCurrency(monthSummary.forecastEom)}</span>
+                  <span className="text-muted-foreground">Forecast EOM:</span>
+                  <span className="font-medium text-info-muted-foreground">{formatCurrency(monthSummary.forecastEom)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">% vs Presupuesto:</span>
+                  <span className="text-muted-foreground">% vs Presupuesto:</span>
                   <span className="font-medium">
                     {formatPercentage(((monthSummary.mtd / (monthSummary.budget || 1)) - 1) * 100)}
                   </span>
@@ -397,9 +396,9 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
         </Card>
 
         {/* Costos MTD */}
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               Costos MTD
             </CardTitle>
@@ -407,10 +406,10 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-foreground">
                   {formatCurrency(metrics.totalCosts || 0)}
                 </span>
-                <Badge className="text-red-600 bg-red-50 border-red-200">
+                <Badge className="text-destructive bg-destructive/10 border-destructive/30">
                   <TrendingUp className="h-3 w-3" />
                   +4.2%
                 </Badge>
@@ -418,20 +417,20 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
               
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Hoy:</span>
+                  <span className="text-muted-foreground">Hoy:</span>
                   <span className="font-medium">{formatCurrency(80000)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Δ día:</span>
-                  <span className="text-red-600 font-medium">+5.000</span>
+                  <span className="text-muted-foreground">Δ día:</span>
+                  <span className="text-destructive font-medium">+5.000</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Burn rate:</span>
+                  <span className="text-muted-foreground">Burn rate:</span>
                   <span className="font-medium">{formatCurrency(80000)}/día</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">% vs Presupuesto:</span>
-                  <span className="font-medium text-red-600">+8.3%</span>
+                  <span className="text-muted-foreground">% vs Presupuesto:</span>
+                  <span className="font-medium text-destructive">+8.3%</span>
                 </div>
               </div>
             </div>
@@ -439,9 +438,9 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
         </Card>
 
         {/* Margen Neto MTD */}
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Margen Neto MTD
             </CardTitle>
@@ -449,10 +448,10 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-foreground">
                   {formatCurrency(metrics.netMargin || 0)}
                 </span>
-                <Badge className="text-green-600 bg-green-50 border-green-200">
+                <Badge className="text-success bg-success-muted border-success-muted">
                   <TrendingUp className="h-3 w-3" />
                   +12.5%
                 </Badge>
@@ -460,21 +459,21 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
               
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Margen %:</span>
-                  <span className="font-medium text-green-600">
+                  <span className="text-muted-foreground">Margen %:</span>
+                  <span className="font-medium text-success">
                     {formatPercentage(metrics.marginPercentage || 0)}%
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Hoy:</span>
+                  <span className="text-muted-foreground">Hoy:</span>
                   <span className="font-medium">{formatCurrency(40000)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Δ día:</span>
-                  <span className="text-green-600 font-medium">+2.500</span>
+                  <span className="text-muted-foreground">Δ día:</span>
+                  <span className="text-success font-medium">+2.500</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Run-rate:</span>
+                  <span className="text-muted-foreground">Run-rate:</span>
                   <span className="font-medium">{formatCurrency(33333)}/día</span>
                 </div>
               </div>
@@ -483,9 +482,9 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
         </Card>
 
         {/* Progreso del Mes */}
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Target className="h-4 w-4" />
               Progreso del Mes
             </CardTitle>
@@ -493,37 +492,37 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-foreground">
                   {monthSummary.daysWorked}/{monthSummary.daysTotal}
                 </span>
-                <Badge className="text-blue-600 bg-blue-50 border-blue-200">
+                <Badge className="text-info-muted-foreground bg-info-muted border-info-muted">
                   {Math.round((monthSummary.daysWorked / monthSummary.daysTotal) * 100)}%
                 </Badge>
               </div>
               
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Días hábiles:</span>
+                  <span className="text-muted-foreground">Días hábiles:</span>
                   <span className="font-medium">{monthSummary.daysWorked}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Días restantes:</span>
+                  <span className="text-muted-foreground">Días restantes:</span>
                   <span className="font-medium">{monthSummary.daysTotal - monthSummary.daysWorked}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Promedio diario:</span>
+                  <span className="text-muted-foreground">Promedio diario:</span>
                   <span className="font-medium">{formatCurrency(monthSummary.runRate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Forecast EOM:</span>
-                  <span className="font-medium text-blue-600">{formatCurrency(monthSummary.forecastEom)}</span>
+                  <span className="text-muted-foreground">Forecast EOM:</span>
+                  <span className="font-medium text-info-muted-foreground">{formatCurrency(monthSummary.forecastEom)}</span>
                 </div>
               </div>
               
               {/* Progress bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-info h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(monthSummary.daysWorked / monthSummary.daysTotal) * 100}%` }}
                 ></div>
               </div>
@@ -537,30 +536,30 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
         {/* Contribuciones por Categoría */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-foreground">
               Contribuciones MTD
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {contributions.map((contribution: CategoryContribution, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-900">{index + 1}</span>
+                    <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-foreground">{index + 1}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{contribution.name}</p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-sm font-medium text-foreground">{contribution.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {formatPercentage(contribution.contributionPct)} del total
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                       {formatCurrency(contribution.value)}
                     </p>
-                    <Badge className={`text-xs ${getPerformanceColor(contribution.deltaPct)}`}>
+                    <Badge className={cn('text-xs', getPerformanceColor(contribution.deltaPct))}>
                       {getPerformanceIcon(contribution.deltaPct)}
                       {formatPercentage(Math.abs(contribution.deltaPct))}
                     </Badge>
@@ -574,30 +573,30 @@ export function CurrentMetricsMTD({ companyId, selectedMonth }: CurrentMetricsMT
         {/* Top Movers del Mes */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-foreground">
               Top Movers del Mes
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {contributions.slice(0, 5).map((mover: CategoryContribution, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-900">{index + 1}</span>
+                    <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-foreground">{index + 1}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{mover.name}</p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-sm font-medium text-foreground">{mover.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         Δ {formatCurrency(mover.delta)} ({formatPercentage(mover.deltaPct)})
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                       {formatCurrency(mover.value)}
                     </p>
-                    <Badge className={`text-xs ${getPerformanceColor(mover.deltaPct)}`}>
+                    <Badge className={cn('text-xs', getPerformanceColor(mover.deltaPct))}>
                       {getPerformanceIcon(mover.deltaPct)}
                       {formatPercentage(Math.abs(mover.deltaPct))}
                     </Badge>

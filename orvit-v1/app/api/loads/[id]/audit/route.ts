@@ -6,6 +6,31 @@ import { JWT_SECRET } from '@/lib/auth';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
+// Flag de módulo: DDL se ejecuta solo una vez por proceso del servidor
+let auditTableInitialized = false;
+
+async function ensureAuditTable() {
+  if (auditTableInitialized) return;
+  try {
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS "LoadAudit" (
+        id SERIAL PRIMARY KEY,
+        "loadId" INTEGER NOT NULL REFERENCES "Load"(id) ON DELETE CASCADE,
+        "userId" INTEGER NOT NULL REFERENCES "User"(id),
+        action VARCHAR(50) NOT NULL,
+        changes JSONB DEFAULT '{}',
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await prisma.$executeRaw`
+      CREATE INDEX IF NOT EXISTS "LoadAudit_loadId_idx" ON "LoadAudit"("loadId")
+    `;
+    auditTableInitialized = true;
+  } catch {
+    // La tabla puede ya existir en otro proceso
+  }
+}
+
 async function getUserFromToken(request: NextRequest) {
   try {
     const token = cookies().get('token')?.value;
@@ -121,25 +146,7 @@ export async function POST(
       return NextResponse.json({ error: 'Action requerida' }, { status: 400 });
     }
 
-    // Crear tabla si no existe
-    try {
-      await prisma.$executeRaw`
-        CREATE TABLE IF NOT EXISTS "LoadAudit" (
-          id SERIAL PRIMARY KEY,
-          "loadId" INTEGER NOT NULL REFERENCES "Load"(id) ON DELETE CASCADE,
-          "userId" INTEGER NOT NULL REFERENCES "User"(id),
-          action VARCHAR(50) NOT NULL,
-          changes JSONB DEFAULT '{}',
-          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `;
-
-      await prisma.$executeRaw`
-        CREATE INDEX IF NOT EXISTS "LoadAudit_loadId_idx" ON "LoadAudit"("loadId")
-      `;
-    } catch {
-      // Ignorar si ya existe
-    }
+    await ensureAuditTable();
 
     // Crear registro de auditoría
     const result = await prisma.$queryRaw`

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { MachineComponent } from '@/lib/types';
 import {
   Dialog,
@@ -8,11 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
+import {
   Network,
   Cog,
   Wrench,
@@ -20,7 +22,8 @@ import {
   CircleCheckBig,
   Building,
   Search,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 
 interface ComponentSelectionModalProps {
@@ -43,15 +46,6 @@ export default function ComponentSelectionModal({
   machineName
 }: ComponentSelectionModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Debug log
-  // console.log('ComponentSelectionModal props:', {
-  //   isOpen,
-  //   components: components.length,
-  //   selectedComponents: selectedComponents.length,
-  //   selectedSubcomponents: selectedSubcomponents.length,
-  //   machineName
-  // });
   
   // Calcular estadísticas
   const totalComponents = components.length;
@@ -111,7 +105,7 @@ export default function ComponentSelectionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="full" className="max-h-[90vh] overflow-y-auto">
+      <DialogContent size="full">
         <DialogHeader className="border-b pb-3">
           <div className="flex items-center justify-between">
             <div>
@@ -135,7 +129,7 @@ export default function ComponentSelectionModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Tarjetas de estadísticas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="rounded-lg border text-card-foreground shadow-sm bg-background border-border">
@@ -238,7 +232,7 @@ export default function ComponentSelectionModal({
                   <div className="grid grid-cols-8 gap-2.5">
                     {components.length === 0 ? (
                       <div className="col-span-8 text-center py-6">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-3"></div>
+                        <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-3" />
                         <p className="text-xs text-muted-foreground">Cargando componentes...</p>
                       </div>
                     ) : filteredComponents.length === 0 ? (
@@ -251,9 +245,9 @@ export default function ComponentSelectionModal({
                       filteredComponents.map((component) => (
                         <div
                           key={component.id}
-                          className={`rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50 ${
-                            isComponentSelected(component.id.toString()) ? 'ring-2 ring-primary bg-primary/5' : ''
-                          }`}
+                          className={cn('rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50',
+                            isComponentSelected(component.id.toString()) && 'ring-2 ring-primary bg-primary/5'
+                          )}
                           onClick={() => handleComponentToggle(component.id.toString())}
                         >
                           <div className="p-2.5">
@@ -277,9 +271,9 @@ export default function ComponentSelectionModal({
                       component.children?.map(subcomponent => (
                         <div
                           key={subcomponent.id}
-                          className={`rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50 ${
-                            isSubcomponentSelected(subcomponent.id.toString()) ? 'ring-2 ring-primary bg-primary/5' : ''
-                          }`}
+                          className={cn('rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer transition-all hover:shadow-lg hover:scale-105 hover:bg-muted/50',
+                            isSubcomponentSelected(subcomponent.id.toString()) && 'ring-2 ring-primary bg-primary/5'
+                          )}
                           onClick={() => handleSubcomponentToggle(subcomponent.id.toString())}
                         >
                           <div className="p-2.5">
@@ -325,7 +319,7 @@ export default function ComponentSelectionModal({
                         {selectedComponents.map(componentId => {
                           const component = components.find(c => c.id.toString() === componentId);
                           return component ? (
-                            <span key={componentId} className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                            <span key={componentId} className="px-2 py-0.5 bg-info-muted text-info-muted-foreground text-xs rounded">
                               {component.name}
                             </span>
                           ) : null;
@@ -342,7 +336,7 @@ export default function ComponentSelectionModal({
                             .flatMap(comp => comp.children || [])
                             .find(sub => sub.id.toString() === subcomponentId);
                           return subcomponent ? (
-                            <span key={subcomponentId} className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">
+                            <span key={subcomponentId} className="px-2 py-0.5 bg-success-muted text-success text-xs rounded">
                               {subcomponent.name}
                             </span>
                           ) : null;
@@ -360,7 +354,7 @@ export default function ComponentSelectionModal({
               )}
             </div>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter className="border-t pt-3">
           <div className="flex justify-between w-full">

@@ -57,9 +57,11 @@ import { ProductCreateDialog } from './product-create-dialog';
 import { ProductImportDialog } from './product-import-dialog';
 import { useCompany } from '@/contexts/CompanyContext';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 export function ProductTable() {
   const { currentCompany } = useCompany();
+  const confirm = useConfirm();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -118,7 +120,7 @@ export function ProductTable() {
         const productsWithImages = productsData.map((p: Product) => ({
           ...p,
           images: p.images
-            ? (Array.isArray(p.images) ? p.images : (typeof p.images === 'string' ? JSON.parse(p.images) : []))
+            ? (Array.isArray(p.images) ? p.images : (typeof p.images === 'string' ? (() => { try { return JSON.parse(p.images as string); } catch { return []; } })() : []))
             : []
         }));
         setProducts(productsWithImages);
@@ -205,7 +207,13 @@ export function ProductTable() {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('¿Estas seguro de que quieres eliminar este producto?')) return;
+    const ok = await confirm({
+      title: 'Eliminar producto',
+      description: '¿Estas seguro de que quieres eliminar este producto?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/ventas/productos/${productId}`, {
@@ -442,10 +450,10 @@ export function ProductTable() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Activos</p>
-                  <p className="text-2xl font-bold mt-1 text-green-600">{productStats.active}</p>
+                  <p className="text-2xl font-bold mt-1 text-success">{productStats.active}</p>
                 </div>
-                <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <div className="p-2 rounded-lg bg-success-muted">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -459,10 +467,10 @@ export function ProductTable() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Stock Bajo</p>
-                  <p className="text-2xl font-bold mt-1 text-orange-600">{productStats.lowStock}</p>
+                  <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{productStats.lowStock}</p>
                 </div>
-                <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <div className="p-2 rounded-lg bg-warning-muted">
+                  <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -612,7 +620,7 @@ export function ProductTable() {
 
             {/* Vista Tabla */}
             {viewMode === 'table' && (
-              <div className="rounded-lg border overflow-hidden">
+              <div className="rounded-lg border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
@@ -692,7 +700,7 @@ export function ProductTable() {
                               className={cn(
                                 "text-xs",
                                 product.isActive
-                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  ? "bg-success-muted text-success"
                                   : ""
                               )}
                             >
@@ -719,7 +727,7 @@ export function ProductTable() {
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }}
-                                    className="text-red-600"
+                                    className="text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Eliminar
@@ -787,7 +795,7 @@ export function ProductTable() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }}
-                                  className="text-red-600"
+                                  className="text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Eliminar
@@ -806,7 +814,7 @@ export function ProductTable() {
                               className={cn(
                                 "text-xs",
                                 product.isActive
-                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  ? "bg-success-muted text-success"
                                   : ""
                               )}
                             >
@@ -957,7 +965,7 @@ export function ProductTable() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               Eliminar
             </AlertDialogAction>

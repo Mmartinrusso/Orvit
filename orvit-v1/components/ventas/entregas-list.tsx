@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -86,14 +88,14 @@ type EstadoEntrega =
   | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<EstadoEntrega, { label: string; color: string; icon: React.ElementType }> = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Clock },
-  EN_PREPARACION: { label: 'Preparación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Package },
-  LISTA_PARA_DESPACHO: { label: 'Lista', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle2 },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-muted text-foreground border-border', icon: Clock },
+  EN_PREPARACION: { label: 'Preparación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
+  LISTA_PARA_DESPACHO: { label: 'Lista', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
   EN_TRANSITO: { label: 'En Tránsito', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Truck },
   RETIRADA: { label: 'Retirada', color: 'bg-cyan-100 text-cyan-700 border-cyan-200', icon: Package },
-  ENTREGADA: { label: 'Entregada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  ENTREGA_FALLIDA: { label: 'Fallida', color: 'bg-red-100 text-red-700 border-red-200', icon: X },
-  CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: X },
+  ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  ENTREGA_FALLIDA: { label: 'Fallida', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: X },
+  CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground border-border', icon: X },
 };
 
 interface EntregasListProps {
@@ -352,7 +354,7 @@ export function EntregasList({
     const config = ESTADOS_CONFIG[estado as EstadoEntrega] || ESTADOS_CONFIG.PENDIENTE;
     const Icon = config.icon;
     return (
-      <Badge className={`${config.color} border text-[10px] px-1.5 py-0.5 font-medium`}>
+      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -392,13 +394,13 @@ export function EntregasList({
       {showKPIs && (
         <div className="grid grid-cols-4 gap-3">
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'PENDIENTE' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'PENDIENTE' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'PENDIENTE' ? 'all' : 'PENDIENTE')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-gray-100">
-                  <Clock className="w-3.5 h-3.5 text-gray-600" />
+                <div className="p-1.5 rounded-md bg-muted">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.pendientes}</p>
@@ -409,13 +411,13 @@ export function EntregasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'LISTA_PARA_DESPACHO' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'LISTA_PARA_DESPACHO' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'LISTA_PARA_DESPACHO' ? 'all' : 'LISTA_PARA_DESPACHO')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-blue-100">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                <div className="p-1.5 rounded-md bg-info-muted">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-info-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.listas}</p>
@@ -426,7 +428,7 @@ export function EntregasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'EN_TRANSITO' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'EN_TRANSITO' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'EN_TRANSITO' ? 'all' : 'EN_TRANSITO')}
           >
             <CardContent className="p-3">
@@ -443,13 +445,13 @@ export function EntregasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'ENTREGADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'ENTREGADA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'ENTREGADA' ? 'all' : 'ENTREGADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-green-100">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                <div className="p-1.5 rounded-md bg-success-muted">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.entregadas}</p>
@@ -519,21 +521,20 @@ export function EntregasList({
           onClick={() => { loadEntregas(); loadKPIs(); }}
           disabled={loading}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
         </Button>
       </div>
 
       {/* Tabla */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <SkeletonTable rows={5} cols={8} />
       ) : entregas.length === 0 ? (
         <div className="text-center py-12">
-          <Truck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No se encontraron entregas</p>
+          <Package className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm font-medium">No hay entregas</p>
+          <p className="text-xs text-muted-foreground mt-1">Las entregas programadas aparecerán aquí</p>
           {hasActiveFilters && (
-            <Button variant="link" size="sm" onClick={clearFilters}>
+            <Button variant="link" size="sm" onClick={clearFilters} className="mt-2">
               Limpiar filtros
             </Button>
           )}

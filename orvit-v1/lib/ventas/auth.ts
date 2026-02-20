@@ -1,85 +1,30 @@
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+/**
+ * Auth helpers para módulo Ventas
+ *
+ * Thin wrapper sobre shared-helpers.ts + constantes de permisos del módulo.
+ * Agrega auditoría de accesos denegados (logAccessDenied) sobre las funciones base.
+ */
+
+import {
+  getUserFromToken,
+  requireAuth as baseRequireAuth,
+  requireAnyPermission as baseRequireAnyPermission,
+  checkPermission,
+  type AuthUser,
+  type AuthResult,
+} from '@/lib/auth/shared-helpers';
 import { hasUserPermission } from '@/lib/permissions-helpers';
-import { NextResponse } from 'next/server';
 import { logAccessDenied } from '@/lib/ventas/audit-helper';
+import { NextResponse } from 'next/server';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-export interface VentasUser {
-  id: number;
-  name: string | null;
-  email: string;
-  role: string;
-  companyId: number;
-}
-
-export interface AuthResult {
-  user: VentasUser | null;
-  error: NextResponse | null;
-}
+// Re-exportar funciones que no necesitan override
+export { getUserFromToken, checkPermission };
+export { baseRequireAuth as requireAuth };
+export type { AuthUser as VentasUser, AuthResult };
 
 /**
- * Get authenticated user from JWT token with company context
- * Returns user object or null if not authenticated
- */
-export async function getUserFromToken(): Promise<VentasUser | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        companies: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
-    });
-
-    if (!user || !user.companies?.[0]?.companyId) return null;
-
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role || 'USER',
-      companyId: user.companies[0].companyId
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Verify authentication and return user or error response
- */
-export async function requireAuth(): Promise<AuthResult> {
-  const user = await getUserFromToken();
-
-  if (!user) {
-    return {
-      user: null,
-      error: NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    };
-  }
-
-  return { user, error: null };
-}
-
-/**
- * Verify authentication AND specific permission
- * Returns user if authorized, or error response if not
+ * Verifica autenticación Y un permiso específico.
+ * Registra en auditoría si el acceso es denegado.
  */
 export async function requirePermission(permission: string): Promise<AuthResult> {
   const user = await getUserFromToken();
@@ -87,27 +32,26 @@ export async function requirePermission(permission: string): Promise<AuthResult>
   if (!user) {
     return {
       user: null,
-      error: NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      error: NextResponse.json({ error: 'No autorizado' }, { status: 401 }),
     };
   }
 
-  const hasPermission = await hasUserPermission(user.id, user.companyId, permission);
+  const has = await hasUserPermission(user.id, user.companyId, permission);
 
-  if (!hasPermission) {
-    // Registrar intento de acceso denegado en auditoría
+  if (!has) {
     logAccessDenied({
       companyId: user.companyId,
       userId: user.id,
       requiredPermission: permission,
       resource: permission.split('.').slice(0, 2).join('.'),
-    }).catch(() => {}); // fire-and-forget, no bloquear la respuesta
+    }).catch(() => {});
 
     return {
       user: null,
       error: NextResponse.json(
         { error: 'Sin permisos para esta acción', requiredPermission: permission },
-        { status: 403 }
-      )
+        { status: 403 },
+      ),
     };
   }
 
@@ -115,8 +59,8 @@ export async function requirePermission(permission: string): Promise<AuthResult>
 }
 
 /**
- * Verify authentication AND any of the specified permissions
- * Returns user if authorized with at least one permission, or error response if not
+ * Verifica autenticación Y que tenga AL MENOS UNO de los permisos.
+ * Registra en auditoría si el acceso es denegado.
  */
 export async function requireAnyPermission(permissions: string[]): Promise<AuthResult> {
   const user = await getUserFromToken();
@@ -124,41 +68,31 @@ export async function requireAnyPermission(permissions: string[]): Promise<AuthR
   if (!user) {
     return {
       user: null,
-      error: NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      error: NextResponse.json({ error: 'No autorizado' }, { status: 401 }),
     };
   }
 
-  // Check if user has any of the required permissions
   for (const permission of permissions) {
-    const hasPermission = await hasUserPermission(user.id, user.companyId, permission);
-    if (hasPermission) {
+    const has = await hasUserPermission(user.id, user.companyId, permission);
+    if (has) {
       return { user, error: null };
     }
   }
 
-  // Registrar intento de acceso denegado en auditoría
   logAccessDenied({
     companyId: user.companyId,
     userId: user.id,
     requiredPermission: permissions.join(', '),
     resource: permissions[0]?.split('.').slice(0, 2).join('.') || 'unknown',
-  }).catch(() => {}); // fire-and-forget
+  }).catch(() => {});
 
   return {
     user: null,
     error: NextResponse.json(
       { error: 'Sin permisos para esta acción', requiredPermissions: permissions },
-      { status: 403 }
-    )
+      { status: 403 },
+    ),
   };
-}
-
-/**
- * Check if user has a specific permission (non-blocking)
- * Useful when you need to check permission without returning error
- */
-export async function checkPermission(userId: number, companyId: number, permission: string): Promise<boolean> {
-  return hasUserPermission(userId, companyId, permission);
 }
 
 // Permission constants for ventas module

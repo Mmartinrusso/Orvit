@@ -285,8 +285,8 @@ export const mockInsights: Insight[] = [
     title: 'Crecimiento Sostenido',
     description: '↑ $2.5M vs mes anterior por Ventas Bloques (+$1.2M, +15%) y Ventas Adoquines (+$0.6M, +9%); cae Costos Indirectos (-$0.3M, -5%). Top cliente: Constructora ABC (+$0.8M).',
     actions: [
-      { label: 'Crear tarea', onClick: () => console.log('Crear tarea') },
-      { label: 'Ver facturas', onClick: () => console.log('Ver facturas') },
+      { label: 'Crear tarea', onClick: () => {} },
+      { label: 'Ver facturas', onClick: () => {} },
     ],
   },
   {
@@ -294,7 +294,7 @@ export const mockInsights: Insight[] = [
     title: 'Atención: DSO en Aumento',
     description: 'DSO aumentó 7 días en el último mes. Revisar cobranzas pendientes de clientes principales.',
     actions: [
-      { label: 'Revisar cobranzas', onClick: () => console.log('Revisar cobranzas') },
+      { label: 'Revisar cobranzas', onClick: () => {} },
     ],
   },
 ];

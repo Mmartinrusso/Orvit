@@ -293,9 +293,9 @@ export default function FailureQuickReportDialog({
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               {formData.isObservation ? (
-                <Eye className="h-4 w-4 text-blue-500" />
+                <Eye className="h-4 w-4 text-info-muted-foreground" />
               ) : (
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
               )}
               <span className="text-sm font-medium">
                 {formData.isObservation ? 'Observación (sin OT)' : 'Falla (crea OT automática)'}
@@ -314,7 +314,7 @@ export default function FailureQuickReportDialog({
           {/* Máquina - OBLIGATORIO */}
           <div className="space-y-2">
             <Label htmlFor="machine" className="flex items-center gap-1">
-              Máquina <span className="text-red-500">*</span>
+              Máquina <span className="text-destructive">*</span>
             </Label>
             <Select
               value={formData.machineId?.toString() || ''}
@@ -344,7 +344,7 @@ export default function FailureQuickReportDialog({
           {/* Título - OBLIGATORIO */}
           <div className="space-y-2">
             <Label htmlFor="title" className="flex items-center gap-1">
-              ¿Qué pasó? <span className="text-red-500">*</span>
+              ¿Qué pasó? <span className="text-destructive">*</span>
             </Label>
             <Input
               id="title"
@@ -352,11 +352,11 @@ export default function FailureQuickReportDialog({
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               className={cn(
-                formData.title.length > 0 && formData.title.length < 5 && 'border-red-500'
+                formData.title.length > 0 && formData.title.length < 5 && 'border-destructive'
               )}
             />
             {formData.title.length > 0 && formData.title.length < 5 && (
-              <p className="text-xs text-red-500">Mínimo 5 caracteres</p>
+              <p className="text-xs text-destructive">Mínimo 5 caracteres</p>
             )}
           </div>
 
@@ -364,7 +364,7 @@ export default function FailureQuickReportDialog({
           {!formData.isObservation && (
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-red-500" />
+                <Clock className="h-4 w-4 text-destructive" />
                 <span className="text-sm">¿Paró la producción?</span>
               </div>
               <Switch
@@ -378,9 +378,9 @@ export default function FailureQuickReportDialog({
           )}
 
           {/* Seguridad */}
-          <div className="flex items-center justify-between p-3 border rounded-lg border-red-200 bg-red-50/50">
+          <div className="flex items-center justify-between p-3 border rounded-lg border-destructive/20 bg-destructive/5">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <AlertTriangle className="h-4 w-4 text-destructive" />
               <span className="text-sm">¿Riesgo de seguridad?</span>
             </div>
             <Switch
@@ -409,7 +409,7 @@ export default function FailureQuickReportDialog({
                   <button
                     type="button"
                     onClick={() => removeAttachment(index)}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -534,9 +534,9 @@ export default function FailureQuickReportDialog({
                   <Badge variant="outline">{dup.status}</Badge>
                   <Badge
                     className={cn(
-                      dup.similarity >= 90 ? 'bg-red-100 text-red-800' :
-                      dup.similarity >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
+                      dup.similarity >= 90 ? 'bg-destructive/10 text-destructive' :
+                      dup.similarity >= 70 ? 'bg-warning-muted text-warning-muted-foreground' :
+                      'bg-muted text-foreground'
                     )}
                   >
                     {dup.similarity}% similar

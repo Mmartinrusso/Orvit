@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -30,6 +31,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface SupplierItem {
   id: number;
@@ -66,6 +68,7 @@ export function InputItemLinker({
   companyId,
   onLinked,
 }: InputItemLinkerProps) {
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<SupplierItem[]>([]);
@@ -129,7 +132,13 @@ export function InputItemLinker({
   };
 
   const handleUnlink = async () => {
-    if (!confirm('¿Desvincular este insumo del item de inventario?')) return;
+    const ok = await confirm({
+      title: 'Desvincular insumo',
+      description: '¿Desvincular este insumo del item de inventario?',
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
 
     setSaving(true);
     try {
@@ -166,14 +175,14 @@ export function InputItemLinker({
       <div className="flex items-center gap-2">
         {currentSupplierItemId ? (
           <>
-            <Badge variant="outline" className="bg-green-50 text-green-700 gap-1">
+            <Badge variant="outline" className="bg-success-muted text-success gap-1">
               <CheckCircle2 className="h-3 w-3" />
               {currentSupplierItemName || `Item #${currentSupplierItemId}`}
             </Badge>
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-muted-foreground hover:text-red-600"
+              className="h-7 px-2 text-muted-foreground hover:text-destructive"
               onClick={handleUnlink}
               disabled={saving}
             >
@@ -183,7 +192,7 @@ export function InputItemLinker({
         ) : (
           <Badge
             variant="outline"
-            className="bg-orange-50 text-orange-700 gap-1 cursor-pointer hover:bg-orange-100"
+            className="bg-warning-muted text-warning-muted-foreground gap-1 cursor-pointer hover:bg-warning-muted/80"
             onClick={() => setOpen(true)}
           >
             <AlertCircle className="h-3 w-3" />
@@ -201,7 +210,7 @@ export function InputItemLinker({
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5" />
@@ -213,7 +222,7 @@ export function InputItemLinker({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             {/* Search */}
             <div className="space-y-2">
               <Label>Buscar Item de Inventario</Label>
@@ -278,7 +287,7 @@ export function InputItemLinker({
                       return (
                         <TableRow
                           key={item.id}
-                          className={isLinked ? 'bg-green-50' : ''}
+                          className={isLinked ? 'bg-success-muted' : ''}
                         >
                           <TableCell>
                             <div>
@@ -292,7 +301,7 @@ export function InputItemLinker({
                           <TableCell className="text-right">
                             <span
                               className={
-                                stock > 0 ? 'text-green-600' : 'text-muted-foreground'
+                                stock > 0 ? 'text-success' : 'text-muted-foreground'
                               }
                             >
                               {stock.toFixed(2)}
@@ -300,7 +309,7 @@ export function InputItemLinker({
                           </TableCell>
                           <TableCell>
                             {isLinked ? (
-                              <Badge className="bg-green-100 text-green-800">
+                              <Badge className="bg-success-muted text-success">
                                 Vinculado
                               </Badge>
                             ) : (
@@ -322,7 +331,7 @@ export function InputItemLinker({
                 </Table>
               )}
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
@@ -405,7 +414,7 @@ export function RecipeInputLinker({
         <h4 className="font-medium">Insumos de la Receta</h4>
         <Badge
           variant="outline"
-          className={allLinked ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}
+          className={allLinked ? 'bg-success-muted text-success' : 'bg-warning-muted text-warning-muted-foreground'}
         >
           {linkedCount}/{items.length} vinculados
         </Badge>
@@ -449,7 +458,7 @@ export function RecipeInputLinker({
       </Table>
 
       {!allLinked && (
-        <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg text-orange-800 text-sm">
+        <div className="flex items-center gap-2 p-3 bg-warning-muted rounded-lg text-warning-muted-foreground text-sm">
           <AlertCircle className="h-4 w-4" />
           <span>
             Vincula todos los insumos para habilitar el consumo automático de stock

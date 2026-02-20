@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -315,7 +316,7 @@ export default function CSVImportDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -328,7 +329,7 @@ export default function CSVImportDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <DialogBody className="grid gap-4">
             {/* Fila 1: Banco + Período */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -502,10 +503,10 @@ export default function CSVImportDialog({
                             {item.descripcion}
                           </TableCell>
                           <TableCell className="text-xs">{item.referencia || '-'}</TableCell>
-                          <TableCell className="text-xs text-right font-mono text-red-600">
+                          <TableCell className="text-xs text-right font-mono text-destructive">
                             {item.debito > 0 ? item.debito.toFixed(2) : '-'}
                           </TableCell>
-                          <TableCell className="text-xs text-right font-mono text-green-600">
+                          <TableCell className="text-xs text-right font-mono text-success">
                             {item.credito > 0 ? item.credito.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-xs text-right font-mono">
@@ -523,7 +524,7 @@ export default function CSVImportDialog({
                 </div>
               </div>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button

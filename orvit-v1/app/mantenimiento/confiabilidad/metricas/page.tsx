@@ -118,7 +118,7 @@ function TrendChart({ data }: { data: ReliabilityData['trends'] }) {
                 <div className="h-32 flex flex-col justify-end gap-1 mb-2">
                   {/* MTBF bar */}
                   <div
-                    className="bg-green-500/80 rounded-t w-full mx-auto"
+                    className="bg-success/80 rounded-t w-full mx-auto"
                     style={{
                       height: `${item.mtbfHours ? (item.mtbfHours / maxMtbf) * 100 : 0}%`,
                       minHeight: item.mtbfHours ? '4px' : '0'
@@ -127,7 +127,7 @@ function TrendChart({ data }: { data: ReliabilityData['trends'] }) {
                   />
                   {/* MTTR bar */}
                   <div
-                    className="bg-blue-500/80 rounded-t w-full mx-auto"
+                    className="bg-info/80 rounded-t w-full mx-auto"
                     style={{
                       height: `${item.mttrMinutes ? (item.mttrMinutes / maxMttr) * 50 : 0}%`,
                       minHeight: item.mttrMinutes ? '4px' : '0'
@@ -143,11 +143,11 @@ function TrendChart({ data }: { data: ReliabilityData['trends'] }) {
           {/* Legend */}
           <div className="flex justify-center gap-6 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500/80 rounded" />
+              <div className="w-3 h-3 bg-success/80 rounded" />
               <span className="text-sm">MTBF (hrs)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500/80 rounded" />
+              <div className="w-3 h-3 bg-info/80 rounded" />
               <span className="text-sm">MTTR (min)</span>
             </div>
           </div>
@@ -212,7 +212,7 @@ function ParetoTable({ data }: { data: ReliabilityData['pareto'] }) {
                   <TableCell className="font-medium">{idx + 1}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {idx < 3 && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                      {idx < 3 && <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />}
                       {machine.machineName}
                     </div>
                   </TableCell>
@@ -370,14 +370,14 @@ export default function MTTRMTBFPage() {
             value={data.global.mtbf.formatted}
             subtitle="Tiempo medio entre fallas"
             icon={TrendingUp}
-            iconColor="text-green-500"
+            iconColor="text-success"
           />
           <KPICard
             title="MTTR"
             value={data.global.mttr.formatted}
             subtitle="Tiempo medio de reparación"
             icon={TrendingDown}
-            iconColor="text-blue-500"
+            iconColor="text-info-muted-foreground"
           />
           <KPICard
             title="Disponibilidad"
@@ -391,7 +391,7 @@ export default function MTTRMTBFPage() {
             value={data.global.totalFailures.toString()}
             subtitle={`Downtime: ${data.global.totalDowntime.hours}h`}
             icon={Clock}
-            iconColor="text-orange-500"
+            iconColor="text-warning-muted-foreground"
           />
         </div>
       ) : null}

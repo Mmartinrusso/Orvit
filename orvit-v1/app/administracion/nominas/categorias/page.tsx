@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Users,
   Plus,
@@ -77,6 +78,7 @@ function getScheduleLabel(type: string): string {
 }
 
 export default function CategoriasPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -400,12 +402,18 @@ export default function CategoriasPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
+                      onClick={async () => {
                         if (category.employeeCount > 0) {
                           toast.error('No se puede eliminar una categoría con empleados');
                           return;
                         }
-                        if (confirm('¿Eliminar esta categoría?')) {
+                        const ok = await confirm({
+                          title: 'Eliminar categoría',
+                          description: '¿Eliminar esta categoría?',
+                          confirmText: 'Eliminar',
+                          variant: 'destructive',
+                        });
+                        if (ok) {
                           deleteMutation.mutate(category.id);
                         }
                       }}

@@ -53,8 +53,8 @@ export default function PortalClienteLoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-3">
-          <div className="w-16 h-16 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
-            <User className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-info-muted flex items-center justify-center">
+            <User className="w-8 h-8 text-primary" />
           </div>
           <CardTitle className="text-2xl text-center">Portal del Cliente</CardTitle>
           <CardDescription className="text-center">

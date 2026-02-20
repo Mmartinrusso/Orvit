@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -31,7 +32,7 @@ function MaintenanceCard({ maintenance, type }: { maintenance: Maintenance; type
     : 'bg-amber-100 text-amber-700 border-amber-200';
 
   return (
-    <div className={`avoid-break border rounded-lg ${borderColor} border-l-4 bg-white print:shadow-none`}>
+    <div className={cn('avoid-break border rounded-lg border-l-4 bg-white print:shadow-none', borderColor)}>
       <div className="p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -57,10 +58,10 @@ function MaintenanceCard({ maintenance, type }: { maintenance: Maintenance; type
             </div>
           </div>
           <div className="flex flex-col gap-1 ml-2 flex-shrink-0 print:gap-0.5">
-            <Badge className={`${kindBadgeColor} text-xs px-2 py-0.5 print:text-[10px] print:px-1.5`}>
+            <Badge className={cn(kindBadgeColor, 'text-xs px-2 py-0.5 print:text-[10px] print:px-1.5')}>
               {maintenance.kind}
             </Badge>
-            <Badge className={`${getPriorityColor(maintenance.priority)} text-xs px-2 py-0.5 print:text-[10px] print:px-1.5`}>
+            <Badge className={cn(getPriorityColor(maintenance.priority), 'text-xs px-2 py-0.5 print:text-[10px] print:px-1.5')}>
               {maintenance.priority}
             </Badge>
             {maintenance.mandatory && (

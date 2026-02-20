@@ -49,28 +49,28 @@ export function SelectionSummaryChips({
       </div>
       <div className="flex flex-wrap gap-2">
         {machineName && (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge variant="outline" className="bg-info-muted text-info-muted-foreground border-info-muted">
             <Wrench className="h-3 w-3 mr-1" />
             {machineName}
           </Badge>
         )}
         {componentNames.slice(0, maxItems).map((name, idx) => (
-          <Badge key={idx} variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge key={idx} variant="outline" className="bg-success-muted text-success border-success-muted">
             {name}
           </Badge>
         ))}
         {componentNames.length > maxItems && (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge variant="outline" className="bg-success-muted text-success border-success-muted">
             +{componentNames.length - maxItems} más
           </Badge>
         )}
         {subcomponentNames.slice(0, maxItems).map((name, idx) => (
-          <Badge key={idx} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+          <Badge key={idx} variant="outline" className="bg-primary/10 text-primary border-primary/20">
             {name}
           </Badge>
         ))}
         {subcomponentNames.length > maxItems && (
-          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
             +{subcomponentNames.length - maxItems} más
           </Badge>
         )}

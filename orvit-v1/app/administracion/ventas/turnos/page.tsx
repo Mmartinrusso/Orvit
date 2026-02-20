@@ -25,10 +25,10 @@ interface Turno {
 }
 
 const ESTADO_CONFIG = {
-  RESERVADO: { label: 'Reservado', color: 'bg-blue-100 text-blue-700' },
-  CONFIRMADO: { label: 'Confirmado', color: 'bg-green-100 text-green-700' },
-  COMPLETADO: { label: 'Completado', color: 'bg-gray-100 text-gray-700' },
-  CANCELADO: { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
+  RESERVADO: { label: 'Reservado', color: 'bg-info-muted text-info-muted-foreground' },
+  CONFIRMADO: { label: 'Confirmado', color: 'bg-success-muted text-success' },
+  COMPLETADO: { label: 'Completado', color: 'bg-muted text-foreground' },
+  CANCELADO: { label: 'Cancelado', color: 'bg-destructive/10 text-destructive' },
 };
 
 export default function TurnosPage() {
@@ -67,7 +67,7 @@ export default function TurnosPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
+                <Calendar className="w-4 h-4 text-info-muted-foreground" />
                 Turnos Hoy
               </CardTitle>
             </CardHeader>
@@ -80,7 +80,7 @@ export default function TurnosPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="w-4 h-4 text-green-600" />
+                <Clock className="w-4 h-4 text-success" />
                 Confirmados
               </CardTitle>
             </CardHeader>
@@ -126,8 +126,8 @@ export default function TurnosPage() {
                     <div className="flex items-start justify-between">
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <Package className="w-5 h-5 text-blue-600" />
+                          <div className="w-10 h-10 rounded-lg bg-info-muted flex items-center justify-center">
+                            <Package className="w-5 h-5 text-info-muted-foreground" />
                           </div>
                           <div>
                             <div className="font-semibold">Orden {turno.orderNumero}</div>

@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -18,15 +17,6 @@ export async function POST(request: NextRequest) {
       justifications = [],
       totalItems
     } = body;
-
-    console.log('🔍 Executing checklist maintenance items:', {
-      checklistId,
-      completedItemsCount: completedItems.length,
-      executionTime,
-      executedBy,
-      companyId,
-      sectorId
-    });
 
     const results = [];
 
@@ -69,17 +59,6 @@ export async function POST(request: NextRequest) {
               // Limitar entre 0% y 200% para casos extremos
               efficiency = Math.max(0, Math.min(200, efficiency));
             }
-            
-            console.log('🔍 Processing maintenance item:', {
-              maintenanceId: item.maintenanceId,
-              itemNotes,
-              itemIssues,
-              hasCustomNotes: !!itemData?.notes,
-              hasCustomIssues: !!itemData?.issues,
-              estimatedTimeMinutes,
-              actualTimeMinutes,
-              efficiency
-            });
 
             // Crear el registro de ejecución para el historial
             const executionRecord = {
@@ -98,9 +77,6 @@ export async function POST(request: NextRequest) {
               executedBy: executedBy
             };
 
-            console.log('🔍 Created execution record:', executionRecord);
-            console.log('🔍 Execution record JSON:', JSON.stringify(executionRecord, null, 2));
-
             // Actualizar el template con la información de ejecución
             const updatedTemplateData = {
               ...templateData,
@@ -116,13 +92,6 @@ export async function POST(request: NextRequest) {
               ]
             };
 
-            console.log('🔍 Template data before update:', {
-              existingExecutionHistory: templateData.executionHistory?.length || 0,
-              newExecutionRecord: executionRecord,
-              updatedExecutionHistoryLength: updatedTemplateData.executionHistory?.length || 0,
-              updatedExecutionHistoryFirstItem: updatedTemplateData.executionHistory?.[0]
-            });
-
             // Actualizar el documento en la base de datos
             const updatedDocument = await prisma.document.update({
               where: { id: item.maintenanceId },
@@ -130,18 +99,6 @@ export async function POST(request: NextRequest) {
                 url: JSON.stringify(updatedTemplateData),
                 updatedAt: new Date()
               }
-            });
-
-            console.log('🔍 Document updated:', {
-              documentId: updatedDocument.id,
-              urlLength: updatedDocument.url.length,
-              updatedTemplateDataKeys: Object.keys(updatedTemplateData),
-              savedExecutionHistory: JSON.parse(updatedDocument.url).executionHistory?.[0],
-              savedExecutionHistoryLength: JSON.parse(updatedDocument.url).executionHistory?.length || 0,
-              savedExecutionHistoryKeys: JSON.parse(updatedDocument.url).executionHistory?.[0] ? Object.keys(JSON.parse(updatedDocument.url).executionHistory[0]) : [],
-              savedExecutionHistoryNotes: JSON.parse(updatedDocument.url).executionHistory?.[0]?.notes,
-              savedExecutionHistoryActualDuration: JSON.parse(updatedDocument.url).executionHistory?.[0]?.actualDuration,
-              savedExecutionHistoryEfficiency: JSON.parse(updatedDocument.url).executionHistory?.[0]?.efficiency
             });
 
             // Registrar en el historial
@@ -170,21 +127,12 @@ export async function POST(request: NextRequest) {
               }
             });
 
-            console.log('✅ Maintenance executed and logged:', {
-              maintenanceId: item.maintenanceId,
-              title: templateData.title,
-              lastMaintenanceDate: updatedTemplateData.lastMaintenanceDate,
-              executionRecord: executionRecord,
-              executionHistoryLength: updatedTemplateData.executionHistory?.length || 0
-            });
-
             results.push({
               maintenanceId: item.maintenanceId,
               status: 'success',
               message: 'Mantenimiento ejecutado correctamente'
             });
           } else {
-            console.log('⚠️ Maintenance not found or not preventive:', item.maintenanceId);
             results.push({
               maintenanceId: item.maintenanceId,
               status: 'error',
@@ -204,17 +152,6 @@ export async function POST(request: NextRequest) {
 
     // Registrar la ejecución del checklist
     try {
-      console.log('🔍 Creating checklist execution record with data:', {
-        checklistId,
-        executedBy,
-        executionTime,
-        completedItems: completedItems.filter(item => item.isCompleted).length,
-        totalItems: totalItems || completedItems.length,
-        companyId,
-        sectorId,
-        status,
-        justificationsCount: justifications.length
-      });
 
       // Crear un registro detallado de la ejecución que incluya todos los items
       const incompleteItems = completedItems.filter(item => !item.isCompleted);
@@ -253,14 +190,6 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      console.log('✅ Checklist execution recorded successfully:', {
-        executionId: checklistExecution.id,
-        status: status,
-        sectorId: sectorId,
-        checklistId: checklistId,
-        completedItems: checklistExecution.completedItems,
-        totalItems: checklistExecution.totalItems
-      });
     } catch (error) {
       console.error('❌ Error recording checklist execution:', error);
       console.error('❌ Error details:', {

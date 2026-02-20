@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Sector } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Factory, MapPin, Activity, Pencil, Trash2, Wrench } from 'lucide-react';
+import { Factory, MapPin, Activity, Pencil, Trash2, Wrench, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { LogoUpload } from '@/components/ui/LogoUpload';
@@ -171,7 +171,7 @@ export default function SectorCard({ sector, onSelect, canEdit = true, canDelete
         {/* Badge de Producción */}
         {(sector as any).enabledForProduction && (
           <div className="absolute top-3 left-3 z-10">
-            <Badge className="bg-blue-500 text-white hover:bg-blue-600 text-xs">
+            <Badge className="bg-primary text-white hover:bg-primary/90 text-xs">
               <Factory className="h-3 w-3 mr-1" />
               Producción
             </Badge>
@@ -313,7 +313,7 @@ export default function SectorCard({ sector, onSelect, canEdit = true, canDelete
             <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
               <div className="space-y-0.5">
                 <Label htmlFor="enabledForProduction" className="text-sm font-medium flex items-center gap-2">
-                  <Factory className="h-4 w-4 text-blue-500" />
+                  <Factory className="h-4 w-4 text-primary" />
                   Habilitar para Producción
                 </Label>
                 <p className="text-xs text-muted-foreground">
@@ -346,7 +346,12 @@ export default function SectorCard({ sector, onSelect, canEdit = true, canDelete
                 Cancelar
               </Button>
               <Button type="submit" size="sm" disabled={isLoading}>
-                {isLoading ? 'Guardando...' : 'Guardar cambios'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : 'Guardar cambios'}
               </Button>
             </DialogFooter>
           </form>

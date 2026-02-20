@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Clock, TrendingUp, TrendingDown, Filter, Plus, Calendar, DollarSign, User, Search } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Clock, TrendingUp, TrendingDown, Filter, Plus, Calendar, DollarSign, User, Search, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,10 +35,21 @@ export function HistorialIndividual({
   companyId, 
   onSalaryChange 
 }: HistorialIndividualProps) {
-  const [historial, setHistorial] = useState<SalaryHistoryEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [filteredHistorial, setFilteredHistorial] = useState<SalaryHistoryEntry[]>([]);
+  const queryClient = useQueryClient();
+  const queryKey = ['costos-historial-individual', employeeId, companyId];
+
+  const { data: historial = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const res = await fetch(`/api/costos/empleados/${employeeId}/historial?companyId=${companyId}`);
+      if (!res.ok) throw new Error('Error al obtener el historial');
+      return res.json() as Promise<SalaryHistoryEntry[]>;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const error = queryError?.message ?? null;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -45,85 +59,44 @@ export function HistorialIndividual({
     changeReason: ''
   });
 
-  // Obtener historial del empleado
-  const fetchHistorial = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetch(`/api/costos/empleados/${employeeId}/historial?companyId=${companyId}`);
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener el historial');
-      }
-      
-      const data = await response.json();
-      setHistorial(data);
-      setFilteredHistorial(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Filtrar historial
-  const filterHistorial = () => {
+  // Filtrado client-side (useMemo en vez de useState + useEffect)
+  const filteredHistorial = useMemo(() => {
     let filtered = historial;
 
-    // Filtro por búsqueda de texto
     if (searchTerm) {
-      filtered = filtered.filter(entry => 
+      filtered = filtered.filter(entry =>
         entry.changeReason.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filtro por fecha
     if (dateFilter !== 'all') {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       switch (dateFilter) {
         case 'today':
-          filtered = filtered.filter(entry => {
-            const entryDate = new Date(entry.changeDate);
-            return entryDate >= today;
-          });
+          filtered = filtered.filter(entry => new Date(entry.changeDate) >= today);
           break;
-        case 'week':
+        case 'week': {
           const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-          filtered = filtered.filter(entry => {
-            const entryDate = new Date(entry.changeDate);
-            return entryDate >= weekAgo;
-          });
+          filtered = filtered.filter(entry => new Date(entry.changeDate) >= weekAgo);
           break;
-        case 'month':
+        }
+        case 'month': {
           const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-          filtered = filtered.filter(entry => {
-            const entryDate = new Date(entry.changeDate);
-            return entryDate >= monthAgo;
-          });
+          filtered = filtered.filter(entry => new Date(entry.changeDate) >= monthAgo);
           break;
+        }
       }
     }
 
-    setFilteredHistorial(filtered);
-  };
-
-  // Aplicar filtros cuando cambien
-  useEffect(() => {
-    filterHistorial();
-  }, [searchTerm, dateFilter, historial]);
-
-  // Cargar historial al montar el componente
-  useEffect(() => {
-    fetchHistorial();
-  }, [employeeId, companyId]);
+    return filtered;
+  }, [historial, searchTerm, dateFilter]);
 
   // Agregar nueva entrada
   const handleAddEntry = async () => {
     if (newEntry.newSalary === newEntry.oldSalary) {
-      alert('El nuevo salario debe ser diferente al anterior');
+      toast.warning('El nuevo salario debe ser diferente al anterior');
       return;
     }
 
@@ -143,8 +116,8 @@ export function HistorialIndividual({
         throw new Error('Error al crear entrada en historial');
       }
 
-      // Recargar historial y notificar cambio
-      await fetchHistorial();
+      // Invalidar cache y notificar cambio
+      queryClient.invalidateQueries({ queryKey });
       onSalaryChange();
       
       // Resetear formulario
@@ -211,14 +184,14 @@ export function HistorialIndividual({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8 text-red-600">
+      <div className="text-center p-8 text-destructive">
         <p>Error: {error}</p>
         <Button onClick={fetchHistorial} className="mt-2">Reintentar</Button>
       </div>
@@ -230,15 +203,15 @@ export function HistorialIndividual({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
             <User className="h-5 w-5" />
             Historial de Sueldos
           </h3>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Registro de cambios salariales para {employeeName}
           </p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="bg-black hover:bg-gray-800">
+        <Button onClick={() => setShowAddModal(true)} className="bg-foreground hover:bg-foreground/90 text-background">
           <Plus className="h-4 w-4 mr-2" />
           Agregar Cambio
         </Button>
@@ -249,7 +222,7 @@ export function HistorialIndividual({
         {/* Filtro de búsqueda */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <Search className="h-4 w-4" />
               Buscar
             </CardTitle>
@@ -266,7 +239,7 @@ export function HistorialIndividual({
         {/* Filtro por fecha */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Período
             </CardTitle>
@@ -291,16 +264,16 @@ export function HistorialIndividual({
           <>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-success" />
                   Aumentos
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold text-green-600">
+                <div className="text-xl font-bold text-success">
                   {formatCurrency(stats.totalIncrease)}
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   Promedio: {formatCurrency(stats.averageIncrease)}
                 </p>
               </CardContent>
@@ -308,16 +281,16 @@ export function HistorialIndividual({
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-destructive" />
                   Disminuciones
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold text-red-600">
+                <div className="text-xl font-bold text-destructive">
                   {formatCurrency(stats.totalDecrease)}
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   Promedio: {formatCurrency(stats.averageDecrease)}
                 </p>
               </CardContent>
@@ -335,8 +308,8 @@ export function HistorialIndividual({
         </CardHeader>
         <CardContent>
           {filteredHistorial.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-muted-foreground">
+              <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p>No hay cambios salariales registrados</p>
               {searchTerm || dateFilter !== 'all' ? (
                 <p className="text-sm">Intenta cambiar los filtros o agregar un cambio</p>
@@ -353,12 +326,12 @@ export function HistorialIndividual({
                 return (
                   <div
                     key={entry.id}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-4 p-4 bg-muted rounded-lg hover:bg-accent transition-colors"
                   >
                     {/* Icono */}
-                    <div className={`p-3 rounded-full ${
-                      isIncrease ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                    }`}>
+                    <div className={cn('p-3 rounded-full',
+                      isIncrease ? 'bg-success-muted text-success' : 'bg-destructive/10 text-destructive'
+                    )}>
                       {isIncrease ? (
                         <TrendingUp className="h-5 w-5" />
                       ) : (
@@ -377,7 +350,7 @@ export function HistorialIndividual({
                         </Badge>
                       </div>
                       
-                      <div className="text-sm text-gray-600 space-y-1">
+                      <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex items-center gap-4 text-xs">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -403,11 +376,11 @@ export function HistorialIndividual({
       {/* Modal para agregar cambio */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-card rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Agregar Cambio Salarial</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Salario Anterior
                 </label>
                 <Input
@@ -419,7 +392,7 @@ export function HistorialIndividual({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Nuevo Salario
                 </label>
                 <Input
@@ -431,7 +404,7 @@ export function HistorialIndividual({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Motivo del Cambio
                 </label>
                 <Input

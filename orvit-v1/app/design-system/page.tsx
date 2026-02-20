@@ -458,7 +458,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Estado</Label>
-                    <p><Badge variant="outline" className="bg-green-100">Activo</Badge></p>
+                    <p><Badge variant="outline" className="bg-success-muted">Activo</Badge></p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Última revisión</Label>
@@ -865,11 +865,11 @@ export default function DesignSystemPage() {
                 <CardTitle>Estados de Mantenimiento</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
-                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendiente</Badge>
-                <Badge className="bg-blue-100 text-blue-800 border-blue-300">En Progreso</Badge>
-                <Badge className="bg-green-100 text-green-800 border-green-300">Completado</Badge>
-                <Badge className="bg-red-100 text-red-800 border-red-300">Vencido</Badge>
-                <Badge className="bg-gray-100 text-gray-800 border-gray-300">Cancelado</Badge>
+                <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted">Pendiente</Badge>
+                <Badge className="bg-info-muted text-info-muted-foreground border-info-muted">En Progreso</Badge>
+                <Badge className="bg-success-muted text-success-muted-foreground border-success-muted">Completado</Badge>
+                <Badge className="bg-destructive/10 text-destructive border-destructive/20">Vencido</Badge>
+                <Badge className="bg-muted text-foreground border-border">Cancelado</Badge>
               </CardContent>
             </Card>
 
@@ -878,10 +878,10 @@ export default function DesignSystemPage() {
                 <CardTitle>Prioridades</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
-                <Badge className="bg-gray-100 text-gray-700">Baja</Badge>
-                <Badge className="bg-yellow-100 text-yellow-700">Media</Badge>
-                <Badge className="bg-orange-100 text-orange-700">Alta</Badge>
-                <Badge className="bg-red-100 text-red-700">Crítica</Badge>
+                <Badge className="bg-muted text-muted-foreground">Baja</Badge>
+                <Badge className="bg-warning-muted text-warning-muted-foreground">Media</Badge>
+                <Badge className="bg-warning-muted text-warning-muted-foreground">Alta</Badge>
+                <Badge className="bg-destructive/10 text-destructive">Crítica</Badge>
               </CardContent>
             </Card>
 
@@ -890,8 +890,8 @@ export default function DesignSystemPage() {
                 <CardTitle>Tipos de Mantenimiento</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
-                <Badge className="bg-blue-500 text-white">Preventivo</Badge>
-                <Badge className="bg-orange-500 text-white">Correctivo</Badge>
+                <Badge className="bg-primary text-primary-foreground">Preventivo</Badge>
+                <Badge className="bg-warning text-warning-foreground">Correctivo</Badge>
                 <Badge className="bg-purple-500 text-white">Predictivo</Badge>
               </CardContent>
             </Card>
@@ -913,16 +913,16 @@ export default function DesignSystemPage() {
                 <CardTitle>Con Íconos</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
-                <Badge className="bg-green-100 text-green-800">
+                <Badge className="bg-success-muted text-success-muted-foreground">
                   <Check className="mr-1 h-3 w-3" /> Aprobado
                 </Badge>
-                <Badge className="bg-red-100 text-red-800">
+                <Badge className="bg-destructive/10 text-destructive">
                   <X className="mr-1 h-3 w-3" /> Rechazado
                 </Badge>
-                <Badge className="bg-yellow-100 text-yellow-800">
+                <Badge className="bg-warning-muted text-warning-muted-foreground">
                   <AlertTriangle className="mr-1 h-3 w-3" /> Advertencia
                 </Badge>
-                <Badge className="bg-blue-100 text-blue-800">
+                <Badge className="bg-info-muted text-info-muted-foreground">
                   <Info className="mr-1 h-3 w-3" /> Info
                 </Badge>
               </CardContent>
@@ -960,8 +960,8 @@ export default function DesignSystemPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Con error</Label>
-                    <Input className="border-red-500" defaultValue="Valor inválido" />
-                    <p className="text-sm text-red-500">Este campo es requerido</p>
+                    <Input className="border-destructive" defaultValue="Valor inválido" />
+                    <p className="text-sm text-destructive">Este campo es requerido</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1097,7 +1097,7 @@ export default function DesignSystemPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500">
+              <Card className="border-l-4 border-l-primary">
                 <CardHeader>
                   <CardTitle>Card con Accent</CardTitle>
                   <CardDescription>Borde izquierdo de color</CardDescription>
@@ -1183,29 +1183,29 @@ export default function DesignSystemPage() {
                 <CardTitle>Colores de Estado</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-yellow-100 border border-yellow-300">
-                  <p className="font-medium text-yellow-800">Pendiente</p>
-                  <p className="text-sm text-yellow-700">bg-yellow-100, text-yellow-800</p>
+                <div className="p-4 rounded-lg bg-warning-muted border border-warning-muted">
+                  <p className="font-medium text-warning-muted-foreground">Pendiente</p>
+                  <p className="text-sm text-warning-muted-foreground">bg-warning-muted, text-warning-muted-foreground</p>
                 </div>
-                <div className="p-4 rounded-lg bg-blue-100 border border-blue-300">
-                  <p className="font-medium text-blue-800">En Progreso</p>
-                  <p className="text-sm text-blue-700">bg-blue-100, text-blue-800</p>
+                <div className="p-4 rounded-lg bg-info-muted border border-info-muted">
+                  <p className="font-medium text-info-muted-foreground">En Progreso</p>
+                  <p className="text-sm text-info-muted-foreground">bg-info-muted, text-info-muted-foreground</p>
                 </div>
-                <div className="p-4 rounded-lg bg-green-100 border border-green-300">
-                  <p className="font-medium text-green-800">Completado</p>
-                  <p className="text-sm text-green-700">bg-green-100, text-green-800</p>
+                <div className="p-4 rounded-lg bg-success-muted border border-success-muted">
+                  <p className="font-medium text-success-muted-foreground">Completado</p>
+                  <p className="text-sm text-success-muted-foreground">bg-success-muted, text-success-muted-foreground</p>
                 </div>
-                <div className="p-4 rounded-lg bg-red-100 border border-red-300">
-                  <p className="font-medium text-red-800">Vencido / Error</p>
-                  <p className="text-sm text-red-700">bg-red-100, text-red-800</p>
+                <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="font-medium text-destructive">Vencido / Error</p>
+                  <p className="text-sm text-destructive">bg-destructive/10, text-destructive</p>
                 </div>
-                <div className="p-4 rounded-lg bg-gray-100 border border-gray-300">
-                  <p className="font-medium text-gray-800">Cancelado / Inactivo</p>
-                  <p className="text-sm text-gray-700">bg-gray-100, text-gray-800</p>
+                <div className="p-4 rounded-lg bg-muted border border-border">
+                  <p className="font-medium text-foreground">Cancelado / Inactivo</p>
+                  <p className="text-sm text-muted-foreground">bg-muted, text-foreground</p>
                 </div>
-                <div className="p-4 rounded-lg bg-orange-100 border border-orange-300">
-                  <p className="font-medium text-orange-800">Advertencia</p>
-                  <p className="text-sm text-orange-700">bg-orange-100, text-orange-800</p>
+                <div className="p-4 rounded-lg bg-warning-muted border border-warning-muted">
+                  <p className="font-medium text-warning-muted-foreground">Advertencia</p>
+                  <p className="text-sm text-warning-muted-foreground">bg-warning-muted, text-warning-muted-foreground</p>
                 </div>
               </CardContent>
             </Card>
@@ -1215,17 +1215,17 @@ export default function DesignSystemPage() {
                 <CardTitle>Colores de Prioridad</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-gray-100">
-                  <p className="font-medium text-gray-700">Baja</p>
+                <div className="p-4 rounded-lg bg-muted">
+                  <p className="font-medium text-muted-foreground">Baja</p>
                 </div>
-                <div className="p-4 rounded-lg bg-yellow-100">
-                  <p className="font-medium text-yellow-700">Media</p>
+                <div className="p-4 rounded-lg bg-warning-muted">
+                  <p className="font-medium text-warning-muted-foreground">Media</p>
                 </div>
-                <div className="p-4 rounded-lg bg-orange-100">
-                  <p className="font-medium text-orange-700">Alta</p>
+                <div className="p-4 rounded-lg bg-warning-muted">
+                  <p className="font-medium text-warning-muted-foreground">Alta</p>
                 </div>
-                <div className="p-4 rounded-lg bg-red-100">
-                  <p className="font-medium text-red-700">Crítica</p>
+                <div className="p-4 rounded-lg bg-destructive/10">
+                  <p className="font-medium text-destructive">Crítica</p>
                 </div>
               </CardContent>
             </Card>
@@ -1235,13 +1235,13 @@ export default function DesignSystemPage() {
                 <CardTitle>Colores de Tipo de Mantenimiento</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-blue-500 text-white">
+                <div className="p-4 rounded-lg bg-primary text-primary-foreground">
                   <p className="font-medium">Preventivo</p>
-                  <p className="text-sm opacity-90">bg-blue-500</p>
+                  <p className="text-sm opacity-90">bg-primary</p>
                 </div>
-                <div className="p-4 rounded-lg bg-orange-500 text-white">
+                <div className="p-4 rounded-lg bg-warning text-warning-foreground">
                   <p className="font-medium">Correctivo</p>
-                  <p className="text-sm opacity-90">bg-orange-500</p>
+                  <p className="text-sm opacity-90">bg-warning</p>
                 </div>
                 <div className="p-4 rounded-lg bg-purple-500 text-white">
                   <p className="font-medium">Predictivo</p>

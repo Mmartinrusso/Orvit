@@ -18,17 +18,17 @@ import {
 import { statusLabel, priorityLabel, maintenanceTypeLabel } from './work-order-utils';
 
 const statusColors: Record<WorkOrderStatus, string> = {
-  PENDING: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20',
-  IN_PROGRESS: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
-  COMPLETED: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
+  PENDING: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  IN_PROGRESS: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  COMPLETED: 'bg-success-muted text-success border-success-muted',
   CANCELLED: 'bg-muted text-muted-foreground border-border',
-  ON_HOLD: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
+  ON_HOLD: 'bg-primary/10 text-primary border-primary/20',
 };
 
 const priorityColors: Record<Priority, string> = {
-  LOW: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
-  MEDIUM: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20',
-  HIGH: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
+  LOW: 'bg-success-muted text-success border-success-muted',
+  MEDIUM: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  HIGH: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
   CRITICAL: 'bg-destructive/10 text-destructive border-destructive/20',
   URGENT: 'bg-destructive/10 text-destructive border-destructive/20',
 };

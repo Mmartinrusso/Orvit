@@ -270,11 +270,14 @@ export function useMachineWorkOrders(
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
-      return response.json();
+      const result = await response.json();
+      // API returns { data: [...], pagination: {...} } — extract the array
+      return Array.isArray(result) ? result : (result.data || []);
     },
     enabled: enabled && !!machineId,
     staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: 1, // falla rápido si hay error de servidor
   });
 
   // Fetch preventive maintenances (stored in Document table)
@@ -312,6 +315,7 @@ export function useMachineWorkOrders(
               assignedTo: template.assignedToName ? { id: template.assignedToId, name: template.assignedToName } : null,
               component: template.componentNames?.[0] ? { id: template.componentIds?.[0], name: template.componentNames[0] } : null,
               componentId: template.componentIds?.[0],
+              componentIds: template.componentIds || [], // todos los componentes del plan
               createdAt: template.createdAt,
               _isPreventiveTemplate: true,
               _templateId: template.id,
@@ -474,9 +478,12 @@ export function useMachineMaintenanceHistory(
     return machineDetailData?.maintenanceHistory || [];
   }, [dashboardHistory, directFetchQuery.data, machineDetailData?.maintenanceHistory]);
   
-  const isLoading = dashboardHistory 
-    ? false 
-    : (directFetchQuery.isLoading || (machineDetailData === undefined));
+  // Solo loading mientras la query directa está fetching activamente.
+  // machineDetailData puede ser undefined cuando se deshabilita (si hay datos del fetch directo),
+  // no debe bloquear el loading state.
+  const isLoading = dashboardHistory
+    ? false
+    : directFetchQuery.isLoading;
   
   const isError = directFetchQuery.isError;
   const error = directFetchQuery.error;

@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const daysAhead = Number(searchParams.get('daysAhead')) || 7;
+    const sectorId = searchParams.get('sectorId');
 
     if (!companyId) {
       return NextResponse.json(
@@ -17,16 +18,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Obtener todos los templates activos de la empresa
-    const templates = await prisma.document.findMany({
-      where: {
-        entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE',
-        url: { contains: `"companyId":${companyId}` }
-      }
-    });
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Fecha límite para buscar alertas
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + daysAhead);
+
+    // Consulta directa: templates activos con nextMaintenanceDate dentro del rango o vencidos
+    const templates = await prisma.preventiveTemplate.findMany({
+      where: {
+        companyId: Number(companyId),
+        isActive: true,
+        nextMaintenanceDate: { not: null },
+        ...(sectorId ? { sectorId: Number(sectorId) } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        machineName: true,
+        nextMaintenanceDate: true,
+        alertDaysBefore: true,
+        assignedToName: true,
+        frequencyDays: true,
+      },
+    });
 
     const alerts: {
       id: number;
@@ -42,69 +58,54 @@ export async function GET(request: NextRequest) {
     }[] = [];
 
     for (const template of templates) {
-      try {
-        const data = JSON.parse(template.url);
+      if (!template.nextMaintenanceDate) continue;
 
-        // Solo procesar templates activos
-        if (!data.isActive) continue;
+      const nextDate = new Date(template.nextMaintenanceDate);
+      nextDate.setHours(0, 0, 0, 0);
 
-        // Verificar que tenga fecha de próximo mantenimiento
-        if (!data.nextMaintenanceDate) continue;
+      const diffTime = nextDate.getTime() - today.getTime();
+      const daysUntilDue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        const nextDate = new Date(data.nextMaintenanceDate);
-        nextDate.setHours(0, 0, 0, 0);
+      const alertDays = template.alertDaysBefore?.length > 0
+        ? template.alertDaysBefore
+        : [3];
 
-        const diffTime = nextDate.getTime() - today.getTime();
-        const daysUntilDue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      // Incluir si está vencido, vence hoy, o está dentro del rango
+      const maxAlertDay = Math.max(...alertDays, daysAhead);
+      if (daysUntilDue > maxAlertDay) continue;
 
-        // Determinar si debe generar alerta
-        const alertDays = Array.isArray(data.alertDaysBefore)
-          ? data.alertDaysBefore.map(Number)
-          : data.alertDaysBefore
-            ? [Number(data.alertDaysBefore)]
-            : [3]; // Por defecto 3 días antes
+      let type: 'OVERDUE' | 'DUE_TODAY' | 'DUE_SOON' | 'UPCOMING';
+      let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
-        // Incluir si está vencido, vence hoy, o está dentro del rango de alertas
-        const maxAlertDay = Math.max(...alertDays, daysAhead);
-        if (daysUntilDue > maxAlertDay) continue;
-
-        // Determinar tipo y prioridad de alerta
-        let type: 'OVERDUE' | 'DUE_TODAY' | 'DUE_SOON' | 'UPCOMING';
-        let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-
-        if (daysUntilDue < 0) {
-          type = 'OVERDUE';
-          priority = 'CRITICAL';
-        } else if (daysUntilDue === 0) {
-          type = 'DUE_TODAY';
-          priority = 'HIGH';
-        } else if (alertDays.includes(daysUntilDue)) {
-          type = 'DUE_SOON';
-          priority = daysUntilDue <= 1 ? 'HIGH' : 'MEDIUM';
-        } else if (daysUntilDue <= 3) {
-          type = 'DUE_SOON';
-          priority = 'MEDIUM';
-        } else {
-          type = 'UPCOMING';
-          priority = 'LOW';
-        }
-
-        alerts.push({
-          id: template.id,
-          type,
-          priority,
-          title: data.title,
-          machineName: data.machineName || 'Sin equipo',
-          nextMaintenanceDate: data.nextMaintenanceDate,
-          daysUntilDue,
-          alertDaysBefore: alertDays,
-          assignedToName: data.assignedToName || null,
-          frequencyDays: data.frequencyDays
-        });
-      } catch {
-        // Skip templates con JSON inválido
-        continue;
+      if (daysUntilDue < 0) {
+        type = 'OVERDUE';
+        priority = 'CRITICAL';
+      } else if (daysUntilDue === 0) {
+        type = 'DUE_TODAY';
+        priority = 'HIGH';
+      } else if (alertDays.includes(daysUntilDue)) {
+        type = 'DUE_SOON';
+        priority = daysUntilDue <= 1 ? 'HIGH' : 'MEDIUM';
+      } else if (daysUntilDue <= 3) {
+        type = 'DUE_SOON';
+        priority = 'MEDIUM';
+      } else {
+        type = 'UPCOMING';
+        priority = 'LOW';
       }
+
+      alerts.push({
+        id: template.id,
+        type,
+        priority,
+        title: template.title,
+        machineName: template.machineName || 'Sin equipo',
+        nextMaintenanceDate: template.nextMaintenanceDate.toISOString(),
+        daysUntilDue,
+        alertDaysBefore: alertDays,
+        assignedToName: template.assignedToName || null,
+        frequencyDays: template.frequencyDays,
+      });
     }
 
     // Ordenar por prioridad y días hasta vencimiento
@@ -115,7 +116,6 @@ export async function GET(request: NextRequest) {
       return a.daysUntilDue - b.daysUntilDue;
     });
 
-    // Resumen de alertas
     const summary = {
       total: alerts.length,
       overdue: alerts.filter(a => a.type === 'OVERDUE').length,
@@ -123,10 +123,9 @@ export async function GET(request: NextRequest) {
       dueSoon: alerts.filter(a => a.type === 'DUE_SOON').length,
       upcoming: alerts.filter(a => a.type === 'UPCOMING').length,
       critical: alerts.filter(a => a.priority === 'CRITICAL').length,
-      high: alerts.filter(a => a.priority === 'HIGH').length
+      high: alerts.filter(a => a.priority === 'HIGH').length,
     };
 
-    // Cache corto para alertas
     const response = NextResponse.json({ alerts, summary });
     response.headers.set('Cache-Control', 'private, max-age=60, s-maxage=60');
     return response;

@@ -12,14 +12,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProductos, Product, ProductCategory } from '@/hooks/use-productos';
 import { useSubcategories, ProductSubcategory } from '@/hooks/use-subcategories';
 import { useCompany } from '@/contexts/CompanyContext';
-import { Plus, Edit, Trash2, Eye, Package, Tag, DollarSign, TrendingUp, AlertTriangle, Power, PowerOff, Upload, Download, FileSpreadsheet, CheckCircle, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Package, Tag, DollarSign, TrendingUp, AlertTriangle, Power, PowerOff, Upload, Download, FileSpreadsheet, CheckCircle, BookOpen, Loader2 } from 'lucide-react';
 import { NotesDialog } from '@/components/ui/NotesDialog';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false; // Desactivado para mejor rendimiento
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 export default function Productos() {
+  const confirm = useConfirm();
   const { currentCompany } = useCompany();
   const {
     categories,
@@ -96,7 +99,7 @@ export default function Productos() {
       setCategoryForm({ name: '', description: '' });
       setShowCategoryDialog(false);
     } catch (error) {
-      alert(`Error al crear categoría: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al crear categoría: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -115,14 +118,14 @@ export default function Productos() {
       setSubcategoryForm({ name: '', description: '', categoryId: '' });
       setShowSubcategoryDialog(false);
     } catch (error) {
-      alert(`Error al crear subcategoría: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al crear subcategoría: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
   // Función para crear producto
   const handleCreateProduct = async () => {
     if (!productForm.name || !productForm.sku || !productForm.categoryId) {
-      alert('Nombre, SKU y categoría son requeridos');
+      toast.warning('Nombre, SKU y categoría son requeridos');
       return;
     }
 
@@ -144,7 +147,7 @@ export default function Productos() {
       });
       setShowProductDialog(false);
     } catch (error) {
-      alert(`Error al crear producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al crear producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -164,7 +167,7 @@ export default function Productos() {
   // Función para actualizar producto
   const handleUpdateProduct = async () => {
     if (!editingProduct || !productForm.name || !productForm.sku || !productForm.categoryId) {
-      alert('Nombre, SKU y categoría son requeridos');
+      toast.warning('Nombre, SKU y categoría son requeridos');
       return;
     }
 
@@ -187,18 +190,24 @@ export default function Productos() {
       });
       setShowProductDialog(false);
     } catch (error) {
-      alert(`Error al actualizar producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al actualizar producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
   // Función para eliminar producto
   const handleDeleteProduct = async (productId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) return;
+    const ok = await confirm({
+      title: 'Eliminar producto',
+      description: '¿Estás seguro de que quieres eliminar este producto?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       await deleteProduct(productId);
     } catch (error) {
-      alert(`Error al eliminar producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al eliminar producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -214,7 +223,7 @@ export default function Productos() {
         isActive: !product.isActive
       });
     } catch (error) {
-      alert(`Error al cambiar estado del producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al cambiar estado del producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -287,11 +296,11 @@ export default function Productos() {
         await refreshData(); // Recargar la lista de productos
       } else {
         console.error('❌ Error en carga masiva:', result);
-        alert(`Error: ${result.error}`);
+        toast.error(`Error: ${result.error}`);
       }
     } catch (error) {
       console.error('❌ Error:', error);
-      alert('Error al subir el archivo');
+      toast.error('Error al subir el archivo');
     } finally {
       setUploading(false);
     }
@@ -326,7 +335,7 @@ export default function Productos() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-600">Error: {error}</div>
+        <div className="text-destructive">Error: {error}</div>
       </div>
     );
   }
@@ -356,7 +365,7 @@ export default function Productos() {
             <Upload className="h-4 w-4 mr-2" />
             Carga Masiva
           </Button>
-          <Button onClick={() => setShowNotesDialog(true)} variant="outline" size="sm" className="text-amber-700 hover:text-amber-800 hover:bg-amber-50">
+          <Button onClick={() => setShowNotesDialog(true)} variant="outline" size="sm" className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted">
             <BookOpen className="h-4 w-4 mr-2" />
             Notas
           </Button>
@@ -372,7 +381,7 @@ export default function Productos() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Package className="h-4 w-4 text-blue-600" />
+              <Package className="h-4 w-4 text-info-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Productos</p>
                 <p className="text-2xl font-bold">{totalProducts}</p>
@@ -384,7 +393,7 @@ export default function Productos() {
                  <Card>
            <CardContent className="p-4">
              <div className="flex items-center space-x-2">
-               <TrendingUp className="h-4 w-4 text-green-600" />
+               <TrendingUp className="h-4 w-4 text-success" />
                <div>
                  <p className="text-sm font-medium text-muted-foreground">Productos Activos</p>
                  <p className="text-2xl font-bold">{activeProducts}</p>
@@ -396,7 +405,7 @@ export default function Productos() {
          <Card>
            <CardContent className="p-4">
              <div className="flex items-center space-x-2">
-               <AlertTriangle className="h-4 w-4 text-orange-600" />
+               <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                <div>
                  <p className="text-sm font-medium text-muted-foreground">Productos Inactivos</p>
                  <p className="text-2xl font-bold">{inactiveProducts}</p>
@@ -470,7 +479,7 @@ export default function Productos() {
                                {product.categoryName}
                              </Badge>
                              {product.subcategoryName && (
-                               <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                               <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
                                  {product.subcategoryName}
                                </Badge>
                              )}
@@ -479,7 +488,7 @@ export default function Productos() {
                              </Badge>
                            </div>
                            <div className="flex items-center gap-4 text-sm">
-                             <span className="text-green-600 font-medium">
+                             <span className="text-success font-medium">
                                {formatCurrency(product.unitPrice)}
                              </span>
                            </div>
@@ -505,7 +514,7 @@ export default function Productos() {
                          <Button
                            variant="outline"
                            size="sm"
-                           className={product.isActive ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}
+                           className={product.isActive ? "text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted" : "text-success hover:text-success hover:bg-success-muted"}
                            onClick={() => handleToggleProductStatus(product)}
                            title={product.isActive ? "Desactivar producto" : "Activar producto"}
                          >
@@ -514,7 +523,7 @@ export default function Productos() {
                          <Button
                            variant="outline"
                            size="sm"
-                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
                            onClick={() => handleDeleteProduct(product.id)}
                          >
                            <Trash2 className="h-4 w-4" />
@@ -645,7 +654,7 @@ export default function Productos() {
                     <button
                       type="button"
                       onClick={() => setShowSubcategoryDialog(true)}
-                      className="text-blue-600 hover:underline ml-1"
+                      className="text-info-muted-foreground hover:underline ml-1"
                     >
                       Crear una
                     </button>
@@ -701,13 +710,13 @@ export default function Productos() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-medium mb-2">Precio de Venta</h4>
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-2xl font-bold text-success">
                         {formatCurrency(selectedProduct.unitPrice)}
                       </p>
                     </div>
                     <div>
                       <h4 className="font-medium mb-2">Costo Unitario</h4>
-                      <p className="text-2xl font-bold text-red-600">
+                      <p className="text-2xl font-bold text-destructive">
                         {formatCurrency(selectedProduct.unitCost)}
                       </p>
                     </div>
@@ -717,13 +726,13 @@ export default function Productos() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-medium mb-2">Margen</h4>
-                      <p className="text-lg font-semibold text-blue-600">
+                      <p className="text-lg font-semibold text-info-muted-foreground">
                         {formatCurrency(selectedProduct.unitPrice - selectedProduct.unitCost)}
                       </p>
                     </div>
                     <div>
                       <h4 className="font-medium mb-2">Costo Unitario</h4>
-                      <p className="text-lg font-semibold text-red-600">
+                      <p className="text-lg font-semibold text-destructive">
                         {formatCurrency(selectedProduct.unitCost)}
                       </p>
                     </div>
@@ -824,9 +833,9 @@ export default function Productos() {
           <DialogBody>
             <div className="space-y-6">
             {/* Instrucciones */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-900 mb-2">📋 Instrucciones:</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
+            <div className="bg-info-muted p-4 rounded-lg">
+              <h3 className="font-semibold text-foreground mb-2">📋 Instrucciones:</h3>
+              <ul className="text-sm text-info-muted-foreground space-y-1">
                 <li>• Descarga la plantilla CSV para ver el formato correcto</li>
                 <li>• Completa los campos requeridos: nombre, sku, categoria</li>
                 <li>• Los campos opcionales son: subcategoria, descripcion</li>
@@ -852,10 +861,10 @@ export default function Productos() {
                 type="file"
                 accept=".csv"
                 onChange={handleFileSelect}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-border rounded-md"
               />
               {uploadFile && (
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-success mt-1">
                   ✅ Archivo seleccionado: {uploadFile.name}
                 </p>
               )}
@@ -870,7 +879,7 @@ export default function Productos() {
               >
                 {uploading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Procesando...
                   </>
                 ) : (
@@ -888,34 +897,34 @@ export default function Productos() {
             {/* Resultados */}
             {uploadResults && (
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-green-600">
+                <div className="flex items-center gap-2 text-success">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-semibold">{uploadResults.message}</span>
                 </div>
 
                 {/* Resumen */}
                 <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-2xl font-bold text-blue-600">{uploadResults.summary.total}</div>
-                    <div className="text-sm text-gray-600">Total</div>
+                  <div className="bg-muted p-3 rounded">
+                    <div className="text-2xl font-bold text-info-muted-foreground">{uploadResults.summary.total}</div>
+                    <div className="text-sm text-foreground">Total</div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-2xl font-bold text-green-600">{uploadResults.summary.success}</div>
-                    <div className="text-sm text-gray-600">Exitosos</div>
+                  <div className="bg-muted p-3 rounded">
+                    <div className="text-2xl font-bold text-success">{uploadResults.summary.success}</div>
+                    <div className="text-sm text-foreground">Exitosos</div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="text-2xl font-bold text-red-600">{uploadResults.summary.errors}</div>
-                    <div className="text-sm text-gray-600">Errores</div>
+                  <div className="bg-muted p-3 rounded">
+                    <div className="text-2xl font-bold text-destructive">{uploadResults.summary.errors}</div>
+                    <div className="text-sm text-foreground">Errores</div>
                   </div>
                 </div>
 
                 {/* Errores */}
                 {uploadResults.errors && uploadResults.errors.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-red-600 mb-2">❌ Errores encontrados:</h4>
-                    <div className="max-h-40 overflow-y-auto bg-red-50 p-3 rounded text-sm">
+                    <h4 className="font-semibold text-destructive mb-2">❌ Errores encontrados:</h4>
+                    <div className="max-h-40 overflow-y-auto bg-destructive/10 p-3 rounded text-sm">
                       {uploadResults.errors.map((error: string, index: number) => (
-                        <div key={index} className="text-red-700">
+                        <div key={index} className="text-destructive">
                           {index + 1}. {error}
                         </div>
                       ))}
@@ -926,15 +935,15 @@ export default function Productos() {
                 {/* Productos procesados */}
                 {uploadResults.results && uploadResults.results.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-green-600 mb-2">✅ Productos procesados:</h4>
-                    <div className="max-h-40 overflow-y-auto bg-green-50 p-3 rounded text-sm">
+                    <h4 className="font-semibold text-success mb-2">✅ Productos procesados:</h4>
+                    <div className="max-h-40 overflow-y-auto bg-success-muted p-3 rounded text-sm">
                       {uploadResults.results.slice(0, 10).map((result: any, index: number) => (
-                        <div key={index} className="text-green-700">
+                        <div key={index} className="text-success">
                           {result.action === 'created' ? '🆕' : '🔄'} {result.product} ({result.sku})
                         </div>
                       ))}
                       {uploadResults.results.length > 10 && (
-                        <div className="text-gray-500 italic">
+                        <div className="text-muted-foreground italic">
                           ... y {uploadResults.results.length - 10} más
                         </div>
                       )}

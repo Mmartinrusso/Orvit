@@ -82,24 +82,24 @@ export default function SectorSelector() {
         <SelectTrigger className={cn(
           "w-auto min-w-[180px] transition-all !border !shadow-[0_0_0_1.5px_rgba(255,255,255,0.08)] !outline-none !ring-0 focus:!ring-0 focus:!outline-none px-4 py-2 rounded-full font-medium text-foreground flex items-center gap-2",
           isInactive
-            ? "bg-red-50 hover:bg-red-100 !border-red-200 !shadow-[0_0_0_1.5px_rgba(239,68,68,0.2)] focus:!border-red-300 focus:!shadow-[0_0_0_2px_rgba(239,68,68,0.3)] text-red-900"
+            ? "bg-destructive/10 hover:bg-destructive/15 !border-destructive/30 !shadow-[0_0_0_1.5px_rgba(239,68,68,0.2)] focus:!border-destructive/40 focus:!shadow-[0_0_0_2px_rgba(239,68,68,0.3)] text-destructive"
             : "bg-card/70 hover:bg-card/90 !border-white/10 focus:!border-white/20 focus:!shadow-[0_0_0_2px_rgba(255,255,255,0.15)]",
-          isStale && !isInactive && "!border-amber-500/30"
+          isStale && !isInactive && "!border-warning-muted"
         )}>
           <div className="flex items-center">
             {isInactive ? (
-              <AlertTriangle className="h-4 w-4 mr-2 text-red-600 animate-pulse" />
+              <AlertTriangle className="h-4 w-4 mr-2 text-destructive animate-pulse" />
             ) : (
               <Factory className="h-4 w-4 mr-2 text-muted-foreground" />
             )}
             <span className="font-semibold">{currentSector.name}</span>
             {isInactive && (
-              <span className="ml-2 px-2 py-0.5 bg-red-200 text-red-800 text-xs rounded-full font-medium">
+              <span className="ml-2 px-2 py-0.5 bg-destructive/10 text-destructive text-xs rounded-full font-medium">
                 PARADA
               </span>
             )}
             {isStale && !isInactive && (
-              <span className="ml-2 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="ml-2 h-1.5 w-1.5 rounded-full bg-warning-muted-foreground animate-pulse" />
             )}
           </div>
         </SelectTrigger>
@@ -112,12 +112,12 @@ export default function SectorSelector() {
                   <SelectItem
                     key={sector.id}
                     value={sector.id.toString()}
-                    className={sectorInactive ? "text-red-700 bg-red-50" : ""}
+                    className={sectorInactive ? "text-destructive bg-destructive/10" : ""}
                   >
                     <div className="flex items-center justify-between w-full">
                       <span>{sector.name}</span>
                       {sectorInactive && (
-                        <span className="ml-2 px-2 py-0.5 bg-red-200 text-red-800 text-xs rounded-full font-medium">
+                        <span className="ml-2 px-2 py-0.5 bg-destructive/10 text-destructive text-xs rounded-full font-medium">
                           PARADA
                         </span>
                       )}
@@ -152,7 +152,7 @@ export default function SectorSelector() {
               className={cn(
                 "h-7 w-7 flex items-center justify-center rounded-full transition-colors",
                 "text-muted-foreground hover:text-foreground hover:bg-card/90",
-                isStale && "text-amber-500 hover:text-amber-400",
+                isStale && "text-warning-muted-foreground hover:text-warning-muted-foreground",
                 isRefreshing && "opacity-70 cursor-not-allowed"
               )}
             >

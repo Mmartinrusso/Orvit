@@ -67,9 +67,9 @@ const categoryIcons: Record<string, any> = {
 };
 
 const categoryColors: Record<string, string> = {
-  VENTAS: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  COMPRAS: 'bg-green-500/10 text-green-500 border-green-500/20',
-  MANTENIMIENTO: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+  VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
+  COMPRAS: 'bg-success/10 text-success border-success-muted/20',
+  MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
   COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
@@ -236,8 +236,8 @@ export default function PermissionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalPermissions}</p>
@@ -262,8 +262,8 @@ export default function PermissionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Lock className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <Lock className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.systemRoles}</p>
@@ -275,8 +275,8 @@ export default function PermissionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Unlock className="h-6 w-6 text-orange-500" />
+              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Unlock className="h-6 w-6 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.customRoles}</p>
@@ -373,11 +373,11 @@ export default function PermissionsPage() {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center",
-                        role.isSystem ? "bg-purple-500/10" : "bg-blue-500/10"
+                        role.isSystem ? "bg-purple-500/10" : "bg-info/10"
                       )}>
                         <Shield className={cn(
                           "h-5 w-5",
-                          role.isSystem ? "text-purple-500" : "text-blue-500"
+                          role.isSystem ? "text-purple-500" : "text-info-muted-foreground"
                         )} />
                       </div>
                       <div>

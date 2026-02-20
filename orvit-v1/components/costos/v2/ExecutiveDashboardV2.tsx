@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import { cn } from '@/lib/utils';
 import RecetasV2 from '@/components/recetas/RecetasV2';
+import { IndirectViewV2 } from '@/components/costos/v2/IndirectViewV2';
+import { PurchasesViewV2 } from '@/components/costos/v2/PurchasesViewV2';
+import { ProductionViewV2 } from '@/components/costos/v2/ProductionViewV2';
+import { SalesViewV2 } from '@/components/costos/v2/SalesViewV2';
+import { PayrollViewV2 } from '@/components/costos/v2/PayrollViewV2';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -124,6 +130,7 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   Sheet,
@@ -144,6 +151,7 @@ import { CalculadoraCostosEmbedded } from '@/components/costos/CalculadoraCostos
 import { CostVersionToggle } from '@/components/costos/CostVersionToggle';
 import CostDistributionMatrix from '@/components/configuracion/CostDistributionMatrix';
 import EmployeeCostDistributionMatrix from '@/components/configuracion/EmployeeCostDistributionMatrix';
+import { RentabilidadView } from '@/components/costos/v2/RentabilidadView';
 
 interface ExecutiveDashboardV2Props {
   selectedMonth: string;
@@ -156,10 +164,11 @@ const COST_SECTIONS = [
   { id: 'overview', name: 'Vista General', description: 'Dashboard ejecutivo consolidado', icon: LayoutDashboard, status: 'active', group: 'main' },
   { id: 'nominas', name: 'Nóminas', description: 'Costos laborales automáticos', icon: Users, status: 'connected', source: 'PayrollRun', group: 'costos' },
   { id: 'compras', name: 'Compras', description: 'Recepciones de mercadería', icon: ShoppingCart, status: 'connected', source: 'GoodsReceipt', group: 'costos' },
-  { id: 'indirectos', name: 'Indirectos', description: 'Servicios y gastos fijos', icon: Building2, status: 'partial', source: 'MonthlyIndirect', group: 'costos' },
+  { id: 'indirectos', name: 'Indirectos', description: 'Servicios y gastos fijos', icon: Building2, status: 'connected', source: 'COMPRAS', group: 'costos' },
   { id: 'produccion', name: 'Producción', description: 'Consumo de insumos', icon: Factory, status: 'connected', source: 'MonthlyProduction', group: 'costos' },
   { id: 'ventas', name: 'Ventas', description: 'Ingresos y márgenes', icon: Receipt, status: 'connected', source: 'SalesInvoice', group: 'costos' },
   { id: 'distribucion', name: 'Distribución', description: 'Asignación de costos', icon: Shuffle, status: 'active', group: 'herramientas' },
+  { id: 'rentabilidad', name: 'Rentabilidad', description: 'P&L real por producto', icon: TrendingUp, status: 'active', group: 'herramientas' },
   { id: 'calculadora', name: 'Calculadora', description: 'Simulador de costos', icon: Calculator, status: 'active', group: 'herramientas' },
   { id: 'recetas', name: 'Recetas', description: 'Fórmulas y composición', icon: ChefHat, status: 'active', group: 'herramientas' },
   { id: 'config', name: 'Configuración', description: 'Fuentes y ajustes', icon: Settings2, status: 'active', group: 'sistema' },
@@ -174,10 +183,10 @@ const formatCurrency = (value: number): string => {
 const formatPercent = (value: number): string => (value ?? 0).toFixed(1) + '%';
 
 const STATUS_STYLES = {
-  active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Activo' },
-  connected: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Conectado' },
-  partial: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Parcial' },
-  pending: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Pendiente' },
+  active: { bg: 'bg-success-muted', text: 'text-success', label: 'Activo' },
+  connected: { bg: 'bg-info-muted', text: 'text-info-muted-foreground', label: 'Conectado' },
+  partial: { bg: 'bg-warning-muted', text: 'text-warning-muted-foreground', label: 'Parcial' },
+  pending: { bg: 'bg-muted', text: 'text-muted-foreground', label: 'Pendiente' },
 };
 
 // Mock data para gráficos
@@ -191,11 +200,11 @@ const MONTHLY_DATA = [
 ];
 
 const COST_BREAKDOWN = [
-  { name: 'Nóminas', value: 780000, percent: 41.3, color: 'bg-blue-500', trend: 5.2 },
-  { name: 'Compras', value: 520000, percent: 27.5, color: 'bg-green-500', trend: 8.5 },
-  { name: 'Indirectos', value: 290000, percent: 15.3, color: 'bg-amber-500', trend: 3.2 },
+  { name: 'Nóminas', value: 780000, percent: 41.3, color: 'bg-info', trend: 5.2 },
+  { name: 'Compras', value: 520000, percent: 27.5, color: 'bg-success', trend: 8.5 },
+  { name: 'Indirectos', value: 290000, percent: 15.3, color: 'bg-warning', trend: 3.2 },
   { name: 'Producción', value: 180000, percent: 9.5, color: 'bg-violet-500', trend: 12.3 },
-  { name: 'Otros', value: 120000, percent: 6.4, color: 'bg-gray-400', trend: -2.1 },
+  { name: 'Otros', value: 120000, percent: 6.4, color: 'bg-muted-foreground', trend: -2.1 },
 ];
 
 // ============================================
@@ -277,6 +286,14 @@ const COLOR_THEMES: Record<ColorTheme, ThemeConfig> = {
     chart4: 'bg-amber-500',
     chart5: 'bg-rose-500',
   },
+};
+
+// Colores hex por tema — sincroniza COLOR_THEMES con userColors hex
+const THEME_HEX_COLORS: Record<Exclude<ColorTheme, 'custom'>, Partial<UserColorPreferences>> = {
+  neutral: { chart1: '#475569', chart2: '#64748b', chart3: '#94a3b8', chart4: '#78716c', chart5: '#57534e', chart6: '#6b7280' },
+  blue:    { chart1: '#2563eb', chart2: '#0ea5e9', chart3: '#6366f1', chart4: '#06b6d4', chart5: '#7c3aed', chart6: '#60a5fa' },
+  green:   { chart1: '#059669', chart2: '#16a34a', chart3: '#0d9488', chart4: '#65a30d', chart5: '#10b981', chart6: '#34d399' },
+  purple:  { chart1: '#7c3aed', chart2: '#9333ea', chart3: '#d946ef', chart4: '#db2777', chart5: '#6366f1', chart6: '#a78bfa' },
 };
 
 // ============================================
@@ -441,15 +458,27 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [currentMonth, setCurrentMonth] = useState(selectedMonth);
 
-  // Sistema de temas y templates
-  const [colorTheme, setColorTheme] = useState<ColorTheme>('neutral');
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('executive');
+  // Sistema de temas y templates — persisten en localStorage
+  const [colorTheme, setColorTheme] = useState<ColorTheme>(() => {
+    if (typeof window === 'undefined') return 'neutral';
+    return (localStorage.getItem('costos-color-theme') as ColorTheme) ?? 'neutral';
+  });
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>(() => {
+    if (typeof window === 'undefined') return 'executive';
+    return (localStorage.getItem('costos-template') as TemplateId) ?? 'executive';
+  });
   const [customLayout, setCustomLayout] = useState(DASHBOARD_TEMPLATES[4].layout);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
 
-  // Estado global de colores del usuario (compartido con todas las secciones)
-  const [userColors, setUserColors] = useState<UserColorPreferences>(DEFAULT_COLORS);
+  // Colores guardados en DB (fuente de verdad para modo 'custom')
+  const [dbColors, setDbColors] = useState<UserColorPreferences>(DEFAULT_COLORS);
   const [colorsLoading, setColorsLoading] = useState(true);
+
+  // Colores efectivos: si el tema es 'custom' usa DB colors, si no aplica el tema encima
+  const userColors = useMemo<UserColorPreferences>(() => {
+    if (colorTheme === 'custom') return dbColors;
+    return { ...dbColors, ...THEME_HEX_COLORS[colorTheme] };
+  }, [dbColors, colorTheme]);
 
   // Cargar preferencias de colores al montar
   useEffect(() => {
@@ -460,7 +489,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
         if (response.ok) {
           const data = await response.json();
           if (data.colors) {
-            setUserColors(data.colors);
+            setDbColors(data.colors);
           }
         }
       } catch (error) {
@@ -471,6 +500,17 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
     };
     loadColorPreferences();
   }, [companyId]);
+
+  // Handlers con persistencia
+  const handleColorThemeChange = (t: ColorTheme) => {
+    setColorTheme(t);
+    localStorage.setItem('costos-color-theme', t);
+  };
+
+  const handleTemplateChange = (t: TemplateId) => {
+    setActiveTemplate(t);
+    localStorage.setItem('costos-template', t);
+  };
 
   const theme = COLOR_THEMES[colorTheme];
   const template = DASHBOARD_TEMPLATES.find(t => t.id === activeTemplate) || DASHBOARD_TEMPLATES[0];
@@ -579,7 +619,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
                 <Sun className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-xs font-medium">Tema de Colores</span>
               </div>
-              <Select value={colorTheme} onValueChange={(v) => setColorTheme(v as ColorTheme)}>
+              <Select value={colorTheme} onValueChange={(v) => handleColorThemeChange(v as ColorTheme)}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -603,7 +643,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
                   <LayoutDashboard className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium">Template</span>
                 </div>
-                <Select value={activeTemplate} onValueChange={(v) => setActiveTemplate(v as TemplateId)}>
+                <Select value={activeTemplate} onValueChange={(v) => handleTemplateChange(v as TemplateId)}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -633,7 +673,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
                   <GitBranch className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium">Fuentes</span>
                 </div>
-                <span className="text-xs font-bold text-green-600">4/5</span>
+                <span className="text-xs font-bold text-success">4/5</span>
               </div>
               <Progress value={80} className="h-1.5" />
             </div>
@@ -678,15 +718,28 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
 
             {/* Content */}
             {activeSection === 'overview' && <OverviewSection month={currentMonth} layout={layout} theme={theme} colors={userColors} />}
-            {activeSection === 'nominas' && <NominasSection month={currentMonth} theme={theme} colors={userColors} />}
-            {activeSection === 'compras' && <ComprasSection month={currentMonth} theme={theme} colors={userColors} />}
-            {activeSection === 'indirectos' && <IndirectosSection month={currentMonth} theme={theme} colors={userColors} />}
-            {activeSection === 'produccion' && <ProduccionSection month={currentMonth} theme={theme} colors={userColors} />}
-            {activeSection === 'ventas' && <VentasSection month={currentMonth} theme={theme} colors={userColors} />}
-            {activeSection === 'distribucion' && <DistribucionSection colors={userColors} />}
-            {activeSection === 'calculadora' && <CalculadoraSection colors={userColors} />}
+            {/* Módulos de costos — todos usan los colores del usuario */}
+            {activeSection === 'nominas' && (
+              <PayrollViewV2 companyId={companyId} selectedMonth={currentMonth} userColors={userColors} />
+            )}
+            {activeSection === 'compras' && (
+              <PurchasesViewV2 companyId={companyId} selectedMonth={currentMonth} userColors={userColors} />
+            )}
+            {activeSection === 'indirectos' && (
+              <IndirectViewV2 companyId={companyId} selectedMonth={currentMonth} userColors={userColors} />
+            )}
+            {activeSection === 'produccion' && (
+              <ProductionViewV2 companyId={companyId} selectedMonth={currentMonth} userColors={userColors} />
+            )}
+            {activeSection === 'ventas' && (
+              <SalesViewV2 companyId={companyId} selectedMonth={currentMonth} userColors={userColors} />
+            )}
+            {/* Herramientas */}
+            {activeSection === 'distribucion' && <DistribucionSection colors={userColors} month={currentMonth} />}
+            {activeSection === 'rentabilidad' && <RentabilidadView colors={userColors} month={currentMonth} />}
+            {activeSection === 'calculadora' && <CalculadoraSection colors={userColors} month={currentMonth} />}
             {activeSection === 'recetas' && <RecetasV2 />}
-            {activeSection === 'config' && <ConfigSection companyId={companyId} colors={userColors} setColors={setUserColors} />}
+            {activeSection === 'config' && <ConfigSection companyId={companyId} colors={userColors} setColors={setDbColors} />}
           </div>
         </main>
       </div>
@@ -855,7 +908,7 @@ function OverviewSection({ month, layout, theme, colors }: {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <ShoppingCart className={cn('w-4 h-4', theme.primary === 'slate' ? 'text-slate-500' : 'text-green-500')} />
+                <ShoppingCart className={cn('w-4 h-4', theme.primary === 'slate' ? 'text-muted-foreground' : 'text-success')} />
                 Top Proveedores
               </CardTitle>
             </CardHeader>
@@ -882,7 +935,7 @@ function OverviewSection({ month, layout, theme, colors }: {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Users className="w-4 h-4 text-cyan-500" />
+              <Users className="w-4 h-4 text-info-muted-foreground" />
               Top Clientes
             </CardTitle>
           </CardHeader>
@@ -934,7 +987,7 @@ function OverviewSection({ month, layout, theme, colors }: {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-amber-500" />
+              <Activity className="w-4 h-4 text-warning-muted-foreground" />
               Métricas Clave
             </CardTitle>
           </CardHeader>
@@ -987,7 +1040,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                           <TableCell className="font-medium">{row.name}</TableCell>
                           <TableCell className="text-right text-muted-foreground">${formatCurrency(row.prev)}</TableCell>
                           <TableCell className="text-right font-medium">${formatCurrency(row.curr)}</TableCell>
-                          <TableCell className={cn('text-right font-medium', isPositive ? 'text-green-600' : 'text-red-600')}>
+                          <TableCell className={cn('text-right font-medium', isPositive ? 'text-success' : 'text-destructive')}>
                             {change > 0 ? '+' : ''}{change.toFixed(1)}%
                           </TableCell>
                           <TableCell>
@@ -1004,10 +1057,10 @@ function OverviewSection({ month, layout, theme, colors }: {
 
           {/* Panel de Alertas y Acciones */}
           {layout.showAlerts && (
-            <Card className={cn(theme.primary === 'slate' ? 'border-slate-200 bg-slate-50/50' : 'border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30')}>
+            <Card className={cn(theme.primary === 'slate' ? 'border-border bg-muted/50' : 'border-warning-muted bg-gradient-to-br from-warning-muted/50 to-warning-muted/30')}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <AlertCircle className={cn('w-4 h-4', theme.primary === 'slate' ? 'text-slate-600' : 'text-amber-600')} />
+                  <AlertCircle className={cn('w-4 h-4', theme.primary === 'slate' ? 'text-muted-foreground' : 'text-warning-muted-foreground')} />
                   Alertas y Pendientes
                 </CardTitle>
               </CardHeader>
@@ -1348,7 +1401,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                   <TrendlineChart values={item.values} color={item.color} width={100} height={32} />
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold">{item.current}</span>
-                    <span className={cn('text-xs font-medium', item.color === 'red' ? 'text-red-500' : 'text-green-500')}>{item.change}</span>
+                    <span className={cn('text-xs font-medium', item.color === 'red' ? 'text-destructive' : 'text-success')}>{item.change}</span>
                   </div>
                 </div>
               ))}
@@ -1387,7 +1440,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Horas Extras</span>
-              <Timer className="w-4 h-4 text-amber-500" />
+              <Timer className="w-4 h-4 text-warning-muted-foreground" />
             </div>
             <p className="text-xl font-bold">{stats.horasExtras}</p>
             <p className="text-xs text-muted-foreground">{((stats.horasExtras / stats.horasNormales) * 100).toFixed(1)}% del total</p>
@@ -1397,7 +1450,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Ausentismo</span>
-              <XCircle className="w-4 h-4 text-red-500" />
+              <XCircle className="w-4 h-4 text-destructive" />
             </div>
             <p className="text-xl font-bold">{stats.ausentismo}%</p>
             <p className="text-xs text-muted-foreground">vs 2.8% mes ant.</p>
@@ -1407,7 +1460,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Rotación</span>
-              <Shuffle className="w-4 h-4 text-orange-500" />
+              <Shuffle className="w-4 h-4 text-warning-muted-foreground" />
             </div>
             <p className="text-xl font-bold">{stats.rotacion}%</p>
             <p className="text-xs text-muted-foreground">Mensual</p>
@@ -1417,7 +1470,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Beneficios</span>
-              <Award className="w-4 h-4 text-green-500" />
+              <Award className="w-4 h-4 text-success" />
             </div>
             <p className="text-xl font-bold">${formatCurrency(stats.beneficios)}</p>
             <p className="text-xs text-muted-foreground">12.2% del total</p>
@@ -1427,7 +1480,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Anticipos</span>
-              <CreditCard className="w-4 h-4 text-purple-500" />
+              <CreditCard className="w-4 h-4 text-info-muted-foreground" />
             </div>
             <p className="text-xl font-bold">${formatCurrency(stats.anticipos)}</p>
             <p className="text-xs text-muted-foreground">8 empleados</p>
@@ -1444,11 +1497,11 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardContent>
             <div className="space-y-4">
               {[
-                { name: 'Producción', value: 320000, employees: 10, color: 'bg-blue-600' },
-                { name: 'Administración', value: 180000, employees: 5, color: 'bg-blue-500' },
-                { name: 'Ventas', value: 150000, employees: 4, color: 'bg-blue-400' },
-                { name: 'Logística', value: 80000, employees: 3, color: 'bg-blue-300' },
-                { name: 'Mantenimiento', value: 50000, employees: 2, color: 'bg-blue-200' },
+                { name: 'Producción', value: 320000, employees: 10, color: 'bg-info' },
+                { name: 'Administración', value: 180000, employees: 5, color: 'bg-info/80' },
+                { name: 'Ventas', value: 150000, employees: 4, color: 'bg-info/60' },
+                { name: 'Logística', value: 80000, employees: 3, color: 'bg-info/40' },
+                { name: 'Mantenimiento', value: 50000, employees: 2, color: 'bg-info/20' },
               ].map((cat, i) => (
                 <div key={i} className="space-y-1.5">
                   <div className="flex items-center justify-between text-sm">
@@ -1477,7 +1530,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
             <div className="h-48 flex items-end gap-2">
               {[720000, 735000, 726000, 741000, 755000, 780000].map((val, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-blue-500 rounded-t transition-all hover:bg-blue-600" style={{ height: `${(val / 800000) * 100}%` }} />
+                  <div className="w-full bg-info rounded-t transition-all hover:bg-info/90" style={{ height: `${(val / 800000) * 100}%` }} />
                   <span className="text-[10px] text-muted-foreground">{['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'][i]}</span>
                 </div>
               ))}
@@ -1502,11 +1555,11 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-xs text-muted-foreground">Cargas / Bruto</p>
-                <p className="text-lg font-bold text-blue-600">25.8%</p>
+                <p className="text-lg font-bold text-info-muted-foreground">25.8%</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Costo / Ingreso</p>
-                <p className="text-lg font-bold text-blue-600">31.8%</p>
+                <p className="text-lg font-bold text-info-muted-foreground">31.8%</p>
               </div>
             </div>
           </CardContent>
@@ -1539,22 +1592,22 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
               <TableRow>
                 <TableCell className="font-medium">Enero 2026 - #1</TableCell>
                 <TableCell><Badge variant="outline">MONTHLY</Badge></TableCell>
-                <TableCell><Badge className="bg-green-600">PAID</Badge></TableCell>
+                <TableCell><Badge className="bg-success">PAID</Badge></TableCell>
                 <TableCell className="text-center">24</TableCell>
                 <TableCell className="text-right">$520.000</TableCell>
                 <TableCell className="text-right text-muted-foreground">$130.000</TableCell>
-                <TableCell className="text-right font-medium text-blue-600">$650.000</TableCell>
-                <TableCell className="text-right text-green-600">$650.000</TableCell>
+                <TableCell className="text-right font-medium text-info-muted-foreground">$650.000</TableCell>
+                <TableCell className="text-right text-success">$650.000</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Enero 2026 - #2</TableCell>
                 <TableCell><Badge variant="outline">BONUS</Badge></TableCell>
-                <TableCell><Badge className="bg-green-600">PAID</Badge></TableCell>
+                <TableCell><Badge className="bg-success">PAID</Badge></TableCell>
                 <TableCell className="text-center">12</TableCell>
                 <TableCell className="text-right">$100.000</TableCell>
                 <TableCell className="text-right text-muted-foreground">$30.000</TableCell>
-                <TableCell className="text-right font-medium text-blue-600">$130.000</TableCell>
-                <TableCell className="text-right text-green-600">$130.000</TableCell>
+                <TableCell className="text-right font-medium text-info-muted-foreground">$130.000</TableCell>
+                <TableCell className="text-right text-success">$130.000</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -1741,7 +1794,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
                 <TrendlineChart values={item.values} color={item.color} width={100} height={32} />
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold">{item.current}</span>
-                  <span className={cn('text-xs font-medium', item.change.startsWith('-') ? 'text-green-500' : 'text-amber-500')}>{item.change}</span>
+                  <span className={cn('text-xs font-medium', item.change.startsWith('-') ? 'text-success' : 'text-warning-muted-foreground')}>{item.change}</span>
                 </div>
               </div>
             ))}
@@ -1768,652 +1821,202 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
 }
 
 // ============================================
-// COMPRAS SECTION - CON MÁS ESTADÍSTICAS
+// COMPRAS SECTION - DATOS REALES DESDE FACTURAS
 // ============================================
-function ComprasSection({ month, theme, colors }: { month: string; theme: ThemeConfig; colors: UserColorPreferences }) {
+function ComprasSection({ month, companyId, theme, colors }: { month: string; companyId: string; theme: ThemeConfig; colors: UserColorPreferences }) {
   const stats = EXTENDED_STATS.compras;
   const baseColor = theme.primary === 'slate' ? 'slate' : 'green';
 
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['costos-purchases-v2', companyId, month],
+    queryFn: async () => {
+      const res = await fetch(`/api/costos/purchases?month=${month}`);
+      if (!res.ok) throw new Error('Error fetching purchases');
+      return res.json();
+    },
+    enabled: !!companyId && !!month,
+  });
+
+  const summary = data?.summary ?? { totalPurchases: 0, receiptCount: 0, supplierCount: 0 };
+  const bySupplier: any[] = data?.bySupplier ?? [];
+  const details: any[] = data?.details ?? [];
+  const hasData = summary.totalPurchases > 0;
+
   return (
     <div className="space-y-6">
-      <SourceBanner source="GoodsReceipt" status="connected" detail="18 recepciones confirmadas" color={baseColor} />
+      <SourceBanner source="PurchaseReceipt" status="connected" detail="Facturas imputadas al período" color={baseColor} />
 
-      {/* KPIs principales */}
+      {/* KPIs principales — reales + operativos */}
       <div className="grid grid-cols-6 gap-4">
-        <MiniKPIEnhanced title="Total Compras" value="$520.000" trend={8.5} icon={ShoppingCart} color={baseColor} />
-        <MiniKPIEnhanced title="Recepciones" value="18" subtitle="Confirmadas" icon={Package} color={theme.primary === 'slate' ? 'gray' : 'emerald'} />
-        <MiniKPIEnhanced title="Items" value="156" subtitle="Recibidos" icon={Boxes} color={theme.primary === 'slate' ? 'zinc' : 'teal'} />
-        <MiniKPIEnhanced title="Proveedores" value="15" subtitle="Distintos" icon={Truck} color={theme.primary === 'slate' ? 'stone' : 'cyan'} />
-        <MiniKPIEnhanced title="Días Pago Prom." value={`${stats.diasPagoPromedio}`} subtitle="días" icon={Clock} color={theme.primary === 'slate' ? 'neutral' : 'amber'} />
-        <MiniKPIEnhanced title="Ahorro Negociado" value={`$${formatCurrency(stats.ahorroNegociado)}`} subtitle="-3.2% vs lista" icon={PiggyBank} color={theme.primary === 'slate' ? 'slate' : 'lime'} />
+        <MiniKPIEnhanced
+          title="Total Compras"
+          value={isLoading ? '...' : `$${formatCurrency(summary.totalPurchases)}`}
+          trend={8.5}
+          icon={ShoppingCart}
+          color={baseColor}
+        />
+        <MiniKPIEnhanced title="Facturas" value={isLoading ? '...' : `${summary.receiptCount}`} subtitle="Del período" icon={FileText} color={theme.primary === 'slate' ? 'gray' : 'slate'} />
+        <MiniKPIEnhanced title="Proveedores" value={isLoading ? '...' : `${summary.supplierCount}`} subtitle="Distintos" icon={Truck} color={theme.primary === 'slate' ? 'zinc' : 'indigo'} />
+        <MiniKPIEnhanced title="OC Abiertas" value={`${stats.ordenesAbiertas}`} subtitle="Pendientes" icon={Package} color={theme.primary === 'slate' ? 'stone' : 'cyan'} />
+        <MiniKPIEnhanced title="Ahorro Negoc." value={`$${formatCurrency(stats.ahorroNegociado)}`} subtitle="vs precio lista" icon={PiggyBank} color={theme.primary === 'slate' ? 'neutral' : 'emerald'} />
+        <MiniKPIEnhanced title="Precio vs Presup." value={`${stats.precioVsPresup}%`} trend={stats.precioVsPresup} icon={Percent} color={theme.primary === 'slate' ? 'slate' : 'amber'} />
       </div>
 
-      {/* KPIs secundarios */}
+      {/* Segunda fila - KPIs adicionales */}
       <div className="grid grid-cols-4 gap-4">
         <Card className="bg-muted/30">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">OC Abiertas</span>
-              <FileText className="w-4 h-4 text-orange-500" />
-            </div>
-            <p className="text-xl font-bold">{stats.ordenesAbiertas}</p>
-            <p className="text-xs text-muted-foreground">Pendientes recepción</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Items Pendientes</span>
-              <Package className="w-4 h-4 text-amber-500" />
-            </div>
-            <p className="text-xl font-bold">{stats.itemsPendientes}</p>
-            <p className="text-xs text-muted-foreground">Sin recibir</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Devoluciones</span>
-              <ArrowDownRight className="w-4 h-4 text-red-500" />
+              <XCircle className="w-4 h-4 text-destructive" />
             </div>
             <p className="text-xl font-bold">{stats.devoluciones}</p>
-            <p className="text-xs text-muted-foreground">Este mes</p>
+            <p className="text-xs text-muted-foreground">Del período</p>
           </CardContent>
         </Card>
         <Card className="bg-muted/30">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Concentración Top 3</span>
-              <Target className="w-4 h-4 text-blue-500" />
+              <Percent className="w-4 h-4 text-warning-muted-foreground" />
             </div>
             <p className="text-xl font-bold">{stats.concentracion.top3}%</p>
-            <p className="text-xs text-muted-foreground">del total</p>
+            <p className="text-xs text-muted-foreground">Top 5: {stats.concentracion.top5}%</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/30">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">OC Abiertas</span>
+              <FileText className="w-4 h-4 text-info-muted-foreground" />
+            </div>
+            <p className="text-xl font-bold">{stats.ordenesAbiertas}</p>
+            <p className="text-xs text-muted-foreground">Pendientes de recepción</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/30">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">Ahorro Negociado</span>
+              <PiggyBank className="w-4 h-4 text-success" />
+            </div>
+            <p className="text-xl font-bold">${formatCurrency(stats.ahorroNegociado)}</p>
+            <p className="text-xs text-muted-foreground">vs precio de lista</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Gráficos */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Top Proveedores */}
+        {/* Evolución diaria */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top 5 Proveedores</CardTitle>
+            <CardTitle className="text-base">Compras por Día</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: 'Distribuidora Norte SA', recep: 5, value: 180000, percent: 34.6 },
-                { name: 'Insumos del Litoral', recep: 4, value: 120000, percent: 23.1 },
-                { name: 'Química Industrial SRL', recep: 3, value: 95000, percent: 18.3 },
-                { name: 'Materiales Express', recep: 4, value: 75000, percent: 14.4 },
-                { name: 'Otros (2)', recep: 2, value: 50000, percent: 9.6 },
-              ].map((p, i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium truncate max-w-[140px]">{p.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{p.recep} rec.</Badge>
-                    </div>
-                    <span className="font-medium text-green-600">${formatCurrency(p.value)}</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${p.percent}%`, backgroundColor: colors.progressSecondary }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Por Categoría */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Por Categoría</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: 'Materias Primas', value: 280000, color: 'bg-green-600' },
-                { name: 'Insumos Producción', value: 120000, color: 'bg-green-500' },
-                { name: 'Packaging', value: 65000, color: 'bg-green-400' },
-                { name: 'Repuestos', value: 35000, color: 'bg-green-300' },
-                { name: 'Otros', value: 20000, color: 'bg-gray-300' },
-              ].map((cat, i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className={cn('w-3 h-3 rounded', cat.color)} />
-                      <span>{cat.name}</span>
-                    </div>
-                    <span className="font-medium">${formatCurrency(cat.value)}</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className={cn('h-full rounded-full', cat.color)} style={{ width: `${(cat.value / 520000) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Evolución */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Evolución 6 Meses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-40 flex items-end gap-2">
-              {[450000, 480000, 465000, 495000, 479000, 520000].map((val, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-green-500 rounded-t transition-all hover:bg-green-600" style={{ height: `${(val / 550000) * 100}%` }} />
-                  <span className="text-[10px] text-muted-foreground">{['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'][i]}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gráfico de compras por día */}
-      <div className="grid grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-muted-foreground" />
-              Compras por Día (últimos 7 días)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-32 flex items-end gap-2">
+            <div className="h-48 flex items-end gap-1">
               {stats.porDia.map((val, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className={cn('w-full rounded-t transition-all hover:opacity-80', theme.primary === 'slate' ? 'bg-slate-500' : 'bg-green-500')} style={{ height: `${(val / 65000) * 100}%` }} />
-                  <span className="text-[10px] text-muted-foreground">{['L', 'M', 'M', 'J', 'V', 'S', 'D'][i]}</span>
+                  <div
+                    className="w-full bg-success rounded-t transition-all hover:opacity-80"
+                    style={{ height: `${(val / Math.max(...stats.porDia)) * 100}%` }}
+                  />
+                  <span className="text-[10px] text-muted-foreground">{['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-between text-sm border-t pt-2">
+            <div className="mt-4 flex items-center justify-between text-sm border-t pt-3">
               <span className="text-muted-foreground">Promedio diario</span>
-              <span className="font-medium">${formatCurrency(stats.porDia.reduce((a, b) => a + b, 0) / 7)}</span>
+              <span className="font-medium">${formatCurrency(stats.porDia.reduce((a, b) => a + b, 0) / stats.porDia.length)}</span>
             </div>
           </CardContent>
         </Card>
 
+        {/* Comparativa */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Scale className="w-4 h-4 text-muted-foreground" />
-              Precio vs Presupuesto
-            </CardTitle>
+            <CardTitle className="text-base">Comparativa</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ComparisonRow label="vs Mes Anterior" current={summary.totalPurchases || 520000} previous={479000} />
+            <ComparisonRow label="vs Mismo Mes 2025" current={summary.totalPurchases || 520000} previous={410000} />
+            <ComparisonRow label="vs Presupuesto" current={summary.totalPurchases || 520000} previous={540000} inverted />
+            <Separator />
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p className="text-xs text-muted-foreground">Top 3 Prov.</p>
+                <p className="text-lg font-bold text-success">{stats.concentracion.top3}%</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Precio vs Presup.</p>
+                <p className="text-lg font-bold text-warning-muted-foreground">{stats.precioVsPresup}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Concentración proveedores */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Concentración</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Variación promedio</span>
-                <Badge variant={stats.precioVsPresup < 0 ? 'default' : 'destructive'} className="text-sm">
-                  {stats.precioVsPresup > 0 ? '+' : ''}{stats.precioVsPresup}%
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-green-50 rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">Bajo presupuesto</p>
-                  <p className="text-lg font-bold text-green-600">12 items</p>
-                </div>
-                <div className="p-3 bg-red-50 rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">Sobre presupuesto</p>
-                  <p className="text-lg font-bold text-red-600">3 items</p>
-                </div>
-              </div>
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Ahorro total estimado</p>
-                <p className="text-xl font-bold text-green-600">${formatCurrency(stats.ahorroNegociado)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* NUEVOS GRÁFICOS - Líneas y Áreas */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Gráfico de Líneas - Evolución de Compras */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <LineChart className="w-4 h-4 text-muted-foreground" />
-                  Evolución de Compras
-                </CardTitle>
-                <CardDescription>Por categoría (12 meses)</CardDescription>
-              </div>
-              <div className="flex gap-3 text-xs">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-green-500" /><span>Materiales</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-emerald-500" /><span>Insumos</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-teal-500" /><span>Servicios</span></div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <LineChartSVG
-              data={[
-                { label: 'Materiales', values: [280000, 295000, 288000, 310000, 325000, 340000, 335000, 350000, 365000, 380000, 395000, 420000] },
-                { label: 'Insumos', values: [85000, 90000, 88000, 95000, 92000, 98000, 102000, 105000, 108000, 112000, 115000, 120000] },
-                { label: 'Servicios', values: [45000, 48000, 50000, 52000, 55000, 58000, 60000, 62000, 65000, 68000, 70000, 75000] },
-              ]}
-              height={160}
-              colors={[colors.chart1, colors.chart2, colors.chart3]}
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
-              <span>Feb 25</span>
-              <span>Ene 26</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gráfico de Área - Total Compras */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AreaChart className="w-4 h-4 text-muted-foreground" />
-                  Tendencia de Compras Totales
-                </CardTitle>
-                <CardDescription>Últimos 12 meses</CardDescription>
-              </div>
-              <Badge variant="outline" className="text-xs">+8.5% MoM</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <AreaChartSVG
-              data={[380000, 410000, 395000, 430000, 445000, 465000, 470000, 490000, 505000, 520000, 535000, 520000]}
-              height={160}
-              color={colors.chart2}
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
-              <span>Feb 25</span>
-              <span>Ene 26</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gauges y KPIs de Compras */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Ejecución Presupuesto</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={96.8} max={100} label="Presup: $537K" color={theme.primary === 'slate' ? 'slate' : 'green'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Cumplim. Entrega</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={94.2} max={100} label="Meta: 95%" color={theme.primary === 'slate' ? 'slate' : 'blue'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Ahorro vs Lista</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={3.2} max={5} label="Meta: 5%" color={theme.primary === 'slate' ? 'slate' : 'amber'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Devoluciones</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={1.1} max={3} label="Meta: <2%" color={theme.primary === 'slate' ? 'slate' : 'violet'} size={120} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tendencias Rápidas de Compras */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-muted-foreground" />
-            Tendencias de Compras
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-5 gap-6">
-            {[
-              { label: 'Total Compras', values: [410, 430, 445, 465, 490, 520], current: '$520K', change: '+8.5%', color: 'green' as const },
-              { label: 'Recepciones', values: [12, 14, 15, 16, 17, 18], current: '18', change: '+5.9%', color: 'blue' as const },
-              { label: 'Proveedores', values: [12, 12, 13, 14, 14, 15], current: '15', change: '+7.1%', color: 'violet' as const },
-              { label: 'Días Pago', values: [35, 34, 33, 33, 32, 32], current: '32d', change: '-2.9%', color: 'green' as const },
-              { label: 'Costo/Item', values: [2800, 2850, 2900, 2950, 3000, 3050], current: '$3.05K', change: '+1.7%', color: 'amber' as const },
-            ].map((item, i) => (
-              <div key={i} className="space-y-2">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <TrendlineChart values={item.values} color={item.color} width={100} height={32} />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">{item.current}</span>
-                  <span className={cn('text-xs font-medium', item.change.startsWith('-') ? 'text-green-500' : 'text-amber-500')}>{item.change}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Últimas Recepciones */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Últimas Recepciones</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Número</TableHead>
-                <TableHead>Proveedor</TableHead>
-                <TableHead className="text-center">Items</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
               {[
-                { fecha: '12/01/2026', num: 'REC-2026-0018', prov: 'Distribuidora Norte SA', items: 12, total: 45200 },
-                { fecha: '10/01/2026', num: 'REC-2026-0017', prov: 'Insumos del Litoral', items: 8, total: 32100 },
-                { fecha: '08/01/2026', num: 'REC-2026-0016', prov: 'Química Industrial SRL', items: 5, total: 28500 },
-                { fecha: '05/01/2026', num: 'REC-2026-0015', prov: 'Materiales Express', items: 15, total: 18750 },
-              ].map((rec, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-muted-foreground">{rec.fecha}</TableCell>
-                  <TableCell className="font-medium font-mono">{rec.num}</TableCell>
-                  <TableCell>{rec.prov}</TableCell>
-                  <TableCell className="text-center">{rec.items}</TableCell>
-                  <TableCell className={cn('text-right font-medium', theme.primary === 'slate' ? 'text-slate-600' : 'text-green-600')}>${formatCurrency(rec.total)}</TableCell>
-                  <TableCell><Badge className={theme.primary === 'slate' ? 'bg-slate-600' : 'bg-green-600'}>Confirmada</Badge></TableCell>
-                </TableRow>
+                { label: 'Top 3 proveedores', value: stats.concentracion.top3 },
+                { label: 'Top 5 proveedores', value: stats.concentracion.top5 },
+                { label: 'Resto', value: 100 - stats.concentracion.top5 },
+              ].map((item, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className="font-medium">{item.value}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-success transition-all"
+                      style={{ width: `${item.value}%`, opacity: 1 - i * 0.25 }}
+                    />
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ============================================
-// INDIRECTOS SECTION - CON MÁS ESTADÍSTICAS
-// ============================================
-function IndirectosSection({ month, theme, colors }: { month: string; theme: ThemeConfig; colors: UserColorPreferences }) {
-  const stats = EXTENDED_STATS.indirectos;
-  const baseColor = theme.primary === 'slate' ? 'slate' : 'amber';
-
-  return (
-    <div className="space-y-6">
-      <SourceBanner source="MonthlyIndirect" status="partial" detail="3 items sin valor este mes" color={baseColor} />
-
-      {/* KPIs principales */}
-      <div className="grid grid-cols-6 gap-4">
-        <MiniKPIEnhanced title="Total Indirectos" value="$290.000" trend={3.2} icon={Building2} color={baseColor} />
-        <MiniKPIEnhanced title="Items Config." value="15" subtitle="Totales" icon={Boxes} color={theme.primary === 'slate' ? 'gray' : 'orange'} />
-        <MiniKPIEnhanced title="Con Valor" value="12" subtitle="Este mes" icon={CheckCircle2} color={theme.primary === 'slate' ? 'zinc' : 'green'} />
-        <MiniKPIEnhanced title="Categorías" value="5" subtitle="Activas" icon={Layers} color={theme.primary === 'slate' ? 'stone' : 'yellow'} />
-        <MiniKPIEnhanced title="Presup. Restante" value={`$${formatCurrency(stats.presupuestoRestante)}`} subtitle="Disponible" icon={PiggyBank} color={theme.primary === 'slate' ? 'neutral' : 'lime'} />
-        <MiniKPIEnhanced title="Var. Anual" value={`${stats.variacionAnual}%`} subtitle="vs 2025" icon={TrendingUp} color={theme.primary === 'slate' ? 'slate' : 'cyan'} />
-      </div>
-
-      {/* Fijos vs Variables */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Costos Fijos</span>
-              <Lock className="w-4 h-4 text-blue-500" />
             </div>
-            <p className="text-xl font-bold">${formatCurrency(stats.fijosVsVariables.fijos)}</p>
-            <p className="text-xs text-muted-foreground">{((stats.fijosVsVariables.fijos / 290000) * 100).toFixed(1)}% del total</p>
-            <Progress value={(stats.fijosVsVariables.fijos / 290000) * 100} className="h-1.5 mt-2" />
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Costos Variables</span>
-              <Activity className="w-4 h-4 text-purple-500" />
-            </div>
-            <p className="text-xl font-bold">${formatCurrency(stats.fijosVsVariables.variables)}</p>
-            <p className="text-xs text-muted-foreground">{((stats.fijosVsVariables.variables / 290000) * 100).toFixed(1)}% del total</p>
-            <Progress value={(stats.fijosVsVariables.variables / 290000) * 100} className="h-1.5 mt-2" />
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Alertas de Consumo</span>
-              <AlertCircle className="w-4 h-4 text-red-500" />
-            </div>
-            <p className="text-xl font-bold">{stats.alertasConsumo}</p>
-            <p className="text-xs text-muted-foreground">Items sobre límite</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Por Categoría Detallado */}
+      {/* Por Proveedor — datos reales */}
+      {hasData && bySupplier.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Desglose por Categoría</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { name: 'Servicios', icon: Zap, items: ['Electricidad $45.000', 'Gas $25.000', 'Agua $15.000', 'Internet $10.000'], total: 95000, color: 'amber' },
-              { name: 'Alquileres', icon: Building2, items: ['Planta Principal $60.000', 'Depósito $20.000'], total: 80000, color: 'orange' },
-              { name: 'Seguros', icon: Shield, items: ['Integral $25.000', 'ART $12.000', 'Vehículos $8.000'], total: 45000, color: 'yellow' },
-              { name: 'Impuestos', icon: Receipt, items: ['Municipal $20.000', 'Ingresos Brutos $15.000'], total: 35000, color: 'lime' },
-              { name: 'Otros', icon: MoreHorizontal, items: ['Varios $35.000'], total: 35000, color: 'gray' },
-            ].map((cat, i) => {
-              const Icon = cat.icon;
-              return (
-                <div key={i} className="p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-amber-600" />
-                      <span className="font-medium">{cat.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{cat.items.length} items</Badge>
-                    </div>
-                    <span className="font-bold text-amber-600">${formatCurrency(cat.total)}</span>
-                  </div>
-                  <div className="pl-6 space-y-1">
-                    {cat.items.map((item, j) => (
-                      <div key={j} className="text-xs text-muted-foreground flex justify-between">
-                        <span>{item.split(' $')[0]}</span>
-                        <span className="font-medium text-foreground">${item.split(' $')[1]}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        {/* Items Pendientes + Evolución */}
-        <div className="space-y-6">
-          <Card className="border-amber-200 bg-amber-50/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-                Items Pendientes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {['Mantenimiento Edificio', 'Honorarios Contador', 'Limpieza'].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 bg-background rounded border border-amber-200">
-                    <span className="text-sm">{item}</span>
-                    <Button size="sm" variant="outline" className="h-7 text-xs">Completar</Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Evolución 6 Meses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-32 flex items-end gap-2">
-                {[275000, 280000, 278000, 285000, 281000, 290000].map((val, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full bg-amber-500 rounded-t" style={{ height: `${(val / 300000) * 100}%` }} />
-                    <span className="text-[10px] text-muted-foreground">{['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'][i]}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// PRODUCCIÓN SECTION - CON MÁS ESTADÍSTICAS
-// ============================================
-function ProduccionSection({ month, theme, colors }: { month: string; theme: ThemeConfig; colors: UserColorPreferences }) {
-  const stats = EXTENDED_STATS.produccion;
-  const baseColor = theme.primary === 'slate' ? 'slate' : 'violet';
-
-  return (
-    <div className="space-y-6">
-      <SourceBanner source="MonthlyProduction + Recetas" status="connected" detail="Consumo calculado desde fórmulas activas" color={baseColor} />
-
-      {/* KPIs principales */}
-      <div className="grid grid-cols-6 gap-4">
-        <MiniKPIEnhanced title="Costo Producción" value="$180.000" trend={12.3} icon={Factory} color={baseColor} />
-        <MiniKPIEnhanced title="Unidades Prod." value="1.250" subtitle="Del período" icon={Package} color={theme.primary === 'slate' ? 'gray' : 'purple'} />
-        <MiniKPIEnhanced title="Productos" value="3" subtitle="Distintos" icon={Boxes} color={theme.primary === 'slate' ? 'zinc' : 'fuchsia'} />
-        <MiniKPIEnhanced title="Rendimiento" value={`${stats.rendimiento}%`} subtitle="Global" icon={Gauge} color={theme.primary === 'slate' ? 'stone' : 'green'} />
-        <MiniKPIEnhanced title="Merma" value={`${stats.merma}%`} subtitle="Promedio" icon={TrendingDown} color={theme.primary === 'slate' ? 'neutral' : 'rose'} />
-        <MiniKPIEnhanced title="Horas Máquina" value={`${stats.horasMaquina}`} subtitle="Acumuladas" icon={Clock} color={theme.primary === 'slate' ? 'slate' : 'cyan'} />
-      </div>
-
-      {/* KPIs secundarios */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Paradas</span>
-              <AlertCircle className="w-4 h-4 text-red-500" />
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Compras por Proveedor</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Actualizar
+              </Button>
             </div>
-            <p className="text-xl font-bold">{stats.paradas}</p>
-            <p className="text-xs text-muted-foreground">Este mes</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Costo kWh</span>
-              <Zap className="w-4 h-4 text-yellow-500" />
-            </div>
-            <p className="text-xl font-bold">${stats.costoKwh}</p>
-            <p className="text-xs text-muted-foreground">Promedio</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Consumo Energía</span>
-              <Activity className="w-4 h-4 text-orange-500" />
-            </div>
-            <p className="text-xl font-bold">${formatCurrency(stats.consumoEnergia)}</p>
-            <p className="text-xs text-muted-foreground">Del mes</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Recetas Activas</span>
-              <ChefHat className="w-4 h-4 text-purple-500" />
-            </div>
-            <p className="text-xl font-bold">5</p>
-            <p className="text-xs text-muted-foreground">Configuradas</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Eficiencia por Línea */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-muted-foreground" />
-            Eficiencia por Línea de Producción
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-6">
-            {stats.eficienciaPorLinea.map((linea, i) => (
-              <div key={i} className="text-center p-4 rounded-lg bg-muted/30">
-                <div className="relative w-24 h-24 mx-auto mb-3">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" strokeWidth="10" className="stroke-muted" />
-                    <circle cx="50" cy="50" r="40" fill="none" strokeWidth="10" className={theme.primary === 'slate' ? 'stroke-slate-500' : 'stroke-violet-500'} strokeDasharray={`${linea.value * 2.51} 251`} />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold">{linea.value}%</span>
-                  </div>
-                </div>
-                <p className="font-medium">{linea.name}</p>
-                <p className="text-xs text-muted-foreground">Meta: 95%</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Producción por Producto */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Producción por Producto</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Producto</TableHead>
-                  <TableHead className="text-right">Cantidad</TableHead>
-                  <TableHead className="text-right">Costo Insumos</TableHead>
-                  <TableHead className="text-right">Costo Unit.</TableHead>
-                  <TableHead>Eficiencia</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead className="text-right">Facturas</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">% del Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[
-                  { name: 'Producto Premium A', qty: 500, cost: 85000, unit: 170, eff: 98 },
-                  { name: 'Producto Estándar B', qty: 450, cost: 58500, unit: 130, eff: 97 },
-                  { name: 'Producto Económico C', qty: 300, cost: 36500, unit: 122, eff: 99 },
-                ].map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-violet-500" />
-                        {p.name}
-                      </div>
+                {bySupplier.map((s: any) => (
+                  <TableRow key={s.supplierId}>
+                    <TableCell className="font-medium">{s.supplierName}</TableCell>
+                    <TableCell className="text-right">{s.receiptCount}</TableCell>
+                    <TableCell className="text-right font-bold" style={{ color: colors.chart1 }}>
+                      ${formatCurrency(s.total)}
                     </TableCell>
-                    <TableCell className="text-right">{p.qty}</TableCell>
-                    <TableCell className="text-right font-medium text-violet-600">${formatCurrency(p.cost)}</TableCell>
-                    <TableCell className="text-right">${p.unit}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress value={p.eff} className="h-1.5 w-16" />
-                        <span className="text-xs text-green-600">{p.eff}%</span>
-                      </div>
+                    <TableCell className="text-right text-muted-foreground">
+                      {summary.totalPurchases > 0 ? ((s.total / summary.totalPurchases) * 100).toFixed(1) + '%' : '0%'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -2421,201 +2024,85 @@ function ProduccionSection({ month, theme, colors }: { month: string; theme: The
             </Table>
           </CardContent>
         </Card>
+      )}
 
-        {/* Top Insumos */}
+      {/* Detalle de Facturas — datos reales */}
+      {hasData && details.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top Insumos Consumidos</CardTitle>
+            <CardTitle className="text-base">Detalle de Facturas</CardTitle>
+            <CardDescription>
+              Mostrando {Math.min(20, details.length)} de {details.length} comprobantes
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: 'Materia Prima A', qty: '850 kg', cost: 68000 },
-                { name: 'Aditivo Especial', qty: '125 lt', cost: 45000 },
-                { name: 'Conservante B12', qty: '50 kg', cost: 32000 },
-                { name: 'Packaging', qty: '1.250 un', cost: 25000 },
-                { name: 'Colorante Natural', qty: '25 lt', cost: 10000 },
-              ].map((ins, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <Beaker className="w-4 h-4 text-violet-400" />
-                    <div>
-                      <p className="text-sm font-medium">{ins.name}</p>
-                      <p className="text-xs text-muted-foreground">{ins.qty}</p>
-                    </div>
-                  </div>
-                  <span className="font-medium text-violet-600">${formatCurrency(ins.cost)}</span>
-                </div>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>N° Factura</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Neto</TableHead>
+                  <TableHead className="text-right">% del Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {details
+                  .sort((a: any, b: any) => b.neto - a.neto)
+                  .slice(0, 20)
+                  .map((item: any) => (
+                    <TableRow key={item.receiptId}>
+                      <TableCell className="font-medium">{item.supplierName}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{item.receiptNumber || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{item.tipo || '—'}</TableCell>
+                      <TableCell><Badge variant="outline">{item.estado || '—'}</Badge></TableCell>
+                      <TableCell className="text-right font-bold" style={{ color: colors.chart1 }}>
+                        ${formatCurrency(item.neto)}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {summary.totalPurchases > 0 ? ((item.neto / summary.totalPurchases) * 100).toFixed(1) + '%' : '0%'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      {/* Indicadores de Eficiencia */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Indicadores de Eficiencia</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-6 gap-4">
-            <div className="text-center p-4 bg-violet-50 rounded-lg border border-violet-200">
-              <p className="text-3xl font-bold text-violet-600">98.2%</p>
-              <p className="text-xs text-muted-foreground mt-1">Rendimiento</p>
+      {!hasData && !isLoading && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No hay facturas de compras imputadas en este período.</p>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <p className="text-3xl font-bold text-green-600">1.8%</p>
-              <p className="text-xs text-muted-foreground mt-1">Merma</p>
-            </div>
-            <div className="text-center p-4 bg-muted rounded-lg border">
-              <p className="text-3xl font-bold">23</p>
-              <p className="text-xs text-muted-foreground mt-1">Días Productivos</p>
-            </div>
-            <div className="text-center p-4 bg-muted rounded-lg border">
-              <p className="text-3xl font-bold">54</p>
-              <p className="text-xs text-muted-foreground mt-1">Unid/Día Prom.</p>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-3xl font-bold text-blue-600">4.2x</p>
-              <p className="text-xs text-muted-foreground mt-1">Rotación Stock</p>
-            </div>
-            <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
-              <p className="text-3xl font-bold text-amber-600">2.1</p>
-              <p className="text-xs text-muted-foreground mt-1">Días Stock</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
 
-      {/* NUEVOS GRÁFICOS - Producción */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Gráfico de Líneas - Producción por Producto */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <LineChart className="w-4 h-4 text-muted-foreground" />
-                  Producción por Producto
-                </CardTitle>
-                <CardDescription>Unidades producidas (6 meses)</CardDescription>
-              </div>
-              <div className="flex gap-3 text-xs">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-violet-500" /><span>Premium</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-purple-500" /><span>Estándar</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-fuchsia-500" /><span>Económico</span></div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <LineChartSVG
-              data={[
-                { label: 'Premium', values: [420, 450, 435, 460, 480, 510] },
-                { label: 'Estándar', values: [380, 395, 390, 410, 420, 445] },
-                { label: 'Económico', values: [250, 265, 255, 275, 285, 295] },
-              ]}
-              height={160}
-              colors={[colors.chart4, colors.chart1, colors.chart5]}
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
-              {['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'].map((m, i) => <span key={i}>{m}</span>)}
-            </div>
-          </CardContent>
-        </Card>
+// ============================================
+// INDIRECTOS SECTION - DATOS REALES DESDE COMPRAS
+// ============================================
+function IndirectosSection({ month, companyId, theme, colors }: { month: string; companyId: string; theme: ThemeConfig; colors: UserColorPreferences }) {
+  return (
+    <div className="space-y-6">
+      <IndirectViewV2 companyId={companyId} selectedMonth={month} />
+    </div>
+  );
+}
 
-        {/* Gráfico de Área - Consumo de Insumos */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AreaChart className="w-4 h-4 text-muted-foreground" />
-                  Costo de Insumos
-                </CardTitle>
-                <CardDescription>Tendencia 12 meses</CardDescription>
-              </div>
-              <Badge variant="outline" className="text-xs">+12.3% MoM</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <AreaChartSVG
-              data={[125000, 130000, 128000, 135000, 140000, 145000, 150000, 155000, 160000, 165000, 172000, 180000]}
-              height={160}
-              color={colors.chart4}
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
-              <span>Feb 25</span>
-              <span>Ene 26</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gauges de Producción */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Rendimiento</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={98.2} max={100} label="Meta: 95%" color={theme.primary === 'slate' ? 'slate' : 'violet'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Merma</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={1.8} max={5} label="Meta: <3%" color={theme.primary === 'slate' ? 'slate' : 'green'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">OEE</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={85.5} max={100} label="Meta: 85%" color={theme.primary === 'slate' ? 'slate' : 'blue'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Utilización</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={92.1} max={100} label="Meta: 90%" color={theme.primary === 'slate' ? 'slate' : 'amber'} size={120} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tendencias de Producción */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-muted-foreground" />
-            Tendencias de Producción
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-5 gap-6">
-            {[
-              { label: 'Unidades', values: [1050, 1110, 1080, 1145, 1185, 1250], current: '1.250', change: '+5.5%', color: 'violet' as const },
-              { label: 'Costo Total', values: [145, 152, 148, 158, 165, 180], current: '$180K', change: '+9.1%', color: 'amber' as const },
-              { label: 'Costo/Unidad', values: [138, 137, 137, 138, 139, 144], current: '$144', change: '+3.6%', color: 'blue' as const },
-              { label: 'Rendimiento', values: [96.5, 97.1, 96.8, 97.5, 97.9, 98.2], current: '98.2%', change: '+0.3%', color: 'green' as const },
-              { label: 'Días Prod.', values: [21, 22, 21, 22, 23, 23], current: '23', change: '0%', color: 'slate' as const },
-            ].map((item, i) => (
-              <div key={i} className="space-y-2">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <TrendlineChart values={item.values} color={item.color} width={100} height={32} />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">{item.current}</span>
-                  <span className={cn('text-xs font-medium', parseFloat(item.change) < 0 ? 'text-red-500' : 'text-green-500')}>{item.change}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+// ============================================
+// PRODUCCIÓN SECTION - DATOS REALES DESDE PRODUCCIÓN + RECETAS
+// ============================================
+function ProduccionSection({ month, companyId, theme, colors }: { month: string; companyId: string; theme: ThemeConfig; colors: UserColorPreferences }) {
+  return (
+    <div className="space-y-6">
+      <ProductionViewV2 companyId={companyId} selectedMonth={month} />
     </div>
   );
 }
@@ -2623,361 +2110,10 @@ function ProduccionSection({ month, theme, colors }: { month: string; theme: The
 // ============================================
 // VENTAS SECTION - CON MÁS ESTADÍSTICAS
 // ============================================
-function VentasSection({ month, theme, colors }: { month: string; theme: ThemeConfig; colors: UserColorPreferences }) {
-  const stats = EXTENDED_STATS.ventas;
-  const baseColor = theme.primary === 'slate' ? 'slate' : 'cyan';
-
+function VentasSection({ month, companyId, colors }: { month: string; companyId: string; colors: UserColorPreferences }) {
   return (
     <div className="space-y-6">
-      <SourceBanner source="SalesInvoice" status="connected" detail="42 facturas confirmadas" color={baseColor} />
-
-      {/* KPIs principales */}
-      <div className="grid grid-cols-6 gap-4">
-        <MiniKPIEnhanced title="Ingresos" value="$2.450.000" trend={12.5} icon={TrendingUp} color={theme.primary === 'slate' ? 'slate' : 'emerald'} />
-        <MiniKPIEnhanced title="COGS" value="$1.680.000" subtitle="Costo ventas" icon={Wallet} color={theme.primary === 'slate' ? 'gray' : 'rose'} />
-        <MiniKPIEnhanced title="Margen Bruto" value="$770.000" subtitle="31.4%" icon={Target} color={baseColor} />
-        <MiniKPIEnhanced title="Facturas" value="42" subtitle="Emitidas" icon={Receipt} color={theme.primary === 'slate' ? 'zinc' : 'blue'} />
-        <MiniKPIEnhanced title="Ticket Prom." value={`$${formatCurrency(stats.ticketPromedio)}`} subtitle="Por factura" icon={CreditCard} color={theme.primary === 'slate' ? 'stone' : 'indigo'} />
-        <MiniKPIEnhanced title="Clientes Activos" value={`${stats.clientesActivos}`} subtitle={`${stats.clientesNuevos} nuevos`} icon={Users} color={theme.primary === 'slate' ? 'neutral' : 'violet'} />
-      </div>
-
-      {/* KPIs secundarios */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Descuentos</span>
-              <Percent className="w-4 h-4 text-red-500" />
-            </div>
-            <p className="text-xl font-bold">${formatCurrency(stats.descuentosOtorgados)}</p>
-            <p className="text-xs text-muted-foreground">{((stats.descuentosOtorgados / 2450000) * 100).toFixed(1)}% de ingresos</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Bonificaciones</span>
-              <Award className="w-4 h-4 text-amber-500" />
-            </div>
-            <p className="text-xl font-bold">${formatCurrency(stats.bonificaciones)}</p>
-            <p className="text-xs text-muted-foreground">15 clientes</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Clientes Nuevos</span>
-              <Star className="w-4 h-4 text-green-500" />
-            </div>
-            <p className="text-xl font-bold">{stats.clientesNuevos}</p>
-            <p className="text-xs text-muted-foreground">Este mes</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Margen Neto</span>
-              <Target className="w-4 h-4 text-blue-500" />
-            </div>
-            <p className="text-xl font-bold">24.8%</p>
-            <p className="text-xs text-muted-foreground">Después de gastos</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Ventas por Canal y Zona */}
-      <div className="grid grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Layers className="w-4 h-4 text-muted-foreground" />
-              Ventas por Canal
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.porCanal.map((canal, i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{canal.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className={cn('font-medium', theme.primary === 'slate' ? 'text-slate-600' : 'text-cyan-600')}>${formatCurrency(canal.value)}</span>
-                      <span className="text-xs text-muted-foreground">{((canal.value / 2450000) * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <div className={cn('h-full rounded-full', theme.primary === 'slate' ? ['bg-slate-600', 'bg-gray-500', 'bg-zinc-400'][i] : ['bg-cyan-600', 'bg-cyan-500', 'bg-cyan-400'][i])} style={{ width: `${(canal.value / 1450000) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Target className="w-4 h-4 text-muted-foreground" />
-              Ventas por Zona
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-48 flex items-end gap-4">
-              {stats.porZona.map((zona, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                  <div className={cn('w-full rounded-t transition-all hover:opacity-80', theme.primary === 'slate' ? ['bg-slate-600', 'bg-gray-500', 'bg-zinc-400'][i] : ['bg-emerald-500', 'bg-blue-500', 'bg-amber-500'][i])} style={{ height: `${(zona.value / 1020000) * 100}%` }} />
-                  <div className="text-center">
-                    <p className="text-xs font-medium">{zona.name}</p>
-                    <p className="text-xs text-muted-foreground">${formatCurrency(zona.value)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Ventas por Producto */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Ventas por Producto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Producto</TableHead>
-                  <TableHead className="text-right">Cantidad</TableHead>
-                  <TableHead className="text-right">Ingreso</TableHead>
-                  <TableHead className="text-right">Margen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[
-                  { name: 'Producto Premium A', qty: 420, revenue: 1050000, margin: 32.5, color: 'green' },
-                  { name: 'Producto Estándar B', qty: 520, revenue: 910000, margin: 28.1, color: 'green' },
-                  { name: 'Producto Económico C', qty: 680, revenue: 490000, margin: 18.4, color: 'amber' },
-                ].map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell className="text-right">{p.qty}</TableCell>
-                    <TableCell className="text-right font-medium text-cyan-600">${formatCurrency(p.revenue)}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge className={cn(p.margin > 25 ? 'bg-green-600' : 'bg-amber-500')}>{p.margin}%</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Top Clientes */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top 5 Clientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: 'Supermercados del Norte', value: 580000, percent: 23.7 },
-                { name: 'Distribuidora Central', value: 420000, percent: 17.1 },
-                { name: 'Minorista Express', value: 310000, percent: 12.7 },
-                { name: 'Almacén Regional', value: 285000, percent: 11.6 },
-                { name: 'Otros (12)', value: 855000, percent: 34.9 },
-              ].map((c, i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="truncate">{c.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-cyan-600">${formatCurrency(c.value)}</span>
-                      <span className="text-xs text-muted-foreground">{c.percent}%</span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${c.percent}%`, backgroundColor: colors.chart5 }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Análisis de Rentabilidad */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Análisis de Rentabilidad</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">Margen Alto</span>
-              </div>
-              <p className="text-2xl font-bold text-green-600">$1.050.000</p>
-              <p className="text-xs text-green-700">Premium A (32.5%)</p>
-            </div>
-            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-                <span className="text-sm font-medium text-amber-800">Margen Bajo</span>
-              </div>
-              <p className="text-2xl font-bold text-amber-600">$490.000</p>
-              <p className="text-xs text-amber-700">Económico C (18.4%)</p>
-            </div>
-            <div className="p-4 bg-muted rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <Percent className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Margen Promedio</span>
-              </div>
-              <p className="text-2xl font-bold">31.4%</p>
-              <p className="text-xs text-muted-foreground">Ponderado por venta</p>
-            </div>
-            <div className="p-4 bg-muted rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Meta Margen</span>
-              </div>
-              <p className="text-2xl font-bold">35%</p>
-              <p className="text-xs text-muted-foreground">Objetivo empresa</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* NUEVOS GRÁFICOS - Ventas */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Gráfico de Líneas - Evolución de Ventas */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <LineChart className="w-4 h-4 text-muted-foreground" />
-                  Evolución de Ventas
-                </CardTitle>
-                <CardDescription>Ingresos vs COGS vs Margen (12 meses)</CardDescription>
-              </div>
-              <div className="flex gap-3 text-xs">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-cyan-500" /><span>Ingresos</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-rose-500" /><span>COGS</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-emerald-500" /><span>Margen</span></div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <LineChartSVG
-              data={[
-                { label: 'Ingresos', values: [1850000, 1920000, 2010000, 1980000, 2100000, 2180000, 2150000, 2250000, 2180000, 2320000, 2380000, 2450000] },
-                { label: 'COGS', values: [1250000, 1300000, 1360000, 1340000, 1420000, 1475000, 1455000, 1520000, 1475000, 1570000, 1610000, 1680000] },
-                { label: 'Margen', values: [600000, 620000, 650000, 640000, 680000, 705000, 695000, 730000, 705000, 750000, 770000, 770000] },
-              ]}
-              height={160}
-              colors={[colors.chart5, colors.kpiNegative, colors.kpiPositive]}
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
-              <span>Feb 25</span>
-              <span>Ene 26</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gráfico de Área - Margen Bruto */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AreaChart className="w-4 h-4 text-muted-foreground" />
-                  Tendencia de Margen %
-                </CardTitle>
-                <CardDescription>Últimos 12 meses</CardDescription>
-              </div>
-              <Badge variant="outline" className="text-xs">+2.3pp YoY</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <AreaChartSVG
-              data={[32.4, 32.3, 32.3, 32.3, 32.4, 32.3, 32.3, 32.4, 32.3, 32.3, 32.4, 31.4]}
-              height={160}
-              color={colors.chart5}
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
-              <span>Feb 25</span>
-              <span>Ene 26</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gauges de Ventas */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">vs Objetivo</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={98} max={100} label="Meta: $2.5M" color={theme.primary === 'slate' ? 'slate' : 'cyan'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Margen Bruto</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={31.4} max={40} label="Meta: 35%" color={theme.primary === 'slate' ? 'slate' : 'emerald'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Conversión</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={78.5} max={100} label="Meta: 80%" color={theme.primary === 'slate' ? 'slate' : 'blue'} size={120} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Retención</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <GaugeChart value={92.3} max={100} label="Meta: 90%" color={theme.primary === 'slate' ? 'slate' : 'violet'} size={120} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tendencias de Ventas */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-muted-foreground" />
-            Tendencias de Ventas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-5 gap-6">
-            {[
-              { label: 'Ingresos', values: [2100, 2180, 2250, 2180, 2380, 2450], current: '$2.45M', change: '+12.5%', color: 'blue' as const },
-              { label: 'Facturas', values: [35, 37, 38, 36, 40, 42], current: '42', change: '+5%', color: 'green' as const },
-              { label: 'Ticket Prom', values: [52, 54, 55, 56, 57, 58], current: '$58.3K', change: '+2.6%', color: 'violet' as const },
-              { label: 'Clientes', values: [36, 37, 38, 39, 41, 42], current: '42', change: '+2.4%', color: 'amber' as const },
-              { label: 'Margen %', values: [30.8, 31.0, 31.2, 31.1, 31.3, 31.4], current: '31.4%', change: '+0.3%', color: 'green' as const },
-            ].map((item, i) => (
-              <div key={i} className="space-y-2">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <TrendlineChart values={item.values} color={item.color} width={100} height={32} />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">{item.current}</span>
-                  <span className={cn('text-xs font-medium', 'text-green-500')}>{item.change}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <SalesViewV2 companyId={companyId} selectedMonth={month} userColors={colors} />
     </div>
   );
 }
@@ -2985,7 +2121,7 @@ function VentasSection({ month, theme, colors }: { month: string; theme: ThemeCo
 // ============================================
 // WRAPPERS PARA HERRAMIENTAS
 // ============================================
-function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
+function DistribucionSection({ colors, month }: { colors: UserColorPreferences; month?: string }) {
   const { currentCompany } = useCompany();
   const [costDistributions, setCostDistributions] = useState<any[]>([]);
   const [employeeDistributions, setEmployeeDistributions] = useState<any[]>([]);
@@ -3062,51 +2198,69 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
     if (!currentCompany?.id) return;
     setLoading(true);
     try {
-      const [costsRes, employeesDistRes, categoriesRes, employeesRes, indirectRes] = await Promise.all([
-        fetch(`/api/cost-distribution?companyId=${currentCompany.id}`),
-        fetch(`/api/employee-distribution?companyId=${currentCompany.id}`),
-        fetch(`/api/productos/categorias?companyId=${currentCompany.id}`),
-        fetch(`/api/empleados?companyId=${currentCompany.id}`),
-        fetch(`/api/monthly-indirect?companyId=${currentCompany.id}`)
+      const currentM = month || new Date().toISOString().slice(0, 7);
+
+      const [distributionRes, employeesRes] = await Promise.all([
+        fetch(`/api/costos/indirect/distribution?month=${currentM}`),
+        fetch(`/api/costos/empleados?companyId=${currentCompany.id}&limit=100`),
       ]);
 
       let costs: any[] = [];
-      let empDist: any[] = [];
+      let indirect: any[] = [];
       let cats: any[] = [];
       let emps: any[] = [];
-      let indirect: any[] = [];
 
-      if (costsRes.ok) {
-        const data = await costsRes.json();
-        costs = data.distributions || data || [];
+      if (distributionRes.ok) {
+        const data = await distributionRes.json();
+        // Adaptar shape: categories[] → costDistributions[] + indirectCosts[]
+        const categories: any[] = data.categories || [];
+        costs = categories.flatMap((cat: any) =>
+          (cat.distributions || []).map((d: any) => ({
+            id: d.id,
+            cost_type: cat.label,
+            cost_name: cat.label,
+            product_category_id: d.productCategoryId,
+            productCategoryId: d.productCategoryId,
+            productCategoryName: d.productCategoryName,
+            percentage: d.percentage,
+            totalCost: cat.monthTotal,
+            is_active: true,
+          }))
+        );
+        indirect = categories
+          .filter((cat: any) => cat.monthTotal > 0)
+          .map((cat: any) => ({
+            id: cat.key,
+            name: cat.label,
+            amount: cat.monthTotal,
+            type: 'indirect',
+          }));
+        // Derivar categorías de productos desde la configuración de distribución
+        const catMap = new Map<number, { id: number; name: string }>();
+        categories.forEach((cat: any) => {
+          (cat.distributions || []).forEach((d: any) => {
+            if (d.productCategoryId && !catMap.has(d.productCategoryId)) {
+              catMap.set(d.productCategoryId, { id: d.productCategoryId, name: d.productCategoryName });
+            }
+          });
+        });
+        cats = Array.from(catMap.values());
       }
-      if (employeesDistRes.ok) {
-        const data = await employeesDistRes.json();
-        empDist = data.distributions || data || [];
-      }
-      if (categoriesRes.ok) {
-        const data = await categoriesRes.json();
-        cats = data.categories || data || [];
-      }
+
       if (employeesRes.ok) {
         const data = await employeesRes.json();
-        emps = data.empleados || data || [];
-      }
-      if (indirectRes.ok) {
-        const data = await indirectRes.json();
-        indirect = data.items || data || [];
+        // /api/costos/empleados responde con: { items: [...], total, page, ... }
+        emps = data.items || [];
       }
 
-      // Use mock data if APIs return empty (for demo/testing)
       setCostDistributions(costs.length > 0 ? costs : MOCK_COST_DISTRIBUTIONS);
-      setEmployeeDistributions(empDist.length > 0 ? empDist : MOCK_EMPLOYEE_DISTRIBUTIONS);
+      setEmployeeDistributions(MOCK_EMPLOYEE_DISTRIBUTIONS); // empleados: mantener mock hasta que exista API
       setProductCategories(cats.length > 0 ? cats : MOCK_CATEGORIES);
       setEmployees(emps.length > 0 ? emps : MOCK_EMPLOYEES);
       setIndirectCosts(indirect.length > 0 ? indirect : MOCK_INDIRECT_COSTS);
 
     } catch (error) {
       console.error('Error fetching distribution data:', error);
-      // Use mock data on error
       setCostDistributions(MOCK_COST_DISTRIBUTIONS);
       setEmployeeDistributions(MOCK_EMPLOYEE_DISTRIBUTIONS);
       setProductCategories(MOCK_CATEGORIES);
@@ -3119,7 +2273,7 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
 
   useEffect(() => {
     fetchData();
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, month]);
 
   // Calculate validation warnings - cost types that don't sum to 100%
   const validationWarnings = useMemo(() => {
@@ -3388,7 +2542,7 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMatrixDialog(true)}
-                className="bg-green-50 hover:bg-green-100 border-green-200"
+                className="bg-success-muted hover:bg-success-muted/80 border-success-muted"
               >
                 <Grid3X3 className="h-4 w-4 mr-1" />
                 Matriz Costos
@@ -3397,7 +2551,7 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowEmployeeMatrixDialog(true)}
-                className="bg-purple-50 hover:bg-purple-100 border-purple-200"
+                className="bg-info-muted hover:bg-info-muted/80 border-info-muted"
               >
                 <Grid3X3 className="h-4 w-4 mr-1" />
                 Matriz Empleados
@@ -3496,7 +2650,7 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
               {/* Barra de distribución proporcional */}
               {grandTotal > 0 && (
                 <div className="mb-4">
-                  <div className="h-4 rounded-full overflow-hidden bg-gray-100 flex">
+                  <div className="h-4 rounded-full overflow-hidden bg-muted flex">
                     {categorySummary.filter(cat => cat.total > 0).map((cat, i) => {
                       const pct = (cat.total / grandTotal) * 100;
                       return (
@@ -3556,14 +2710,14 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
                       {/* Indirectos */}
                       <div className="space-y-1 mb-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-600 flex items-center gap-1">
+                          <span className="text-muted-foreground flex items-center gap-1">
                             <DollarSign className="h-3 w-3" /> Indirectos
                           </span>
                           <span className="font-semibold" style={{ color: colors.chart1 }}>
                             ${formatCurrency(cat.totalIndirect)}
                           </span>
                         </div>
-                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full"
                             style={{ width: `${indirectPct}%`, backgroundColor: colors.chart1 }}
@@ -3574,14 +2728,14 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
                       {/* Empleados */}
                       <div className="space-y-1 mb-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-600 flex items-center gap-1">
+                          <span className="text-muted-foreground flex items-center gap-1">
                             <Users className="h-3 w-3" /> Empleados
                           </span>
                           <span className="font-semibold" style={{ color: colors.chart4 }}>
                             ${formatCurrency(cat.totalEmployee)}
                           </span>
                         </div>
-                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full"
                             style={{ width: `${100 - indirectPct}%`, backgroundColor: colors.chart4 }}
@@ -4019,6 +3173,7 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
       {/* Matriz de Distribución de Costos - Component has its own Dialog */}
       <CostDistributionMatrix
         isOpen={showMatrixDialog}
+        month={month}
         onClose={() => {
           setShowMatrixDialog(false);
           fetchData();
@@ -4045,65 +3200,31 @@ function DistribucionSection({ colors }: { colors: UserColorPreferences }) {
   );
 }
 
-function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
+function CalculadoraSection({ colors, month: initialMonth }: { colors: UserColorPreferences; month: string }) {
   const { currentCompany } = useCompany();
 
   // State for month navigation
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
 
-  // State for available months (from API)
-  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
-
-  // State for distribution method
-  const [distributionMethod, setDistributionMethod] = useState<'ventas' | 'produccion' | null>(null);
-
-  // State for real data
-  const [costData, setCostData] = useState<any>(null);
+  // Estado real del consolidador
+  const [calcData, setCalcData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch available months and cost data
+  // Parámetros de simulación en browser (no requieren API call)
+  const [targetMargin, setTargetMargin] = useState(30); // margen objetivo %
+  const [mpVariation, setMpVariation] = useState(0);    // variación MP %
+  const [volVariation, setVolVariation] = useState(0);  // variación volumen %
+  const [precioVariation, setPrecioVariation] = useState(0); // variación precio venta %
+
+  // Fetch datos reales del consolidador
   useEffect(() => {
-    const fetchData = async () => {
-      if (!currentCompany?.id) return;
-      setLoading(true);
-
-      try {
-        // Fetch available months from monthly productions/calculations
-        const [monthsRes, configRes] = await Promise.all([
-          fetch(`/api/monthly-production?companyId=${currentCompany.id}`).catch(() => null),
-          fetch(`/api/cost-distribution?companyId=${currentCompany.id}`).catch(() => null),
-        ]);
-
-        // Extract available months
-        if (monthsRes?.ok) {
-          const monthsData = await monthsRes.json();
-          if (Array.isArray(monthsData)) {
-            const months = [...new Set(monthsData.map((p: any) => p.month))].sort().reverse();
-            setAvailableMonths(months as string[]);
-          }
-        }
-
-        // Determine distribution method from config
-        if (configRes?.ok) {
-          const configData = await configRes.json();
-          if (Array.isArray(configData) && configData.length > 0) {
-            // Check what method is being used based on cost_type patterns
-            const hasVentas = configData.some((c: any) => c.cost_type?.toLowerCase().includes('venta'));
-            const hasProduccion = configData.some((c: any) => c.cost_type?.toLowerCase().includes('producc'));
-            setDistributionMethod(hasProduccion ? 'produccion' : hasVentas ? 'ventas' : null);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching calculator data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    if (!currentCompany?.id) return;
+    setLoading(true);
+    fetch(`/api/costos/v2/calculator?month=${selectedMonth}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setCalcData(d))
+      .catch(() => setCalcData(null))
+      .finally(() => setLoading(false));
   }, [currentCompany?.id, selectedMonth]);
 
   // Month navigation functions
@@ -4140,10 +3261,14 @@ function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
     return year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1);
   }, [selectedMonth]);
 
-  // Check if current month has data
+  // Check if current month has data (basado en datos reales)
   const hasDataForMonth = useMemo(() => {
-    return availableMonths.includes(selectedMonth);
-  }, [availableMonths, selectedMonth]);
+    return calcData?.products && calcData.products.length > 0;
+  }, [calcData]);
+
+  // Datos derivados del consolidador
+  const products: any[] = calcData?.products ?? [];
+  const totals = calcData?.totals ?? null;
 
   // Componente Donut Chart simple
   const DonutChartSimple = ({
@@ -4211,33 +3336,65 @@ function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
     );
   };
 
-  // Mock data para calculadora
-  const escenarios = [
-    { id: 1, nombre: 'Escenario Base', fecha: '2026-01-10', productos: 5, costoTotal: 125000, margenProm: 28.5, estado: 'activo' },
-    { id: 2, nombre: 'Aumento MP 10%', fecha: '2026-01-08', productos: 5, costoTotal: 137500, margenProm: 21.3, estado: 'simulado' },
-    { id: 3, nombre: 'Optimización Proceso', fecha: '2026-01-05', productos: 3, costoTotal: 98000, margenProm: 32.1, estado: 'simulado' },
-  ];
+  // Datos reales derivados del consolidador
+  const avgCostPerUnit = totals?.avgCostPerUnit ?? 0;
+  const avgMarginPct = totals?.avgMarginPercent ?? 0;
+  const totalRevenue = totals?.totalRevenue ?? 0;
+  const totalCostTotal = totals?.totalCostTotal ?? 0;
 
-  const calculosRapidos = [
-    { label: 'Costo Promedio/Unidad', valor: '$458', variacion: -2.3 },
-    { label: 'Margen Bruto Prom.', valor: '28.5%', variacion: 1.2 },
-    { label: 'Punto Equilibrio', valor: '1,250 u', variacion: -5.1 },
-    { label: 'ROI Estimado', valor: '18.2%', variacion: 0.8 },
-  ];
+  // Punto de equilibrio: costos fijos / (precio - costo variable por unidad)
+  // Aproximación: costIndirect total / (avgSalePrice - avgCostPerUnit)
+  const avgSalePrice = totals?.avgSalePrice ?? 0;
+  const breakEven = useMemo(() => {
+    const fixedCosts = totals?.totalCostIndirect ?? 0;
+    const contribution = avgSalePrice - (totals?.avgCostPerUnit ?? 0) + (totals?.totalCostIndirect ?? 0) / Math.max(totals?.totalUnitsProduced ?? 1, 1);
+    if (contribution <= 0) return 0;
+    return Math.round(fixedCosts / contribution);
+  }, [totals, avgSalePrice]);
 
-  const componentesCosto = [
-    { nombre: 'Materia Prima', porcentaje: 45, valor: 56250, trend: 3.2 },
-    { nombre: 'Mano de Obra', porcentaje: 25, valor: 31250, trend: 1.8 },
-    { nombre: 'Costos Indirectos', porcentaje: 18, valor: 22500, trend: -0.5 },
-    { nombre: 'Packaging', porcentaje: 8, valor: 10000, trend: 2.1 },
-    { nombre: 'Otros', porcentaje: 4, valor: 5000, trend: 0.3 },
-  ];
+  // Componentes de costo reales
+  const componentesCosto = useMemo(() => {
+    if (!totals) return [];
+    const mat = totals.totalCostMaterials;
+    const ind = totals.totalCostIndirect;
+    const total = mat + ind;
+    if (total === 0) return [];
+    return [
+      { nombre: 'Materia Prima', porcentaje: total > 0 ? (mat / total) * 100 : 0, valor: mat },
+      { nombre: 'Costos Indirectos', porcentaje: total > 0 ? (ind / total) * 100 : 0, valor: ind },
+    ];
+  }, [totals]);
 
-  const simulaciones = [
-    { escenario: 'MP +10%', costoUnit: 504, margen: 21.3, impacto: 'negativo' },
-    { escenario: 'Volumen +20%', costoUnit: 421, margen: 32.8, impacto: 'positivo' },
-    { escenario: 'MO +5%', costoUnit: 470, margen: 26.4, impacto: 'neutro' },
-  ];
+  // Simulaciones "Qué pasa si..." calculadas en browser sobre datos reales
+  const simulaciones = useMemo(() => {
+    if (!totals || avgCostPerUnit === 0) return [];
+    const matPct = totals.totalCostMaterials / Math.max(totalCostTotal, 1);
+    const totalUnits = totals.totalUnitsProduced;
+
+    // Escenario 1: MP varía X%
+    const newCostMP = avgCostPerUnit * (1 + (matPct * mpVariation) / 100);
+    const newMarginMP = avgSalePrice > 0 ? ((avgSalePrice * (1 + precioVariation / 100) - newCostMP) / (avgSalePrice * (1 + precioVariation / 100))) * 100 : 0;
+    const impMP = newMarginMP < avgMarginPct ? 'negativo' : newMarginMP > avgMarginPct ? 'positivo' : 'neutro';
+
+    // Escenario 2: Volumen varía X% (los fijos se diluyen)
+    const newTotalUnits = totalUnits * (1 + volVariation / 100);
+    const newCostVol = newTotalUnits > 0
+      ? (totals.totalCostMaterials + totals.totalCostIndirect) / newTotalUnits
+      : avgCostPerUnit;
+    const newMarginVol = avgSalePrice > 0 ? ((avgSalePrice - newCostVol) / avgSalePrice) * 100 : 0;
+    const impVol = newMarginVol > avgMarginPct ? 'positivo' : newMarginVol < avgMarginPct ? 'negativo' : 'neutro';
+
+    // Escenario 3: Precio de venta varía X%
+    const newPrice = avgSalePrice * (1 + precioVariation / 100);
+    const newMarginPrecio = newPrice > 0 ? ((newPrice - avgCostPerUnit) / newPrice) * 100 : 0;
+    const impPrecio = newMarginPrecio > avgMarginPct ? 'positivo' : newMarginPrecio < avgMarginPct ? 'negativo' : 'neutro';
+
+    return [
+      { escenario: `MP ${mpVariation >= 0 ? '+' : ''}${mpVariation}%`, costoUnit: newCostMP, margen: newMarginMP, impacto: impMP },
+      { escenario: `Volumen ${volVariation >= 0 ? '+' : ''}${volVariation}%`, costoUnit: newCostVol, margen: newMarginVol, impacto: impVol },
+      { escenario: `Precio ${precioVariation >= 0 ? '+' : ''}${precioVariation}%`, costoUnit: avgCostPerUnit, margen: newMarginPrecio, impacto: impPrecio },
+    ];
+  }, [totals, avgCostPerUnit, avgSalePrice, avgMarginPct, totalCostTotal, mpVariation, volVariation, precioVariation]);
 
   return (
     <div className="space-y-6">
@@ -4288,38 +3445,17 @@ function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
               )}
             </div>
 
-            {/* Distribution Method Indicator */}
+            {/* Indicador de fuente de datos */}
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">Método de distribución:</span>
-              {distributionMethod ? (
-                <Badge
-                  variant="outline"
-                  className="gap-1.5"
-                  style={{
-                    borderColor: distributionMethod === 'produccion' ? colors.chart4 : colors.chart1,
-                    color: distributionMethod === 'produccion' ? colors.chart4 : colors.chart1,
-                    backgroundColor: (distributionMethod === 'produccion' ? colors.chart4 : colors.chart1) + '10',
-                  }}
-                >
-                  {distributionMethod === 'produccion' ? (
-                    <>
-                      <Factory className="w-3.5 h-3.5" />
-                      Por Producción
-                    </>
-                  ) : (
-                    <>
-                      <BarChart2 className="w-3.5 h-3.5" />
-                      Por Ventas
-                    </>
-                  )}
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                  <PackageSearch className="w-3.5 h-3.5 mr-1" />
-                  No configurado
-                </Badge>
-              )}
-
+              <span className="text-sm text-muted-foreground">Fuentes:</span>
+              <Badge
+                variant="outline"
+                className="gap-1.5"
+                style={{ borderColor: colors.chart4, color: colors.chart4, backgroundColor: colors.chart4 + '10' }}
+              >
+                <Factory className="w-3.5 h-3.5" />
+                Producción + Indirectos + Ventas
+              </Badge>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
@@ -4327,9 +3463,9 @@ function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p className="text-sm">
-                      <strong>Por Producción:</strong> Distribuye costos según las unidades producidas de cada producto.
-                      <br /><br />
-                      <strong>Por Ventas:</strong> Distribuye costos según los ingresos por ventas de cada producto.
+                      Los costos se calculan con datos reales:<br />
+                      <strong>Materiales:</strong> Consumo de insumos según recetas × precio PPP<br />
+                      <strong>Indirectos:</strong> Facturas marcadas como indirecto, distribuidas por categoría de producto según los % configurados
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -4339,92 +3475,160 @@ function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
         </CardContent>
       </Card>
 
-      {/* KPIs de cálculos rápidos */}
-      <div className="grid grid-cols-4 gap-4">
-        {calculosRapidos.map((calc, i) => (
-          <Card key={i} className="border-l-4" style={{ borderLeftColor: [colors.chart1, colors.chart2, colors.chart3, colors.chart4][i] }}>
+      {/* KPIs reales */}
+      {loading ? (
+        <div className="grid grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i} className="border-l-4 animate-pulse" style={{ borderLeftColor: [colors.chart1, colors.chart2, colors.chart4, colors.kpiPositive][i] }}>
+              <CardContent className="p-4">
+                <div className="h-4 bg-muted rounded mb-2 w-3/4" />
+                <div className="h-8 bg-muted rounded w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
+          <Card className="border-l-4" style={{ borderLeftColor: colors.chart1 }}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">{calc.label}</span>
-                <Badge variant={calc.variacion >= 0 ? 'default' : 'secondary'} className="text-[10px]">
-                  {calc.variacion >= 0 ? '+' : ''}{calc.variacion}%
-                </Badge>
-              </div>
-              <p className="text-2xl font-bold">{calc.valor}</p>
+              <p className="text-xs text-muted-foreground mb-1">Costo Prom/Unidad</p>
+              <p className="text-2xl font-bold">${(avgCostPerUnit).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-xs text-muted-foreground mt-1">Materiales + Indirectos</p>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          <Card className="border-l-4" style={{ borderLeftColor: colors.chart2 }}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">Margen Bruto Prom.</p>
+              <p className="text-2xl font-bold" style={{ color: avgMarginPct >= targetMargin ? colors.kpiPositive : colors.kpiNegative }}>
+                {formatPercent(avgMarginPct)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Umbral: {targetMargin}%</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4" style={{ borderLeftColor: colors.chart4 }}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">Punto de Equilibrio</p>
+              <p className="text-2xl font-bold">{formatCurrency(breakEven)} u</p>
+              <p className="text-xs text-muted-foreground mt-1">Indirectos / (precio − costo var.)</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4" style={{ borderLeftColor: colors.kpiPositive }}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">Ingresos del Período</p>
+              <p className="text-2xl font-bold">${formatCurrency(totalRevenue)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Margen: ${formatCurrency(totalRevenue - totalCostTotal)}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Sección principal */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Desglose de costos */}
+        {/* Composición del costo real */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <PieChart className="w-4 h-4" style={{ color: colors.chart2 }} />
               Composición del Costo
             </CardTitle>
-            <CardDescription>Desglose por componente</CardDescription>
+            <CardDescription>Desglose por componente — {formatMonthDisplay(selectedMonth)}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-center mb-4">
-              <DonutChartSimple
-                data={componentesCosto.map((c, i) => ({
-                  value: c.porcentaje,
-                  color: [colors.donut1, colors.donut2, colors.donut3, colors.donut4, colors.donut5][i]
-                }))}
-                size={140}
-                centerLabel="$125K"
-                centerSubLabel="Total"
-              />
-            </div>
-            <div className="space-y-2">
-              {componentesCosto.map((comp, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: [colors.donut1, colors.donut2, colors.donut3, colors.donut4, colors.donut5][i] }} />
-                    <span>{comp.nombre}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">${formatCurrency(comp.valor)}</span>
-                    <span className={cn('text-xs', comp.trend > 0 ? 'text-red-500' : 'text-green-500')}>
-                      {comp.trend > 0 ? '+' : ''}{comp.trend}%
-                    </span>
-                  </div>
+            {componentesCosto.length > 0 ? (
+              <>
+                <div className="flex justify-center mb-4">
+                  <DonutChartSimple
+                    data={componentesCosto.map((c, i) => ({
+                      value: c.porcentaje,
+                      color: [colors.donut1, colors.donut2][i]
+                    }))}
+                    size={140}
+                    centerLabel={`$${formatCurrency(totalCostTotal / 1000)}K`}
+                    centerSubLabel="Total"
+                  />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  {componentesCosto.map((comp, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: [colors.donut1, colors.donut2][i] }} />
+                        <span>{comp.nombre}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">${formatCurrency(comp.valor)}</span>
+                        <span className="text-xs text-muted-foreground">{formatPercent(comp.porcentaje)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">Sin datos de costo para este período</p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Simulador rápido */}
+        {/* Simulador interactivo */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Beaker className="w-4 h-4" style={{ color: colors.chart4 }} />
-              Simulación Rápida
+              ¿Qué pasa si...?
             </CardTitle>
-            <CardDescription>Impacto de variaciones</CardDescription>
+            <CardDescription>Ajustá las variables y el impacto se calcula solo</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-3 rounded-lg border" style={{ borderColor: colors.kpiNeutral }}>
-                <p className="text-xs text-muted-foreground mb-1">Costo Unitario Base</p>
-                <p className="text-2xl font-bold">$458</p>
+              <div className="p-3 rounded-lg border" style={{ borderColor: colors.kpiNeutral + '80' }}>
+                <p className="text-xs text-muted-foreground mb-1">Costo Unitario Base (real)</p>
+                <p className="text-2xl font-bold">${(avgCostPerUnit).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+
+              {/* Inputs de variación */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-24">MP varía:</label>
+                  <Input
+                    type="number"
+                    value={mpVariation}
+                    onChange={(e) => setMpVariation(Number(e.target.value))}
+                    className="h-7 text-sm w-20 text-right"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-24">Volumen:</label>
+                  <Input
+                    type="number"
+                    value={volVariation}
+                    onChange={(e) => setVolVariation(Number(e.target.value))}
+                    className="h-7 text-sm w-20 text-right"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground w-24">Precio venta:</label>
+                  <Input
+                    type="number"
+                    value={precioVariation}
+                    onChange={(e) => setPrecioVariation(Number(e.target.value))}
+                    className="h-7 text-sm w-20 text-right"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
 
               <Separator />
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {simulaciones.map((sim, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                     <div>
-                      <p className="text-sm font-medium">{sim.escenario}</p>
-                      <p className="text-xs text-muted-foreground">Costo: ${sim.costoUnit}</p>
+                      <p className="text-xs font-medium">{sim.escenario}</p>
+                      <p className="text-[10px] text-muted-foreground">Costo: ${sim.costoUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold">{sim.margen}%</p>
+                      <p className="text-sm font-bold">{formatPercent(sim.margen)}</p>
                       <Badge
                         variant="outline"
                         className="text-[10px]"
@@ -4443,93 +3647,118 @@ function CalculadoraSection({ colors }: { colors: UserColorPreferences }) {
           </CardContent>
         </Card>
 
-        {/* Escenarios guardados */}
+        {/* Precio sugerido por producto */}
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BookMarked className="w-4 h-4" style={{ color: colors.chart1 }} />
-                  Escenarios Guardados
-                </CardTitle>
-                <CardDescription>Simulaciones anteriores</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="w-4 h-4" style={{ color: colors.chart1 }} />
+              Precio Sugerido
+            </CardTitle>
+            <CardDescription className="flex items-center gap-2">
+              Margen objetivo:
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  value={targetMargin}
+                  onChange={(e) => setTargetMargin(Number(e.target.value))}
+                  className="h-6 w-16 text-xs text-right"
+                  min={0}
+                  max={100}
+                />
+                <span className="text-xs">%</span>
               </div>
-              <Button variant="outline" size="sm" className="h-7 text-xs">
-                <Plus className="w-3 h-3 mr-1" /> Nuevo
-              </Button>
-            </div>
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {escenarios.map((esc) => (
-                <div key={esc.id} className="p-3 rounded-lg border hover:border-primary/50 cursor-pointer transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm">{esc.nombre}</span>
-                    <Badge
-                      variant={esc.estado === 'activo' ? 'default' : 'secondary'}
-                      className="text-[10px]"
-                      style={esc.estado === 'activo' ? { backgroundColor: colors.kpiPositive } : {}}
-                    >
-                      {esc.estado}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                    <div>
-                      <p className="text-foreground font-medium">{esc.productos} prod.</p>
-                      <p>Productos</p>
+          <CardContent className="pt-2">
+            {products.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Sin datos de producción</p>
+            ) : (
+              <div className="space-y-2">
+                {products.map((p: any) => {
+                  // precioSugerido = costPerUnit / (1 - targetMargin/100)
+                  const sugerido = targetMargin < 100 && p.costPerUnit > 0
+                    ? p.costPerUnit / (1 - targetMargin / 100)
+                    : 0;
+                  const current = p.revenuePriceAvg;
+                  const diff = sugerido > 0 && current > 0 ? ((sugerido - current) / current) * 100 : null;
+                  return (
+                    <div key={p.productId} className="text-xs border rounded p-2 space-y-1">
+                      <p className="font-medium truncate" title={p.productName}>{p.productName}</p>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Costo/UN: <span className="text-foreground font-medium">${p.costPerUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                        <span>Actual: <span className="text-foreground">${current > 0 ? current.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</span></span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Sugerido con {targetMargin}%:</span>
+                        <span className="font-bold" style={{ color: sugerido > 0 ? colors.chart1 : colors.kpiNeutral }}>
+                          {sugerido > 0 ? `$${sugerido.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                          {diff !== null && (
+                            <span className="ml-1 text-[10px]" style={{ color: diff > 0 ? colors.kpiNegative : colors.kpiPositive }}>
+                              ({diff > 0 ? '+' : ''}{diff.toFixed(1)}%)
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-foreground font-medium">${formatCurrency(esc.costoTotal)}</p>
-                      <p>Costo Total</p>
-                    </div>
-                    <div>
-                      <p className="text-foreground font-medium">{esc.margenProm}%</p>
-                      <p>Margen</p>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-2">{esc.fecha}</p>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Comparativa de escenarios */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Scale className="w-4 h-4" style={{ color: colors.chart3 }} />
-                Comparativa de Escenarios
-              </CardTitle>
-              <CardDescription>Visualiza el impacto de diferentes variables</CardDescription>
-            </div>
-            <div className="flex gap-3 text-xs">
-              <div className="flex items-center gap-1.5"><div className="w-3 h-0.5" style={{ backgroundColor: colors.chart1 }} /><span>Base</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-3 h-0.5" style={{ backgroundColor: colors.kpiNegative }} /><span>MP +10%</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-3 h-0.5" style={{ backgroundColor: colors.kpiPositive }} /><span>Optimizado</span></div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-48">
-            <LineChartSVG
-              data={[
-                { label: 'Base', values: [458, 455, 460, 458, 462, 458] },
-                { label: 'MP +10%', values: [504, 500, 508, 504, 510, 504] },
-                { label: 'Optimizado', values: [421, 418, 425, 420, 428, 421] },
-              ]}
-              height={180}
-              colors={[colors.chart1, colors.kpiNegative, colors.kpiPositive]}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground mt-2 px-2">
-            {['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'].map((m, i) => <span key={i}>{m}</span>)}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tabla por producto — costos y márgenes reales */}
+      {products.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Scale className="w-4 h-4" style={{ color: colors.chart3 }} />
+              Detalle por Producto — {formatMonthDisplay(selectedMonth)}
+            </CardTitle>
+            <CardDescription>Costo de materiales + indirectos distribuidos vs. precio de venta real</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Producto</TableHead>
+                  <TableHead className="text-right">Uds. Prod.</TableHead>
+                  <TableHead className="text-right">Mat./UN</TableHead>
+                  <TableHead className="text-right">Ind./UN</TableHead>
+                  <TableHead className="text-right">Costo/UN</TableHead>
+                  <TableHead className="text-right">Precio Venta/UN</TableHead>
+                  <TableHead className="text-right">Margen Real</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((p: any) => {
+                  const mColor = !p.hasSales
+                    ? colors.kpiNeutral
+                    : p.marginPercent >= targetMargin
+                      ? colors.kpiPositive
+                      : colors.kpiNegative;
+                  return (
+                    <TableRow key={p.productId}>
+                      <TableCell className="font-medium text-sm">{p.productName}</TableCell>
+                      <TableCell className="text-right text-sm">{formatCurrency(p.unitsProduced)}</TableCell>
+                      <TableCell className="text-right text-sm">${p.costMatPerUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right text-sm">${p.costIndPerUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right text-sm font-semibold">${p.costPerUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right text-sm">
+                        {p.hasSales ? `$${p.revenuePriceAvg.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right font-bold" style={{ color: mColor }}>
+                        {p.hasSales ? formatPercent(p.marginPercent) : <span className="text-muted-foreground text-sm font-normal">Sin ventas</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Calculadora Completa V2 */}
       <CalculadoraCompletaV2 colors={colors} selectedMonth={selectedMonth} />
@@ -4907,7 +4136,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
 
     return (
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="w-[900px] sm:max-w-[900px] overflow-y-auto">
+        <SheetContent size="xl" className="overflow-y-auto">
           <SheetHeader className="pb-4 border-b">
             <SheetTitle className="flex items-center gap-3">
               <div className="p-2 rounded-lg" style={{ backgroundColor: colors.chart1 + '20' }}>
@@ -5104,7 +4333,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tiene receta</span>
-                <span className={product.hasRecipe ? 'text-green-600' : 'text-red-600'}>
+                <span className={product.hasRecipe ? 'text-success' : 'text-destructive'}>
                   {product.hasRecipe ? 'Sí' : 'No'}
                 </span>
               </div>
@@ -5336,7 +4565,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                       step="1"
                       value={(simParams as any)[param.key]}
                       onChange={(e) => setSimParams(prev => ({ ...prev, [param.key]: Number(e.target.value) }))}
-                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                     />
                     <Badge
                       variant="outline"
@@ -5371,9 +4600,9 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                     <span className="text-xs text-muted-foreground">Activar</span>
                     <button
                       onClick={() => setPretensadosEnabled(!pretensadosEnabled)}
-                      className={`w-10 h-5 rounded-full transition-colors ${pretensadosEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={cn('w-10 h-5 rounded-full transition-colors', pretensadosEnabled ? 'bg-success' : 'bg-muted')}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${pretensadosEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      <div className={cn('w-4 h-4 rounded-full bg-white shadow transition-transform', pretensadosEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
                     </button>
                   </div>
                 </div>
@@ -5411,7 +4640,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                             />
                           </div>
                         </div>
-                        <div className="p-2 rounded bg-white/50">
+                        <div className="p-2 rounded bg-card/50">
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Total:</span>
                             <span className="font-bold" style={{ color: colors.donut1 }}>
@@ -5451,7 +4680,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                             />
                           </div>
                         </div>
-                        <div className="p-2 rounded bg-white/50">
+                        <div className="p-2 rounded bg-card/50">
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Total:</span>
                             <span className="font-bold" style={{ color: colors.donut2 }}>
@@ -5491,7 +4720,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                             />
                           </div>
                         </div>
-                        <div className="p-2 rounded bg-white/50">
+                        <div className="p-2 rounded bg-card/50">
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Total:</span>
                             <span className="font-bold" style={{ color: colors.donut3 }}>
@@ -5518,7 +4747,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                         size="sm"
                         onClick={() => {
                           // TODO: Apply calculated quantities to products
-                          alert(`Cantidades confirmadas:\n• Viguetas: ${(pretensadosParams.viguetasDias * pretensadosParams.viguetasBancos * pretensadosParams.metrosUtilesPorBanco).toLocaleString()} metros\n• Bloques: ${(pretensadosParams.bloquesDias * pretensadosParams.bloquesPlacas * pretensadosParams.unidadesPorPlaca).toLocaleString()} unidades\n• Adoquines: ${Math.round(pretensadosParams.adoquinesDias * pretensadosParams.adoquinesM2PorDia * pretensadosParams.adoquinesUnidadesPorM2).toLocaleString()} unidades`);
+                          toast.success(`Cantidades confirmadas: Viguetas: ${(pretensadosParams.viguetasDias * pretensadosParams.viguetasBancos * pretensadosParams.metrosUtilesPorBanco).toLocaleString()} metros, Bloques: ${(pretensadosParams.bloquesDias * pretensadosParams.bloquesPlacas * pretensadosParams.unidadesPorPlaca).toLocaleString()} unidades, Adoquines: ${Math.round(pretensadosParams.adoquinesDias * pretensadosParams.adoquinesM2PorDia * pretensadosParams.adoquinesUnidadesPorM2).toLocaleString()} unidades`);
                         }}
                         style={{ backgroundColor: colors.kpiPositive }}
                       >
@@ -5922,7 +5151,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+                <Sparkles className="w-4 h-4 text-warning-muted-foreground" />
                 Paletas Predefinidas
               </CardTitle>
               <CardDescription>Aplica una paleta completa con un click</CardDescription>
@@ -5957,7 +5186,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-blue-500" />
+                <BarChart3 className="w-4 h-4 text-info-muted-foreground" />
                 Colores de Gráficos
               </CardTitle>
               <CardDescription>Personaliza los colores de barras, líneas y áreas</CardDescription>
@@ -6054,7 +5283,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="w-4 h-4 text-green-500" />
+                <Activity className="w-4 h-4 text-success" />
                 Colores de Barras de Progreso
               </CardTitle>
               <CardDescription>Personaliza los colores de las barras de progreso y métricas</CardDescription>
@@ -6095,7 +5324,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-cyan-500" />
+                <TrendingUp className="w-4 h-4 text-info-muted-foreground" />
                 Colores de Indicadores (KPIs)
               </CardTitle>
               <CardDescription>Personaliza los colores de tendencias positivas, negativas y neutras</CardDescription>
@@ -6138,7 +5367,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Box className="w-4 h-4 text-slate-500" />
+                <Box className="w-4 h-4 text-muted-foreground" />
                 Colores de Fondos
               </CardTitle>
               <CardDescription>Personaliza los colores de fondo de cards destacadas</CardDescription>
@@ -6193,7 +5422,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
               {saveMessage && (
                 <span className={cn(
                   "text-sm",
-                  saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'
+                  saveMessage.type === 'success' ? 'text-success' : 'text-destructive'
                 )}>
                   {saveMessage.text}
                 </span>
@@ -6250,7 +5479,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
                   <TableRow key={i}>
                     <TableCell className="font-medium">{row.mod}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{row.src}</TableCell>
-                    <TableCell><Badge className={row.status === 'Activo' ? 'bg-green-600' : 'bg-amber-500'}>{row.status}</Badge></TableCell>
+                    <TableCell><Badge className={row.status === 'Activo' ? 'bg-success' : 'bg-warning'}>{row.status}</Badge></TableCell>
                     <TableCell>{row.records}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">{row.sync}</TableCell>
                     <TableCell><Button variant="ghost" size="sm"><Settings2 className="w-4 h-4" /></Button></TableCell>
@@ -6294,10 +5523,10 @@ function KPICardEnhanced({ title, value, change, trend, icon: Icon, color, subti
   title: string; value: number; change: number; trend: 'up' | 'down'; icon: any; color: string; subtitle?: string; highlight?: boolean; isPercent?: boolean;
 }) {
   const colors: Record<string, string> = {
-    emerald: 'text-emerald-600', rose: 'text-rose-600', blue: 'text-blue-600', violet: 'text-violet-600', amber: 'text-amber-600',
+    emerald: 'text-success', rose: 'text-destructive', blue: 'text-info-muted-foreground', violet: 'text-info-muted-foreground', amber: 'text-warning-muted-foreground',
   };
   return (
-    <Card className={cn(highlight && 'border-violet-300 bg-gradient-to-br from-violet-50 to-purple-50')}>
+    <Card className={cn(highlight && 'border-info-muted bg-gradient-to-br from-info-muted to-info-muted')}>
       <CardContent className="pt-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-muted-foreground font-medium">{title}</span>
@@ -6308,8 +5537,8 @@ function KPICardEnhanced({ title, value, change, trend, icon: Icon, color, subti
         </div>
         <div className="flex items-center gap-2 mt-1">
           <div className="flex items-center gap-1">
-            {trend === 'up' ? <ArrowUpRight className="w-3 h-3 text-green-500" /> : <ArrowDownRight className="w-3 h-3 text-red-500" />}
-            <span className={cn('text-xs font-medium', trend === 'up' ? 'text-green-600' : 'text-red-600')}>
+            {trend === 'up' ? <ArrowUpRight className="w-3 h-3 text-success" /> : <ArrowDownRight className="w-3 h-3 text-destructive" />}
+            <span className={cn('text-xs font-medium', trend === 'up' ? 'text-success' : 'text-destructive')}>
               {change > 0 ? '+' : ''}{change}%
             </span>
           </div>
@@ -6324,10 +5553,10 @@ function MiniKPIEnhanced({ title, value, trend, subtitle, icon: Icon, color }: {
   title: string; value: string; trend?: number; subtitle?: string; icon: any; color: string;
 }) {
   const colors: Record<string, string> = {
-    blue: 'text-blue-600', green: 'text-green-600', amber: 'text-amber-600', violet: 'text-violet-600', cyan: 'text-cyan-600',
-    emerald: 'text-emerald-600', rose: 'text-rose-600', indigo: 'text-indigo-600', slate: 'text-slate-600', orange: 'text-orange-600',
-    yellow: 'text-yellow-600', lime: 'text-lime-600', teal: 'text-teal-600', purple: 'text-purple-600', fuchsia: 'text-fuchsia-600',
-    pink: 'text-pink-600',
+    blue: 'text-info-muted-foreground', green: 'text-success', amber: 'text-warning-muted-foreground', violet: 'text-info-muted-foreground', cyan: 'text-info-muted-foreground',
+    emerald: 'text-success', rose: 'text-destructive', indigo: 'text-info-muted-foreground', slate: 'text-muted-foreground', orange: 'text-warning-muted-foreground',
+    yellow: 'text-warning-muted-foreground', lime: 'text-success', teal: 'text-info-muted-foreground', purple: 'text-info-muted-foreground', fuchsia: 'text-info-muted-foreground',
+    pink: 'text-info-muted-foreground',
   };
   return (
     <Card>
@@ -6352,13 +5581,13 @@ function MiniKPIEnhanced({ title, value, trend, subtitle, icon: Icon, color }: {
 
 function SourceBanner({ source, status, detail, color }: { source: string; status: 'connected' | 'partial'; detail: string; color: string }) {
   const colors: Record<string, { border: string; bg: string; icon: string; text: string }> = {
-    blue: { border: 'border-blue-200', bg: 'bg-blue-50/50', icon: 'text-blue-600', text: 'text-blue-800' },
-    green: { border: 'border-green-200', bg: 'bg-green-50/50', icon: 'text-green-600', text: 'text-green-800' },
-    amber: { border: 'border-amber-200', bg: 'bg-amber-50/50', icon: 'text-amber-600', text: 'text-amber-800' },
-    violet: { border: 'border-violet-200', bg: 'bg-violet-50/50', icon: 'text-violet-600', text: 'text-violet-800' },
-    cyan: { border: 'border-cyan-200', bg: 'bg-cyan-50/50', icon: 'text-cyan-600', text: 'text-cyan-800' },
-    slate: { border: 'border-slate-200', bg: 'bg-slate-50/50', icon: 'text-slate-600', text: 'text-slate-800' },
-    gray: { border: 'border-gray-200', bg: 'bg-gray-50/50', icon: 'text-gray-600', text: 'text-gray-800' },
+    blue: { border: 'border-info-muted', bg: 'bg-info-muted/50', icon: 'text-info-muted-foreground', text: 'text-info-muted-foreground' },
+    green: { border: 'border-success-muted', bg: 'bg-success-muted/50', icon: 'text-success', text: 'text-success' },
+    amber: { border: 'border-warning-muted', bg: 'bg-warning-muted/50', icon: 'text-warning-muted-foreground', text: 'text-warning-muted-foreground' },
+    violet: { border: 'border-info-muted', bg: 'bg-info-muted/50', icon: 'text-info-muted-foreground', text: 'text-info-muted-foreground' },
+    cyan: { border: 'border-info-muted', bg: 'bg-info-muted/50', icon: 'text-info-muted-foreground', text: 'text-info-muted-foreground' },
+    slate: { border: 'border-border', bg: 'bg-muted/50', icon: 'text-muted-foreground', text: 'text-foreground' },
+    gray: { border: 'border-border', bg: 'bg-muted/50', icon: 'text-muted-foreground', text: 'text-foreground' },
   };
   const c = colors[color] || colors.slate;
   return (
@@ -6374,7 +5603,7 @@ function SourceBanner({ source, status, detail, color }: { source: string; statu
               <p className={cn('text-xs', c.icon)}>{detail}</p>
             </div>
           </div>
-          <Badge className={status === 'connected' ? 'bg-green-600' : 'bg-amber-500'}>
+          <Badge className={status === 'connected' ? 'bg-success' : 'bg-warning'}>
             {status === 'connected' ? 'Conectado' : 'Parcial'}
           </Badge>
         </div>
@@ -6426,7 +5655,7 @@ function MiniSparkline({ values, color }: { values: number[]; color: 'green' | '
       {values.map((v, i) => (
         <div
           key={i}
-          className={cn('w-1.5 rounded-sm', color === 'green' ? 'bg-green-500' : 'bg-red-500')}
+          className={cn('w-1.5 rounded-sm', color === 'green' ? 'bg-success' : 'bg-destructive')}
           style={{ height: `${((v - min) / range) * 100}%`, minHeight: '2px' }}
         />
       ))}
@@ -6451,9 +5680,9 @@ function MetricRow({ icon: Icon, label, value, detail }: { icon: any; label: str
 
 function AlertItem({ icon: Icon, title, description, type }: { icon: any; title: string; description: string; type: 'warning' | 'info' | 'success' }) {
   const colors = {
-    warning: 'text-amber-600 bg-amber-100',
-    info: 'text-blue-600 bg-blue-100',
-    success: 'text-green-600 bg-green-100',
+    warning: 'text-warning-muted-foreground bg-warning-muted',
+    info: 'text-info-muted-foreground bg-info-muted',
+    success: 'text-success bg-success-muted',
   };
   return (
     <div className="flex items-start gap-3 p-2 rounded-lg bg-background border">
@@ -6474,14 +5703,14 @@ function PerformanceCard({ title, value, target, unit, icon: Icon, color, invert
   const isGood = inverted ? value <= target : value >= target;
   const percent = Math.min((value / target) * 100, 100);
   const colors: Record<string, string> = {
-    blue: 'text-blue-600', green: 'text-green-600', amber: 'text-amber-600', violet: 'text-violet-600', cyan: 'text-cyan-600', emerald: 'text-emerald-600',
+    blue: 'text-info-muted-foreground', green: 'text-success', amber: 'text-warning-muted-foreground', violet: 'text-info-muted-foreground', cyan: 'text-info-muted-foreground', emerald: 'text-success',
   };
   return (
     <Card>
       <CardContent className="pt-4">
         <div className="flex items-center justify-between mb-2">
           <Icon className={cn('w-4 h-4', colors[color])} />
-          {isGood ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-500" />}
+          {isGood ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <AlertCircle className="w-3.5 h-3.5 text-warning-muted-foreground" />}
         </div>
         <p className={cn('text-xl font-bold', colors[color])}>{value}{unit}</p>
         <p className="text-[10px] text-muted-foreground mb-2">{title}</p>
@@ -6499,10 +5728,10 @@ function ComparisonRow({ label, current, previous, inverted }: { label: string; 
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
-        <span className={cn('text-sm font-medium', isPositive ? 'text-green-600' : 'text-red-600')}>
+        <span className={cn('text-sm font-medium', isPositive ? 'text-success' : 'text-destructive')}>
           {change > 0 ? '+' : ''}{change.toFixed(1)}%
         </span>
-        {isPositive ? <ArrowUpRight className="w-3.5 h-3.5 text-green-500" /> : <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />}
+        {isPositive ? <ArrowUpRight className="w-3.5 h-3.5 text-success" /> : <ArrowDownRight className="w-3.5 h-3.5 text-destructive" />}
       </div>
     </div>
   );
@@ -6929,8 +6158,8 @@ function WaterfallChart({ data, height = 200 }: {
       {processedData.map((item, i) => {
         const heightPercent = ((item.end - item.start) / maxVal) * 100;
         const bottomPercent = (item.start / maxVal) * 100;
-        const colorClass = item.type === 'start' || item.type === 'total' ? 'bg-blue-500' :
-                          item.type === 'add' ? 'bg-green-500' : 'bg-red-500';
+        const colorClass = item.type === 'start' || item.type === 'total' ? 'bg-info' :
+                          item.type === 'add' ? 'bg-success' : 'bg-destructive';
         return (
           <div key={i} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full relative" style={{ height: '85%' }}>

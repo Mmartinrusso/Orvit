@@ -104,40 +104,36 @@ export function AlertsCard({ data, previousMonthData }: AlertsCardProps) {
   const getAlertStyles = (type: Alert['type']) => {
     switch (type) {
       case 'critical':
-        // Solo crítico usa rojo
         return {
-          bg: 'bg-red-50 dark:bg-red-950/30',
-          border: 'border-red-200 dark:border-red-900/50',
+          bg: 'bg-destructive/10',
+          border: 'border-destructive/30',
           icon: AlertTriangle,
-          iconColor: 'text-red-600 dark:text-red-400',
-          titleColor: 'text-red-700 dark:text-red-300'
+          iconColor: 'text-destructive',
+          titleColor: 'text-destructive'
         };
       case 'warning':
-        // Warning usa gris oscuro (slate)
         return {
-          bg: 'bg-slate-100 dark:bg-slate-800/50',
-          border: 'border-slate-200 dark:border-slate-700',
+          bg: 'bg-muted',
+          border: 'border-border',
           icon: AlertCircle,
-          iconColor: 'text-slate-600 dark:text-slate-400',
-          titleColor: 'text-slate-700 dark:text-slate-300'
+          iconColor: 'text-muted-foreground',
+          titleColor: 'text-foreground'
         };
       case 'info':
-        // Info usa gris más claro
         return {
-          bg: 'bg-gray-50 dark:bg-gray-800/50',
-          border: 'border-gray-200 dark:border-gray-700',
+          bg: 'bg-muted',
+          border: 'border-border',
           icon: Info,
-          iconColor: 'text-gray-500 dark:text-gray-400',
-          titleColor: 'text-gray-700 dark:text-gray-300'
+          iconColor: 'text-muted-foreground',
+          titleColor: 'text-foreground'
         };
       case 'success':
-        // Success puede quedarse verde pero más sutil
         return {
-          bg: 'bg-gray-50 dark:bg-gray-800/50',
-          border: 'border-gray-200 dark:border-gray-700',
+          bg: 'bg-muted',
+          border: 'border-border',
           icon: CheckCircle2,
-          iconColor: 'text-gray-500 dark:text-gray-400',
-          titleColor: 'text-gray-700 dark:text-gray-300'
+          iconColor: 'text-muted-foreground',
+          titleColor: 'text-foreground'
         };
     }
   };
@@ -151,7 +147,7 @@ export function AlertsCard({ data, previousMonthData }: AlertsCardProps) {
   return (
     <Card className={cn(
       "border-l-4",
-      criticalCount > 0 ? "border-l-red-500" : "border-l-gray-400"
+      criticalCount > 0 ? "border-l-destructive" : "border-l-muted-foreground"
     )}>
       <CardContent className="p-4">
         {/* Header compacto */}
@@ -188,8 +184,8 @@ export function AlertsCard({ data, previousMonthData }: AlertsCardProps) {
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{alert.description}</p>
                   {alert.action && (
                     <div className="flex items-center gap-1 mt-1.5">
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:underline">{alert.action}</span>
-                      <ArrowRight className="h-3 w-3 text-gray-500" />
+                      <span className="text-xs font-medium text-muted-foreground cursor-pointer hover:underline">{alert.action}</span>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
                     </div>
                   )}
                 </div>

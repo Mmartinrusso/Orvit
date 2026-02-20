@@ -18,6 +18,11 @@ import { createUser, createInactiveUser, createUserWithoutPassword } from '../..
 import { createCompany } from '../../factories/company.factory';
 import { createMockRequest, parseJsonResponse } from '../../utils/test-helpers';
 import { POST } from '@/app/api/auth/login/route';
+import {
+  checkRateLimit,
+  incrementRateLimit,
+  resetRateLimit,
+} from '@/lib/auth/rate-limit';
 
 describe('POST /api/auth/login', () => {
   beforeAll(async () => {
@@ -316,5 +321,116 @@ describe('POST /api/auth/login', () => {
 
     expect(sessions.length).toBe(1);
     expect(data.sessionId).toBe(sessions[0].id);
+  });
+
+  // ========================================================================
+  // Rate Limiting
+  // ========================================================================
+  // Nota: checkRateLimit bypasses en NODE_ENV !== 'production' para login/loginByEmail.
+  // Testeamos las funciones de rate limit directamente con action='api' (no bypassed)
+  // para verificar la lógica de rate limiting funciona correctamente.
+
+  describe('Rate Limiting (direct function tests)', () => {
+    const testIdentifier = 'test-ip-rate-limit';
+
+    beforeEach(async () => {
+      await resetRateLimit(testIdentifier, 'api');
+    });
+
+    it('should allow requests within rate limit', async () => {
+      const result = await checkRateLimit(testIdentifier, 'api');
+
+      expect(result.allowed).toBe(true);
+      expect(result.remaining).toBeGreaterThan(0);
+      expect(result.blocked).toBe(false);
+    });
+
+    it('should decrement remaining count after incrementing', async () => {
+      const before = await checkRateLimit(testIdentifier, 'api');
+      await incrementRateLimit(testIdentifier, 'api');
+      const after = await checkRateLimit(testIdentifier, 'api');
+
+      expect(after.remaining).toBeLessThan(before.remaining);
+    });
+
+    it('should block after exceeding max attempts', async () => {
+      // api config: max 100 per 60s — use passwordReset for faster test (max 3)
+      const id = 'rate-test-block';
+      await resetRateLimit(id, 'passwordReset');
+
+      // Increment beyond max (passwordReset: max 3)
+      for (let i = 0; i < 4; i++) {
+        await incrementRateLimit(id, 'passwordReset');
+      }
+
+      const result = await checkRateLimit(id, 'passwordReset');
+
+      expect(result.allowed).toBe(false);
+      expect(result.remaining).toBe(0);
+
+      // Cleanup
+      await resetRateLimit(id, 'passwordReset');
+    });
+
+    it('should reset rate limit after explicit reset', async () => {
+      const id = 'rate-test-reset';
+      await resetRateLimit(id, 'passwordReset');
+
+      // Fill up the limit
+      for (let i = 0; i < 4; i++) {
+        await incrementRateLimit(id, 'passwordReset');
+      }
+
+      const blocked = await checkRateLimit(id, 'passwordReset');
+      expect(blocked.allowed).toBe(false);
+
+      // Reset
+      await resetRateLimit(id, 'passwordReset');
+
+      const afterReset = await checkRateLimit(id, 'passwordReset');
+      expect(afterReset.allowed).toBe(true);
+      expect(afterReset.remaining).toBeGreaterThan(0);
+    });
+
+    it('should persist rate limit entries in database', async () => {
+      const prisma = getTestPrisma();
+      const id = 'rate-test-persist';
+      await resetRateLimit(id, 'passwordReset');
+
+      await incrementRateLimit(id, 'passwordReset');
+
+      // Esperar un momento para que la escritura async a BD complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const entry = await prisma.rateLimitEntry.findUnique({
+        where: { identifier_action: { identifier: id, action: 'passwordReset' } },
+      });
+
+      expect(entry).not.toBeNull();
+      expect(entry!.count).toBeGreaterThanOrEqual(1);
+
+      // Cleanup
+      await resetRateLimit(id, 'passwordReset');
+    });
+
+    it('should track retryAfter when blocked', async () => {
+      const id = 'rate-test-retry';
+      await resetRateLimit(id, 'passwordReset');
+
+      // passwordReset: max 3, blockDuration 3600s
+      for (let i = 0; i < 4; i++) {
+        await incrementRateLimit(id, 'passwordReset');
+      }
+
+      const result = await checkRateLimit(id, 'passwordReset');
+
+      expect(result.allowed).toBe(false);
+      expect(result.blocked).toBe(true);
+      expect(result.retryAfter).toBeGreaterThan(0);
+      expect(result.blockedUntil).toBeDefined();
+
+      // Cleanup
+      await resetRateLimit(id, 'passwordReset');
+    });
   });
 });

@@ -31,6 +31,7 @@ export const CreateAgendaTaskSchema = z.object({
   dueDate: z.string().datetime('Fecha de vencimiento debe ser formato ISO válido').optional().nullable(),
   priority: TaskPrioritySchema.default('MEDIUM'),
   category: z.string().trim().max(100, 'Categoría muy larga').optional(),
+  groupId: z.number().int().positive('ID de grupo inválido').optional().nullable(),
   assignedToUserId: z.number().int().positive('ID de usuario asignado inválido').optional().nullable(),
   assignedToContactId: z.number().int().positive('ID de contacto asignado inválido').optional().nullable(),
   assignedToName: z.string().trim().max(200, 'Nombre del asignado muy largo').optional(),

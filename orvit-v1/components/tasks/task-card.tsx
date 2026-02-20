@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { CheckCircle, Eye, MoreHorizontal, PencilLine, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -43,16 +44,16 @@ function PriorityBadge({ priority, className }: { priority: string; className?: 
   const getColor = (priority: string) => {
     switch (priority.toLowerCase()) {
       case 'alta':
-      case 'high': 
-        return 'text-red-500';
+      case 'high':
+        return 'text-destructive';
       case 'media':
-      case 'medium': 
-        return 'text-yellow-500';
+      case 'medium':
+        return 'text-warning-muted-foreground';
       case 'baja':
-      case 'low': 
-        return 'text-green-500';
-      default: 
-        return 'text-gray-500';
+      case 'low':
+        return 'text-success';
+      default:
+        return 'text-muted-foreground';
     }
   };
 
@@ -73,7 +74,7 @@ function PriorityBadge({ priority, className }: { priority: string; className?: 
   };
 
   return (
-    <span className={`text-xs font-medium ${getColor(priority)} ${className}`}>
+    <span className={cn('text-xs font-medium', getColor(priority), className)}>
       {getPriorityText(priority)}
     </span>
   );
@@ -247,7 +248,7 @@ export function TaskCard({ task }: TaskCardProps) {
           <div className="flex items-center justify-between gap-3">
             <div className="flex flex-wrap gap-1 min-w-0">
               {(task.tags ?? []).slice(0, 3).map((tag) => (
-                <span key={tag} className={`px-2 py-0.5 text-xs rounded-md font-medium ${getTagColor(tag)}`}>
+                <span key={tag} className={cn('px-2 py-0.5 text-xs rounded-md font-medium', getTagColor(tag))}>
                   {translateTag(tag)}
                 </span>
               ))}
@@ -264,7 +265,7 @@ export function TaskCard({ task }: TaskCardProps) {
                   variant={dueChip(task.dueDate, task.status)!.tone === "destructive" ? "destructive" : "secondary"}
                   className={
                     dueChip(task.dueDate, task.status)!.tone === "warning"
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
+                      ? "bg-warning-muted text-warning-muted-foreground"
                       : ""
                   }
                 >

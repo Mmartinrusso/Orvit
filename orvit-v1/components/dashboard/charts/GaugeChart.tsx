@@ -16,9 +16,9 @@ interface GaugeChartProps {
 }
 
 const DEFAULT_THRESHOLDS = [
-  { value: 30, color: '#ef4444' },  // red
-  { value: 60, color: '#eab308' },  // yellow
-  { value: 100, color: '#22c55e' }, // green
+  { value: 30, color: 'hsl(var(--destructive))' },  // red
+  { value: 60, color: 'hsl(var(--warning))' },  // yellow
+  { value: 100, color: 'hsl(var(--success))' }, // green
 ];
 
 export function GaugeChart({
@@ -45,7 +45,7 @@ export function GaugeChart({
         return threshold.color;
       }
     }
-    return thresholds[thresholds.length - 1]?.color || '#22c55e';
+    return thresholds[thresholds.length - 1]?.color || 'hsl(var(--success))';
   };
 
   return (
@@ -59,7 +59,7 @@ export function GaugeChart({
         <path
           d={describeArc(center, center, radius, 180, 360)}
           fill="none"
-          stroke="#e5e7eb"
+          stroke="hsl(var(--border))"
           strokeWidth={thickness}
           strokeLinecap="round"
         />

@@ -134,11 +134,11 @@ export default function AuditoriaPage() {
 
   const getSourceBadgeColor = (source: string) => {
     switch (source) {
-      case 'PRICE_LIST': return 'bg-blue-100 text-blue-700';
+      case 'PRICE_LIST': return 'bg-info-muted text-info-muted-foreground';
       case 'PRODUCT_DIRECT': return 'bg-purple-100 text-purple-700';
-      case 'BULK_UPDATE': return 'bg-amber-100 text-amber-700';
-      case 'IMPORT': return 'bg-gray-100 text-gray-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'BULK_UPDATE': return 'bg-warning-muted text-warning-muted-foreground';
+      case 'IMPORT': return 'bg-muted text-foreground';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -350,19 +350,19 @@ export default function AuditoriaPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Aumentos</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-red-500" />
+                  <TrendingUp className="h-4 w-4 text-destructive" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{priceChangeSummary.increases}</div>
+                  <div className="text-2xl font-bold text-destructive">{priceChangeSummary.increases}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Disminuciones</CardTitle>
-                  <TrendingDown className="h-4 w-4 text-green-500" />
+                  <TrendingDown className="h-4 w-4 text-success" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{priceChangeSummary.decreases}</div>
+                  <div className="text-2xl font-bold text-success">{priceChangeSummary.decreases}</div>
                 </CardContent>
               </Card>
               <Card>
@@ -379,10 +379,10 @@ export default function AuditoriaPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Significativos</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-amber-600">{priceChangeSummary.significantChanges}</div>
+                  <div className="text-2xl font-bold text-warning-muted-foreground">{priceChangeSummary.significantChanges}</div>
                   <p className="text-xs text-muted-foreground">Cambios &gt;20%</p>
                 </CardContent>
               </Card>
@@ -530,9 +530,9 @@ export default function AuditoriaPage() {
                             variant="outline"
                             className={`text-xs ${
                               log.changePercentage > 0
-                                ? 'text-red-600 border-red-200'
+                                ? 'text-destructive border-destructive/30'
                                 : log.changePercentage < 0
-                                ? 'text-green-600 border-green-200'
+                                ? 'text-success border-success-muted'
                                 : ''
                             }`}
                           >

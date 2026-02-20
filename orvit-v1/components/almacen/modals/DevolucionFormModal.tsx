@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -233,7 +234,7 @@ export function DevolucionFormModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Nueva Devolución</DialogTitle>
           <DialogDescription>
@@ -241,7 +242,8 @@ export function DevolucionFormModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+        <DialogBody className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {/* Depósito */}
             <div className="space-y-2">
@@ -412,6 +414,8 @@ export function DevolucionFormModal({
               </div>
             )}
           </div>
+
+          </DialogBody>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

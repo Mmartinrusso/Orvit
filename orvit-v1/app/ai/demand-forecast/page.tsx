@@ -89,10 +89,10 @@ export default function DemandForecastPage() {
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <h1 className="text-4xl font-bold text-foreground mb-2">
           📈 Demand Forecasting AI
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Predicción inteligente de demanda con Machine Learning
         </p>
       </div>
@@ -140,11 +140,11 @@ export default function DemandForecastPage() {
               </div>
 
               {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start">
+                  <AlertCircle className="w-5 h-5 text-destructive mt-0.5 mr-3 flex-shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-red-900">Error</h4>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                    <h4 className="font-semibold text-destructive">Error</h4>
+                    <p className="text-sm text-destructive mt-1">{error}</p>
                   </div>
                 </div>
               )}
@@ -197,11 +197,11 @@ export default function DemandForecastPage() {
             </CardHeader>
             <CardContent>
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start">
+                  <AlertCircle className="w-5 h-5 text-destructive mt-0.5 mr-3 flex-shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-red-900">Error</h4>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                    <h4 className="font-semibold text-destructive">Error</h4>
+                    <p className="text-sm text-destructive mt-1">{error}</p>
                   </div>
                 </div>
               )}
@@ -209,7 +209,7 @@ export default function DemandForecastPage() {
               {autoReorderData && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between py-2 border-b">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-foreground">
                       Total de productos analizados
                     </span>
                     <Badge variant="outline" className="text-lg px-3 py-1">
@@ -222,22 +222,22 @@ export default function DemandForecastPage() {
                       {autoReorderData.suggestions.map((suggestion: any, idx: number) => {
                         const urgencyConfig = {
                           CRITICAL: {
-                            color: 'bg-red-100 text-red-700 border-red-300',
+                            color: 'bg-destructive/10 text-destructive border-destructive/30',
                             icon: '🔴',
                             label: 'CRÍTICO',
                           },
                           HIGH: {
-                            color: 'bg-orange-100 text-orange-700 border-orange-300',
+                            color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
                             icon: '🟠',
                             label: 'ALTO',
                           },
                           MEDIUM: {
-                            color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+                            color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
                             icon: '🟡',
                             label: 'MEDIO',
                           },
                           LOW: {
-                            color: 'bg-blue-100 text-blue-700 border-blue-300',
+                            color: 'bg-info-muted text-info-muted-foreground border-info-muted',
                             icon: '🔵',
                             label: 'BAJO',
                           },
@@ -253,7 +253,7 @@ export default function DemandForecastPage() {
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="font-semibold text-gray-900">
+                                  <h3 className="font-semibold text-foreground">
                                     {suggestion.product.code} - {suggestion.product.name}
                                   </h3>
                                   <Badge variant="outline" className={config.color}>
@@ -263,26 +263,26 @@ export default function DemandForecastPage() {
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                   <div>
-                                    <p className="text-gray-500">Stock Actual</p>
-                                    <p className="font-semibold text-gray-900">
+                                    <p className="text-muted-foreground">Stock Actual</p>
+                                    <p className="font-semibold text-foreground">
                                       {Number(suggestion.product.stockActual).toLocaleString()}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-gray-500">Punto Reorden</p>
-                                    <p className="font-semibold text-orange-600">
+                                    <p className="text-muted-foreground">Punto Reorden</p>
+                                    <p className="font-semibold text-warning-muted-foreground">
                                       {suggestion.forecast.summary.recommendedReorderPoint}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-gray-500">Cantidad a Ordenar</p>
-                                    <p className="font-semibold text-blue-600">
+                                    <p className="text-muted-foreground">Cantidad a Ordenar</p>
+                                    <p className="font-semibold text-info-muted-foreground">
                                       {suggestion.forecast.summary.recommendedReorderQuantity}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-gray-500">Días hasta quiebre</p>
-                                    <p className="font-semibold text-red-600">
+                                    <p className="text-muted-foreground">Días hasta quiebre</p>
+                                    <p className="font-semibold text-destructive">
                                       {suggestion.forecast.summary.daysUntilStockout || 'N/A'}
                                     </p>
                                   </div>
@@ -299,8 +299,8 @@ export default function DemandForecastPage() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
                       <p className="text-lg font-medium">No hay productos que requieran reposición urgente</p>
                       <p className="text-sm mt-1">Todos los productos tienen stock suficiente según el forecast</p>
                     </div>
@@ -319,7 +319,7 @@ export default function DemandForecastPage() {
             <CardTitle className="text-lg">🎯 Precisión</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Usa GPT-4 + análisis estadístico para predicciones con 70-90% de precisión.
               Detecta patrones estacionales automáticamente.
             </p>
@@ -331,7 +331,7 @@ export default function DemandForecastPage() {
             <CardTitle className="text-lg">💰 ROI</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Reduce inventario en 30% y quiebres de stock en 50%. Para empresa con $100K
               en inventario = <strong>$30K ahorrados</strong>.
             </p>
@@ -343,7 +343,7 @@ export default function DemandForecastPage() {
             <CardTitle className="text-lg">⚡ Automatización</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Sistema puede generar órdenes de compra automáticamente basado en
               forecasts y puntos de reorden configurables.
             </p>

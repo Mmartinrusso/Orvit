@@ -105,8 +105,8 @@ export default function SuperAdminDashboard() {
       value: stats?.totalCompanies || 0,
       subtitle: `${stats?.activeCompanies || 0} activas`,
       icon: Building2,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
+      color: 'text-info-muted-foreground',
+      bgColor: 'bg-info/10',
       href: '/superadmin/companies',
     },
     {
@@ -123,8 +123,8 @@ export default function SuperAdminDashboard() {
       value: stats?.totalUsers || 0,
       subtitle: 'En todas las empresas',
       icon: Users,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
       href: '/superadmin/users',
     },
     {
@@ -132,8 +132,8 @@ export default function SuperAdminDashboard() {
       value: stats?.totalTemplates || 0,
       subtitle: 'Presets disponibles',
       icon: FileStack,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
+      color: 'text-warning-muted-foreground',
+      bgColor: 'bg-warning/10',
       href: '/superadmin/templates',
     },
   ];
@@ -303,21 +303,21 @@ export default function SuperAdminDashboard() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               <div>
                 <p className="text-sm font-medium">Base de Datos</p>
                 <p className="text-xs text-muted-foreground">PostgreSQL conectado</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               <div>
                 <p className="text-sm font-medium">Autenticación</p>
                 <p className="text-xs text-muted-foreground">JWT funcionando</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               <div>
                 <p className="text-sm font-medium">API</p>
                 <p className="text-xs text-muted-foreground">Todos los endpoints activos</p>

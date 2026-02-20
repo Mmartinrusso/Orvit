@@ -217,7 +217,7 @@ export default function ShiftsConfigPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Clock className="h-6 w-6 text-green-600" />
+              <Clock className="h-6 w-6 text-success" />
               Turnos de Trabajo
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -285,8 +285,8 @@ export default function ShiftsConfigPage() {
                           <Badge
                             className={
                               shift.isActive
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'bg-success-muted text-success'
+                                : 'bg-muted text-muted-foreground'
                             }
                           >
                             {shift.isActive ? 'Activo' : 'Inactivo'}
@@ -309,7 +309,7 @@ export default function ShiftsConfigPage() {
                                 setDeleteDialogOpen(true);
                               }}
                             >
-                              <Trash2 className="h-4 w-4 text-red-500" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </TableCell>

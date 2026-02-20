@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Accordion,
@@ -134,6 +134,21 @@ export function MachineTreeSelector({
       c.name.toLowerCase().includes(searchLower)
     );
   }, [components, componentSearch]);
+
+  // Auto-expandir el componente padre cuando hay subcomponentes preseleccionados
+  useEffect(() => {
+    if (!value.subcomponentIds || value.subcomponentIds.length === 0) return;
+    if (!allSubcomponents) return;
+    const toExpand: Record<number, boolean> = {};
+    Object.entries(allSubcomponents).forEach(([compId, subs]) => {
+      if ((subs as Subcomponent[]).some(s => value.subcomponentIds!.includes(s.id))) {
+        toExpand[Number(compId)] = true;
+      }
+    });
+    if (Object.keys(toExpand).length > 0) {
+      setExpandedComponents(prev => ({ ...prev, ...toExpand }));
+    }
+  }, [value.subcomponentIds, allSubcomponents]);
 
   const handleMachineSelect = (machineId: number) => {
     onChange({
@@ -365,7 +380,7 @@ export function MachineTreeSelector({
                               />
 
                               {/* Icono y nombre */}
-                              <Cog className="h-4 w-4 text-blue-500 shrink-0" />
+                              <Cog className="h-4 w-4 text-info-muted-foreground shrink-0" />
                               <span className="text-sm truncate">{component.name}</span>
                             </div>
 
@@ -386,7 +401,7 @@ export function MachineTreeSelector({
                                         onCheckedChange={() => handleSubcomponentToggle(sub.id)}
                                         className="shrink-0"
                                       />
-                                      <Layers className="h-4 w-4 text-purple-500 shrink-0" />
+                                      <Layers className="h-4 w-4 text-primary shrink-0" />
                                       <span className="text-sm truncate">{sub.name}</span>
                                     </div>
                                   ))

@@ -1,14 +1,18 @@
 /**
- * Helper de autenticación para las rutas de Payroll
- * Soporta tanto el nuevo sistema de tokens como el legacy
+ * Auth helpers para módulo Payroll
+ *
+ * Thin wrapper sobre shared-helpers.ts para retrocompatibilidad.
+ * Mantiene la interfaz AuthUser original con roleName.
+ *
+ * Los consumidores existentes siguen usando los mismos imports:
+ *   import { getPayrollAuthUser } from '@/lib/payroll/auth-helper';
  */
 
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { getUserFromToken } from '@/lib/auth/shared-helpers';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+// ============================================================================
+// TIPOS (retrocompatibles con la interfaz original)
+// ============================================================================
 
 export interface AuthUser {
   id: number;
@@ -17,53 +21,22 @@ export interface AuthUser {
   roleName?: string;
 }
 
+// ============================================================================
+// FUNCIONES
+// ============================================================================
+
 /**
- * Obtiene el usuario autenticado de las cookies
- * Soporta tanto accessToken (nuevo) como token (legacy)
+ * Obtiene el usuario autenticado de las cookies.
+ * Wrapper sobre getUserFromToken() con formato PayrollAuthUser.
  */
 export async function getPayrollAuthUser(): Promise<AuthUser | null> {
-  try {
-    const cookieStore = cookies();
+  const user = await getUserFromToken();
+  if (!user) return null;
 
-    // Intentar nuevo sistema primero
-    let token = cookieStore.get('accessToken')?.value;
-
-    // Fallback a legacy
-    if (!token) {
-      token = cookieStore.get('token')?.value;
-    }
-
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        role: true,
-        companies: {
-          select: {
-            companyId: true,
-            role: { select: { name: true } }
-          },
-          take: 1
-        }
-      }
-    });
-
-    if (!user) return null;
-
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) return null;
-
-    return {
-      id: user.id,
-      role: String(user.role),
-      companyId,
-      roleName: user.companies?.[0]?.role?.name,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    id: user.id,
+    role: user.role,
+    companyId: user.companyId,
+    roleName: user.role,
+  };
 }

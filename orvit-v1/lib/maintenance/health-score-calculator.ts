@@ -47,59 +47,36 @@ export async function calculateHealthScore(machineId: number): Promise<HealthSco
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
 
-  // Inicializar valores por defecto
-  let recentFailures = 0
-  let overduePMs = 0
-  let recurrences = 0
-  let mttrTrend: 'improving' | 'stable' | 'worsening' = 'stable'
-  let downtimePercent = 0
+  // Ejecutar todas las queries en paralelo para reducir latencia ~5x
+  const [
+    recentFailures,
+    overduePMs,
+    recurrences,
+    mttrTrend,
+    downtimePercent
+  ] = await Promise.all([
+    // 1. Fallas de los últimos 30 días
+    prisma.failureOccurrence.count({
+      where: { machineId, reportedAt: { gte: thirtyDaysAgo }, status: { not: 'CANCELLED' } }
+    }).catch(e => { console.warn('Could not fetch failure occurrences for health score', e); return 0; }),
 
-  // 1. Obtener fallas de los últimos 30 días
-  try {
-    recentFailures = await prisma.failureOccurrence.count({
-      where: {
-        machineId,
-        reportedAt: { gte: thirtyDaysAgo },
-        status: { not: 'CANCELLED' }
-      }
-    })
-  } catch (e) {
-    console.warn('Could not fetch failure occurrences for health score', e)
-  }
+    // 2. PMs vencidos
+    prisma.maintenanceChecklist.count({
+      where: { machineId, nextDueDate: { lt: now }, isActive: true }
+    }).catch(e => { console.warn('Could not fetch overdue PMs for health score', e); return 0; }),
 
-  // 2. Obtener PMs vencidos
-  try {
-    overduePMs = await prisma.maintenanceChecklist.count({
-      where: {
-        machineId,
-        nextDueDate: { lt: now },
-        isActive: true
-      }
-    })
-  } catch (e) {
-    console.warn('Could not fetch overdue PMs for health score', e)
-  }
+    // 3. Reincidencias (misma máquina + mismo componente en 7 días)
+    detectRecurrences(machineId, thirtyDaysAgo)
+      .catch(e => { console.warn('Could not detect recurrences for health score', e); return 0; }),
 
-  // 3. Detectar reincidencias (misma máquina + mismo componente en 7 días)
-  try {
-    recurrences = await detectRecurrences(machineId, thirtyDaysAgo)
-  } catch (e) {
-    console.warn('Could not detect recurrences for health score', e)
-  }
+    // 4. Tendencia de MTTR
+    calculateMTTRTrend(machineId, thirtyDaysAgo, sixtyDaysAgo)
+      .catch(e => { console.warn('Could not calculate MTTR trend for health score', e); return 'stable' as const; }),
 
-  // 4. Calcular tendencia de MTTR
-  try {
-    mttrTrend = await calculateMTTRTrend(machineId, thirtyDaysAgo, sixtyDaysAgo)
-  } catch (e) {
-    console.warn('Could not calculate MTTR trend for health score', e)
-  }
-
-  // 5. Calcular porcentaje de downtime
-  try {
-    downtimePercent = await calculateDowntimePercent(machineId, thirtyDaysAgo)
-  } catch (e) {
-    console.warn('Could not calculate downtime for health score', e)
-  }
+    // 5. Porcentaje de downtime
+    calculateDowntimePercent(machineId, thirtyDaysAgo)
+      .catch(e => { console.warn('Could not calculate downtime for health score', e); return 0; })
+  ]);
 
   // Calcular penalizaciones
   const failuresPenalty = recentFailures * 5

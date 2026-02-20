@@ -261,7 +261,7 @@ export default function WorkStationDialog({
                   id="sector"
                   value={currentSector?.name || 'No hay sector seleccionado'}
                   disabled
-                  className="bg-gray-50"
+                  className="bg-muted"
                 />
               </div>
             </div>

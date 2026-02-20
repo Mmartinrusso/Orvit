@@ -1771,6 +1771,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ingresar_tareas', // Solo sus tareas
     'tasks.edit', // Solo sus tareas
     'tasks.complete', // Solo sus tareas
+    'fixed_tasks.create', // Sus propias tareas fijas
+    'fixed_tasks.edit',
+    'fixed_tasks.delete',
     'work_orders.view', // Solo las asignadas
     'work_orders.edit', // Solo las asignadas
     'preventive_maintenance.view',
@@ -2456,12 +2459,11 @@ function applyContextualRules(permission: Permission, context: PermissionContext
     case 'notifications.system':
       return userRole === 'SUPERADMIN';
 
-    // Reglas para tareas fijas
+    // Reglas para tareas fijas — el control de roles ya se hizo vía ROLE_PERMISSIONS arriba
     case 'fixed_tasks.create':
     case 'fixed_tasks.edit':
     case 'fixed_tasks.delete':
-      if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') return true;
-      return false;
+      return true;
 
     default:
       // Para permisos sin reglas específicas, usar solo el permiso del rol

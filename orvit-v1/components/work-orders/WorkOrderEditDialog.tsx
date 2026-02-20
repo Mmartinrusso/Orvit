@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface WorkOrderEditDialogProps {
   workOrder?: WorkOrder;
@@ -168,7 +170,7 @@ export default function WorkOrderEditDialog({
   const handleSave = async () => {
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
-      alert('Errores de validación:\n' + validationErrors.join('\n'));
+      toast.warning('Errores de validación:\n' + validationErrors.join('\n'));
       return;
     }
 
@@ -222,7 +224,7 @@ export default function WorkOrderEditDialog({
       }
     } catch (error: any) {
       console.error('Error saving work order:', error);
-      alert(error.message || 'Error al guardar la orden de trabajo');
+      toast.error(error.message || 'Error al guardar la orden de trabajo');
     } finally {
       setLoading(false);
     }
@@ -259,9 +261,10 @@ export default function WorkOrderEditDialog({
     <>
       <Dialog open={dialogOpen} onOpenChange={handleClose}>
         <DialogContent
-          className="w-[min(980px,calc(100vw-2rem))] max-h-[min(80vh,820px)] p-0 overflow-hidden rounded-2xl border-border bg-card shadow-lg"
+          size="lg"
+          className="p-0 rounded-2xl border-border bg-card shadow-lg"
         >
-          <div className="flex flex-col h-full max-h-[min(80vh,820px)]">
+          <div className="flex flex-col h-full">
             <WorkOrderDialogHeaderSticky
               workOrder={workOrder}
               onClose={handleClose}

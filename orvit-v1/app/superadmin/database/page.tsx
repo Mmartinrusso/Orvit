@@ -125,9 +125,9 @@ const mockBackups: Backup[] = [
 ];
 
 const statusConfig = {
-  healthy: { label: 'Saludable', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: CheckCircle },
-  warning: { label: 'Advertencia', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', icon: AlertCircle },
-  critical: { label: 'Crítico', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: AlertCircle },
+  healthy: { label: 'Saludable', color: 'bg-success/10 text-success border-success-muted/20', icon: CheckCircle },
+  warning: { label: 'Advertencia', color: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20', icon: AlertCircle },
+  critical: { label: 'Crítico', color: 'bg-destructive/10 text-destructive border-destructive/30/20', icon: AlertCircle },
 };
 
 export default function DatabasePage() {
@@ -232,8 +232,8 @@ export default function DatabasePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Server className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                <Server className="h-6 w-6 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -264,8 +264,8 @@ export default function DatabasePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Zap className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <Zap className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -446,10 +446,10 @@ export default function DatabasePage() {
                     <Badge className={cn(
                       "text-xs",
                       backup.status === 'completed'
-                        ? "bg-green-500/10 text-green-500 border-green-500/20"
+                        ? "bg-success/10 text-success border-success-muted/20"
                         : backup.status === 'in_progress'
-                        ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                        : "bg-red-500/10 text-red-500 border-red-500/20"
+                        ? "bg-warning/10 text-warning-muted-foreground border-warning-muted/20"
+                        : "bg-destructive/10 text-destructive border-destructive/30/20"
                     )}>
                       {backup.status === 'completed' ? 'Completado' : backup.status === 'in_progress' ? 'En progreso' : 'Fallido'}
                     </Badge>

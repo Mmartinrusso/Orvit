@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -307,7 +307,7 @@ export function QRScanner({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="h-5 w-5 text-primary" />
@@ -315,7 +315,7 @@ export function QRScanner({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Scanner Area */}
           {!foundTool && (
             <>
@@ -512,7 +512,7 @@ export function QRScanner({
                   <div className="flex gap-2">
                     {(mode === 'search' || mode === 'stock-in') && (
                       <Button
-                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
                         onClick={() => handleStockAction('IN')}
                         disabled={isProcessing}
                       >
@@ -526,7 +526,7 @@ export function QRScanner({
                     )}
                     {(mode === 'search' || mode === 'stock-out') && (
                       <Button
-                        className="flex-1 bg-red-600 hover:bg-red-700"
+                        className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                         onClick={() => handleStockAction('OUT')}
                         disabled={isProcessing || foundTool.stockQuantity === 0}
                       >
@@ -553,7 +553,7 @@ export function QRScanner({
               </CardContent>
             </Card>
           )}
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

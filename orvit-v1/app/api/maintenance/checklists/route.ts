@@ -498,41 +498,29 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Guardar instructivos en la tabla ChecklistInstructive
+    // Guardar instructivos en la tabla ChecklistInstructive con INSERT batch
     if (data.instructives && Array.isArray(data.instructives) && data.instructives.length > 0) {
       try {
-        // Primero, verificar si la tabla existe, si no, crearla
-        await prisma.$executeRaw`
-          CREATE TABLE IF NOT EXISTS "ChecklistInstructive" (
-            "id" SERIAL PRIMARY KEY,
-            "checklistId" INTEGER NOT NULL,
-            "title" TEXT NOT NULL,
-            "content" TEXT NOT NULL,
-            "order" INTEGER NOT NULL DEFAULT 0,
-            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
-        
-        // Crear índice si no existe
-        await prisma.$executeRaw`
-          CREATE INDEX IF NOT EXISTS "ChecklistInstructive_checklistId_idx" 
-          ON "ChecklistInstructive"("checklistId")
-        `;
-        
-        // Eliminar instructivos existentes (por si acaso)
+        // Limpiar instructivos existentes y luego insertar todos de una vez
         await prisma.$executeRaw`
           DELETE FROM "ChecklistInstructive" WHERE "checklistId" = ${checklist.id}
         `;
-        
-        // Insertar los nuevos instructivos
-        for (let i = 0; i < data.instructives.length; i++) {
-          const inst = data.instructives[i];
-          await prisma.$executeRaw`
-            INSERT INTO "ChecklistInstructive" ("checklistId", "title", "content", "order", "createdAt", "updatedAt")
-            VALUES (${checklist.id}, ${inst.title}, ${inst.content}, ${i}, NOW(), NOW())
-          `;
-        }
+
+        // Batch insert: un solo query para todos los instructivos
+        const values = data.instructives
+          .map((_: any, i: number) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4}, NOW(), NOW())`)
+          .join(', ');
+        const params = data.instructives.flatMap((inst: any, i: number) => [
+          checklist.id,
+          inst.title ?? '',
+          inst.content ?? '',
+          i
+        ]);
+
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "ChecklistInstructive" ("checklistId", "title", "content", "order", "createdAt", "updatedAt") VALUES ${values}`,
+          ...params
+        );
       } catch (instructiveError) {
         // No fallar el proceso si hay error con instructivos
       }

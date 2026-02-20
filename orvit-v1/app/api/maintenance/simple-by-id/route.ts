@@ -4,16 +4,12 @@ import { prisma } from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  console.log('🔍 [SIMPLE BY-ID API] Route called');
   try {
     const { searchParams } = new URL(request.url);
     const maintenanceId = searchParams.get('maintenanceId');
     const companyId = searchParams.get('companyId');
 
-    console.log('🔍 [SIMPLE BY-ID API] Params:', { maintenanceId, companyId });
-
     if (!maintenanceId || !companyId) {
-      console.log('❌ [SIMPLE BY-ID API] Missing params');
       return NextResponse.json({ 
         success: false, 
         error: 'maintenanceId and companyId are required' 
@@ -21,10 +17,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar primero en documentos (mantenimientos preventivos)
-    console.log('🔍 [SIMPLE BY-ID API] Searching document:', { 
-      id: parseInt(maintenanceId), 
-      companyId: parseInt(companyId) 
-    });
     
     const document = await prisma.document.findFirst({
       where: {
@@ -32,8 +24,6 @@ export async function GET(request: NextRequest) {
         companyId: parseInt(companyId)
       }
     });
-
-    console.log('🔍 [SIMPLE BY-ID API] Document found:', !!document);
 
     if (document) {
       // Parsear datos del JSON
@@ -98,7 +88,6 @@ export async function GET(request: NextRequest) {
         priority: data.priority || 'MEDIUM'
       };
 
-      console.log('✅ [SIMPLE BY-ID API] Returning preventive maintenance:', maintenance.id);
       return NextResponse.json({
         success: true,
         data: maintenance
@@ -106,10 +95,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Si no se encuentra en documentos, buscar en WorkOrders (mantenimientos correctivos)
-    console.log('🔍 [SIMPLE BY-ID API] Searching workOrder:', { 
-      id: parseInt(maintenanceId), 
-      companyId: parseInt(companyId) 
-    });
 
     const workOrder = await prisma.workOrder.findFirst({
       where: {
@@ -122,8 +107,6 @@ export async function GET(request: NextRequest) {
         assignedTo: true
       }
     });
-
-    console.log('🔍 [SIMPLE BY-ID API] WorkOrder found:', !!workOrder);
 
     if (workOrder) {
       const equipment = workOrder.machine ? {
@@ -159,7 +142,6 @@ export async function GET(request: NextRequest) {
         priority: workOrder.priority || 'MEDIUM'
       };
 
-      console.log('✅ [SIMPLE BY-ID API] Returning corrective maintenance:', maintenance.id);
       return NextResponse.json({
         success: true,
         data: maintenance
@@ -167,12 +149,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Si no se encuentra en ningún lado
-    console.log('❌ [SIMPLE BY-ID API] Maintenance not found in document or workOrder');
     return NextResponse.json({ 
       success: false, 
       error: 'Maintenance not found' 
     }, { status: 404 });
-
 
   } catch (error) {
     console.error('❌ [SIMPLE BY-ID API] Error:', error);

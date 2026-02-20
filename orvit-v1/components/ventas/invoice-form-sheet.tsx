@@ -164,7 +164,7 @@ export function InvoiceFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-4xl overflow-y-auto">
+      <SheetContent size="xl" className="overflow-y-auto">
         <SheetHeader className="space-y-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={handleClose}>
@@ -190,7 +190,7 @@ export function InvoiceFormSheet({
                 <ErrorMessage error={apiError} onRetry={fetchSaleOrder} />
               ) : (
                 <>
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-2 text-red-500" />
+                  <AlertTriangle className="w-12 h-12 mx-auto mb-2 text-destructive" />
                   <p className="text-muted-foreground">No se pudo cargar la orden de venta</p>
                 </>
               )}

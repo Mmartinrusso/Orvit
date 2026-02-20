@@ -323,8 +323,8 @@ export default function CostosLaboralesPage() {
 
   const getEstadoBadge = (estado: 'activo' | 'inactivo') => {
     return estado === 'activo' 
-      ? <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Activo</Badge>
-      : <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactivo</Badge>;
+      ? <Badge className="bg-success-muted text-success hover:bg-success-muted">Activo</Badge>
+      : <Badge className="bg-muted text-foreground hover:bg-muted">Inactivo</Badge>;
   };
 
   const filteredEmpleados = empleados.filter(empleado => {
@@ -637,7 +637,7 @@ export default function CostosLaboralesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalCostoLaboral)}</div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-green-500" />
+              <TrendingUp className="h-4 w-4 text-success" />
               <span>+3.1% vs mes anterior</span>
             </div>
           </CardContent>
@@ -854,7 +854,7 @@ export default function CostosLaboralesPage() {
               <div className="mb-6 p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium">Resumen de Distribución</h3>
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                  <Badge className="bg-info-muted text-info-muted-foreground hover:bg-info-muted">
                     {asignaciones.reduce((sum, a) => sum + a.porcentaje, 0)}% asignado
                   </Badge>
                 </div>
@@ -869,7 +869,7 @@ export default function CostosLaboralesPage() {
                   </div>
                 </div>
                 {asignaciones.reduce((sum, a) => sum + a.porcentaje, 0) !== 100 && (
-                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+                  <div className="mt-2 p-2 bg-warning-muted border border-warning-muted rounded text-warning-muted-foreground text-sm">
                     ⚠️ El total de porcentajes asignados debe ser 100%. Actualmente: {asignaciones.reduce((sum, a) => sum + a.porcentaje, 0)}%
                   </div>
                 )}
@@ -955,7 +955,7 @@ export default function CostosLaboralesPage() {
                     asignaciones.map((asignacion) => (
                       <div key={asignacion.id} className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-success"></div>
                           <span className="text-sm font-medium">{asignacion.producto}</span>
                         </div>
                         <div className="text-right">
@@ -982,32 +982,32 @@ export default function CostosLaboralesPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                   <span>3 empleados sin aumento este año</span>
                 </div>
-                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>
+                <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                   <span>Costos laborales estables</span>
                 </div>
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>
+                <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-blue-500" />
+                  <Clock className="h-4 w-4 text-info-muted-foreground" />
                   <span>Próximo aumento general en 2 meses</span>
                 </div>
-                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Programado</Badge>
+                <Badge className="bg-info-muted text-info-muted-foreground hover:bg-info-muted">Programado</Badge>
               </div>
               {asignaciones.reduce((sum, a) => sum + a.porcentaje, 0) !== 100 && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                     <span>Distribución de costos incompleta ({asignaciones.reduce((sum, a) => sum + a.porcentaje, 0)}%)</span>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Incompleto</Badge>
+                  <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Incompleto</Badge>
                 </div>
               )}
             </CardContent>
@@ -1398,7 +1398,7 @@ export default function CostosLaboralesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Porcentaje de Aumento</Label>
-                    <div className="text-sm font-medium text-green-600">+{selectedAumento.porcentaje}%</div>
+                    <div className="text-sm font-medium text-success">+{selectedAumento.porcentaje}%</div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Monto del Aumento</Label>
@@ -1493,7 +1493,7 @@ export default function CostosLaboralesPage() {
             {nuevaAsignacion.porcentaje && (
               <div className="p-3 bg-muted/30 rounded-lg">
                 <div className="text-sm font-medium">Costo que se asignará:</div>
-                <div className="text-lg font-semibold text-green-600">
+                <div className="text-lg font-semibold text-success">
                   {formatCurrency((totalCostoLaboral * parseFloat(nuevaAsignacion.porcentaje)) / 100)}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -1579,7 +1579,7 @@ export default function CostosLaboralesPage() {
             {nuevaAsignacion.porcentaje && (
               <div className="p-3 bg-muted/30 rounded-lg">
                 <div className="text-sm font-medium">Costo que se asignará:</div>
-                <div className="text-lg font-semibold text-green-600">
+                <div className="text-lg font-semibold text-success">
                   {formatCurrency((totalCostoLaboral * parseFloat(nuevaAsignacion.porcentaje)) / 100)}
                 </div>
                 <div className="text-xs text-muted-foreground">

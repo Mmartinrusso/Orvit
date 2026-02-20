@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,16 +26,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { 
-  UserCheck, 
-  Calendar, 
-  Package, 
+import {
+  UserCheck,
+  Calendar,
+  Package,
   ArrowRightLeft,
   Clock,
   CheckCircle,
   AlertCircle,
   User,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 
@@ -310,7 +312,7 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
         <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5 text-blue-600" />
+              <ArrowRightLeft className="h-5 w-5 text-info-muted-foreground" />
               Gestión de Préstamos - {tool?.name}
             </DialogTitle>
           </DialogHeader>
@@ -318,18 +320,18 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
           <DialogBody>
 
         {/* Información de la herramienta */}
-        <Card className="bg-blue-50 dark:bg-blue-900/20">
+        <Card className="bg-info-muted">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Package className="h-8 w-8 text-blue-600" />
+                <Package className="h-8 w-8 text-info-muted-foreground" />
                 <div>
                   <h3 className="font-semibold text-lg">{tool?.name}</h3>
-                  <p className="text-sm text-gray-600">Stock disponible: {tool?.stockQuantity} unidades</p>
+                  <p className="text-sm text-foreground">Stock disponible: {tool?.stockQuantity} unidades</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Stock mínimo: {tool?.minStockLevel}</p>
+                <p className="text-sm text-foreground">Stock mínimo: {tool?.minStockLevel}</p>
                 <Badge variant={tool?.stockQuantity <= tool?.minStockLevel ? 'destructive' : 'secondary'}>
                   {tool?.stockQuantity <= tool?.minStockLevel ? 'Stock Bajo' : 'Stock OK'}
                 </Badge>
@@ -339,7 +341,7 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
         </Card>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+        <div className="flex space-x-1 bg-muted p-1 rounded-lg">
           <Button
             variant={activeTab === 'loans' ? 'default' : 'ghost'}
             size="sm"
@@ -366,9 +368,9 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
             {activeLoans.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-medium text-lg mb-2">No hay préstamos activos</h3>
-                  <p className="text-gray-500">
+                  <p className="text-muted-foreground">
                     Esta herramienta no tiene préstamos pendientes de devolución
                   </p>
                 </CardContent>
@@ -380,19 +382,19 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                 const borrowerInfo = getBorrowerInfo(loan);
                 
                 return (
-                  <Card key={loan.id} className={`${isOverdue ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : ''}`}>
+                  <Card key={loan.id} className={cn(isOverdue && 'border-destructive/30 bg-destructive/10')}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
-                          <User className={`h-8 w-8 ${borrowerInfo.type === 'Operario' ? 'text-green-600' : 'text-blue-600'}`} />
+                          <User className={cn('h-8 w-8', borrowerInfo.type === 'Operario' ? 'text-success' : 'text-info-muted-foreground')} />
                           <div>
                             <CardTitle className="text-lg">
                               {borrowerInfo.name}
-                              <span className="ml-2 text-xs font-normal bg-gray-100 px-2 py-1 rounded">
+                              <span className="ml-2 text-xs font-normal bg-muted px-2 py-1 rounded">
                                 {borrowerInfo.type}
                               </span>
                             </CardTitle>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-foreground">
                               {borrowerInfo.contact}
                               {borrowerInfo.specialty && (
                                 <span className="ml-2 text-xs">({borrowerInfo.specialty})</span>
@@ -412,7 +414,7 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-2">
-                          <Badge variant="default" className="bg-blue-500 text-white">
+                          <Badge variant="default" className="bg-info text-white">
                             Prestado
                           </Badge>
                           {isOverdue && (
@@ -422,23 +424,23 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                             </Badge>
                           )}
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           Prestado por: {loan.borrowedBy?.name || 'Sistema'}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-500">Cantidad:</span>
+                          <span className="text-muted-foreground">Cantidad:</span>
                           <p className="font-medium">{loan.quantity} unidades</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Prestado el:</span>
+                          <span className="text-muted-foreground">Prestado el:</span>
                           <p className="font-medium">{formatDate(loan.borrowedAt)}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Esperado:</span>
-                          <p className={`font-medium ${isOverdue ? 'text-red-600' : ''}`}>
+                          <span className="text-muted-foreground">Esperado:</span>
+                          <p className={cn('font-medium', isOverdue && 'text-destructive')}>
                             {loan.expectedReturnDate ? formatDate(loan.expectedReturnDate) : 'Sin fecha límite'}
                             {daysUntilReturn !== null && (
                               <span className="block text-xs">
@@ -451,28 +453,28 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
 
                       {loan.notes && (
                         <div>
-                          <span className="text-gray-500 text-sm">Notas:</span>
-                          <p className="text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">{loan.notes}</p>
+                          <span className="text-muted-foreground text-sm">Notas:</span>
+                          <p className="text-sm bg-muted p-2 rounded">{loan.notes}</p>
                         </div>
                       )}
 
                       <Separator />
 
-                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      <div className="bg-muted p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-foreground mb-3">
                           🔄 Confirmar Devolución
                         </h4>
                         <div className="flex gap-2">
                           <Button 
                             onClick={() => openReturnDialog(loan)}
                             disabled={isLoading}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            className="flex-1 bg-info hover:bg-info/90"
                           >
                             <ArrowRightLeft className="h-4 w-4 mr-2" />
                             🔄 Procesar Devolución
                           </Button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2 text-center">
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
                           Se registrará automáticamente en el historial de movimientos
                         </p>
                       </div>
@@ -487,11 +489,11 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
         {activeTab === 'new' && (
           <div className="space-y-6">
             {tool?.stockQuantity === 0 ? (
-              <Card className="border-red-300 bg-red-50 dark:bg-red-900/20">
+              <Card className="border-destructive/30 bg-destructive/10">
                 <CardContent className="p-6 text-center">
-                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                   <h3 className="font-medium text-lg mb-2">Sin Stock Disponible</h3>
-                  <p className="text-red-600">
+                  <p className="text-destructive">
                     No se pueden crear préstamos porque no hay stock disponible
                   </p>
                 </CardContent>
@@ -542,7 +544,7 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                     value={loanForm.quantity}
                     onChange={(e) => setLoanForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Máximo disponible: {tool?.stockQuantity} unidades
                   </p>
                 </div>
@@ -567,14 +569,14 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                     placeholder="Ejemplo: Mantenimiento programado sector A, Reparación urgente máquina línea 3, etc."
                     rows={3}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     📝 Se recomienda especificar el motivo para un mejor control del historial
                   </p>
                 </div>
 
                 {/* Resumen */}
                 {selectedUser && (
-                  <Card className="bg-blue-50 dark:bg-blue-900/20">
+                  <Card className="bg-info-muted">
                     <CardContent className="p-4">
                       <h4 className="font-medium mb-2">Resumen del préstamo:</h4>
                       <div className="space-y-1 text-sm">
@@ -594,12 +596,17 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                   <Button onClick={onClose} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button 
-                    onClick={handleCreateLoan} 
+                  <Button
+                    onClick={handleCreateLoan}
                     disabled={isLoading || !loanForm.userId || loanForm.quantity <= 0}
                     className="flex-1"
                   >
-                    {isLoading ? 'Creando...' : 'Crear Préstamo'}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creando...
+                      </>
+                    ) : 'Crear Préstamo'}
                   </Button>
                 </div>
               </div>
@@ -615,7 +622,7 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ArrowRightLeft className="h-5 w-5 text-blue-600" />
+            <ArrowRightLeft className="h-5 w-5 text-info-muted-foreground" />
             Procesar Devolución
           </DialogTitle>
         </DialogHeader>
@@ -624,7 +631,7 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
         {selectedLoanForReturn && (
           <div className="space-y-4">
             {/* Información del préstamo */}
-            <Card className="bg-blue-50 dark:bg-blue-900/20">
+            <Card className="bg-info-muted">
               <CardContent className="p-3">
                 <div className="text-sm">
                   <p><strong>Herramienta:</strong> {tool?.name}</p>
@@ -684,19 +691,19 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
                   <SelectContent>
                     <SelectItem value="GOOD">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <CheckCircle className="h-4 w-4 text-success" />
                         <span>Buen Estado</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="DAMAGED">
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-orange-500" />
+                        <AlertCircle className="h-4 w-4 text-warning-muted-foreground" />
                         <span>Con Daños</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="BROKEN">
                       <div className="flex items-center gap-2">
-                        <X className="h-4 w-4 text-red-500" />
+                        <X className="h-4 w-4 text-destructive" />
                         <span>Rota/Inutilizable</span>
                       </div>
                     </SelectItem>
@@ -734,7 +741,12 @@ export default function LoanDialog({ isOpen, onClose, tool, onLoanCreated }: Loa
             disabled={isLoading || !returnForm.returnedBy.trim()}
             size="sm"
           >
-            {isLoading ? 'Procesando...' : 'Confirmar Devolución'}
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Procesando...
+              </>
+            ) : 'Confirmar Devolución'}
           </Button>
         </DialogFooter>
       </DialogContent>

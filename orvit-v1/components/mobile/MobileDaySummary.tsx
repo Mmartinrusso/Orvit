@@ -55,33 +55,33 @@ export function MobileDaySummary({ summary, isToday }: MobileDaySummaryProps) {
 
         {/* Stats grid */}
         <div className="grid grid-cols-4 gap-2">
-          <div className="text-center p-2 bg-white/50 rounded-lg">
+          <div className="text-center p-2 bg-background/50 rounded-lg">
             <div className="flex justify-center mb-1">
-              <Clock className="h-4 w-4 text-gray-500" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-lg font-bold">{summary.pending}</p>
             <p className="text-xs text-muted-foreground">Pendientes</p>
           </div>
 
-          <div className="text-center p-2 bg-white/50 rounded-lg">
+          <div className="text-center p-2 bg-background/50 rounded-lg">
             <div className="flex justify-center mb-1">
-              <div className="h-4 w-4 rounded-full bg-amber-500 animate-pulse" />
+              <div className="h-4 w-4 rounded-full bg-warning animate-pulse" />
             </div>
             <p className="text-lg font-bold">{summary.inProgress}</p>
             <p className="text-xs text-muted-foreground">En curso</p>
           </div>
 
-          <div className="text-center p-2 bg-white/50 rounded-lg">
+          <div className="text-center p-2 bg-background/50 rounded-lg">
             <div className="flex justify-center mb-1">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
             </div>
             <p className="text-lg font-bold">{summary.completed}</p>
             <p className="text-xs text-muted-foreground">Listas</p>
           </div>
 
-          <div className="text-center p-2 bg-white/50 rounded-lg">
+          <div className="text-center p-2 bg-background/50 rounded-lg">
             <div className="flex justify-center mb-1">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <AlertTriangle className="h-4 w-4 text-destructive" />
             </div>
             <p className="text-lg font-bold">{summary.highPriority}</p>
             <p className="text-xs text-muted-foreground">Urgentes</p>
@@ -96,13 +96,13 @@ export function MobileDaySummary({ summary, isToday }: MobileDaySummaryProps) {
             </p>
             <div className="flex gap-2">
               {summary.activeLOTOs > 0 && (
-                <Badge variant="outline" className="bg-red-100 text-red-700">
+                <Badge variant="outline" className="bg-destructive/10 text-destructive">
                   <Lock className="h-3 w-3 mr-1" />
                   {summary.activeLOTOs} LOTO activos
                 </Badge>
               )}
               {summary.activePTWs > 0 && (
-                <Badge variant="outline" className="bg-orange-100 text-orange-700">
+                <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground">
                   <FileWarning className="h-3 w-3 mr-1" />
                   {summary.activePTWs} PTW activos
                 </Badge>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -7,40 +8,29 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import esLocale from '@fullcalendar/core/locales/es';
 import { Card, CardContent } from '@/components/ui/card';
-import type { AgendaTask } from '@/lib/agenda/types';
-import { PRIORITY_CONFIG, isTaskOverdue } from '@/lib/agenda/types';
+import type { UnifiedTask } from '@/types/unified-task';
+import { isUnifiedTaskOverdue } from '@/types/unified-task';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 interface AgendaCalendarViewProps {
-  tasks: AgendaTask[];
-  onSelect: (task: AgendaTask) => void;
+  tasks: UnifiedTask[];
+  onSelect: (task: UnifiedTask) => void;
 }
 
 export function AgendaCalendarView({ tasks, onSelect }: AgendaCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
-  // Convertir tareas a eventos de FullCalendar
+  // Convertir tareas unificadas a eventos de FullCalendar
   const calendarEvents = useMemo(() => {
     return tasks
       .filter((task) => task.dueDate)
       .map((task) => {
-        const overdue = isTaskOverdue(task);
-        const isCompleted = task.status === 'COMPLETED';
-        const isCancelled = task.status === 'CANCELLED';
+        const overdue = isUnifiedTaskOverdue(task);
+        const isCompleted = task.status === 'completed';
+        const isCancelled = task.status === 'cancelled';
 
-        // Color según prioridad y estado
         let backgroundColor = userColors.chart1;
         let borderColor = userColors.chart1;
 
@@ -55,15 +45,15 @@ export function AgendaCalendarView({ tasks, onSelect }: AgendaCalendarViewProps)
           borderColor = userColors.kpiNegative;
         } else {
           switch (task.priority) {
-            case 'URGENT':
+            case 'urgent':
               backgroundColor = userColors.kpiNegative;
               borderColor = userColors.kpiNegative;
               break;
-            case 'HIGH':
+            case 'high':
               backgroundColor = userColors.chart4;
               borderColor = userColors.chart4;
               break;
-            case 'MEDIUM':
+            case 'medium':
               backgroundColor = userColors.chart1;
               borderColor = userColors.chart1;
               break;
@@ -73,14 +63,18 @@ export function AgendaCalendarView({ tasks, onSelect }: AgendaCalendarViewProps)
           }
         }
 
+        // Diferenciar visualmente tareas regulares con borde punteado
+        const classNames = task.origin === 'regular' ? ['fc-event-regular-task'] : [];
+
         return {
-          id: `task-${task.id}`,
-          title: task.title,
+          id: task.uid,
+          title: `${task.origin === 'regular' ? '[T] ' : ''}${task.title}`,
           start: task.dueDate,
           allDay: true,
-          backgroundColor: `${backgroundColor}90`,
+          backgroundColor: `${backgroundColor}B3`,
           borderColor,
           textColor: '#fff',
+          classNames,
           extendedProps: {
             type: 'task',
             data: task,
@@ -90,7 +84,7 @@ export function AgendaCalendarView({ tasks, onSelect }: AgendaCalendarViewProps)
   }, [tasks, userColors]);
 
   const handleEventClick = (info: any) => {
-    const task = info.event.extendedProps.data as AgendaTask;
+    const task = info.event.extendedProps.data as UnifiedTask;
     onSelect(task);
   };
 
@@ -120,6 +114,9 @@ export function AgendaCalendarView({ tasks, onSelect }: AgendaCalendarViewProps)
           .fc-theme-standard td,
           .fc-theme-standard th {
             border-color: hsl(var(--border));
+          }
+          .fc-event-regular-task {
+            border-style: dashed !important;
           }
         `}</style>
         <FullCalendar

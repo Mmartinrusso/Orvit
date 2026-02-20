@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -160,11 +161,7 @@ export function EmployeeHistoryDialog({
                   return (
                     <div
                       key={record.id}
-                      className={`relative flex items-center justify-between p-4 rounded-lg border transition-shadow ${
-                        isLatest
-                          ? 'bg-primary/5 border-primary/20 shadow-sm'
-                          : 'bg-card border-border hover:shadow-sm'
-                      }`}
+                      className={cn('relative flex items-center justify-between p-4 rounded-lg border transition-shadow', isLatest ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-card border-border hover:shadow-sm')}
                     >
                       {/* Timeline line */}
                       {index < history.length - 1 && (
@@ -173,9 +170,7 @@ export function EmployeeHistoryDialog({
 
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            isLatest ? 'bg-primary' : 'bg-muted-foreground'
-                          }`}></div>
+                          <div className={cn('w-3 h-3 rounded-full', isLatest ? 'bg-primary' : 'bg-muted-foreground')}></div>
                           <div>
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -204,11 +199,7 @@ export function EmployeeHistoryDialog({
                       {/* Change percentage */}
                       {record.changePct !== null && (
                         <div className="text-right">
-                          <div className={`flex items-center gap-1 text-sm font-medium ${
-                            record.changePct >= 0 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
+                          <div className={cn('flex items-center gap-1 text-sm font-medium', record.changePct >= 0 ? 'text-success' : 'text-destructive')}>
                             {record.changePct >= 0 ? (
                               <TrendingUp className="h-3 w-3" />
                             ) : (
@@ -253,13 +244,13 @@ export function EmployeeHistoryDialog({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Aumento promedio:</span>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-success">
                           +{avgIncrease.toFixed(1)}%
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Crecimiento total:</span>
-                        <span className={`font-medium ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={cn('font-medium', totalGrowth >= 0 ? 'text-success' : 'text-destructive')}>
                           {totalGrowth >= 0 ? '+' : ''}{totalGrowth.toFixed(1)}%
                         </span>
                       </div>

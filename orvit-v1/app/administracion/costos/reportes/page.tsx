@@ -205,32 +205,32 @@ export default function ReportesPage() {
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
     switch (estado) {
       case 'ok':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>;
       case 'warning':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>;
       case 'danger':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>;
     }
   };
 
   const getTendenciaIcon = (tendencia: 'up' | 'down' | 'stable') => {
     switch (tendencia) {
       case 'up':
-        return <TrendingUp className="h-4 w-4 text-red-500" />;
+        return <TrendingUp className="h-4 w-4 text-destructive" />;
       case 'down':
-        return <TrendingDown className="h-4 w-4 text-green-500" />;
+        return <TrendingDown className="h-4 w-4 text-success" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getMargenBadge = (margen: number) => {
     if (margen >= 25) {
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-success-muted text-success hover:bg-success-muted">{margen.toFixed(1)}%</Badge>;
     } else if (margen >= 15) {
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">{margen.toFixed(1)}%</Badge>;
     } else {
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">{margen.toFixed(1)}%</Badge>;
     }
   };
 
@@ -287,7 +287,7 @@ export default function ReportesPage() {
             <div className="text-2xl font-bold">{formatCurrency(totalCostos)}</div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               {getTendenciaIcon(variacionTotal > 0 ? 'up' : 'down')}
-              <span className={variacionTotal > 0 ? 'text-red-500' : 'text-green-500'}>
+              <span className={variacionTotal > 0 ? 'text-destructive' : 'text-success'}>
                 {variacionTotal > 0 ? '+' : ''}{variacionTotal.toFixed(1)}% vs mes anterior
               </span>
             </div>
@@ -370,7 +370,7 @@ export default function ReportesPage() {
                           <div className="font-medium">{formatCurrency(reporte.costoActual)}</div>
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getTendenciaIcon(reporte.tendencia)}
-                            <span className={reporte.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                            <span className={reporte.variacion > 0 ? 'text-destructive' : 'text-success'}>
                               {reporte.variacion > 0 ? '+' : ''}{reporte.variacion.toFixed(1)}%
                             </span>
                           </div>

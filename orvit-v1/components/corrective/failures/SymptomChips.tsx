@@ -49,7 +49,6 @@ export function SymptomChips({
   const addCustomSymptom = () => {
     if (customSymptom.trim()) {
       // TODO: Crear síntoma personalizado y agregarlo
-      console.log('Agregar síntoma custom:', customSymptom);
       setCustomSymptom('');
     }
   };

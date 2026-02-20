@@ -295,7 +295,7 @@ export default function ProductionReportsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-info-muted-foreground" />
         </div>
       ) : reportData ? (
         <>
@@ -305,7 +305,7 @@ export default function ProductionReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <TrendingUp className="h-5 w-5 text-success" />
                   Producción por Día
                 </CardTitle>
                 <CardDescription>
@@ -355,7 +355,7 @@ export default function ProductionReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                  <FileSpreadsheet className="h-5 w-5 text-info-muted-foreground" />
                   Estado de Órdenes
                 </CardTitle>
                 <CardDescription>
@@ -399,7 +399,7 @@ export default function ProductionReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-red-600" />
+                  <Clock className="h-5 w-5 text-destructive" />
                   Pareto de Paradas
                 </CardTitle>
                 <CardDescription>
@@ -445,7 +445,7 @@ export default function ProductionReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-success" />
                   Controles de Calidad
                 </CardTitle>
                 <CardDescription>
@@ -490,7 +490,7 @@ export default function ProductionReportsPage() {
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Cumplimiento Plan vs Real</p>
                   <p className={`text-4xl font-bold ${
-                    reportData.orders.completionRate >= 100 ? 'text-green-600' : 'text-yellow-600'
+                    reportData.orders.completionRate >= 100 ? 'text-success' : 'text-warning-muted-foreground'
                   }`}>
                     {reportData.orders.completionRate}%
                   </p>
@@ -502,7 +502,7 @@ export default function ProductionReportsPage() {
               <CardContent className="pt-6">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Total Paradas (min)</p>
-                  <p className="text-4xl font-bold text-red-600">
+                  <p className="text-4xl font-bold text-destructive">
                     {formatMinutes(
                       reportData.downtimes.byType.reduce((acc, d) => acc + d.minutes, 0)
                     )}
@@ -515,7 +515,7 @@ export default function ProductionReportsPage() {
               <CardContent className="pt-6">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Tasa Aprobación QC</p>
-                  <p className="text-4xl font-bold text-green-600">
+                  <p className="text-4xl font-bold text-success">
                     {reportData.quality.byResult.length > 0
                       ? Math.round(
                           (reportData.quality.byResult.find(r => r.result === 'Aprobados')?.count || 0) /

@@ -56,18 +56,18 @@ interface Contractor {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  ACTIVE: { label: 'Activo', color: 'bg-green-100 text-green-800', icon: <CheckCircle2 className="h-4 w-4" /> },
-  INACTIVE: { label: 'Inactivo', color: 'bg-gray-100 text-gray-800', icon: <XCircle className="h-4 w-4" /> },
-  SUSPENDED: { label: 'Suspendido', color: 'bg-yellow-100 text-yellow-800', icon: <AlertCircle className="h-4 w-4" /> },
-  BLACKLISTED: { label: 'Bloqueado', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
+  ACTIVE: { label: 'Activo', color: 'bg-success-muted text-success', icon: <CheckCircle2 className="h-4 w-4" /> },
+  INACTIVE: { label: 'Inactivo', color: 'bg-muted text-foreground', icon: <XCircle className="h-4 w-4" /> },
+  SUSPENDED: { label: 'Suspendido', color: 'bg-warning-muted text-warning-muted-foreground', icon: <AlertCircle className="h-4 w-4" /> },
+  BLACKLISTED: { label: 'Bloqueado', color: 'bg-destructive/10 text-destructive', icon: <XCircle className="h-4 w-4" /> },
 };
 
 const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-  MAINTENANCE: { label: 'Mantenimiento', color: 'bg-blue-100 text-blue-800' },
+  MAINTENANCE: { label: 'Mantenimiento', color: 'bg-info-muted text-info-muted-foreground' },
   INSPECTION: { label: 'Inspección', color: 'bg-purple-100 text-purple-800' },
-  CALIBRATION: { label: 'Calibración', color: 'bg-amber-100 text-amber-800' },
+  CALIBRATION: { label: 'Calibración', color: 'bg-warning-muted text-warning-muted-foreground' },
   SPECIALIZED: { label: 'Especializado', color: 'bg-indigo-100 text-indigo-800' },
-  GENERAL: { label: 'General', color: 'bg-gray-100 text-gray-800' },
+  GENERAL: { label: 'General', color: 'bg-muted text-foreground' },
 };
 
 export default function ContractorsPage() {
@@ -104,7 +104,7 @@ export default function ContractorsPage() {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+            className={`h-4 w-4 ${star <= rating ? 'text-warning-muted-foreground fill-yellow-400' : 'text-muted-foreground'}`}
           />
         ))}
       </div>
@@ -211,7 +211,7 @@ export default function ContractorsPage() {
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <Building2 className="h-8 w-8 text-blue-500" />
+              <Building2 className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -220,9 +220,9 @@ export default function ContractorsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Activos</p>
-                <p className="text-2xl font-bold text-green-600">{summary.active || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.active || 0}</p>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -231,9 +231,9 @@ export default function ContractorsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Suspendidos</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.suspended || 0}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{summary.suspended || 0}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-yellow-500" />
+              <AlertCircle className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -242,9 +242,9 @@ export default function ContractorsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Inactivos</p>
-                <p className="text-2xl font-bold text-gray-600">{summary.inactive || 0}</p>
+                <p className="text-2xl font-bold text-muted-foreground">{summary.inactive || 0}</p>
               </div>
-              <XCircle className="h-8 w-8 text-gray-500" />
+              <XCircle className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -345,12 +345,12 @@ export default function ContractorsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={TYPE_CONFIG[contractor.type]?.color || 'bg-gray-100'}>
+                      <Badge className={TYPE_CONFIG[contractor.type]?.color || 'bg-muted'}>
                         {TYPE_CONFIG[contractor.type]?.label || contractor.type}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={STATUS_CONFIG[contractor.status]?.color || 'bg-gray-100'}>
+                      <Badge className={STATUS_CONFIG[contractor.status]?.color || 'bg-muted'}>
                         <span className="flex items-center gap-1">
                           {STATUS_CONFIG[contractor.status]?.icon}
                           {STATUS_CONFIG[contractor.status]?.label || contractor.status}

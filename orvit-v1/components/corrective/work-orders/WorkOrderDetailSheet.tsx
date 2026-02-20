@@ -47,6 +47,7 @@ import {
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { WaitingStateDialog } from './WaitingStateDialog';
 import { ReturnToProductionDialog } from './ReturnToProductionDialog';
 import { GuidedCloseDialog } from './GuidedCloseDialog';
@@ -130,16 +131,16 @@ interface WorkOrderDetail {
 }
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-gray-100 text-gray-800',
-  PENDING: 'bg-gray-100 text-gray-800',
-  in_progress: 'bg-blue-100 text-blue-800',
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  waiting: 'bg-yellow-100 text-yellow-800',
-  WAITING: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+  pending: 'bg-muted text-foreground',
+  PENDING: 'bg-muted text-foreground',
+  in_progress: 'bg-info-muted text-info-muted-foreground',
+  IN_PROGRESS: 'bg-info-muted text-info-muted-foreground',
+  waiting: 'bg-warning-muted text-warning-muted-foreground',
+  WAITING: 'bg-warning-muted text-warning-muted-foreground',
+  completed: 'bg-success-muted text-success',
+  COMPLETED: 'bg-success-muted text-success',
+  cancelled: 'bg-destructive/10 text-destructive',
+  CANCELLED: 'bg-destructive/10 text-destructive',
 };
 
 const statusLabels: Record<string, string> = {
@@ -169,9 +170,9 @@ const outcomeLabels: Record<string, string> = {
 };
 
 const outcomeColors: Record<string, string> = {
-  FUNCIONÓ: 'bg-green-100 text-green-800',
-  PARCIAL: 'bg-yellow-100 text-yellow-800',
-  NO_FUNCIONÓ: 'bg-red-100 text-red-800',
+  FUNCIONÓ: 'bg-success-muted text-success',
+  PARCIAL: 'bg-warning-muted text-warning-muted-foreground',
+  NO_FUNCIONÓ: 'bg-destructive/10 text-destructive',
 };
 
 /**
@@ -392,7 +393,7 @@ export function WorkOrderDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:w-[700px] sm:max-w-4xl overflow-y-auto px-6">
+        <SheetContent size="lg" className="overflow-y-auto px-6">
           {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-8 w-3/4" />
@@ -406,7 +407,7 @@ export function WorkOrderDetailSheet({
                 <div className="flex items-center justify-between">
                   <SheetTitle>OT #{workOrder.id}</SheetTitle>
                   <div className="flex items-center gap-2">
-                    <Badge className={statusColors[workOrder.status] || 'bg-gray-100 text-gray-800'}>
+                    <Badge className={statusColors[workOrder.status] || 'bg-muted text-foreground'}>
                       {statusLabels[workOrder.status] || workOrder.status}
                     </Badge>
                     <Button
@@ -529,7 +530,7 @@ export function WorkOrderDetailSheet({
                 )}
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2 -mx-6 px-6">
-                <TabsList className="!w-full grid grid-cols-4 h-9">
+                <TabsList className="w-full justify-start overflow-x-auto h-9">
                   <TabsTrigger value="summary">Resumen</TabsTrigger>
                   <TabsTrigger value="logs">Registros</TabsTrigger>
                   <TabsTrigger value="chat">Chat</TabsTrigger>
@@ -595,7 +596,7 @@ export function WorkOrderDetailSheet({
                       </div>
                       <div className="p-3">
                         <p className="text-xs font-medium text-muted-foreground mb-1">Estado</p>
-                        <Badge className={`${statusColors[workOrder.status] || 'bg-gray-100'} text-xs`}>
+                        <Badge className={cn(statusColors[workOrder.status] || 'bg-muted', 'text-xs')}>
                           {statusLabels[workOrder.status] || workOrder.status}
                         </Badge>
                       </div>
@@ -638,7 +639,7 @@ export function WorkOrderDetailSheet({
                       {workOrder.resultNotes && (
                         <div className="rounded-lg border p-3">
                           <p className="text-xs font-medium text-muted-foreground mb-1">Resultado</p>
-                          <Badge className={`${outcomeColors[workOrder.resultNotes] || 'bg-gray-100'} text-xs`}>
+                          <Badge className={cn(outcomeColors[workOrder.resultNotes] || 'bg-muted', 'text-xs')}>
                             {outcomeLabels[workOrder.resultNotes] || workOrder.resultNotes}
                           </Badge>
                         </div>
@@ -685,7 +686,7 @@ export function WorkOrderDetailSheet({
                           {workOrder.solutionsApplied.slice(0, 1).map((solution) => (
                             <div
                               key={solution.id}
-                              className="rounded-lg border border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-900/30 p-3 hover:bg-green-100/50 dark:hover:bg-green-900/30 cursor-pointer transition-colors"
+                              className="rounded-lg border border-success-muted bg-success-muted/50 p-3 hover:bg-success-muted cursor-pointer transition-colors"
                               onClick={() => {
                                 onOpenChange(false);
                                 router.push(`/mantenimiento/mantenimientos?correctiveId=${workOrder.id}`);
@@ -703,7 +704,7 @@ export function WorkOrderDetailSheet({
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <p className="text-xs text-muted-foreground">Resultado:</p>
-                                    <Badge className={`${outcomeColors[solution.outcome] || 'bg-gray-100'} text-xs`}>
+                                    <Badge className={cn(outcomeColors[solution.outcome] || 'bg-muted', 'text-xs')}>
                                       {outcomeLabels[solution.outcome] || solution.outcome}
                                     </Badge>
                                   </div>
@@ -779,7 +780,7 @@ export function WorkOrderDetailSheet({
                             {/* Botón de cerrar downtime - dentro de cada tarjeta abierta */}
                             {isOpen && (
                               <Button
-                                className="w-full mt-3 bg-green-600 hover:bg-green-700"
+                                className="w-full mt-3 bg-success hover:bg-success/90"
                                 onClick={() => setReturnDialogOpen(true)}
                               >
                                 <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -797,7 +798,7 @@ export function WorkOrderDetailSheet({
                     workOrder.requiresReturnToProduction &&
                     !workOrder.returnToProductionConfirmed && (
                       <Button
-                        className="w-full bg-green-600 hover:bg-green-700"
+                        className="w-full bg-success hover:bg-success/90"
                         onClick={() => setReturnDialogOpen(true)}
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />

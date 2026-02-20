@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Search, SlidersHorizontal, X, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,8 +47,7 @@ export function TaskFilters() {
     if (debouncedSearch !== filters.search) {
       setFilters({ search: debouncedSearch });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
+  }, [debouncedSearch, filters.search, setFilters]);
 
   // Si el store cambia por "Limpiar", reflejar en el input
   useEffect(() => {
@@ -202,11 +202,7 @@ export function TaskFilters() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilters({ dateRange: "today" })}
-                  className={`px-4 py-1.5 text-sm font-medium relative min-w-[90px] rounded-md transition-colors duration-150 ease-in-out ${
-                    filters.dateRange === "today" 
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                  }`}
+                  className={cn('px-4 py-1.5 text-sm font-medium relative min-w-[90px] rounded-md transition-colors duration-150 ease-in-out', filters.dateRange === "today" ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/70")}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Hoy
@@ -225,11 +221,7 @@ export function TaskFilters() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilters({ dateRange: "week" })}
-                  className={`px-4 py-1.5 text-sm font-medium relative min-w-[120px] rounded-md transition-colors duration-150 ease-in-out ${
-                    filters.dateRange === "week" 
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                  }`}
+                  className={cn('px-4 py-1.5 text-sm font-medium relative min-w-[120px] rounded-md transition-colors duration-150 ease-in-out', filters.dateRange === "week" ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/70")}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Esta semana
@@ -248,11 +240,7 @@ export function TaskFilters() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilters({ dateRange: "month" as any })}
-                  className={`px-4 py-1.5 text-sm font-medium relative min-w-[90px] rounded-md transition-colors duration-150 ease-in-out ${
-                    (filters.dateRange as any) === "month"
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                  }`}
+                  className={cn('px-4 py-1.5 text-sm font-medium relative min-w-[90px] rounded-md transition-colors duration-150 ease-in-out', (filters.dateRange as any) === "month" ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/70")}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Mes
@@ -271,11 +259,7 @@ export function TaskFilters() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilters({ dateRange: "all" })}
-                  className={`px-4 py-1.5 text-sm font-medium relative min-w-[90px] rounded-md transition-colors duration-150 ease-in-out ${
-                    filters.dateRange === "all" 
-                      ? "bg-primary text-primary-foreground font-semibold shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-                  }`}
+                  className={cn('px-4 py-1.5 text-sm font-medium relative min-w-[90px] rounded-md transition-colors duration-150 ease-in-out', filters.dateRange === "all" ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/70")}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Todas

@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -80,7 +81,7 @@ export function CreditStatusBadge({
         <TooltipTrigger asChild>
           <Badge
             variant={getVariant()}
-            className={`flex items-center gap-1 cursor-default ${className}`}
+            className={cn('flex items-center gap-1 cursor-default', className)}
           >
             <Icon className="w-3 h-3" />
             {status.statusLabel}

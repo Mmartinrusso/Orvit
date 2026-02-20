@@ -91,9 +91,9 @@ interface Installation {
 }
 
 const statusConfig = {
-  AVAILABLE: { label: 'Disponible', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2 },
-  DEPLETED: { label: 'Agotado', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', icon: Package },
-  EXPIRED: { label: 'Vencido', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
+  AVAILABLE: { label: 'Disponible', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  DEPLETED: { label: 'Agotado', color: 'bg-muted text-foreground', icon: Package },
+  EXPIRED: { label: 'Vencido', color: 'bg-destructive/10 text-destructive', icon: XCircle },
 };
 
 export default function LotesPage() {
@@ -173,13 +173,13 @@ export default function LotesPage() {
     const daysUntil = differenceInDays(expiresDate, new Date());
 
     if (daysUntil < 0) {
-      return { status: 'expired', label: 'Vencido', color: 'text-red-600', days: Math.abs(daysUntil) };
+      return { status: 'expired', label: 'Vencido', color: 'text-destructive', days: Math.abs(daysUntil) };
     } else if (daysUntil <= 7) {
-      return { status: 'critical', label: 'Vence pronto', color: 'text-red-600', days: daysUntil };
+      return { status: 'critical', label: 'Vence pronto', color: 'text-destructive', days: daysUntil };
     } else if (daysUntil <= 30) {
-      return { status: 'warning', label: 'Por vencer', color: 'text-amber-600', days: daysUntil };
+      return { status: 'warning', label: 'Por vencer', color: 'text-warning-muted-foreground', days: daysUntil };
     }
-    return { status: 'ok', label: 'Vigente', color: 'text-green-600', days: daysUntil };
+    return { status: 'ok', label: 'Vigente', color: 'text-success', days: daysUntil };
   };
 
   if (loading) {
@@ -220,15 +220,15 @@ export default function LotesPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Disponibles</p>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="text-2xl font-bold text-success">
                       {stats.byStatus?.AVAILABLE?.count || 0}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {stats.byStatus?.AVAILABLE?.quantity || 0} unidades
                     </p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-success" />
                   </div>
                 </div>
               </CardContent>
@@ -239,28 +239,28 @@ export default function LotesPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Agotados</p>
-                    <p className="text-2xl font-bold text-gray-600">
+                    <p className="text-2xl font-bold text-muted-foreground">
                       {stats.byStatus?.DEPLETED?.count || 0}
                     </p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-gray-600" />
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <Package className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={cn(stats.expiringSoon > 0 && 'border-amber-500/50')}>
+            <Card className={cn(stats.expiringSoon > 0 && 'border-warning-muted/50')}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Por Vencer (30d)</p>
-                    <p className="text-2xl font-bold text-amber-600">
+                    <p className="text-2xl font-bold text-warning-muted-foreground">
                       {stats.expiringSoon || 0}
                     </p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  <div className="h-10 w-10 rounded-full bg-warning-muted flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -436,7 +436,7 @@ export default function LotesPage() {
                   </div>
                   <div className="p-3 rounded-lg bg-muted/50">
                     <p className="text-xs text-muted-foreground">Restante</p>
-                    <p className="font-semibold text-green-600">{selectedLot.remainingQty} {selectedLot.tool.unit}</p>
+                    <p className="font-semibold text-success">{selectedLot.remainingQty} {selectedLot.tool.unit}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/50">
                     <p className="text-xs text-muted-foreground">Recibido</p>
@@ -454,10 +454,10 @@ export default function LotesPage() {
                 {selectedLot.expiresAt && (
                   <div className={cn(
                     'p-3 rounded-lg border flex items-center gap-3',
-                    getExpirationInfo(selectedLot)?.status === 'expired' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
-                    getExpirationInfo(selectedLot)?.status === 'critical' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
-                    getExpirationInfo(selectedLot)?.status === 'warning' ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' :
-                    'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                    getExpirationInfo(selectedLot)?.status === 'expired' ? 'bg-destructive/10 border-destructive/30' :
+                    getExpirationInfo(selectedLot)?.status === 'critical' ? 'bg-destructive/10 border-destructive/30' :
+                    getExpirationInfo(selectedLot)?.status === 'warning' ? 'bg-warning-muted border-warning-muted' :
+                    'bg-success-muted border-success-muted'
                   )}>
                     <Calendar className={cn('h-5 w-5', getExpirationInfo(selectedLot)?.color)} />
                     <div>
@@ -497,11 +497,11 @@ export default function LotesPage() {
                             <div className="flex items-start gap-3">
                               <div className={cn(
                                 'p-2 rounded-lg',
-                                inst.removedAt ? 'bg-gray-100 dark:bg-gray-800' : 'bg-green-100 dark:bg-green-900/30'
+                                inst.removedAt ? 'bg-muted' : 'bg-success-muted'
                               )}>
                                 <Wrench className={cn(
                                   'h-4 w-4',
-                                  inst.removedAt ? 'text-gray-600' : 'text-green-600'
+                                  inst.removedAt ? 'text-muted-foreground' : 'text-success'
                                 )} />
                               </div>
                               <div>
@@ -532,7 +532,7 @@ export default function LotesPage() {
 
                           {inst.removedAt && (
                             <div className="mt-2 pt-2 border-t border-dashed text-xs text-muted-foreground">
-                              <span className="text-red-600">Removido:</span>{' '}
+                              <span className="text-destructive">Removido:</span>{' '}
                               {format(new Date(inst.removedAt), 'dd/MM/yyyy HH:mm')}
                               {inst.removalReason && ` - ${inst.removalReason}`}
                               {inst.removedBy && ` (por ${inst.removedBy.name})`}

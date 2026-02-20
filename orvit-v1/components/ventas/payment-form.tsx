@@ -43,7 +43,7 @@ import {
   Trash2,
   AlertCircle,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useApiClient } from '@/hooks/use-api-client';
 
@@ -383,13 +383,11 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
                 key={c.id}
                 type="button"
                 onClick={() => handleClientSelect(c.id)}
-                className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
-                  clientId === c.id ? 'bg-blue-50' : ''
-                }`}
+                className={cn('w-full text-left px-3 py-2 hover:bg-accent', clientId === c.id && 'bg-primary/10')}
               >
                 {c.legalName || c.name}
                 {c.currentBalance !== undefined && (
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="ml-2 text-sm text-muted-foreground">
                     - Deuda: {formatCurrency(parseFloat(c.currentBalance.toString()))}
                   </span>
                 )}
@@ -398,7 +396,7 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
           </div>
         )}
         {client && (
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-foreground">
             Seleccionado: <strong>{client.legalName || client.name}</strong>
           </div>
         )}
@@ -835,11 +833,11 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
         </Collapsible>
 
         {/* Total */}
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-info-muted border-info">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between text-lg font-semibold">
               <span>Total Cobro:</span>
-              <span className="text-blue-700">{formatCurrency(totalPago)}</span>
+              <span className="text-info-muted-foreground">{formatCurrency(totalPago)}</span>
             </div>
           </CardContent>
         </Card>
@@ -898,12 +896,12 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
           <h3 className="text-lg font-semibold">Aplicar a Facturas</h3>
 
           {loadingInvoices ? (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
               Cargando facturas pendientes...
             </div>
           ) : pendingInvoices.length === 0 ? (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               No hay facturas pendientes para este cliente
             </div>
           ) : (
@@ -929,7 +927,7 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
                         />
                         <div className="flex-1">
                           <div className="font-medium">{invoice.numero}</div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             Saldo: {formatCurrency(saldoPendiente)}
                           </div>
                         </div>
@@ -966,9 +964,7 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
                 <div className="flex items-center justify-between">
                   <span>Saldo Libre:</span>
                   <span
-                    className={`font-semibold ${
-                      saldoLibre < 0 ? 'text-red-600' : 'text-green-600'
-                    }`}
+                    className={cn('font-semibold', saldoLibre < 0 ? 'text-destructive' : 'text-success')}
                   >
                     {formatCurrency(saldoLibre)}
                   </span>
@@ -976,7 +972,7 @@ export function PaymentForm({ onSubmit, onCancel, submitting = false }: PaymentF
               </div>
 
               {saldoLibre < 0 && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-2 rounded">
                   <AlertCircle className="w-4 h-4" />
                   <span>El monto aplicado excede el total del pago</span>
                 </div>

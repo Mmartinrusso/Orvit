@@ -11,9 +11,9 @@ interface RPNBadgeProps {
 }
 
 export function getRPNLevel(rpn: number) {
-  if (rpn >= 200) return { level: 'high', label: 'Alto Riesgo', color: 'bg-red-100 text-red-800 border-red-200' };
-  if (rpn >= 100) return { level: 'medium', label: 'Riesgo Medio', color: 'bg-amber-100 text-amber-800 border-amber-200' };
-  return { level: 'low', label: 'Bajo Riesgo', color: 'bg-green-100 text-green-800 border-green-200' };
+  if (rpn >= 200) return { level: 'high', label: 'Alto Riesgo', color: 'bg-destructive/10 text-destructive border-destructive/20' };
+  if (rpn >= 100) return { level: 'medium', label: 'Riesgo Medio', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20' };
+  return { level: 'low', label: 'Bajo Riesgo', color: 'bg-success-muted text-success border-success/20' };
 }
 
 export function RPNBadge({ rpn, showIcon = true, size = 'md' }: RPNBadgeProps) {
@@ -37,9 +37,9 @@ export function RPNBadge({ rpn, showIcon = true, size = 'md' }: RPNBadgeProps) {
 
 export function RPNIndicator({ value, label }: { value: number; label: string }) {
   const getColor = (val: number) => {
-    if (val >= 8) return 'bg-red-500';
-    if (val >= 5) return 'bg-amber-500';
-    return 'bg-green-500';
+    if (val >= 8) return 'bg-destructive';
+    if (val >= 5) return 'bg-warning-muted-foreground';
+    return 'bg-success';
   };
 
   return (
@@ -51,7 +51,7 @@ export function RPNIndicator({ value, label }: { value: number; label: string })
             key={i}
             className={cn(
               'w-2 h-4 rounded-sm',
-              i < value ? getColor(value) : 'bg-gray-200'
+              i < value ? getColor(value) : 'bg-muted'
             )}
           />
         ))}

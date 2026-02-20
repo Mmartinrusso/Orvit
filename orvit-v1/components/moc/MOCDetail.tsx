@@ -15,6 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -147,7 +148,7 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
-          <AlertTriangle className="h-12 w-12 mx-auto text-amber-500 mb-2" />
+          <AlertTriangle className="h-12 w-12 mx-auto text-warning-muted-foreground mb-2" />
           <p className="text-muted-foreground">Error al cargar el MOC</p>
           <Button variant="outline" className="mt-4" onClick={() => router.back()}>
             Volver
@@ -184,6 +185,7 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => router.push('/mantenimiento/moc')}
+                  aria-label="Anterior"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -393,7 +395,7 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
                     </Badge>
                   )}
                   {moc.requiresTraining && (
-                    <Badge variant="outline" className={moc.trainingCompleted ? 'border-green-500' : 'border-amber-500'}>
+                    <Badge variant="outline" className={moc.trainingCompleted ? 'border-success' : 'border-warning-muted-foreground'}>
                       {moc.trainingCompleted ? 'Capacitación Completada' : 'Requiere Capacitación'}
                     </Badge>
                   )}
@@ -401,11 +403,11 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
 
                 {/* Approval/Rejection */}
                 {moc.status === 'APPROVED' && moc.approvalNotes && (
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-1">Notas de Aprobación</h4>
-                    <p className="text-sm text-green-700">{moc.approvalNotes}</p>
+                  <div className="bg-success-muted p-4 rounded-lg">
+                    <h4 className="font-medium text-success mb-1">Notas de Aprobación</h4>
+                    <p className="text-sm text-success">{moc.approvalNotes}</p>
                     {moc.approvedBy && (
-                      <p className="text-xs text-green-600 mt-2">
+                      <p className="text-xs text-success mt-2">
                         Aprobado por {moc.approvedBy.name} el {format(new Date(moc.approvalDate), 'dd/MM/yyyy HH:mm')}
                       </p>
                     )}
@@ -413,9 +415,9 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
                 )}
 
                 {moc.status === 'REJECTED' && moc.rejectionReason && (
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-red-800 mb-1">Razón del Rechazo</h4>
-                    <p className="text-sm text-red-700">{moc.rejectionReason}</p>
+                  <div className="bg-destructive/10 p-4 rounded-lg">
+                    <h4 className="font-medium text-destructive mb-1">Razón del Rechazo</h4>
+                    <p className="text-sm text-destructive">{moc.rejectionReason}</p>
                   </div>
                 )}
               </TabsContent>
@@ -495,8 +497,8 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
                         className="flex gap-4 pb-4 border-b last:border-0"
                       >
                         <div className="flex-shrink-0">
-                          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                            <History className="h-4 w-4 text-gray-500" />
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            <History className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
                         <div>
@@ -531,12 +533,14 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
               {statusDialog?.notesLabel || 'Ingrese una nota para este cambio de estado'}
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
           <Textarea
             value={statusNotes}
             onChange={(e) => setStatusNotes(e.target.value)}
             placeholder="Escriba sus notas aquí..."
             rows={4}
           />
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setStatusDialog(null)}>
               Cancelar

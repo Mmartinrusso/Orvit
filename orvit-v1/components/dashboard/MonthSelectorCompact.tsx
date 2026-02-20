@@ -6,7 +6,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -155,7 +156,7 @@ export function MonthSelectorCompact({
   if (isLoading) {
     return (
       <div className="flex items-center gap-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+        <Loader2 className="h-4 w-4 animate-spin" />
         <span className="text-sm text-muted-foreground">Cargando...</span>
       </div>
     );
@@ -206,13 +207,13 @@ export function MonthSelectorCompact({
                 </span>
                 <div className="flex gap-1">
                   {monthInfo?.hasSales && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Ventas" />
+                    <div className="w-2 h-2 bg-success rounded-full" title="Ventas" />
                   )}
                   {monthInfo?.hasCosts && (
-                    <div className="w-2 h-2 bg-red-500 rounded-full" title="Costos" />
+                    <div className="w-2 h-2 bg-destructive rounded-full" title="Costos" />
                   )}
                   {monthInfo?.hasProduction && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full" title="Producción" />
+                    <div className="w-2 h-2 bg-info rounded-full" title="Producción" />
                   )}
                 </div>
               </DropdownMenuItem>

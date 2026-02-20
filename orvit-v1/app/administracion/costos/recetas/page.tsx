@@ -307,31 +307,31 @@ export default function RecetasPage() {
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
     switch (estado) {
       case 'ok':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>;
       case 'warning':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>;
       case 'danger':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>;
     }
   };
 
   const getVariacionIcon = (variacion: number) => {
     if (variacion > 0) {
-      return <TrendingUp className="h-4 w-4 text-red-500" />;
+      return <TrendingUp className="h-4 w-4 text-destructive" />;
     } else if (variacion < 0) {
-      return <TrendingDown className="h-4 w-4 text-green-500" />;
+      return <TrendingDown className="h-4 w-4 text-success" />;
     } else {
-      return <Clock className="h-4 w-4 text-gray-500" />;
+      return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getMargenBadge = (margen: number) => {
     if (margen >= 25) {
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-success-muted text-success hover:bg-success-muted">{margen.toFixed(1)}%</Badge>;
     } else if (margen >= 15) {
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">{margen.toFixed(1)}%</Badge>;
     } else {
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">{margen.toFixed(1)}%</Badge>;
     }
   };
 
@@ -557,7 +557,7 @@ export default function RecetasPage() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalCostoRecetas / recetas.length)}</div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-red-500" />
+              <TrendingUp className="h-4 w-4 text-destructive" />
               <span>+3.8% vs mes anterior</span>
             </div>
           </CardContent>
@@ -654,7 +654,7 @@ export default function RecetasPage() {
                           <div className="font-medium">{formatCurrency(receta.costoUnitario)}</div>
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getVariacionIcon(receta.variacion)}
-                            <span className={receta.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                            <span className={receta.variacion > 0 ? 'text-destructive' : 'text-success'}>
                               {receta.variacion > 0 ? '+' : ''}{receta.variacion.toFixed(1)}%
                             </span>
                           </div>
@@ -831,24 +831,24 @@ export default function RecetasPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                     <span>Losa 60x60 margen bajo</span>
                   </div>
-                  <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>
+                  <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                     <span>Vigueta 12x30 margen bajo</span>
                   </div>
-                  <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>
+                  <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                     <span>Bloque 20x20x40 estable</span>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>
+                  <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -1002,7 +1002,7 @@ export default function RecetasPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleRemoveInsumo(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -1317,7 +1317,7 @@ export default function RecetasPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Costo Unitario</Label>
-                  <div className="text-lg font-semibold text-green-600">{formatCurrency(selectedRecetaForView.costoUnitario)}</div>
+                  <div className="text-lg font-semibold text-success">{formatCurrency(selectedRecetaForView.costoUnitario)}</div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Margen</Label>
@@ -1413,7 +1413,7 @@ export default function RecetasPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Nueva Versión</Label>
-                <div className="text-lg font-semibold text-blue-600">
+                <div className="text-lg font-semibold text-info-muted-foreground">
                   v{(parseFloat(selectedRecetaForVersion.version.replace('v', '')) + 0.1).toFixed(1)}
                 </div>
               </div>
@@ -1427,7 +1427,7 @@ export default function RecetasPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Costo Actual</Label>
-                <div className="text-lg font-semibold text-green-600">{formatCurrency(selectedRecetaForVersion.costoUnitario)}</div>
+                <div className="text-lg font-semibold text-success">{formatCurrency(selectedRecetaForVersion.costoUnitario)}</div>
               </div>
             </div>
           )}

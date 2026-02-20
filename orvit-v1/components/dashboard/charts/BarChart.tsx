@@ -22,16 +22,16 @@ interface BarChartProps {
 }
 
 const DEFAULT_COLORS = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-yellow-500',
-  'bg-red-500',
-  'bg-purple-500',
-  'bg-indigo-500',
-  'bg-pink-500',
-  'bg-orange-500',
-  'bg-teal-500',
-  'bg-cyan-500',
+  'bg-primary',
+  'bg-success',
+  'bg-warning',
+  'bg-destructive',
+  'bg-chart-1',
+  'bg-chart-1',
+  'bg-chart-3',
+  'bg-chart-5',
+  'bg-info',
+  'bg-info',
 ];
 
 export function BarChart({
@@ -64,7 +64,7 @@ export function BarChart({
                   )}
                 </div>
               )}
-              <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                 <div
                   className={cn(
                     'h-2.5 rounded-full',

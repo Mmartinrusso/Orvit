@@ -378,10 +378,10 @@ export default function CajasPage() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Ingreso">
-                              <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                              <ArrowUpCircle className="h-4 w-4 text-success" />
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Egreso">
-                              <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                              <ArrowDownCircle className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </TableCell>

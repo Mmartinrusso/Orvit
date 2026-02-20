@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/contexts/CompanyContext';
-import { Plus, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Save, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface IndirectCost {
   id: number;
@@ -27,6 +28,7 @@ interface CostDistributionMatrixProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (distributions: CostDistribution[]) => void;
+  month?: string;
 }
 
 interface CostDistribution {
@@ -40,7 +42,8 @@ interface CostDistribution {
 export default function CostDistributionMatrix({
   isOpen,
   onClose,
-  onSave
+  onSave,
+  month,
 }: CostDistributionMatrixProps) {
   const { currentCompany } = useCompany();
   const [indirectCosts, setIndirectCosts] = useState<IndirectCost[]>([]);
@@ -61,63 +64,68 @@ export default function CostDistributionMatrix({
 
     setLoading(true);
     try {
-      // Cargar costos indirectos
-      const indirectResponse = await fetch(`/api/indirect-items?companyId=${currentCompany.id}`);
+      const currentM = month || new Date().toISOString().slice(0, 7);
+
+      // Cargar categorías de costos indirectos + distribución existente desde la nueva API
+      const [distributionRes, categoriesRes] = await Promise.all([
+        fetch(`/api/costos/indirect/distribution?month=${currentM}`),
+        fetch(`/api/productos/categorias?companyId=${currentCompany.id}`),
+      ]);
+
       let indirectData: IndirectCost[] = [];
-      if (indirectResponse.ok) {
-        const data = await indirectResponse.json();
-        indirectData = data.indirectItems || [];
+      let existingDistributions: any[] = [];
+
+      if (distributionRes.ok) {
+        const data = await distributionRes.json();
+        const apiCategories: any[] = data.categories || [];
+
+        // Mapear categorías de la API al formato IndirectCost que usa la matriz
+        indirectData = apiCategories.map((cat: any, idx: number) => ({
+          id: idx + 1,                     // id numérico incremental
+          label: cat.label,               // "Servicios Públicos"
+          category: cat.key,              // "UTILITIES" — usado para el POST
+          currentPrice: cat.monthTotal ?? 0,
+        }));
+
+        // Recopilar distribuciones existentes para pre-cargar la matriz
+        apiCategories.forEach((cat: any, idx: number) => {
+          (cat.distributions || []).forEach((d: any) => {
+            existingDistributions.push({
+              costId: idx + 1,
+              productCategoryId: d.productCategoryId,
+              percentage: d.percentage,
+            });
+          });
+        });
+
         setIndirectCosts(indirectData);
       }
 
-      // Cargar categorías de productos
-      const categoriesResponse = await fetch(`/api/productos/categorias?companyId=${currentCompany.id}`);
       let categoriesData: ProductCategory[] = [];
-      if (categoriesResponse.ok) {
-        categoriesData = await categoriesResponse.json();
+      if (categoriesRes.ok) {
+        const data = await categoriesRes.json();
+        categoriesData = Array.isArray(data) ? data : data.categories || [];
         setProductCategories(categoriesData);
       }
 
-      // Cargar distribuciones existentes después de tener los datos
-      await loadExistingDistributions(indirectData, categoriesData);
+      // Inicializar matriz con distribuciones existentes
+      const initialMatrix: Record<string, Record<string, number>> = {};
+      indirectData.forEach((cost) => {
+        initialMatrix[cost.id.toString()] = {};
+        categoriesData.forEach((category) => {
+          const existing = existingDistributions.find(
+            (d) => d.costId === cost.id && d.productCategoryId === category.id
+          );
+          initialMatrix[cost.id.toString()][category.id.toString()] = existing?.percentage ?? 0;
+        });
+      });
+      setMatrix(initialMatrix);
 
     } catch (error) {
       console.error('Error cargando datos:', error);
       toast.error('Error al cargar los datos');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadExistingDistributions = async (costs: IndirectCost[], categories: ProductCategory[]) => {
-    try {
-      const response = await fetch(`/api/cost-distribution/bulk?companyId=${currentCompany?.id}`);
-      if (response.ok) {
-        const existingDistributions = await response.json();
-        
-        console.log('📊 Costos indirectos para matriz:', costs.length);
-        console.log('📊 Categorías de productos para matriz:', categories.length);
-        console.log('📊 Distribuciones existentes:', existingDistributions.length);
-        
-        // Inicializar matriz con distribuciones existentes
-        const initialMatrix: Record<string, Record<string, number>> = {};
-        
-        costs.forEach(cost => {
-          initialMatrix[cost.id.toString()] = {};
-          categories.forEach(category => {
-            const existing = existingDistributions.find((d: any) => 
-              d.costName === cost.label && d.productCategoryId === category.id
-            );
-            const percentage = existing?.percentage ? parseFloat(existing.percentage) : 0;
-            initialMatrix[cost.id.toString()][category.id.toString()] = percentage;
-          });
-        });
-        
-        console.log('📊 Matriz inicializada:', initialMatrix);
-        setMatrix(initialMatrix);
-      }
-    } catch (error) {
-      console.error('Error cargando distribuciones existentes:', error);
     }
   };
 
@@ -169,12 +177,10 @@ export default function CostDistributionMatrix({
   const calculateRowTotal = (costId: string): number => {
     const row = matrix[costId] || {};
     const values = Object.values(row);
-    console.log(`🔍 Calculando total fila ${costId}:`, values);
     const total = values.reduce((sum, value) => {
       const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
       return sum + numValue;
     }, 0);
-    console.log(`✅ Total calculado:`, total);
     return isNaN(total) ? 0 : total;
   };
 
@@ -217,7 +223,13 @@ export default function CostDistributionMatrix({
     setSaving(true);
     try {
       const distributions: CostDistribution[] = [];
-      
+      const apiPayload: Array<{
+        indirectCategory: string;
+        productCategoryId: number;
+        productCategoryName: string;
+        percentage: number;
+      }> = [];
+
       indirectCosts.forEach(cost => {
         productCategories.forEach(category => {
           const percentage = matrix[cost.id.toString()]?.[category.id.toString()] || 0;
@@ -229,33 +241,51 @@ export default function CostDistributionMatrix({
               categoryName: category.name,
               percentage
             });
+            apiPayload.push({
+              indirectCategory: (cost as any).category, // "UTILITIES", "VEHICLES", etc.
+              productCategoryId: category.id,
+              productCategoryName: category.name,
+              percentage,
+            });
           }
         });
       });
 
+      // Guardar en la nueva API
+      const saveRes = await fetch('/api/costos/indirect/distribution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ distributions: apiPayload }),
+      });
+
+      if (!saveRes.ok) {
+        const err = await saveRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al guardar');
+      }
+
       await onSave(distributions);
       toast.success('Distribución de costos guardada exitosamente');
       onClose();
-      
+
     } catch (error) {
       console.error('Error guardando distribuciones:', error);
-      toast.error('Error al guardar la distribución');
+      toast.error(error instanceof Error ? error.message : 'Error al guardar la distribución');
     } finally {
       setSaving(false);
     }
   };
 
   const getRowTotalColor = (total: number): string => {
-    if (total === 100) return 'text-green-600 bg-green-50';
-    if (total > 100) return 'text-red-600 bg-red-50';
-    return 'text-yellow-600 bg-yellow-50';
+    if (total === 100) return 'text-success bg-success-muted';
+    if (total > 100) return 'text-destructive bg-destructive/10';
+    return 'text-warning-muted-foreground bg-warning-muted';
   };
 
   if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="full" className="max-h-[90vh] overflow-hidden">
+      <DialogContent size="full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -263,34 +293,35 @@ export default function CostDistributionMatrix({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 overflow-auto max-h-[70vh]">
+        <DialogBody>
+        <div className="space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <Loader2 className="h-8 w-8 animate-spin text-info" />
               <span className="ml-2">Cargando datos...</span>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
+              <table className="w-full border-collapse border border-border">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 p-2 text-left font-semibold min-w-[200px]">
+                  <tr className="bg-muted">
+                    <th className="border border-border p-2 text-left font-semibold min-w-[200px]">
                       Costos Indirectos
                     </th>
                     {productCategories.map(category => {
                       const columnTotal = calculateColumnTotal(category.id.toString());
                       return (
-                        <th key={category.id} className="border border-gray-300 p-2 text-center font-semibold min-w-[120px]">
+                        <th key={category.id} className="border border-border p-2 text-center font-semibold min-w-[120px]">
                           <div className="flex flex-col">
                             <span className="text-sm">{category.name}</span>
-                            <span className="text-xs text-gray-500 font-normal">
+                            <span className="text-xs text-muted-foreground font-normal">
                               Total: {(typeof columnTotal === 'number' ? columnTotal : 0).toFixed(1)}%
                             </span>
                           </div>
                         </th>
                       );
                     })}
-                    <th className="border border-gray-300 p-2 text-center font-semibold bg-blue-50 min-w-[100px]">
+                    <th className="border border-border p-2 text-center font-semibold bg-info-muted min-w-[100px]">
                       Total Fila
                     </th>
                   </tr>
@@ -299,17 +330,17 @@ export default function CostDistributionMatrix({
                   {indirectCosts.map(cost => {
                     const rowTotal = calculateRowTotal(cost.id.toString());
                     return (
-                      <tr key={cost.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 font-medium">
+                      <tr key={cost.id} className="hover:bg-muted">
+                        <td className="border border-border p-2 font-medium">
                           <div className="flex flex-col">
                             <span className="text-sm">{cost.label}</span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               ${cost.currentPrice.toLocaleString()}
                             </span>
                           </div>
                         </td>
                         {productCategories.map(category => (
-                          <td key={category.id} className="border border-gray-300 p-1">
+                          <td key={category.id} className="border border-border p-1">
                             <Input
                               type="number"
                               min="0"
@@ -325,10 +356,10 @@ export default function CostDistributionMatrix({
                             />
                           </td>
                         ))}
-                        <td className={`border border-gray-300 p-2 text-center font-semibold ${getRowTotalColor(rowTotal)}`}>
+                        <td className={cn('border border-border p-2 text-center font-semibold', getRowTotalColor(rowTotal))}>
                           <div className="flex items-center justify-center gap-1">
                             {rowTotal === 100 ? (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-success" />
                             ) : (
                               <AlertCircle className="h-4 w-4" />
                             )}
@@ -344,7 +375,7 @@ export default function CostDistributionMatrix({
           )}
 
           {/* Resumen de validación */}
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-muted p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Resumen de Validación:</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
@@ -355,33 +386,34 @@ export default function CostDistributionMatrix({
               </div>
               <div>
                 <span className="font-medium">Filas Válidas (100%):</span> 
-                <span className="ml-1 text-green-600 font-semibold">
+                <span className="ml-1 text-success font-semibold">
                   {indirectCosts.filter(cost => calculateRowTotal(cost.id.toString()) === 100).length}
                 </span>
               </div>
               <div>
                 <span className="font-medium">Filas con Errores:</span> 
-                <span className="ml-1 text-red-600 font-semibold">
+                <span className="ml-1 text-destructive font-semibold">
                   {indirectCosts.filter(cost => calculateRowTotal(cost.id.toString()) !== 100).length}
                 </span>
               </div>
             </div>
           </div>
         </div>
+        </DialogBody>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
             <X className="h-4 w-4 mr-2" />
             Cancelar
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={saving || loading}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-info hover:bg-info/90"
           >
             {saving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Guardando...
               </>
             ) : (
@@ -391,7 +423,7 @@ export default function CostDistributionMatrix({
               </>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

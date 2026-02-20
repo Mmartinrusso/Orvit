@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const machineIds = searchParams.get('machineIds');
     const unidadMovilIds = searchParams.get('unidadMovilIds');
     const searchTerm = searchParams.get('searchTerm')?.trim();
+    const maintenanceId = searchParams.get('maintenanceId');
     const page = Math.max(parseInt(searchParams.get('page') || '0', 10), 0);
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50', 10), 100);
 
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
     const componentIdNum = componentId ? parseInt(componentId) : null;
     const subcomponentIdNum = subcomponentId ? parseInt(subcomponentId) : null;
     const unidadMovilIdNum = unidadMovilId ? parseInt(unidadMovilId) : null;
+    const maintenanceIdNum = maintenanceId ? parseInt(maintenanceId) : null;
 
     // ✅ OPTIMIZACIÓN: Construir filtros
     const workOrderWhere: any = { companyId: companyIdNum };
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ✅ OPTIMIZACIÓN: Ejecutar queries en paralelo
-    const [workOrders, templates, maintenanceHistoryRecords] = await Promise.all([
+    const [workOrders, templates, preventiveTemplateRecord, maintenanceHistoryRecords] = await Promise.all([
       prisma.workOrder.findMany({
         where: workOrderWhere,
         include: {
@@ -100,6 +102,16 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: 'desc' },
         take: 500
       }),
+      // Consultar preventiveTemplate por ID para obtener executionHistory del sistema nuevo
+      maintenanceIdNum ? prisma.preventiveTemplate.findUnique({
+        where: { id: maintenanceIdNum },
+        select: {
+          id: true, title: true, description: true, machineId: true,
+          executionHistory: true, lastMaintenanceDate: true,
+          lastExecutionDuration: true, priority: true, nextMaintenanceDate: true,
+          machine: { select: { id: true, name: true } }
+        }
+      }) : Promise.resolve(null),
       // Consultar maintenance_history si hay filtros específicos
       (machineIdNum || componentIdNum) ? prisma.maintenance_history.findMany({
         where: maintenanceHistoryWhere,
@@ -271,6 +283,66 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Procesar historial de preventiveTemplate (sistema nuevo — executionHistory JSON)
+    const preventiveTemplateHistory: any[] = [];
+    if (preventiveTemplateRecord) {
+      const tpl = preventiveTemplateRecord;
+      const entries = Array.isArray(tpl.executionHistory) ? (tpl.executionHistory as any[]) : [];
+
+      if (entries.length > 0) {
+        for (const entry of entries) {
+          preventiveTemplateHistory.push({
+            id: `prevtpl-${tpl.id}-${entry.id}`,
+            maintenanceId: tpl.id,
+            maintenanceType: 'PREVENTIVE',
+            type: 'PREVENTIVE_TEMPLATE',
+            title: tpl.title,
+            description: tpl.description,
+            machineId: tpl.machineId ?? null,
+            machineName: tpl.machine?.name ?? null,
+            assignedToName: null,
+            executedAt: entry.executedAt ? new Date(entry.executedAt).toISOString() : new Date().toISOString(),
+            actualDuration: entry.actualDuration ? Math.round(Number(entry.actualDuration) * 60) : null,
+            notes: entry.notes ?? '',
+            issues: entry.issues ?? '',
+            completionStatus: entry.completionStatus || 'COMPLETED',
+            companyId: companyIdNum,
+            priority: tpl.priority || 'MEDIUM',
+            status: 'COMPLETED',
+            scheduledDate: tpl.nextMaintenanceDate?.toISOString() ?? null,
+            completedDate: entry.executedAt ? new Date(entry.executedAt).toISOString() : null,
+            isFromChecklist: true,
+            reExecutionReason: entry.reExecutionReason ?? null,
+            cost: entry.cost ?? null,
+            isFromChecklist: false,
+          });
+        }
+      } else if (tpl.lastMaintenanceDate) {
+        // Solo tiene lastMaintenanceDate, sin entries detalladas
+        preventiveTemplateHistory.push({
+          id: `prevtpl-${tpl.id}-last`,
+          maintenanceId: tpl.id,
+          maintenanceType: 'PREVENTIVE',
+          type: 'PREVENTIVE_TEMPLATE',
+          title: tpl.title,
+          description: tpl.description,
+          machineId: tpl.machineId ?? null,
+          machineName: tpl.machine?.name ?? null,
+          assignedToName: null,
+          executedAt: tpl.lastMaintenanceDate.toISOString(),
+          actualDuration: tpl.lastExecutionDuration ? Math.round(Number(tpl.lastExecutionDuration) * 60) : null,
+          notes: '',
+          completionStatus: 'COMPLETED',
+          companyId: companyIdNum,
+          priority: tpl.priority || 'MEDIUM',
+          status: 'COMPLETED',
+          scheduledDate: tpl.nextMaintenanceDate?.toISOString() ?? null,
+          completedDate: tpl.lastMaintenanceDate.toISOString(),
+          isFromChecklist: false,
+        });
+      }
+    }
+
     // Procesar maintenance_history records
     const maintenanceHistoryData = maintenanceHistoryRecords.map((record: any) => ({
       id: `history-${record.id}`,
@@ -303,7 +375,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Combinar y ordenar
-    const combinedHistory = [...workOrderHistory, ...templateHistory, ...maintenanceHistoryData]
+    const combinedHistory = [...workOrderHistory, ...templateHistory, ...preventiveTemplateHistory, ...maintenanceHistoryData]
       .sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
 
     // Paginar

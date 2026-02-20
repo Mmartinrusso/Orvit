@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -114,22 +115,22 @@ function getFrequencyLabel(frequency: string | null | undefined): string {
 }
 
 function getFrequencyColor(frequency: string | null | undefined): string {
-  if (!frequency) return 'bg-gray-50 text-gray-700 border-gray-200';
+  if (!frequency) return 'bg-muted text-foreground border-border';
 
   const colorMap: Record<string, string> = {
-    'DAILY': 'bg-red-50 text-red-700 border-red-200',
-    'WEEKLY': 'bg-orange-50 text-orange-700 border-orange-200',
-    'BIWEEKLY': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    'MONTHLY': 'bg-blue-50 text-blue-700 border-blue-200',
-    'BIMONTHLY': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    'QUARTERLY': 'bg-purple-50 text-purple-700 border-purple-200',
-    'SEMIANNUAL': 'bg-pink-50 text-pink-700 border-pink-200',
-    'YEARLY': 'bg-green-50 text-green-700 border-green-200',
-    'ANNUAL': 'bg-green-50 text-green-700 border-green-200',
-    'ON_DEMAND': 'bg-gray-50 text-gray-700 border-gray-200',
+    'DAILY': 'bg-destructive/10 text-destructive border-destructive/20',
+    'WEEKLY': 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20',
+    'BIWEEKLY': 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20',
+    'MONTHLY': 'bg-info-muted text-info-muted-foreground border-info-muted-foreground/20',
+    'BIMONTHLY': 'bg-info-muted text-info-muted-foreground border-info-muted-foreground/20',
+    'QUARTERLY': 'bg-muted text-foreground border-border',
+    'SEMIANNUAL': 'bg-muted text-foreground border-border',
+    'YEARLY': 'bg-success-muted text-success border-success/20',
+    'ANNUAL': 'bg-success-muted text-success border-success/20',
+    'ON_DEMAND': 'bg-muted text-foreground border-border',
   };
 
-  return colorMap[frequency] || 'bg-gray-50 text-gray-700 border-gray-200';
+  return colorMap[frequency] || 'bg-muted text-foreground border-border';
 }
 
 export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps) {
@@ -250,40 +251,40 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
       )}
 
       {/* Métricas principales - en una sola fila */}
-      <div className={`grid gap-3 ${stats.phasesCount > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+      <div className={cn('grid gap-3', stats.phasesCount > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3')}>
+        <div className="bg-info-muted border border-info-muted-foreground/20 rounded-lg p-3">
           <div className="flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-blue-600" />
-            <span className="text-[10px] font-medium text-blue-800 uppercase tracking-wide">Tiempo</span>
+            <Clock className="h-3.5 w-3.5 text-info-muted-foreground" />
+            <span className="text-[10px] font-medium text-info-muted-foreground uppercase tracking-wide">Tiempo</span>
           </div>
-          <p className="text-lg font-bold text-blue-900 mt-1">
+          <p className="text-lg font-bold text-foreground mt-1">
             {formatMinutes(stats.estimatedMinutes)}
           </p>
         </div>
 
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <div className="bg-success-muted border border-success/20 rounded-lg p-3">
           <div className="flex items-center gap-2">
-            <CheckSquare className="h-3.5 w-3.5 text-green-600" />
-            <span className="text-[10px] font-medium text-green-800 uppercase tracking-wide">Items</span>
+            <CheckSquare className="h-3.5 w-3.5 text-success" />
+            <span className="text-[10px] font-medium text-success uppercase tracking-wide">Items</span>
           </div>
-          <p className="text-lg font-bold text-green-900 mt-1">
+          <p className="text-lg font-bold text-foreground mt-1">
             {stats.totalItems}
           </p>
         </div>
 
         {stats.phasesCount > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div className="bg-warning-muted border border-warning-muted-foreground/20 rounded-lg p-3">
             <div className="flex items-center gap-2">
-              <Layers className="h-3.5 w-3.5 text-orange-600" />
-              <span className="text-[10px] font-medium text-orange-800 uppercase tracking-wide">Fases</span>
+              <Layers className="h-3.5 w-3.5 text-warning-muted-foreground" />
+              <span className="text-[10px] font-medium text-warning-muted-foreground uppercase tracking-wide">Fases</span>
             </div>
-            <p className="text-lg font-bold text-orange-900 mt-1">
+            <p className="text-lg font-bold text-foreground mt-1">
               {stats.phasesCount}
             </p>
           </div>
         )}
 
-        <div className={`border rounded-lg p-3 ${getFrequencyColor(checklist.frequency)}`}>
+        <div className={cn('border rounded-lg p-3', getFrequencyColor(checklist.frequency))}>
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5" />
             <span className="text-[10px] font-medium uppercase tracking-wide">Frecuencia</span>
@@ -360,8 +361,8 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
                   <Badge
                     className={
                       checklist.isActive
-                        ? 'bg-green-100 text-green-800 text-xs border-green-200'
-                        : 'bg-gray-100 text-gray-800 text-xs border-gray-200'
+                        ? 'bg-success-muted text-success text-xs border-success/20'
+                        : 'bg-muted text-foreground text-xs border-border'
                     }
                     variant="outline"
                   >
@@ -373,7 +374,7 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Categoría</label>
                 <div className="mt-1">
-                  <Badge className="bg-orange-100 text-orange-800 text-xs border-orange-200" variant="outline">
+                  <Badge className="bg-warning-muted text-warning-muted-foreground text-xs border-warning-muted-foreground/20" variant="outline">
                     {getCategoryLabel(checklist.category)}
                   </Badge>
                 </div>
@@ -399,16 +400,16 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
 
       {/* Última ejecución (si existe) */}
       {(checklist as any).lastExecutionDate && (
-        <Card className="border-green-200 bg-green-50/50">
+        <Card className="border-success/20 bg-success-muted/50">
           <CardContent className="py-3 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                  <CalendarCheck className="h-4 w-4 text-green-600" />
+                <div className="h-8 w-8 rounded-full bg-success-muted flex items-center justify-center">
+                  <CalendarCheck className="h-4 w-4 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-green-900">Última ejecución</p>
-                  <p className="text-xs text-green-700">
+                  <p className="text-sm font-medium text-foreground">Última ejecución</p>
+                  <p className="text-xs text-success">
                     {formatDateTime((checklist as any).lastExecutionDate)}
                     {(checklist as any).lastExecutedBy && (
                       <span className="ml-2">por {(checklist as any).lastExecutedBy}</span>
@@ -418,8 +419,8 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
               </div>
               {(checklist as any).executionCount && (
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-900">{(checklist as any).executionCount}</p>
-                  <p className="text-[10px] text-green-700 uppercase tracking-wide">ejecuciones</p>
+                  <p className="text-lg font-bold text-foreground">{(checklist as any).executionCount}</p>
+                  <p className="text-[10px] text-success uppercase tracking-wide">ejecuciones</p>
                 </div>
               )}
             </div>

@@ -6,6 +6,7 @@ import { getT2Client, isT2DatabaseConfigured } from '@/lib/prisma-t2';
 import * as cache from '@/app/api/compras/comprobantes/cache';
 import { JWT_SECRET } from '@/lib/auth';
 import { logStatusChange, logDeletion } from '@/lib/compras/audit-helper';
+import { syncAllSupplyPrices } from '@/lib/costs/sync-supply-prices';
 
 export const dynamic = 'force-dynamic';
 
@@ -782,6 +783,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       total,
       tipoCuentaId,
       items,
+      esIndirecto,
+      indirectCategory,
     } = body;
 
     // Actualizar el comprobante principal
@@ -814,6 +817,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (iibb !== undefined && iibb !== null && iibb !== '') data.iibb = parseFloat(iibb);
     if (total !== undefined && total !== null && total !== '') data.total = parseFloat(total);
     if (tipoCuentaId) data.tipoCuentaId = Number(tipoCuentaId);
+    if (typeof esIndirecto === 'boolean') {
+      data.esIndirecto = esIndirecto;
+      data.indirectCategory = esIndirecto ? (indirectCategory || null) : null;
+    }
 
     console.log('[COMPROBANTES ID] PUT - Data a actualizar:', data);
 
@@ -881,6 +888,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
         // 3) Crear nuevos items y aplicar su impacto al stock + historial de precios
         for (const item of items) {
+          // Concepto indirecto: guardar descripción libre sin stock ni historial de precios
+          if (item.isIndirectConcept) {
+            await tx.purchaseReceiptItem.create({
+              data: {
+                comprobanteId: id,
+                companyId: companyId,
+                itemId: null,
+                descripcion: item.descripcion || '',
+                cantidad: parseFloat(item.cantidad) || 1,
+                unidad: item.unidad || 'UN',
+                precioUnitario: parseFloat(item.precioUnitario) || 0,
+                subtotal: parseFloat(item.subtotal) || parseFloat(item.precioUnitario) || 0,
+                proveedorId: item.proveedorId ? Number(item.proveedorId) : Number(proveedorId),
+              },
+            });
+            continue;
+          }
+
           const createdItem = await tx.purchaseReceiptItem.create({
             data: {
               comprobanteId: id,
@@ -940,6 +965,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
               },
             });
           }
+        }
+
+        // Auto-sincronizar precios de insumos con supply_monthly_prices (best-effort)
+        const syncItems = items.map((item: any) => ({
+          itemId: item.itemId ? Number(item.itemId) : null,
+          precioUnitario: parseFloat(item.precioUnitario) || 0,
+        }));
+        const syncRef = `${numeroSerie ?? ''}-${numeroFactura ?? ''} (editado)`.replace(/^-|-$/, '');
+        try {
+          await syncAllSupplyPrices(
+            tx,
+            syncItems,
+            fechaImputacion ?? fechaEmision,
+            companyId,
+            syncRef
+          );
+        } catch (syncError) {
+          console.warn('[syncAllSupplyPrices] Error sincronizando precios (no bloquea edición):', syncError);
         }
       }
 

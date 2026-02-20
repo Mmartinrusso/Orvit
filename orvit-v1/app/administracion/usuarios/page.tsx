@@ -443,10 +443,10 @@ export default function UsuariosPage() {
   // Helper para color de avatar basado en rol
   const getAvatarColor = (role: string) => {
     const colors: Record<string, string> = {
-      'SUPERADMIN': 'bg-red-500/10 text-red-600',
-      'ADMIN': 'bg-blue-500/10 text-blue-600',
+      'SUPERADMIN': 'bg-destructive/10 text-destructive',
+      'ADMIN': 'bg-info/10 text-info-muted-foreground',
       'SUPERVISOR': 'bg-purple-500/10 text-purple-600',
-      'USER': 'bg-slate-500/10 text-slate-600',
+      'USER': 'bg-muted-foreground/10 text-muted-foreground',
     };
     return colors[role?.toUpperCase()] || 'bg-primary/10 text-primary';
   };
@@ -552,21 +552,21 @@ export default function UsuariosPage() {
               <span className="text-sm font-semibold">{stats.totalUsers}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-              <UserCheck className="h-4 w-4 text-green-600" />
+              <UserCheck className="h-4 w-4 text-success" />
               <span className="text-sm text-muted-foreground">Activos:</span>
-              <span className="text-sm font-semibold text-green-600">{stats.activeUsers}</span>
+              <span className="text-sm font-semibold text-success">{stats.activeUsers}</span>
             </div>
             {stats.inactiveUsers > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-                <UserX className="h-4 w-4 text-red-600" />
+                <UserX className="h-4 w-4 text-destructive" />
                 <span className="text-sm text-muted-foreground">Inactivos:</span>
-                <span className="text-sm font-semibold text-red-600">{stats.inactiveUsers}</span>
+                <span className="text-sm font-semibold text-destructive">{stats.inactiveUsers}</span>
               </div>
             )}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-              <Shield className="h-4 w-4 text-blue-600" />
+              <Shield className="h-4 w-4 text-info-muted-foreground" />
               <span className="text-sm text-muted-foreground">Admins:</span>
-              <span className="text-sm font-semibold text-blue-600">{stats.adminUsers}</span>
+              <span className="text-sm font-semibold text-info-muted-foreground">{stats.adminUsers}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
               <Activity className="h-4 w-4 text-purple-600" />
@@ -788,12 +788,12 @@ export default function UsuariosPage() {
                       <TableCell className="hidden sm:table-cell">
                         {user.isActive ? (
                           <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <div className="w-2 h-2 rounded-full bg-success" />
                             <span className="text-xs text-muted-foreground">Activo</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full bg-red-500" />
+                            <div className="w-2 h-2 rounded-full bg-destructive" />
                             <span className="text-xs text-muted-foreground">Inactivo</span>
                           </div>
                         )}
@@ -801,7 +801,7 @@ export default function UsuariosPage() {
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex items-center gap-1.5">
                           <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className={`text-xs ${user.lastLogin ? 'text-muted-foreground' : 'text-amber-600'}`}>
+                          <span className={`text-xs ${user.lastLogin ? 'text-muted-foreground' : 'text-warning-muted-foreground'}`}>
                             {getRelativeTime(user.lastLogin)}
                           </span>
                         </div>
@@ -861,7 +861,7 @@ export default function UsuariosPage() {
                             )}
                             {canDelete(user.id) && (
                               <DropdownMenuItem
-                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                className="text-destructive focus:text-destructive focus:bg-destructive/10"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedUsers([user.id]);
@@ -959,7 +959,7 @@ export default function UsuariosPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => handleBulkAction(bulkActionDialog.action, bulkActionDialog.newRole)}
-              className={bulkActionDialog.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
+              className={bulkActionDialog.action === 'delete' ? 'bg-destructive hover:bg-destructive' : ''}
             >
               Confirmar
             </AlertDialogAction>

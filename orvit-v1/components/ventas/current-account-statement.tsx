@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface Transaction {
@@ -136,11 +136,11 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
   const getTransactionIcon = (tipo: string) => {
     switch (tipo) {
       case 'FACTURA':
-        return <FileText className="w-4 h-4 text-blue-600" />;
+        return <FileText className="w-4 h-4 text-info-muted-foreground" />;
       case 'PAGO':
-        return <Receipt className="w-4 h-4 text-green-600" />;
+        return <Receipt className="w-4 h-4 text-success" />;
       case 'NOTA_CREDITO':
-        return <FileX className="w-4 h-4 text-orange-600" />;
+        return <FileX className="w-4 h-4 text-warning-muted-foreground" />;
       default:
         return null;
     }
@@ -179,9 +179,7 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
             <div className="text-right">
               <Label className="text-xs text-muted-foreground">Saldo Actual</Label>
               <div
-                className={`text-2xl font-bold ${
-                  data.client.saldoActual > 0 ? 'text-red-600' : 'text-green-600'
-                }`}
+                className={cn('text-2xl font-bold', data.client.saldoActual > 0 ? 'text-destructive' : 'text-success')}
               >
                 {formatCurrency(data.client.saldoActual)}
               </div>
@@ -241,11 +239,11 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Facturado</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-2xl font-bold text-info-muted-foreground">
                   {formatCurrency(data.summary.totalFacturado)}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-600 opacity-50" />
+              <TrendingUp className="w-8 h-8 text-info-muted-foreground opacity-50" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {data.summary.cantidadFacturas} facturas
@@ -258,11 +256,11 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Cobrado</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-success">
                   {formatCurrency(data.summary.totalCobrado)}
                 </p>
               </div>
-              <TrendingDown className="w-8 h-8 text-green-600 opacity-50" />
+              <TrendingDown className="w-8 h-8 text-success opacity-50" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {data.summary.cantidadPagos} pagos
@@ -275,11 +273,11 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Notas de Crédito</p>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-2xl font-bold text-warning-muted-foreground">
                   {formatCurrency(data.summary.totalNotasCredito)}
                 </p>
               </div>
-              <FileX className="w-8 h-8 text-orange-600 opacity-50" />
+              <FileX className="w-8 h-8 text-warning-muted-foreground opacity-50" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {data.summary.cantidadNotasCredito} notas
@@ -293,17 +291,15 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
               <div>
                 <p className="text-sm text-muted-foreground">Saldo</p>
                 <p
-                  className={`text-2xl font-bold ${
-                    data.summary.saldoActual > 0 ? 'text-red-600' : 'text-green-600'
-                  }`}
+                  className={cn('text-2xl font-bold', data.summary.saldoActual > 0 ? 'text-destructive' : 'text-success')}
                 >
                   {formatCurrency(data.summary.saldoActual)}
                 </p>
               </div>
               {data.summary.saldoActual > 0 ? (
-                <TrendingUp className="w-8 h-8 text-red-600 opacity-50" />
+                <TrendingUp className="w-8 h-8 text-destructive opacity-50" />
               ) : (
-                <TrendingDown className="w-8 h-8 text-green-600 opacity-50" />
+                <TrendingDown className="w-8 h-8 text-success opacity-50" />
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -360,16 +356,16 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
                       <TableCell className="text-sm text-muted-foreground">
                         {txn.detalles || '-'}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
+                      <TableCell className="text-right font-medium text-destructive">
                         {txn.debe > 0 ? formatCurrency(txn.debe) : '-'}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-success">
                         {txn.haber > 0 ? formatCurrency(txn.haber) : '-'}
                       </TableCell>
                       <TableCell className="text-right font-bold">
                         <span
                           className={
-                            txn.saldo > 0 ? 'text-red-600' : txn.saldo < 0 ? 'text-green-600' : ''
+                            txn.saldo > 0 ? 'text-destructive' : txn.saldo < 0 ? 'text-success' : ''
                           }
                         >
                           {formatCurrency(txn.saldo)}

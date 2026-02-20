@@ -24,15 +24,15 @@ export function Header({ hasAlerts = false, showComparativeAnalysis = false, onT
   const { theme } = useTheme();
 
   const handleExport = () => {
-    console.log('Exportar datos');
+    // TODO: Implement export
   };
 
   const handleShare = () => {
-    console.log('Compartir vista');
+    // TODO: Implement share
   };
 
   const handleSettings = () => {
-    console.log('Abrir configuración');
+    // TODO: Implement settings
   };
 
   return (
@@ -52,7 +52,7 @@ export function Header({ hasAlerts = false, showComparativeAnalysis = false, onT
             
             {hasAlerts && (
               <div className="flex items-center gap-3">
-                <Badge variant="destructive" className="bg-red-50 text-red-600 border-red-200">
+                <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/30">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   Alertas
                 </Badge>
@@ -104,25 +104,25 @@ export function Header({ hasAlerts = false, showComparativeAnalysis = false, onT
         {/* Indicadores de configuración */}
         <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <div className="w-2 h-2 rounded-full bg-info"></div>
             <span>Modo: {filters.comparisonMode}</span>
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <div className="w-2 h-2 rounded-full bg-success"></div>
             <span>Vista: {filters.viewMode}</span>
           </div>
           
           {filters.nominalVsAdjusted === 'adjusted' && (
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+              <div className="w-2 h-2 rounded-full bg-warning"></div>
               <span>Ajustado por inflación</span>
             </div>
           )}
           
           {filters.fxNormalized && (
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <div className="w-2 h-2 rounded-full bg-info"></div>
               <span>FX normalizado</span>
             </div>
           )}

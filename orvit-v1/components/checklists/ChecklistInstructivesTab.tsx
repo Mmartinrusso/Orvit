@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { 
-  BookOpen, 
-  Plus, 
-  FileText, 
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { sanitizeHtml } from '@/lib/sanitize';
+import {
+  BookOpen,
+  Plus,
+  FileText,
   AlertCircle,
   Trash2,
   Edit3,
@@ -357,7 +358,7 @@ export function ChecklistInstructivesTab({ checklistId }: ChecklistInstructivesT
                     <div className="flex items-center gap-2 mb-2">
                       <h5 className="font-medium text-sm">{instructive.title}</h5>
                       {instructive.isDraft && (
-                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                        <span className="text-xs bg-warning-muted text-warning-muted-foreground px-2 py-0.5 rounded">
                           Borrador
                         </span>
                       )}
@@ -373,8 +374,8 @@ export function ChecklistInstructivesTab({ checklistId }: ChecklistInstructivesT
                     )}
                     <div 
                       className="text-xs text-muted-foreground mt-2 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: instructive.content.substring(0, 200) + (instructive.content.length > 200 ? '...' : '') 
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(instructive.content.substring(0, 200) + (instructive.content.length > 200 ? '...' : ''))
                       }}
                     />
                     {instructive.content.length > 200 && (
@@ -399,7 +400,7 @@ export function ChecklistInstructivesTab({ checklistId }: ChecklistInstructivesT
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(instructive.id)}
-                      className="text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                      className="text-primary hover:bg-primary/10"
                       title="Editar instructivo"
                     >
                       <Edit3 className="h-4 w-4" />
@@ -410,7 +411,7 @@ export function ChecklistInstructivesTab({ checklistId }: ChecklistInstructivesT
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteDraft(instructive.id as string)}
-                        className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                        className="text-destructive hover:bg-destructive/10"
                         title="Eliminar borrador"
                       >
                         <Trash2 className="h-4 w-4" />

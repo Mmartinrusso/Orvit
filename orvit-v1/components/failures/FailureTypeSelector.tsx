@@ -82,13 +82,13 @@ export function FailureTypeSelector({
     switch (priority) {
       case 'HIGH':
       case 'CRITICAL':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
       case 'LOW':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-success-muted text-success border-success-muted';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -121,7 +121,7 @@ export function FailureTypeSelector({
         >
           {value ? (
             <div className="flex items-center gap-2 truncate">
-              <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground flex-shrink-0" />
               <span className="truncate">{value.title}</span>
               <Badge variant="outline" className={cn('text-xs', getPriorityColor(value.priority))}>
                 {value.occurrencesCount} vez{value.occurrencesCount !== 1 ? 'es' : ''}

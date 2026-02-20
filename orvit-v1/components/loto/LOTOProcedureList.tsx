@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { LOTOProcedure } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,7 +162,7 @@ export default function LOTOProcedureList({
         <div className="flex gap-2">
           {onRefresh && (
             <Button variant="outline" size="icon" onClick={onRefresh} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
             </Button>
           )}
           {onCreate && (
@@ -245,7 +246,7 @@ export default function LOTOProcedureList({
                       </Badge>
                       <Badge
                         variant={procedure.isApproved ? 'outline' : 'secondary'}
-                        className={`w-fit text-xs ${procedure.isApproved ? 'border-green-300 text-green-700' : ''}`}
+                        className={cn('w-fit text-xs', procedure.isApproved && 'border-success/30 text-success')}
                       >
                         {procedure.isApproved ? 'Aprobado' : 'Pendiente'}
                       </Badge>

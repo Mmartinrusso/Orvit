@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import {
@@ -435,11 +436,11 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="lg" className="p-0 gap-0 max-h-[85vh] flex flex-col">
+      <DialogContent size="lg" className="p-0 gap-0">
         {/* Header fijo */}
         <div className="px-6 py-4 border-b bg-background shrink-0">
           <div className="flex items-center gap-3">
-            <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${isCreateMode ? 'bg-primary/10' : 'bg-muted'}`}>
+            <div className={cn('h-9 w-9 rounded-lg flex items-center justify-center shrink-0', isCreateMode ? 'bg-primary/10' : 'bg-muted')}>
               {isCreateMode ? (
                 <UserPlus className="h-4 w-4 text-primary" />
               ) : (
@@ -485,14 +486,14 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
 
                 <div className="shrink-0">
                   {userData.isActive ? (
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-md">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      <span className="text-[10px] font-medium text-green-700">Activo</span>
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-success-muted rounded-md">
+                      <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                      <span className="text-[10px] font-medium text-success">Activo</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/10 rounded-md">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      <span className="text-[10px] font-medium text-red-700">Inactivo</span>
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-destructive/10 rounded-md">
+                      <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                      <span className="text-[10px] font-medium text-destructive">Inactivo</span>
                     </div>
                   )}
                 </div>
@@ -501,9 +502,9 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
 
             {/* Alertas */}
             {!isCreateMode && isOwnProfile && (
-              <div className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span className="text-xs text-amber-800">
+              <div className="flex items-center gap-2 p-2.5 bg-warning-muted border border-warning-muted-foreground/20 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5 text-warning-muted-foreground shrink-0" />
+                <span className="text-xs text-warning-muted-foreground">
                   Estás editando tu propio perfil. Ten cuidado al cambiar tu rol.
                 </span>
               </div>
@@ -624,35 +625,35 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
                   <span className="text-xs font-medium text-muted-foreground">Actividad</span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  <div className="text-center py-2 px-1 bg-blue-500/5 rounded-md border border-blue-500/10">
-                    <div className="text-base font-semibold text-blue-600">
+                  <div className="text-center py-2 px-1 bg-info-muted/50 rounded-md border border-info-muted-foreground/10">
+                    <div className="text-base font-semibold text-info-muted-foreground">
                       {userData.stats.assignedTasks}
                     </div>
-                    <div className="text-[9px] text-blue-600/70 leading-tight">
+                    <div className="text-[9px] text-info-muted-foreground/70 leading-tight">
                       Tareas<br/>asignadas
                     </div>
                   </div>
-                  <div className="text-center py-2 px-1 bg-green-500/5 rounded-md border border-green-500/10">
-                    <div className="text-base font-semibold text-green-600">
+                  <div className="text-center py-2 px-1 bg-success-muted/50 rounded-md border border-success/10">
+                    <div className="text-base font-semibold text-success">
                       {userData.stats.createdTasks}
                     </div>
-                    <div className="text-[9px] text-green-600/70 leading-tight">
+                    <div className="text-[9px] text-success/70 leading-tight">
                       Tareas<br/>creadas
                     </div>
                   </div>
-                  <div className="text-center py-2 px-1 bg-purple-500/5 rounded-md border border-purple-500/10">
-                    <div className="text-base font-semibold text-purple-600">
+                  <div className="text-center py-2 px-1 bg-muted/50 rounded-md border border-border">
+                    <div className="text-base font-semibold text-foreground">
                       {userData.stats.assignedWorkOrders}
                     </div>
-                    <div className="text-[9px] text-purple-600/70 leading-tight">
+                    <div className="text-[9px] text-foreground/70 leading-tight">
                       OT<br/>asignadas
                     </div>
                   </div>
-                  <div className="text-center py-2 px-1 bg-orange-500/5 rounded-md border border-orange-500/10">
-                    <div className="text-base font-semibold text-orange-600">
+                  <div className="text-center py-2 px-1 bg-warning-muted/50 rounded-md border border-warning-muted-foreground/10">
+                    <div className="text-base font-semibold text-warning-muted-foreground">
                       {userData.stats.createdWorkOrders}
                     </div>
-                    <div className="text-[9px] text-orange-600/70 leading-tight">
+                    <div className="text-[9px] text-warning-muted-foreground/70 leading-tight">
                       OT<br/>creadas
                     </div>
                   </div>
@@ -668,8 +669,8 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
             <div className="flex items-center gap-2">
               {!isCreateMode && hasChanges() && (
                 <>
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs text-amber-600 font-medium">Cambios sin guardar</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-warning-muted-foreground animate-pulse" />
+                  <span className="text-xs text-warning-muted-foreground font-medium">Cambios sin guardar</span>
                 </>
               )}
               {!isCreateMode && !hasChanges() && (

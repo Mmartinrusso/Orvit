@@ -67,7 +67,7 @@ export default function QRLandingPage({ params }: Params) {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
@@ -80,7 +80,7 @@ export default function QRLandingPage({ params }: Params) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
             <QrCode className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -98,10 +98,10 @@ export default function QRLandingPage({ params }: Params) {
   if (!machine) return null;
 
   const getHealthColor = (score?: number) => {
-    if (!score) return 'bg-gray-100 text-gray-800';
-    if (score >= 80) return 'bg-green-100 text-green-800';
-    if (score >= 50) return 'bg-amber-100 text-amber-800';
-    return 'bg-red-100 text-red-800';
+    if (!score) return 'bg-muted text-foreground';
+    if (score >= 80) return 'bg-success-muted text-success-muted-foreground';
+    if (score >= 50) return 'bg-warning-muted text-warning-muted-foreground';
+    return 'bg-destructive/10 text-destructive';
   };
 
   const getHealthLabel = (score?: number) => {
@@ -139,7 +139,7 @@ export default function QRLandingPage({ params }: Params) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-muted p-4">
       <div className="max-w-md mx-auto space-y-4">
         {/* Machine Info Card */}
         <Card>
@@ -235,14 +235,14 @@ export default function QRLandingPage({ params }: Params) {
               <div className="flex items-center gap-4">
                 <div className="text-4xl font-bold">{machine.healthScore}</div>
                 <div className="flex-1">
-                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full ${
                         machine.healthScore >= 80
-                          ? 'bg-green-500'
+                          ? 'bg-success'
                           : machine.healthScore >= 50
-                          ? 'bg-amber-500'
-                          : 'bg-red-500'
+                          ? 'bg-warning'
+                          : 'bg-destructive'
                       }`}
                       style={{ width: `${machine.healthScore}%` }}
                     />

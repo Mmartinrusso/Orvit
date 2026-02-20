@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -333,14 +334,14 @@ export function CreditNoteCreateModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
             Nueva Nota de {formData.tipo === 'NOTA_CREDITO' ? 'Crédito' : 'Débito'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <DialogBody className="space-y-6">
           {/* Header Info */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -392,7 +393,7 @@ export function CreditNoteCreateModal({
                       setFormData({ ...formData, clientId: client.id, invoiceId: '' });
                       setClientSearch('');
                     }}
-                    className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-0"
+                    className="w-full text-left p-3 hover:bg-accent border-b last:border-0"
                   >
                     <div className="font-medium">{client.legalName || client.name}</div>
                     {client.cuit && (
@@ -403,7 +404,7 @@ export function CreditNoteCreateModal({
               </div>
             )}
             {formData.clientId && !clientSearch && (
-              <div className="flex items-center justify-between p-2 bg-blue-50 rounded-md">
+              <div className="flex items-center justify-between p-2 bg-primary/10 rounded-md">
                 <span className="text-sm font-medium">
                   {clients.find((c) => c.id === formData.clientId)?.legalName ||
                     clients.find((c) => c.id === formData.clientId)?.name}
@@ -572,7 +573,7 @@ export function CreditNoteCreateModal({
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-2 rounded text-sm">
+                <div className="bg-muted p-2 rounded text-sm">
                   Subtotal: {formatCurrency(item.cantidad * item.precioUnitario)}
                 </div>
               </div>
@@ -582,7 +583,7 @@ export function CreditNoteCreateModal({
           <Separator />
 
           {/* Totals */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+          <div className="bg-muted p-4 rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
               <span>Neto Gravado:</span>
               <span>{formatCurrency(totals.netoGravado)}</span>
@@ -614,7 +615,7 @@ export function CreditNoteCreateModal({
             <Separator />
             <div className="flex justify-between font-bold text-lg">
               <span>Total:</span>
-              <span className={formData.tipo === 'NOTA_CREDITO' ? 'text-green-600' : 'text-red-600'}>
+              <span className={formData.tipo === 'NOTA_CREDITO' ? 'text-success' : 'text-destructive'}>
                 {formatCurrency(totals.total)}
               </span>
             </div>
@@ -635,7 +636,7 @@ export function CreditNoteCreateModal({
               </Label>
             </div>
           )}
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={saving}>

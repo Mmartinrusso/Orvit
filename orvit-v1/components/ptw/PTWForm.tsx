@@ -21,6 +21,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Sheet,
@@ -366,7 +367,7 @@ export default function PTWForm({
       {/* Hazards */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
           Peligros Identificados *
         </h3>
         <div className="flex gap-2">
@@ -398,7 +399,7 @@ export default function PTWForm({
       {/* Control Measures */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Shield className="h-5 w-5 text-green-500" />
+          <Shield className="h-5 w-5 text-success" />
           Medidas de Control *
         </h3>
         <div className="flex gap-2">
@@ -414,7 +415,7 @@ export default function PTWForm({
         </div>
         <div className="flex flex-wrap gap-2">
           {formData.controlMeasures?.map((measure, idx) => (
-            <Badge key={idx} variant="outline" className="py-1 px-3 border-green-300 text-green-700">
+            <Badge key={idx} variant="outline" className="py-1 px-3 border-success/30 text-success">
               {measure}
               <button onClick={() => removeMeasure(idx)} className="ml-2 hover:text-destructive">
                 <X className="h-3 w-3" />
@@ -463,7 +464,7 @@ export default function PTWForm({
       {/* Emergency Contacts */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Phone className="h-5 w-5 text-blue-500" />
+          <Phone className="h-5 w-5 text-primary" />
           Contactos de Emergencia
         </h3>
         <div className="grid grid-cols-3 gap-2">
@@ -533,16 +534,16 @@ export default function PTWForm({
   if (mode === 'dialog') {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Editar Permiso de Trabajo' : 'Nuevo Permiso de Trabajo'}</DialogTitle>
             <DialogDescription>
               Complete los campos requeridos para {isEditing ? 'actualizar' : 'crear'} el permiso de trabajo.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <DialogBody>
             {content}
-          </ScrollArea>
+          </DialogBody>
           <DialogFooter>{footer}</DialogFooter>
         </DialogContent>
       </Dialog>
@@ -551,7 +552,7 @@ export default function PTWForm({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent size="md" className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{isEditing ? 'Editar Permiso de Trabajo' : 'Nuevo Permiso de Trabajo'}</SheetTitle>
           <SheetDescription>

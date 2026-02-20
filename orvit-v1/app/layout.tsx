@@ -9,6 +9,7 @@ import { CompanyProvider } from '@/contexts/CompanyContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
+import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog-provider';
 import { ModulesProvider } from '@/contexts/ModulesContext';
 import MobileBottomBar from '@/components/layout/MobileBottomBar';
 import { ThemeForce } from '@/components/ThemeForce';
@@ -129,19 +130,21 @@ export default function RootLayout({
                     <NotificationProvider>
                       <NavigationProvider>
                         <ViewModeProvider>
-                          {children}
-                          <MobileBottomBar />
-                          <AssistantWrapper />
-                          <VerificationModal />
-                          <Toaster />
-                          <SonnerToaster
-                            position="top-right"
-                            richColors
-                            closeButton
-                            toastOptions={{
-                              duration: 4000,
-                            }}
-                          />
+                          <ConfirmDialogProvider>
+                            {children}
+                            <MobileBottomBar />
+                            <AssistantWrapper />
+                            <VerificationModal />
+                            <Toaster />
+                            <SonnerToaster
+                              position="top-right"
+                              richColors
+                              closeButton
+                              toastOptions={{
+                                duration: 4000,
+                              }}
+                            />
+                          </ConfirmDialogProvider>
                         </ViewModeProvider>
                       </NavigationProvider>
                     </NotificationProvider>

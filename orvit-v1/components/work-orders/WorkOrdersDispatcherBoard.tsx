@@ -120,14 +120,14 @@ const LANES: Lane[] = [
 ];
 
 const priorityConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  P1: { label: 'P1', color: 'text-white', bgColor: 'bg-red-500' },
-  P2: { label: 'P2', color: 'text-white', bgColor: 'bg-orange-500' },
-  P3: { label: 'P3', color: 'text-black', bgColor: 'bg-yellow-400' },
-  P4: { label: 'P4', color: 'text-white', bgColor: 'bg-green-500' },
-  URGENT: { label: 'P1', color: 'text-white', bgColor: 'bg-red-500' },
-  HIGH: { label: 'P2', color: 'text-white', bgColor: 'bg-orange-500' },
-  MEDIUM: { label: 'P3', color: 'text-black', bgColor: 'bg-yellow-400' },
-  LOW: { label: 'P4', color: 'text-white', bgColor: 'bg-green-500' },
+  P1: { label: 'P1', color: 'text-destructive-foreground', bgColor: 'bg-destructive' },
+  P2: { label: 'P2', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  P3: { label: 'P3', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  P4: { label: 'P4', color: 'text-success-foreground', bgColor: 'bg-success' },
+  URGENT: { label: 'P1', color: 'text-destructive-foreground', bgColor: 'bg-destructive' },
+  HIGH: { label: 'P2', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  MEDIUM: { label: 'P3', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  LOW: { label: 'P4', color: 'text-success-foreground', bgColor: 'bg-success' },
 };
 
 const waitingReasonLabels: Record<string, string> = {
@@ -140,29 +140,29 @@ const waitingReasonLabels: Record<string, string> = {
 };
 
 const slaStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  OK: { label: 'OK', color: 'text-green-700', bgColor: 'bg-green-100' },
-  AT_RISK: { label: 'En riesgo', color: 'text-amber-700', bgColor: 'bg-amber-100' },
-  BREACHED: { label: 'Vencido', color: 'text-red-700', bgColor: 'bg-red-100' },
+  OK: { label: 'OK', color: 'text-success', bgColor: 'bg-success-muted' },
+  AT_RISK: { label: 'En riesgo', color: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted' },
+  BREACHED: { label: 'Vencido', color: 'text-destructive', bgColor: 'bg-destructive/10' },
 };
 
 const laneColorMap: Record<string, string> = {
-  blue: 'border-l-blue-500',
-  yellow: 'border-l-yellow-500',
-  cyan: 'border-l-cyan-500',
-  green: 'border-l-green-500',
-  amber: 'border-l-amber-500',
-  red: 'border-l-red-500',
-  emerald: 'border-l-emerald-500',
+  blue: 'border-l-info',
+  yellow: 'border-l-warning',
+  cyan: 'border-l-info',
+  green: 'border-l-success',
+  amber: 'border-l-warning',
+  red: 'border-l-destructive',
+  emerald: 'border-l-success',
 };
 
 const laneDotColorMap: Record<string, string> = {
-  blue: 'bg-blue-500',
-  yellow: 'bg-yellow-500',
-  cyan: 'bg-cyan-500',
-  green: 'bg-green-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
-  emerald: 'bg-emerald-500',
+  blue: 'bg-info',
+  yellow: 'bg-warning',
+  cyan: 'bg-info',
+  green: 'bg-success',
+  amber: 'bg-warning',
+  red: 'bg-destructive',
+  emerald: 'bg-success',
 };
 
 export function WorkOrdersDispatcherBoard({
@@ -357,8 +357,8 @@ export function WorkOrdersDispatcherBoard({
     return (
       <Card className={cn('p-6', className)}>
         <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-10 w-10 text-red-500" />
-          <p className="text-red-500">Error al cargar el board</p>
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <p className="text-destructive">Error al cargar el board</p>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -408,7 +408,7 @@ export function WorkOrdersDispatcherBoard({
               </Badge>
             )}
             {summary?.slaAtRisk > 0 && (
-              <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+              <Badge variant="outline" className="gap-1 border-warning-muted text-warning-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {summary.slaAtRisk} en riesgo
               </Badge>
@@ -556,9 +556,9 @@ function DispatcherCard({
     <div
       className={cn(
         'p-2 border rounded-lg transition-all hover:shadow-md cursor-pointer bg-card text-xs',
-        workOrder.etaOverdue && 'border-red-400 bg-red-50/50',
-        workOrder.slaStatus === 'BREACHED' && !workOrder.etaOverdue && 'border-red-300',
-        workOrder.slaStatus === 'AT_RISK' && !workOrder.etaOverdue && 'border-amber-300',
+        workOrder.etaOverdue && 'border-destructive bg-destructive/5',
+        workOrder.slaStatus === 'BREACHED' && !workOrder.etaOverdue && 'border-destructive/50',
+        workOrder.slaStatus === 'AT_RISK' && !workOrder.etaOverdue && 'border-warning-muted',
       )}
       onClick={onClick}
     >
@@ -641,7 +641,7 @@ function DispatcherCard({
       <div className="flex items-center gap-1 text-muted-foreground">
         <User className="h-2.5 w-2.5" />
         {workOrder.assignedTo?.name || (
-          <span className="text-amber-600 font-medium">Sin asignar</span>
+          <span className="text-warning-muted-foreground font-medium">Sin asignar</span>
         )}
       </div>
 
@@ -667,7 +667,7 @@ function DispatcherCard({
       {showWaiting && workOrder.waitingReason && (
         <div className={cn(
           'mt-1.5 p-1.5 rounded text-[10px]',
-          workOrder.etaOverdue ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+          workOrder.etaOverdue ? 'bg-destructive/10 text-destructive' : 'bg-warning-muted text-warning-muted-foreground'
         )}>
           <div className="flex items-center gap-1 font-medium">
             <Timer className="h-2.5 w-2.5" />
@@ -677,7 +677,7 @@ function DispatcherCard({
             <div className="mt-0.5">
               ETA: {format(new Date(workOrder.waitingETA), 'dd/MM HH:mm', { locale: es })}
               {workOrder.etaOverdue && (
-                <span className="text-red-600 font-bold ml-1">
+                <span className="text-destructive font-bold ml-1">
                   ({workOrder.etaOverdueHours}h)
                 </span>
               )}
@@ -702,7 +702,7 @@ function DispatcherCard({
       {(laneId === 'listas') && onStart && workOrder.assignedTo && (
         <Button
           size="sm"
-          className="w-full mt-2 h-6 text-[10px] bg-green-600 hover:bg-green-700"
+          className="w-full mt-2 h-6 text-[10px] bg-success hover:bg-success/90"
           onClick={(e) => { e.stopPropagation(); onStart(); }}
         >
           <Play className="h-2.5 w-2.5 mr-1" />

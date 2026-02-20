@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -51,7 +52,7 @@ export function LoadOrderDetailItems({ items, estado }: LoadOrderDetailItemsProp
               items.map((item) => {
                 const hasDifference = isConfirmed && item.cantidadCargada !== item.cantidad;
                 return (
-                  <TableRow key={item.id} className={hasDifference ? 'bg-yellow-50' : ''}>
+                  <TableRow key={item.id} className={hasDifference ? 'bg-warning-muted' : ''}>
                     <TableCell className="text-sm font-mono text-center">
                       {item.secuencia || '-'}
                     </TableCell>
@@ -75,7 +76,7 @@ export function LoadOrderDetailItems({ items, estado }: LoadOrderDetailItemsProp
                       <TableCell className="text-sm text-center">
                         {item.cantidadCargada !== null ? (
                           <div className="flex items-center justify-center gap-1">
-                            <span className={`font-medium ${hasDifference ? 'text-orange-600' : ''}`}>
+                            <span className={cn('font-medium', hasDifference && 'text-orange-600')}>
                               {item.cantidadCargada}
                             </span>
                             {hasDifference && (

@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -251,15 +252,16 @@ export function DespachoFormModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4">
+      <DialogContent size="lg">
+        <DialogHeader>
           <DialogTitle>Nuevo Despacho</DialogTitle>
           <DialogDescription>
             Registra la salida de materiales del almacén
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit}>
+        <DialogBody className="space-y-6">
           {/* Primera fila: Tipo y Depósito */}
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -393,7 +395,7 @@ export function DespachoFormModal({
                           <div className="text-right">
                             <p className={cn(
                               'text-sm font-medium',
-                              item.stockDisponible <= 0 && 'text-red-500'
+                              item.stockDisponible <= 0 && 'text-destructive'
                             )}>
                               {item.stockDisponible?.toFixed(2)} {item.supplierItem?.unidad}
                             </p>
@@ -429,7 +431,7 @@ export function DespachoFormModal({
                       </TableCell>
                       <TableCell className="text-right">
                         <span className={cn(
-                          item.stockDisponible < item.cantidadDespachada && 'text-red-500'
+                          item.stockDisponible < item.cantidadDespachada && 'text-destructive'
                         )}>
                           {item.stockDisponible.toFixed(2)}
                         </span>
@@ -447,7 +449,7 @@ export function DespachoFormModal({
                           }
                           className={cn(
                             'w-full text-right',
-                            item.cantidadDespachada > item.stockDisponible && 'border-red-500'
+                            item.cantidadDespachada > item.stockDisponible && 'border-destructive'
                           )}
                         />
                       </TableCell>
@@ -479,7 +481,7 @@ export function DespachoFormModal({
 
             {/* Warning si hay items con stock insuficiente */}
             {items.some((i) => i.cantidadDespachada > i.stockDisponible) && (
-              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md text-red-700">
+              <div className="flex items-center gap-2 p-2 bg-destructive/10 border border-destructive/30 rounded-md text-destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-sm">
                   Algunos items exceden el stock disponible
@@ -488,7 +490,9 @@ export function DespachoFormModal({
             )}
           </div>
 
-          <DialogFooter className="pt-4 gap-2">
+          </DialogBody>
+
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>

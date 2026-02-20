@@ -61,20 +61,12 @@ export async function GET(
         // Extraer frecuencia de los datos almacenados PRIMERO
         let frequency = undefined;
         let frequencyUnit = undefined;
-        
-        console.log('🔍 Datos del mantenimiento:', {
-          id: doc.id,
-          title: data.title,
-          frequencyDays: data.frequencyDays,
-          dataKeys: Object.keys(data)
-        });
-        
+
         // Intentar extraer frecuencia de diferentes campos posibles
         let frequencyDays = data.frequencyDays || data.frequency || data.frequencyValue;
         
         if (frequencyDays) {
           const days = Number(frequencyDays);
-          console.log('📅 Convirtiendo frequencyDays:', days, 'días');
           
           if (days >= 365) {
             frequency = Math.floor(days / 365).toString();
@@ -90,17 +82,14 @@ export async function GET(
             frequencyUnit = 'days';
           }
           
-          console.log('✅ Frecuencia calculada:', { frequency, frequencyUnit });
         } else {
           // Si no hay datos de frecuencia, usar valores por defecto para mantenimientos preventivos
           if (data.title && data.title.toLowerCase().includes('aceite')) {
             frequency = '1';
             frequencyUnit = 'months';
-            console.log('🔄 Usando frecuencia por defecto para cambio de aceite: Mensual');
           } else {
             frequency = '1';
             frequencyUnit = 'months';
-            console.log('🔄 Usando frecuencia por defecto: Mensual');
           }
         }
 
@@ -120,15 +109,7 @@ export async function GET(
         if (completedDate && frequency && frequencyUnit) {
           const completed = new Date(completedDate);
           const freq = parseInt(frequency);
-          
-          console.log(`🔍 Mantenimiento ${doc.id} - FORZANDO cálculo:`, {
-            completedDate,
-            frequency,
-            frequencyUnit,
-            originalScheduledDate: data.nextMaintenanceDate,
-            status: data.status
-          });
-          
+
           // Calcular la próxima fecha basada en la frecuencia
           let nextDate = new Date(completed);
           
@@ -148,17 +129,7 @@ export async function GET(
           }
           
           scheduledDate = nextDate.toISOString();
-          console.log(`📅 Mantenimiento ${doc.id}: PRÓXIMA FECHA CALCULADA: ${completedDate} + ${frequency} ${frequencyUnit} = ${scheduledDate}`);
         } else {
-          console.log(`⚠️ Mantenimiento ${doc.id}: No se puede calcular próxima fecha:`, {
-            status: data.status,
-            completedDate,
-            frequency,
-            frequencyUnit,
-            hasCompletedDate: !!completedDate,
-            hasFrequency: !!frequency,
-            hasFrequencyUnit: !!frequencyUnit
-          });
         }
         
         return {

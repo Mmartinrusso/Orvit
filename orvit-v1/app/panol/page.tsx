@@ -62,15 +62,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 const ITEM_TYPE_CONFIG = {
-  TOOL: { label: 'Herramienta', icon: Wrench, color: 'bg-blue-500', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600' },
-  SUPPLY: { label: 'Insumo', icon: Box, color: 'bg-green-500', iconBg: 'bg-green-100 dark:bg-green-900/30', iconColor: 'text-green-600' },
+  TOOL: { label: 'Herramienta', icon: Wrench, color: 'bg-info', iconBg: 'bg-info-muted', iconColor: 'text-info-muted-foreground' },
+  SUPPLY: { label: 'Insumo', icon: Box, color: 'bg-success', iconBg: 'bg-success-muted', iconColor: 'text-success' },
   SPARE_PART: { label: 'Repuesto', icon: Cog, color: 'bg-purple-500', iconBg: 'bg-purple-100 dark:bg-purple-900/30', iconColor: 'text-purple-600' },
-  HAND_TOOL: { label: 'Herramienta Manual', icon: Wrench, color: 'bg-amber-500', iconBg: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600' },
+  HAND_TOOL: { label: 'Herramienta Manual', icon: Wrench, color: 'bg-warning', iconBg: 'bg-warning-muted', iconColor: 'text-warning-muted-foreground' },
 };
 
 export default function PanolPage() {
+  const confirm = useConfirm();
   const { currentCompany } = useCompany();
   const permissions = usePanolPermissions();
 
@@ -143,7 +145,13 @@ export default function PanolPage() {
       toast.error('No tienes permisos para eliminar productos');
       return;
     }
-    if (!confirm(`¿Eliminar "${tool.name}"? Esta acción no se puede deshacer.`)) return;
+    const ok = await confirm({
+      title: 'Eliminar producto',
+      description: `¿Eliminar "${tool.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       toast.loading('Eliminando...', { id: 'delete' });
@@ -243,9 +251,9 @@ export default function PanolPage() {
       return <Badge variant="destructive" className="text-xs">Sin stock</Badge>;
     }
     if (tool.stockQuantity <= tool.minStockLevel) {
-      return <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">Stock bajo</Badge>;
+      return <Badge variant="outline" className="text-xs border-warning-muted text-warning-muted-foreground">Stock bajo</Badge>;
     }
-    return <Badge variant="outline" className="text-xs border-green-500 text-green-600">OK</Badge>;
+    return <Badge variant="outline" className="text-xs border-success-muted text-success">OK</Badge>;
   };
 
   const clearFilters = () => {
@@ -304,29 +312,29 @@ export default function PanolPage() {
               </CardContent>
             </Card>
 
-            <Card className={stats.lowStock > 0 ? 'border-amber-500/50' : ''}>
+            <Card className={stats.lowStock > 0 ? 'border-warning-muted/50' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Stock Bajo</p>
-                    <p className="text-2xl font-bold mt-1 text-amber-600">{stats.lowStock}</p>
+                    <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{stats.lowStock}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                    <TrendingDown className="h-4 w-4 text-amber-600" />
+                  <div className="p-2 rounded-lg bg-warning-muted">
+                    <TrendingDown className="h-4 w-4 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={stats.outOfStock > 0 ? 'border-red-500/50' : ''}>
+            <Card className={stats.outOfStock > 0 ? 'border-destructive/30/50' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Sin Stock</p>
-                    <p className="text-2xl font-bold mt-1 text-red-600">{stats.outOfStock}</p>
+                    <p className="text-2xl font-bold mt-1 text-destructive">{stats.outOfStock}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                   </div>
                 </div>
               </CardContent>
@@ -340,8 +348,8 @@ export default function PanolPage() {
                       <p className="text-xs font-medium text-muted-foreground">Valor Total</p>
                       <p className="text-2xl font-bold mt-1">${stats.totalValue.toLocaleString('es-AR')}</p>
                     </div>
-                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                      <Package className="h-4 w-4 text-green-600" />
+                    <div className="p-2 rounded-lg bg-success-muted">
+                      <Package className="h-4 w-4 text-success" />
                     </div>
                   </div>
                 </CardContent>
@@ -527,8 +535,8 @@ export default function PanolPage() {
                         <TableCell className="text-center">
                           <span className={cn(
                             "text-sm font-semibold",
-                            tool.stockQuantity === 0 && "text-red-600",
-                            tool.stockQuantity > 0 && tool.stockQuantity <= tool.minStockLevel && "text-amber-600"
+                            tool.stockQuantity === 0 && "text-destructive",
+                            tool.stockQuantity > 0 && tool.stockQuantity <= tool.minStockLevel && "text-warning-muted-foreground"
                           )}>
                             {tool.stockQuantity}
                           </span>
@@ -547,7 +555,7 @@ export default function PanolPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 text-green-600"
+                                  className="h-7 w-7 text-success"
                                   onClick={(e) => { e.stopPropagation(); handleStockIn(tool); }}
                                 >
                                   <ArrowUp className="h-3.5 w-3.5" />
@@ -560,7 +568,7 @@ export default function PanolPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 text-red-600"
+                                  className="h-7 w-7 text-destructive"
                                   onClick={(e) => { e.stopPropagation(); handleStockOut(tool); }}
                                   disabled={tool.stockQuantity === 0}
                                 >
@@ -596,7 +604,7 @@ export default function PanolPage() {
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-red-600"
+                                      className="text-destructive"
                                       onClick={() => handleDeleteTool(tool)}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" /> Eliminar
@@ -627,15 +635,15 @@ export default function PanolPage() {
                     key={tool.id}
                     className={cn(
                       "group cursor-pointer transition-all hover:shadow-md overflow-hidden",
-                      isOutOfStock && "border-red-500/50",
-                      isLowStock && !isOutOfStock && "border-amber-500/50"
+                      isOutOfStock && "border-destructive/30/50",
+                      isLowStock && !isOutOfStock && "border-warning-muted/50"
                     )}
                     onClick={() => handleViewTool(tool)}
                   >
                     {/* Status bar */}
                     <div className={cn(
                       "h-1 w-full",
-                      isOutOfStock ? "bg-red-500" : isLowStock ? "bg-amber-500" : "bg-green-500"
+                      isOutOfStock ? "bg-destructive" : isLowStock ? "bg-warning" : "bg-success"
                     )} />
 
                     <CardContent className="p-4">
@@ -671,7 +679,7 @@ export default function PanolPage() {
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-red-600"
+                                  className="text-destructive"
                                   onClick={() => handleDeleteTool(tool)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" /> Eliminar
@@ -717,8 +725,8 @@ export default function PanolPage() {
                           <div className="flex items-baseline gap-1">
                             <span className={cn(
                               "text-lg font-bold",
-                              isOutOfStock && "text-red-600",
-                              isLowStock && !isOutOfStock && "text-amber-600"
+                              isOutOfStock && "text-destructive",
+                              isLowStock && !isOutOfStock && "text-warning-muted-foreground"
                             )}>
                               {tool.stockQuantity}
                             </span>
@@ -731,7 +739,7 @@ export default function PanolPage() {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50"
+                                className="h-8 w-8 text-success border-success-muted hover:bg-success-muted"
                                 onClick={(e) => { e.stopPropagation(); handleStockIn(tool); }}
                               >
                                 <ArrowUp className="h-4 w-4" />
@@ -744,7 +752,7 @@ export default function PanolPage() {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50"
+                                className="h-8 w-8 text-destructive border-destructive/30 hover:bg-destructive/10"
                                 onClick={(e) => { e.stopPropagation(); handleStockOut(tool); }}
                                 disabled={tool.stockQuantity === 0}
                               >

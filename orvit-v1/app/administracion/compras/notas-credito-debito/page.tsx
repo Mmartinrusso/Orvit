@@ -43,6 +43,7 @@ import {
 import { toast } from 'sonner';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface NotaCreditoDebito {
   id: number;
@@ -88,6 +89,7 @@ const estadoColors: Record<string, string> = {
 };
 
 export default function NotasCreditoDebitoPage() {
+  const confirm = useConfirm();
   // ViewMode context - determina si se puede crear T2
   const { mode: viewMode } = useViewMode();
 
@@ -237,14 +239,21 @@ export default function NotasCreditoDebitoPage() {
   };
 
   const handleAction = async (nota: NotaCreditoDebito, accion: string) => {
-    const confirmMessages: Record<string, string> = {
+    const actionMessages: Record<string, string> = {
       aprobar: `¿Aprobar ${nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'} ${nota.numero}?`,
       rechazar: `¿Rechazar ${nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'} ${nota.numero}?`,
       aplicar: `¿Aplicar ${nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'} ${nota.numero}? Esta acción es irreversible.`,
       anular: `¿Anular ${nota.tipo === 'NOTA_CREDITO' ? 'NC' : 'ND'} ${nota.numero}?`
     };
 
-    if (!confirm(confirmMessages[accion])) return;
+    const isDestructive = accion === 'rechazar' || accion === 'anular';
+    const ok = await confirm({
+      title: accion.charAt(0).toUpperCase() + accion.slice(1),
+      description: actionMessages[accion],
+      confirmText: isDestructive ? 'Eliminar' : 'Confirmar',
+      variant: isDestructive ? 'destructive' : 'default',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/notas-credito-debito/${nota.id}`, {
@@ -311,9 +320,9 @@ export default function NotasCreditoDebitoPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Notas de Crédito</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totales.creditos)}</p>
+                <p className="text-2xl font-bold text-success">{formatCurrency(totales.creditos)}</p>
               </div>
-              <ArrowDownCircle className="w-8 h-8 text-green-500" />
+              <ArrowDownCircle className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -322,9 +331,9 @@ export default function NotasCreditoDebitoPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Notas de Débito</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(totales.debitos)}</p>
+                <p className="text-2xl font-bold text-destructive">{formatCurrency(totales.debitos)}</p>
               </div>
-              <ArrowUpCircle className="w-8 h-8 text-red-500" />
+              <ArrowUpCircle className="w-8 h-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -335,7 +344,7 @@ export default function NotasCreditoDebitoPage() {
                 <p className="text-sm text-muted-foreground">Pendientes</p>
                 <p className="text-2xl font-bold">{totales.pendientes}</p>
               </div>
-              <FileText className="w-8 h-8 text-orange-500" />
+              <FileText className="w-8 h-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -445,7 +454,7 @@ export default function NotasCreditoDebitoPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-green-600"
+                              className="text-success"
                               onClick={() => handleAction(nota, 'aprobar')}
                             >
                               <Check className="w-4 h-4" />
@@ -464,7 +473,7 @@ export default function NotasCreditoDebitoPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-blue-600"
+                            className="text-info-muted-foreground"
                             onClick={() => handleAction(nota, 'aplicar')}
                           >
                             Aplicar

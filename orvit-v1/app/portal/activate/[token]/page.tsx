@@ -42,7 +42,7 @@ function validatePassword(password: string): PasswordValidation {
 
 function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
   return (
-    <div className={`flex items-center gap-2 text-xs ${met ? 'text-green-600' : 'text-muted-foreground'}`}>
+    <div className={`flex items-center gap-2 text-xs ${met ? 'text-success' : 'text-muted-foreground'}`}>
       {met ? (
         <Check className="h-3.5 w-3.5" />
       ) : (
@@ -198,8 +198,8 @@ export default function ActivateAccountPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <Check className="h-6 w-6 text-green-600" />
+            <div className="mx-auto h-12 w-12 rounded-full bg-success-muted flex items-center justify-center mb-4">
+              <Check className="h-6 w-6 text-success" />
             </div>
             <CardTitle>Cuenta activada</CardTitle>
             <CardDescription>Tu cuenta ha sido activada correctamente</CardDescription>
@@ -319,7 +319,7 @@ export default function ActivateAccountPage() {
                   <p className="text-xs text-destructive">Las contraseñas no coinciden</p>
                 )}
                 {passwordsMatch && (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
+                  <p className="text-xs text-success flex items-center gap-1">
                     <Check className="h-3 w-3" /> Las contraseñas coinciden
                   </p>
                 )}

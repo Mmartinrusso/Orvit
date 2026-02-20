@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -221,7 +222,7 @@ export function WhatsAppButton(props: WhatsAppButtonProps) {
       size={size}
       onClick={handleSend}
       disabled={disabled || !phone}
-      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+      className="text-success hover:text-success hover:bg-success-muted"
     >
       <MessageCircle className="w-4 h-4" />
       {showLabel && <span className="ml-2">WhatsApp</span>}
@@ -387,7 +388,7 @@ export function WhatsAppDropdown(props: WhatsAppDropdownProps) {
           variant={variant}
           size={size}
           disabled={disabled || !phone}
-          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+          className="text-success hover:text-success hover:bg-success-muted"
         >
           <MessageCircle className="w-4 h-4 mr-2" />
           WhatsApp
@@ -460,7 +461,7 @@ export function WhatsAppIconButton({
       size="icon"
       onClick={handleClick}
       disabled={disabled || !phone}
-      className={`text-green-600 hover:text-green-700 hover:bg-green-50 ${className}`}
+      className={cn('text-success hover:text-success hover:bg-success-muted', className)}
       title={title}
     >
       <MessageCircle className="w-4 h-4" />

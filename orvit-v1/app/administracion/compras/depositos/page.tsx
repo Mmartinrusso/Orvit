@@ -35,6 +35,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Deposito {
   id: number;
@@ -52,6 +53,7 @@ interface Deposito {
 }
 
 export default function DepositosPage() {
+  const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [depositos, setDepositos] = useState<Deposito[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,7 +144,13 @@ export default function DepositosPage() {
   };
 
   const handleDelete = async (deposito: Deposito) => {
-    if (!confirm(`¿Desactivar el depósito "${deposito.nombre}"?`)) return;
+    const ok = await confirm({
+      title: 'Desactivar depósito',
+      description: `¿Desactivar el depósito "${deposito.nombre}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/depositos/${deposito.id}`, {
@@ -190,7 +198,7 @@ export default function DepositosPage() {
                 <p className="text-sm text-muted-foreground">Total Depósitos</p>
                 <p className="text-2xl font-bold">{depositos.filter(d => d.isActive).length}</p>
               </div>
-              <Warehouse className="w-8 h-8 text-blue-500" />
+              <Warehouse className="w-8 h-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -203,7 +211,7 @@ export default function DepositosPage() {
                   {depositos.reduce((acc, d) => acc + d._count.stockLocations, 0)}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-green-500" />
+              <Package className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -269,7 +277,7 @@ export default function DepositosPage() {
                       <div className="flex items-center gap-2">
                         {deposito.codigo}
                         {deposito.isDefault && (
-                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                          <Star className="w-4 h-4 text-warning-muted-foreground fill-yellow-500" />
                         )}
                       </div>
                     </TableCell>

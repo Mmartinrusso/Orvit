@@ -139,8 +139,8 @@ export function DeliveryAnalyticsDashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Package className="w-6 h-6 text-blue-600" />
+              <div className="p-3 bg-info-muted rounded-lg">
+                <Package className="w-6 h-6 text-info-muted-foreground" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Total Entregas</p>
@@ -153,17 +153,17 @@ export function DeliveryAnalyticsDashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-success-muted rounded-lg">
+                <CheckCircle2 className="w-6 h-6 text-success" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Tasa Entrega a Tiempo</p>
                 <div className="flex items-center gap-2">
                   <p className="text-3xl font-bold">{overview.onTimeRate}%</p>
                   {overview.onTimeRate >= 80 ? (
-                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <TrendingUp className="w-5 h-5 text-success" />
                   ) : (
-                    <TrendingDown className="w-5 h-5 text-red-600" />
+                    <TrendingDown className="w-5 h-5 text-destructive" />
                   )}
                 </div>
               </div>
@@ -295,7 +295,7 @@ export function DeliveryAnalyticsDashboard() {
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5">
                       <div
-                        className="bg-red-500 h-1.5 rounded-full"
+                        className="bg-destructive h-1.5 rounded-full"
                         style={{
                           width: `${(failure.count / failureAnalysis[0].count) * 100}%`,
                         }}
@@ -339,12 +339,12 @@ export function DeliveryAnalyticsDashboard() {
                   </div>
                   <div className="flex gap-1 h-6">
                     <div
-                      className="bg-blue-500 rounded"
+                      className="bg-primary rounded"
                       style={{ width: `${(day.created / maxValue) * 100}%` }}
                       title={`${day.created} creadas`}
                     />
                     <div
-                      className="bg-green-500 rounded"
+                      className="bg-success rounded"
                       style={{ width: `${(day.delivered / maxValue) * 100}%` }}
                       title={`${day.delivered} entregadas`}
                     />
@@ -355,11 +355,11 @@ export function DeliveryAnalyticsDashboard() {
           </div>
           <div className="mt-4 flex justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded" />
+              <div className="w-3 h-3 bg-primary rounded" />
               <span>Creadas</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded" />
+              <div className="w-3 h-3 bg-success rounded" />
               <span>Entregadas</span>
             </div>
           </div>

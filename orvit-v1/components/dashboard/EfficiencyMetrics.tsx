@@ -41,10 +41,10 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
 
   // Determinar nivel de eficiencia
   const getEfficiencyLevel = (ratio: number) => {
-    if (ratio >= 90) return { label: 'Excelente', color: 'text-green-600 dark:text-green-400' };
-    if (ratio >= 70) return { label: 'Bueno', color: 'text-gray-600 dark:text-gray-400' };
-    if (ratio >= 50) return { label: 'Regular', color: 'text-amber-600 dark:text-amber-400' };
-    return { label: 'Bajo', color: 'text-red-600 dark:text-red-400' };
+    if (ratio >= 90) return { label: 'Excelente', color: 'text-success' };
+    if (ratio >= 70) return { label: 'Bueno', color: 'text-muted-foreground' };
+    if (ratio >= 50) return { label: 'Regular', color: 'text-warning-muted-foreground' };
+    return { label: 'Bajo', color: 'text-destructive' };
   };
 
   const efficiencyLevel = getEfficiencyLevel(costEfficiency);
@@ -109,10 +109,10 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
                   strokeWidth="8"
                   className={cn(
                     "fill-none transition-all duration-500",
-                    costEfficiency >= 25 ? "stroke-green-500" :
-                    costEfficiency >= 15 ? "stroke-gray-500" :
-                    costEfficiency >= 0 ? "stroke-amber-500" :
-                    "stroke-red-500"
+                    costEfficiency >= 25 ? "stroke-success" :
+                    costEfficiency >= 15 ? "stroke-muted-foreground" :
+                    costEfficiency >= 0 ? "stroke-warning" :
+                    "stroke-destructive"
                   )}
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 40}
@@ -153,14 +153,14 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
                   className={cn(
                     "p-2 rounded-md text-center",
                     metric.highlight
-                      ? "bg-green-50 dark:bg-green-950/30"
+                      ? "bg-success-muted"
                       : "bg-muted/50"
                   )}
                 >
                   <p className="text-xs text-muted-foreground mb-0.5">{metric.label}</p>
                   <p className={cn(
                     "text-sm font-bold",
-                    metric.highlight ? "text-green-600 dark:text-green-400" : "text-foreground"
+                    metric.highlight ? "text-success" : "text-foreground"
                   )}>
                     {metric.value}
                   </p>
@@ -175,9 +175,9 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
               <span className="text-muted-foreground">Ratio Costo/Venta</span>
               <span className={cn(
                 "font-semibold",
-                100 - costEfficiency <= 60 ? "text-green-600 dark:text-green-400" :
-                100 - costEfficiency <= 80 ? "text-amber-600 dark:text-amber-400" :
-                "text-red-600 dark:text-red-400"
+                100 - costEfficiency <= 60 ? "text-success" :
+                100 - costEfficiency <= 80 ? "text-warning-muted-foreground" :
+                "text-destructive"
               )}>
                 {(100 - costEfficiency).toFixed(1)}%
               </span>
@@ -186,9 +186,9 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
-                  100 - costEfficiency <= 60 ? "bg-green-500" :
-                  100 - costEfficiency <= 80 ? "bg-amber-500" :
-                  "bg-red-500"
+                  100 - costEfficiency <= 60 ? "bg-success" :
+                  100 - costEfficiency <= 80 ? "bg-warning" :
+                  "bg-destructive"
                 )}
                 style={{ width: `${Math.min(100 - costEfficiency, 100)}%` }}
               />

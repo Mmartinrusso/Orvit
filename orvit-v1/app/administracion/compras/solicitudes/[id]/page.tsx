@@ -131,24 +131,24 @@ interface Solicitud {
 
 const getEstadoBadge = (estado: string) => {
   const estados: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
-    borrador: { color: 'bg-gray-100 text-gray-700 border-gray-200', label: 'Borrador', icon: <FileText className="w-3 h-3" /> },
-    pendiente: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Pendiente', icon: <Clock className="w-3 h-3" /> },
-    en_revision: { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'En Revisión', icon: <AlertTriangle className="w-3 h-3" /> },
-    aprobada: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Pendiente de Pago', icon: <CreditCard className="w-3 h-3" /> },
-    rechazada: { color: 'bg-red-100 text-red-700 border-red-200', label: 'Rechazada', icon: <XCircle className="w-3 h-3" /> },
-    convertida: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Convertida', icon: <DollarSign className="w-3 h-3" /> },
+    borrador: { color: 'bg-muted text-foreground border-border', label: 'Borrador', icon: <FileText className="w-3 h-3" /> },
+    pendiente: { color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', label: 'Pendiente', icon: <Clock className="w-3 h-3" /> },
+    en_revision: { color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', label: 'En Revisión', icon: <AlertTriangle className="w-3 h-3" /> },
+    aprobada: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Pendiente de Pago', icon: <CreditCard className="w-3 h-3" /> },
+    rechazada: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Rechazada', icon: <XCircle className="w-3 h-3" /> },
+    convertida: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Convertida', icon: <DollarSign className="w-3 h-3" /> },
     pagada: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Pagada', icon: <CheckCircle className="w-3 h-3" /> },
-    cancelada: { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Cancelada', icon: <XCircle className="w-3 h-3" /> }
+    cancelada: { color: 'bg-muted text-foreground border-border', label: 'Cancelada', icon: <XCircle className="w-3 h-3" /> }
   };
   return estados[estado] || estados.pendiente;
 };
 
 const getPrioridadBadge = (prioridad: string) => {
   const prioridades: Record<string, { color: string; label: string }> = {
-    baja: { color: 'bg-gray-100 text-gray-600 border-gray-200', label: 'Baja' },
-    media: { color: 'bg-blue-100 text-blue-600 border-blue-200', label: 'Media' },
-    alta: { color: 'bg-orange-100 text-orange-600 border-orange-200', label: 'Alta' },
-    urgente: { color: 'bg-red-100 text-red-600 border-red-200', label: 'Urgente' }
+    baja: { color: 'bg-muted text-muted-foreground border-border', label: 'Baja' },
+    media: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Media' },
+    alta: { color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', label: 'Alta' },
+    urgente: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Urgente' }
   };
   return prioridades[prioridad] || prioridades.media;
 };
@@ -369,7 +369,7 @@ export default function SolicitudDetallePage() {
                 <>
                   <DropdownMenuItem
                     onClick={handleAprobar}
-                    className="text-green-600 focus:text-green-600"
+                    className="text-success focus:text-success"
                     disabled={actionLoading}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -377,7 +377,7 @@ export default function SolicitudDetallePage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setShowRejectDialog(true)}
-                    className="text-red-600 focus:text-red-600"
+                    className="text-destructive focus:text-destructive"
                     disabled={actionLoading}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
@@ -521,17 +521,17 @@ export default function SolicitudDetallePage() {
 
             {/* Motivo de rechazo */}
             {solicitud.motivoRechazo && (
-              <Card className="border-red-200 bg-red-50/50">
+              <Card className="border-destructive/30 bg-destructive/10/50">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-red-700 flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-destructive flex items-center gap-2">
                     <XCircle className="w-4 h-4" />
                     Motivo de Rechazo
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-red-600">{solicitud.motivoRechazo}</p>
+                  <p className="text-sm text-destructive">{solicitud.motivoRechazo}</p>
                   {solicitud.rechazadoPor && (
-                    <p className="text-xs text-red-500 mt-2">
+                    <p className="text-xs text-destructive mt-2">
                       Rechazado por: {solicitud.rechazadoPor.nombre}
                     </p>
                   )}

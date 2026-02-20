@@ -221,11 +221,11 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
                 "w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold border-4",
                 healthData?.healthScore?.current
                   ? healthData.healthScore.current >= 80
-                    ? "border-green-500 text-green-600 bg-green-50"
+                    ? "border-success text-success bg-success-muted"
                     : healthData.healthScore.current >= 50
-                      ? "border-yellow-500 text-yellow-600 bg-yellow-50"
-                      : "border-red-500 text-red-600 bg-red-50"
-                  : "border-gray-300 text-gray-400 bg-gray-50"
+                      ? "border-warning text-warning bg-warning-muted"
+                      : "border-destructive text-destructive bg-destructive/10"
+                  : "border-border text-muted-foreground bg-muted"
               )}>
                 {healthData?.healthScore?.current ?? '—'}
               </div>
@@ -269,7 +269,7 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
           title="Fallas Abiertas"
           value={statsData?.stats?.openFailures ?? 0}
           icon={AlertTriangle}
-          iconColor="text-red-500"
+          iconColor="text-destructive"
           trend={statsData?.stats?.openFailures === 0 ? 'positive' : 'negative'}
           onClick={() => onTabChange?.('failures')}
         />
@@ -277,7 +277,7 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
           title="OTs Pendientes"
           value={statsData?.stats?.pendingWorkOrders ?? 0}
           icon={Wrench}
-          iconColor="text-orange-500"
+          iconColor="text-warning"
           trend={statsData?.stats?.pendingWorkOrders === 0 ? 'positive' : 'neutral'}
           onClick={() => onTabChange?.('maintenance')}
         />
@@ -285,14 +285,14 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
           title="Componentes"
           value={statsData?.stats?.totalComponents ?? (machine as any)._count?.components ?? 0}
           icon={Settings}
-          iconColor="text-blue-500"
+          iconColor="text-info"
           onClick={() => onTabChange?.('components')}
         />
         <StatCard
           title="Documentos"
           value={statsData?.stats?.totalDocuments ?? 0}
           icon={FileText}
-          iconColor="text-purple-500"
+          iconColor="text-primary"
           onClick={() => onTabChange?.('docs')}
         />
       </div>
@@ -311,28 +311,28 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">MTBF</p>
-                <p className="text-xl font-bold text-green-600">
+                <p className="text-xl font-bold text-success">
                   {statsData?.kpis?.mtbf ? `${statsData.kpis.mtbf}h` : '—'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Tiempo medio entre fallas</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">MTTR</p>
-                <p className="text-xl font-bold text-orange-600">
+                <p className="text-xl font-bold text-warning">
                   {statsData?.kpis?.mttr ? `${statsData.kpis.mttr}h` : '—'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Tiempo medio de reparación</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">Disponibilidad</p>
-                <p className="text-xl font-bold text-blue-600">
+                <p className="text-xl font-bold text-info">
                   {statsData?.kpis?.availability ? `${statsData.kpis.availability}%` : '—'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Uptime del activo</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">OEE</p>
-                <p className="text-xl font-bold text-purple-600">
+                <p className="text-xl font-bold text-primary">
                   {statsData?.kpis?.oee ? `${statsData.kpis.oee}%` : '—'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Eficiencia global</p>
@@ -365,7 +365,7 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
                   const isNearTrigger = progress >= 80;
 
                   return (
-                    <div key={counter.id} className={cn("p-2 rounded-lg border", isNearTrigger && "border-amber-300 bg-amber-50")}>
+                    <div key={counter.id} className={cn("p-2 rounded-lg border", isNearTrigger && "border-warning/30 bg-warning-muted")}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm font-medium">{counter.name}</span>
                         <span className="text-sm font-bold">
@@ -373,7 +373,7 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
                         </span>
                       </div>
                       {trigger && (
-                        <Progress value={progress} className={cn("h-1.5", isNearTrigger && "bg-amber-200")} />
+                        <Progress value={progress} className={cn("h-1.5", isNearTrigger && "bg-warning/20")} />
                       )}
                     </div>
                   );
@@ -444,7 +444,7 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total Mantenimiento</span>
-                <span className="text-sm font-bold text-green-600">
+                <span className="text-sm font-bold text-success">
                   ${(statsData?.costs?.totalMaintenance ?? 0).toLocaleString()}
                 </span>
               </div>
@@ -524,15 +524,15 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
                   <div key={idx} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
                     <div className={cn(
                       "p-1.5 rounded-full",
-                      activity.type === 'failure' ? 'bg-red-100' :
-                      activity.type === 'workOrder' ? 'bg-blue-100' : 'bg-green-100'
+                      activity.type === 'failure' ? 'bg-destructive/10' :
+                      activity.type === 'workOrder' ? 'bg-info-muted' : 'bg-success-muted'
                     )}>
                       {activity.type === 'failure' ? (
-                        <AlertTriangle className="h-3 w-3 text-red-600" />
+                        <AlertTriangle className="h-3 w-3 text-destructive" />
                       ) : activity.type === 'workOrder' ? (
-                        <Wrench className="h-3 w-3 text-blue-600" />
+                        <Wrench className="h-3 w-3 text-info" />
                       ) : (
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <CheckCircle className="h-3 w-3 text-success" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -585,7 +585,7 @@ interface StatCardProps {
   onClick?: () => void;
 }
 
-function StatCard({ title, value, icon: Icon, iconColor = 'text-gray-500', trend, onClick }: StatCardProps) {
+function StatCard({ title, value, icon: Icon, iconColor = 'text-muted-foreground', trend, onClick }: StatCardProps) {
   return (
     <Card
       className={cn("cursor-pointer hover:shadow-md transition-shadow", onClick && "hover:border-primary/50")}
@@ -605,13 +605,13 @@ function StatCard({ title, value, icon: Icon, iconColor = 'text-gray-500', trend
           <div className="mt-2 flex items-center text-xs">
             {trend === 'positive' ? (
               <>
-                <ArrowDownRight className="h-3 w-3 text-green-500 mr-1" />
-                <span className="text-green-600">Óptimo</span>
+                <ArrowDownRight className="h-3 w-3 text-success mr-1" />
+                <span className="text-success">Óptimo</span>
               </>
             ) : trend === 'negative' ? (
               <>
-                <ArrowUpRight className="h-3 w-3 text-red-500 mr-1" />
-                <span className="text-red-600">Requiere atención</span>
+                <ArrowUpRight className="h-3 w-3 text-destructive mr-1" />
+                <span className="text-destructive">Requiere atención</span>
               </>
             ) : null}
           </div>
@@ -630,7 +630,7 @@ interface FactorCardProps {
 
 function FactorCard({ label, value, maxValue }: FactorCardProps) {
   const percentage = (value / maxValue) * 100;
-  const color = percentage >= 80 ? 'bg-green-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+  const color = percentage >= 80 ? 'bg-success' : percentage >= 50 ? 'bg-warning' : 'bg-destructive';
 
   return (
     <div className="text-center">

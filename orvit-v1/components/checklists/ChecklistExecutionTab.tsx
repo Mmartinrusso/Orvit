@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -192,7 +193,7 @@ export function ChecklistExecutionTab({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold text-gray-900">Información de Ejecución</h3>
+        <h3 className="text-xs font-semibold text-foreground">Información de Ejecución</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Card izquierda - Resumen */}
           <Card>
@@ -258,7 +259,7 @@ export function ChecklistExecutionTab({
   if (!checklist) {
     return (
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold text-gray-900">Información de Ejecución</h3>
+        <h3 className="text-xs font-semibold text-foreground">Información de Ejecución</h3>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
@@ -273,16 +274,16 @@ export function ChecklistExecutionTab({
     <div className="space-y-4">
       {/* Botón principal de ejecución prominente */}
       {canExecute && onExecute && (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <Card className="bg-success-muted border-success/20">
           <CardContent className="py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <Play className="h-6 w-6 text-green-600" />
+                <div className="h-12 w-12 rounded-full bg-success-muted flex items-center justify-center">
+                  <Play className="h-6 w-6 text-success" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-green-900">Listo para ejecutar</h3>
-                  <p className="text-sm text-green-700">
+                  <h3 className="font-semibold text-foreground">Listo para ejecutar</h3>
+                  <p className="text-sm text-success">
                     {totals.totalItems} tareas • {totals.totalDurationLabel} estimado
                   </p>
                 </div>
@@ -290,7 +291,7 @@ export function ChecklistExecutionTab({
               <Button
                 onClick={onExecute}
                 size="lg"
-                className="bg-green-600 hover:bg-green-700 text-white shadow-lg"
+                className="bg-success hover:bg-success/90 text-success-foreground shadow-lg"
               >
                 <Play className="h-4 w-4 mr-2" />
                 Iniciar Ejecución
@@ -301,22 +302,22 @@ export function ChecklistExecutionTab({
       )}
 
       {/* Métricas rápidas */}
-      <div className={`grid gap-3 ${totals.phasesCount > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-          <Timer className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-blue-900">{totals.totalDurationLabel}</p>
-          <p className="text-[10px] text-blue-700 uppercase tracking-wide">Tiempo Total</p>
+      <div className={cn('grid gap-3', totals.phasesCount > 0 ? 'grid-cols-3' : 'grid-cols-2')}>
+        <div className="bg-info-muted border border-info-muted-foreground/20 rounded-lg p-3 text-center">
+          <Timer className="h-5 w-5 text-info-muted-foreground mx-auto mb-1" />
+          <p className="text-lg font-bold text-foreground">{totals.totalDurationLabel}</p>
+          <p className="text-[10px] text-info-muted-foreground uppercase tracking-wide">Tiempo Total</p>
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-          <SquareCheckBig className="h-5 w-5 text-green-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-green-900">{totals.totalItems}</p>
-          <p className="text-[10px] text-green-700 uppercase tracking-wide">Items</p>
+        <div className="bg-success-muted border border-success/20 rounded-lg p-3 text-center">
+          <SquareCheckBig className="h-5 w-5 text-success mx-auto mb-1" />
+          <p className="text-lg font-bold text-foreground">{totals.totalItems}</p>
+          <p className="text-[10px] text-success uppercase tracking-wide">Items</p>
         </div>
         {totals.phasesCount > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-            <Layers className="h-5 w-5 text-orange-600 mx-auto mb-1" />
-            <p className="text-lg font-bold text-orange-900">{totals.phasesCount}</p>
-            <p className="text-[10px] text-orange-700 uppercase tracking-wide">Fases</p>
+          <div className="bg-warning-muted border border-warning-muted-foreground/20 rounded-lg p-3 text-center">
+            <Layers className="h-5 w-5 text-warning-muted-foreground mx-auto mb-1" />
+            <p className="text-lg font-bold text-foreground">{totals.phasesCount}</p>
+            <p className="text-[10px] text-warning-muted-foreground uppercase tracking-wide">Fases</p>
           </div>
         )}
       </div>
@@ -335,7 +336,7 @@ export function ChecklistExecutionTab({
               {phasesData.map((phase, index) => (
                 <div
                   key={phase.id}
-                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent transition-colors"
                 >
                   {/* Indicador de paso */}
                   <div className="flex flex-col items-center">
@@ -343,28 +344,28 @@ export function ChecklistExecutionTab({
                       {index + 1}
                     </div>
                     {index < phasesData.length - 1 && (
-                      <div className="w-0.5 h-4 bg-gray-200 mt-1" />
+                      <div className="w-0.5 h-4 bg-border mt-1" />
                     )}
                   </div>
 
                   {/* Contenido de la fase */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-gray-900 truncate">
+                    <p className="font-medium text-sm text-foreground truncate">
                       {safeText(phase.name)}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {phase.itemsCount} items
                       </span>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <span className="text-border">•</span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {phase.durationLabel}
                       </span>
                     </div>
                   </div>
 
-                  <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 </div>
               ))}
             </div>

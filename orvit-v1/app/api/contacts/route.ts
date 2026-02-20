@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       notes: contact.notes,
       avatar: contact.avatar,
       category: contact.category,
-      tags: contact.tags ? (typeof contact.tags === 'string' ? JSON.parse(contact.tags) : contact.tags) : [],
+      tags: (() => { if (!contact.tags) return []; if (typeof contact.tags !== 'string') return contact.tags; try { return JSON.parse(contact.tags); } catch { return []; } })(),
       isActive: contact.isActive,
       pendingReminders: 0, // Temporal: sin recordatorios por ahora
       totalInteractions: 0, // Temporal: sin interacciones por ahora
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
       notes: newContact.notes,
       avatar: newContact.avatar,
       category: newContact.category,
-      tags: newContact.tags ? (typeof newContact.tags === 'string' ? JSON.parse(newContact.tags) : newContact.tags) : [],
+      tags: (() => { if (!newContact.tags) return []; if (typeof newContact.tags !== 'string') return newContact.tags; try { return JSON.parse(newContact.tags as string); } catch { return []; } })(),
       isActive: newContact.isActive,
       pendingReminders: 0, // Nuevo contacto, sin recordatorios
       totalInteractions: 0, // Nuevo contacto, sin interacciones

@@ -105,8 +105,8 @@ export default function PageHeader() {
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="relative flex h-2 w-2 ml-1 cursor-help">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-40"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500/70"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-muted-foreground opacity-40"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-warning-muted-foreground/70"></span>
               </span>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">

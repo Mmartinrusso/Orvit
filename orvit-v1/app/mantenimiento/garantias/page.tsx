@@ -46,8 +46,8 @@ interface Warranty {
 }
 
 const COVERAGE_TYPES: Record<string, { label: string; color: string }> = {
-  FULL: { label: 'Completa', color: 'bg-green-100 text-green-800' },
-  PARTS_ONLY: { label: 'Solo Repuestos', color: 'bg-blue-100 text-blue-800' },
+  FULL: { label: 'Completa', color: 'bg-success-muted text-success' },
+  PARTS_ONLY: { label: 'Solo Repuestos', color: 'bg-info-muted text-info-muted-foreground' },
   LABOR_ONLY: { label: 'Solo Mano de Obra', color: 'bg-purple-100 text-purple-800' },
 };
 
@@ -121,7 +121,7 @@ export default function GarantiasPage() {
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <Shield className="h-8 w-8 text-blue-500" />
+              <Shield className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -130,9 +130,9 @@ export default function GarantiasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Activas</p>
-                <p className="text-2xl font-bold text-green-600">{summary.active || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.active || 0}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -141,9 +141,9 @@ export default function GarantiasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Por Vencer</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.expiringSoon || 0}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{summary.expiringSoon || 0}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-500" />
+              <AlertTriangle className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -152,9 +152,9 @@ export default function GarantiasPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Vencidas</p>
-                <p className="text-2xl font-bold text-red-600">{summary.expired || 0}</p>
+                <p className="text-2xl font-bold text-destructive">{summary.expired || 0}</p>
               </div>
-              <XCircle className="h-8 w-8 text-red-500" />
+              <XCircle className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -216,7 +216,7 @@ export default function GarantiasPage() {
                 filteredWarranties.map((warranty) => {
                   const statusInfo = getWarrantyStatus(warranty);
                   const StatusIcon = statusInfo.icon;
-                  const coverage = COVERAGE_TYPES[warranty.coverageType] || { label: warranty.coverageType, color: 'bg-gray-100' };
+                  const coverage = COVERAGE_TYPES[warranty.coverageType] || { label: warranty.coverageType, color: 'bg-muted' };
                   const daysRemaining = differenceInDays(new Date(warranty.endDate), new Date());
 
                   return (

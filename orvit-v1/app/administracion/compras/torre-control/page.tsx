@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Package,
@@ -189,17 +190,7 @@ function formatCompact(value: number): string {
 }
 
 // User colors for dynamic theming
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',  // Indigo
-  chart2: '#8b5cf6',  // Violet
-  chart3: '#ec4899',  // Pink
-  chart4: '#f59e0b',  // Amber
-  chart5: '#10b981',  // Emerald
-  chart6: '#06b6d4',  // Cyan
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 // ============ ANIMATED PROGRESS BAR ============
 function AnimatedProgress({ value, max, color }: { value: number; max: number; color: string }) {
@@ -265,7 +256,7 @@ function MetricMiniCard({
           {trend && (
             <span className={cn(
               "flex items-center text-xs",
-              trend === 'up' ? "text-red-500" : trend === 'down' ? "text-green-500" : "text-muted-foreground"
+              trend === 'up' ? "text-destructive" : trend === 'down' ? "text-success" : "text-muted-foreground"
             )}>
               {trend === 'up' ? <ArrowUpRight className="h-3 w-3" /> : trend === 'down' ? <ArrowDownRight className="h-3 w-3" /> : null}
             </span>
@@ -284,7 +275,7 @@ export default function TorreControlPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const router = useRouter();
   const { currentCompany } = useCompany();
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   const fetchData = useCallback(async () => {
     try {
@@ -457,7 +448,7 @@ export default function TorreControlPage() {
             <TabsTrigger value="grni" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               GRNI
               {data?.grni && data.grni.cantidadRecepciones > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1 bg-amber-100 text-amber-700">{data.grni.cantidadRecepciones}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1 bg-warning-muted text-warning-muted-foreground">{data.grni.cantidadRecepciones}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="stock" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">

@@ -16,42 +16,42 @@ import {
 const MOC_STATUS_CONFIG = {
   DRAFT: {
     label: 'Borrador',
-    color: 'bg-gray-100 text-gray-800 border-gray-200',
+    color: 'bg-muted text-foreground border-border',
     icon: FileEdit,
   },
   PENDING_REVIEW: {
     label: 'Pendiente de Revisión',
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    color: 'bg-info-muted text-info-muted-foreground border-info-muted-foreground/20',
     icon: Clock,
   },
   UNDER_REVIEW: {
     label: 'En Revisión',
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    color: 'bg-muted text-foreground border-border',
     icon: Search,
   },
   APPROVED: {
     label: 'Aprobado',
-    color: 'bg-green-100 text-green-800 border-green-200',
+    color: 'bg-success-muted text-success border-success/20',
     icon: CheckCircle,
   },
   REJECTED: {
     label: 'Rechazado',
-    color: 'bg-red-100 text-red-800 border-red-200',
+    color: 'bg-destructive/10 text-destructive border-destructive/20',
     icon: XCircle,
   },
   IMPLEMENTING: {
     label: 'En Implementación',
-    color: 'bg-amber-100 text-amber-800 border-amber-200',
+    color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20',
     icon: Wrench,
   },
   COMPLETED: {
     label: 'Completado',
-    color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    color: 'bg-success-muted text-success border-success/20',
     icon: CheckCircle2,
   },
   CANCELLED: {
     label: 'Cancelado',
-    color: 'bg-gray-100 text-gray-500 border-gray-200',
+    color: 'bg-muted text-muted-foreground border-border',
     icon: Ban,
   },
 };
@@ -81,11 +81,11 @@ export function MOCStatusBadge({ status, showIcon = true, size = 'md' }: MOCStat
 }
 
 export const MOC_CHANGE_TYPES = {
-  EQUIPMENT: { label: 'Equipo', color: 'bg-blue-100 text-blue-800' },
-  PROCESS: { label: 'Proceso', color: 'bg-purple-100 text-purple-800' },
-  PROCEDURE: { label: 'Procedimiento', color: 'bg-amber-100 text-amber-800' },
-  MATERIAL: { label: 'Material', color: 'bg-green-100 text-green-800' },
-  PERSONNEL: { label: 'Personal', color: 'bg-pink-100 text-pink-800' },
+  EQUIPMENT: { label: 'Equipo', color: 'bg-info-muted text-info-muted-foreground' },
+  PROCESS: { label: 'Proceso', color: 'bg-muted text-foreground' },
+  PROCEDURE: { label: 'Procedimiento', color: 'bg-warning-muted text-warning-muted-foreground' },
+  MATERIAL: { label: 'Material', color: 'bg-success-muted text-success' },
+  PERSONNEL: { label: 'Personal', color: 'bg-muted text-foreground' },
 };
 
 interface MOCTypeBadgeProps {
@@ -102,10 +102,10 @@ export function MOCTypeBadge({ type }: MOCTypeBadgeProps) {
 }
 
 export const MOC_PRIORITIES = {
-  LOW: { label: 'Baja', color: 'bg-gray-100 text-gray-800' },
-  MEDIUM: { label: 'Media', color: 'bg-blue-100 text-blue-800' },
-  HIGH: { label: 'Alta', color: 'bg-amber-100 text-amber-800' },
-  CRITICAL: { label: 'Crítica', color: 'bg-red-100 text-red-800' },
+  LOW: { label: 'Baja', color: 'bg-muted text-foreground' },
+  MEDIUM: { label: 'Media', color: 'bg-info-muted text-info-muted-foreground' },
+  HIGH: { label: 'Alta', color: 'bg-warning-muted text-warning-muted-foreground' },
+  CRITICAL: { label: 'Crítica', color: 'bg-destructive/10 text-destructive' },
 };
 
 interface MOCPriorityBadgeProps {

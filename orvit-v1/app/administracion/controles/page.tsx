@@ -117,22 +117,22 @@ export default function ControlesPage() {
       lastUpdate: 'Actualizado ahora',
       onClick: () => setIsTaxControlModalOpen(true),
       badge: loading ? 'Cargando...' : `${taxStats.vencidos} vencidos`,
-      badgeColor: taxStats.vencidos > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+      badgeColor: taxStats.vencidos > 0 ? 'bg-destructive/10 text-destructive' : 'bg-success-muted text-success'
     }
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-muted text-success';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'completed':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'warning':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -206,12 +206,12 @@ export default function ControlesPage() {
           <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Sistema Activo</CardTitle>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-4 w-4 text-green-600" />
+              <div className="p-2 bg-success-muted rounded-lg">
+                <CheckCircle className="h-4 w-4 text-success" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">1</div>
+              <div className="text-3xl font-bold text-success">1</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Control de Impuestos
               </p>
@@ -221,12 +221,12 @@ export default function ControlesPage() {
           <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Impuestos Registrados</CardTitle>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="h-4 w-4 text-blue-600" />
+              <div className="p-2 bg-info-muted rounded-lg">
+                <FileText className="h-4 w-4 text-info-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">
+              <div className="text-3xl font-bold text-info-muted-foreground">
                 {loading ? '...' : taxStats.total}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -238,12 +238,12 @@ export default function ControlesPage() {
           <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Pendientes</CardTitle>
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="h-4 w-4 text-yellow-600" />
+              <div className="p-2 bg-warning-muted rounded-lg">
+                <Clock className="h-4 w-4 text-warning-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-yellow-600">
+              <div className="text-3xl font-bold text-warning-muted-foreground">
                 {loading ? '...' : taxStats.pendientes}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -255,12 +255,12 @@ export default function ControlesPage() {
           <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Alertas</CardTitle>
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-600">
+              <div className="text-3xl font-bold text-destructive">
                 {loading ? '...' : taxStats.vencidos}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -319,29 +319,29 @@ export default function ControlesPage() {
                       
                       {/* Estadísticas de Impuestos */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                        <div className="text-center p-2 bg-red-50 rounded-lg border border-red-200">
-                          <div className="text-lg font-bold text-red-600">
+                        <div className="text-center p-2 bg-destructive/10 rounded-lg border border-destructive/30">
+                          <div className="text-lg font-bold text-destructive">
                             {loading ? '...' : taxStats.vencidos}
                           </div>
-                          <div className="text-xs text-red-700">Vencidos</div>
+                          <div className="text-xs text-destructive">Vencidos</div>
                         </div>
-                        <div className="text-center p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-                          <div className="text-lg font-bold text-yellow-600">
+                        <div className="text-center p-2 bg-warning-muted rounded-lg border border-warning-muted">
+                          <div className="text-lg font-bold text-warning-muted-foreground">
                             {loading ? '...' : taxStats.pendientes}
                           </div>
-                          <div className="text-xs text-yellow-700">Pendientes</div>
+                          <div className="text-xs text-warning-muted-foreground">Pendientes</div>
                         </div>
-                        <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200">
-                          <div className="text-lg font-bold text-blue-600">
+                        <div className="text-center p-2 bg-info-muted rounded-lg border border-info-muted">
+                          <div className="text-lg font-bold text-info-muted-foreground">
                             {loading ? '...' : taxStats.recibidos}
                           </div>
-                          <div className="text-xs text-blue-700">Recibidos</div>
+                          <div className="text-xs text-info-muted-foreground">Recibidos</div>
                         </div>
-                        <div className="text-center p-2 bg-green-50 rounded-lg border border-green-200">
-                          <div className="text-lg font-bold text-green-600">
+                        <div className="text-center p-2 bg-success-muted rounded-lg border border-success-muted">
+                          <div className="text-lg font-bold text-success">
                             {loading ? '...' : taxStats.pagados}
                           </div>
-                          <div className="text-xs text-green-700">Pagados</div>
+                          <div className="text-xs text-success">Pagados</div>
                         </div>
                       </div>
                       

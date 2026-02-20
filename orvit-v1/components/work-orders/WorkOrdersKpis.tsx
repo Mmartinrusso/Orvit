@@ -44,16 +44,16 @@ const kpiDefinitions: KpiItem[] = [
     label: 'Pendientes',
     icon: Clock,
     getValue: (orders) => orders.filter(o => o.status === WorkOrderStatus.PENDING).length,
-    dotColor: 'bg-amber-500',
-    iconColor: 'text-amber-500',
+    dotColor: 'bg-warning',
+    iconColor: 'text-warning',
   },
   {
     id: WorkOrderStatus.IN_PROGRESS,
     label: 'En proceso',
     icon: PlayCircle,
     getValue: (orders) => orders.filter(o => o.status === WorkOrderStatus.IN_PROGRESS).length,
-    dotColor: 'bg-blue-500',
-    iconColor: 'text-blue-500',
+    dotColor: 'bg-info',
+    iconColor: 'text-info',
   },
   {
     id: 'OVERDUE',
@@ -68,8 +68,8 @@ const kpiDefinitions: KpiItem[] = [
           o.status !== WorkOrderStatus.CANCELLED;
       }).length;
     },
-    dotColor: 'bg-rose-500',
-    iconColor: 'text-rose-500',
+    dotColor: 'bg-destructive',
+    iconColor: 'text-destructive',
   },
   {
     id: 'UNASSIGNED',
@@ -80,8 +80,8 @@ const kpiDefinitions: KpiItem[] = [
       o.status !== WorkOrderStatus.COMPLETED &&
       o.status !== WorkOrderStatus.CANCELLED
     ).length,
-    dotColor: 'bg-slate-500',
-    iconColor: 'text-slate-500',
+    dotColor: 'bg-muted-foreground',
+    iconColor: 'text-muted-foreground',
   },
 ];
 

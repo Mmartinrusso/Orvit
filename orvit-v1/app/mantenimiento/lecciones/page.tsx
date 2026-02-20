@@ -45,16 +45,16 @@ interface LessonLearned {
 }
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  TECHNICAL: { label: 'Técnico', color: 'bg-blue-100 text-blue-800', icon: Wrench },
+  TECHNICAL: { label: 'Técnico', color: 'bg-info-muted text-info-muted-foreground', icon: Wrench },
   PROCESS: { label: 'Proceso', color: 'bg-purple-100 text-purple-800', icon: BookOpen },
-  SAFETY: { label: 'Seguridad', color: 'bg-red-100 text-red-800', icon: Shield },
-  QUALITY: { label: 'Calidad', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  SAFETY: { label: 'Seguridad', color: 'bg-destructive/10 text-destructive', icon: Shield },
+  QUALITY: { label: 'Calidad', color: 'bg-success-muted text-success', icon: CheckCircle },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-800' },
-  APPROVED: { label: 'Aprobada', color: 'bg-blue-100 text-blue-800' },
-  PUBLISHED: { label: 'Publicada', color: 'bg-green-100 text-green-800' },
+  DRAFT: { label: 'Borrador', color: 'bg-muted text-foreground' },
+  APPROVED: { label: 'Aprobada', color: 'bg-info-muted text-info-muted-foreground' },
+  PUBLISHED: { label: 'Publicada', color: 'bg-success-muted text-success' },
 };
 
 export default function LeccionesPage() {
@@ -119,7 +119,7 @@ export default function LeccionesPage() {
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <Lightbulb className="h-8 w-8 text-yellow-500" />
+              <Lightbulb className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -128,9 +128,9 @@ export default function LeccionesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Técnico</p>
-                <p className="text-2xl font-bold text-blue-600">{summary.byCategory?.technical || 0}</p>
+                <p className="text-2xl font-bold text-info-muted-foreground">{summary.byCategory?.technical || 0}</p>
               </div>
-              <Wrench className="h-8 w-8 text-blue-500" />
+              <Wrench className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -150,9 +150,9 @@ export default function LeccionesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Seguridad</p>
-                <p className="text-2xl font-bold text-red-600">{summary.byCategory?.safety || 0}</p>
+                <p className="text-2xl font-bold text-destructive">{summary.byCategory?.safety || 0}</p>
               </div>
-              <Shield className="h-8 w-8 text-red-500" />
+              <Shield className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -161,9 +161,9 @@ export default function LeccionesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Calidad</p>
-                <p className="text-2xl font-bold text-green-600">{summary.byCategory?.quality || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.byCategory?.quality || 0}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>

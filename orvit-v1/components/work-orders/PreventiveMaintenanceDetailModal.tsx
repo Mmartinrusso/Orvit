@@ -2,9 +2,10 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,7 +23,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  History
+  History,
+  Loader2
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -85,15 +87,15 @@ export default function PreventiveMaintenanceDetailModal({
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'LOW':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
       case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'HIGH':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'URGENT':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -113,15 +115,15 @@ export default function PreventiveMaintenanceDetailModal({
   };
 
   const getStatusColor = (isActive: boolean, nextDate: string) => {
-    if (!isActive) return 'bg-gray-100 text-gray-800';
-    
+    if (!isActive) return 'bg-muted text-muted-foreground';
+
     const next = new Date(nextDate);
     const now = new Date();
     const diffDays = Math.ceil((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return 'bg-red-100 text-red-800';
-    if (diffDays <= 3) return 'bg-orange-100 text-orange-800';
-    return 'bg-green-100 text-green-800';
+
+    if (diffDays < 0) return 'bg-destructive/10 text-destructive';
+    if (diffDays <= 3) return 'bg-warning-muted text-warning-muted-foreground';
+    return 'bg-success-muted text-success';
   };
 
   const getStatusText = (isActive: boolean, nextDate: string) => {
@@ -141,11 +143,11 @@ export default function PreventiveMaintenanceDetailModal({
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'increasing':
-        return <TrendingUp className="h-4 w-4 text-red-500" />;
+        return <TrendingUp className="h-4 w-4 text-destructive" />;
       case 'decreasing':
-        return <TrendingDown className="h-4 w-4 text-green-500" />;
+        return <TrendingDown className="h-4 w-4 text-success" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-500" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -231,16 +233,17 @@ export default function PreventiveMaintenanceDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="lg" className="max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[calc(100vh-4rem)]">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-blue-600" />
+            <Settings className="h-5 w-5 text-info-muted-foreground" />
             {maintenance.title}
           </DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="details">Resumen</TabsTrigger>
             <TabsTrigger value="equipment">Equipamiento</TabsTrigger>
             <TabsTrigger value="programming">Programación</TabsTrigger>
@@ -381,7 +384,7 @@ export default function PreventiveMaintenanceDetailModal({
                       onClick={() => window.open(instructive.url, '_blank')}
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-red-500" />
+                        <FileText className="h-5 w-5 text-destructive" />
                         <div>
                           <p className="font-medium">{instructive.fileName}</p>
                           <p className="text-sm text-muted-foreground">
@@ -408,7 +411,7 @@ export default function PreventiveMaintenanceDetailModal({
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {maintenance.alertDaysBefore.map((days: number, index: number) => (
-                    <Badge key={index} variant="outline" className="bg-yellow-50 text-yellow-800">
+                    <Badge key={index} variant="outline" className="bg-warning-muted text-warning-muted-foreground">
                       {days === 0 ? 'El mismo día' : `${days} día${days > 1 ? 's' : ''} antes`}
                     </Badge>
                   ))}
@@ -518,7 +521,7 @@ export default function PreventiveMaintenanceDetailModal({
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {maintenance.alertDaysBefore.map((days: number, index: number) => (
-                      <Badge key={index} variant="outline" className="bg-yellow-50 text-yellow-800">
+                      <Badge key={index} variant="outline" className="bg-warning-muted text-warning-muted-foreground">
                         {days === 0 ? 'El mismo día' : `${days} día${days > 1 ? 's' : ''} antes`}
                       </Badge>
                     ))}
@@ -545,7 +548,7 @@ export default function PreventiveMaintenanceDetailModal({
                         onClick={() => window.open(instructive.url, '_blank')}
                       >
                         <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 text-red-500" />
+                          <FileText className="h-5 w-5 text-destructive" />
                           <div>
                             <p className="font-medium">{instructive.fileName}</p>
                             <p className="text-sm text-muted-foreground">
@@ -572,8 +575,8 @@ export default function PreventiveMaintenanceDetailModal({
               <CardContent>
                 {history.length === 0 ? (
                   <div className="text-center py-8">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No hay historial de ejecución disponible</p>
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No hay historial de ejecución disponible</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -581,8 +584,8 @@ export default function PreventiveMaintenanceDetailModal({
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <Badge className="bg-green-100 text-green-800">Completado</Badge>
-                            <span className="text-sm text-gray-600">
+                            <Badge className="bg-success-muted text-success">Completado</Badge>
+                            <span className="text-sm text-muted-foreground">
                               {formatDateTime(execution.executedAt)}
                             </span>
                           </div>
@@ -595,34 +598,34 @@ export default function PreventiveMaintenanceDetailModal({
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                           <div>
-                            <p className="text-gray-600">Duración</p>
+                            <p className="text-muted-foreground">Duración</p>
                             <p className="font-medium">{getDurationDisplay(execution)}</p>
                           </div>
                           <div>
-                            <p className="text-gray-600">Cantidad</p>
+                            <p className="text-muted-foreground">Cantidad</p>
                             <p className="font-medium">{getQuantityDisplay(execution)}</p>
                           </div>
                           <div>
-                            <p className="text-gray-600">Eficiencia</p>
+                            <p className="text-muted-foreground">Eficiencia</p>
                             <p className="font-medium">{execution.efficiency}%</p>
                           </div>
                           <div>
-                            <p className="text-gray-600">Costo</p>
+                            <p className="text-muted-foreground">Costo</p>
                             <p className="font-medium">${execution.cost}</p>
                           </div>
                         </div>
 
                         {execution.notes && (
                           <div className="mb-2">
-                            <p className="text-sm text-gray-600">Notas:</p>
+                            <p className="text-sm text-muted-foreground">Notas:</p>
                             <p className="text-sm">{execution.notes}</p>
                           </div>
                         )}
 
                         {execution.issues && (
                           <div>
-                            <p className="text-sm text-gray-600">Problemas:</p>
-                            <p className="text-sm text-red-600">{execution.issues}</p>
+                            <p className="text-sm text-muted-foreground">Problemas:</p>
+                            <p className="text-sm text-destructive">{execution.issues}</p>
                           </div>
                         )}
                       </div>
@@ -636,8 +639,8 @@ export default function PreventiveMaintenanceDetailModal({
           <TabsContent value="statistics" className="space-y-4">
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-600 mt-2">Cargando estadísticas...</p>
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                <p className="text-muted-foreground mt-2">Cargando estadísticas...</p>
               </div>
             ) : stats ? (
               <>
@@ -645,25 +648,25 @@ export default function PreventiveMaintenanceDetailModal({
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-blue-600">{stats.stats.totalExecutions}</p>
+                      <p className="text-2xl font-bold text-info-muted-foreground">{stats.stats.totalExecutions}</p>
                       <p className="text-sm text-muted-foreground">Ejecuciones</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-green-600">{stats.stats.averageDuration}h</p>
+                      <p className="text-2xl font-bold text-success">{stats.stats.averageDuration}h</p>
                       <p className="text-sm text-muted-foreground">Duración Promedio</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-purple-600">{stats.stats.averageEfficiency}%</p>
+                      <p className="text-2xl font-bold text-primary">{stats.stats.averageEfficiency}%</p>
                       <p className="text-sm text-muted-foreground">Eficiencia Promedio</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-orange-600">${stats.stats.totalCost}</p>
+                      <p className="text-2xl font-bold text-warning-muted-foreground">${stats.stats.totalCost}</p>
                       <p className="text-sm text-muted-foreground">Costo Total</p>
                     </CardContent>
                   </Card>
@@ -680,15 +683,15 @@ export default function PreventiveMaintenanceDetailModal({
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Mínima:</span>
+                        <span className="text-sm text-muted-foreground">Mínima:</span>
                         <span className="font-medium">{stats.stats.minDuration}h</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Máxima:</span>
+                        <span className="text-sm text-muted-foreground">Máxima:</span>
                         <span className="font-medium">{stats.stats.maxDuration}h</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Tendencia:</span>
+                        <span className="text-sm text-muted-foreground">Tendencia:</span>
                         <div className="flex items-center gap-2">
                           {getTrendIcon(stats.stats.trend)}
                           <span className="font-medium">{getTrendText(stats.stats.trend)}</span>
@@ -707,7 +710,7 @@ export default function PreventiveMaintenanceDetailModal({
                     <CardContent className="space-y-4">
                       {stats.stats.firstExecution && (
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Primera ejecución:</span>
+                          <span className="text-sm text-muted-foreground">Primera ejecución:</span>
                           <span className="font-medium text-sm">
                             {formatDateTime(stats.stats.firstExecution)}
                           </span>
@@ -715,14 +718,14 @@ export default function PreventiveMaintenanceDetailModal({
                       )}
                       {stats.stats.lastExecution && (
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Última ejecución:</span>
+                          <span className="text-sm text-muted-foreground">Última ejecución:</span>
                           <span className="font-medium text-sm">
                             {formatDateTime(stats.stats.lastExecution)}
                           </span>
                         </div>
                       )}
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Calidad promedio:</span>
+                        <span className="text-sm text-muted-foreground">Calidad promedio:</span>
                         <span className="font-medium">{stats.stats.averageQuality}/10</span>
                       </div>
                     </CardContent>
@@ -741,11 +744,11 @@ export default function PreventiveMaintenanceDetailModal({
                     <CardContent>
                       <div className="space-y-3">
                         {stats.recommendations.map((rec: any, index: number) => (
-                          <div key={index} className={`p-3 rounded-lg border-l-4 ${
-                            rec.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
-                            rec.type === 'alert' ? 'bg-red-50 border-red-400' :
-                            'bg-blue-50 border-blue-400'
-                          }`}>
+                          <div key={index} className={cn('p-3 rounded-lg border-l-4',
+                            rec.type === 'warning' ? 'bg-warning-muted border-warning' :
+                            rec.type === 'alert' ? 'bg-destructive/10 border-destructive' :
+                            'bg-info-muted border-info'
+                          )}>
                             <p className="text-sm">{rec.message}</p>
                           </div>
                         ))}
@@ -756,12 +759,13 @@ export default function PreventiveMaintenanceDetailModal({
               </>
             ) : (
               <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No hay estadísticas disponibles</p>
+                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No hay estadísticas disponibles</p>
               </div>
             )}
           </TabsContent>
         </Tabs>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

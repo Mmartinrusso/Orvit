@@ -50,17 +50,17 @@ export default function HealthScorePage() {
   const machines: MachineHealth[] = data?.machines || [];
 
   const getHealthColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-100';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100';
-    if (score >= 40) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
+    if (score >= 80) return 'text-success bg-success-muted';
+    if (score >= 60) return 'text-warning-muted-foreground bg-warning-muted';
+    if (score >= 40) return 'text-warning-muted-foreground bg-warning-muted';
+    return 'text-destructive bg-destructive/10';
   };
 
   const getHealthIcon = (score: number) => {
-    if (score >= 80) return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-    if (score >= 60) return <Minus className="h-5 w-5 text-yellow-600" />;
-    if (score >= 40) return <TrendingDown className="h-5 w-5 text-orange-600" />;
-    return <AlertTriangle className="h-5 w-5 text-red-600" />;
+    if (score >= 80) return <CheckCircle2 className="h-5 w-5 text-success" />;
+    if (score >= 60) return <Minus className="h-5 w-5 text-warning-muted-foreground" />;
+    if (score >= 40) return <TrendingDown className="h-5 w-5 text-warning-muted-foreground" />;
+    return <AlertTriangle className="h-5 w-5 text-destructive" />;
   };
 
   const filteredMachines = machines.filter(m => {
@@ -86,7 +86,7 @@ export default function HealthScorePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Heart className="h-6 w-6 text-red-500" />
+            <Heart className="h-6 w-6 text-destructive" />
             Health Score de Activos
           </h1>
           <p className="text-muted-foreground">
@@ -121,9 +121,9 @@ export default function HealthScorePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Estado Crítico</p>
-                <p className="text-3xl font-bold text-red-600">{criticalCount}</p>
+                <p className="text-3xl font-bold text-destructive">{criticalCount}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">Requieren atención inmediata</p>
           </CardContent>
@@ -134,9 +134,9 @@ export default function HealthScorePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Con Advertencia</p>
-                <p className="text-3xl font-bold text-yellow-600">{warningCount}</p>
+                <p className="text-3xl font-bold text-warning-muted-foreground">{warningCount}</p>
               </div>
-              <TrendingDown className="h-8 w-8 text-yellow-500" />
+              <TrendingDown className="h-8 w-8 text-warning-muted-foreground" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">Programar revisión</p>
           </CardContent>
@@ -147,9 +147,9 @@ export default function HealthScorePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En Buen Estado</p>
-                <p className="text-3xl font-bold text-green-600">{goodCount}</p>
+                <p className="text-3xl font-bold text-success">{goodCount}</p>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">Funcionando correctamente</p>
           </CardContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,10 +60,10 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
       <Card className="mb-6">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-muted rounded w-1/4"></div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 bg-gray-200 rounded"></div>
+                <div key={i} className="h-20 bg-muted rounded"></div>
               ))}
             </div>
           </div>
@@ -75,7 +76,7 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
     return (
       <Card className="mb-6">
         <CardContent className="p-6">
-          <p className="text-gray-600">No se pudieron cargar las métricas actuales</p>
+          <p className="text-muted-foreground">No se pudieron cargar las métricas actuales</p>
         </CardContent>
       </Card>
     );
@@ -132,18 +133,18 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
       value: ventasActuales,
       change: cambios.ventas,
       icon: DollarSign,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
+      color: 'text-success',
+      bgColor: 'bg-success-muted',
+      borderColor: 'border-success-muted'
     },
     {
       title: 'Costos Totales',
       value: costosTotalesCalculados,
       change: cambios.costos,
       icon: ShoppingCart,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
+      color: 'text-destructive',
+      bgColor: 'bg-destructive/10',
+      borderColor: 'border-destructive/30',
       breakdown: {
         materiales: materialesTotales,
         indirectos: indirectosTotales,
@@ -156,9 +157,9 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
       value: sueldosTotales,
       change: cambios.sueldos,
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
+      color: 'text-info-muted-foreground',
+      bgColor: 'bg-info-muted',
+      borderColor: 'border-info-muted'
     },
     {
       title: 'Margen Neto',
@@ -168,9 +169,9 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
         percentage: margenNetoPct
       },
       icon: BarChart3,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200'
+      color: 'text-info-muted-foreground',
+      bgColor: 'bg-info-muted',
+      borderColor: 'border-info-muted'
     }
   ];
 
@@ -179,10 +180,10 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-gray-900">
+            <CardTitle className="text-xl font-bold text-foreground">
               Métricas Actuales
             </CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {metrics.period.current} {metrics.period.previous && `vs ${metrics.period.previous}`}
             </p>
           </div>
@@ -208,7 +209,7 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
       </CardHeader>
 
       <CardContent>
-        <div className={`grid gap-4 ${isExpanded ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-4'}`}>
+        <div className={cn('grid gap-4', isExpanded ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-4')}>
         <TooltipProvider delayDuration={200}>
           {metricsCards.map((metric, index) => {
             const Icon = metric.icon;
@@ -218,17 +219,13 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
             return (
               <div
                 key={index}
-                className={`p-4 rounded-lg border relative ${metric.bgColor} ${metric.borderColor}`}
+                className={cn('p-4 rounded-lg border relative', metric.bgColor, metric.borderColor)}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <Icon className={`h-5 w-5 ${metric.color}`} />
+                  <Icon className={cn('h-5 w-5', metric.color)} />
                   <Badge 
                     variant="secondary" 
-                    className={`text-xs ${
-                      isPositive 
-                        ? 'bg-green-50 text-green-700 border-green-200' 
-                        : 'bg-red-50 text-red-700 border-red-200'
-                    }`}
+                    className={cn('text-xs', isPositive ? 'bg-success-muted text-success border-success-muted' : 'bg-destructive/10 text-destructive border-destructive/30')}
                   >
                     {isPositive ? (
                       <TrendingUp className="h-3 w-3 mr-1" />
@@ -241,14 +238,14 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
                 
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-600">{metric.title}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{metric.title}</p>
                     {hasBreakdown && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-gray-500 hover:text-gray-700 cursor-pointer" />
+                          <Info className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer" />
                         </TooltipTrigger>
                         <TooltipContent className="space-y-2">
-                          <div className="text-xs uppercase tracking-wide font-semibold text-gray-500">
+                          <div className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">
                             Composición de costos
                           </div>
                           <div className="space-y-1 text-sm">
@@ -298,13 +295,11 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
                       </Tooltip>
                     )}
                   </div>
-                  <p className={`text-2xl font-bold ${metric.color}`}>
+                  <p className={cn('text-2xl font-bold', metric.color)}>
                     {formatCurrency(metric.value)}
                   </p>
                   {isExpanded && (
-                    <p className={`text-xs ${
-                      isPositive ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <p className={cn('text-xs', isPositive ? 'text-success' : 'text-destructive')}>
                       {isPositive ? '+' : ''}{formatCurrency(metric.change.amount)} vs anterior
                     </p>
                   )}
@@ -316,20 +311,20 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
         </div>
 
         {isExpanded && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-border">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Análisis de Márgenes</h4>
+                <h4 className="text-sm font-medium text-foreground mb-3">Análisis de Márgenes</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Margen Bruto</span>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm text-muted-foreground">Margen Bruto</span>
+                    <span className="text-sm font-medium text-foreground">
                       {formatCurrency(metrics.currentMetrics.margenBruto)} ({formatPercentage(metrics.currentMetrics.margenBrutoPct)})
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Margen Neto</span>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm text-muted-foreground">Margen Neto</span>
+                    <span className="text-sm font-medium text-foreground">
                       {formatCurrency(metrics.currentMetrics.margenNeto)} ({formatPercentage(metrics.currentMetrics.margenNetoPct)})
                     </span>
                   </div>
@@ -337,16 +332,16 @@ export function CurrentMetrics({ companyId, selectedMonth }: CurrentMetricsProps
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Resumen del Período</h4>
+                <h4 className="text-sm font-medium text-foreground mb-3">Resumen del Período</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Período actual</span>
-                    <span className="text-sm font-medium text-gray-900">{metrics.period.current}</span>
+                    <span className="text-sm text-muted-foreground">Período actual</span>
+                    <span className="text-sm font-medium text-foreground">{metrics.period.current}</span>
                   </div>
                   {metrics.period.previous && (
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Período anterior</span>
-                      <span className="text-sm font-medium text-gray-900">{metrics.period.previous}</span>
+                      <span className="text-sm text-muted-foreground">Período anterior</span>
+                      <span className="text-sm font-medium text-foreground">{metrics.period.previous}</span>
                     </div>
                   )}
                 </div>

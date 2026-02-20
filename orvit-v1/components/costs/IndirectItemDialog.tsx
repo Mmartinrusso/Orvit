@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -62,12 +63,12 @@ const categoryLabels = {
 };
 
 const categoryColors = {
-  IMP_SERV: 'bg-blue-100 text-blue-800 border-blue-200',
-  SOCIAL: 'bg-green-100 text-green-800 border-green-200',
-  VEHICLES: 'bg-orange-100 text-orange-800 border-orange-200',
-  MKT: 'bg-purple-100 text-purple-800 border-purple-200',
-  UTILITIES: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  OTHER: 'bg-gray-100 text-gray-800 border-gray-200',
+  IMP_SERV: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  SOCIAL: 'bg-success-muted text-success border-success-muted',
+  VEHICLES: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  MKT: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  UTILITIES: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  OTHER: 'bg-muted text-foreground border-border',
 };
 
 export function IndirectItemDialog({ children, onItemCreated }: IndirectItemDialogProps) {
@@ -188,7 +189,7 @@ export function IndirectItemDialog({ children, onItemCreated }: IndirectItemDial
                             <div className="flex items-center gap-2">
                               <Badge 
                                 variant="outline" 
-                                className={`text-xs ${categoryColors[value as keyof typeof categoryColors]}`}
+                                className={cn('text-xs', categoryColors[value as keyof typeof categoryColors])}
                               >
                                 {label}
                               </Badge>
@@ -255,7 +256,7 @@ export function IndirectItemDialog({ children, onItemCreated }: IndirectItemDial
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className={`${categoryColors[form.watch('category') as keyof typeof categoryColors]}`}
+                    className={cn(categoryColors[form.watch('category') as keyof typeof categoryColors])}
                   >
                     {categoryLabels[form.watch('category') as keyof typeof categoryLabels]}
                   </Badge>

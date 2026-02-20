@@ -144,7 +144,7 @@ export default function CreateControlDialog({ isOpen, onClose, onSuccess }: Crea
         onClose();
       }
     }}>
-      <DialogContent size="md" className="max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -157,7 +157,7 @@ export default function CreateControlDialog({ isOpen, onClose, onSuccess }: Crea
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="controlType" className="text-sm font-medium">
-              Tipo de Control <span className="text-red-500">*</span>
+              Tipo de Control <span className="text-destructive">*</span>
             </Label>
             <Select 
               value={selectedControlType} 
@@ -185,14 +185,14 @@ export default function CreateControlDialog({ isOpen, onClose, onSuccess }: Crea
               </SelectContent>
             </Select>
             {selectedType && (
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+              <div className="bg-info-muted border border-info-muted rounded-md p-3">
                 <div className="flex items-start gap-2">
-                  <SelectedIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <SelectedIcon className="h-4 w-4 text-info-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
+                    <p className="text-xs font-medium text-foreground">
                       {selectedType.name}
                     </p>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    <p className="text-xs text-info-muted-foreground mt-1">
                       {selectedType.description}
                     </p>
                   </div>
@@ -205,7 +205,7 @@ export default function CreateControlDialog({ isOpen, onClose, onSuccess }: Crea
             <>
               <div className="space-y-2">
                 <Label htmlFor="controlName" className="text-sm font-medium">
-                  Nombre del Control <span className="text-red-500">*</span>
+                  Nombre del Control <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="controlName"

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -50,41 +52,28 @@ export default function WorkOrderComments({ workOrderId, isOpen = true }: WorkOr
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [comments, setComments] = useState<Comment[]>([]);
+  const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
   const [commentType, setCommentType] = useState<'comment' | 'update' | 'issue'>('comment');
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchComments();
-    }
-  }, [workOrderId, isOpen]);
-
-  const fetchComments = async () => {
-    try {
-      setLoading(true);
+  const queryKey = ['work-order-comments', workOrderId];
+  const { data: comments = [], isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: async () => {
       const response = await fetch(`/api/work-orders/${workOrderId}/comments`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data.map((comment: any) => ({
-          ...comment,
-          createdAt: new Date(comment.createdAt)
-        })));
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los comentarios',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.map((comment: any) => ({
+        ...comment,
+        createdAt: new Date(comment.createdAt)
+      })) as Comment[];
+    },
+    enabled: isOpen,
+    staleTime: 60 * 1000,
+  });
+
+  const invalidateComments = () => queryClient.invalidateQueries({ queryKey });
 
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !user) return;
@@ -104,17 +93,10 @@ export default function WorkOrderComments({ workOrderId, isOpen = true }: WorkOr
       });
 
       if (response.ok) {
-        const newCommentData = await response.json();
-        setComments(prev => [
-          {
-            ...newCommentData,
-            createdAt: new Date(newCommentData.createdAt)
-          },
-          ...prev
-        ]);
         setNewComment('');
         setCommentType('comment');
-        
+        invalidateComments();
+
         toast({
           title: 'Comentario agregado',
           description: 'El comentario se ha agregado exitosamente',
@@ -137,13 +119,13 @@ export default function WorkOrderComments({ workOrderId, isOpen = true }: WorkOr
   const getCommentIcon = (type: string) => {
     switch (type) {
       case 'system':
-        return <Settings className="h-4 w-4 text-blue-500" />;
+        return <Settings className="h-4 w-4 text-info-muted-foreground" />;
       case 'update':
-        return <Info className="h-4 w-4 text-green-500" />;
+        return <Info className="h-4 w-4 text-success" />;
       case 'issue':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        return <AlertTriangle className="h-4 w-4 text-destructive" />;
       default:
-        return <MessageSquare className="h-4 w-4 text-gray-500" />;
+        return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -163,13 +145,13 @@ export default function WorkOrderComments({ workOrderId, isOpen = true }: WorkOr
   const getCommentTypeBadgeColor = (type: string) => {
     switch (type) {
       case 'system':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'update':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-success-muted text-success';
       case 'issue':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -217,11 +199,11 @@ export default function WorkOrderComments({ workOrderId, isOpen = true }: WorkOr
             <Button
               variant="ghost"
               size="sm"
-              onClick={fetchComments}
+              onClick={invalidateComments}
               disabled={loading}
               className="h-7 w-7 p-0"
             >
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
             </Button>
           </div>
         </div>
@@ -318,7 +300,7 @@ export default function WorkOrderComments({ workOrderId, isOpen = true }: WorkOr
                       <span className="text-sm font-medium">
                         {comment.author.name}
                       </span>
-                      <Badge className={`text-xs ${getCommentTypeBadgeColor(comment.type)}`}>
+                      <Badge className={cn('text-xs', getCommentTypeBadgeColor(comment.type))}>
                         {getCommentIcon(comment.type)}
                         <span className="ml-1">{getCommentTypeLabel(comment.type)}</span>
                       </Badge>

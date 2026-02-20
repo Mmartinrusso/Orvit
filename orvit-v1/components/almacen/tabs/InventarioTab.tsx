@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -139,7 +139,7 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
             checked={filters.onlyBelowMinimum || false}
             onCheckedChange={handleBelowMinimumToggle}
           />
-          <Label htmlFor="below-minimum" className="text-sm text-red-600">
+          <Label htmlFor="below-minimum" className="text-sm text-destructive">
             Bajo mínimo
           </Label>
         </div>
@@ -157,12 +157,12 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
 
       {/* Tabla */}
       {isLoading ? (
-        <TableSkeleton />
+        <SkeletonTable rows={5} cols={10} />
       ) : items.length === 0 ? (
         <EmptyState type="inventario" />
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -184,8 +184,8 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
                     key={`${item.supplierItem?.id}-${item.warehouseId}-${index}`}
                     className={cn(
                       'cursor-pointer hover:bg-muted/50',
-                      item.isBelowMinimum && 'bg-red-50',
-                      item.isBelowReorder && !item.isBelowMinimum && 'bg-yellow-50'
+                      item.isBelowMinimum && 'bg-destructive/10',
+                      item.isBelowReorder && !item.isBelowMinimum && 'bg-warning-muted'
                     )}
                     onClick={() => onViewItem?.(item.supplierItem?.id)}
                   >
@@ -222,7 +222,7 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                className="h-8 w-8 text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
                                 disabled={!item.stockDisponible || item.stockDisponible <= 0}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -288,7 +288,7 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
 function StockStatusBadge({ item }: { item: any }) {
   if (item.isBelowMinimum) {
     return (
-      <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+      <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
         <AlertTriangle className="h-3 w-3 mr-1" />
         Crítico
       </Badge>
@@ -296,54 +296,16 @@ function StockStatusBadge({ item }: { item: any }) {
   }
   if (item.isBelowReorder) {
     return (
-      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+      <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning/30">
         Reordenar
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+    <Badge variant="outline" className="bg-success-muted text-success border-success/30">
       <Package className="h-3 w-3 mr-1" />
       OK
     </Badge>
   );
 }
 
-function TableSkeleton() {
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-32" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}

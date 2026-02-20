@@ -106,9 +106,9 @@ function SolutionCard({
   onCopy: () => void;
 }) {
   const outcomeColors = {
-    'FUNCIONÓ': 'bg-green-100 text-green-700 border-green-200',
-    'PARCIAL': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    'NO_FUNCIONÓ': 'bg-red-100 text-red-700 border-red-200'
+    'FUNCIONÓ': 'bg-success-muted text-success border-success-muted',
+    'PARCIAL': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+    'NO_FUNCIONÓ': 'bg-destructive/10 text-destructive border-destructive/30'
   };
 
   const outcomeLabels = {
@@ -118,19 +118,19 @@ function SolutionCard({
   };
 
   return (
-    <div className="p-4 border rounded-lg hover:border-blue-200 hover:bg-blue-50/30 transition-colors">
+    <div className="p-4 border rounded-lg hover:border-info-muted hover:bg-info-muted/30 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           {/* Título y match */}
           <div className="flex items-center gap-2">
-            <p className="font-medium text-gray-900 truncate">{solution.title}</p>
+            <p className="font-medium text-foreground truncate">{solution.title}</p>
             <Badge variant="outline" className="text-xs shrink-0">
               {solution.similarity}% match
             </Badge>
           </div>
 
           {/* Descripción */}
-          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+          <p className="text-sm text-foreground mt-1 line-clamp-2">
             {solution.description}
           </p>
 
@@ -146,7 +146,7 @@ function SolutionCard({
             {solution.effectiveness && (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger className="flex items-center gap-1 text-xs text-gray-500">
+                  <TooltipTrigger className="flex items-center gap-1 text-xs text-muted-foreground">
                     <ThumbsUp className="h-3 w-3" />
                     {solution.effectiveness}/5
                   </TooltipTrigger>
@@ -155,12 +155,12 @@ function SolutionCard({
               </TooltipProvider>
             )}
 
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <History className="h-3 w-3" />
               {solution.usageCount}x usado
             </span>
 
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               {formatDistanceToNow(new Date(solution.lastUsedAt), {
                 addSuffix: true,
@@ -171,7 +171,7 @@ function SolutionCard({
 
           {/* Contexto */}
           {(solution.machine || solution.component) && (
-            <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
               <Wrench className="h-3 w-3" />
               {[solution.machine?.name, solution.component?.name]
                 .filter(Boolean)
@@ -196,7 +196,7 @@ function SolutionCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-gray-500"
+            className="h-8 text-muted-foreground"
             onClick={onCopy}
           >
             <Copy className="h-3 w-3 mr-1" />
@@ -210,19 +210,19 @@ function SolutionCard({
 
 function PatternCard({ pattern }: { pattern: FailurePattern }) {
   const severityColors = {
-    LOW: 'bg-green-100 text-green-700',
-    MEDIUM: 'bg-yellow-100 text-yellow-700',
-    HIGH: 'bg-red-100 text-red-700'
+    LOW: 'bg-success-muted text-success',
+    MEDIUM: 'bg-warning-muted text-warning-muted-foreground',
+    HIGH: 'bg-destructive/10 text-destructive'
   };
 
   const trendIcons = {
-    UP: <TrendingUp className="h-3 w-3 text-red-500" />,
-    DOWN: <TrendingUp className="h-3 w-3 text-green-500 rotate-180" />,
-    STABLE: <span className="w-3 h-0.5 bg-gray-400" />
+    UP: <TrendingUp className="h-3 w-3 text-destructive" />,
+    DOWN: <TrendingUp className="h-3 w-3 text-success rotate-180" />,
+    STABLE: <span className="w-3 h-0.5 bg-muted-foreground" />
   };
 
   return (
-    <div className="p-3 border rounded-lg bg-orange-50/30 border-orange-200">
+    <div className="p-3 border rounded-lg bg-warning-muted/30 border-warning-muted">
       <div className="flex items-start gap-3">
         <div className={cn(
           'shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
@@ -233,11 +233,11 @@ function PatternCard({ pattern }: { pattern: FailurePattern }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-gray-900">{pattern.title}</p>
+            <p className="font-medium text-foreground">{pattern.title}</p>
             {trendIcons[pattern.trend]}
           </div>
-          <p className="text-sm text-gray-600 mt-0.5">{pattern.description}</p>
-          <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+          <p className="text-sm text-foreground mt-0.5">{pattern.description}</p>
+          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
             <span>{pattern.occurrences} ocurrencias</span>
             <span>•</span>
             <span>
@@ -255,9 +255,9 @@ function PatternCard({ pattern }: { pattern: FailurePattern }) {
 
 function RecommendationCard({ recommendation }: { recommendation: Recommendation }) {
   const typeColors = {
-    IMMEDIATE: 'bg-red-100 text-red-700',
-    PREVENTIVE: 'bg-blue-100 text-blue-700',
-    INVESTIGATION: 'bg-purple-100 text-purple-700'
+    IMMEDIATE: 'bg-destructive/10 text-destructive',
+    PREVENTIVE: 'bg-info-muted text-info-muted-foreground',
+    INVESTIGATION: 'bg-muted text-foreground'
   };
 
   const typeLabels = {
@@ -267,14 +267,14 @@ function RecommendationCard({ recommendation }: { recommendation: Recommendation
   };
 
   const priorityColors = {
-    HIGH: 'border-red-300',
-    MEDIUM: 'border-yellow-300',
-    LOW: 'border-green-300'
+    HIGH: 'border-destructive/30',
+    MEDIUM: 'border-warning-muted-foreground/30',
+    LOW: 'border-success/30'
   };
 
   return (
     <div className={cn(
-      'p-3 border-l-4 rounded-r-lg bg-gray-50',
+      'p-3 border-l-4 rounded-r-lg bg-muted',
       priorityColors[recommendation.priority]
     )}>
       <div className="flex items-start gap-3">
@@ -286,20 +286,20 @@ function RecommendationCard({ recommendation }: { recommendation: Recommendation
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900">{recommendation.title}</p>
-          <p className="text-sm text-gray-600 mt-0.5">{recommendation.description}</p>
+          <p className="font-medium text-foreground">{recommendation.title}</p>
+          <p className="text-sm text-foreground mt-0.5">{recommendation.description}</p>
 
           <div className="flex items-center gap-4 mt-2">
             {recommendation.estimatedTime && (
-              <span className="text-xs text-gray-500 flex items-center gap-1">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 ~{recommendation.estimatedTime} min
               </span>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Confianza:</span>
+              <span className="text-xs text-muted-foreground">Confianza:</span>
               <Progress value={recommendation.confidence} className="w-16 h-1.5" />
-              <span className="text-xs text-gray-600">{recommendation.confidence}%</span>
+              <span className="text-xs text-foreground">{recommendation.confidence}%</span>
             </div>
           </div>
         </div>
@@ -385,8 +385,8 @@ export function AISuggestionsPanel({
     return (
       <div className={cn('p-4', className)}>
         <div className="flex flex-col items-center py-8 text-center">
-          <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
-          <p className="text-gray-600 mb-4">Error al cargar sugerencias</p>
+          <AlertTriangle className="h-8 w-8 text-destructive mb-2" />
+          <p className="text-foreground mb-4">Error al cargar sugerencias</p>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -403,7 +403,7 @@ export function AISuggestionsPanel({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-purple-600" />
+          <Sparkles className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Sugerencias Inteligentes</h3>
           {data?.confidence && (
             <Badge variant="outline" className="text-xs">
@@ -426,10 +426,10 @@ export function AISuggestionsPanel({
       </div>
 
       {!hasContent ? (
-        <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
-          <Lightbulb className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">No hay sugerencias disponibles</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="text-center py-8 bg-muted rounded-lg border border-dashed">
+          <Lightbulb className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+          <p className="text-muted-foreground text-sm">No hay sugerencias disponibles</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Las sugerencias aparecerán basadas en el historial
           </p>
         </div>
@@ -439,8 +439,8 @@ export function AISuggestionsPanel({
           {similarSolutions.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <History className="h-4 w-4 text-blue-600" />
-                <h4 className="text-sm font-medium text-gray-700">
+                <History className="h-4 w-4 text-info-muted-foreground" />
+                <h4 className="text-sm font-medium text-foreground">
                   Soluciones Similares
                 </h4>
                 <Badge variant="secondary" className="text-xs">
@@ -472,8 +472,8 @@ export function AISuggestionsPanel({
           {patterns.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-orange-600" />
-                <h4 className="text-sm font-medium text-gray-700">
+                <TrendingUp className="h-4 w-4 text-warning-muted-foreground" />
+                <h4 className="text-sm font-medium text-foreground">
                   Patrones Detectados
                 </h4>
               </div>
@@ -490,8 +490,8 @@ export function AISuggestionsPanel({
           {recommendations.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-yellow-600" />
-                <h4 className="text-sm font-medium text-gray-700">
+                <Lightbulb className="h-4 w-4 text-warning-muted-foreground" />
+                <h4 className="text-sm font-medium text-foreground">
                   Recomendaciones
                 </h4>
               </div>
@@ -509,7 +509,7 @@ export function AISuggestionsPanel({
       {/* Footer */}
       {hasContent && (
         <div className="pt-4 border-t text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Sugerencias generadas basadas en el historial de mantenimiento.
             {data?.lastUpdated && (
               <> Actualizado {formatDistanceToNow(new Date(data.lastUpdated), {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useNotifications, Notification } from '@/contexts/NotificationContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +40,8 @@ import {
   Maximize2,
   FileText,
   Landmark,
-  Receipt
+  Receipt,
+  Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -191,13 +193,13 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return 'border-l-red-500 bg-gradient-to-r from-red-50/80 to-card dark:from-red-950/30 dark:to-transparent shadow-md hover:from-red-100/90 dark:hover:from-red-950/40';
+        return 'border-l-destructive bg-gradient-to-r from-destructive/10 to-card shadow-md hover:from-destructive/15';
       case 'high':
-        return 'border-l-orange-500 bg-gradient-to-r from-orange-50/80 to-card dark:from-orange-950/30 dark:to-transparent shadow-md hover:from-orange-100/90 dark:hover:from-orange-950/40';
+        return 'border-l-warning-muted-foreground bg-gradient-to-r from-warning-muted/80 to-card shadow-md hover:from-warning-muted';
       case 'medium':
-        return 'border-l-yellow-500 bg-gradient-to-r from-yellow-50/80 to-card dark:from-yellow-950/30 dark:to-transparent shadow-sm hover:from-yellow-100/90 dark:hover:from-yellow-950/40';
+        return 'border-l-warning-muted-foreground/70 bg-gradient-to-r from-warning-muted/60 to-card shadow-sm hover:from-warning-muted/80';
       default:
-        return 'border-l-slate-400 bg-gradient-to-r from-slate-50/60 to-card dark:from-slate-950/20 dark:to-transparent shadow-sm hover:from-slate-100/80 dark:hover:from-slate-950/30';
+        return 'border-l-muted-foreground bg-gradient-to-r from-muted/60 to-card shadow-sm hover:from-muted/80';
     }
   };
 
@@ -347,7 +349,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
       }
     }}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className={`relative ${triggerClassName}`}>
+        <Button variant="ghost" size="icon" className={cn('relative', triggerClassName)} aria-label="Notificaciones">
           {unreadCount > 0 ? (
             <BellRing className="h-5 w-5" />
           ) : (
@@ -374,7 +376,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
       >
         <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-muted/50 to-muted/30">
           <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-primary/10 dark:bg-primary/20 rounded-lg">
+                          <div className="p-1.5 bg-primary/10 rounded-lg">
                 <Bell className="h-4 w-4 text-primary" />
               </div>
             <div>
@@ -398,6 +400,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
               onClick={handleOpenModal}
               className="h-7 w-7 p-0 hover:bg-muted rounded-lg"
               title="Ver todas las notificaciones"
+              aria-label="Ver detalle"
             >
               <Maximize2 className="h-4 w-4 text-foreground" />
             </Button>
@@ -408,16 +411,17 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
               disabled={isLoading}
               className="h-7 w-7 p-0 hover:bg-muted rounded-lg"
               title="Actualizar"
+              aria-label="Actualizar"
             >
-              <Clock className={`h-4 w-4 text-foreground ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? <Loader2 className="h-4 w-4 text-foreground animate-spin" /> : <Clock className="h-4 w-4 text-foreground" />}
             </Button>
           </div>
         </div>
         <DropdownMenuSeparator />
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-2xl mb-3">
-              <Bell className="h-10 w-10 text-primary/70 dark:text-primary/60" />
+            <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl mb-3">
+              <Bell className="h-10 w-10 text-primary/70" />
             </div>
             <h3 className="text-base font-semibold text-foreground mb-1">Todo despejado</h3>
             <p className="text-xs text-muted-foreground mb-1">No hay notificaciones pendientes</p>
@@ -426,7 +430,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
               variant="outline" 
               size="sm" 
               onClick={handleOpenModal}
-              className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary/50 dark:border-primary/20 dark:hover:bg-primary/5 dark:hover:border-primary/40"
+              className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary/50"
             >
               <Maximize2 className="h-4 w-4 mr-2" />
               Ver historial completo
@@ -438,23 +442,23 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
               {notifications.slice(0, 10).map((notification) => (
                 <div
                   key={notification.id}
-                  className={`
-                    group relative p-2 rounded-lg border-l-4 cursor-pointer transition-all duration-300 
-                    hover:scale-[1.01] hover:shadow-lg hover:border-l-6
-                    ${getPriorityColor(notification.priority)}
-                    ${!notification.read ? 'opacity-100 ring-1 ring-primary/20' : 'opacity-80'}
-                  `}
+                  className={cn(
+                    'group relative p-2 rounded-lg border-l-4 cursor-pointer transition-all duration-300',
+                    'hover:scale-[1.01] hover:shadow-lg hover:border-l-6',
+                    getPriorityColor(notification.priority),
+                    !notification.read ? 'opacity-100 ring-1 ring-primary/20' : 'opacity-80'
+                  )}
                   onClick={() => handleNotificationClick(notification)}
                   title={notification.taskId || notification.workOrderId || notification.toolId || notification.reminderId || notification.relatedData?.link || notification.type?.startsWith('invoice_') || notification.type?.startsWith('cheque_') || notification.type === 'quote_expiring' || notification.type === 'payment_received' ?
                     "Haz clic para ver detalles" : notification.title}
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 mt-0.5">
-                      <div className={`p-1 rounded-md transition-colors duration-200 ${
-                        !notification.read 
-                          ? 'bg-primary/15 text-primary dark:bg-primary/20 dark:text-primary-foreground' 
+                      <div className={cn('p-1 rounded-md transition-colors duration-200',
+                        !notification.read
+                          ? 'bg-primary/15 text-primary'
                           : 'bg-muted text-muted-foreground'
-                      }`}>
+                      )}>
                       {getPriorityIcon(notification)}
                       </div>
                     </div>
@@ -479,6 +483,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                               }}
                               className="h-6 w-6 p-0 hover:bg-primary hover:text-primary-foreground"
                               title="Marcar como leída"
+                              aria-label="Completar"
                             >
                               <Check className="h-3 w-3" />
                             </Button>
@@ -490,15 +495,15 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                       </p>
                         <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-muted-foreground bg-muted/80 dark:bg-muted/50 px-1.5 py-0.5 rounded border border-border/50">
+                          <span className="text-[10px] font-medium text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
                             {formatTimestamp(notification.timestamp)}
                           </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            notification.priority === 'urgent' ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200 border border-red-200 dark:border-red-900/50' :
-                            notification.priority === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200 border border-orange-200 dark:border-orange-900/50' :
-                            notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-900/50' :
-                            'bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50'
-                          }`}>
+                          <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium',
+                            notification.priority === 'urgent' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
+                            notification.priority === 'high' ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted-foreground/20' :
+                            notification.priority === 'medium' ? 'bg-warning-muted/60 text-warning-muted-foreground border border-warning-muted-foreground/20' :
+                            'bg-muted text-muted-foreground border border-border'
+                          )}>
                             {notification.priority === 'urgent' ? 'Urgente' :
                              notification.priority === 'high' ? 'Alta' :
                              notification.priority === 'medium' ? 'Media' : 'Baja'}
@@ -520,7 +525,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="text-xs font-medium hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 px-3 py-1.5 rounded-lg" 
+                    className="text-xs font-medium hover:bg-primary/10 hover:text-primary px-3 py-1.5 rounded-lg" 
                     onClick={handleOpenModal}
                   >
                     Ver todas las notificaciones ({notifications.length})
@@ -541,7 +546,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
         setIsOpen(false);
       }
     }}>
-      <DialogContent size="xl" className="max-h-[85vh] flex flex-col">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -666,7 +671,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
               )}
 
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-                <Clock className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Clock className="h-3.5 w-3.5 mr-1.5" />}
                 Actualizar
               </Button>
             </div>
@@ -707,23 +712,23 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`
-                    group relative p-2 rounded-lg border-l-4 border-r-4 cursor-pointer transition-all duration-300 
-                    hover:scale-[1.005] hover:shadow-xl hover:border-l-6 hover:border-r-6 backdrop-blur-sm
-                    ${getPriorityColor(notification.priority)}
-                    ${!notification.read ? 'opacity-100 ring-2 ring-primary/30' : 'opacity-85'}
-                  `}
+                  className={cn(
+                    'group relative p-2 rounded-lg border-l-4 border-r-4 cursor-pointer transition-all duration-300',
+                    'hover:scale-[1.005] hover:shadow-xl hover:border-l-6 hover:border-r-6 backdrop-blur-sm',
+                    getPriorityColor(notification.priority),
+                    !notification.read ? 'opacity-100 ring-2 ring-primary/30' : 'opacity-85'
+                  )}
                   onClick={() => handleNotificationClick(notification)}
                   title={notification.taskId || notification.workOrderId || notification.toolId || notification.reminderId || notification.relatedData?.link || notification.type?.startsWith('invoice_') || notification.type?.startsWith('cheque_') || notification.type === 'quote_expiring' || notification.type === 'payment_received' ?
                     "Haz clic para ver detalles" : notification.title}
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 mt-0.5">
-                      <div className={`p-1 rounded-md transition-all duration-200 ${
-                        !notification.read 
-                          ? 'bg-primary/15 text-primary shadow-md' 
+                      <div className={cn('p-1 rounded-md transition-all duration-200',
+                        !notification.read
+                          ? 'bg-primary/15 text-primary shadow-md'
                           : 'bg-muted text-muted-foreground'
-                      }`}>
+                      )}>
                       {getPriorityIcon(notification)}
                       </div>
                     </div>
@@ -745,12 +750,12 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                             >
                               {getNotificationTypeLabel(notification.type)}
                             </Badge>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                              notification.priority === 'urgent' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border border-red-200 dark:border-red-900/50' :
-                              notification.priority === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200 border border-orange-200 dark:border-orange-900/50' :
-                              notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-900/50' :
-                              'bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200 dark:border-slate-700/50'
-                            }`}>
+                            <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold',
+                              notification.priority === 'urgent' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
+                              notification.priority === 'high' ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted-foreground/20' :
+                              notification.priority === 'medium' ? 'bg-warning-muted/60 text-warning-muted-foreground border border-warning-muted-foreground/20' :
+                              'bg-muted text-muted-foreground border border-border'
+                            )}>
                               {notification.priority === 'urgent' ? '🔴 Urgente' :
                                notification.priority === 'high' ? '🟠 Alta' :
                                notification.priority === 'medium' ? '🟡 Media' : '⚪ Baja'}
@@ -768,6 +773,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                           }}
                               className="h-6 w-6 p-0 hover:bg-primary hover:text-primary-foreground rounded-lg"
                               title="Marcar como leída"
+                              aria-label="Completar"
                         >
                               <Check className="h-3 w-3" />
                         </Button>
@@ -778,7 +784,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                         {notification.message}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-muted-foreground bg-muted/80 dark:bg-muted/50 border border-border/50 px-2 py-1 rounded">
+                        <span className="text-[10px] font-semibold text-muted-foreground bg-muted/80 border border-border/50 px-2 py-1 rounded">
                           📅 {formatTimestamp(notification.timestamp)}
                         </span>
                         {(notification.workOrderId || notification.taskId || notification.toolId || notification.reminderId || notification.relatedData?.link || notification.type?.startsWith('invoice_') || notification.type?.startsWith('cheque_') || notification.type === 'quote_expiring' || notification.type === 'payment_received') && (

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, FileText, CheckCircle, Upload, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Clock, FileText, CheckCircle, Upload, X, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -67,8 +68,8 @@ function formatTime(minutes: number): string {
 
 function getPriorityColor(priority: string) {
   switch (priority) {
-    case 'alta': return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800/50';
-    case 'media': return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800/50';
+    case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
+    case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
     case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/50';
     default: return 'bg-muted text-muted-foreground border-border';
   }
@@ -130,7 +131,7 @@ export function TaskExecutionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="md" className="flex flex-col">
+      <DialogContent size="md">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-2">
@@ -206,11 +207,7 @@ export function TaskExecutionModal({
               </div>
               
               {timeDifference !== 0 && (
-                <div className={`p-3 rounded-lg border ${
-                  isOverTime 
-                    ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-800/50 dark:text-red-400' 
-                    : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-800/50 dark:text-green-400'
-                }`}>
+                <div className={cn('p-3 rounded-lg border', isOverTime ? 'bg-destructive/10 border-destructive/30 text-destructive' : 'bg-success-muted border-success-muted text-success')}>
                   <p className="text-sm font-medium">
                     {isOverTime 
                       ? `⚠️ Tiempo excedido en ${Math.abs(timeDifference)} minutos` 
@@ -282,7 +279,7 @@ export function TaskExecutionModal({
                         size="sm"
                         variant="ghost"
                         onClick={() => removeAttachment(index)}
-                        className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                        className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -302,11 +299,11 @@ export function TaskExecutionModal({
             size="sm"
             onClick={handleComplete}
             disabled={isCompleting}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-success hover:bg-success/90 text-white"
           >
             {isCompleting ? (
               <>
-                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Completando...
               </>
             ) : (

@@ -203,7 +203,7 @@ export function DiscountConfig({ companyId }: DiscountConfigProps) {
               <div className="space-y-2 ml-6">
                 <div className="flex items-center justify-between">
                   <Label>Descuento Máximo con Aprobación (%)</Label>
-                  <span className="text-2xl font-bold text-red-500">
+                  <span className="text-2xl font-bold text-destructive">
                     {config?.descuentoMaximoConAprobacion || 20}%
                   </span>
                 </div>
@@ -245,9 +245,9 @@ export function DiscountConfig({ companyId }: DiscountConfigProps) {
                   <span className="text-sm font-medium">Zona Verde (Automático)</span>
                   <span className="text-sm text-muted-foreground">0% - {maxAuto}%</span>
                 </div>
-                <div className="h-3 bg-green-100 rounded-full overflow-hidden">
+                <div className="h-3 bg-success-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500"
+                    className="h-full bg-success"
                     style={{ width: `${(maxAuto / 100) * 100}%` }}
                   />
                 </div>
@@ -264,9 +264,9 @@ export function DiscountConfig({ companyId }: DiscountConfigProps) {
                         {maxAuto}% - {maxSinAprobacion}%
                       </span>
                     </div>
-                    <div className="h-3 bg-yellow-100 rounded-full overflow-hidden">
+                    <div className="h-3 bg-warning-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-yellow-500"
+                        className="h-full bg-warning"
                         style={{
                           width: `${((maxSinAprobacion - maxAuto) / 100) * 100}%`,
                           marginLeft: `${(maxAuto / 100) * 100}%`,
@@ -304,9 +304,9 @@ export function DiscountConfig({ companyId }: DiscountConfigProps) {
                         +{maxConAprobacion}%
                       </span>
                     </div>
-                    <div className="h-3 bg-red-100 rounded-full overflow-hidden">
+                    <div className="h-3 bg-destructive/10 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-red-500"
+                        className="h-full bg-destructive"
                         style={{
                           width: `${((100 - maxConAprobacion) / 100) * 100}%`,
                           marginLeft: `${(maxConAprobacion / 100) * 100}%`,

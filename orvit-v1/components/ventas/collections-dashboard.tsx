@@ -295,7 +295,7 @@ export function CollectionsDashboard() {
             <DollarSign className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {formatCurrency(data.totalCobrado)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -322,10 +322,10 @@ export function CollectionsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Pendiente de Cobro</CardTitle>
-            <Clock className="w-4 h-4 text-yellow-600" />
+            <Clock className="w-4 h-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-warning-muted-foreground">
               {formatCurrency(data.totalPendiente)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -341,7 +341,7 @@ export function CollectionsDashboard() {
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{data.eficienciaCobranza}%</div>
+            <div className="text-2xl font-bold text-info-muted-foreground">{data.eficienciaCobranza}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               Del total facturado en el período
             </p>
@@ -364,13 +364,13 @@ export function CollectionsDashboard() {
             </p>
             <div className="mt-2">
               {data.dso <= 30 && (
-                <Badge className="bg-green-100 text-green-700">Excelente</Badge>
+                <Badge className="bg-success-muted text-success">Excelente</Badge>
               )}
               {data.dso > 30 && data.dso <= 60 && (
-                <Badge className="bg-yellow-100 text-yellow-700">Bueno</Badge>
+                <Badge className="bg-warning-muted text-warning-muted-foreground">Bueno</Badge>
               )}
               {data.dso > 60 && (
-                <Badge className="bg-red-100 text-red-700">Necesita atención</Badge>
+                <Badge className="bg-destructive/10 text-destructive">Necesita atención</Badge>
               )}
             </div>
           </CardContent>
@@ -380,10 +380,10 @@ export function CollectionsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Monto Vencido</CardTitle>
-            <AlertCircle className="w-4 h-4 text-red-600" />
+            <AlertCircle className="w-4 h-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatCurrency(data.montoVencido)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -396,10 +396,10 @@ export function CollectionsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Tasa de Cobranza</CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <CheckCircle2 className="w-4 h-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {data.totalCobrado > 0 && data.totalPendiente + data.totalCobrado > 0
                 ? (
                     (data.totalCobrado / (data.totalCobrado + data.totalPendiente)) *
@@ -479,15 +479,15 @@ export function CollectionsDashboard() {
                 className="flex items-center justify-between p-3 border rounded-md"
               >
                 <div className="flex items-center gap-3">
-                  <BarChart3 className="w-4 h-4 text-gray-500" />
+                  <BarChart3 className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <div className="font-medium">{status.estado}</div>
-                    <div className="text-sm text-gray-500">{status.count} cobros</div>
+                    <div className="text-sm text-muted-foreground">{status.count} cobros</div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold">{formatCurrency(status.monto)}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {data.totalCobrado > 0
                       ? ((status.monto / data.totalCobrado) * 100).toFixed(1)
                       : 0}

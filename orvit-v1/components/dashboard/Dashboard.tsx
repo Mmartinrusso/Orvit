@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Header } from './Header';
 import { FilterDock } from './FilterDock';
 import { KpiCard } from './KpiCard';
@@ -220,7 +221,7 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
           <p className="text-[#9BA8AB] mb-4">No se pudieron cargar los datos del dashboard</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-info text-white rounded-lg hover:bg-info/90 transition-colors"
           >
             Reintentar
           </button>
@@ -269,14 +270,14 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
 
         {/* KPIs Grid */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <h2 className="text-xl font-bold text-foreground mb-4">
             Indicadores Clave de Rendimiento
           </h2>
-          <div className={`grid gap-4 ${
-            filters.viewMode === 'compact' 
-              ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6' 
+          <div className={cn('grid gap-4',
+            filters.viewMode === 'compact'
+              ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
               : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-          }`}>
+          )}>
             {kpisData.map((kpi, index) => (
               <KpiCard 
                 key={index}
@@ -291,9 +292,9 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
           {/* Gráfico Principal */}
           <div className="xl:col-span-3">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   {filters.comparisonMode === '2months' && 'Comparación 2 Meses'}
                   {filters.comparisonMode === 'range-vs-range' && 'Rango vs Rango'}
                   {filters.comparisonMode === 'multi-mes' && 'Tendencia Multi-Mes'}
@@ -301,7 +302,7 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
                   {filters.comparisonMode === 'index100' && 'Índice Base 100'}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {filteredData.length} meses
                   </span>
               </div>
@@ -318,50 +319,50 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
           {/* Panel Lateral */}
           <div className="space-y-6">
             {/* Resumen Ejecutivo */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
                 Resumen Ejecutivo
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Tendencia General</span>
+                  <span className="text-sm text-muted-foreground">Tendencia General</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-sm text-green-600">Positiva</span>
+                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <span className="text-sm text-success">Positiva</span>
               </div>
             </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Período</span>
-                  <span className="text-sm text-gray-900">
+                  <span className="text-sm text-muted-foreground">Período</span>
+                  <span className="text-sm text-foreground">
                     {filteredData[0]?.monthFormatted} - {filteredData[filteredData.length - 1]?.monthFormatted}
                   </span>
           </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Valor Inicial</span>
-                  <span className="text-sm text-gray-900">
+                  <span className="text-sm text-muted-foreground">Valor Inicial</span>
+                  <span className="text-sm text-foreground">
                     ${filteredData[0]?.ventas.toLocaleString() || '0'}
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Valor Final</span>
-                  <span className="text-sm text-gray-900">
+                  <span className="text-sm text-muted-foreground">Valor Final</span>
+                  <span className="text-sm text-foreground">
                     ${filteredData[filteredData.length - 1]?.ventas.toLocaleString() || '0'}
                   </span>
             </div>
             
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Volatilidad</span>
-                  <span className="text-sm text-gray-900">12.5%</span>
+                  <span className="text-sm text-muted-foreground">Volatilidad</span>
+                  <span className="text-sm text-foreground">12.5%</span>
           </div>
                 
                 {filteredData.length >= 12 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">CAGR</span>
-                    <span className="text-sm text-gray-900">18.2%</span>
+                    <span className="text-sm text-muted-foreground">CAGR</span>
+                    <span className="text-sm text-foreground">18.2%</span>
               </div>
             )}
                 </div>
@@ -378,7 +379,7 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
 
         {/* Detalle por Categoría */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <h2 className="text-xl font-bold text-foreground mb-4">
             Análisis por Categoría
           </h2>
           <CategoryGrid 

@@ -2,7 +2,7 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -167,7 +167,7 @@ export function ProductFileUpload({
   return (
     <div className="space-y-6">
       {/* Debug info */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-xs text-yellow-800">
+      <div className="bg-warning-muted border border-warning-muted rounded-lg p-2 text-xs text-warning-muted-foreground">
         Debug: ProductFileUpload renderizado - productId: {productId}, companyId: {companyId}
       </div>
 
@@ -182,8 +182,8 @@ export function ProductFileUpload({
         <CardContent className="space-y-4">
           {/* Mensaje cuando el producto no existe */}
           {productId === 'temp' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-blue-800">
+            <div className="bg-info-muted border border-info-muted rounded-lg p-4 text-center">
+              <p className="text-sm text-info-muted-foreground">
                 💡 Guarda el producto primero para poder subir imágenes y documentos
               </p>
             </div>
@@ -272,8 +272,8 @@ export function ProductFileUpload({
         <CardContent className="space-y-4">
           {/* Mensaje cuando el producto no existe */}
           {productId === 'temp' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-blue-800">
+            <div className="bg-info-muted border border-info-muted rounded-lg p-4 text-center">
+              <p className="text-sm text-info-muted-foreground">
                 💡 Guarda el producto primero para poder subir imágenes y documentos
               </p>
             </div>

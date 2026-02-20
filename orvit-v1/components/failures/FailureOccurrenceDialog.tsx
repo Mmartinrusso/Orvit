@@ -224,8 +224,6 @@ export default function FailureOccurrenceDialog({
 
       // Si se abrió desde un WorkOrder, usar el endpoint de apply-solution
       if (workOrderId && solutionData) {
-        console.log(`📝 Applying solution to WorkOrder ${workOrderId}`);
-
         const payload: any = {
           actualHours: solutionData.actualHours,
           timeUnit: solutionData.timeUnit || 'hours',
@@ -245,7 +243,6 @@ export default function FailureOccurrenceDialog({
             return;
           }
           payload.existingSolutionId = selectedSolutionId;
-          console.log(`🔍 Enviando existingSolutionId: ${selectedSolutionId} (tipo: ${typeof selectedSolutionId})`);
         } else if (solutionMode === 'new') {
           payload.newSolution = {
             title: solutionData.title,
@@ -270,7 +267,6 @@ export default function FailureOccurrenceDialog({
         }
 
         const result = await response.json();
-        console.log('✅ Solution applied to WorkOrder:', result);
 
         toast({
           title: 'Solución aplicada',
@@ -304,8 +300,6 @@ export default function FailureOccurrenceDialog({
         }),
       };
 
-      console.log('📝 Creating occurrence for existing failure:', failure.id, occurrenceData);
-
       const occurrenceResponse = await fetch(`/api/failures/${failure.id}/occurrences`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -318,7 +312,6 @@ export default function FailureOccurrenceDialog({
       }
 
       const occurrenceResult = await occurrenceResponse.json();
-      console.log('✅ Occurrence created:', occurrenceResult);
 
       // ✅ El backend ya maneja la creación de WorkOrder, FailureSolution y SolutionApplication
       // No necesitamos crear nada más manualmente
@@ -379,7 +372,7 @@ export default function FailureOccurrenceDialog({
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
             {workOrderId ? 'Aplicar Solución a Orden de Trabajo' : 'Registrar Ocurrencia de Falla'}
           </DialogTitle>
           <DialogDescription>
@@ -424,7 +417,7 @@ export default function FailureOccurrenceDialog({
                     <RadioGroupItem value="existing" id="existing" />
                     <Label htmlFor="existing" className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <History className="h-4 w-4 text-blue-500" />
+                        <History className="h-4 w-4 text-info-muted-foreground" />
                         <span>Usar solución anterior</span>
                         <Badge variant="secondary" className="ml-2">
                           {previousSolutions.length} disponible{previousSolutions.length > 1 ? 's' : ''}
@@ -438,7 +431,7 @@ export default function FailureOccurrenceDialog({
                   <RadioGroupItem value="new" id="new" />
                   <Label htmlFor="new" className="flex-1 cursor-pointer">
                     <div className="flex items-center gap-2">
-                      <Plus className="h-4 w-4 text-green-500" />
+                      <Plus className="h-4 w-4 text-success" />
                       <span>Crear nueva solución</span>
                     </div>
                   </Label>
@@ -449,7 +442,7 @@ export default function FailureOccurrenceDialog({
                     <RadioGroupItem value="unresolved" id="unresolved" />
                     <Label htmlFor="unresolved" className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                         <span>Sin resolver todavía</span>
                       </div>
                     </Label>
@@ -492,7 +485,7 @@ export default function FailureOccurrenceDialog({
                                 </span>
                                 {solution.isPreferred && (
                                   <Badge variant="secondary" className="flex-shrink-0">
-                                    <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                    <Star className="h-3 w-3 mr-1 fill-warning-muted-foreground text-warning-muted-foreground" />
                                     Preferida
                                   </Badge>
                                 )}
@@ -524,7 +517,7 @@ export default function FailureOccurrenceDialog({
                                         className={cn(
                                           "h-3 w-3",
                                           star <= solution.effectiveness!
-                                            ? "fill-yellow-400 text-yellow-400"
+                                            ? "fill-warning-muted-foreground text-warning-muted-foreground"
                                             : "text-muted-foreground"
                                         )}
                                       />
@@ -543,7 +536,7 @@ export default function FailureOccurrenceDialog({
                                 )}
                               >
                                 {selectedSolutionId === solution.id && (
-                                  <CheckCircle className="h-3 w-3 text-white m-auto" />
+                                  <CheckCircle className="h-3 w-3 text-primary-foreground m-auto" />
                                 )}
                               </div>
                             </div>

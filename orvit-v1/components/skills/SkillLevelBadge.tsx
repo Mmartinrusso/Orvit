@@ -10,11 +10,11 @@ interface SkillLevelBadgeProps {
 }
 
 const SKILL_LEVELS = [
-  { level: 1, label: 'Básico', color: 'bg-gray-500' },
-  { level: 2, label: 'Intermedio', color: 'bg-blue-500' },
-  { level: 3, label: 'Avanzado', color: 'bg-green-500' },
-  { level: 4, label: 'Experto', color: 'bg-purple-500' },
-  { level: 5, label: 'Instructor', color: 'bg-amber-500' },
+  { level: 1, label: 'Básico', color: 'bg-muted-foreground' },
+  { level: 2, label: 'Intermedio', color: 'bg-primary' },
+  { level: 3, label: 'Avanzado', color: 'bg-success' },
+  { level: 4, label: 'Experto', color: 'bg-primary' },
+  { level: 5, label: 'Instructor', color: 'bg-warning-muted-foreground' },
 ];
 
 export function SkillLevelBadge({ level, showLabel = true, size = 'md' }: SkillLevelBadgeProps) {
@@ -29,7 +29,7 @@ export function SkillLevelBadge({ level, showLabel = true, size = 'md' }: SkillL
   return (
     <Badge
       className={cn(
-        'text-white font-medium',
+        'text-background font-medium',
         skillLevel.color,
         sizeClasses[size]
       )}
@@ -47,7 +47,7 @@ export function SkillLevelIndicator({ level, maxLevel = 5 }: { level: number; ma
           key={i}
           className={cn(
             'w-2 h-2 rounded-full',
-            i < level ? SKILL_LEVELS[Math.min(level - 1, 4)].color : 'bg-gray-200'
+            i < level ? SKILL_LEVELS[Math.min(level - 1, 4)].color : 'bg-muted'
           )}
         />
       ))}

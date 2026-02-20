@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -285,7 +286,7 @@ export function PaymentQuickModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="w-5 h-5" />
@@ -300,7 +301,7 @@ export function PaymentQuickModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <DialogBody className="space-y-6">
           {/* Monto y Fecha */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -440,7 +441,7 @@ export function PaymentQuickModal({
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={unallocated === 0 ? 'default' : 'secondary'}
-                    className={unallocated < 0 ? 'bg-red-100 text-red-700' : ''}
+                    className={unallocated < 0 ? 'bg-destructive/10 text-destructive' : ''}
                   >
                     {unallocated === 0
                       ? 'Totalmente imputado'
@@ -512,8 +513,8 @@ export function PaymentQuickModal({
               </div>
 
               {unallocated > 0 && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-yellow-50 p-3 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-warning-muted p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-warning-muted-foreground" />
                   <span>
                     El monto no imputado quedará como saldo a favor del cliente.
                   </span>
@@ -532,7 +533,7 @@ export function PaymentQuickModal({
               rows={2}
             />
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>

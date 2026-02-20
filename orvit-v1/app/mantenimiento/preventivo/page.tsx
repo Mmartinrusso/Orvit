@@ -109,6 +109,32 @@ function PreventivoPageContent() {
     setIsExecuteDialogOpen(true);
   }, []);
 
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  const handleExecutionSubmit = useCallback(async (executionData: any) => {
+    setIsExecuting(true);
+    try {
+      const response = await fetch('/api/maintenance/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(executionData),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Error al ejecutar el mantenimiento');
+      }
+      const result = await response.json();
+      toast({ title: 'Mantenimiento ejecutado', description: result.message, duration: 3000 });
+      setIsExecuteDialogOpen(false);
+      setSelectedMaintenance(null);
+      queryClient.invalidateQueries({ queryKey: ['maintenance-pending'] });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [queryClient]);
+
   const handleDeleteMaintenance = useCallback((maintenance: any) => {
     setMaintenanceToDelete(maintenance);
     setIsDeleteDialogOpen(true);
@@ -334,8 +360,8 @@ function PreventivoPageContent() {
                     size="sm"
                     variant="outline"
                     className={alertsSummary.overdue > 0
-                      ? "border-red-300 bg-red-50 hover:bg-red-100 text-red-700"
-                      : "border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-700"
+                      ? "border-destructive/30 bg-destructive/10 hover:bg-destructive/10 text-destructive"
+                      : "border-warning-muted bg-warning-muted hover:bg-warning-muted text-warning-muted-foreground"
                     }
                   >
                     {alertsSummary.overdue > 0 ? (
@@ -368,7 +394,7 @@ function PreventivoPageContent() {
                         }}
                       >
                         <div className={`h-2 w-2 rounded-full shrink-0 ${
-                          alert.type === 'OVERDUE' ? 'bg-red-500' : 'bg-orange-500'
+                          alert.type === 'OVERDUE' ? 'bg-destructive' : 'bg-warning'
                         }`} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{alert.title}</p>
@@ -407,7 +433,7 @@ function PreventivoPageContent() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                  className="bg-success-muted hover:bg-success-muted text-success border-success-muted"
                   onClick={() => setIsMassExecutionOpen(true)}
                 >
                   <CheckCircle className="h-4 w-4" />
@@ -419,7 +445,7 @@ function PreventivoPageContent() {
             {(currentView === 'hoy' || currentView === 'calendario' || currentView === 'planes') && (
               <Button
                 size="sm"
-                className="bg-black hover:bg-gray-800 text-white"
+                className="bg-black hover:bg-muted-foreground text-white"
                 onClick={handleCreatePlan}
               >
                 <Plus className="h-4 w-4" />
@@ -430,7 +456,7 @@ function PreventivoPageContent() {
             {currentView === 'checklists' && (
               <Button
                 size="sm"
-                className="bg-black hover:bg-gray-800 text-white"
+                className="bg-black hover:bg-muted-foreground text-white"
                 onClick={handleCreateChecklist}
               >
                 <Plus className="h-4 w-4" />
@@ -548,6 +574,8 @@ function PreventivoPageContent() {
               onClose={handleDialogClose}
               maintenance={selectedMaintenance}
               companyId={companyId}
+              onExecute={handleExecutionSubmit}
+              isLoading={isExecuting}
             />
           )}
 

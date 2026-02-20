@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -150,7 +151,7 @@ export function QRCodeGenerator({ machineId, machineName, assetCode }: QRCodeGen
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />
@@ -158,9 +159,10 @@ export function QRCodeGenerator({ machineId, machineName, assetCode }: QRCodeGen
             </DialogTitle>
           </DialogHeader>
 
+          <DialogBody>
           <div className="space-y-4">
             {/* QR Preview */}
-            <div className="flex justify-center p-4 bg-white border rounded-lg">
+            <div className="flex justify-center p-4 bg-background border rounded-lg">
               {isLoading || isFetching ? (
                 <Skeleton className="w-[200px] h-[200px]" />
               ) : data?.qr?.dataUrl ? (
@@ -220,6 +222,7 @@ export function QRCodeGenerator({ machineId, machineName, assetCode }: QRCodeGen
               </Select>
             </div>
           </div>
+          </DialogBody>
 
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => refetch()}>

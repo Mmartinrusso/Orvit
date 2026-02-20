@@ -12,7 +12,8 @@ import {
   BarChart3,
   Target,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import { formatCurrency, formatPercentage, formatNumber } from './utils/metrics';
 import { MonthSelectorCompact } from './MonthSelectorCompact';
@@ -472,7 +473,7 @@ export function ComprehensiveDashboard({
       <div className="space-y-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground">Cargando dashboard completo...</p>
           </div>
         </div>
@@ -550,8 +551,8 @@ export function ComprehensiveDashboard({
               </p>
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <div className="flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">+68.7%</span>
+                  <TrendingUp className="h-3 w-3 text-success" />
+                  <span className="text-xs font-medium text-success">+68.7%</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{formatNumber(data.totalUnitsSold)} u.</span>
               </div>
@@ -574,8 +575,8 @@ export function ComprehensiveDashboard({
                   </p>
                   <div className="flex items-center justify-between pt-2 border-t border-border">
                     <div className="flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3 text-red-600 dark:text-red-400" />
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">+8.9%</span>
+                      <TrendingUp className="h-3 w-3 text-destructive" />
+                      <span className="text-xs font-medium text-destructive">+8.9%</span>
                     </div>
                     <span className="text-xs text-muted-foreground">Ver detalle</span>
                   </div>
@@ -621,8 +622,8 @@ export function ComprehensiveDashboard({
               </p>
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">Excelente</span>
+                  <CheckCircle className="h-3 w-3 text-success" />
+                  <span className="text-xs font-medium text-success">Excelente</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{formatCurrency(data.netMargin)}</span>
               </div>
@@ -795,7 +796,7 @@ export function ComprehensiveDashboard({
               className={cn(
                 "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 viewMode === 'ventas'
-                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
+                  ? 'bg-foreground text-background'
                   : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
@@ -806,7 +807,7 @@ export function ComprehensiveDashboard({
               className={cn(
                 "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 viewMode === 'produccion'
-                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
+                  ? 'bg-foreground text-background'
                   : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
@@ -944,10 +945,10 @@ export function ComprehensiveDashboard({
                       <>
                         {/* 1. Mejor Oportunidad */}
                         {mejorOportunidad && (
-                          <div className="p-2.5 rounded-lg border bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-500/20">
+                          <div className="p-2.5 rounded-lg border bg-success/10 border-success/30">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">MÁXIMA PRIORIDAD</p>
+                              <div className="w-2 h-2 rounded-full bg-success"></div>
+                              <p className="text-xs font-bold text-success">MÁXIMA PRIORIDAD</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               <strong className="text-foreground">{mejorOportunidad.name}</strong>: Margen {mejorOportunidad.margin?.toFixed(1)}%
@@ -958,10 +959,10 @@ export function ComprehensiveDashboard({
 
                         {/* 2. Campeón de Ganancias */}
                         {mejorGananciaTotal && mejorGananciaTotal.name !== mejorOportunidad?.name && (
-                          <div className="p-2.5 rounded-lg border bg-blue-500/10 border-blue-500/30 dark:bg-blue-500/20">
+                          <div className="p-2.5 rounded-lg border bg-info/10 border-info/30">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                              <p className="text-xs font-bold text-blue-700 dark:text-blue-400">Campeón de Ganancias</p>
+                              <div className="w-2 h-2 rounded-full bg-info"></div>
+                              <p className="text-xs font-bold text-info-muted-foreground">Campeón de Ganancias</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               <strong className="text-foreground">{mejorGananciaTotal.name}</strong> genera {formatCurrency(mejorGananciaTotal.gananciaTotal)} en ganancias totales.
@@ -971,10 +972,10 @@ export function ComprehensiveDashboard({
 
                         {/* 3. Producto Estrella */}
                         {masVendido && masVendido.name !== mejorOportunidad?.name && masVendido.name !== mejorGananciaTotal?.name && (
-                          <div className="p-2.5 rounded-lg border bg-purple-500/10 border-purple-500/30 dark:bg-purple-500/20">
+                          <div className="p-2.5 rounded-lg border bg-info/10 border-info/30">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                              <p className="text-xs font-bold text-purple-700 dark:text-purple-400">Volumen Líder</p>
+                              <div className="w-2 h-2 rounded-full bg-info"></div>
+                              <p className="text-xs font-bold text-info-muted-foreground">Volumen Líder</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               <strong className="text-foreground">{masVendido.name}</strong>: {formatNumber(masVendido.units)} unidades vendidas.
@@ -984,10 +985,10 @@ export function ComprehensiveDashboard({
 
                         {/* 4. Acción Requerida - URGENTE (rojo) */}
                         {productosRiesgo.length > 0 && (
-                          <div className="p-2.5 rounded-lg border bg-red-500/10 border-red-500/30 dark:bg-red-500/20">
+                          <div className="p-2.5 rounded-lg border bg-destructive/10 border-destructive/30">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                              <p className="text-xs font-bold text-red-700 dark:text-red-400">Acción Requerida</p>
+                              <div className="w-2 h-2 rounded-full bg-destructive animate-pulse"></div>
+                              <p className="text-xs font-bold text-destructive">Acción Requerida</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               {productosRiesgo.length} productos con margen {'<'}25%. Urgente: <strong className="text-foreground">{productosRiesgo[0].name}</strong> ({productosRiesgo[0].margin?.toFixed(1)}%).
@@ -999,14 +1000,14 @@ export function ComprehensiveDashboard({
                         <div className={cn(
                           "p-2.5 rounded-lg border",
                           concentracionTop10 > 70
-                            ? "bg-amber-500/10 border-amber-500/30 dark:bg-amber-500/20"
-                            : "bg-muted/50 border-border dark:bg-muted/30"
+                            ? "bg-warning/10 border-warning/30"
+                            : "bg-muted/50 border-border"
                         )}>
                           <div className="flex items-center gap-1.5 mb-1">
-                            {concentracionTop10 > 70 && <div className="w-2 h-2 rounded-full bg-amber-500"></div>}
+                            {concentracionTop10 > 70 && <div className="w-2 h-2 rounded-full bg-warning"></div>}
                             <p className={cn(
                               "text-xs font-bold",
-                              concentracionTop10 > 70 ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+                              concentracionTop10 > 70 ? "text-warning-muted-foreground" : "text-foreground"
                             )}>Concentración</p>
                           </div>
                           <p className="text-xs text-muted-foreground leading-tight">
@@ -1017,10 +1018,10 @@ export function ComprehensiveDashboard({
 
                         {/* 6. Productos Premium */}
                         {productosExcelentes.length > 0 && (
-                          <div className="p-2.5 rounded-lg border bg-green-500/10 border-green-500/30 dark:bg-green-500/20">
+                          <div className="p-2.5 rounded-lg border bg-success/10 border-success/30">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                              <p className="text-xs font-bold text-green-700 dark:text-green-400">Premium</p>
+                              <div className="w-2 h-2 rounded-full bg-success"></div>
+                              <p className="text-xs font-bold text-success">Premium</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               {productosExcelentes.length} productos {'>'}50% margen. Top: <strong className="text-foreground">{productosExcelentes[0].name}</strong>.
@@ -1030,10 +1031,10 @@ export function ComprehensiveDashboard({
 
                         {/* 7. Viguetas vs Bloques */}
                         {viguetas.length > 0 && bloques.length > 0 && (
-                          <div className="p-2.5 rounded-lg border bg-indigo-500/10 border-indigo-500/30 dark:bg-indigo-500/20">
+                          <div className="p-2.5 rounded-lg border bg-info/10 border-info/30">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                              <p className="text-xs font-bold text-indigo-700 dark:text-indigo-400">Categorías</p>
+                              <div className="w-2 h-2 rounded-full bg-info"></div>
+                              <p className="text-xs font-bold text-info-muted-foreground">Categorías</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               {ingresosViguetas > ingresosBloques
@@ -1045,7 +1046,7 @@ export function ComprehensiveDashboard({
                         )}
 
                         {/* 8. Proyección IA */}
-                        <div className="p-2.5 rounded-lg border bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 dark:from-primary/20 dark:to-primary/10">
+                        <div className="p-2.5 rounded-lg border bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30">
                           <div className="flex items-center gap-1.5 mb-1">
                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                             <p className="text-xs font-bold text-primary">Proyección IA</p>

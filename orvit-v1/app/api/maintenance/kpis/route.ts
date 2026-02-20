@@ -76,34 +76,37 @@ export async function GET(request: NextRequest) {
       where.type = type;
     }
 
-    // Temporalmente usamos solo workOrders existentes sin el campo history
-    let allMaintenances = await prisma.workOrder.findMany({
-      where,
-      include: {
-        // history: true, // Comentado hasta que se aplique la migración
-        machine: true,
-        unidadMovil: {
-          select: {
-            id: true,
-            nombre: true,
-            tipo: true
-          }
+    // ✅ OPTIMIZADO: Filtro de búsqueda en la query DB (evita cargar todo en memoria)
+    if (searchTerm && searchTerm.trim()) {
+      const term = searchTerm.trim();
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { title: { contains: term, mode: 'insensitive' } },
+            { description: { contains: term, mode: 'insensitive' } },
+            { machine: { name: { contains: term, mode: 'insensitive' } } },
+            { unidadMovil: { nombre: { contains: term, mode: 'insensitive' } } }
+          ]
         }
+      ];
+    }
+
+    // ✅ OPTIMIZADO: Select solo campos necesarios para KPIs (no include completo)
+    const allMaintenances = await prisma.workOrder.findMany({
+      where,
+      select: {
+        id: true,
+        status: true,
+        type: true,
+        scheduledDate: true,
+        completedDate: true,
+        estimatedHours: true,
+        actualHours: true,
+        cost: true,
+        machineId: true,
       }
     });
-
-    // Aplicar filtro de búsqueda si se especificó
-    if (searchTerm && searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      allMaintenances = allMaintenances.filter(maintenance => {
-        return (
-          maintenance.title?.toLowerCase().includes(searchLower) ||
-          maintenance.description?.toLowerCase().includes(searchLower) ||
-          maintenance.machine?.name?.toLowerCase().includes(searchLower) ||
-          maintenance.unidadMovil?.nombre?.toLowerCase().includes(searchLower)
-        );
-      });
-    }
 
     // Calcular KPIs
     const totalMaintenances = allMaintenances.length;
@@ -125,38 +128,31 @@ export async function GET(request: NextRequest) {
       ? completedWithTimes.reduce((sum, m) => sum + (m.actualHours || 0), 0) / completedWithTimes.length
       : 0;
 
-    // Temporalmente calculamos MTTR/MTBF de forma simplificada
-    // const historyWithMTTR = allMaintenances
-    //   .flatMap(m => m.history)
-    //   .filter(h => h.mttr !== null);
-    
+    // MTTR = promedio de horas reales de trabajos completados
     const avgMTTR = completedWithTimes.length > 0 ? avgCompletionTime : 0;
 
-    // const historyWithMTBF = allMaintenances
-    //   .flatMap(m => m.history)
-    //   .filter(h => h.mtbf !== null);
-    
-    const avgMTBF = 0; // Temporalmente 0 hasta tener el historial
+    // MTBF = horas del período / cantidad de fallas correctivas
+    const periodHours = (dateRange.lte.getTime() - dateRange.gte.getTime()) / (1000 * 60 * 60);
+    const correctiveFailureCount = allMaintenances.filter(m => m.type === 'CORRECTIVE').length;
+    const avgMTBF = correctiveFailureCount > 0
+      ? Math.round((periodHours / correctiveFailureCount) * 10) / 10
+      : null;
 
     // Calcular tasa de completitud
     const completionRate = totalMaintenances > 0 
       ? (completedOnTime.length / totalMaintenances) * 100
       : 0;
 
-    // Calcular eficiencia de costos (simplificado)
-    const plannedCosts = allMaintenances.reduce((sum, m) => sum + (m.cost || 0), 0);
-    // const actualCosts = allMaintenances
-    //   .flatMap(m => m.history)
-    //   .reduce((sum, h) => sum + (h.cost || 0), 0);
-    
-    const costEfficiency = 85; // Valor temporal
+    // Eficiencia de costos: ratio estimado vs real (en horas como proxy)
+    const completedWithBothHours = completedMaintenances.filter(m => m.estimatedHours && m.actualHours);
+    const costEfficiency = completedWithBothHours.length > 0
+      ? Math.round(
+          (completedWithBothHours.reduce((sum, m) => sum + (m.estimatedHours || 0), 0) /
+           completedWithBothHours.reduce((sum, m) => sum + (m.actualHours || 0), 0)) * 100
+        )
+      : null;
 
-    // Calcular puntuación de calidad promedio (temporal)
-    // const historyWithQuality = allMaintenances
-    //   .flatMap(m => m.history)
-    //   .filter(h => h.qualityScore !== null);
-    
-    const qualityScore = 7.5; // Valor temporal
+    // qualityScore se calcula desde maintenance_history (en el Promise.all abajo)
 
     // Calcular uptime/downtime (simplificado)
     const totalHours = 24 * 30; // Aproximado para el mes
@@ -168,13 +164,25 @@ export async function GET(request: NextRequest) {
     const preventiveCount = allMaintenances.filter(m => m.type === 'PREVENTIVE').length;
     const correctiveCount = allMaintenances.filter(m => m.type === 'CORRECTIVE').length;
 
-    // ✅ OPTIMIZACIÓN: Ejecutar queries de tendencias en paralelo
-    const [monthlyCompletion, costTrend, failureFrequency, preventiveCompliance] = await Promise.all([
+    // ✅ OPTIMIZACIÓN: Ejecutar queries de tendencias + calidad en paralelo
+    const [monthlyCompletion, costTrend, failureFrequency, preventiveCompliance, qualityHistories] = await Promise.all([
       getMonthlyCompletionTrend(parseInt(companyId), sectorId, machineId),
       getCostTrend(parseInt(companyId), sectorId, machineId),
       getFailureFrequency(parseInt(companyId), sectorId, machineId),
-      getPreventiveCompliance(parseInt(companyId))
+      getPreventiveCompliance(parseInt(companyId)),
+      // Calidad promedio desde historial real
+      prisma.maintenance_history.findMany({
+        where: {
+          work_orders: { companyId: parseInt(companyId), createdAt: dateRange },
+          qualityScore: { not: null }
+        },
+        select: { qualityScore: true }
+      })
     ]);
+
+    const qualityScore = qualityHistories.length > 0
+      ? Math.round(qualityHistories.reduce((sum, h) => sum + (h.qualityScore || 0), 0) / qualityHistories.length * 10) / 10
+      : null;
 
     const kpis = {
       totalMaintenances,
@@ -354,10 +362,12 @@ async function getFailureFrequency(companyId: number, sectorId?: string | null, 
  */
 async function getPreventiveCompliance(companyId: number) {
   try {
-    // Obtener todas las instancias de preventivo
+    // Obtener instancias de preventivo de esta empresa usando filtro en JSON
+    // Evita cargar instancias de otras empresas (multi-tenant)
     const instances = await prisma.document.findMany({
       where: {
-        entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE'
+        entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE',
+        url: { contains: `"companyId":${companyId}` }
       }
     });
 
@@ -377,9 +387,6 @@ async function getPreventiveCompliance(companyId: number) {
     for (const inst of instances) {
       try {
         const data = JSON.parse(inst.url);
-
-        // Filtrar por companyId
-        if (data.companyId !== companyId) continue;
 
         const scheduledDate = new Date(data.scheduledDate);
         scheduledDate.setHours(0, 0, 0, 0);

@@ -32,17 +32,23 @@ export interface MaintenanceAlertsResponse {
 
 interface UseMaintenanceAlertsOptions {
   companyId: number | null;
+  sectorId?: number | null;
   daysAhead?: number;
   enabled?: boolean;
 }
 
 async function fetchMaintenanceAlerts(
   companyId: number,
-  daysAhead: number
+  daysAhead: number,
+  sectorId?: number | null
 ): Promise<MaintenanceAlertsResponse> {
-  const response = await fetch(
-    `/api/maintenance/preventive/alerts?companyId=${companyId}&daysAhead=${daysAhead}`
-  );
+  const params = new URLSearchParams({
+    companyId: companyId.toString(),
+    daysAhead: daysAhead.toString(),
+  });
+  if (sectorId) params.set('sectorId', sectorId.toString());
+
+  const response = await fetch(`/api/maintenance/preventive/alerts?${params}`);
 
   if (!response.ok) {
     throw new Error('Error al cargar alertas de mantenimiento');
@@ -53,12 +59,13 @@ async function fetchMaintenanceAlerts(
 
 export function useMaintenanceAlerts({
   companyId,
+  sectorId,
   daysAhead = 7,
   enabled = true,
 }: UseMaintenanceAlertsOptions) {
   return useQuery({
-    queryKey: ['maintenance-alerts', companyId, daysAhead],
-    queryFn: () => fetchMaintenanceAlerts(companyId!, daysAhead),
+    queryKey: ['maintenance-alerts', companyId, sectorId, daysAhead],
+    queryFn: () => fetchMaintenanceAlerts(companyId!, daysAhead, sectorId),
     enabled: enabled && companyId !== null,
     staleTime: 60 * 1000, // 1 minuto
     refetchInterval: 5 * 60 * 1000, // Refrescar cada 5 minutos

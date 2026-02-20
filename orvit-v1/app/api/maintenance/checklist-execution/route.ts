@@ -3,12 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function POST(request: NextRequest) {
-  console.log('🚀 [API] Checklist execution endpoint called');
   try {
     const data = await request.json();
-    console.log('📋 Datos de ejecución recibidos:', JSON.stringify(data, null, 2));
 
     const {
       checklistId,
@@ -94,10 +91,8 @@ export async function POST(request: NextRequest) {
     if (responsibles && responsibles.horaFinalizacion) {
       const [horas, minutos] = responsibles.horaFinalizacion.split(':');
       executedAtDate.setHours(parseInt(horas) || 0, parseInt(minutos) || 0, 0, 0);
-      console.log('🕐 Hora de finalización aplicada:', responsibles.horaFinalizacion, '->', executedAtDate.toISOString());
     } else {
       // Usar la hora actual del executedAtDate
-      console.log('🕐 Usando fecha/hora actual:', executedAtDate.toISOString());
     }
 
     // Determinar el estado según si se finaliza o no
@@ -160,20 +155,17 @@ export async function POST(request: NextRequest) {
           where: { id: numericExecutionId },
           data: executionData
         });
-        console.log('✅ Ejecución del checklist ACTUALIZADA:', checklistExecution.id, `Status: ${executionStatus}`, `Finalized: ${isFinalized}`);
       } else {
         // Si no existe o no está en progreso, crear una nueva
         checklistExecution = await prisma.checklistExecution.create({
           data: executionData
         });
-        console.log('✅ Ejecución del checklist CREADA (existente no válida):', checklistExecution.id, `Status: ${executionStatus}`, `Finalized: ${isFinalized}`);
       }
     } else {
       // Crear nueva ejecución
       checklistExecution = await prisma.checklistExecution.create({
         data: executionData
       });
-      console.log('✅ Ejecución del checklist CREADA:', checklistExecution.id, `Status: ${executionStatus}`, `Finalized: ${isFinalized}`);
     }
 
     // Actualizar el checklist con el ID de ejecución en progreso (o limpiarlo si se finaliza)
@@ -208,7 +200,6 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          console.log('✅ Checklist marcado como completado, inProgressExecutionId limpiado');
         } else {
           // En progreso: guardar el ID de ejecución para que pueda ser recargado
           const updatedChecklistData = {
@@ -227,7 +218,6 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          console.log('✅ Checklist actualizado con inProgressExecutionId:', checklistExecution.id);
         }
       }
     } catch (error) {
@@ -280,17 +270,6 @@ export async function POST(request: NextRequest) {
           console.error(`❌ maintenanceId inválido:`, maintenanceId);
           continue;
         }
-        
-        console.log(`🔧 Procesando mantenimiento ${numericMaintenanceId}:`, {
-          completedDate,
-          rescheduleDate,
-          currentKilometers,
-          currentHours,
-          notes,
-          issues,
-          executors: effectiveExecutors,
-          supervisors: effectiveSupervisors
-        });
 
         // Si tiene fecha de completado, marcar como completado
         if (completedDate) {
@@ -391,10 +370,6 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          console.log(`✅ Mantenimiento preventivo ${numericMaintenanceId} marcado como COMPLETADO con fecha: ${parseDateDDMMYYYY(completedDate)}`);
-          console.log(`📝 Historial de ejecución agregado:`, executionRecord);
-          console.log(`📊 Total ejecuciones en historial: ${updatedData.executionHistory.length}`);
-
           // Si es una unidad móvil, actualizar kilometraje y horas
           if (currentKilometers || currentHours) {
             try {
@@ -414,7 +389,6 @@ export async function POST(request: NextRequest) {
                     data: updateData
                   });
 
-                  console.log(`✅ Unidad móvil ${unidadMovilId} actualizada: KM=${currentKilometers}`);
                 }
               }
             } catch (error) {
@@ -503,11 +477,6 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          console.log(`📅 Mantenimiento preventivo ${numericMaintenanceId} reprogramado para ${rescheduleDate} (${parseDateDDMMYYYY(rescheduleDate)}) con status SCHEDULED`);
-          console.log(`🔄 Status actualizado a SCHEDULED, lastExecutionDate: ${updatedData.lastExecutionDate}`);
-          console.log(`📅 Nueva fecha de mantenimiento: ${updatedData.nextMaintenanceDate}`);
-          console.log(`📝 Registro de reprogramación agregado al historial:`, rescheduleRecord);
-          console.log(`📊 Total ejecuciones en historial: ${updatedData.executionHistory.length}`);
         } catch (error) {
           console.error(`❌ Error reprogramando mantenimiento preventivo ${numericMaintenanceId}:`, error);
         }
@@ -602,7 +571,6 @@ export async function GET(request: NextRequest) {
       }
 
       // Obtener el checklist asociado
-      console.log('🔍 Buscando checklist document con ID:', execution.checklistId);
       
       // Intentar buscar primero con entityType
       let checklistDoc = await prisma.document.findUnique({
@@ -614,7 +582,6 @@ export async function GET(request: NextRequest) {
 
       // Si no se encuentra con entityType, intentar buscar solo por ID
       if (!checklistDoc) {
-        console.log('⚠️ No se encontró con entityType, buscando solo por ID...');
         checklistDoc = await prisma.document.findUnique({
           where: {
             id: execution.checklistId
@@ -624,19 +591,10 @@ export async function GET(request: NextRequest) {
 
       let checklistData = null;
       if (checklistDoc) {
-        console.log('✅ Checklist document encontrado:', {
-          id: checklistDoc.id,
-          entityType: checklistDoc.entityType,
-          hasUrl: !!checklistDoc.url
-        });
         
         try {
           if (checklistDoc.url) {
             checklistData = JSON.parse(checklistDoc.url);
-            console.log('✅ Checklist parseado correctamente:', {
-              id: checklistData?.id,
-              title: checklistData?.title
-            });
           } else {
             console.warn('⚠️ Checklist document no tiene URL');
           }

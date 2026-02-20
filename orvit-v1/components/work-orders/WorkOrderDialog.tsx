@@ -8,11 +8,13 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -177,7 +179,7 @@ export default function WorkOrderDialog({
     
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
-      alert('Errores de validación:\n' + validationErrors.join('\n'));
+      toast.warning('Errores de validación:\n' + validationErrors.join('\n'));
       return;
     }
 
@@ -223,7 +225,7 @@ export default function WorkOrderDialog({
         </DialogTrigger>
       )}
       
-      <DialogContent size="sm" className="max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[calc(100vh-4rem)]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {workOrder ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
@@ -236,6 +238,7 @@ export default function WorkOrderDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <Tabs defaultValue="form" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="form">Formulario</TabsTrigger>
@@ -283,25 +286,25 @@ export default function WorkOrderDialog({
                     <SelectContent>
                       <SelectItem value={MaintenanceType.PREVENTIVE}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-success rounded-full"></div>
                           Preventivo
                         </div>
                       </SelectItem>
                       <SelectItem value={MaintenanceType.CORRECTIVE}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-warning rounded-full"></div>
                           Correctivo
                         </div>
                       </SelectItem>
                       <SelectItem value={MaintenanceType.PREDICTIVE}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-info rounded-full"></div>
                           Predictivo
                         </div>
                       </SelectItem>
                       <SelectItem value={MaintenanceType.EMERGENCY}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
                           Emergencia
                         </div>
                       </SelectItem>
@@ -321,25 +324,25 @@ export default function WorkOrderDialog({
                     <SelectContent>
                       <SelectItem value={Priority.LOW}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-success rounded-full"></div>
                           Baja
                         </div>
                       </SelectItem>
                       <SelectItem value={Priority.MEDIUM}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-warning rounded-full"></div>
                           Media
                         </div>
                       </SelectItem>
                       <SelectItem value={Priority.HIGH}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-warning rounded-full"></div>
                           Alta
                         </div>
                       </SelectItem>
                       <SelectItem value={Priority.URGENT}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
                           Urgente
                         </div>
                       </SelectItem>
@@ -361,31 +364,31 @@ export default function WorkOrderDialog({
                       <SelectContent>
                         <SelectItem value={WorkOrderStatus.PENDING}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-warning rounded-full"></div>
                             Pendiente
                           </div>
                         </SelectItem>
                         <SelectItem value={WorkOrderStatus.IN_PROGRESS}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-info rounded-full"></div>
                             En Proceso
                           </div>
                         </SelectItem>
                         <SelectItem value={WorkOrderStatus.ON_HOLD}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
                             En Espera
                           </div>
                         </SelectItem>
                         <SelectItem value={WorkOrderStatus.COMPLETED}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-success rounded-full"></div>
                             Completada
                           </div>
                         </SelectItem>
                         <SelectItem value={WorkOrderStatus.CANCELLED}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-destructive rounded-full"></div>
                             Cancelada
                           </div>
                         </SelectItem>
@@ -440,7 +443,7 @@ export default function WorkOrderDialog({
 
               {/* Fila 3: Fechas */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-700 border-b pb-2">Fechas</h4>
+                <h4 className="text-sm font-medium text-foreground border-b pb-2">Fechas</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="scheduledDate">Fecha Programada</Label>
@@ -482,7 +485,7 @@ export default function WorkOrderDialog({
 
               {/* Fila 4: Horas y Costo */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-700 border-b pb-2">Tiempo y Costo</h4>
+                <h4 className="text-sm font-medium text-foreground border-b pb-2">Tiempo y Costo</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="estimatedHours">Horas Estimadas</Label>
@@ -561,6 +564,7 @@ export default function WorkOrderDialog({
             </TabsContent>
           )}
         </Tabs>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

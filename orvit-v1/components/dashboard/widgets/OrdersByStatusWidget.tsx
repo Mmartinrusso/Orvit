@@ -19,18 +19,18 @@ interface ExtendedWidgetProps extends WidgetProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendientes', color: '#eab308' },
-  IN_PROGRESS: { label: 'En Proceso', color: '#3b82f6' },
-  COMPLETED: { label: 'Completadas', color: '#22c55e' },
-  CANCELLED: { label: 'Canceladas', color: '#ef4444' },
-  ON_HOLD: { label: 'En Espera', color: '#6b7280' },
+  PENDING: { label: 'Pendientes', color: 'hsl(var(--warning))' },
+  IN_PROGRESS: { label: 'En Proceso', color: 'hsl(var(--primary))' },
+  COMPLETED: { label: 'Completadas', color: 'hsl(var(--success))' },
+  CANCELLED: { label: 'Canceladas', color: 'hsl(var(--destructive))' },
+  ON_HOLD: { label: 'En Espera', color: 'hsl(var(--muted-foreground))' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-  CRITICAL: { label: 'Crítica', color: '#ef4444' },
-  HIGH: { label: 'Alta', color: '#f97316' },
-  MEDIUM: { label: 'Media', color: '#eab308' },
-  LOW: { label: 'Baja', color: '#22c55e' },
+  CRITICAL: { label: 'Crítica', color: 'hsl(var(--destructive))' },
+  HIGH: { label: 'Alta', color: 'hsl(var(--chart-5))' },
+  MEDIUM: { label: 'Media', color: 'hsl(var(--warning))' },
+  LOW: { label: 'Baja', color: 'hsl(var(--success))' },
 };
 
 export function OrdersByStatusWidget({ 
@@ -60,7 +60,7 @@ export function OrdersByStatusWidget({
     .map(([key, count]) => ({
       label: config[key]?.label || key,
       value: count as number,
-      color: config[key]?.color || '#6b7280',
+      color: config[key]?.color || 'hsl(var(--muted-foreground))',
     }));
 
   const renderContent = () => {

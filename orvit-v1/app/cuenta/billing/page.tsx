@@ -139,17 +139,17 @@ interface SubscriptionData {
 const subscriptionStatusConfig: Record<string, { label: string; color: string; icon: any }> = {
   TRIALING: {
     label: 'Período de Prueba',
-    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    color: 'bg-primary/10 text-primary border-primary/20',
     icon: Clock,
   },
   ACTIVE: {
     label: 'Activa',
-    color: 'bg-green-500/10 text-green-500 border-green-500/20',
+    color: 'bg-success/10 text-success border-success/20',
     icon: CheckCircle,
   },
   PAST_DUE: {
     label: 'Pago Vencido',
-    color: 'bg-red-500/10 text-red-500 border-red-500/20',
+    color: 'bg-destructive/10 text-destructive border-destructive/20',
     icon: AlertCircle,
   },
   CANCELED: {
@@ -159,16 +159,16 @@ const subscriptionStatusConfig: Record<string, { label: string; color: string; i
   },
   PAUSED: {
     label: 'Pausada',
-    color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    color: 'bg-warning/10 text-warning-muted-foreground border-warning/20',
     icon: Pause,
   },
 };
 
 const invoiceStatusConfig: Record<string, { label: string; color: string }> = {
   DRAFT: { label: 'Borrador', color: 'bg-muted text-muted-foreground' },
-  OPEN: { label: 'Pendiente', color: 'bg-yellow-500/10 text-yellow-500' },
-  PAID: { label: 'Pagada', color: 'bg-green-500/10 text-green-500' },
-  VOID: { label: 'Anulada', color: 'bg-red-500/10 text-red-500' },
+  OPEN: { label: 'Pendiente', color: 'bg-warning/10 text-warning-muted-foreground' },
+  PAID: { label: 'Pagada', color: 'bg-success/10 text-success' },
+  VOID: { label: 'Anulada', color: 'bg-destructive/10 text-destructive' },
   UNCOLLECTIBLE: { label: 'Incobrable', color: 'bg-orange-500/10 text-orange-500' },
 };
 
@@ -461,7 +461,7 @@ export default function ClientBillingPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {subscription.plan.features.map((feature, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
                       <span>{feature}</span>
                     </div>
                   ))}
@@ -490,7 +490,7 @@ export default function ClientBillingPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-500" />
+              <Zap className="h-5 w-5 text-warning-muted-foreground" />
               Tokens
             </CardTitle>
             <CardDescription>
@@ -549,7 +549,7 @@ export default function ClientBillingPage() {
                 </CardDescription>
               </div>
               {autoPayment?.isEnabled ? (
-                <Badge className="bg-green-500/10 text-green-500">
+                <Badge className="bg-success/10 text-success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Activo
                 </Badge>
@@ -732,7 +732,7 @@ export default function ClientBillingPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-500" />
+              <Zap className="h-5 w-5 text-warning-muted-foreground" />
               Historial de Tokens
             </CardTitle>
             <CardDescription>
@@ -756,8 +756,8 @@ export default function ClientBillingPage() {
                     variant={tx.amount > 0 ? 'default' : 'secondary'}
                     className={cn(
                       tx.amount > 0
-                        ? 'bg-green-500/10 text-green-500'
-                        : 'bg-red-500/10 text-red-500'
+                        ? 'bg-success/10 text-success'
+                        : 'bg-destructive/10 text-destructive'
                     )}
                   >
                     {tx.amount > 0 ? '+' : ''}{tx.amount}

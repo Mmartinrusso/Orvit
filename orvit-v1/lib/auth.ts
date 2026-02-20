@@ -1,21 +1,36 @@
 // Archivo de configuración de autenticación usando JWT nativo
 // Este archivo solo mantiene las configuraciones necesarias para nuestro sistema JWT personalizado
 
-// Ya no necesitamos NextAuth, usamos JWT directamente con jose y cookies
-export const JWT_SECRET = process.env.JWT_SECRET || 'Messi';
-
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+// Validación lazy del JWT_SECRET para evitar crash en module load
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      'JWT_SECRET no está definido o es demasiado corto. ' +
+      'Debe tener al menos 32 caracteres. ' +
+      'Configuralo en .env o en las variables de entorno del servidor.'
+    );
+  }
+  return secret;
+}
+
+// Export mantenido para compatibilidad con 180+ archivos que importan JWT_SECRET
+export const JWT_SECRET = process.env.JWT_SECRET ?? '';
+
+function getJwtSecretKey(): Uint8Array {
+  return new TextEncoder().encode(getJwtSecret());
+}
 
 export async function getUserIdFromToken() {
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
   if (!token) throw new Error('No token provided');
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
     return payload.userId as number;
   } catch (error) {
     throw new Error('Invalid token');
@@ -28,7 +43,7 @@ export async function getUserIdFromToken() {
  */
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
     return payload;
   } catch (error) {
     return null;
@@ -52,7 +67,7 @@ export async function verifyAuth(request: NextRequest): Promise<AuthPayload | nu
     const token = request.cookies.get('token')?.value;
     if (!token) return null;
 
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
 
     return {
       userId: payload.userId as number,

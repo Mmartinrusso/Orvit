@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Check, Package, Truck, FileText, X, AlertTriangle } from 'lucide-react';
@@ -32,14 +33,14 @@ const estadoIcons: Record<string, any> = {
 };
 
 const estadoColors: Record<string, string> = {
-  BORRADOR: 'bg-gray-100 text-gray-800 border-gray-300',
-  CONFIRMADA: 'bg-blue-100 text-blue-800 border-blue-300',
-  EN_PREPARACION: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  BORRADOR: 'bg-muted text-foreground border-border',
+  CONFIRMADA: 'bg-info-muted text-info-muted-foreground border-info',
+  EN_PREPARACION: 'bg-warning-muted text-warning-muted-foreground border-warning',
   PARCIALMENTE_ENTREGADA: 'bg-purple-100 text-purple-800 border-purple-300',
-  ENTREGADA: 'bg-green-100 text-green-800 border-green-300',
+  ENTREGADA: 'bg-success-muted text-success-muted-foreground border-success',
   FACTURADA: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   COMPLETADA: 'bg-teal-100 text-teal-800 border-teal-300',
-  CANCELADA: 'bg-red-100 text-red-800 border-red-300',
+  CANCELADA: 'bg-destructive/10 text-destructive border-destructive',
 };
 
 export function OrdenTimeline({ orden, eventos }: OrdenTimelineProps) {
@@ -79,7 +80,7 @@ export function OrdenTimeline({ orden, eventos }: OrdenTimelineProps) {
             return (
               <div key={index} className="relative flex gap-4">
                 {/* Icono */}
-                <div className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 ${colorClass}`}>
+                <div className={cn('relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2', colorClass)}>
                   <Icon className="h-4 w-4" />
                 </div>
 
@@ -132,9 +133,9 @@ export function OrdenTimeline({ orden, eventos }: OrdenTimelineProps) {
 
         {/* Próximos pasos */}
         {orden.estado !== 'COMPLETADA' && orden.estado !== 'CANCELADA' && (
-          <div className="mt-4 p-4 rounded-lg border border-blue-200 bg-blue-50">
-            <p className="text-sm font-semibold text-blue-900 mb-2">Próximos Pasos</p>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="mt-4 p-4 rounded-lg border border-info bg-info-muted">
+            <p className="text-sm font-semibold text-foreground mb-2">Próximos Pasos</p>
+            <ul className="text-sm text-foreground space-y-1">
               {orden.estado === 'BORRADOR' && (
                 <>
                   <li>• Revisar items y totales</li>

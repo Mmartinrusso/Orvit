@@ -107,41 +107,41 @@ export default function FMEAPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-destructive/30 bg-destructive/10">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-red-600">Alto Riesgo</p>
-                  <p className="text-2xl font-bold text-red-700">{summary.highRisk}</p>
-                  <p className="text-xs text-red-500">RPN ≥ 200</p>
+                  <p className="text-sm text-destructive">Alto Riesgo</p>
+                  <p className="text-2xl font-bold text-destructive">{summary.highRisk}</p>
+                  <p className="text-xs text-destructive">RPN ≥ 200</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="border-warning-muted bg-warning-muted">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-amber-600">Riesgo Medio</p>
-                  <p className="text-2xl font-bold text-amber-700">{summary.mediumRisk}</p>
-                  <p className="text-xs text-amber-500">RPN 100-199</p>
+                  <p className="text-sm text-warning-muted-foreground">Riesgo Medio</p>
+                  <p className="text-2xl font-bold text-warning-muted-foreground">{summary.mediumRisk}</p>
+                  <p className="text-xs text-warning-muted-foreground">RPN 100-199</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-amber-500" />
+                <BarChart3 className="h-8 w-8 text-warning-muted-foreground" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-green-200 bg-green-50">
+          <Card className="border-success-muted bg-success-muted">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-green-600">Bajo Riesgo</p>
-                  <p className="text-2xl font-bold text-green-700">{summary.lowRisk}</p>
-                  <p className="text-xs text-green-500">RPN &lt; 100</p>
+                  <p className="text-sm text-success">Bajo Riesgo</p>
+                  <p className="text-2xl font-bold text-success">{summary.lowRisk}</p>
+                  <p className="text-xs text-success">RPN &lt; 100</p>
                 </div>
-                <Target className="h-8 w-8 text-green-500" />
+                <Target className="h-8 w-8 text-success" />
               </div>
             </CardContent>
           </Card>
@@ -168,7 +168,7 @@ export default function FMEAPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <AlertTriangle className="h-5 w-5 text-destructive" />
                 Fallas de Alta Prioridad
               </CardTitle>
               <CardDescription>
@@ -184,7 +184,7 @@ export default function FMEAPage() {
                     .map((fm: any) => (
                       <div
                         key={fm.id}
-                        className="flex items-center justify-between p-3 border border-red-200 rounded-lg bg-red-50"
+                        className="flex items-center justify-between p-3 border border-destructive/30 rounded-lg bg-destructive/10"
                       >
                         <div>
                           <p className="font-medium">{fm.failureMode}</p>
@@ -193,7 +193,7 @@ export default function FMEAPage() {
                             {fm.component && ` / ${fm.component.name}`}
                           </p>
                           {fm.recommendedActions && (
-                            <p className="text-xs text-red-600 mt-1">
+                            <p className="text-xs text-destructive mt-1">
                               Acción: {fm.recommendedActions}
                             </p>
                           )}
@@ -211,7 +211,7 @@ export default function FMEAPage() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Target className="h-12 w-12 mx-auto mb-2 text-green-500" />
+                  <Target className="h-12 w-12 mx-auto mb-2 text-success" />
                   <p>No hay fallas de alta prioridad</p>
                   <p className="text-sm">Todas las fallas están bajo control</p>
                 </div>

@@ -160,28 +160,28 @@ export default function ContadoresPage() {
             </CardContent>
           </Card>
 
-          <Card className={summary.nearTriggerCount > 0 ? 'border-amber-200 bg-amber-50' : ''}>
+          <Card className={summary.nearTriggerCount > 0 ? 'border-warning-muted bg-warning-muted' : ''}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-amber-600">Cerca del PM</p>
-                  <p className="text-2xl font-bold text-amber-700">{summary.nearTriggerCount}</p>
-                  <p className="text-xs text-amber-500">&ge; 90% del intervalo</p>
+                  <p className="text-sm text-warning-muted-foreground">Cerca del PM</p>
+                  <p className="text-2xl font-bold text-warning-muted-foreground">{summary.nearTriggerCount}</p>
+                  <p className="text-xs text-warning-muted-foreground">&ge; 90% del intervalo</p>
                 </div>
-                <Clock className="h-8 w-8 text-amber-500" />
+                <Clock className="h-8 w-8 text-warning-muted-foreground" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className={summary.overdueCount > 0 ? 'border-red-200 bg-red-50' : ''}>
+          <Card className={summary.overdueCount > 0 ? 'border-destructive/30 bg-destructive/10' : ''}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-red-600">PM Vencidos</p>
-                  <p className="text-2xl font-bold text-red-700">{summary.overdueCount}</p>
-                  <p className="text-xs text-red-500">Requieren atención</p>
+                  <p className="text-sm text-destructive">PM Vencidos</p>
+                  <p className="text-2xl font-bold text-destructive">{summary.overdueCount}</p>
+                  <p className="text-xs text-destructive">Requieren atención</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
             </CardContent>
           </Card>
@@ -254,7 +254,7 @@ export default function ContadoresPage() {
                               <>
                                 <Progress
                                   value={progressPercent}
-                                  className={progressPercent >= 90 ? 'bg-amber-200' : ''}
+                                  className={progressPercent >= 90 ? 'bg-warning-muted' : ''}
                                 />
                                 <p className="text-xs text-muted-foreground">
                                   PM cada {Number(trigger.triggerEvery).toLocaleString()} {counter.unit}
@@ -378,9 +378,9 @@ function UpcomingMaintenanceList({ machines }: { machines: Machine[] }) {
           key={`${item.machineId}-${item.counterName}-${index}`}
           className={`p-4 border rounded-lg ${
             item.progressPercent >= 100
-              ? 'border-red-300 bg-red-50'
+              ? 'border-destructive/30 bg-destructive/10'
               : item.progressPercent >= 90
-              ? 'border-amber-300 bg-amber-50'
+              ? 'border-warning-muted bg-warning-muted'
               : ''
           }`}
         >
@@ -400,7 +400,7 @@ function UpcomingMaintenanceList({ machines }: { machines: Machine[] }) {
           </div>
           <Progress
             value={item.progressPercent}
-            className={item.progressPercent >= 90 ? 'bg-amber-200' : ''}
+            className={item.progressPercent >= 90 ? 'bg-warning-muted' : ''}
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>

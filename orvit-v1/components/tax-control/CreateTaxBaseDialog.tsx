@@ -94,7 +94,7 @@ export default function CreateTaxBaseDialog({ isOpen, onClose, onSuccess }: Crea
         onClose();
       }
     }}>
-      <DialogContent size="md" className="max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
@@ -107,7 +107,7 @@ export default function CreateTaxBaseDialog({ isOpen, onClose, onSuccess }: Crea
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="baseName" className="text-sm font-medium">
-              Nombre del Impuesto <span className="text-red-500">*</span>
+              Nombre del Impuesto <span className="text-destructive">*</span>
             </Label>
             <Input
               id="baseName"
@@ -140,7 +140,7 @@ export default function CreateTaxBaseDialog({ isOpen, onClose, onSuccess }: Crea
           
           <div className="space-y-2">
             <Label htmlFor="baseRecurringDay" className="text-sm font-medium">
-              Día del mes para la alerta <span className="text-red-500">*</span>
+              Día del mes para la alerta <span className="text-destructive">*</span>
             </Label>
             <Select 
               value={baseFormData.recurringDay.toString()} 
@@ -158,8 +158,8 @@ export default function CreateTaxBaseDialog({ isOpen, onClose, onSuccess }: Crea
                 ))}
               </SelectContent>
             </Select>
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
+            <div className="bg-info-muted border border-info-muted rounded-md p-3">
+              <p className="text-xs text-info-muted-foreground">
                 <strong>ℹ️ Información:</strong> El sistema generará automáticamente un recordatorio el día <strong>{baseFormData.recurringDay}</strong> de cada mes para este impuesto.
               </p>
             </div>

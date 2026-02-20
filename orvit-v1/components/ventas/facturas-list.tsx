@@ -63,6 +63,7 @@ import {
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Factura {
   id: number;
@@ -101,12 +102,12 @@ type EstadoFactura =
   | 'ANULADA';
 
 const ESTADOS_CONFIG: Record<EstadoFactura, { label: string; color: string; icon: React.ElementType }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: FileEdit },
-  EMITIDA: { label: 'Emitida', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: FileText },
-  PARCIALMENTE_COBRADA: { label: 'Parcial', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
-  COBRADA: { label: 'Cobrada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  VENCIDA: { label: 'Vencida', color: 'bg-red-100 text-red-700 border-red-200', icon: AlertTriangle },
-  ANULADA: { label: 'Anulada', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: XCircle },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground border-border', icon: FileEdit },
+  EMITIDA: { label: 'Emitida', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: FileText },
+  PARCIALMENTE_COBRADA: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Clock },
+  COBRADA: { label: 'Cobrada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  VENCIDA: { label: 'Vencida', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: AlertTriangle },
+  ANULADA: { label: 'Anulada', color: 'bg-muted text-muted-foreground border-border', icon: XCircle },
 };
 
 const TIPOS_FACTURA = ['A', 'B', 'C', 'M'];
@@ -295,7 +296,7 @@ export function FacturasList({
     const config = ESTADOS_CONFIG[estado as EstadoFactura] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={`${config.color} border text-[10px] px-1.5 py-0.5 font-medium`}>
+      <Badge className={cn(config.color, "border text-[10px] px-1.5 py-0.5 font-medium")}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -304,13 +305,13 @@ export function FacturasList({
 
   const getTipoBadge = (tipo: string) => {
     const colors: Record<string, string> = {
-      'A': 'bg-blue-50 text-blue-700 border-blue-200',
-      'B': 'bg-green-50 text-green-700 border-green-200',
+      'A': 'bg-info-muted text-info-muted-foreground border-info-muted',
+      'B': 'bg-success-muted text-success border-success-muted',
       'C': 'bg-purple-50 text-purple-700 border-purple-200',
-      'M': 'bg-orange-50 text-orange-700 border-orange-200',
+      'M': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     };
     return (
-      <Badge className={`${colors[tipo] || 'bg-gray-50 text-gray-700'} border text-[10px] px-1.5 py-0.5 font-medium`}>
+      <Badge className={cn(colors[tipo] || "bg-muted text-foreground", "border text-[10px] px-1.5 py-0.5 font-medium")}>
         {tipo}
       </Badge>
     );
@@ -496,13 +497,13 @@ export function FacturasList({
       {showKPIs && (
         <div className="grid grid-cols-6 gap-3">
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'BORRADOR' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn("cursor-pointer transition-all", statusFilter === 'BORRADOR' ? "ring-2 ring-primary" : "hover:shadow-md")}
             onClick={() => setStatusFilter(statusFilter === 'BORRADOR' ? 'all' : 'BORRADOR')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-gray-100">
-                  <FileEdit className="w-3.5 h-3.5 text-gray-600" />
+                <div className="p-1.5 rounded-md bg-muted">
+                  <FileEdit className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.borradores}</p>
@@ -513,13 +514,13 @@ export function FacturasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'EMITIDA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn("cursor-pointer transition-all", statusFilter === 'EMITIDA' ? "ring-2 ring-primary" : "hover:shadow-md")}
             onClick={() => setStatusFilter(statusFilter === 'EMITIDA' ? 'all' : 'EMITIDA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-blue-100">
-                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                <div className="p-1.5 rounded-md bg-info-muted">
+                  <FileText className="w-3.5 h-3.5 text-info-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.emitidas}</p>
@@ -530,13 +531,13 @@ export function FacturasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'PARCIALMENTE_COBRADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn("cursor-pointer transition-all", statusFilter === 'PARCIALMENTE_COBRADA' ? "ring-2 ring-primary" : "hover:shadow-md")}
             onClick={() => setStatusFilter(statusFilter === 'PARCIALMENTE_COBRADA' ? 'all' : 'PARCIALMENTE_COBRADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-yellow-100">
-                  <Clock className="w-3.5 h-3.5 text-yellow-600" />
+                <div className="p-1.5 rounded-md bg-warning-muted">
+                  <Clock className="w-3.5 h-3.5 text-warning-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.parciales}</p>
@@ -547,13 +548,13 @@ export function FacturasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'COBRADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn("cursor-pointer transition-all", statusFilter === 'COBRADA' ? "ring-2 ring-primary" : "hover:shadow-md")}
             onClick={() => setStatusFilter(statusFilter === 'COBRADA' ? 'all' : 'COBRADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-green-100">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                <div className="p-1.5 rounded-md bg-success-muted">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.cobradas}</p>
@@ -564,16 +565,16 @@ export function FacturasList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'VENCIDA' ? 'ring-2 ring-red-500' : 'hover:shadow-md'}`}
+            className={cn("cursor-pointer transition-all", statusFilter === 'VENCIDA' ? "ring-2 ring-red-500" : "hover:shadow-md")}
             onClick={() => setStatusFilter(statusFilter === 'VENCIDA' ? 'all' : 'VENCIDA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-red-100">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                <div className="p-1.5 rounded-md bg-destructive/10">
+                  <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-red-600">{kpis.vencidas}</p>
+                  <p className="text-xl font-bold text-destructive">{kpis.vencidas}</p>
                   <p className="text-[10px] text-muted-foreground">Vencidas</p>
                 </div>
               </div>
@@ -654,7 +655,7 @@ export function FacturasList({
           onClick={() => { loadFacturas(); loadKPIs(); }}
           disabled={loading}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
         </Button>
       </div>
 
@@ -747,7 +748,7 @@ export function FacturasList({
                         {factura.fecha ? format(new Date(factura.fecha), 'dd/MM/yy', { locale: es }) : '-'}
                       </TableCell>
                       <TableCell className="text-xs hidden lg:table-cell">
-                        <div className={vencida ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                        <div className={vencida ? 'text-destructive font-medium' : 'text-muted-foreground'}>
                           {factura.fechaVencimiento ? format(new Date(factura.fechaVencimiento), 'dd/MM/yy', { locale: es }) : '-'}
                           {vencida && <span className="ml-1 text-[10px]">({Math.abs(diasVenc!)}d)</span>}
                         </div>
@@ -757,7 +758,7 @@ export function FacturasList({
                         {formatCurrency(Number(factura.total), factura.moneda)}
                       </TableCell>
                       <TableCell className="text-right text-xs hidden sm:table-cell">
-                        <span className={Number(factura.saldoPendiente) > 0 ? 'text-orange-600 font-medium' : 'text-green-600'}>
+                        <span className={Number(factura.saldoPendiente) > 0 ? 'text-warning-muted-foreground font-medium' : 'text-success'}>
                           {formatCurrency(Number(factura.saldoPendiente), factura.moneda)}
                         </span>
                       </TableCell>
@@ -789,7 +790,7 @@ export function FacturasList({
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-red-600"
+                                  className="text-destructive"
                                   onClick={() => handleAnular(factura.id)}
                                 >
                                   <XCircle className="w-4 h-4 mr-2" />
@@ -855,7 +856,7 @@ export function FacturasList({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleBulkAction(bulkActionDialog.action)}
-              className={bulkActionDialog.action === 'void' ? 'bg-red-600 hover:bg-red-700' : ''}
+              className={bulkActionDialog.action === 'void' ? 'bg-destructive hover:bg-destructive/90' : ''}
             >
               Confirmar
             </AlertDialogAction>

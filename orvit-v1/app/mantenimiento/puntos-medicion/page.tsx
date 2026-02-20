@@ -65,19 +65,19 @@ interface InspectionRound {
 }
 
 const MEASUREMENT_TYPES: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  TEMPERATURE: { label: 'Temperatura', icon: Thermometer, color: 'text-red-500' },
+  TEMPERATURE: { label: 'Temperatura', icon: Thermometer, color: 'text-destructive' },
   VIBRATION: { label: 'Vibración', icon: Activity, color: 'text-purple-500' },
-  PRESSURE: { label: 'Presión', icon: Gauge, color: 'text-blue-500' },
+  PRESSURE: { label: 'Presión', icon: Gauge, color: 'text-info-muted-foreground' },
   LEVEL: { label: 'Nivel', icon: Droplet, color: 'text-cyan-500' },
-  CURRENT: { label: 'Corriente', icon: Zap, color: 'text-yellow-500' },
-  OTHER: { label: 'Otro', icon: Gauge, color: 'text-gray-500' },
+  CURRENT: { label: 'Corriente', icon: Zap, color: 'text-warning-muted-foreground' },
+  OTHER: { label: 'Otro', icon: Gauge, color: 'text-muted-foreground' },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  OK: { label: 'Normal', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  NORMAL: { label: 'Normal', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  WARNING: { label: 'Alerta', color: 'bg-yellow-100 text-yellow-800', icon: AlertTriangle },
-  CRITICAL: { label: 'Crítico', color: 'bg-red-100 text-red-800', icon: XCircle },
+  OK: { label: 'Normal', color: 'bg-success-muted text-success', icon: CheckCircle },
+  NORMAL: { label: 'Normal', color: 'bg-success-muted text-success', icon: CheckCircle },
+  WARNING: { label: 'Alerta', color: 'bg-warning-muted text-warning-muted-foreground', icon: AlertTriangle },
+  CRITICAL: { label: 'Crítico', color: 'bg-destructive/10 text-destructive', icon: XCircle },
 };
 
 export default function PuntosMedicionPage() {
@@ -159,7 +159,7 @@ export default function PuntosMedicionPage() {
                 <p className="text-sm text-muted-foreground">Total Puntos</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <Gauge className="h-8 w-8 text-blue-500" />
+              <Gauge className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -168,9 +168,9 @@ export default function PuntosMedicionPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Normales</p>
-                <p className="text-2xl font-bold text-green-600">{summary.normal || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.normal || 0}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -179,9 +179,9 @@ export default function PuntosMedicionPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En Alerta</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.warning || 0}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{summary.warning || 0}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-500" />
+              <AlertTriangle className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -190,9 +190,9 @@ export default function PuntosMedicionPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Críticos</p>
-                <p className="text-2xl font-bold text-red-600">{summary.critical || 0}</p>
+                <p className="text-2xl font-bold text-destructive">{summary.critical || 0}</p>
               </div>
-              <XCircle className="h-8 w-8 text-red-500" />
+              <XCircle className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>

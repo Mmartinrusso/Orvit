@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,17 +101,6 @@ interface GRNIStats {
   }>;
 }
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-AR', {
@@ -123,7 +113,7 @@ function formatCurrency(value: number): string {
 export default function GRNIPage() {
   const router = useRouter();
   const { mode } = useViewMode();
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -216,11 +206,11 @@ export default function GRNIPage() {
   const getAgingBadge = (createdAt: string) => {
     const dias = differenceInDays(new Date(), new Date(createdAt));
     if (dias <= 30) {
-      return <Badge variant="secondary" className="bg-green-100 text-green-700">{dias}d</Badge>;
+      return <Badge variant="secondary" className="bg-success-muted text-success">{dias}d</Badge>;
     } else if (dias <= 60) {
-      return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">{dias}d</Badge>;
+      return <Badge variant="secondary" className="bg-warning-muted text-warning-muted-foreground">{dias}d</Badge>;
     } else if (dias <= 90) {
-      return <Badge variant="secondary" className="bg-orange-100 text-orange-700">{dias}d</Badge>;
+      return <Badge variant="secondary" className="bg-warning-muted text-warning-muted-foreground">{dias}d</Badge>;
     } else {
       return <Badge variant="destructive">{dias}d</Badge>;
     }
@@ -337,7 +327,7 @@ export default function GRNIPage() {
             </CardContent>
           </Card>
 
-          <Card className={stats.aging['61-90'] + stats.aging['90+'] > 0 ? 'border-orange-300' : ''}>
+          <Card className={stats.aging['61-90'] + stats.aging['90+'] > 0 ? 'border-warning-muted' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -361,7 +351,7 @@ export default function GRNIPage() {
             </CardContent>
           </Card>
 
-          <Card className={stats.aging['61-90'] > 0 ? 'border-orange-400' : ''}>
+          <Card className={stats.aging['61-90'] > 0 ? 'border-warning-muted' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -385,7 +375,7 @@ export default function GRNIPage() {
             </CardContent>
           </Card>
 
-          <Card className={stats.aging['90+'] > 0 ? 'border-red-400' : ''}>
+          <Card className={stats.aging['90+'] > 0 ? 'border-destructive/30' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>

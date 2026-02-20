@@ -107,7 +107,7 @@ export function WidgetWrapper({
                   </DropdownMenuItem>
                 )}
                 {onRemove && isEditMode && (
-                  <DropdownMenuItem onClick={onRemove} className="text-red-600">
+                  <DropdownMenuItem onClick={onRemove} className="text-destructive">
                     <X className="h-3.5 w-3.5 mr-2" />
                     Eliminar
                   </DropdownMenuItem>

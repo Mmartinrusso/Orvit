@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
@@ -249,10 +250,10 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'SUPERADMIN': return 'bg-red-100 text-red-800';
-      case 'ADMIN': return 'bg-blue-100 text-blue-800';
-      case 'SUPERVISOR': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'SUPERADMIN': return 'bg-destructive/10 text-destructive';
+      case 'ADMIN': return 'bg-info-muted text-info-muted-foreground';
+      case 'SUPERVISOR': return 'bg-success-muted text-success';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -297,7 +298,7 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
         <DialogBody>
         {userData && (
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="profile">Perfil</TabsTrigger>
               <TabsTrigger value="security">Seguridad</TabsTrigger>
               <TabsTrigger value="activity">Actividad</TabsTrigger>
@@ -393,7 +394,7 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div className="space-y-2">
                       <Label>Rol</Label>
-                      <div className={`px-3 py-2 rounded-md text-sm font-medium ${getRoleBadgeColor(userData.role)}`}>
+                      <div className={cn('px-3 py-2 rounded-md text-sm font-medium', getRoleBadgeColor(userData.role))}>
                         {getRoleLabel(userData.role)}
                       </div>
                     </div>
@@ -495,38 +496,38 @@ export default function UserProfileDialog({ isOpen, onClose, userId }: UserProfi
                 <CardContent>
                   {userData.stats && (
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-center p-4 bg-info-muted rounded-lg">
+                        <div className="text-2xl font-bold text-info-muted-foreground">
                           {userData.stats.assignedTasks}
                         </div>
-                        <div className="text-sm text-blue-600">
+                        <div className="text-sm text-info-muted-foreground">
                           Tareas asignadas
                         </div>
                       </div>
-                      
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">
+
+                      <div className="text-center p-4 bg-success-muted rounded-lg">
+                        <div className="text-2xl font-bold text-success">
                           {userData.stats.createdTasks}
                         </div>
-                        <div className="text-sm text-green-600">
+                        <div className="text-sm text-success">
                           Tareas creadas
                         </div>
                       </div>
-                      
-                      <div className="text-center p-4 bg-purple-50 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-600">
+
+                      <div className="text-center p-4 bg-muted rounded-lg">
+                        <div className="text-2xl font-bold text-foreground">
                           {userData.stats.assignedWorkOrders}
                         </div>
-                        <div className="text-sm text-purple-600">
+                        <div className="text-sm text-foreground">
                           Órdenes asignadas
                         </div>
                       </div>
-                      
-                      <div className="text-center p-4 bg-orange-50 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-600">
+
+                      <div className="text-center p-4 bg-warning-muted rounded-lg">
+                        <div className="text-2xl font-bold text-warning-muted-foreground">
                           {userData.stats.createdWorkOrders}
                         </div>
-                        <div className="text-sm text-orange-600">
+                        <div className="text-sm text-warning-muted-foreground">
                           Órdenes creadas
                         </div>
                       </div>

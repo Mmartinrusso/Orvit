@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -107,10 +108,10 @@ export function ReturnToProductionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+      <DialogContent size="sm" className="p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
             Confirmar Retorno a Producción
           </DialogTitle>
           <DialogDescription>
@@ -119,7 +120,7 @@ export function ReturnToProductionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 py-5 space-y-5">
+        <DialogBody className="px-6 py-5 space-y-5">
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
@@ -169,9 +170,9 @@ export function ReturnToProductionDialog({
               />
             </form>
           </Form>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+        <DialogFooter className="px-6 py-4 border-t">
           <Button
             type="button"
             variant="outline"
@@ -183,7 +184,7 @@ export function ReturnToProductionDialog({
             type="submit"
             form="return-form"
             disabled={returnMutation.isPending}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-success hover:bg-success/90"
           >
             {returnMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

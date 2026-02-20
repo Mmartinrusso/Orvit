@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Machine, MachineComponent, Priority, ExecutionWindow, TimeUnit } from '@/lib/types';
 import {
   Dialog,
@@ -53,7 +53,8 @@ import {
   History,
   ChevronLeft,
   ChevronRight,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -62,6 +63,7 @@ import { useMachinesInitial } from '@/hooks/use-machines-initial';
 import { Step, Stepper } from '@/components/ui/stepper';
 import { MaintenanceSummaryBar } from './MaintenanceSummaryBar';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
+import ComponentDialog from '@/components/maquinas/ComponentDialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { SectionCard } from './SectionCard';
@@ -77,8 +79,9 @@ interface PreventiveMaintenanceDialogProps {
   editingMaintenance?: any; // Datos del mantenimiento a editar
   mode?: 'create' | 'edit'; // Modo del diálogo
   preselectedMachineId?: number; // ID de la máquina preseleccionada
-  preselectedComponentId?: string | number; // ID del componente preseleccionado
+  preselectedComponentId?: string | number; // ID del componente (nivel 1) preseleccionado
   preselectedParentComponentId?: string; // ID del componente padre preseleccionado
+  preselectedSubcomponentId?: string | number; // ID del subcomponente preseleccionado
 }
 
 interface ToolRequest {
@@ -91,7 +94,7 @@ interface ToolRequest {
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 export default function PreventiveMaintenanceDialog({
   isOpen,
@@ -101,7 +104,8 @@ export default function PreventiveMaintenanceDialog({
   mode = 'create',
   preselectedMachineId,
   preselectedComponentId,
-  preselectedParentComponentId
+  preselectedParentComponentId,
+  preselectedSubcomponentId,
 }: PreventiveMaintenanceDialogProps) {
   const { currentCompany, currentSector } = useCompany();
   const { user } = useAuth();
@@ -202,12 +206,15 @@ export default function PreventiveMaintenanceDialog({
     frequencyDays: 30,
     machineId: preselectedMachineId ? preselectedMachineId.toString() : '',
     componentIds: (() => {
-      const ids = [];
+      const ids: string[] = [];
       if (preselectedComponentId) ids.push(preselectedComponentId.toString());
-      if (preselectedParentComponentId) ids.push(preselectedParentComponentId);
+      // Solo agregar el padre si es diferente al componentId (evitar duplicados)
+      if (preselectedParentComponentId && preselectedParentComponentId !== preselectedComponentId?.toString()) {
+        ids.push(preselectedParentComponentId);
+      }
       return ids;
     })(),
-    subcomponentIds: [] as string[], // Array para múltiples subcomponentes
+    subcomponentIds: preselectedSubcomponentId ? [preselectedSubcomponentId.toString()] : [] as string[],
     assignedToId: 'none',
     startDate: (() => {
       const tomorrow = new Date();
@@ -397,11 +404,20 @@ export default function PreventiveMaintenanceDialog({
     }
   }, [formData.componentIds, formData.subcomponentIds, formData.executionWindow, formData.timeUnit, formData.timeValue, mode]);
 
+  // Refs para detectar cambios reales vs mount inicial
+  const prevMachineIdRef = useRef<string | null>(null);
+  const prevComponentIdsRef = useRef<string | null>(null);
+
   // Cargar componentes cuando se selecciona una máquina (solo en modo creación sin datos previos)
   useEffect(() => {
     if (formData.machineId && !editingMaintenance) {
       fetchComponents(formData.machineId);
-      setFormData(prev => ({ ...prev, componentIds: [], subcomponentIds: [] }));
+      // Solo resetear componentes si la máquina realmente cambió (no en el primer render)
+      if (prevMachineIdRef.current !== null && prevMachineIdRef.current !== formData.machineId) {
+        setFormData(prev => ({ ...prev, componentIds: [], subcomponentIds: [] }));
+        prevComponentIdsRef.current = null; // Resetear también el ref de componentes
+      }
+      prevMachineIdRef.current = formData.machineId;
     }
   }, [formData.machineId, editingMaintenance]);
 
@@ -410,7 +426,12 @@ export default function PreventiveMaintenanceDialog({
     if (formData.componentIds.length > 0 && !editingMaintenance) {
       // Cargar subcomponentes para el primer componente seleccionado
       fetchSubcomponents(formData.componentIds[0]);
-      setFormData(prev => ({ ...prev, subcomponentIds: [] }));
+      // Solo resetear subcomponentes si los componentes realmente cambiaron (no en el primer render)
+      const currentComponentKey = formData.componentIds.join(',');
+      if (prevComponentIdsRef.current !== null && prevComponentIdsRef.current !== currentComponentKey) {
+        setFormData(prev => ({ ...prev, subcomponentIds: [] }));
+      }
+      prevComponentIdsRef.current = currentComponentKey;
     }
   }, [formData.componentIds, editingMaintenance]);
 
@@ -463,6 +484,54 @@ export default function PreventiveMaintenanceDialog({
     } finally {
       setLoadingSubcomponents(false);
     }
+  };
+
+  // Estados para el dialog de creación de componente/subcomponente
+  const [showComponentDialog, setShowComponentDialog] = useState(false);
+  const [componentDialogMode, setComponentDialogMode] = useState<'component' | 'subcomponent'>('component');
+  const [pendingComponentName, setPendingComponentName] = useState('');
+
+  // Abre el ComponentDialog con el nombre pre-cargado
+  const handleCreateComponent = (name: string) => {
+    setPendingComponentName(name);
+    setComponentDialogMode('component');
+    setShowComponentDialog(true);
+  };
+
+  const handleCreateSubcomponent = (name: string) => {
+    if (!formData.componentIds[0]) return;
+    setPendingComponentName(name);
+    setComponentDialogMode('subcomponent');
+    setShowComponentDialog(true);
+  };
+
+  // Callback del ComponentDialog: llama API y auto-selecciona
+  const handleComponentDialogSave = async (data: any) => {
+    const parentId = componentDialogMode === 'subcomponent' && formData.componentIds[0]
+      ? Number(formData.componentIds[0])
+      : undefined;
+
+    const response = await fetch('/api/components', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        machineId: Number(formData.machineId),
+        ...(parentId ? { parentId } : {}),
+      }),
+    });
+    if (!response.ok) throw new Error('Error al crear componente');
+    const result = await response.json();
+    const newId = result.component.id.toString();
+
+    if (componentDialogMode === 'component') {
+      await fetchComponents(formData.machineId);
+      setFormData(prev => ({ ...prev, componentIds: [...prev.componentIds, newId] }));
+    } else {
+      await fetchSubcomponents(formData.componentIds[0]);
+      setFormData(prev => ({ ...prev, subcomponentIds: [...prev.subcomponentIds, newId] }));
+    }
+    setShowComponentDialog(false);
   };
 
   const fetchUsers = async () => {
@@ -1092,6 +1161,8 @@ export default function PreventiveMaintenanceDialog({
   };
 
   const resetForm = () => {
+    prevMachineIdRef.current = null; // Permitir re-inicialización sin resetear componentes
+    prevComponentIdsRef.current = null; // Permitir re-inicialización sin resetear subcomponentes
     setFormData({
       title: '',
       description: '',
@@ -1100,12 +1171,14 @@ export default function PreventiveMaintenanceDialog({
       estimatedHours: 2,
       machineId: preselectedMachineId ? preselectedMachineId.toString() : '',
       componentIds: (() => {
-        const ids = [];
+        const ids: string[] = [];
         if (preselectedComponentId) ids.push(preselectedComponentId.toString());
-        if (preselectedParentComponentId) ids.push(preselectedParentComponentId);
+        if (preselectedParentComponentId && preselectedParentComponentId !== preselectedComponentId?.toString()) {
+          ids.push(preselectedParentComponentId);
+        }
         return ids;
       })(),
-      subcomponentIds: [],
+      subcomponentIds: preselectedSubcomponentId ? [preselectedSubcomponentId.toString()] : [],
       assignedToId: 'none',
       startDate: (() => {
         const tomorrow = new Date();
@@ -1167,15 +1240,15 @@ export default function PreventiveMaintenanceDialog({
   const getPriorityColor = (priority: Priority) => {
     switch (priority) {
       case Priority.LOW:
-        return 'bg-gray-200 text-gray-900 border-gray-400';
+        return 'bg-muted text-foreground border-border';
       case Priority.MEDIUM:
-        return 'bg-yellow-200 text-yellow-900 border-yellow-400';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning';
       case Priority.HIGH:
-        return 'bg-orange-200 text-orange-900 border-orange-400';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning';
       case Priority.URGENT:
-        return 'bg-red-200 text-red-900 border-red-400';
+        return 'bg-destructive/10 text-destructive border-destructive';
       default:
-        return 'bg-gray-200 text-gray-900 border-gray-400';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -1276,8 +1349,9 @@ export default function PreventiveMaintenanceDialog({
   };
 
   return (
+  <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent size="xl" className="p-0 flex flex-col overflow-hidden h-[85vh]" hideCloseButton>
+      <DialogContent size="xl" className="p-0" hideCloseButton>
         {/* Header Sticky - Unificado con Summary */}
         <div className="flex-shrink-0 bg-background border-b">
           {/* Título y badges de resumen */}
@@ -1307,7 +1381,7 @@ export default function PreventiveMaintenanceDialog({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 ml-2 rounded-full hover:bg-gray-100"
+                className="h-8 w-8 ml-2 rounded-full hover:bg-accent"
                 onClick={handleClose}
               >
                 <X className="h-4 w-4" />
@@ -1391,23 +1465,18 @@ export default function PreventiveMaintenanceDialog({
                             />
                       ) : loadingComponents ? (
                             <div className="flex items-center justify-center py-8 border rounded-lg">
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
                               <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
                             </div>
-                      ) : components.length === 0 ? (
-                            <EmptyState
-                              icon={Wrench}
-                              title="No hay componentes disponibles"
-                              subtitle="Esta máquina no tiene componentes registrados"
-                            />
                           ) : (
                             <MultiSelect
                               options={components.map(c => ({ value: c.id.toString(), label: c.name }))}
                               selected={formData.componentIds}
                               onChange={(selected) => setFormData(prev => ({ ...prev, componentIds: selected }))}
-                              placeholder="Seleccionar componentes..."
-                              emptyMessage="No se encontraron componentes"
+                              placeholder="Seleccionar o crear componente..."
+                              emptyMessage="No hay componentes. Escribí un nombre para crear uno."
                               searchPlaceholder="Buscar componentes..."
+                              onCreateNew={handleCreateComponent}
                             />
                           )}
                   </div>
@@ -1425,24 +1494,19 @@ export default function PreventiveMaintenanceDialog({
                             />
                       ) : loadingSubcomponents ? (
                             <div className="flex items-center justify-center py-8 border rounded-lg">
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
                               <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
                             </div>
-                      ) : subcomponents.length === 0 ? (
-                            <EmptyState
-                              icon={Cog}
-                              title="No hay subcomponentes disponibles"
-                              subtitle="Los componentes seleccionados no tienen subcomponentes"
-                            />
                           ) : (
                             <MultiSelect
                               options={subcomponents.map(s => ({ value: s.id.toString(), label: s.name }))}
                               selected={formData.subcomponentIds}
                               onChange={(selected) => setFormData(prev => ({ ...prev, subcomponentIds: selected }))}
-                              placeholder="Seleccionar subcomponentes..."
-                              emptyMessage="No se encontraron subcomponentes"
+                              placeholder="Seleccionar o crear subcomponente..."
+                              emptyMessage="No hay subcomponentes. Escribí un nombre para crear uno."
                               searchPlaceholder="Buscar subcomponentes..."
                               disabled={formData.componentIds.length === 0}
+                              onCreateNew={handleCreateSubcomponent}
                             />
                           )}
                   </div>
@@ -1527,25 +1591,25 @@ export default function PreventiveMaintenanceDialog({
                       <SelectContent>
                         <SelectItem value={Priority.LOW}>
                           <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-gray-400 rounded-full"></div>
+                                    <div className="w-2.5 h-2.5 bg-muted-foreground rounded-full"></div>
                             Baja
                           </div>
                         </SelectItem>
                         <SelectItem value={Priority.MEDIUM}>
                           <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
+                                    <div className="w-2.5 h-2.5 bg-warning rounded-full"></div>
                             Media
                           </div>
                         </SelectItem>
                         <SelectItem value={Priority.HIGH}>
                           <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-orange-400 rounded-full"></div>
+                                    <div className="w-2.5 h-2.5 bg-warning rounded-full"></div>
                             Alta
                           </div>
                         </SelectItem>
                         <SelectItem value={Priority.URGENT}>
                           <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
+                                    <div className="w-2.5 h-2.5 bg-destructive rounded-full"></div>
                             Urgente
                           </div>
                         </SelectItem>
@@ -1589,7 +1653,7 @@ export default function PreventiveMaintenanceDialog({
                               <SelectItem key={user.id} value={user.id.toString()}>
                                 <div className="flex items-center justify-between w-full">
                                   <span>{user.name}</span>
-                                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs ml-2">
+                                          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground text-xs ml-2">
                                     {user.role === 'ADMIN' || user.role === 'SUPERADMIN' ? 'Admin' : 'Usuario'}
                                   </Badge>
                                 </div>
@@ -1615,7 +1679,7 @@ export default function PreventiveMaintenanceDialog({
                                       </span>
                                     )}
                                   </div>
-                                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs ml-2">
+                                          <Badge variant="secondary" className="bg-success-muted text-success text-xs ml-2">
                                     Operario
                                   </Badge>
                                 </div>
@@ -1703,7 +1767,7 @@ export default function PreventiveMaintenanceDialog({
                             <div className="space-y-2 pr-4">
                         {loadingTools ? (
                           <div className="flex items-center justify-center py-12">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
                                   <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
                           </div>
                         ) : filteredTools.length === 0 ? (
@@ -1725,7 +1789,7 @@ export default function PreventiveMaintenanceDialog({
                                   {tool.category?.name || 'Sin categoría'} • {tool.location?.name || 'Sin ubicación'}
                                 </p>
                                 {tool.stockQuantity !== undefined && (
-                                        <Badge variant="outline" className="text-xs mt-1 bg-blue-50 text-blue-700 border-blue-200">
+                                        <Badge variant="outline" className="text-xs mt-1 bg-info-muted text-info-muted-foreground border-info-muted">
                                           Stock: {tool.stockQuantity}
                                         </Badge>
                                 )}
@@ -1782,7 +1846,7 @@ export default function PreventiveMaintenanceDialog({
                                 />
                         ) : loadingSpares ? (
                           <div className="flex items-center justify-center py-12">
-                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
                                   <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
                           </div>
                         ) : filteredSpares.length === 0 ? (
@@ -2213,18 +2277,18 @@ export default function PreventiveMaintenanceDialog({
                         return (
                                     <div
                                       key={i}
-                                      className={`flex items-center justify-between p-3 rounded-md border ${
-                                        isToday ? 'bg-blue-50 border-blue-200' : 
-                                        isPast ? 'bg-muted border-border' : 'bg-green-50 border-green-200'
-                                      }`}
+                                      className={cn('flex items-center justify-between p-3 rounded-md border',
+                                        isToday ? 'bg-info-muted border-info-muted' :
+                                        isPast ? 'bg-muted border-border' : 'bg-success-muted border-success-muted'
+                                      )}
                                     >
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                           <span className="text-xs font-medium text-muted-foreground">#{i + 1}</span>
-                                          <span className={`text-xs font-semibold ${
-                                isToday ? 'text-blue-800' : 
-                                            isPast ? 'text-muted-foreground' : 'text-green-800'
-                              }`}>
+                                          <span className={cn('text-xs font-semibold',
+                                isToday ? 'text-info-muted-foreground' :
+                                            isPast ? 'text-muted-foreground' : 'text-success'
+                              )}>
                                 {date.toLocaleDateString('es-ES', {
                                   weekday: 'short',
                                   day: 'numeric',
@@ -2233,7 +2297,7 @@ export default function PreventiveMaintenanceDialog({
                                 })}
                               </span>
                               {isToday && (
-                                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                                            <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
                                               HOY
                                             </Badge>
                                           )}
@@ -2459,7 +2523,7 @@ export default function PreventiveMaintenanceDialog({
               {/* Estado del formulario */}
               <div className="hidden sm:block text-xs">
                 {formData.title.trim() && formData.machineId && formData.startDate && formData.frequencyDays > 0 ? (
-                  <span className="text-green-600 font-medium">✓ Listo para guardar</span>
+                  <span className="text-success font-medium">✓ Listo para guardar</span>
                 ) : (
                   <span className="text-muted-foreground">Complete los campos obligatorios</span>
                 )}
@@ -2523,7 +2587,7 @@ export default function PreventiveMaintenanceDialog({
                 >
                   {loading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       {mode === 'edit' ? 'Guardando...' : 'Creando...'}
                     </>
                   ) : (
@@ -2560,6 +2624,7 @@ export default function PreventiveMaintenanceDialog({
             </div>
           </DialogHeader>
           
+          <DialogBody>
           {/* Buscador */}
           {maintenanceHistory.length > 0 && (
             <div className="px-1 pb-3">
@@ -2575,11 +2640,11 @@ export default function PreventiveMaintenanceDialog({
               </div>
             </div>
           )}
-          
-          <div className="overflow-y-auto max-h-[60vh]">
+
+          <div>
             {loadingHistory ? (
               <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <Loader2 className="h-8 w-8 animate-spin text-foreground" />
               </div>
             ) : (() => {
               // Filtrar mantenimientos por término de búsqueda
@@ -2690,11 +2755,11 @@ export default function PreventiveMaintenanceDialog({
                                   ID: {maintenance.id}
                                 </div>
                                 {maintenance.priority && (
-                                  <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 bg-yellow-100 text-yellow-800 shrink-0">
+                                  <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 bg-warning-muted text-warning-muted-foreground shrink-0">
                                     {getPriorityLabel(maintenance.priority)}
                                   </div>
                                 )}
-                                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 shrink-0 bg-yellow-100 text-yellow-800">
+                                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 shrink-0 bg-warning-muted text-warning-muted-foreground">
                                   {status === 'COMPLETED' ? 'Completado' : 'Pendiente'}
                                 </div>
                                 <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground shrink-0">
@@ -2716,13 +2781,13 @@ export default function PreventiveMaintenanceDialog({
                                   </div>
                                 )}
                                 {maintenance.componentNames && maintenance.componentNames.length > 0 && maintenance.componentNames.map((name: string, idx: number) => (
-                                  <div key={`component-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-blue-50 text-blue-700">
+                                  <div key={`component-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-info-muted text-info-muted-foreground">
                                     <Cog className="h-3 w-3 mr-1" />
                                     {name}
                                   </div>
                                 ))}
                                 {maintenance.subcomponentNames && maintenance.subcomponentNames.length > 0 && maintenance.subcomponentNames.map((name: string, idx: number) => (
-                                  <div key={`subcomponent-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-purple-50 text-purple-700">
+                                  <div key={`subcomponent-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-primary/10 text-primary">
                                     <Settings className="h-3 w-3 mr-1" />
                                     {name}
                                   </div>
@@ -2771,8 +2836,29 @@ export default function PreventiveMaintenanceDialog({
               );
             })()}
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </Dialog>
+
+    {/* Dialog para crear componente o subcomponente desde el selector */}
+    {showComponentDialog && formData.machineId && (
+      <ComponentDialog
+        isOpen={showComponentDialog}
+        onClose={() => setShowComponentDialog(false)}
+        onSave={handleComponentDialogSave}
+        machineId={Number(formData.machineId)}
+        machineName={machines.find(m => m.id === Number(formData.machineId))?.name}
+        initialValues={{
+          name: pendingComponentName,
+          machineId: Number(formData.machineId),
+        }}
+        parentComponent={componentDialogMode === 'subcomponent' && formData.componentIds[0] ? (() => {
+          const parentComp = components.find(c => c.id.toString() === formData.componentIds[0]);
+          return parentComp ? { id: Number(parentComp.id), name: parentComp.name } : undefined;
+        })() : undefined}
+      />
+    )}
+  </>
   );
 } 

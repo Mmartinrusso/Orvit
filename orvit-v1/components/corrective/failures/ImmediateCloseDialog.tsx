@@ -125,7 +125,7 @@ export function ImmediateCloseDialog({
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
             Resolver Inmediatamente
           </DialogTitle>
           <DialogDescription className="text-sm">
@@ -210,19 +210,19 @@ export function ImmediateCloseDialog({
                         <SelectContent>
                           <SelectItem value="FUNCIONÓ">
                             <span className="flex items-center gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              <CheckCircle2 className="h-4 w-4 text-success" />
                               Funcionó
                             </span>
                           </SelectItem>
                           <SelectItem value="PARCIAL">
                             <span className="flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                               Parcial
                             </span>
                           </SelectItem>
                           <SelectItem value="NO_FUNCIONÓ">
                             <span className="flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-600" />
+                              <AlertTriangle className="h-4 w-4 text-destructive" />
                               No funcionó
                             </span>
                           </SelectItem>
@@ -318,7 +318,7 @@ export function ImmediateCloseDialog({
               <Button
                 type="submit"
                 disabled={closeMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-success hover:bg-success/90"
               >
                 {closeMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

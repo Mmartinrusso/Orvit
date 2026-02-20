@@ -172,48 +172,48 @@ export const TABLE_HEADER_CLASSES = 'text-xs font-medium text-muted-foreground u
 
 export const STATUS_COLORS = {
   pending: {
-    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-    text: 'text-yellow-800 dark:text-yellow-200',
-    border: 'border-yellow-300 dark:border-yellow-700',
+    bg: 'bg-warning-muted',
+    text: 'text-warning-muted-foreground',
+    border: 'border-warning-muted',
   },
   in_progress: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-800 dark:text-blue-200',
-    border: 'border-blue-300 dark:border-blue-700',
+    bg: 'bg-info-muted',
+    text: 'text-info-muted-foreground',
+    border: 'border-info-muted',
   },
   completed: {
-    bg: 'bg-green-100 dark:bg-green-900/30',
-    text: 'text-green-800 dark:text-green-200',
-    border: 'border-green-300 dark:border-green-700',
+    bg: 'bg-success-muted',
+    text: 'text-success-muted-foreground',
+    border: 'border-success-muted',
   },
   cancelled: {
-    bg: 'bg-gray-100 dark:bg-gray-900/30',
-    text: 'text-gray-800 dark:text-gray-200',
-    border: 'border-gray-300 dark:border-gray-700',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: 'border-border',
   },
   overdue: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-800 dark:text-red-200',
-    border: 'border-red-300 dark:border-red-700',
+    bg: 'bg-destructive/10',
+    text: 'text-destructive',
+    border: 'border-destructive/30',
   },
 } as const;
 
 export const PRIORITY_COLORS = {
   LOW: {
-    bg: 'bg-gray-100 dark:bg-gray-800',
-    text: 'text-gray-700 dark:text-gray-300',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
   },
   MEDIUM: {
-    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-    text: 'text-yellow-700 dark:text-yellow-300',
+    bg: 'bg-warning-muted',
+    text: 'text-warning-muted-foreground',
   },
   HIGH: {
-    bg: 'bg-orange-100 dark:bg-orange-900/30',
-    text: 'text-orange-700 dark:text-orange-300',
+    bg: 'bg-warning-muted',
+    text: 'text-warning',
   },
   CRITICAL: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-700 dark:text-red-300',
+    bg: 'bg-destructive/10',
+    text: 'text-destructive',
   },
 } as const;
 

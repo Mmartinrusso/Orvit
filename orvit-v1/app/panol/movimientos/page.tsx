@@ -72,10 +72,10 @@ interface Movement {
 }
 
 const MOVEMENT_TYPES = {
-  IN: { label: 'Entrada', icon: ArrowUpCircle, color: 'text-green-600' },
-  OUT: { label: 'Salida', icon: ArrowDownCircle, color: 'text-red-600' },
-  TRANSFER: { label: 'Transferencia', icon: ArrowLeftRight, color: 'text-blue-600' },
-  MAINTENANCE: { label: 'Mantenimiento', icon: Wrench, color: 'text-amber-600' },
+  IN: { label: 'Entrada', icon: ArrowUpCircle, color: 'text-success' },
+  OUT: { label: 'Salida', icon: ArrowDownCircle, color: 'text-destructive' },
+  TRANSFER: { label: 'Transferencia', icon: ArrowLeftRight, color: 'text-info-muted-foreground' },
+  MAINTENANCE: { label: 'Mantenimiento', icon: Wrench, color: 'text-warning-muted-foreground' },
   RETURN: { label: 'Devolución', icon: RotateCcw, color: 'text-purple-600' },
 };
 
@@ -284,7 +284,7 @@ export default function MovimientosPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Entradas</p>
-                    <p className="text-2xl font-bold mt-1 text-green-600">{stats.entries}</p>
+                    <p className="text-2xl font-bold mt-1 text-success">{stats.entries}</p>
                   </div>
                   <div className="p-2 rounded-lg bg-muted">
                     <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
@@ -298,7 +298,7 @@ export default function MovimientosPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Salidas</p>
-                    <p className="text-2xl font-bold mt-1 text-red-600">{stats.exits}</p>
+                    <p className="text-2xl font-bold mt-1 text-destructive">{stats.exits}</p>
                   </div>
                   <div className="p-2 rounded-lg bg-muted">
                     <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
@@ -436,7 +436,7 @@ export default function MovimientosPage() {
                         <TableCell className="text-center">
                           <span className={cn(
                             'text-sm font-bold',
-                            movement.type === 'OUT' ? 'text-red-600' : 'text-green-600'
+                            movement.type === 'OUT' ? 'text-destructive' : 'text-success'
                           )}>
                             {movement.type === 'OUT' ? '-' : '+'}{movement.quantity}
                           </span>

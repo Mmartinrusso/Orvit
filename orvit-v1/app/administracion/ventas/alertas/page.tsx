@@ -31,29 +31,29 @@ const TIPO_CONFIG = {
   LIMITE_CREDITO: {
     label: 'Límite de Crédito',
     icon: DollarSign,
-    color: 'bg-red-100 text-red-700 border-red-300',
+    color: 'bg-destructive/10 text-destructive border-destructive/30',
   },
   MORA: {
     label: 'Mora',
     icon: Calendar,
-    color: 'bg-orange-100 text-orange-700 border-orange-300',
+    color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
   },
   CHEQUE_RECHAZADO: {
     label: 'Cheque Rechazado',
     icon: XCircle,
-    color: 'bg-red-100 text-red-700 border-red-300',
+    color: 'bg-destructive/10 text-destructive border-destructive/30',
   },
   PAGO_ATRASADO: {
     label: 'Pago Atrasado',
     icon: AlertCircle,
-    color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+    color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
   },
 };
 
 const SEVERIDAD_CONFIG = {
-  ALTA: { label: 'Alta', color: 'bg-red-100 text-red-700' },
-  MEDIA: { label: 'Media', color: 'bg-yellow-100 text-yellow-700' },
-  BAJA: { label: 'Baja', color: 'bg-blue-100 text-blue-700' },
+  ALTA: { label: 'Alta', color: 'bg-destructive/10 text-destructive' },
+  MEDIA: { label: 'Media', color: 'bg-warning-muted text-warning-muted-foreground' },
+  BAJA: { label: 'Baja', color: 'bg-info-muted text-info-muted-foreground' },
 };
 
 export default function AlertasPage() {
@@ -95,7 +95,7 @@ export default function AlertasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
+                <AlertTriangle className="w-4 h-4 text-destructive" />
                 Alertas Activas
               </CardTitle>
             </CardHeader>
@@ -108,7 +108,7 @@ export default function AlertasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-600" />
+                <XCircle className="w-4 h-4 text-destructive" />
                 Alta Prioridad
               </CardTitle>
             </CardHeader>
@@ -121,7 +121,7 @@ export default function AlertasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <AlertCircle className="w-4 h-4 text-warning-muted-foreground" />
                 Media Prioridad
               </CardTitle>
             </CardHeader>
@@ -134,7 +134,7 @@ export default function AlertasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <TrendingUp className="w-4 h-4 text-info-muted-foreground" />
                 Baja Prioridad
               </CardTitle>
             </CardHeader>
@@ -177,19 +177,19 @@ export default function AlertasPage() {
                           <div
                             className={`w-10 h-10 rounded-lg ${
                               alert.severidad === 'ALTA'
-                                ? 'bg-red-100'
+                                ? 'bg-destructive/10'
                                 : alert.severidad === 'MEDIA'
-                                ? 'bg-yellow-100'
-                                : 'bg-blue-100'
+                                ? 'bg-warning-muted'
+                                : 'bg-info-muted'
                             } flex items-center justify-center`}
                           >
                             <TipoIcon
                               className={`w-5 h-5 ${
                                 alert.severidad === 'ALTA'
-                                  ? 'text-red-600'
+                                  ? 'text-destructive'
                                   : alert.severidad === 'MEDIA'
-                                  ? 'text-yellow-600'
-                                  : 'text-blue-600'
+                                  ? 'text-warning-muted-foreground'
+                                  : 'text-info-muted-foreground'
                               }`}
                             />
                           </div>

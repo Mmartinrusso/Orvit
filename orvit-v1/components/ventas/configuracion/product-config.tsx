@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -233,7 +234,7 @@ export function ProductConfig() {
             </Card>
             <Card className="p-3">
               <div className="flex items-center gap-2">
-                <Factory className="w-4 h-4 text-blue-500" />
+                <Factory className="w-4 h-4 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground">Producción</p>
                   <p className="text-lg font-bold">{stats.byType.PRODUCTION}</p>
@@ -242,7 +243,7 @@ export function ProductConfig() {
             </Card>
             <Card className="p-3">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-green-500" />
+                <ShoppingCart className="w-4 h-4 text-success" />
                 <div>
                   <p className="text-xs text-muted-foreground">Compra</p>
                   <p className="text-lg font-bold">{stats.byType.PURCHASE}</p>
@@ -311,9 +312,7 @@ export function ProductConfig() {
               {costFeatures.map((feature) => (
                 <div
                   key={feature.id}
-                  className={`p-3 border rounded-lg transition-colors ${
-                    config[feature.id] ? 'bg-primary/5 border-primary/20' : 'bg-background'
-                  }`}
+                  className={cn('p-3 border rounded-lg transition-colors', config[feature.id] ? 'bg-primary/5 border-primary/20' : 'bg-background')}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1">
@@ -359,9 +358,7 @@ export function ProductConfig() {
               {alertFeatures.map((feature) => (
                 <div
                   key={feature.id}
-                  className={`p-3 border rounded-lg transition-colors ${
-                    config[feature.id] ? 'bg-primary/5 border-primary/20' : 'bg-background'
-                  }`}
+                  className={cn('p-3 border rounded-lg transition-colors', config[feature.id] ? 'bg-primary/5 border-primary/20' : 'bg-background')}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1">
@@ -397,9 +394,7 @@ export function ProductConfig() {
               {pricingFeatures.map((feature) => (
                 <div
                   key={feature.id}
-                  className={`p-3 border rounded-lg transition-colors ${
-                    config[feature.id] ? 'bg-primary/5 border-primary/20' : 'bg-background'
-                  }`}
+                  className={cn('p-3 border rounded-lg transition-colors', config[feature.id] ? 'bg-primary/5 border-primary/20' : 'bg-background')}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1">
@@ -420,10 +415,10 @@ export function ProductConfig() {
         </Card>
 
         {/* Info de cómo funcionará */}
-        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+        <Card className="border-warning-muted bg-warning-muted/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Info className="w-4 h-4 text-amber-600" />
+              <Info className="w-4 h-4 text-warning-muted-foreground" />
               Cómo funciona el cálculo de costos
             </CardTitle>
           </CardHeader>
@@ -452,8 +447,8 @@ export function ProductConfig() {
             </>
           ) : (
             <>
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span className="text-green-600">Configuración guardada</span>
+              <CheckCircle2 className="w-4 h-4 text-success" />
+              <span className="text-success">Configuración guardada</span>
             </>
           )}
         </div>

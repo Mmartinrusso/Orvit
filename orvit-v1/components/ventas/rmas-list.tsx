@@ -115,22 +115,22 @@ const ESTADOS_CONFIG: Record<
 > = {
   SOLICITADO: {
     label: 'Solicitado',
-    color: 'bg-blue-100 text-blue-700',
+    color: 'bg-info-muted text-info-muted-foreground',
     icon: Clock,
   },
   EN_REVISION: {
     label: 'En Revisión',
-    color: 'bg-yellow-100 text-yellow-700',
+    color: 'bg-warning-muted text-warning-muted-foreground',
     icon: FileText,
   },
   APROBADO: {
     label: 'Aprobado',
-    color: 'bg-green-100 text-green-700',
+    color: 'bg-success-muted text-success',
     icon: CheckCircle2,
   },
   RECHAZADO: {
     label: 'Rechazado',
-    color: 'bg-red-100 text-red-700',
+    color: 'bg-destructive/10 text-destructive',
     icon: XCircle,
   },
   EN_TRANSITO: {
@@ -145,7 +145,7 @@ const ESTADOS_CONFIG: Record<
   },
   EN_EVALUACION: {
     label: 'En Evaluación',
-    color: 'bg-orange-100 text-orange-700',
+    color: 'bg-warning-muted text-warning-muted-foreground',
     icon: ClipboardCheck,
   },
   PROCESADO: {
@@ -155,21 +155,21 @@ const ESTADOS_CONFIG: Record<
   },
   CERRADO: {
     label: 'Cerrado',
-    color: 'bg-gray-100 text-gray-700',
+    color: 'bg-muted text-foreground',
     icon: CheckCircle2,
   },
   CANCELADO: {
     label: 'Cancelado',
-    color: 'bg-gray-100 text-gray-500',
+    color: 'bg-muted text-muted-foreground',
     icon: Ban,
   },
 };
 
 const TIPOS_CONFIG: Record<RMAType, { label: string; color: string }> = {
-  DEVOLUCION: { label: 'Devolución', color: 'bg-red-50 text-red-700 border-red-200' },
-  CAMBIO: { label: 'Cambio', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  REPARACION: { label: 'Reparación', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  GARANTIA: { label: 'Garantía', color: 'bg-green-50 text-green-700 border-green-200' },
+  DEVOLUCION: { label: 'Devolución', color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  CAMBIO: { label: 'Cambio', color: 'bg-info-muted text-info-muted-foreground border-info-muted' },
+  REPARACION: { label: 'Reparación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted' },
+  GARANTIA: { label: 'Garantía', color: 'bg-success-muted text-success border-success-muted' },
 };
 
 export function RMASList() {
@@ -339,30 +339,30 @@ export function RMASList() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
+              <Clock className="h-4 w-4 text-info-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.pendientes}</div>
+              <div className="text-2xl font-bold text-info-muted-foreground">{stats.pendientes}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Aprobados</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <CheckCircle2 className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.aprobados}</div>
+              <div className="text-2xl font-bold text-success">{stats.aprobados}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rechazados</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
+              <XCircle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rechazados}</div>
+              <div className="text-2xl font-bold text-destructive">{stats.rechazados}</div>
             </CardContent>
           </Card>
 
@@ -535,13 +535,13 @@ export function RMASList() {
                                   <DropdownMenuItem
                                     onClick={() => aprobarMutation.mutate(rma.id)}
                                   >
-                                    <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                                    <CheckCircle2 className="mr-2 h-4 w-4 text-success" />
                                     Aprobar
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => rechazarMutation.mutate(rma.id)}
                                   >
-                                    <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                                    <XCircle className="mr-2 h-4 w-4 text-destructive" />
                                     Rechazar
                                   </DropdownMenuItem>
                                 </>

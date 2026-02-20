@@ -183,7 +183,7 @@ export function SignatureCanvas({
 
   return (
     <div ref={containerRef} className={cn('w-full space-y-2', className)}>
-      <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-white">
+      <div className="relative border-2 border-dashed border-border rounded-lg overflow-hidden bg-background">
         <canvas
           ref={canvasRef}
           width={canvasSize.width}
@@ -203,7 +203,7 @@ export function SignatureCanvas({
         />
         {!hasSignature && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-gray-400 text-sm">
+            <span className="text-muted-foreground text-sm">
               {disabled ? 'Firma deshabilitada' : 'Firme aquí'}
             </span>
           </div>

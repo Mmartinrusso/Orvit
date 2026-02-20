@@ -66,7 +66,7 @@ export function SidebarPreferencesConfig() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-yellow-600" />
+            <Sparkles className="h-4 w-4 text-warning-muted-foreground" />
             Módulos Core
           </CardTitle>
           <CardDescription>
@@ -143,7 +143,7 @@ export function SidebarPreferencesConfig() {
                         {module.isNew && (
                           <Badge
                             variant="outline"
-                            className="text-xs bg-green-50 text-green-700 border-green-200"
+                            className="text-xs bg-success-muted text-success-muted-foreground border-success"
                           >
                             Nuevo
                           </Badge>
@@ -204,7 +204,7 @@ export function SidebarPreferencesConfig() {
                         {module.isNew && (
                           <Badge
                             variant="outline"
-                            className="text-xs bg-green-50 text-green-700 border-green-200"
+                            className="text-xs bg-success-muted text-success-muted-foreground border-success"
                           >
                             Nuevo
                           </Badge>
@@ -264,14 +264,14 @@ export function SidebarPreferencesConfig() {
                         <p className="font-medium text-sm">{module.name}</p>
                         <Badge
                           variant="outline"
-                          className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                          className="text-xs bg-info-muted text-info-muted-foreground border-info"
                         >
                           Próximamente
                         </Badge>
                         {module.isNew && (
                           <Badge
                             variant="outline"
-                            className="text-xs bg-green-50 text-green-700 border-green-200"
+                            className="text-xs bg-success-muted text-success-muted-foreground border-success"
                           >
                             Nuevo
                           </Badge>
@@ -297,15 +297,15 @@ export function SidebarPreferencesConfig() {
       )}
 
       {/* Info Footer */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-info-muted border-info">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
+            <Sparkles className="h-5 w-5 text-primary mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-blue-900">
+              <p className="text-sm font-medium text-foreground">
                 Personalización guardada automáticamente
               </p>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Tus cambios se guardan automáticamente y solo afectan tu propia
                 experiencia. Los módulos ocultos seguirán siendo accesibles a
                 través de la búsqueda.

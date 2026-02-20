@@ -586,10 +586,10 @@ export default function PuestosTrabajoPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">Activos</p>
-                      <p className="text-2xl font-bold text-green-600">{dashboardStats.activos}</p>
+                      <p className="text-2xl font-bold text-success">{dashboardStats.activos}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <Settings2 className="h-5 w-5 text-green-600" />
+                    <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
+                      <Settings2 className="h-5 w-5 text-success" />
                     </div>
                   </div>
                 </CardContent>
@@ -600,11 +600,11 @@ export default function PuestosTrabajoPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">Con Instructivos</p>
-                      <p className="text-2xl font-bold text-blue-600">{dashboardStats.conInstructivos}</p>
+                      <p className="text-2xl font-bold text-info-muted-foreground">{dashboardStats.conInstructivos}</p>
                       <p className="text-xs text-muted-foreground">{dashboardStats.totalInstructivos} docs</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-blue-600" />
+                    <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-info-muted-foreground" />
                     </div>
                   </div>
                 </CardContent>
@@ -692,7 +692,7 @@ export default function PuestosTrabajoPage() {
                   className="gap-1 h-8 text-xs"
                   onClick={() => handleBulkChangeStatus('ACTIVE')}
                 >
-                  <ToggleRight className="h-3.5 w-3.5 text-green-600" />
+                  <ToggleRight className="h-3.5 w-3.5 text-success" />
                   Activar
                 </Button>
                 <Button
@@ -701,14 +701,14 @@ export default function PuestosTrabajoPage() {
                   className="gap-1 h-8 text-xs"
                   onClick={() => handleBulkChangeStatus('INACTIVE')}
                 >
-                  <ToggleLeft className="h-3.5 w-3.5 text-amber-600" />
+                  <ToggleLeft className="h-3.5 w-3.5 text-warning-muted-foreground" />
                   Desactivar
                 </Button>
                 {canDeletePuestoTrabajo && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1 h-8 text-xs text-red-600 hover:bg-red-50"
+                    className="gap-1 h-8 text-xs text-destructive hover:bg-destructive/10"
                     onClick={handleBulkDelete}
                   >
                     <Trash2 className="h-3.5 w-3.5" />

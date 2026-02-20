@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Cpu,
@@ -51,17 +52,6 @@ import { LogoUpload } from '@/components/ui/LogoUpload';
 import { ControlModal } from './ControlModal';
 import { v4 as uuidv4 } from 'uuid';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
 
 export interface ExtractedMachineData {
   machine: {
@@ -110,7 +100,7 @@ export function ImportReview({
   const [showControlModal, setShowControlModal] = useState(false);
   const [jobFiles, setJobFiles] = useState<Array<{ id: number; fileName: string; mimeType: string }>>([]);
 
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   // Fetch job files for control modal
   useEffect(() => {
@@ -269,7 +259,7 @@ export function ImportReview({
 
   const EditDot = ({ tempId, field }: { tempId: string; field: string }) => {
     if (!isFieldEdited(tempId, field)) return null;
-    return <span className="h-1.5 w-1.5 rounded-full bg-blue-500 inline-block" title="Editado manualmente" />;
+    return <span className="h-1.5 w-1.5 rounded-full bg-info inline-block" title="Editado manualmente" />;
   };
 
   return (

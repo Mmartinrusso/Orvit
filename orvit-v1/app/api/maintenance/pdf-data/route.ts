@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-
 interface PDFDataResult {
   preventiveMaintenances: any[];
   correctiveMaintenances: any[];
@@ -22,16 +21,6 @@ export async function GET(request: NextRequest) {
     const componentIds = searchParams.get('componentIds'); // Comma-separated
     const subcomponentIds = searchParams.get('subcomponentIds'); // Comma-separated
 
-    console.log('🚀 PDF-DATA endpoint called with params:', {
-      companyId,
-      sectorId,
-      machineIds,
-      unidadMovilIds,
-      maintenanceTypes,
-      componentIds,
-      subcomponentIds
-    });
-
     if (!companyId) {
       return NextResponse.json(
         { error: 'companyId es requerido' },
@@ -39,22 +28,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    
-
     const machineIdArray = machineIds ? machineIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
     const unidadMovilIdArray = unidadMovilIds ? unidadMovilIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
     const typeArray = maintenanceTypes ? maintenanceTypes.split(',').filter(type => type.trim()) : [];
     const componentIdArray = componentIds ? componentIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
     const subcomponentIdArray = subcomponentIds ? subcomponentIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
-
-    console.log('🔍 Arrays procesados:', {
-      machineIdArray,
-      unidadMovilIdArray,
-      typeArray,
-      componentIdArray,
-      subcomponentIdArray
-    });
-
 
     const result: PDFDataResult = {
       preventiveMaintenances: [],
@@ -139,212 +117,110 @@ export async function GET(request: NextRequest) {
       orderBy: { nombre: 'asc' }
     });
 
-    // Obtener mantenimientos preventivos si está seleccionado
+    // ✅ MIGRADO: Queries directas a preventiveTemplate/preventiveInstance en lugar de JSON-in-Document
     if (typeArray.includes('PREVENTIVE')) {
-      
-      const preventiveWhere: any = {
-        entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE'
+
+      // Construir filtros para preventiveTemplate
+      const templateWhere: any = {
+        companyId: parseInt(companyId),
+        isActive: true,
       };
 
-      // Filtrar por companyId y sectorId usando el campo url que contiene JSON
-      if (companyId) {
-        const companyIdFilter = `"companyId":${parseInt(companyId)}`;
-        const sectorIdFilter = sectorId ? `"sectorId":${parseInt(sectorId)}` : '';
-        const urlFilter = sectorIdFilter ? `${companyIdFilter},${sectorIdFilter}` : companyIdFilter;
-        preventiveWhere.url = { contains: urlFilter };
+      if (sectorId) templateWhere.sectorId = parseInt(sectorId);
+
+      // Filtros de activos (máquinas / unidades móviles)
+      if (machineIdArray.length > 0 && unidadMovilIdArray.length > 0) {
+        templateWhere.OR = [
+          { machineId: { in: machineIdArray } },
+          { unidadMovilId: { in: unidadMovilIdArray } },
+        ];
+      } else if (machineIdArray.length > 0) {
+        templateWhere.machineId = { in: machineIdArray };
+      } else if (unidadMovilIdArray.length > 0) {
+        templateWhere.unidadMovilId = { in: unidadMovilIdArray };
       }
 
-      const preventiveTemplates = await prisma.document.findMany({
-        where: preventiveWhere,
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-
-      console.log('🔍 Templates preventivos encontrados:', {
-        total: preventiveTemplates.length,
-        companyId: parseInt(companyId),
-        where: preventiveWhere
-      });
-
-
-      // Filtrar por companyId, machineIds, unidadMovilIds, componentIds y subcomponentIds
-      console.log('🔍 Filtros aplicados:', {
-        machineIdArray,
-        unidadMovilIdArray,
-        componentIdArray,
-        subcomponentIdArray,
-        totalTemplates: preventiveTemplates.length
-      });
-
-      const filteredPreventiveTemplates = preventiveTemplates.filter(template => {
-        try {
-          const data = JSON.parse(template.url);
-          const matchesCompany = data.companyId === Number(companyId);
-
-          // Para máquinas: verificar si hay machineId y está en la lista
-          const matchesMachine = data.machineId && machineIdArray.length > 0 && machineIdArray.includes(data.machineId);
-
-          // Para unidades móviles: verificar si hay unidadMovilId y está en la lista
-          const matchesUnidadMovil = data.unidadMovilId && unidadMovilIdArray.length > 0 && unidadMovilIdArray.includes(data.unidadMovilId);
-
-          // Para componentes: verificar si hay componentId o componentIds
-          let matchesComponent = false;
-          if (componentIdArray.length > 0) {
-            // Puede tener un solo componentId o un array componentIds
-            if (data.componentId && componentIdArray.includes(data.componentId)) {
-              matchesComponent = true;
-            }
-            if (data.componentIds && Array.isArray(data.componentIds)) {
-              matchesComponent = data.componentIds.some((id: number) => componentIdArray.includes(id));
-            }
-          }
-
-          // Para subcomponentes: verificar si hay subcomponentId o subcomponentIds
-          let matchesSubcomponent = false;
-          if (subcomponentIdArray.length > 0) {
-            if (data.subcomponentId && subcomponentIdArray.includes(data.subcomponentId)) {
-              matchesSubcomponent = true;
-            }
-            if (data.subcomponentIds && Array.isArray(data.subcomponentIds)) {
-              matchesSubcomponent = data.subcomponentIds.some((id: number) => subcomponentIdArray.includes(id));
-            }
-          }
-
-          // Si no se especificaron filtros de máquinas/unidades, incluir todo
-          const noAssetFilters = (machineIdArray.length === 0 && unidadMovilIdArray.length === 0);
-          const noComponentFilters = (componentIdArray.length === 0 && subcomponentIdArray.length === 0);
-
-          // Si se especificaron filtros, verificar que el mantenimiento coincida con alguno
-          // Si no se especificaron filtros, incluir todos los mantenimientos de la empresa
-          let shouldInclude = false;
-          if (noAssetFilters && noComponentFilters) {
-            // Sin filtros: incluir todo de la empresa
-            shouldInclude = matchesCompany;
-          } else if (!noAssetFilters && noComponentFilters) {
-            // Solo filtros de activos: coincide con máquina o unidad móvil
-            shouldInclude = matchesCompany && (matchesMachine || matchesUnidadMovil);
-          } else if (noAssetFilters && !noComponentFilters) {
-            // Solo filtros de componentes: coincide con componente o subcomponente
-            shouldInclude = matchesCompany && (matchesComponent || matchesSubcomponent);
-          } else {
-            // Ambos tipos de filtros: coincide con activo Y con componente/subcomponente
-            const matchesAsset = matchesMachine || matchesUnidadMovil;
-            const matchesComponentOrSubcomponent = matchesComponent || matchesSubcomponent || (componentIdArray.length === 0 && subcomponentIdArray.length === 0);
-            shouldInclude = matchesCompany && matchesAsset && matchesComponentOrSubcomponent;
-          }
-
-          return shouldInclude;
-        } catch (error) {
-          console.error('❌ Error parsing template:', template.id, error);
-          return false;
-        }
-      });
-
-
-      // Recolectar todos los IDs de componentes y subcomponentes únicos
-      const allComponentIds = new Set<number>();
-      const allSubcomponentIds = new Set<number>();
-
-      filteredPreventiveTemplates.forEach(template => {
-        try {
-          const data = JSON.parse(template.url);
-          if (data.componentId) allComponentIds.add(data.componentId);
-          if (data.componentIds && Array.isArray(data.componentIds)) {
-            data.componentIds.forEach((id: number) => allComponentIds.add(id));
-          }
-          if (data.subcomponentId) allSubcomponentIds.add(data.subcomponentId);
-          if (data.subcomponentIds && Array.isArray(data.subcomponentIds)) {
-            data.subcomponentIds.forEach((id: number) => allSubcomponentIds.add(id));
-          }
-        } catch {}
-      });
-
-      // Obtener nombres de componentes
-      const componentMap = new Map<number, string>();
-      if (allComponentIds.size > 0) {
-        const components = await prisma.component.findMany({
-          where: { id: { in: Array.from(allComponentIds) } },
-          select: { id: true, name: true }
-        });
-        components.forEach(c => componentMap.set(c.id, c.name));
+      // Filtros de componentes / subcomponentes (usando hasSome para arrays JSON)
+      if (componentIdArray.length > 0) {
+        templateWhere.componentIds = { hasSome: componentIdArray };
+      }
+      if (subcomponentIdArray.length > 0) {
+        templateWhere.subcomponentIds = { hasSome: subcomponentIdArray };
       }
 
-      // Obtener nombres de subcomponentes (también son componentes con parentId)
-      if (allSubcomponentIds.size > 0) {
-        const subcomponents = await prisma.component.findMany({
-          where: { id: { in: Array.from(allSubcomponentIds) } },
-          select: { id: true, name: true }
-        });
-        subcomponents.forEach(c => componentMap.set(c.id, c.name));
-      }
+      const preventiveTemplates = await prisma.preventiveTemplate.findMany({
+        where: templateWhere,
+        include: {
+          instances: {
+            orderBy: { scheduledDate: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-      // Obtener instancias programadas para cada template
-      const preventiveWithInstances = await Promise.all(
-        filteredPreventiveTemplates.map(async (template) => {
-          const instances = await prisma.document.findMany({
-            where: {
-              entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE',
-              entityId: {
-                startsWith: `template-${template.id}`
-              }
-            },
-            orderBy: {
-              createdAt: 'asc'
-            }
-          });
+      result.preventiveMaintenances = preventiveTemplates.map((tpl) => {
+        // Map instances to plain data objects (same shape as before)
+        const instancesData = tpl.instances.map((inst) => ({
+          id: inst.id,
+          templateId: inst.templateId,
+          scheduledDate: inst.scheduledDate?.toISOString() || null,
+          status: inst.status,
+          actualStartDate: inst.actualStartDate?.toISOString() || null,
+          actualEndDate: inst.actualEndDate?.toISOString() || null,
+          actualHours: inst.actualHours,
+          completedById: inst.completedById,
+          completionNotes: inst.completionNotes,
+          toolsUsed: inst.toolsUsed,
+          photoUrls: inst.photoUrls,
+        }));
 
-          const templateData = JSON.parse(template.url);
-          const instancesData = instances.map(instance => {
-            try {
-              return JSON.parse(instance.url);
-            } catch {
-              return null;
-            }
-          }).filter(Boolean);
-
-          // Resolver nombres de componentes
-          let componentName: string | undefined;
-          let componentNames: string[] = [];
-          let subcomponentName: string | undefined;
-          let subcomponentNames: string[] = [];
-
-          if (templateData.componentId) {
-            componentName = componentMap.get(templateData.componentId);
-          }
-          if (templateData.componentIds && Array.isArray(templateData.componentIds)) {
-            componentNames = templateData.componentIds
-              .map((id: number) => componentMap.get(id))
-              .filter(Boolean) as string[];
-          }
-          if (templateData.subcomponentId) {
-            subcomponentName = componentMap.get(templateData.subcomponentId);
-          }
-          if (templateData.subcomponentIds && Array.isArray(templateData.subcomponentIds)) {
-            subcomponentNames = templateData.subcomponentIds
-              .map((id: number) => componentMap.get(id))
-              .filter(Boolean) as string[];
-          }
-
-          return {
-            id: template.id,
-            ...templateData,
-            instances: instancesData,
-            machine: templateData.machineId ? result.machines.find(m => m.id === templateData.machineId) : null,
-            unidadMovil: templateData.unidadMovilId ? result.unidadesMoviles.find(u => u.id === templateData.unidadMovilId) : null,
-            // Agregar campos de frecuencia para que MaintenanceScreenView los pueda usar
-            frequency: templateData.frequencyDays,
-            frequencyUnit: 'DAYS',
-            // Agregar nombres de componentes y subcomponentes
-            componentName,
-            componentNames: componentNames.length > 0 ? componentNames : undefined,
-            subcomponentName,
-            subcomponentNames: subcomponentNames.length > 0 ? subcomponentNames : undefined
-          };
-        })
-      );
-
-      result.preventiveMaintenances = preventiveWithInstances;
+        return {
+          id: tpl.id,
+          title: tpl.title,
+          description: tpl.description,
+          priority: tpl.priority,
+          notes: tpl.notes,
+          machineId: tpl.machineId,
+          machineName: tpl.machineName,
+          unidadMovilId: tpl.unidadMovilId,
+          isMobileUnit: tpl.isMobileUnit,
+          componentIds: tpl.componentIds || [],
+          componentNames: tpl.componentNames || [],
+          subcomponentIds: tpl.subcomponentIds || [],
+          subcomponentNames: tpl.subcomponentNames || [],
+          frequencyDays: tpl.frequencyDays,
+          nextMaintenanceDate: tpl.nextMaintenanceDate?.toISOString() || null,
+          lastMaintenanceDate: tpl.lastMaintenanceDate?.toISOString() || null,
+          weekdaysOnly: tpl.weekdaysOnly,
+          estimatedHours: tpl.estimatedHours,
+          timeUnit: tpl.timeUnit,
+          timeValue: tpl.timeValue,
+          executionWindow: tpl.executionWindow,
+          toolsRequired: tpl.toolsRequired || [],
+          assignedToId: tpl.assignedToId,
+          assignedToName: tpl.assignedToName,
+          companyId: tpl.companyId,
+          sectorId: tpl.sectorId,
+          isActive: tpl.isActive,
+          instructives: tpl.instructives || [],
+          alertDaysBefore: tpl.alertDaysBefore || [],
+          maintenanceCount: tpl.maintenanceCount,
+          averageDuration: tpl.averageDuration,
+          lastExecutionDuration: tpl.lastExecutionDuration,
+          executionHistory: tpl.executionHistory || [],
+          createdAt: tpl.createdAt?.toISOString() || null,
+          instances: instancesData,
+          // Resolve machine and unidadMovil from already-fetched result arrays
+          machine: tpl.machineId ? result.machines.find((m: any) => m.id === tpl.machineId) : null,
+          unidadMovil: tpl.unidadMovilId ? result.unidadesMoviles.find((u: any) => u.id === tpl.unidadMovilId) : null,
+          // Frequency fields for MaintenanceScreenView compatibility
+          frequency: tpl.frequencyDays,
+          frequencyUnit: 'DAYS',
+          // Component/subcomponent names are already stored in the template columns
+          componentName: (tpl.componentNames as string[])?.[0] || undefined,
+          subcomponentName: (tpl.subcomponentNames as string[])?.[0] || undefined,
+        };
+      });
     }
 
     // Obtener mantenimientos correctivos (Work Orders) si está seleccionado
@@ -381,7 +257,6 @@ export async function GET(request: NextRequest) {
       if (workOrderTypes.length > 0) {
         workOrderWhere.type = { in: workOrderTypes };
       }
-
 
       const workOrders = await prisma.workOrder.findMany({
         where: workOrderWhere,
@@ -434,7 +309,6 @@ export async function GET(request: NextRequest) {
           createdAt: 'desc'
         }
       });
-
 
       // Obtener unidades móviles para los work orders que las tienen
       const workOrdersWithUnidadMovil = workOrders.filter((wo: any) => wo.unidadMovilId);
@@ -514,17 +388,6 @@ export async function GET(request: NextRequest) {
 
     result.preventiveMaintenances = sortMaintenances(result.preventiveMaintenances);
     result.correctiveMaintenances = sortMaintenances(result.correctiveMaintenances);
-
-    console.log('✅ PDF data prepared:', {
-      machines: result.machines.length,
-      preventive: result.preventiveMaintenances.length,
-      corrective: result.correctiveMaintenances.length,
-      filters: {
-        machineIds: machineIdArray,
-        unidadMovilIds: unidadMovilIdArray,
-        types: typeArray
-      }
-    });
 
     return NextResponse.json({
       success: true,

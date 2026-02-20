@@ -31,36 +31,36 @@ const ALERT_CONFIG: Record<
     label: 'Stock Bajo',
     icon: Package,
     color: {
-      ALTA: 'bg-red-100 text-red-800 border-red-300',
-      MEDIA: 'bg-orange-100 text-orange-800 border-orange-300',
-      BAJA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      ALTA: 'bg-destructive/10 text-destructive border-destructive/30',
+      MEDIA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+      BAJA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     },
   },
   MARGEN_BAJO: {
     label: 'Margen Bajo',
     icon: TrendingDown,
     color: {
-      ALTA: 'bg-red-100 text-red-800 border-red-300',
-      MEDIA: 'bg-orange-100 text-orange-800 border-orange-300',
-      BAJA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      ALTA: 'bg-destructive/10 text-destructive border-destructive/30',
+      MEDIA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+      BAJA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     },
   },
   SIN_VENTAS: {
     label: 'Sin Ventas',
     icon: Clock,
     color: {
-      ALTA: 'bg-red-100 text-red-800 border-red-300',
-      MEDIA: 'bg-orange-100 text-orange-800 border-orange-300',
-      BAJA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      ALTA: 'bg-destructive/10 text-destructive border-destructive/30',
+      MEDIA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+      BAJA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     },
   },
   ROTACION_LENTA: {
     label: 'Rotación Lenta',
     icon: TrendingDown,
     color: {
-      ALTA: 'bg-red-100 text-red-800 border-red-300',
-      MEDIA: 'bg-orange-100 text-orange-800 border-orange-300',
-      BAJA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      ALTA: 'bg-destructive/10 text-destructive border-destructive/30',
+      MEDIA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+      BAJA: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     },
   },
 };
@@ -90,10 +90,10 @@ export function AlertCountBadge({ count, prioridad = 'MEDIA', className }: Alert
 
   const variantClass =
     prioridad === 'ALTA'
-      ? 'bg-red-100 text-red-800 border-red-300'
+      ? 'bg-destructive/10 text-destructive border-destructive/30'
       : prioridad === 'MEDIA'
-      ? 'bg-orange-100 text-orange-800 border-orange-300'
-      : 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      ? 'bg-warning-muted text-warning-muted-foreground border-warning-muted'
+      : 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
 
   return (
     <Badge variant="outline" className={cn(variantClass, 'text-xs font-medium', className)}>

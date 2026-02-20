@@ -175,7 +175,7 @@ export function LogoUpload({
       <div className="space-y-4">
         {/* Logo actual - VERSIÓN CORREGIDA */}
         {currentLogo && (
-          <div className="flex items-center gap-4 p-4 border rounded-lg bg-white dark:bg-gray-900">
+          <div className="flex items-center gap-4 p-4 border rounded-lg bg-background">
             {/* Contenedor fijo para la imagen con posicionamiento centrado */}
             <div className="logo-container">
               <img
@@ -186,8 +186,8 @@ export function LogoUpload({
             </div>
             {/* Información del archivo */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Logo actual</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              <p className="text-sm font-medium text-foreground">Logo actual</p>
+              <p className="text-xs text-muted-foreground truncate">
                 {currentLogo.split('/').pop()}
               </p>
             </div>
@@ -266,9 +266,9 @@ export function LogoUpload({
         )}
 
         {success && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <p className="text-sm text-green-600">{success}</p>
+          <div className="flex items-center gap-2 p-3 bg-success-muted border border-success-muted rounded-lg">
+            <CheckCircle className="h-4 w-4 text-success" />
+            <p className="text-sm text-success">{success}</p>
           </div>
         )}
       </div>

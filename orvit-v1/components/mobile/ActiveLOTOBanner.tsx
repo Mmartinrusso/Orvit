@@ -34,7 +34,7 @@ export function ActiveLOTOBanner({ lotos, onRelease }: ActiveLOTOBannerProps) {
   if (lotos.length === 0) return null;
 
   return (
-    <Card className="bg-red-50 border-red-200">
+    <Card className="bg-destructive/10 border-destructive/20">
       <CardContent className="p-4">
         {/* Header */}
         <div
@@ -42,23 +42,23 @@ export function ActiveLOTOBanner({ lotos, onRelease }: ActiveLOTOBannerProps) {
           onClick={() => setExpanded(!expanded)}
         >
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-red-500 rounded-full animate-pulse">
+            <div className="p-2 bg-destructive rounded-full animate-pulse">
               <Lock className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-red-800">
+              <h3 className="font-semibold text-destructive">
                 LOTO Activo
               </h3>
-              <p className="text-xs text-red-600">
+              <p className="text-xs text-destructive">
                 {lotos.length} bloqueo{lotos.length > 1 ? 's' : ''} activo{lotos.length > 1 ? 's' : ''}
               </p>
             </div>
           </div>
           <Button variant="ghost" size="icon">
             {expanded ? (
-              <ChevronUp className="h-5 w-5 text-red-600" />
+              <ChevronUp className="h-5 w-5 text-destructive" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-red-600" />
+              <ChevronDown className="h-5 w-5 text-destructive" />
             )}
           </Button>
         </div>
@@ -69,7 +69,7 @@ export function ActiveLOTOBanner({ lotos, onRelease }: ActiveLOTOBannerProps) {
             {lotos.map((loto) => (
               <div
                 key={loto.id}
-                className="bg-white rounded-lg p-3 border border-red-200"
+                className="bg-card rounded-lg p-3 border border-destructive/20"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -83,7 +83,7 @@ export function ActiveLOTOBanner({ lotos, onRelease }: ActiveLOTOBannerProps) {
                       </p>
                     )}
                     {loto.lockedAt && (
-                      <p className="text-xs text-red-600 mt-1">
+                      <p className="text-xs text-destructive mt-1">
                         Bloqueado: {format(new Date(loto.lockedAt), 'HH:mm', { locale: es })}
                       </p>
                     )}
@@ -92,7 +92,7 @@ export function ActiveLOTOBanner({ lotos, onRelease }: ActiveLOTOBannerProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-red-300 text-red-700 hover:bg-red-100"
+                      className="border-destructive/30 text-destructive hover:bg-destructive/10"
                       onClick={(e) => {
                         e.stopPropagation();
                         onRelease(loto.id);
@@ -106,7 +106,7 @@ export function ActiveLOTOBanner({ lotos, onRelease }: ActiveLOTOBannerProps) {
               </div>
             ))}
 
-            <div className="flex items-start gap-2 p-2 bg-red-100 rounded text-xs text-red-800">
+            <div className="flex items-start gap-2 p-2 bg-destructive/10 rounded text-xs text-destructive">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <p>
                 No olvides liberar los bloqueos LOTO al finalizar el trabajo.

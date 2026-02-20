@@ -42,9 +42,9 @@ export default function MachineTable({
   const getMachineStatusBadge = (status: MachineStatus) => {
     switch (status) {
       case MachineStatus.ACTIVE:
-        return <Badge variant="default" className="bg-green-500">Activo</Badge>;
+        return <Badge variant="default" className="bg-success text-success-foreground">Activo</Badge>;
       case MachineStatus.OUT_OF_SERVICE:
-        return <Badge variant="secondary" className="bg-amber-500">Fuera de servicio</Badge>;
+        return <Badge variant="secondary" className="bg-warning text-warning-foreground">Fuera de servicio</Badge>;
       case MachineStatus.DECOMMISSIONED:
         return <Badge variant="destructive">Baja</Badge>;
       default:

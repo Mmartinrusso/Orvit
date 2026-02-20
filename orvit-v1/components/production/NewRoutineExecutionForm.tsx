@@ -1,6 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import {
+  useExecutionTemplates,
+  useWorkCenters,
+  useProductionResources,
+  useProductionSectors,
+  useWorkSectors,
+  useRoutineEmployees,
+} from '@/hooks/production/use-production-reference';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -266,11 +274,47 @@ const normalizeItemInputs = (item: RoutineItem): RoutineInput[] => {
         options: addInput.options?.map((o: any) => typeof o === 'string' ? o : o.text),
         selectDisplayMode: addInput.selectDisplayMode,
         ratingMax: addInput.ratingMax,
+        conditionalDisplay: addInput.conditionalDisplay,
       });
     });
   }
 
   return inputs;
+};
+
+// Evalúa si un ítem debe mostrarse según su conditionalDisplay
+const isItemVisible = (
+  item: RoutineItem,
+  allItems: RoutineItem[],
+  responses: Record<string, { value: any; photos?: string[] }>
+): boolean => {
+  const cond = (item as any).conditionalDisplay;
+  if (!cond) return true;
+
+  const { parentItemId, parentValue } = cond;
+  const parentItem = allItems.find(i => i.id === parentItemId);
+  if (!parentItem) return false;
+
+  // Resolver el ID del input principal del padre
+  const parentInputId =
+    parentItem.inputs && parentItem.inputs.length > 0
+      ? parentItem.inputs[0].id
+      : parentItem.id + '_input';
+
+  const parentResponse = responses[parentInputId];
+
+  // CHECK almacena boolean, pero parentValue es "Sí"/"No"
+  const parentMainType =
+    parentItem.inputs && parentItem.inputs.length > 0
+      ? parentItem.inputs[0].type
+      : (parentItem as any).type;
+
+  if (parentMainType === 'CHECK') {
+    return parentResponse?.value === (parentValue === 'Sí' ? true : false);
+  }
+
+  // SELECT y otros tipos: comparación directa
+  return parentResponse?.value === parentValue;
 };
 
 interface RoutineGroup {
@@ -413,7 +457,7 @@ function InputRenderer({
             size="lg"
             className={cn(
               "flex-1 h-10 text-sm touch-manipulation",
-              response?.value === true ? 'bg-green-600 hover:bg-green-700' : ''
+              response?.value === true ? 'bg-success hover:bg-success/90' : ''
             )}
             onClick={() => onValueChange(true)}
           >
@@ -483,7 +527,7 @@ function InputRenderer({
                   <button
                     type="button"
                     onClick={() => onPhotoRemove(photoIndex)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md"
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 shadow-md"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -545,7 +589,7 @@ function InputRenderer({
           </div>
 
           {response?.photos && response.photos.length > 0 ? (
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="flex items-center gap-2 text-sm text-success">
               <CheckCircle2 className="h-4 w-4" />
               {response.photos.length} foto{response.photos.length !== 1 ? 's' : ''} subida{response.photos.length !== 1 ? 's' : ''}
             </div>
@@ -606,7 +650,7 @@ function InputRenderer({
               >
                 <div className={cn(
                   "h-4 w-4 rounded border-2 flex items-center justify-center transition-colors",
-                  isChecked ? "bg-primary border-primary" : "border-gray-300"
+                  isChecked ? "bg-primary border-primary" : "border-border"
                 )}>
                   {isChecked && <CheckSquare className="h-3 w-3 text-white" />}
                 </div>
@@ -634,7 +678,7 @@ function InputRenderer({
                   <Star
                     className={cn(
                       "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
-                      isSelected ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                      isSelected ? "fill-warning text-warning" : "text-muted-foreground/50"
                     )}
                   />
                 </button>
@@ -658,7 +702,7 @@ function InputRenderer({
         <div className="space-y-2">
           {response?.value ? (
             <div className="space-y-2">
-              <div className="border rounded-lg overflow-hidden bg-white">
+              <div className="border rounded-lg overflow-hidden bg-background">
                 <img
                   src={response.value}
                   alt="Firma"
@@ -666,7 +710,7 @@ function InputRenderer({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-green-600 flex items-center gap-1">
+                <span className="text-sm text-success flex items-center gap-1">
                   <CheckCircle2 className="h-4 w-4" />
                   Firma guardada
                 </span>
@@ -728,7 +772,7 @@ function InputRenderer({
                   "h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors",
                   response?.value === option
                     ? "border-primary"
-                    : "border-gray-300"
+                    : "border-border"
                 )}>
                   {response?.value === option && (
                     <div className="h-2 w-2 rounded-full bg-primary" />
@@ -898,16 +942,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
       && employees.length > 0
       && value.length === 0;
 
-    console.log('[Auto-populate Effect]', {
-      hasAttendanceTracking,
-      employeesLength: employees.length,
-      valueLength: value.length,
-      isPopulating: isPopulatingRef.current,
-      shouldPopulate
-    });
-
     if (shouldPopulate) {
-      console.log('[Auto-populate] Populating with employees:', employees.map(e => e.name));
       isPopulatingRef.current = true;
 
       // Use setTimeout to:
@@ -1044,9 +1079,9 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PRESENT': return 'border-green-300 bg-green-50';
-      case 'ABSENT': return 'border-red-300 bg-red-50';
-      case 'TRANSFERRED': return 'border-amber-300 bg-amber-50';
+      case 'PRESENT': return 'border-success-muted bg-success-muted';
+      case 'ABSENT': return 'border-destructive/30 bg-destructive/10';
+      case 'TRANSFERRED': return 'border-warning-muted bg-warning-muted';
       default: return '';
     }
   };
@@ -1121,7 +1156,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                         type="button"
                         className={cn(
                           'p-1.5 rounded-md transition-colors',
-                          empStatus === 'PRESENT' ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground hover:bg-green-100'
+                          empStatus === 'PRESENT' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground hover:bg-success-muted'
                         )}
                         onClick={() => setEmployeeStatus(emp.id, 'PRESENT')}
                         title="Presente"
@@ -1132,7 +1167,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                         type="button"
                         className={cn(
                           'p-1.5 rounded-md transition-colors',
-                          empStatus === 'ABSENT' ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground hover:bg-red-100'
+                          empStatus === 'ABSENT' ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground hover:bg-destructive/10'
                         )}
                         onClick={() => setEmployeeStatus(emp.id, 'ABSENT')}
                         title="Ausente"
@@ -1144,7 +1179,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                           type="button"
                           className={cn(
                             'p-1.5 rounded-md transition-colors',
-                            empStatus === 'TRANSFERRED' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-amber-100'
+                            empStatus === 'TRANSFERRED' ? 'bg-warning text-warning-foreground' : 'bg-muted text-muted-foreground hover:bg-warning-muted'
                           )}
                           onClick={() => setEmployeeStatus(emp.id, 'TRANSFERRED')}
                           title="En otro sector"
@@ -1160,14 +1195,14 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                 {isSelected && empStatus === 'ABSENT' && (
                   <div className="mt-2 ml-6 space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <XCircle className="h-3.5 w-3.5 text-red-500" />
-                      <span className="text-[10px] font-medium text-red-600">Motivo de ausencia:</span>
+                      <XCircle className="h-3.5 w-3.5 text-destructive" />
+                      <span className="text-[10px] font-medium text-destructive">Motivo de ausencia:</span>
                     </div>
                     <Select
                       value={empEntry?.absenceReasonId || ''}
                       onValueChange={(val) => setAbsenceReason(emp.id, val)}
                     >
-                      <SelectTrigger className="h-8 text-xs border-red-200">
+                      <SelectTrigger className="h-8 text-xs border-destructive/20">
                         <SelectValue placeholder="Seleccionar motivo..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -1185,14 +1220,14 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                 {isSelected && empStatus === 'TRANSFERRED' && (
                   <div className="mt-2 ml-6 space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <ArrowRightLeft className="h-3.5 w-3.5 text-amber-500" />
-                      <span className="text-[10px] font-medium text-amber-600">Transferido a:</span>
+                      <ArrowRightLeft className="h-3.5 w-3.5 text-warning" />
+                      <span className="text-[10px] font-medium text-warning-muted-foreground">Transferido a:</span>
                     </div>
                     <Select
                       value={empEntry?.transferSectorId?.toString() || ''}
                       onValueChange={(val) => setTransferSector(emp.id, val ? parseInt(val) : undefined)}
                     >
-                      <SelectTrigger className="h-8 text-xs border-amber-200">
+                      <SelectTrigger className="h-8 text-xs border-warning-muted">
                         <SelectValue placeholder="Seleccionar sector destino..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -1216,8 +1251,8 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                             className={cn(
                               'h-6 px-2 text-[10px] flex-1',
                               (!empEntry.transferAssignmentType || empEntry.transferAssignmentType === 'TASK')
-                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                                : 'text-muted-foreground hover:bg-amber-50'
+                                ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted'
+                                : 'text-muted-foreground hover:bg-warning-muted'
                             )}
                             onClick={() => setTransferAssignmentType(emp.id, 'TASK')}
                           >
@@ -1230,8 +1265,8 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                             className={cn(
                               'h-6 px-2 text-[10px] flex-1',
                               empEntry.transferAssignmentType === 'POSITION'
-                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                                : 'text-muted-foreground hover:bg-amber-50'
+                                ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted'
+                                : 'text-muted-foreground hover:bg-warning-muted'
                             )}
                             onClick={() => setTransferAssignmentType(emp.id, 'POSITION')}
                           >
@@ -1245,7 +1280,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                             placeholder="Tarea que realiza en el otro sector..."
                             value={empEntry?.transferTask || ''}
                             onChange={(e) => setTransferTask(emp.id, e.target.value)}
-                            className="h-8 text-xs border-amber-200"
+                            className="h-8 text-xs border-warning-muted"
                           />
                         )}
 
@@ -1256,7 +1291,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                             onValueChange={(val) => setTransferRole(emp.id, val)}
                             disabled={loadingTransferRoles[empEntry.transferSectorId!]}
                           >
-                            <SelectTrigger className="h-8 text-xs border-amber-200 bg-amber-50/50">
+                            <SelectTrigger className="h-8 text-xs border-warning-muted bg-warning-muted/50">
                               <SelectValue placeholder={
                                 loadingTransferRoles[empEntry.transferSectorId!]
                                   ? "Cargando puestos..."
@@ -1287,14 +1322,14 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
                 {isSelected && empStatus === 'PRESENT' && workSectorConfigEnabled && (
                   <div className="mt-2 ml-6 space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <Briefcase className="h-3.5 w-3.5 text-blue-500" />
-                      <span className="text-[10px] font-medium text-blue-700">Puesto de trabajo:</span>
+                      <Briefcase className="h-3.5 w-3.5 text-info" />
+                      <span className="text-[10px] font-medium text-info-muted-foreground">Puesto de trabajo:</span>
                     </div>
                     <Select
                       value={empEntry?.assignedRole || emp.role || ''}
                       onValueChange={(val) => setAssignedRole(emp.id, val)}
                     >
-                      <SelectTrigger className="h-8 text-xs border-blue-200 bg-blue-50/50">
+                      <SelectTrigger className="h-8 text-xs border-info-muted bg-info-muted/50">
                         <SelectValue placeholder="Seleccionar puesto..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -1345,18 +1380,18 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
           {hasAttendanceTracking ? (
             <>
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                <CheckCircle2 className="h-3 w-3 text-success" />
                 <strong>{presentCount}</strong> presente{presentCount !== 1 ? 's' : ''}
               </span>
               {absentCount > 0 && (
                 <span className="flex items-center gap-1">
-                  <XCircle className="h-3 w-3 text-red-500" />
+                  <XCircle className="h-3 w-3 text-destructive" />
                   <strong>{absentCount}</strong> ausente{absentCount !== 1 ? 's' : ''}
                 </span>
               )}
               {transferredCount > 0 && (
                 <span className="flex items-center gap-1">
-                  <ArrowRightLeft className="h-3 w-3 text-amber-500" />
+                  <ArrowRightLeft className="h-3 w-3 text-warning" />
                   <strong>{transferredCount}</strong> transferido{transferredCount !== 1 ? 's' : ''}
                 </span>
               )}
@@ -1507,7 +1542,7 @@ function MaterialInputRenderer({ input, value, onChange }: MaterialInputRenderer
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                 onClick={() => removeBatch(batchRef)}
               >
                 <Trash2 className="h-3 w-3" />
@@ -1606,6 +1641,7 @@ function MachineSelectRenderer({ input, value, onChange }: MachineSelectRenderer
   const allowMultiple = config.allowMultiple ?? false;
   const requireCounterReading = config.requireCounterReading ?? false;
   const selectedMachineIds = (config.selectedMachines || []).map((m: any) => m.id);
+  const selectedMachineIdsKey = JSON.stringify(selectedMachineIds);
 
   useEffect(() => {
     // If specific machines are configured, fetch their full details
@@ -1634,8 +1670,7 @@ function MachineSelectRenderer({ input, value, onChange }: MachineSelectRenderer
       }
     };
     fetchMachines();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMachineIds.join(',')]);
+  }, [selectedMachineIdsKey, selectedMachineIds]);
 
   const filteredMachines = useMemo(() => {
     if (!searchTerm) return machines;
@@ -1742,7 +1777,7 @@ function MachineSelectRenderer({ input, value, onChange }: MachineSelectRenderer
                         toggleMachine(machine);
                       }}
                     >
-                      {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-background" />}
                     </div>
                   )}
 
@@ -1971,7 +2006,7 @@ function ResourceSequenceSelectRenderer({ resources, value, onChange, minSelecti
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
+                  className="h-5 w-5 p-0 text-destructive hover:text-destructive"
                   onClick={() => removeResource(resource.id)}
                 >
                   <X className="h-3 w-3" />
@@ -2006,7 +2041,7 @@ function ResourceSequenceSelectRenderer({ resources, value, onChange, minSelecti
       <div className="text-[10px] text-muted-foreground">
         {value.length} de {resources.length} recurso{resources.length !== 1 ? 's' : ''} seleccionado{value.length !== 1 ? 's' : ''}
         {minSelection && value.length < minSelection && (
-          <span className="text-amber-600 ml-1.5">(mínimo {minSelection})</span>
+          <span className="text-warning-muted-foreground ml-1.5">(mínimo {minSelection})</span>
         )}
       </div>
     </div>
@@ -2062,7 +2097,7 @@ function ItemRenderer({
   const hasMultipleInputs = inputs.length > 1;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border overflow-hidden">
+    <div className="bg-background rounded-xl shadow-sm border overflow-hidden">
       {/* Header with number and description */}
       <div className="bg-gradient-to-r from-primary/5 to-transparent px-3 py-2 border-b">
         <div className="flex items-start gap-2">
@@ -2130,23 +2165,36 @@ export default function NewRoutineExecutionForm({
   onSuccess,
   onCancel,
 }: NewRoutineExecutionFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
-  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<RoutineTemplate[]>([]);
-  const [workCenters, setWorkCenters] = useState<{ id: number; name: string; machine?: { sectorId?: number | null } | null }[]>([]);
-  const [shifts, setShifts] = useState<{ id: number; name: string }[]>([]);
+  // === Reference data via TanStack Query hooks ===
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(
     draftToResume?.template || preselectedTemplate || null
   );
-  // New: Resources, Employees, and WorkSectors for advanced inputs
-  const [availableResources, setAvailableResources] = useState<ProductionResource[]>([]);
-  const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
-  const [allEmployeesCache, setAllEmployeesCache] = useState<Employee[]>([]); // Cache of ALL employees
   const [showingAllEmployees, setShowingAllEmployees] = useState(false);
-  const [availableWorkSectors, setAvailableWorkSectors] = useState<WorkSector[]>([]);
-  const [availableSectors, setAvailableSectors] = useState<{ id: number; name: string }[]>([]);
-  const [allSectorRoles, setAllSectorRoles] = useState<string[]>([]); // Todos los puestos del sector
+
+  const selectedWorkCenterId = selectedTemplate?.workCenter?.id ?? undefined;
+
+  // Build employee filters reactively — TanStack auto-refetches when filters change
+  const employeeFilters = useMemo(() => {
+    if (showingAllEmployees) return { all: true as const };
+    if (selectedTemplate?.sector?.id) return { sectorId: selectedTemplate.sector.id };
+    if (selectedWorkCenterId) return { workCenterId: selectedWorkCenterId };
+    if (selectedTemplate?.name) return { templateName: selectedTemplate.name };
+    return {};
+  }, [showingAllEmployees, selectedTemplate?.sector?.id, selectedWorkCenterId, selectedTemplate?.name]);
+
+  const { data: templates = [] } = useExecutionTemplates();
+  const { data: workCenters = [] } = useWorkCenters();
+  const { data: availableResources = [] } = useProductionResources();
+  const { data: availableSectors = [] } = useProductionSectors();
+  const { data: availableWorkSectors = [] } = useWorkSectors();
+  const { data: employeesData, isLoading: isLoadingEmployees } = useRoutineEmployees(employeeFilters);
+  const availableEmployees = employeesData?.employees ?? [];
+  const allSectorRoles = employeesData?.allSectorRoles ?? [];
+
+  const loadingData = !templates.length && !workCenters.length && isLoadingEmployees;
+
+  const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   // New structure: inputResponses tracks each input's value/photos
   const [inputResponses, setInputResponses] = useState<
     Record<string, { value: any; photos?: string[] }>
@@ -2193,247 +2241,82 @@ export default function NewRoutineExecutionForm({
     },
   });
 
-  const fetchMasterData = useCallback(async () => {
-    setLoadingData(true);
-    try {
-      // Build employee URL based on template's sector for initial filtered load
-      const activeTemplate = draftToResume?.template || preselectedTemplate;
-      let employeeUrl = '/api/production/routines/employees';
-      if (activeTemplate?.sector?.id) {
-        employeeUrl = `/api/production/routines/employees?sectorId=${activeTemplate.sector.id}`;
-      } else if (activeTemplate?.name) {
-        employeeUrl = `/api/production/routines/employees?templateName=${encodeURIComponent(activeTemplate.name)}`;
-      }
+  // Inicializar respuestas cuando data está lista (una vez)
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (loadingData || initializedRef.current) return;
+    initializedRef.current = true;
 
-      const [templatesRes, wcRes, shiftsRes, resourcesRes, employeesRes, workSectorsRes, sectorsRes] = await Promise.all([
-        fetch('/api/production/routines/templates?activeOnly=true&limit=100'),
-        fetch('/api/production/work-centers?status=ACTIVE'),
-        fetch('/api/production/shifts?activeOnly=true'),
-        fetch('/api/production/resources?status=ACTIVE'),
-        fetch(employeeUrl),
-        fetch('/api/production/work-sectors?activeOnly=true'),
-        fetch('/api/production/sectors'),
-      ]);
+    const templateToUse = draftToResume?.template || preselectedTemplate;
+    if (templateToUse) {
+      initializeResponses(templateToUse);
 
-      const [templatesData, wcData, shiftsData, resourcesData, employeesData, workSectorsData, sectorsData] = await Promise.all([
-        templatesRes.json(),
-        wcRes.json(),
-        shiftsRes.json(),
-        resourcesRes.json(),
-        employeesRes.json(),
-        workSectorsRes.json(),
-        sectorsRes.json(),
-      ]);
+      // Si estamos resumiendo un draft, hidratar las respuestas guardadas
+      if (draftToResume?.responses && Array.isArray(draftToResume.responses)) {
+        const restoredResponses: Record<string, { value: any; photos?: string[] }> = {};
+        const restoredNotes: Record<string, string> = {};
 
-      if (templatesData.success) setTemplates(templatesData.templates);
-      if (wcData.success) setWorkCenters(wcData.workCenters);
-      if (shiftsData.success) setShifts(shiftsData.shifts);
-      if (resourcesData.success) setAvailableResources(resourcesData.resources);
-      if (employeesData.success) {
-        setAvailableEmployees(employeesData.employees);
-        // Set all sector roles if available from API
-        if (employeesData.allSectorRoles) {
-          setAllSectorRoles(employeesData.allSectorRoles);
-        }
-        console.log('[Initial Employee Load]', {
-          url: employeeUrl,
-          count: employeesData.employees?.length,
-          meta: employeesData.meta,
-          allSectorRoles: employeesData.allSectorRoles,
-          preselectedSectorId: preselectedTemplate?.sector?.id
-        });
-      }
-      console.log('[WorkSectors API Response]', {
-        success: workSectorsData.success,
-        count: workSectorsData.workSectors?.length,
-        error: workSectorsData.error
-      });
-      if (workSectorsData.success) setAvailableWorkSectors(workSectorsData.workSectors);
-      if (sectorsData.success && Array.isArray(sectorsData.sectors)) {
-        setAvailableSectors(sectorsData.sectors.map((s: any) => ({ id: s.id, name: s.name })));
-      }
-
-      // Determinar el template a usar (draft tiene prioridad)
-      const templateToUse = draftToResume?.template || preselectedTemplate;
-
-      if (templateToUse) {
-        setSelectedTemplate(templateToUse);
-        initializeResponses(templateToUse);
-
-        // Si estamos resumiendo un draft, hidratar las respuestas guardadas
-        if (draftToResume?.responses && Array.isArray(draftToResume.responses)) {
-          const restoredResponses: Record<string, { value: any; photos?: string[] }> = {};
-          const restoredNotes: Record<string, string> = {};
-
-          for (const resp of draftToResume.responses) {
-            if (resp.inputs && Array.isArray(resp.inputs)) {
-              for (const inp of resp.inputs) {
-                if (inp.value !== null && inp.value !== undefined && inp.value !== '') {
-                  restoredResponses[inp.inputId] = {
-                    value: inp.value,
-                    photos: inp.photos || [],
-                  };
-                }
+        for (const resp of draftToResume.responses) {
+          if (resp.inputs && Array.isArray(resp.inputs)) {
+            for (const inp of resp.inputs) {
+              if (inp.value !== null && inp.value !== undefined && inp.value !== '') {
+                restoredResponses[inp.inputId] = {
+                  value: inp.value,
+                  photos: inp.photos || [],
+                };
               }
             }
-            if (resp.notes) {
-              restoredNotes[resp.itemId] = resp.notes;
-            }
           }
-
-          // Merge restored responses on top of initial (preserving defaults for empty ones)
-          setInputResponses(prev => ({ ...prev, ...restoredResponses }));
-          setItemNotes(prev => ({ ...prev, ...restoredNotes }));
-          setPreExecutionCompleted(true); // Skip pre-execution for resumed drafts
-          console.log('[Draft Resume] Hydrated responses:', Object.keys(restoredResponses).length, 'inputs,', Object.keys(restoredNotes).length, 'notes');
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching master data:', error);
-      toast.error('Error al cargar datos');
-    } finally {
-      setLoadingData(false);
-    }
-  }, [preselectedTemplate, draftToResume]);
-
-  useEffect(() => {
-    fetchMasterData();
-  }, [fetchMasterData]);
-
-  // Re-fetch employees when template changes — filter by sector
-  const selectedWorkCenterId = form.watch('workCenterId');
-  useEffect(() => {
-    const fetchFilteredEmployees = async () => {
-      try {
-        // Prioritize sectorId from template, fallback to workCenterId, fallback to template name search
-        let url = '/api/production/routines/employees';
-        let filterMethod = 'none';
-
-        if (selectedTemplate?.sector?.id) {
-          url = `/api/production/routines/employees?sectorId=${selectedTemplate.sector.id}`;
-          filterMethod = 'template-sector-id';
-        } else if (selectedWorkCenterId) {
-          url = `/api/production/routines/employees?workCenterId=${selectedWorkCenterId}`;
-          filterMethod = 'workCenter-id';
-        } else if (selectedTemplate?.name) {
-          // Fallback: use template name to search employees by matching workSector name
-          url = `/api/production/routines/employees?templateName=${encodeURIComponent(selectedTemplate.name)}`;
-          filterMethod = 'template-name-fallback';
-        }
-
-        const res = await fetch(url);
-        const data = await res.json();
-        console.log('[Employee Filter Debug]', {
-          url,
-          filterMethod,
-          sectorId: selectedTemplate?.sector?.id,
-          templateName: selectedTemplate?.name,
-          workCenterId: selectedWorkCenterId,
-          meta: data.meta,
-          employeesCount: data.employees?.length,
-          allSectorRoles: data.allSectorRoles
-        });
-        if (data.success) {
-          setAvailableEmployees(data.employees);
-          // Update sector roles
-          if (data.allSectorRoles) {
-            setAllSectorRoles(data.allSectorRoles);
+          if (resp.notes) {
+            restoredNotes[resp.itemId] = resp.notes;
           }
         }
-      } catch (error) {
-        console.error('Error fetching filtered employees:', error);
-      }
-    };
-    // Only re-fetch after initial load is done
-    if (!loadingData && selectedTemplate) {
-      fetchFilteredEmployees();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTemplate?.sector?.id, selectedTemplate?.name, selectedWorkCenterId, loadingData]);
 
-  // Handle toggle to show all employees vs filtered
-  const handleShowAllEmployeesToggle = useCallback(async () => {
-    if (showingAllEmployees) {
-      // Switch back to filtered - re-fetch with sector filter
-      setShowingAllEmployees(false);
-      if (allEmployeesCache.length > 0 && selectedTemplate?.sector?.id) {
-        // Use cached data but filter locally for quick response
-        // Then trigger a re-fetch for accurate data
-        let url = '/api/production/routines/employees';
-        if (selectedTemplate?.sector?.id) {
-          url = `/api/production/routines/employees?sectorId=${selectedTemplate.sector.id}`;
-        } else if (selectedTemplate?.name) {
-          url = `/api/production/routines/employees?templateName=${encodeURIComponent(selectedTemplate.name)}`;
-        }
-        try {
-          const res = await fetch(url);
-          const data = await res.json();
-          if (data.success) setAvailableEmployees(data.employees);
-        } catch (error) {
-          console.error('Error re-fetching filtered employees:', error);
-        }
-      }
-    } else {
-      // Switch to show all employees
-      setShowingAllEmployees(true);
-      if (allEmployeesCache.length > 0) {
-        // Use cached data
-        setAvailableEmployees(allEmployeesCache);
-      } else {
-        // Fetch all employees and cache
-        try {
-          const res = await fetch('/api/production/routines/employees');
-          const data = await res.json();
-          if (data.success) {
-            setAllEmployeesCache(data.employees);
-            setAvailableEmployees(data.employees);
-          }
-        } catch (error) {
-          console.error('Error fetching all employees:', error);
-        }
+        setInputResponses(prev => ({ ...prev, ...restoredResponses }));
+        setItemNotes(prev => ({ ...prev, ...restoredNotes }));
+        setPreExecutionCompleted(true);
       }
     }
-  }, [showingAllEmployees, allEmployeesCache, selectedTemplate?.sector?.id, selectedTemplate?.name]);
+    // initializedRef guard ensures this effect body only executes once.
+    // initializeResponses is a component function (re-created each render) but the
+    // ref guard prevents duplicate execution, so including it in deps is safe.
+  }, [loadingData, draftToResume, preselectedTemplate, initializeResponses]);
+
+  // Toggle mostrar todos los empleados vs filtrados — TanStack Query maneja el cache
+  const handleShowAllEmployeesToggle = () => {
+    setShowingAllEmployees(prev => !prev);
+  };
 
   // Filter work sectors by the selected template's sector OR workCenter's sector
   const filteredWorkSectors = useMemo(() => {
-    let filtered: WorkSector[] = [];
-    let filterMethod = 'none';
-
     // First, try to use the template's sector directly
     if (selectedTemplate?.sector?.id) {
       const sectorId = selectedTemplate.sector.id;
       const sectorName = selectedTemplate.sector.name;
-      // Filter by source_sector_id OR by name containing the sector name
-      filtered = availableWorkSectors.filter(ws =>
+      const filtered = availableWorkSectors.filter(ws =>
         ws.sector?.id === sectorId ||
         (sectorName && ws.name?.toLowerCase().includes(sectorName.toLowerCase()))
       );
-      filterMethod = `template-sector (id=${sectorId}, name=${sectorName})`;
-      if (filtered.length > 0) {
-        console.log('[WorkSector Filter Debug]', { filterMethod, found: filtered.length, total: availableWorkSectors.length });
-        return filtered;
-      }
+      if (filtered.length > 0) return filtered;
     }
     // Fallback: try using workCenter's machine's sector
     if (selectedWorkCenterId) {
       const wc = workCenters.find(w => w.id === selectedWorkCenterId);
       const sectorId = wc?.machine?.sectorId;
       if (sectorId) {
-        filtered = availableWorkSectors.filter(ws => ws.sector?.id === sectorId);
-        filterMethod = `workCenter-sector (sectorId=${sectorId})`;
-        if (filtered.length > 0) {
-          console.log('[WorkSector Filter Debug]', { filterMethod, found: filtered.length, total: availableWorkSectors.length });
-          return filtered;
-        }
+        const filtered = availableWorkSectors.filter(ws => ws.sector?.id === sectorId);
+        if (filtered.length > 0) return filtered;
       }
     }
-    console.log('[WorkSector Filter Debug]', { filterMethod: 'all (no filter applied)', total: availableWorkSectors.length });
     return availableWorkSectors;
   }, [selectedTemplate?.sector?.id, selectedTemplate?.sector?.name, selectedWorkCenterId, workCenters, availableWorkSectors]);
 
   // Auto-save draft function
-  const saveDraft = useCallback(async (responsesToSave: Record<string, { value: any; photos?: string[] }>, notesToSave: Record<string, string>) => {
+  const saveDraft = useCallback(async (
+    responsesToSave: Record<string, { value: any; photos?: string[] }>,
+    notesToSave: Record<string, string>,
+    notifyIncomplete?: boolean,
+  ) => {
     if (!selectedTemplate) return;
 
     setIsSaving(true);
@@ -2463,6 +2346,7 @@ export default function NewRoutineExecutionForm({
           draftId,
           templateId: selectedTemplate.id,
           responses: responseArray,
+          notifyIncomplete: notifyIncomplete || false,
         }),
       });
 
@@ -2479,6 +2363,30 @@ export default function NewRoutineExecutionForm({
       setIsSaving(false);
     }
   }, [selectedTemplate, draftId]);
+
+  // Cancelar con notificación de incompleto si hay borrador activo
+  const handleCancel = useCallback(async () => {
+    if (draftId) {
+      const totalInputs = visibleFlatItems.reduce(
+        (acc, item) => acc + normalizeItemInputs(item).length, 0
+      );
+      const answeredInputs = visibleFlatItems.reduce((acc, item) => {
+        return acc + normalizeItemInputs(item).filter(inp => {
+          const r = inputResponses[inp.id];
+          return r?.value !== null && r?.value !== undefined && r?.value !== '';
+        }).length;
+      }, 0);
+
+      if (answeredInputs < totalInputs) {
+        try {
+          await saveDraft(inputResponses, itemNotes, true);
+        } catch {
+          // Si falla el guardado, continuar con el cancel igual
+        }
+      }
+    }
+    onCancel();
+  }, [draftId, visibleFlatItems, inputResponses, itemNotes, saveDraft, onCancel]);
 
   // Debounced auto-save
   const triggerAutoSave = useCallback((responses: Record<string, { value: any; photos?: string[] }>, notes: Record<string, string>) => {
@@ -2932,28 +2840,29 @@ export default function NewRoutineExecutionForm({
   const sections = selectedTemplate?.sections || [];
   const hasSections = sections.length > 0;
 
-  // Filter items: exclude disabled and filter by active section
-  const activeItems = useMemo(() => {
-    // First filter out disabled items
-    const enabledItems = flatItems.filter(item => !item.disabled);
+  // Ítems habilitados y con condición visible
+  const visibleFlatItems = useMemo(() => {
+    return flatItems.filter(item => !item.disabled && isItemVisible(item, flatItems, inputResponses));
+  }, [flatItems, inputResponses]);
 
-    if (!hasSections) return enabledItems;
+  // Filter items: exclude disabled, conditional hidden, and filter by active section
+  const activeItems = useMemo(() => {
+    if (!hasSections) return visibleFlatItems;
 
     // If we have sections but no section is selected, show items without section
     if (activeSectionId === null) {
-      return enabledItems.filter(item => !item.sectionId);
+      return visibleFlatItems.filter(item => !item.sectionId);
     }
 
     // Filter by active section
-    return enabledItems.filter(item => item.sectionId === activeSectionId);
-  }, [flatItems, hasSections, activeSectionId]);
+    return visibleFlatItems.filter(item => item.sectionId === activeSectionId);
+  }, [visibleFlatItems, hasSections, activeSectionId]);
 
   // Count items per section (for badges)
   const sectionCounts = useMemo(() => {
     const counts: Record<string, number> = { '_none': 0 };
-    const enabledItems = flatItems.filter(item => !item.disabled);
 
-    enabledItems.forEach(item => {
+    visibleFlatItems.forEach(item => {
       if (item.sectionId) {
         counts[item.sectionId] = (counts[item.sectionId] || 0) + 1;
       } else {
@@ -2961,28 +2870,27 @@ export default function NewRoutineExecutionForm({
       }
     });
     return counts;
-  }, [flatItems]);
+  }, [visibleFlatItems]);
 
   // Build slides array: [General (if has items), ...sections]
   // IMPORTANT: This must be defined BEFORE useEffects and functions that use it
   const slides = useMemo(() => {
     const result: Array<{ id: string | null; name: string; items: RoutineItem[] }> = [];
-    const enabledItems = flatItems.filter(item => !item.disabled);
 
     // Add "General" slide if there are items without section
-    const generalItems = enabledItems.filter(item => !item.sectionId);
+    const generalItems = visibleFlatItems.filter(item => !item.sectionId);
     if (generalItems.length > 0) {
       result.push({ id: null, name: 'General', items: generalItems });
     }
 
     // Add section slides
     sections.forEach(section => {
-      const sectionItems = enabledItems.filter(item => item.sectionId === section.id);
+      const sectionItems = visibleFlatItems.filter(item => item.sectionId === section.id);
       result.push({ id: section.id, name: section.name, items: sectionItems });
     });
 
     return result;
-  }, [flatItems, sections]);
+  }, [visibleFlatItems, sections]);
 
   // Current slide index
   const currentSlideIndex = useMemo(() => {
@@ -3056,7 +2964,7 @@ export default function NewRoutineExecutionForm({
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -3101,14 +3009,14 @@ export default function NewRoutineExecutionForm({
         {selectedTemplate && selectedTemplate.preExecutionInputs && selectedTemplate.preExecutionInputs.length > 0 && (
           <Card className={cn(
             "border-2",
-            preExecutionCompleted ? "border-green-500 bg-green-50/50 dark:bg-green-900/10" : "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10"
+            preExecutionCompleted ? "border-success bg-success-muted/50" : "border-info bg-info-muted/50"
           )}>
             <CardHeader className="pb-2 px-3 pt-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-blue-600" />
+                <Settings2 className="h-4 w-4 text-info-muted-foreground" />
                 Configuración Pre-Ejecución
                 {preExecutionCompleted && (
-                  <Badge className="bg-green-600 ml-2 text-xs">Completado</Badge>
+                  <Badge className="bg-success ml-2 text-xs">Completado</Badge>
                 )}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
@@ -3182,7 +3090,7 @@ export default function NewRoutineExecutionForm({
                     <CardHeader
                       className={cn(
                         'py-2 px-3 cursor-pointer transition-colors',
-                        isComplete ? 'bg-green-50 dark:bg-green-900/20' : 'bg-muted/30'
+                        isComplete ? 'bg-success-muted' : 'bg-muted/30'
                       )}
                     >
                       <CollapsibleTrigger asChild>
@@ -3209,7 +3117,7 @@ export default function NewRoutineExecutionForm({
 
                           <Badge
                             variant={isComplete ? 'default' : 'secondary'}
-                            className={cn("text-xs", isComplete ? 'bg-green-600' : '')}
+                            className={cn("text-xs", isComplete ? 'bg-success' : '')}
                           >
                             {progress.completed}/{progress.total}
                           </Badge>
@@ -3221,10 +3129,10 @@ export default function NewRoutineExecutionForm({
                       <CardContent className="pt-3 space-y-3 px-3 pb-3">
                         {/* Repeatable group indicator */}
                         {group.isRepeatable && (
-                          <div className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200">
+                          <div className="flex items-center justify-between p-2 bg-warning-muted rounded-lg border border-warning-muted">
                             <div className="flex items-center gap-2">
-                              <RefreshCw className="h-3.5 w-3.5 text-amber-600" />
-                              <span className="text-xs text-amber-700 dark:text-amber-400">
+                              <RefreshCw className="h-3.5 w-3.5 text-warning-muted-foreground" />
+                              <span className="text-xs text-warning-muted-foreground">
                                 Grupo repetible - {repeatableInstances[group.id]?.length || 0} instancias
                               </span>
                             </div>
@@ -3243,9 +3151,9 @@ export default function NewRoutineExecutionForm({
 
                         {/* Cadence indicator */}
                         {group.cadence && (
-                          <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                            <RefreshCw className="h-3.5 w-3.5 text-blue-600" />
-                            <span className="text-xs text-blue-700 dark:text-blue-400">
+                          <div className="flex items-center gap-2 p-2 bg-info-muted rounded-lg border border-info-muted">
+                            <RefreshCw className="h-3.5 w-3.5 text-info-muted-foreground" />
+                            <span className="text-xs text-info-muted-foreground">
                               Se ejecuta cada {group.cadence.every} recursos
                             </span>
                           </div>
@@ -3253,9 +3161,9 @@ export default function NewRoutineExecutionForm({
 
                         {/* LinkedSequence indicator */}
                         {group.linkedSequenceId && (
-                          <div className="flex items-center gap-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200">
-                            <Layers className="h-3.5 w-3.5 text-purple-600" />
-                            <span className="text-xs text-purple-700 dark:text-purple-400">
+                          <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
+                            <Layers className="h-3.5 w-3.5 text-primary" />
+                            <span className="text-xs text-primary">
                               Se repite por cada recurso en la secuencia pre-ejecución
                             </span>
                           </div>
@@ -3287,16 +3195,16 @@ export default function NewRoutineExecutionForm({
 
                         {/* Repeatable instances */}
                         {group.isRepeatable && repeatableInstances[group.id]?.map((instanceId, instIdx) => (
-                          <div key={`instance-${instanceId}`} className="border-2 border-amber-200 rounded-lg p-3 space-y-3 bg-amber-50/30">
+                          <div key={`instance-${instanceId}`} className="border-2 border-warning-muted rounded-lg p-3 space-y-3 bg-warning-muted/30">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-amber-700">
+                              <span className="text-xs font-medium text-warning-muted-foreground">
                                 {group.repeatableConfig?.instanceLabel || 'Instancia'} #{instIdx + 1}
                               </span>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                                className="text-destructive hover:text-destructive h-7 w-7 p-0"
                                 onClick={() => removeRepeatableInstance(group.id, instanceId)}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -3350,7 +3258,7 @@ export default function NewRoutineExecutionForm({
               <div className="flex items-center gap-1.5">
                 <CheckSquare className="h-4 w-4 text-primary" />
                 <span className="font-medium text-xs">
-                  {flatItems.filter(i => !i.disabled).length} preguntas
+                  {visibleFlatItems.length} preguntas
                 </span>
                 {/* Auto-save indicator */}
                 {isSaving && (
@@ -3360,14 +3268,19 @@ export default function NewRoutineExecutionForm({
                   </span>
                 )}
                 {!isSaving && lastSaved && (
-                  <span className="text-xs text-green-600 flex items-center gap-1">
+                  <span className="text-xs text-success flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />
                     Guardado
                   </span>
                 )}
               </div>
               <Badge variant="outline" className="text-xs">
-                {Object.keys(inputResponses).filter(k => inputResponses[k]?.value !== null && inputResponses[k]?.value !== '').length} / {flatItems.filter(i => !i.disabled).length}
+                {visibleFlatItems.reduce((acc, item) => {
+                  return acc + normalizeItemInputs(item).filter(inp => {
+                    const r = inputResponses[inp.id];
+                    return r?.value !== null && r?.value !== undefined && r?.value !== '';
+                  }).length;
+                }, 0)} / {visibleFlatItems.reduce((acc, item) => acc + normalizeItemInputs(item).length, 0)}
               </Badge>
             </div>
 
@@ -3453,7 +3366,7 @@ export default function NewRoutineExecutionForm({
                   {slides.map((slide, slideIdx) => (
                     <div
                       key={slide.id ?? '_general'}
-                      className="w-full h-full flex-shrink-0 px-1 overflow-y-auto"
+                      className="w-full h-full flex-shrink-0 overflow-y-auto"
                       style={{ minWidth: '100%' }}
                     >
                       <div className="space-y-2">
@@ -3550,7 +3463,7 @@ export default function NewRoutineExecutionForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onCancel}
+            onClick={handleCancel}
             className="flex-1 sm:flex-none h-9 text-sm order-2 sm:order-1"
           >
             Cancelar

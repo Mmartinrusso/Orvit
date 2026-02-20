@@ -167,7 +167,7 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
 
         <DialogBody>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
             <TabsTrigger value="history">Historial</TabsTrigger>
             <TabsTrigger value="trends">Tendencias</TabsTrigger>
@@ -181,7 +181,7 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
                   <CardTitle className="text-sm font-medium">Sueldo Actual</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-success">
                     {formatCurrency(employee.totalCost)}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -195,7 +195,7 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
                   <CardTitle className="text-sm font-medium">Aumentos Totales</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-info-muted-foreground">
                     {stats ? stats.totalIncreases : 0}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -257,7 +257,7 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
                 {loading ? (
                   <div className="text-center py-8">Cargando historial...</div>
                 ) : error ? (
-                  <div className="text-center py-8 text-red-600">Error: {error}</div>
+                  <div className="text-center py-8 text-destructive">Error: {error}</div>
                 ) : salaryHistory.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No hay historial de sueldos registrado
@@ -288,17 +288,17 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-green-600">
+                              <p className="text-lg font-bold text-success">
                                 {formatCurrency(entry.totalCost)}
                               </p>
                               {increase > 0 && (
-                                <div className="flex items-center gap-1 text-green-600 text-sm">
+                                <div className="flex items-center gap-1 text-success text-sm">
                                   <TrendingUp className="h-3 w-3" />
                                   <span>+{formatCurrency(increase)} ({percentageIncrease.toFixed(1)}%)</span>
                                 </div>
                               )}
                               {increase < 0 && (
-                                <div className="flex items-center gap-1 text-red-600 text-sm">
+                                <div className="flex items-center gap-1 text-destructive text-sm">
                                   <TrendingDown className="h-3 w-3" />
                                   <span>{formatCurrency(increase)} ({percentageIncrease.toFixed(1)}%)</span>
                                 </div>

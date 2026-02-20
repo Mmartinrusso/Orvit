@@ -6,6 +6,8 @@
  */
 
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,17 +38,7 @@ interface LoadsMetricsProps {
   };
 }
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 export default function LoadsMetrics({ loads, className, userColors = DEFAULT_COLORS }: LoadsMetricsProps) {
   const metrics = useMemo(() => calculateLoadMetrics(loads), [loads]);
@@ -83,7 +75,7 @@ export default function LoadsMetrics({ loads, className, userColors = DEFAULT_CO
   ];
 
   return (
-    <div className={`space-y-4 ${className || ''}`}>
+    <div className={cn('space-y-4', className)}>
       {/* KPIs principales */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpis.map((kpi, index) => (

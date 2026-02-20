@@ -2,7 +2,7 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +47,7 @@ import { Truck, Plus, Edit, Trash2, Check, ChevronsUpDown, Eye, Search, LayoutGr
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface TruckData {
   id: number;
@@ -76,6 +77,8 @@ interface ClientData {
 }
 
 export default function TrucksManager({ companyId }: TrucksManagerProps) {
+  const confirm = useConfirm();
+
   // ✨ OPTIMIZACIÓN: Usar catálogos consolidados
   const { data: catalogsData } = useAdminCatalogs(companyId);
   
@@ -225,7 +228,13 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Está seguro de que desea eliminar este camión?')) {
+    const ok = await confirm({
+      title: 'Eliminar camión',
+      description: '¿Está seguro de que desea eliminar este camión?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) {
       return;
     }
 
@@ -292,13 +301,13 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'CHASIS':
-        return 'bg-blue-500';
+        return 'bg-info';
       case 'EQUIPO':
-        return 'bg-green-500';
+        return 'bg-success';
       case 'SEMI':
-        return 'bg-orange-500';
+        return 'bg-warning';
       default:
-        return 'bg-gray-500';
+        return 'bg-muted-foreground';
     }
   };
 
@@ -737,7 +746,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
                       <p className="text-xs text-muted-foreground mt-0.5">ID Interno: {truck.internalId}</p>
                     )}
                   </div>
-                  <Badge className={`${getTypeColor(truck.type)} text-white`}>
+                  <Badge className={cn(getTypeColor(truck.type), 'text-white')}>
                     {getTypeLabel(truck.type)}
                   </Badge>
                 </div>
@@ -826,7 +835,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
                     <td className="px-4 py-3 text-sm font-medium">{truck.id}</td>
                     <td className="px-4 py-3 text-sm font-medium">{truck.name}</td>
                     <td className="px-4 py-3 text-sm">
-                      <Badge className={`${getTypeColor(truck.type)} text-white`}>
+                      <Badge className={cn(getTypeColor(truck.type), 'text-white')}>
                         {getTypeLabel(truck.type)}
                       </Badge>
                     </td>
@@ -909,7 +918,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
                         Tipo
                       </Label>
                       <div>
-                        <Badge className={`${getTypeColor(viewingTruck.type)} text-sm px-3 py-1`}>
+                        <Badge className={cn(getTypeColor(viewingTruck.type), 'text-sm px-3 py-1')}>
                     {getTypeLabel(viewingTruck.type)}
                   </Badge>
                 </div>
@@ -940,7 +949,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
               <Card className="border-2">
                 <CardHeader className="bg-muted/50 pb-3">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-info"></div>
                     Dimensiones
                   </CardTitle>
                 </CardHeader>
@@ -984,7 +993,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
                 <Card className="border-2">
                   <CardHeader className="bg-muted/50 pb-3">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500"></div>
+                      <div className="h-1.5 w-1.5 rounded-full bg-warning"></div>
                       Peso
                     </CardTitle>
                   </CardHeader>
@@ -1017,7 +1026,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
                 <Card className="border-2">
                   <CardHeader className="bg-muted/50 pb-3">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500"></div>
+                      <div className="h-1.5 w-1.5 rounded-full bg-warning"></div>
                       Peso
                     </CardTitle>
                   </CardHeader>
@@ -1037,7 +1046,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
                 <Card className="border-2">
                   <CardHeader className="bg-muted/50 pb-3">
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                      <div className="h-1.5 w-1.5 rounded-full bg-success"></div>
                       Descripción
                     </CardTitle>
                   </CardHeader>

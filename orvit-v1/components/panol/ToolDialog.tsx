@@ -15,10 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Package, 
-  Edit, 
-  Save, 
+import {
+  Package,
+  Edit,
+  Save,
   X,
   Calendar,
   DollarSign,
@@ -26,7 +26,8 @@ import {
   FileText,
   Building,
   Hash,
-  Tag
+  Tag,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -194,7 +195,6 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
   const fetchComponentUsage = useCallback(async () => {
     if (!currentCompany || !tool?.id || formData.itemType !== 'SUPPLY') return;
     
-    // console.log(`🔍 Buscando componentes que usan el repuesto ${tool.id} en empresa ${currentCompany.id}`) // Log reducido;
     setIsLoadingComponents(true);
     try {
       const response = await fetch(`/api/tools/${tool.id}/component-usage?companyId=${currentCompany.id}`);
@@ -277,15 +277,15 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'AVAILABLE':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-muted text-success';
       case 'IN_USE':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'MAINTENANCE':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'DAMAGED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -314,7 +314,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
-            <Package className="h-6 w-6 text-blue-600" />
+            <Package className="h-6 w-6 text-info-muted-foreground" />
             {title}
           </DialogTitle>
         </DialogHeader>
@@ -324,7 +324,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
           {/* Información Básica */}
           <div className="space-y-4">
             <div className="bg-card p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-info-muted-foreground mb-3 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Información Básica
               </h3>
@@ -387,7 +387,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
                   <Label htmlFor="itemType">Tipo de Producto *</Label>
                   {isReadonly ? (
                     <div className="mt-1">
-                      <Badge className={formData.itemType === 'TOOL' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}>
+                      <Badge className={formData.itemType === 'TOOL' ? 'bg-info-muted text-info-muted-foreground' : 'bg-purple-100 text-purple-800'}>
                         {formData.itemType === 'TOOL' ? 'Herramienta' : 'Repuesto/Material'}
                       </Badge>
                     </div>
@@ -421,7 +421,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
           
                             <div>
                               <div className="font-medium">Herramienta</div>
-                              <div className="text-xs text-gray-500">Se presta y devuelve</div>
+                              <div className="text-xs text-muted-foreground">Se presta y devuelve</div>
                             </div>
                           </div>
                         </SelectItem>
@@ -430,7 +430,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
           
                             <div>
                               <div className="font-medium">Repuesto/Material</div>
-                              <div className="text-xs text-gray-500">Se consume en máquinas</div>
+                              <div className="text-xs text-muted-foreground">Se consume en máquinas</div>
                             </div>
                           </div>
                         </SelectItem>
@@ -464,7 +464,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
 
             {/* Información del Fabricante */}
             <div className="bg-card p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-success mb-3 flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 Fabricante
               </h3>
@@ -599,7 +599,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
 
             {/* Información Comercial */}
             <div className="bg-card p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-warning-muted-foreground mb-3 flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
                 Información Comercial
               </h3>
@@ -657,7 +657,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
 
             {/* Notas */}
             <div className="bg-card p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Notas Adicionales
               </h3>
@@ -676,24 +676,24 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
         {/* Componentes y Máquinas que usan este repuesto */}
         {formData.itemType === 'SUPPLY' && (
           <div className="bg-card p-6 rounded-lg border shadow-sm mt-6">
-            <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-4 flex items-center gap-2 text-lg">
+            <h3 className="font-semibold text-warning-muted-foreground mb-4 flex items-center gap-2 text-lg">
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
               </svg>
               Componentes que utilizan este repuesto
             </h3>
             
-            <div className="mb-4 p-3 bg-orange-100 dark:bg-orange-800/30 rounded text-sm text-orange-800 dark:text-orange-200">
+            <div className="mb-4 p-3 bg-warning-muted rounded text-sm text-warning-muted-foreground">
                               Aquí se muestran los componentes de máquinas que requieren este repuesto para mantenimiento o reemplazo
             </div>
 
             {isLoadingComponents ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-                <p className="text-gray-500">Cargando componentes...</p>
+                <Loader2 className="h-8 w-8 animate-spin text-warning-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Cargando componentes...</p>
               </div>
             ) : componentUsage.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-8 text-muted-foreground">
 
                 <p className="mt-2 text-lg font-medium">Este repuesto aún no está vinculado a ningún componente</p>
                 <p className="text-sm mt-1">Los componentes que requieren este repuesto aparecerán aquí automáticamente</p>
@@ -705,15 +705,15 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
               <div className="space-y-4">
                 {/* Estadísticas rápidas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="text-2xl font-bold text-blue-600">{componentUsage.length}</div>
-                    <div className="text-sm text-blue-700 dark:text-blue-300">Máquinas afectadas</div>
+                  <div className="bg-info-muted p-4 rounded-lg border border-info-muted">
+                    <div className="text-2xl font-bold text-info-muted-foreground">{componentUsage.length}</div>
+                    <div className="text-sm text-info-muted-foreground">Máquinas afectadas</div>
                   </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="bg-success-muted p-4 rounded-lg border border-success-muted">
+                    <div className="text-2xl font-bold text-success">
                       {componentUsage.reduce((total, usage) => total + usage.components.length, 0)}
                     </div>
-                    <div className="text-sm text-green-700 dark:text-green-300">Componentes totales</div>
+                    <div className="text-sm text-success">Componentes totales</div>
                   </div>
                   <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
                     <div className="text-2xl font-bold text-purple-600">
@@ -728,30 +728,30 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
                 {/* Lista de máquinas y sus componentes */}
                 <div className="space-y-4">
                   {componentUsage.map((usage, index) => (
-                    <div key={usage.machine.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div key={usage.machine.id} className="bg-background rounded-lg border border-border overflow-hidden">
                       {/* Header de la máquina */}
-                      <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="bg-background p-4 border-b border-border">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">
+                            <div className="w-10 h-10 bg-info rounded-lg flex items-center justify-center text-white font-bold">
                               🏭
                             </div>
                             <div>
-                              <h4 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                              <h4 className="font-semibold text-lg text-foreground">
                                 {usage.machine.name}
                               </h4>
                               {usage.machine.nickname && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                <p className="text-sm text-muted-foreground">
                                   &quot;{usage.machine.nickname}&quot;
                                 </p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-blue-600">
+                            <div className="text-2xl font-bold text-info-muted-foreground">
                               {usage.components.length}
                             </div>
-                            <div className="text-xs text-gray-500">componentes</div>
+                            <div className="text-xs text-muted-foreground">componentes</div>
                           </div>
                         </div>
                       </div>
@@ -760,17 +760,17 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
                       <div className="p-4">
                         <div className="space-y-3">
                           {usage.components.map((component: any) => (
-                            <div key={component.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
+                            <div key={component.id} className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
                               <div className="flex items-center gap-3 flex-1">
-                                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                <div className="w-8 h-8 bg-warning-muted rounded-lg flex items-center justify-center">
                   
                                 </div>
                                 <div className="flex-1">
-                                  <h5 className="font-medium text-gray-900 dark:text-gray-100">
+                                  <h5 className="font-medium text-foreground">
                                     {component.name}
                                   </h5>
                                   {component.technicalInfo && (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                                    <p className="text-sm text-muted-foreground line-clamp-2">
                                       {typeof component.technicalInfo === 'string'
                                         ? component.technicalInfo
                                         : JSON.stringify(component.technicalInfo)}
@@ -783,7 +783,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
                                   <div className="text-lg font-semibold text-purple-600">
                                     {component.quantityNeeded || 1}
                                   </div>
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-xs text-muted-foreground">
                                     {component.quantityNeeded === 1 ? 'unidad' : 'unidades'}
                                   </div>
                                 </div>
@@ -791,7 +791,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
                                   variant="outline"
                                   size="sm"
                                   onClick={() => window.open(`/maquinas/${usage.machine.id}`, '_blank')}
-                                  className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                                  className="text-info-muted-foreground hover:text-info-muted-foreground border-info-muted hover:border-info-muted"
                                 >
                                   <span className="mr-1">🔗</span>
                                   Ver en máquina
@@ -820,7 +820,7 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
             <Button size="sm" onClick={handleSave} disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Guardando...
                 </>
               ) : (

@@ -108,47 +108,47 @@ export default function MaquinasPage() {
   const getButtonClasses = (variant: 'primary' | 'outline' | 'secondary' = 'primary') => {
     switch (theme) {
       case 'light':
-        return variant === 'primary' ? 'bg-black hover:bg-gray-800 text-white' : 
-               variant === 'outline' ? 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700' :
-               'bg-gray-100 hover:bg-gray-200 text-gray-900';
+        return variant === 'primary' ? 'bg-black hover:bg-muted-foreground text-white' : 
+               variant === 'outline' ? 'border border-border bg-background hover:bg-muted text-foreground' :
+               'bg-muted hover:bg-muted text-foreground';
       case 'dark':
-        return variant === 'primary' ? 'bg-white hover:bg-gray-200 text-black' : 
-               variant === 'outline' ? 'border border-gray-600 bg-zinc-800 hover:bg-zinc-700 text-white' :
+        return variant === 'primary' ? 'bg-background hover:bg-muted text-black' : 
+               variant === 'outline' ? 'border border-border bg-zinc-800 hover:bg-zinc-700 text-white' :
                'bg-zinc-700 hover:bg-zinc-600 text-white';
       case 'metal':
         return variant === 'primary' ? 'bg-[#58717D] hover:bg-[#4A6068] text-[#F4FEFE]' : 
                variant === 'outline' ? 'border border-[#3A4F5A] bg-[#1E3A46] hover:bg-[#182B31] text-[#F4FEFE]' :
                'bg-[#58717D] hover:bg-[#4A6068] text-[#F4FEFE]';
       default:
-        return variant === 'primary' ? 'bg-black hover:bg-gray-800 text-white' : 
-               variant === 'outline' ? 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700' :
-               'bg-gray-100 hover:bg-gray-200 text-gray-900';
+        return variant === 'primary' ? 'bg-black hover:bg-muted-foreground text-white' : 
+               variant === 'outline' ? 'border border-border bg-background hover:bg-muted text-foreground' :
+               'bg-muted hover:bg-muted text-foreground';
     }
   };
 
   const getInputClasses = () => {
     switch (theme) {
       case 'light':
-        return 'bg-white border-gray-300 text-gray-900 placeholder-gray-500';
+        return 'bg-background border-border text-foreground placeholder-gray-500';
       case 'dark':
-        return 'bg-zinc-800 border-gray-600 text-white placeholder-gray-400';
+        return 'bg-zinc-800 border-border text-white placeholder-gray-400';
       case 'metal':
         return 'bg-[#1E3A46] border-[#3A4F5A] text-[#F4FEFE] placeholder-[#B4C3CC]';
       default:
-        return 'bg-white border-gray-300 text-gray-900 placeholder-gray-500';
+        return 'bg-background border-border text-foreground placeholder-gray-500';
     }
   };
 
   const getSelectClasses = () => {
     switch (theme) {
       case 'light':
-        return 'bg-white border-gray-300 text-gray-900';
+        return 'bg-background border-border text-foreground';
       case 'dark':
-        return 'bg-zinc-800 border-gray-600 text-white';
+        return 'bg-zinc-800 border-border text-white';
       case 'metal':
         return 'bg-[#1E3A46] border-[#3A4F5A] text-[#F4FEFE]';
       default:
-        return 'bg-white border-gray-300 text-gray-900';
+        return 'bg-background border-border text-foreground';
     }
   };
 
@@ -1622,7 +1622,7 @@ export default function MaquinasPage() {
                         <div
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                             advancedFilters.hasWarrantyExpiring
-                              ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
+                              ? 'bg-warning-muted border-warning-muted'
                               : 'hover:bg-muted/50'
                           }`}
                           onClick={() => setAdvancedFilters(prev => ({
@@ -1631,9 +1631,9 @@ export default function MaquinasPage() {
                           }))}
                         >
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                            advancedFilters.hasWarrantyExpiring ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-muted'
+                            advancedFilters.hasWarrantyExpiring ? 'bg-warning-muted' : 'bg-muted'
                           }`}>
-                            <Shield className={`h-4 w-4 ${advancedFilters.hasWarrantyExpiring ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                            <Shield className={`h-4 w-4 ${advancedFilters.hasWarrantyExpiring ? 'text-warning-muted-foreground' : 'text-muted-foreground'}`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">Garantía por vencer</p>
@@ -1649,7 +1649,7 @@ export default function MaquinasPage() {
                         <div
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                             advancedFilters.hasOpenFailures
-                              ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                              ? 'bg-destructive/10 border-destructive/30'
                               : 'hover:bg-muted/50'
                           }`}
                           onClick={() => setAdvancedFilters(prev => ({
@@ -1658,9 +1658,9 @@ export default function MaquinasPage() {
                           }))}
                         >
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                            advancedFilters.hasOpenFailures ? 'bg-red-100 dark:bg-red-900/50' : 'bg-muted'
+                            advancedFilters.hasOpenFailures ? 'bg-destructive/10' : 'bg-muted'
                           }`}>
-                            <AlertTriangle className={`h-4 w-4 ${advancedFilters.hasOpenFailures ? 'text-red-600' : 'text-muted-foreground'}`} />
+                            <AlertTriangle className={`h-4 w-4 ${advancedFilters.hasOpenFailures ? 'text-destructive' : 'text-muted-foreground'}`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">Con fallas abiertas</p>
@@ -1676,7 +1676,7 @@ export default function MaquinasPage() {
                         <div
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                             advancedFilters.hasPendingWorkOrders
-                              ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800'
+                              ? 'bg-info-muted border-info-muted'
                               : 'hover:bg-muted/50'
                           }`}
                           onClick={() => setAdvancedFilters(prev => ({
@@ -1685,9 +1685,9 @@ export default function MaquinasPage() {
                           }))}
                         >
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                            advancedFilters.hasPendingWorkOrders ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-muted'
+                            advancedFilters.hasPendingWorkOrders ? 'bg-info-muted' : 'bg-muted'
                           }`}>
-                            <Wrench className={`h-4 w-4 ${advancedFilters.hasPendingWorkOrders ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                            <Wrench className={`h-4 w-4 ${advancedFilters.hasPendingWorkOrders ? 'text-info-muted-foreground' : 'text-muted-foreground'}`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">Con OTs pendientes</p>

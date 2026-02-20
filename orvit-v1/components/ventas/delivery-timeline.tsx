@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,15 +27,15 @@ type DeliveryStatus =
   | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<DeliveryStatus, { label: string; color: string; icon: React.ElementType }> = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700', icon: Clock },
-  EN_PREPARACION: { label: 'En Preparación', color: 'bg-yellow-100 text-yellow-700', icon: Package },
-  LISTA_PARA_DESPACHO: { label: 'Lista para Despacho', color: 'bg-blue-100 text-blue-700', icon: CheckCircle2 },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-muted text-foreground', icon: Clock },
+  EN_PREPARACION: { label: 'En Preparación', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package },
+  LISTA_PARA_DESPACHO: { label: 'Lista para Despacho', color: 'bg-info-muted text-info-muted-foreground', icon: CheckCircle2 },
   EN_TRANSITO: { label: 'En Tránsito', color: 'bg-purple-100 text-purple-700', icon: Truck },
   RETIRADA: { label: 'Retirada', color: 'bg-cyan-100 text-cyan-700', icon: Package },
-  ENTREGADA: { label: 'Entregada', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  ENTREGA_FALLIDA: { label: 'Entrega Fallida', color: 'bg-red-100 text-red-700', icon: X },
-  PARCIAL: { label: 'Parcial', color: 'bg-orange-100 text-orange-700', icon: Package },
-  CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500', icon: X },
+  ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  ENTREGA_FALLIDA: { label: 'Entrega Fallida', color: 'bg-destructive/10 text-destructive', icon: X },
+  PARCIAL: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package },
+  CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground', icon: X },
 };
 
 interface TimelineEvent {
@@ -121,9 +122,7 @@ export function DeliveryTimeline({ delivery, auditLogs = [] }: DeliveryTimelineP
 
                   {/* Icon Circle */}
                   <div
-                    className={`absolute left-[-28px] top-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      isCurrent ? config.color : 'bg-muted'
-                    }`}
+                    className={cn('absolute left-[-28px] top-0 w-8 h-8 rounded-full flex items-center justify-center', isCurrent ? config.color : 'bg-muted')}
                   >
                     <Icon className="w-4 h-4" />
                   </div>
@@ -131,7 +130,7 @@ export function DeliveryTimeline({ delivery, auditLogs = [] }: DeliveryTimelineP
                   {/* Event Content */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <Badge className={`${config.color} border text-xs`}>
+                      <Badge className={cn(config.color, 'border text-xs')}>
                         {config.label}
                       </Badge>
                       {isCurrent && (
@@ -187,29 +186,29 @@ export function DeliveryTimeline({ delivery, auditLogs = [] }: DeliveryTimelineP
 
           {/* Next Steps Suggestion */}
           {delivery.estado === 'PENDIENTE' && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
+            <div className="mt-6 p-4 bg-info-muted border border-info-muted rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
                 <strong>Próximo paso:</strong> Iniciar la preparación de la entrega
               </p>
             </div>
           )}
           {delivery.estado === 'EN_PREPARACION' && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
+            <div className="mt-6 p-4 bg-info-muted border border-info-muted rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
                 <strong>Próximo paso:</strong> Marcar como lista para despacho
               </p>
             </div>
           )}
           {delivery.estado === 'LISTA_PARA_DESPACHO' && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
+            <div className="mt-6 p-4 bg-info-muted border border-info-muted rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
                 <strong>Próximo paso:</strong> Despachar la entrega o marcar como retirada
               </p>
             </div>
           )}
           {delivery.estado === 'EN_TRANSITO' && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
+            <div className="mt-6 p-4 bg-info-muted border border-info-muted rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
                 <strong>Próximo paso:</strong> Confirmar la entrega o marcar como fallida
               </p>
             </div>

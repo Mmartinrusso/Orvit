@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withGuards } from '@/lib/middleware/withGuards';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+export const POST = withGuards(async (request, ctx) => {
   try {
     const data = await request.json();
-    
-    console.log('🔍 Datos de duplicación recibidos:', data);
 
     const {
       title,
@@ -56,14 +55,12 @@ export async function POST(request: NextRequest) {
         cost: null,
         notes,
         assignedToId,
-        createdById: 1, // TODO: Obtener del usuario actual
+        createdById: ctx.user.userId,
         scheduledDate: null, // Se calculará automáticamente
         startedDate: null,
         completedDate: null
       }
     });
-
-    console.log('✅ Mantenimiento duplicado creado:', duplicatedMaintenance.id);
 
     return NextResponse.json({
       success: true,
@@ -79,11 +76,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error duplicando mantenimiento:', error);
     return NextResponse.json(
-      { 
-        error: 'Error interno del servidor', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
-}
+});

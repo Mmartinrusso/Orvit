@@ -249,7 +249,7 @@ export default function LOTOProcedureForm({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent size="md" className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{isEditing ? 'Editar Procedimiento LOTO' : 'Nuevo Procedimiento LOTO'}</SheetTitle>
           <SheetDescription>
@@ -321,7 +321,7 @@ export default function LOTOProcedureForm({
           {/* Energy Sources */}
           <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-yellow-500" />
+              <Zap className="h-4 w-4 text-warning-muted-foreground" />
               Fuentes de Energia *
             </h3>
 
@@ -362,7 +362,7 @@ export default function LOTOProcedureForm({
                 {energySources.map((source) => (
                   <div key={source.id} className="flex items-center justify-between p-2 border rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <Zap className="h-4 w-4 text-warning-muted-foreground" />
                       <span className="font-medium">{source.type}</span>
                       <span className="text-muted-foreground">- {source.location}</span>
                       {source.voltage && <Badge variant="outline">{source.voltage}</Badge>}
@@ -382,7 +382,7 @@ export default function LOTOProcedureForm({
           {/* Lockout Steps */}
           <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
-              <Lock className="h-4 w-4 text-red-500" />
+              <Lock className="h-4 w-4 text-destructive" />
               Pasos de Bloqueo *
             </h3>
 
@@ -443,7 +443,7 @@ export default function LOTOProcedureForm({
           {/* Verification Steps */}
           <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-blue-500" />
+              <CheckCircle className="h-4 w-4 text-primary" />
               Pasos de Verificacion
             </h3>
 
@@ -488,7 +488,7 @@ export default function LOTOProcedureForm({
           {/* Restoration Steps */}
           <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
-              <Unlock className="h-4 w-4 text-green-500" />
+              <Unlock className="h-4 w-4 text-success" />
               Pasos de Restauracion
             </h3>
 
@@ -507,7 +507,7 @@ export default function LOTOProcedureForm({
             {restorationSteps.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {restorationSteps.map((step, idx) => (
-                  <Badge key={idx} variant="outline" className="py-1 px-3 border-green-300">
+                  <Badge key={idx} variant="outline" className="py-1 px-3 border-success/30">
                     {step}
                     <button onClick={() => removeRestorationStep(idx)} className="ml-2 hover:text-destructive">
                       <X className="h-3 w-3" />
@@ -542,7 +542,7 @@ export default function LOTOProcedureForm({
           {/* Warnings */}
           <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
               Advertencias y Consideraciones
             </h3>
 

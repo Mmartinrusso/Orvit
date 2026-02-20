@@ -300,10 +300,10 @@ export default function AILoadCreator({
       if (!newOpen) resetForm();
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
+            <Sparkles className="h-5 w-5 text-info-muted-foreground" />
             Nueva Carga con IA
           </DialogTitle>
           <DialogDescription>
@@ -311,7 +311,7 @@ export default function AILoadCreator({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-auto">
+        <DialogBody>
           <div className="grid grid-cols-2 gap-6">
             {/* Columna izquierda: Configuración y materiales */}
             <div className="space-y-4">
@@ -541,9 +541,9 @@ export default function AILoadCreator({
               {/* Estado de la IA */}
               <Card className={cn(
                 "transition-colors",
-                isOptimizing && "border-purple-500/50 bg-purple-500/5",
-                aiResult && "border-green-500/50 bg-green-500/5",
-                aiError && "border-red-500/50 bg-red-500/5"
+                isOptimizing && "border-info/50 bg-info-muted/50",
+                aiResult && "border-success/50 bg-success-muted/50",
+                aiError && "border-destructive/50 bg-destructive/5"
               )}>
                 <CardContent className="p-4">
                   {!selectedTruckId || items.length === 0 ? (
@@ -554,7 +554,7 @@ export default function AILoadCreator({
                     </div>
                   ) : isOptimizing ? (
                     <div className="text-center py-8">
-                      <Loader2 className="h-12 w-12 mx-auto mb-3 animate-spin text-purple-500" />
+                      <Loader2 className="h-12 w-12 mx-auto mb-3 animate-spin text-info-muted-foreground" />
                       <p className="text-sm font-medium">Optimizando con IA...</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Analizando {items.length} materiales para {selectedTruck?.name}
@@ -562,8 +562,8 @@ export default function AILoadCreator({
                     </div>
                   ) : aiError ? (
                     <div className="text-center py-8">
-                      <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-red-500" />
-                      <p className="text-sm font-medium text-red-600">Error de optimización</p>
+                      <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-destructive" />
+                      <p className="text-sm font-medium text-destructive">Error de optimización</p>
                       <p className="text-xs text-muted-foreground mt-1">{aiError}</p>
                       <Button
                         variant="outline"
@@ -577,7 +577,7 @@ export default function AILoadCreator({
                     </div>
                   ) : aiResult ? (
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-green-600">
+                      <div className="flex items-center gap-2 text-success">
                         <CheckCircle2 className="h-5 w-5" />
                         <span className="font-medium">Carga optimizada</span>
                       </div>
@@ -622,7 +622,7 @@ export default function AILoadCreator({
                           {aiResult.stats.weightPerFloor.map((weight, floor) => (
                             <div key={floor} className="flex-1 text-center">
                               <div
-                                className="bg-purple-500/20 rounded-t"
+                                className="bg-info-muted rounded-t"
                                 style={{
                                   height: `${Math.max(20, (weight / Math.max(...aiResult.stats.weightPerFloor)) * 60)}px`
                                 }}
@@ -648,7 +648,7 @@ export default function AILoadCreator({
                       {aiResult.warnings && aiResult.warnings.length > 0 && (
                         <div className="space-y-1">
                           {aiResult.warnings.map((warning, i) => (
-                            <div key={i} className="flex items-start gap-2 text-amber-600 text-xs">
+                            <div key={i} className="flex items-start gap-2 text-warning-muted-foreground text-xs">
                               <AlertTriangle className="h-3 w-3 mt-0.5" />
                               <span>{warning}</span>
                             </div>
@@ -669,7 +669,7 @@ export default function AILoadCreator({
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <Sparkles className="h-12 w-12 mx-auto mb-3 text-purple-500/50" />
+                      <Sparkles className="h-12 w-12 mx-auto mb-3 text-info-muted-foreground/50" />
                       <p className="text-sm">Listo para optimizar</p>
                       <Button
                         className="mt-3"
@@ -690,19 +690,19 @@ export default function AILoadCreator({
                     <h4 className="text-sm font-medium mb-3">Resumen</h4>
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
-                        <div className="text-2xl font-bold text-purple-600">
+                        <div className="text-2xl font-bold text-info-muted-foreground">
                           {totals.totalUnits}
                         </div>
                         <div className="text-xs text-muted-foreground">unidades</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-blue-600">
+                        <div className="text-2xl font-bold text-info-muted-foreground">
                           {totals.totalTypes}
                         </div>
                         <div className="text-xs text-muted-foreground">tipos</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-green-600">
+                        <div className="text-2xl font-bold text-success">
                           {totals.totalWeight.toFixed(1)}
                         </div>
                         <div className="text-xs text-muted-foreground">toneladas</div>

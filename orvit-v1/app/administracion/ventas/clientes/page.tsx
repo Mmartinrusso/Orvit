@@ -355,26 +355,26 @@ export default function ClientsPage() {
             <span className="text-sm font-semibold">{stats.total}</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-            <UserCheck className="h-4 w-4 text-green-600" />
+            <UserCheck className="h-4 w-4 text-success" />
             <span className="text-sm text-muted-foreground">Activos:</span>
-            <span className="text-sm font-semibold text-green-600">{stats.active}</span>
+            <span className="text-sm font-semibold text-success">{stats.active}</span>
           </div>
           {stats.blocked > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-              <Ban className="h-4 w-4 text-red-600" />
+              <Ban className="h-4 w-4 text-destructive" />
               <span className="text-sm text-muted-foreground">Bloqueados:</span>
-              <span className="text-sm font-semibold text-red-600">{stats.blocked}</span>
+              <span className="text-sm font-semibold text-destructive">{stats.blocked}</span>
             </div>
           )}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-            <Banknote className="h-4 w-4 text-amber-600" />
+            <Banknote className="h-4 w-4 text-warning-muted-foreground" />
             <span className="text-sm text-muted-foreground">Con Deuda:</span>
-            <span className="text-sm font-semibold text-amber-600">{stats.withDebt}</span>
+            <span className="text-sm font-semibold text-warning-muted-foreground">{stats.withDebt}</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border">
-            <DollarSign className="h-4 w-4 text-blue-600" />
+            <DollarSign className="h-4 w-4 text-info-muted-foreground" />
             <span className="text-sm text-muted-foreground">Total Deuda:</span>
-            <span className="text-sm font-semibold text-blue-600">{formatCurrency(stats.totalDebt)}</span>
+            <span className="text-sm font-semibold text-info-muted-foreground">{formatCurrency(stats.totalDebt)}</span>
           </div>
         </div>
       </div>
@@ -538,7 +538,7 @@ export default function ClientsPage() {
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
-                          client.isBlocked ? "bg-red-500/10 text-red-600" : "bg-primary/10 text-primary"
+                          client.isBlocked ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
                         )}>
                           <span className="text-sm font-semibold">
                             {client.legalName.charAt(0).toUpperCase()}
@@ -592,8 +592,8 @@ export default function ClientsPage() {
                     <TableCell className="hidden sm:table-cell">
                       <span className={cn(
                         "text-sm font-medium",
-                        client.currentBalance > 0 ? "text-red-600" :
-                        client.currentBalance < 0 ? "text-green-600" : "text-muted-foreground"
+                        client.currentBalance > 0 ? "text-destructive" :
+                        client.currentBalance < 0 ? "text-success" : "text-muted-foreground"
                       )}>
                         {client.currentBalance !== 0 ? formatCurrency(Math.abs(client.currentBalance)) : '-'}
                         {client.currentBalance > 0 && ' (deuda)'}
@@ -603,12 +603,12 @@ export default function ClientsPage() {
                     <TableCell>
                       {client.isActive ? (
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <div className="w-2 h-2 rounded-full bg-success" />
                           <span className="text-xs text-muted-foreground">Activo</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-red-500" />
+                          <div className="w-2 h-2 rounded-full bg-destructive" />
                           <span className="text-xs text-muted-foreground">Inactivo</span>
                         </div>
                       )}
@@ -655,7 +655,7 @@ export default function ClientsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteDialog({ open: true, clientId: client.id, clientName: client.legalName });
@@ -750,7 +750,7 @@ export default function ClientsPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteDialog.clientId && handleDelete(deleteDialog.clientId)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive"
             >
               Desactivar
             </AlertDialogAction>
@@ -779,7 +779,7 @@ export default function ClientsPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleBulkAction(bulkActionDialog.action)}
-              className={bulkActionDialog.action === 'block' ? 'bg-red-600 hover:bg-red-700' : ''}
+              className={bulkActionDialog.action === 'block' ? 'bg-destructive hover:bg-destructive' : ''}
             >
               Confirmar
             </AlertDialogAction>

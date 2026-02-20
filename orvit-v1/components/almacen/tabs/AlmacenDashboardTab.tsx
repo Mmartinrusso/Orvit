@@ -121,31 +121,31 @@ export function AlmacenDashboardTab({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
-              <div className="p-2 rounded-full bg-green-100">
-                <ArrowDownLeft className="h-4 w-4 text-green-600" />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-success-muted border border-border">
+              <div className="p-2 rounded-full bg-success-muted">
+                <ArrowDownLeft className="h-4 w-4 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-700">{stats?.entradasHoy || 0}</p>
-                <p className="text-xs text-green-600">Entradas</p>
+                <p className="text-2xl font-bold text-success">{stats?.entradasHoy || 0}</p>
+                <p className="text-xs text-success">Entradas</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50 border border-orange-100">
-              <div className="p-2 rounded-full bg-orange-100">
-                <ArrowUpRight className="h-4 w-4 text-orange-600" />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-warning-muted border border-border">
+              <div className="p-2 rounded-full bg-warning-muted">
+                <ArrowUpRight className="h-4 w-4 text-warning-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-orange-700">{stats?.salidasHoy || 0}</p>
-                <p className="text-xs text-orange-600">Salidas</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{stats?.salidasHoy || 0}</p>
+                <p className="text-xs text-warning-muted-foreground">Salidas</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-100">
-              <div className="p-2 rounded-full bg-blue-100">
-                <PackageCheck className="h-4 w-4 text-blue-600" />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-info-muted border border-border">
+              <div className="p-2 rounded-full bg-info-muted">
+                <PackageCheck className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-700">{stats?.despachosHoy || 0}</p>
-                <p className="text-xs text-blue-600">Despachos</p>
+                <p className="text-2xl font-bold text-primary">{stats?.despachosHoy || 0}</p>
+                <p className="text-xs text-primary">Despachos</p>
               </div>
             </div>
           </div>
@@ -155,14 +155,14 @@ export function AlmacenDashboardTab({
       {/* Segunda fila: Items en Salida y Stock Bajo */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Items en Salida (Sin devolver) */}
-        <Card className="border-orange-200">
+        <Card className="border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4 text-orange-500" />
+                <ArrowUpRight className="h-4 w-4 text-warning-muted-foreground" />
                 <CardTitle className="text-base">Items en Salida</CardTitle>
               </div>
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+              <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-border">
                 {stats?.despachosEnSalida || 0} despachos
               </Badge>
             </div>
@@ -179,18 +179,18 @@ export function AlmacenDashboardTab({
                       key={despacho.id}
                       className={cn(
                         'flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors',
-                        despacho.diasEnSalida > 7 && 'border-orange-300 bg-orange-50/50'
+                        despacho.diasEnSalida > 7 && 'border-warning bg-warning-muted/50'
                       )}
                       onClick={() => onOpenDespacho?.(despacho.id)}
                     >
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           'p-2 rounded-full',
-                          despacho.diasEnSalida > 7 ? 'bg-orange-100' : 'bg-muted'
+                          despacho.diasEnSalida > 7 ? 'bg-warning-muted' : 'bg-muted'
                         )}>
                           <Package className={cn(
                             'h-4 w-4',
-                            despacho.diasEnSalida > 7 ? 'text-orange-600' : 'text-muted-foreground'
+                            despacho.diasEnSalida > 7 ? 'text-warning-muted-foreground' : 'text-muted-foreground'
                           )} />
                         </div>
                         <div>
@@ -233,14 +233,14 @@ export function AlmacenDashboardTab({
         </Card>
 
         {/* Stock Bajo */}
-        <Card className="border-red-200">
+        <Card className="border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <AlertTriangle className="h-4 w-4 text-destructive" />
                 <CardTitle className="text-base">Stock Bajo</CardTitle>
               </div>
-              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+              <Badge variant="outline" className="bg-destructive/10 text-destructive border-border">
                 {stats?.alertasStock || 0} items
               </Badge>
             </div>
@@ -270,7 +270,7 @@ export function AlmacenDashboardTab({
                         </TableCell>
                         <TableCell className={cn(
                           'text-right font-medium',
-                          item.available <= 0 ? 'text-red-600' : 'text-orange-600'
+                          item.available <= 0 ? 'text-destructive' : 'text-warning-muted-foreground'
                         )}>
                           {item.available.toFixed(1)} {item.unit}
                         </TableCell>
@@ -462,12 +462,12 @@ export function AlmacenDashboardTab({
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       'p-1.5 rounded-full',
-                      mov.tipo.includes('ENTRADA') || mov.tipo === 'DEVOLUCION' ? 'bg-green-100' : 'bg-orange-100'
+                      mov.tipo.includes('ENTRADA') || mov.tipo === 'DEVOLUCION' ? 'bg-success-muted' : 'bg-warning-muted'
                     )}>
                       {mov.tipo.includes('ENTRADA') || mov.tipo === 'DEVOLUCION' ? (
-                        <ArrowDownLeft className="h-3 w-3 text-green-600" />
+                        <ArrowDownLeft className="h-3 w-3 text-success" />
                       ) : (
-                        <ArrowUpRight className="h-3 w-3 text-orange-600" />
+                        <ArrowUpRight className="h-3 w-3 text-warning-muted-foreground" />
                       )}
                     </div>
                     <div>
@@ -478,7 +478,7 @@ export function AlmacenDashboardTab({
                   <div className="text-right">
                     <p className={cn(
                       'text-sm font-medium',
-                      mov.tipo.includes('ENTRADA') || mov.tipo === 'DEVOLUCION' ? 'text-green-600' : 'text-orange-600'
+                      mov.tipo.includes('ENTRADA') || mov.tipo === 'DEVOLUCION' ? 'text-success' : 'text-warning-muted-foreground'
                     )}>
                       {mov.tipo.includes('ENTRADA') || mov.tipo === 'DEVOLUCION' ? '+' : '-'}{mov.cantidad}
                     </p>
@@ -536,21 +536,21 @@ interface KPICardProps {
 
 function KPICard({ title, value, description, icon: Icon, trend, color, onClick }: KPICardProps) {
   const colorClasses = {
-    yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    green: 'bg-green-50 text-green-600 border-green-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
-    purple: 'bg-purple-50 text-purple-600 border-purple-200',
-    orange: 'bg-orange-50 text-orange-600 border-orange-200',
+    yellow: 'bg-warning-muted text-warning-muted-foreground border-warning/30',
+    blue: 'bg-info-muted text-info-muted-foreground border-primary/30',
+    green: 'bg-success-muted text-success border-success/30',
+    red: 'bg-destructive/10 text-destructive border-destructive/30',
+    purple: 'bg-muted text-foreground border-border',
+    orange: 'bg-warning-muted text-warning-muted-foreground border-warning/30',
   };
 
   const iconColors = {
-    yellow: 'text-yellow-600',
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    red: 'text-red-600',
-    purple: 'text-purple-600',
-    orange: 'text-orange-600',
+    yellow: 'text-warning-muted-foreground',
+    blue: 'text-primary',
+    green: 'text-success',
+    red: 'text-destructive',
+    purple: 'text-foreground',
+    orange: 'text-warning-muted-foreground',
   };
 
   return (
@@ -569,10 +569,10 @@ function KPICard({ title, value, description, icon: Icon, trend, color, onClick 
         <div className="flex items-baseline gap-2">
           <div className="text-2xl font-bold">{value}</div>
           {trend === 'attention' && value > 0 && (
-            <TrendingUp className="h-4 w-4 text-yellow-500" />
+            <TrendingUp className="h-4 w-4 text-warning-muted-foreground" />
           )}
           {trend === 'critical' && value > 0 && (
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertTriangle className="h-4 w-4 text-destructive" />
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">{description}</p>
@@ -591,11 +591,11 @@ function StatRow({
   color: 'yellow' | 'blue' | 'green' | 'red' | 'orange';
 }) {
   const dotColors = {
-    yellow: 'bg-yellow-500',
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    red: 'bg-red-500',
-    orange: 'bg-orange-500',
+    yellow: 'bg-warning',
+    blue: 'bg-primary',
+    green: 'bg-success',
+    red: 'bg-destructive',
+    orange: 'bg-warning',
   };
 
   return (

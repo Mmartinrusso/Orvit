@@ -89,12 +89,6 @@ export async function GET(request: NextRequest) {
           priority: data.priority || 'MEDIUM'
         };
 
-        console.log('✅ [BY-ID API] Found preventive maintenance:', {
-          id: maintenance.id,
-          title: maintenance.title,
-          equipment: maintenance.equipment?.name || 'Sin equipo'
-        });
-
         return NextResponse.json({
           success: true,
           data: maintenance
@@ -155,19 +149,12 @@ export async function GET(request: NextRequest) {
         priority: workOrder.priority || 'MEDIUM'
       };
 
-      console.log('✅ [BY-ID API] Found corrective maintenance:', {
-        id: maintenance.id,
-        title: maintenance.title,
-        equipment: maintenance.equipment?.name || 'Sin equipo'
-      });
-
       return NextResponse.json({
         success: true,
         data: maintenance
       });
     }
 
-    console.log('❌ [BY-ID API] Maintenance not found:', maintenanceId);
     return NextResponse.json({ 
       success: false, 
       error: 'Maintenance not found' 

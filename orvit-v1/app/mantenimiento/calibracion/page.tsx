@@ -53,11 +53,11 @@ interface Calibration {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800' },
-  IN_PROGRESS: { label: 'En Progreso', color: 'bg-blue-100 text-blue-800' },
-  COMPLETED: { label: 'Completado', color: 'bg-green-100 text-green-800' },
-  FAILED: { label: 'Fallido', color: 'bg-red-100 text-red-800' },
-  OVERDUE: { label: 'Vencido', color: 'bg-red-100 text-red-800' },
+  PENDING: { label: 'Pendiente', color: 'bg-warning-muted text-warning-muted-foreground' },
+  IN_PROGRESS: { label: 'En Progreso', color: 'bg-info-muted text-info-muted-foreground' },
+  COMPLETED: { label: 'Completado', color: 'bg-success-muted text-success' },
+  FAILED: { label: 'Fallido', color: 'bg-destructive/10 text-destructive' },
+  OVERDUE: { label: 'Vencido', color: 'bg-destructive/10 text-destructive' },
 };
 
 export default function CalibrationPage() {
@@ -88,7 +88,7 @@ export default function CalibrationPage() {
   );
 
   const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || { label: status, color: 'bg-gray-100' };
+    const config = STATUS_CONFIG[status] || { label: status, color: 'bg-muted' };
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
@@ -166,7 +166,7 @@ export default function CalibrationPage() {
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <Gauge className="h-8 w-8 text-blue-500" />
+              <Gauge className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -175,9 +175,9 @@ export default function CalibrationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.pending || 0}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{summary.pending || 0}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
+              <Clock className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -186,9 +186,9 @@ export default function CalibrationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Vencidos</p>
-                <p className="text-2xl font-bold text-red-600">{summary.overdue || 0}</p>
+                <p className="text-2xl font-bold text-destructive">{summary.overdue || 0}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -197,9 +197,9 @@ export default function CalibrationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completados</p>
-                <p className="text-2xl font-bold text-green-600">{summary.completed || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.completed || 0}</p>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -286,7 +286,7 @@ export default function CalibrationPage() {
                             <p className="text-sm">
                               {format(new Date(cal.nextCalibrationDate), 'dd/MM/yyyy')}
                             </p>
-                            <p className={`text-xs ${isPast(new Date(cal.nextCalibrationDate)) ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            <p className={`text-xs ${isPast(new Date(cal.nextCalibrationDate)) ? 'text-destructive' : 'text-muted-foreground'}`}>
                               {formatDistanceToNow(new Date(cal.nextCalibrationDate), { addSuffix: true, locale: es })}
                             </p>
                           </div>

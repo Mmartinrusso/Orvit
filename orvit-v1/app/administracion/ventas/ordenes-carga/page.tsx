@@ -81,6 +81,7 @@ import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 type LoadOrderStatus = 'PENDIENTE' | 'CARGANDO' | 'CARGADA' | 'DESPACHADA' | 'CANCELADA';
 
@@ -142,14 +143,15 @@ const STATUS_CONFIG: Record<
   LoadOrderStatus,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700', icon: Clock },
-  CARGANDO: { label: 'En Carga', color: 'bg-yellow-100 text-yellow-700', icon: Package },
-  CARGADA: { label: 'Cargada', color: 'bg-blue-100 text-blue-700', icon: CheckCircle2 },
-  DESPACHADA: { label: 'Despachada', color: 'bg-green-100 text-green-700', icon: Truck },
-  CANCELADA: { label: 'Cancelada', color: 'bg-red-100 text-red-700', icon: XCircle },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-muted text-foreground', icon: Clock },
+  CARGANDO: { label: 'En Carga', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package },
+  CARGADA: { label: 'Cargada', color: 'bg-info-muted text-info-muted-foreground', icon: CheckCircle2 },
+  DESPACHADA: { label: 'Despachada', color: 'bg-success-muted text-success', icon: Truck },
+  CANCELADA: { label: 'Cancelada', color: 'bg-destructive/10 text-destructive', icon: XCircle },
 };
 
 export default function LoadOrdersPage() {
+  const showConfirm = useConfirm();
   const router = useRouter();
   const { mode: viewMode } = useViewMode();
   const { user } = useAuth();
@@ -396,17 +398,23 @@ export default function LoadOrdersPage() {
     );
 
     if (totalPeso > 30000) {
-      const confirm = window.confirm(
-        `⚠️ ADVERTENCIA: El peso total (${totalPeso.toFixed(0)} kg) excede el límite recomendado de 30,000 kg.\n\n¿Desea continuar de todos modos?`
-      );
-      if (!confirm) return;
+      const ok = await showConfirm({
+        title: 'Advertencia de peso',
+        description: `El peso total (${totalPeso.toFixed(0)} kg) excede el límite recomendado de 30,000 kg. ¿Desea continuar de todos modos?`,
+        confirmText: 'Confirmar',
+        variant: 'default',
+      });
+      if (!ok) return;
     }
 
     if (totalVolumen > 90) {
-      const confirm = window.confirm(
-        `⚠️ ADVERTENCIA: El volumen total (${totalVolumen.toFixed(2)} m³) excede el límite recomendado de 90 m³.\n\n¿Desea continuar de todos modos?`
-      );
-      if (!confirm) return;
+      const ok = await showConfirm({
+        title: 'Advertencia de volumen',
+        description: `El volumen total (${totalVolumen.toFixed(2)} m³) excede el límite recomendado de 90 m³. ¿Desea continuar de todos modos?`,
+        confirmText: 'Confirmar',
+        variant: 'default',
+      });
+      if (!ok) return;
     }
 
     setConfirmLoading(true);
@@ -755,7 +763,7 @@ export default function LoadOrdersPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Órdenes de Carga</h1>
-            <p className="text-gray-500">Gestión de órdenes de carga y despacho</p>
+            <p className="text-muted-foreground">Gestión de órdenes de carga y despacho</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
@@ -817,7 +825,7 @@ export default function LoadOrdersPage() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setEstadoFilter('PENDIENTE')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
-              <Clock className="h-4 w-4 text-gray-500" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pendientes}</div>
@@ -827,7 +835,7 @@ export default function LoadOrdersPage() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setEstadoFilter('CARGANDO')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">En Carga</CardTitle>
-              <Package className="h-4 w-4 text-yellow-500" />
+              <Package className="h-4 w-4 text-warning-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.enCarga}</div>
@@ -837,7 +845,7 @@ export default function LoadOrdersPage() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setEstadoFilter('CARGADA')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Cargadas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              <CheckCircle2 className="h-4 w-4 text-info-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.cargadas}</div>
@@ -847,7 +855,7 @@ export default function LoadOrdersPage() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setEstadoFilter('DESPACHADA')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Despachadas</CardTitle>
-              <Truck className="h-4 w-4 text-green-500" />
+              <Truck className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.despachadas}</div>
@@ -1014,8 +1022,8 @@ export default function LoadOrdersPage() {
               </div>
             ) : loadOrders.length === 0 ? (
               <div className="text-center py-12">
-                <Package className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">No se encontraron órdenes de carga</p>
+                <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No se encontraron órdenes de carga</p>
               </div>
             ) : (
               <>
@@ -1029,7 +1037,7 @@ export default function LoadOrdersPage() {
                         />
                       </TableHead>
                       <TableHead
-                        className="cursor-pointer hover:bg-gray-50"
+                        className="cursor-pointer hover:bg-muted"
                         onClick={() => {
                           setSortBy('numero');
                           setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -1040,7 +1048,7 @@ export default function LoadOrdersPage() {
                       <TableHead>Pedido</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead
-                        className="cursor-pointer hover:bg-gray-50"
+                        className="cursor-pointer hover:bg-muted"
                         onClick={() => {
                           setSortBy('fecha');
                           setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -1052,7 +1060,7 @@ export default function LoadOrdersPage() {
                       <TableHead className="text-right">Peso/Vol</TableHead>
                       <TableHead className="text-center">Items</TableHead>
                       <TableHead
-                        className="cursor-pointer hover:bg-gray-50"
+                        className="cursor-pointer hover:bg-muted"
                         onClick={() => {
                           setSortBy('estado');
                           setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -1069,7 +1077,7 @@ export default function LoadOrdersPage() {
                       return (
                         <TableRow
                           key={order.id}
-                          className="cursor-pointer hover:bg-gray-50"
+                          className="cursor-pointer hover:bg-muted"
                           onClick={(e) => {
                             // Don't navigate if clicking checkbox or action button
                             if (
@@ -1103,7 +1111,7 @@ export default function LoadOrdersPage() {
                                 <div className="font-medium">{order.vehiculo}</div>
                               )}
                               {order.chofer && (
-                                <div className="text-gray-500">{order.chofer}</div>
+                                <div className="text-muted-foreground">{order.chofer}</div>
                               )}
                               {!order.vehiculo && !order.chofer && '-'}
                             </div>
@@ -1114,7 +1122,7 @@ export default function LoadOrdersPage() {
                                 <div>{order.pesoTotal.toFixed(0)} kg</div>
                               )}
                               {order.volumenTotal && (
-                                <div className="text-gray-500">{order.volumenTotal.toFixed(2)} m³</div>
+                                <div className="text-muted-foreground">{order.volumenTotal.toFixed(2)} m³</div>
                               )}
                               {!order.pesoTotal && !order.volumenTotal && '-'}
                             </div>
@@ -1182,7 +1190,7 @@ export default function LoadOrdersPage() {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       onClick={() => handleOpenCancel(order)}
-                                      className="text-red-600"
+                                      className="text-destructive"
                                     >
                                       <Ban className="w-4 h-4 mr-2" />
                                       Cancelar orden
@@ -1201,7 +1209,7 @@ export default function LoadOrdersPage() {
                 {/* Pagination */}
                 <div className="flex items-center justify-between px-2 py-4 border-t">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, totalCount)} de {totalCount}
                     </span>
                     <Select
@@ -1277,9 +1285,9 @@ export default function LoadOrdersPage() {
             </DialogHeader>
 
             {/* Warning Box */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800">
+            <div className="bg-warning-muted border border-warning-muted rounded-lg p-4 flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-warning-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-warning-muted-foreground">
                 <p className="font-semibold mb-1">⚠️ ATENCIÓN: Esta acción es irreversible</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Se decrementará el stock de los productos</li>
@@ -1307,19 +1315,19 @@ export default function LoadOrdersPage() {
                     <div
                       key={item.id}
                       className={`border rounded-lg p-4 ${
-                        isDifferent ? 'bg-yellow-50 border-yellow-300' : ''
+                        isDifferent ? 'bg-warning-muted border-warning-muted' : ''
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="font-medium">{item.product.name}</p>
-                          <p className="text-sm text-gray-500">Código: {item.product.codigo}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">Código: {item.product.codigo}</p>
+                          <p className="text-sm text-muted-foreground">
                             Cant. Pedido: {item.cantidad} | Stock disponible: {item.saleItem?.cantidad || 0}
                           </p>
                         </div>
                         {isDifferent && (
-                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                          <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground">
                             Diferencia
                           </Badge>
                         )}
@@ -1341,15 +1349,15 @@ export default function LoadOrdersPage() {
                                 )
                               );
                             }}
-                            className={isDifferent ? 'border-yellow-400' : ''}
+                            className={isDifferent ? 'border-warning-muted' : ''}
                           />
                           {totalPeso > 0 && (
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               Peso: {totalPeso.toFixed(2)} kg
                             </p>
                           )}
                           {totalVolumen > 0 && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               Volumen: {totalVolumen.toFixed(3)} m³
                             </p>
                           )}
@@ -1371,7 +1379,7 @@ export default function LoadOrdersPage() {
                                 );
                               }}
                               rows={2}
-                              className="border-yellow-400"
+                              className="border-warning-muted"
                             />
                           </div>
                         )}
@@ -1385,11 +1393,11 @@ export default function LoadOrdersPage() {
                   <h4 className="font-semibold mb-2">Resumen Total</h4>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500">Total Items</p>
+                      <p className="text-muted-foreground">Total Items</p>
                       <p className="text-lg font-semibold">{confirmItems.length}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Peso Total</p>
+                      <p className="text-muted-foreground">Peso Total</p>
                       <p className="text-lg font-semibold">
                         {confirmItems
                           .reduce(
@@ -1402,7 +1410,7 @@ export default function LoadOrdersPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Volumen Total</p>
+                      <p className="text-muted-foreground">Volumen Total</p>
                       <p className="text-lg font-semibold">
                         {confirmItems
                           .reduce(
@@ -1469,17 +1477,17 @@ export default function LoadOrdersPage() {
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-500">Pedido</Label>
+                    <Label className="text-muted-foreground">Pedido</Label>
                     <p className="font-medium">{detailOrder.sale.numero}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Cliente</Label>
+                    <Label className="text-muted-foreground">Cliente</Label>
                     <p className="font-medium">
                       {detailOrder.sale.client.legalName || detailOrder.sale.client.name}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Fecha</Label>
+                    <Label className="text-muted-foreground">Fecha</Label>
                     <p className="font-medium">
                       {detailOrder.fecha
                         ? format(new Date(detailOrder.fecha), 'dd/MM/yyyy', { locale: es })
@@ -1487,25 +1495,25 @@ export default function LoadOrdersPage() {
                     </p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Vehículo</Label>
+                    <Label className="text-muted-foreground">Vehículo</Label>
                     <p className="font-medium">{detailOrder.vehiculo || '-'}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Chofer</Label>
+                    <Label className="text-muted-foreground">Chofer</Label>
                     <p className="font-medium">{detailOrder.chofer || '-'}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Transportista</Label>
+                    <Label className="text-muted-foreground">Transportista</Label>
                     <p className="font-medium">{detailOrder.transportista || '-'}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Peso Total</Label>
+                    <Label className="text-muted-foreground">Peso Total</Label>
                     <p className="font-medium">
                       {detailOrder.pesoTotal ? `${detailOrder.pesoTotal.toFixed(0)} kg` : '-'}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-gray-500">Volumen Total</Label>
+                    <Label className="text-muted-foreground">Volumen Total</Label>
                     <p className="font-medium">
                       {detailOrder.volumenTotal ? `${detailOrder.volumenTotal.toFixed(2)} m³` : '-'}
                     </p>
@@ -1514,7 +1522,7 @@ export default function LoadOrdersPage() {
 
                 {/* Items */}
                 <div>
-                  <Label className="text-gray-500 mb-2 block">Items ({detailItems.length})</Label>
+                  <Label className="text-muted-foreground mb-2 block">Items ({detailItems.length})</Label>
                   <div className="border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
@@ -1533,7 +1541,7 @@ export default function LoadOrdersPage() {
                             <TableCell>
                               <div>
                                 <p className="font-medium">{item.product.name}</p>
-                                <p className="text-xs text-gray-500">{item.product.codigo}</p>
+                                <p className="text-xs text-muted-foreground">{item.product.codigo}</p>
                               </div>
                             </TableCell>
                             <TableCell className="text-right">{item.cantidad}</TableCell>
@@ -1542,7 +1550,7 @@ export default function LoadOrdersPage() {
                                 <span
                                   className={
                                     item.cantidadCargada !== item.cantidad
-                                      ? 'font-semibold text-yellow-600'
+                                      ? 'font-semibold text-warning-muted-foreground'
                                       : ''
                                   }
                                 >
@@ -1563,8 +1571,8 @@ export default function LoadOrdersPage() {
                 {/* Observations */}
                 {detailOrder.observaciones && (
                   <div>
-                    <Label className="text-gray-500">Observaciones</Label>
-                    <p className="text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
+                    <Label className="text-muted-foreground">Observaciones</Label>
+                    <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-lg">
                       {detailOrder.observaciones}
                     </p>
                   </div>
@@ -1615,7 +1623,7 @@ export default function LoadOrdersPage() {
                   handleCancelOrder();
                 }}
                 disabled={cancelLoading || !cancelReason.trim()}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-destructive hover:bg-destructive"
               >
                 {cancelLoading ? 'Cancelando...' : 'Confirmar Cancelación'}
               </AlertDialogAction>

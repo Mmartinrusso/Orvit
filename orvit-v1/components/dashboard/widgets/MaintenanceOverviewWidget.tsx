@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { useWorkOrdersDashboard } from '@/hooks/use-work-orders-dashboard';
 import { WidgetWrapper, WidgetProps } from './WidgetWrapper';
 import { ClipboardList, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
@@ -28,26 +29,26 @@ export function MaintenanceOverviewWidget({
     {
       label: 'Total Órdenes',
       value: stats?.total || 0,
-      icon: <ClipboardList className="h-4 w-4 text-blue-500" />,
-      bgColor: 'bg-blue-50',
+      icon: <ClipboardList className="h-4 w-4 text-info-muted-foreground" />,
+      bgColor: 'bg-info-muted',
     },
     {
       label: 'Vencidas',
       value: stats?.overdue || 0,
-      icon: <AlertTriangle className="h-4 w-4 text-red-500" />,
-      bgColor: 'bg-red-50',
+      icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
+      bgColor: 'bg-destructive/10',
     },
     {
       label: 'En Progreso',
       value: stats?.inProgress || 0,
-      icon: <Clock className="h-4 w-4 text-yellow-500" />,
-      bgColor: 'bg-yellow-50',
+      icon: <Clock className="h-4 w-4 text-warning-muted-foreground" />,
+      bgColor: 'bg-warning-muted',
     },
     {
       label: 'Completadas',
       value: stats?.completedThisMonth || 0,
-      icon: <CheckCircle className="h-4 w-4 text-green-500" />,
-      bgColor: 'bg-green-50',
+      icon: <CheckCircle className="h-4 w-4 text-success" />,
+      bgColor: 'bg-success-muted',
     },
   ];
 
@@ -65,7 +66,7 @@ export function MaintenanceOverviewWidget({
         {items.map((item, index) => (
           <div 
             key={index} 
-            className={`p-3 rounded-lg ${item.bgColor} flex items-center gap-3`}
+            className={cn('p-3 rounded-lg flex items-center gap-3', item.bgColor)}
           >
             <div className="flex-shrink-0">
               {item.icon}

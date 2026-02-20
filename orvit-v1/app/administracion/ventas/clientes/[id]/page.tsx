@@ -369,7 +369,7 @@ export default function ClientDetailPage() {
                   <p className="text-sm text-muted-foreground">Saldo Actual</p>
                   <p className={`text-lg font-bold ${
                     client.currentBalance === 0 ? 'text-muted-foreground' : 
-                    client.currentBalance > 0 ? 'text-green-600' : 'text-red-600'
+                    client.currentBalance > 0 ? 'text-success' : 'text-destructive'
                   }`}>
                     {client.currentBalance === 0 ? 'Sin saldo' : formatCurrency(client.currentBalance)}
                   </p>

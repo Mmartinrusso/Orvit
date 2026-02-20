@@ -41,9 +41,15 @@ export const AUTH_CONFIG = {
 
     // Límites por acción
     login: {
-      window: 15 * 60,          // 15 minutos
-      max: 5,                   // 5 intentos
-      blockDuration: 30 * 60,   // Bloquear 30 minutos
+      window: 60,               // 1 minuto
+      max: 5,                   // 5 intentos por IP por minuto
+      blockDuration: 15 * 60,   // Bloquear IP por 15 minutos
+    },
+    // Rate limit por email (prevenir ataque distribuido a una cuenta)
+    loginByEmail: {
+      window: 5 * 60,           // 5 minutos
+      max: 10,                  // 10 intentos por email
+      blockDuration: 15 * 60,   // Bloquear email por 15 minutos
     },
     '2fa': {
       window: 15 * 60,

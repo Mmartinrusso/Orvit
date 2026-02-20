@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -196,9 +197,7 @@ export function QuoteConfig() {
                 return (
                   <div
                     key={method.id}
-                    className={`relative p-4 border rounded-lg transition-colors cursor-pointer ${
-                      isSelected ? 'bg-primary/5 border-primary' : 'bg-background hover:bg-muted/50'
-                    }`}
+                    className={cn('relative p-4 border rounded-lg transition-colors cursor-pointer', isSelected ? 'bg-primary/5 border-primary' : 'bg-background hover:bg-muted/50')}
                     onClick={() =>
                       setConfig({ ...config, pricingMethod: method.id as 'LIST' | 'MARGIN' | 'DISCOUNT' })
                     }
@@ -240,9 +239,7 @@ export function QuoteConfig() {
           <div className="space-y-3">
             {/* Mostrar costos */}
             <div
-              className={`p-3 border rounded-lg transition-colors ${
-                config.showCostsInQuotes ? 'bg-primary/5 border-primary/20' : 'bg-background'
-              }`}
+              className={cn('p-3 border rounded-lg transition-colors', config.showCostsInQuotes ? 'bg-primary/5 border-primary/20' : 'bg-background')}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1">
@@ -274,9 +271,7 @@ export function QuoteConfig() {
 
             {/* Mostrar márgenes */}
             <div
-              className={`p-3 border rounded-lg transition-colors ${
-                config.showMarginsInQuotes ? 'bg-primary/5 border-primary/20' : 'bg-background'
-              }`}
+              className={cn('p-3 border rounded-lg transition-colors', config.showMarginsInQuotes ? 'bg-primary/5 border-primary/20' : 'bg-background')}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1">
@@ -310,10 +305,10 @@ export function QuoteConfig() {
       </Card>
 
       {/* Información de seguridad */}
-      <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+      <Card className="border-primary/30 bg-info-muted/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Info className="w-4 h-4 text-blue-600" />
+            <Info className="w-4 h-4 text-primary" />
             Consideraciones de Seguridad
           </CardTitle>
         </CardHeader>
@@ -326,7 +321,7 @@ export function QuoteConfig() {
             Por ejemplo, con el método "Lista de Precios", el cliente solo ve precios finales sin
             saber cuánto te cuesta producir cada item.
           </p>
-          <p className="text-amber-600">
+          <p className="text-warning-muted-foreground">
             <AlertCircle className="w-3 h-3 inline mr-1" />
             <strong>Recomendación:</strong> Si trabajas con revendedores o competidores, mantén
             esta información oculta.
@@ -343,8 +338,8 @@ export function QuoteConfig() {
           </>
         ) : (
           <>
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            <span className="text-green-600">Configuración guardada</span>
+            <CheckCircle2 className="w-4 h-4 text-success" />
+            <span className="text-success">Configuración guardada</span>
           </>
         )}
       </div>

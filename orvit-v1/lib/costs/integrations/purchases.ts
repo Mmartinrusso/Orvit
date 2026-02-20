@@ -1,16 +1,16 @@
 /**
  * Centro de Costos V2 - Integración con Compras
  *
- * Lee datos de GoodsReceipt (recepciones confirmadas) para alimentar
- * el sistema de costos automáticamente.
+ * Lee las facturas de Compras (PurchaseReceipt) del mes para mostrar
+ * el gasto total de compras operativas, excluyendo:
+ * - Facturas de costos indirectos (esIndirecto = true) → van a IndirectViewV2
+ * - Facturas canceladas
  *
- * IMPORTANTE: Suma por ITEMS de recepción (cantidadAceptada × precioUnitario),
- * NO por OC completa. Esto evita duplicar cuando hay recepciones parciales.
+ * El monto usado es el campo `neto` de cada comprobante.
  */
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
-import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
 
 export interface PurchaseCostData {
   totalPurchases: number;
@@ -34,21 +34,14 @@ export interface PurchaseDetail {
   supplierId: number;
   supplierName: string;
   receiptDate: Date;
-  itemId: number;
-  itemDescription: string;
-  quantity: number;
-  unitCost: number;
-  totalCost: number;
-  poItemId: number | null;
-  supplierItemId: number;
+  neto: number;
+  total: number;
+  estado: string;
+  tipo: string;
 }
 
 /**
- * Obtiene los costos de compras para un mes específico.
- * Solo considera recepciones con estado CONFIRMADA.
- *
- * Calcula el costo por ITEM de recepción, no por OC,
- * evitando duplicar en recepciones parciales.
+ * Obtiene todas las facturas de compras del mes (excluyendo indirectas y canceladas).
  *
  * @param companyId - ID de la empresa
  * @param month - Mes en formato "YYYY-MM" (ej: "2026-01")
@@ -57,135 +50,83 @@ export async function getPurchaseCostsForMonth(
   companyId: number,
   month: string
 ): Promise<PurchaseCostData> {
-  const startDate = startOfMonth(parseISO(month + '-01'));
-  const endDate = endOfMonth(startDate);
+  const [year, monthNum] = month.split('-').map(Number);
+  const startDate = new Date(year, monthNum - 1, 1);
+  const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
 
-  // Buscar recepciones confirmadas del mes
-  const receipts = await prisma.goodsReceipt.findMany({
+  const receipts = await prisma.purchaseReceipt.findMany({
     where: {
       companyId,
-      estado: 'CONFIRMADA',
-      fechaRecepcion: {
+      esIndirecto: false,
+      estado: { not: 'cancelado' },
+      fechaImputacion: {
         gte: startDate,
-        lte: endDate
-      }
+        lte: endDate,
+      },
     },
     include: {
       proveedor: {
-        select: {
-          id: true,
-          nombre: true
-        }
+        select: { id: true, name: true, razon_social: true },
       },
-      items: {
-        include: {
-          purchaseOrderItem: {
-            select: {
-              precioUnitario: true,
-              descuento: true
-            }
-          },
-          supplierItem: {
-            select: {
-              id: true,
-              nombre: true,
-              precioUnitario: true
-            }
-          }
-        }
-      }
     },
-    orderBy: { fechaRecepcion: 'asc' }
+    orderBy: [{ proveedorId: 'asc' }, { fechaImputacion: 'asc' }],
   });
 
-  // Si no hay recepciones, retornar valores en cero
   if (receipts.length === 0) {
     return {
       totalPurchases: 0,
       receiptCount: 0,
       itemCount: 0,
       bySupplier: [],
-      details: []
+      details: [],
     };
   }
 
-  // Calcular totales por items
   let totalPurchases = 0;
-  let totalItems = 0;
-  const details: PurchaseDetail[] = [];
   const supplierMap = new Map<number, SupplierPurchaseSummary>();
+  const details: PurchaseDetail[] = [];
 
   for (const receipt of receipts) {
+    const neto = toNumber(receipt.neto);
     const supplierId = receipt.proveedorId;
-    const supplierName = receipt.proveedor.nombre;
+    const supplierName = receipt.proveedor.razon_social || receipt.proveedor.name;
 
-    // Inicializar resumen de proveedor si no existe
+    totalPurchases += neto;
+
     if (!supplierMap.has(supplierId)) {
       supplierMap.set(supplierId, {
         supplierId,
         supplierName,
         total: 0,
         receiptCount: 0,
-        itemCount: 0
+        itemCount: 0,
       });
     }
+    const s = supplierMap.get(supplierId)!;
+    s.total += neto;
+    s.receiptCount += 1;
 
-    const supplierSummary = supplierMap.get(supplierId)!;
-    supplierSummary.receiptCount += 1;
-
-    for (const item of receipt.items) {
-      // Determinar el precio unitario:
-      // 1. Precio de la OC (si existe)
-      // 2. Fallback al precio del SupplierItem
-      let unitCost = 0;
-
-      if (item.purchaseOrderItem?.precioUnitario) {
-        unitCost = toNumber(item.purchaseOrderItem.precioUnitario);
-        // Aplicar descuento si existe
-        const discount = toNumber(item.purchaseOrderItem.descuento);
-        if (discount > 0) {
-          unitCost = unitCost * (1 - discount / 100);
-        }
-      } else if (item.supplierItem?.precioUnitario) {
-        unitCost = toNumber(item.supplierItem.precioUnitario);
-      }
-
-      // Usar cantidadAceptada para el cálculo
-      const quantity = toNumber(item.cantidadAceptada);
-      const itemCost = quantity * unitCost;
-
-      totalPurchases += itemCost;
-      totalItems += 1;
-      supplierSummary.total += itemCost;
-      supplierSummary.itemCount += 1;
-
-      details.push({
-        receiptId: receipt.id,
-        receiptNumber: receipt.numero,
-        supplierId,
-        supplierName,
-        receiptDate: receipt.fechaRecepcion,
-        itemId: item.id,
-        itemDescription: item.descripcion,
-        quantity,
-        unitCost,
-        totalCost: itemCost,
-        poItemId: item.purchaseOrderItemId,
-        supplierItemId: item.supplierItemId
-      });
-    }
+    details.push({
+      receiptId: receipt.id,
+      receiptNumber: `${receipt.numeroSerie ?? ''}-${receipt.numeroFactura ?? ''}`.replace(/^-|-$/, ''),
+      supplierId,
+      supplierName,
+      receiptDate: receipt.fechaImputacion,
+      neto,
+      total: toNumber(receipt.total),
+      estado: receipt.estado,
+      tipo: receipt.tipo,
+    });
   }
 
-  // Convertir mapa a array y ordenar por total descendente
-  const bySupplier = Array.from(supplierMap.values())
-    .sort((a, b) => b.total - a.total);
+  const bySupplier = Array.from(supplierMap.values()).sort((a, b) => b.total - a.total);
 
   return {
     totalPurchases,
     receiptCount: receipts.length,
-    itemCount: totalItems,
+    itemCount: receipts.length, // campo legacy, igual a receiptCount
     bySupplier,
-    details
+    details,
   };
 }
 

@@ -194,7 +194,9 @@ export async function handleIdempotency(
 
       if (record.status === 'COMPLETED' && record.response) {
         // Retornar respuesta guardada con header indicando replay
-        const response = JSON.parse(record.response);
+        let response: any;
+        try { response = JSON.parse(record.response); } catch { response = null; }
+        if (!response) return null as any;
         return NextResponse.json(response, {
           headers: {
             'Idempotency-Replayed': 'true',

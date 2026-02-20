@@ -44,14 +44,14 @@ export function OrdenDetailNotas({ notas, notasInternas }: OrdenDetailNotasProps
         {notas && (
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="bg-info-muted text-info-muted-foreground border-info">
                 Notas Públicas
               </Badge>
               <span className="text-xs text-muted-foreground">
                 (Visibles para el cliente)
               </span>
             </div>
-            <Alert className="bg-blue-50 border-blue-200">
+            <Alert className="bg-info-muted border-info">
               <AlertDescription className="text-sm whitespace-pre-wrap">
                 {notas}
               </AlertDescription>
@@ -63,7 +63,7 @@ export function OrdenDetailNotas({ notas, notasInternas }: OrdenDetailNotasProps
         {notasInternas && (
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+              <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning">
                 <Lock className="h-3 w-3 mr-1" />
                 Notas Internas
               </Badge>
@@ -71,7 +71,7 @@ export function OrdenDetailNotas({ notas, notasInternas }: OrdenDetailNotasProps
                 (Solo para uso interno)
               </span>
             </div>
-            <Alert className="bg-amber-50 border-amber-200">
+            <Alert className="bg-warning-muted border-warning">
               <AlertDescription className="text-sm whitespace-pre-wrap">
                 {notasInternas}
               </AlertDescription>

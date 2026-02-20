@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { cn } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -134,21 +135,21 @@ const COST_TYPES = [
     name: 'Manual',
     description: 'El costo se ingresa manualmente',
     icon: Pencil,
-    color: 'text-orange-500',
+    color: 'text-warning-muted-foreground',
   },
   {
     id: 'PURCHASE',
     name: 'Compra',
     description: 'Se actualiza al registrar compras',
     icon: ShoppingCart,
-    color: 'text-green-500',
+    color: 'text-success',
   },
   {
     id: 'PRODUCTION',
     name: 'Produccion',
     description: 'Se calcula desde una receta',
     icon: Factory,
-    color: 'text-blue-500',
+    color: 'text-info-muted-foreground',
   },
 ] as const;
 
@@ -640,7 +641,7 @@ export function ProductCreateDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" className="max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -649,7 +650,7 @@ export function ProductCreateDialog({
             </span>
             <div className="flex items-center gap-2">
               {isEditMode && (
-                <span className="text-xs text-muted-foreground px-2 py-1 bg-amber-100 dark:bg-amber-900/20 rounded">
+                <span className="text-xs text-muted-foreground px-2 py-1 bg-warning-muted rounded">
                   Modo edición: Click en <X className="inline h-3 w-3" /> para ocultar campos
                 </span>
               )}
@@ -679,7 +680,7 @@ export function ProductCreateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto">
+        <DialogBody>
           {loadingData ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -687,7 +688,7 @@ export function ProductCreateDialog({
           ) : (
             <form id="product-create-form" onSubmit={handleSubmit(onSubmit)}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-7 mb-4">
+                <TabsList className="w-full justify-start overflow-x-auto mb-4">
                   <TabsTrigger value="basic" className="text-xs">
                     <Package className="w-3.5 h-3.5 mr-1.5" />
                     Basico
@@ -1166,17 +1167,13 @@ export function ProductCreateDialog({
                                 key={type.id}
                                 type="button"
                                 onClick={() => field.onChange(type.id)}
-                                className={`group relative p-4 border-2 rounded-lg text-left transition-all ${
-                                  isSelected
-                                    ? 'border-primary bg-primary/10 ring-2 ring-primary/20 shadow-sm'
-                                    : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50'
-                                }`}
+                                className={cn('group relative p-4 border-2 rounded-lg text-left transition-all', isSelected ? 'border-primary bg-primary/10 ring-2 ring-primary/20 shadow-sm' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50')}
                               >
                                 <div className="flex items-center gap-2.5 mb-2">
-                                  <div className={`p-2 rounded-md ${isSelected ? 'bg-primary/20' : 'bg-muted'}`}>
-                                    <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : type.color}`} />
+                                  <div className={cn('p-2 rounded-md', isSelected ? 'bg-primary/20' : 'bg-muted')}>
+                                    <Icon className={cn('w-5 h-5', isSelected ? 'text-primary' : type.color)} />
                                   </div>
-                                  <span className={`text-sm font-semibold ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                  <span className={cn('text-sm font-semibold', isSelected ? 'text-primary' : 'text-foreground')}>
                                     {type.name}
                                   </span>
                                 </div>
@@ -1204,8 +1201,8 @@ export function ProductCreateDialog({
 
                   {/* Campos condicionales segun tipo de costo */}
                   {watchCostType === 'MANUAL' && (
-                    <div className="bg-gradient-to-br from-blue-50/50 to-muted/30 border border-blue-200/50 rounded-lg p-4">
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-blue-900">
+                    <div className="bg-gradient-to-br from-info-muted/50 to-muted/30 border border-info/50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-info-muted-foreground">
                         <Pencil className="w-4 h-4" />
                         Configuración de Costo Manual
                       </h3>
@@ -1264,8 +1261,8 @@ export function ProductCreateDialog({
                   )}
 
                   {watchCostType === 'PURCHASE' && (
-                    <div className="bg-gradient-to-br from-green-50/50 to-muted/30 border border-green-200/50 rounded-lg p-4">
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-green-900">
+                    <div className="bg-gradient-to-br from-success-muted/50 to-muted/30 border border-success/50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-success">
                         <ShoppingCart className="w-4 h-4" />
                         Vinculación con Compras
                       </h3>
@@ -1333,7 +1330,7 @@ export function ProductCreateDialog({
                               className="bg-muted/50 font-mono text-base"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <div className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                              <div className="px-2 py-0.5 bg-success-muted text-success text-xs font-medium rounded">
                                 AUTO
                               </div>
                             </div>
@@ -1522,9 +1519,9 @@ export function ProductCreateDialog({
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Margen Mínimo */}
-                        <div className="bg-gradient-to-br from-red-50/50 to-background border border-red-200/50 rounded-lg p-3">
+                        <div className="bg-gradient-to-br from-destructive/10 to-background border border-destructive/20 rounded-lg p-3">
                           <Label htmlFor="marginMin" className="text-sm font-medium mb-2 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                            <span className="w-2 h-2 rounded-full bg-destructive"></span>
                             Margen Mínimo (%)
                           </Label>
                           <div className="relative">
@@ -1542,15 +1539,15 @@ export function ProductCreateDialog({
                               %
                             </span>
                           </div>
-                          <p className="text-xs text-red-600 mt-2">
+                          <p className="text-xs text-destructive mt-2">
                             ⚠️ Alerta si el margen es menor a este valor
                           </p>
                         </div>
 
                         {/* Margen Máximo */}
-                        <div className="bg-gradient-to-br from-blue-50/50 to-background border border-blue-200/50 rounded-lg p-3">
+                        <div className="bg-gradient-to-br from-info-muted/50 to-background border border-info/50 rounded-lg p-3">
                           <Label htmlFor="marginMax" className="text-sm font-medium mb-2 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <span className="w-2 h-2 rounded-full bg-info"></span>
                             Margen Máximo (%)
                           </Label>
                           <div className="relative">
@@ -1568,7 +1565,7 @@ export function ProductCreateDialog({
                               %
                             </span>
                           </div>
-                          <p className="text-xs text-blue-600 mt-2">
+                          <p className="text-xs text-info-muted-foreground mt-2">
                             📊 Alerta si el margen supera este valor
                           </p>
                         </div>
@@ -1589,12 +1586,12 @@ export function ProductCreateDialog({
                             <span className="font-mono">0%</span>
                             <div className="flex gap-3">
                               {watch('marginMin') && (
-                                <span className="text-red-600 font-medium">
+                                <span className="text-destructive font-medium">
                                   Min: {watch('marginMin')}%
                                 </span>
                               )}
                               {watch('marginMax') && (
-                                <span className="text-blue-600 font-medium">
+                                <span className="text-info-muted-foreground font-medium">
                                   Max: {watch('marginMax')}%
                                 </span>
                               )}
@@ -1653,7 +1650,7 @@ export function ProductCreateDialog({
                         </div>
 
                         {/* Stock Mínimo */}
-                        <div className="bg-gradient-to-br from-amber-50/50 to-background border border-amber-200/50 rounded-lg p-3">
+                        <div className="bg-gradient-to-br from-warning-muted/50 to-background border border-warning/50 rounded-lg p-3">
                           <Label htmlFor="minStock" className="text-sm font-medium mb-2 block">
                             Stock Mínimo (Punto de Reorden)
                           </Label>
@@ -1671,7 +1668,7 @@ export function ProductCreateDialog({
                               {watch('unit') || 'unidades'}
                             </span>
                           </div>
-                          <p className="text-xs text-amber-600 mt-2">
+                          <p className="text-xs text-warning-muted-foreground mt-2">
                             ⚠️ Alerta cuando el stock caiga por debajo
                           </p>
                         </div>

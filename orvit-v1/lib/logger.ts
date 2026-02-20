@@ -14,24 +14,46 @@ import * as Sentry from '@sentry/nextjs';
 
 // Sensitive field paths to redact
 const REDACT_PATHS = [
+  // Credenciales de usuario
   'password',
   'newPassword',
   'oldPassword',
+  'passwordHash',
+  // Tokens y sesiones
   'token',
   'accessToken',
   'refreshToken',
   'legacyToken',
   'jwt',
+  'sessionToken',
+  'inviteToken',
+  'tokenHash',
+  // Secretos y API keys
   'secret',
   'apiKey',
-  'authorization',
-  'cookie',
-  'creditCard',
-  'ssn',
+  'JWT_SECRET',
+  'OPENAI_API_KEY',
+  'DISCORD_BOT_TOKEN',
+  'DISCORD_WEBHOOK_URL',
+  'SENTRY_AUTH_TOKEN',
+  'SMTP_PASSWORD',
+  'WHATSAPP_API_KEY',
+  // AWS
   'AWS_SECRET_ACCESS_KEY',
   'AWS_ACCESS_KEY_ID',
+  'AWS_SESSION_TOKEN',
+  // Headers sensibles
+  'authorization',
+  'cookie',
   'req.headers.authorization',
   'req.headers.cookie',
+  'req.headers["x-api-key"]',
+  // Datos personales sensibles
+  'creditCard',
+  'ssn',
+  // Database connection strings
+  'DATABASE_URL',
+  'DIRECT_URL',
 ];
 
 // Determine if running on server or client

@@ -37,14 +37,14 @@ interface OrdenDetailHeaderProps {
 }
 
 const estadoConfig: Record<string, { variant: any; label: string; color: string }> = {
-  BORRADOR: { variant: 'secondary', label: 'Borrador', color: 'bg-gray-100 text-gray-800' },
-  CONFIRMADA: { variant: 'default', label: 'Confirmada', color: 'bg-blue-100 text-blue-800' },
-  EN_PREPARACION: { variant: 'default', label: 'En Preparación', color: 'bg-yellow-100 text-yellow-800' },
+  BORRADOR: { variant: 'secondary', label: 'Borrador', color: 'bg-muted text-foreground' },
+  CONFIRMADA: { variant: 'default', label: 'Confirmada', color: 'bg-info-muted text-info-muted-foreground' },
+  EN_PREPARACION: { variant: 'default', label: 'En Preparación', color: 'bg-warning-muted text-warning-muted-foreground' },
   PARCIALMENTE_ENTREGADA: { variant: 'default', label: 'Parcialmente Entregada', color: 'bg-purple-100 text-purple-800' },
-  ENTREGADA: { variant: 'default', label: 'Entregada', color: 'bg-green-100 text-green-800' },
+  ENTREGADA: { variant: 'default', label: 'Entregada', color: 'bg-success-muted text-success-muted-foreground' },
   FACTURADA: { variant: 'default', label: 'Facturada', color: 'bg-indigo-100 text-indigo-800' },
   COMPLETADA: { variant: 'default', label: 'Completada', color: 'bg-teal-100 text-teal-800' },
-  CANCELADA: { variant: 'destructive', label: 'Cancelada', color: 'bg-red-100 text-red-800' },
+  CANCELADA: { variant: 'destructive', label: 'Cancelada', color: 'bg-destructive/10 text-destructive' },
 };
 
 export function OrdenDetailHeader({
@@ -67,7 +67,7 @@ export function OrdenDetailHeader({
             <div className="flex items-center gap-3">
               <Link
                 href="/administracion/ventas/ordenes"
-                className="hover:bg-gray-100 p-1 rounded"
+                className="hover:bg-accent p-1 rounded"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
@@ -147,7 +147,7 @@ export function OrdenDetailHeader({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={onCancelar}
-                      className="text-red-600"
+                      className="text-destructive"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Cancelar Orden
@@ -187,7 +187,7 @@ export function OrdenDetailHeader({
               }
             </p>
             {orden.fechaEntregaReal && (
-              <p className="text-xs text-green-600">
+              <p className="text-xs text-success">
                 Real: {format(new Date(orden.fechaEntregaReal), 'dd/MM/yyyy', { locale: es })}
               </p>
             )}

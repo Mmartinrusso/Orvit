@@ -210,7 +210,7 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Nueva Cotización Rápida</DialogTitle>
         </DialogHeader>

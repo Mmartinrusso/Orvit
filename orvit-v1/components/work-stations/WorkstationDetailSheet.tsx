@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -65,17 +66,7 @@ interface WorkstationDetailSheetProps {
   loading?: boolean;
 }
 
-const statusLabels: Record<string, string> = {
-  'ACTIVE': 'Activo',
-  'INACTIVE': 'Inactivo',
-  'MAINTENANCE': 'En mantenimiento',
-};
-
-const statusColors: Record<string, string> = {
-  'ACTIVE': 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-  'INACTIVE': 'bg-muted text-muted-foreground border-border',
-  'MAINTENANCE': 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-};
+import { statusLabels, statusColors } from './workstation.helpers';
 
 export function WorkstationDetailSheet({
   workstation,
@@ -313,7 +304,7 @@ export function WorkstationDetailSheet({
         </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-4 h-9">
+          <TabsList className="w-full justify-start overflow-x-auto h-9">
             <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
             <TabsTrigger value="instructivos" className="text-xs">Instructivos</TabsTrigger>
             <TabsTrigger value="maquinas" className="text-xs">Máquinas</TabsTrigger>
@@ -343,8 +334,8 @@ export function WorkstationDetailSheet({
               <Card className="group hover:shadow-md transition-all duration-200">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                      <Building2 className="h-4 w-4 text-blue-600" />
+                    <div className="h-8 w-8 rounded-lg bg-info-muted flex items-center justify-center shrink-0">
+                      <Building2 className="h-4 w-4 text-info-muted-foreground" />
                     </div>
                     <div className="flex-1">
                       <p className="text-[10px] text-muted-foreground">Sector</p>
@@ -376,13 +367,13 @@ export function WorkstationDetailSheet({
                     <div className={cn(
                       "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
                       workstation.status === 'ACTIVE' ? 'bg-emerald-500/10' :
-                      workstation.status === 'MAINTENANCE' ? 'bg-amber-500/10' :
+                      workstation.status === 'MAINTENANCE' ? 'bg-warning-muted' :
                       'bg-muted'
                     )}>
                       {workstation.status === 'ACTIVE' ? (
                         <Power className="h-4 w-4 text-emerald-600" />
                       ) : workstation.status === 'MAINTENANCE' ? (
-                        <Wrench className="h-4 w-4 text-amber-600" />
+                        <Wrench className="h-4 w-4 text-warning-muted-foreground" />
                       ) : (
                         <PowerOff className="h-4 w-4 text-muted-foreground" />
                       )}
@@ -404,8 +395,8 @@ export function WorkstationDetailSheet({
               <Card className="group hover:shadow-md transition-all duration-200">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
-                      <Clock className="h-4 w-4 text-orange-600" />
+                    <div className="h-8 w-8 rounded-lg bg-warning-muted flex items-center justify-center shrink-0">
+                      <Clock className="h-4 w-4 text-warning-muted-foreground" />
                     </div>
                     <div className="flex-1">
                       <p className="text-[10px] text-muted-foreground">Última actualización</p>
@@ -543,8 +534,8 @@ export function WorkstationDetailSheet({
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                            <Wrench className="h-5 w-5 text-amber-600" />
+                          <div className="h-10 w-10 rounded-lg bg-warning-muted flex items-center justify-center shrink-0">
+                            <Wrench className="h-5 w-5 text-warning-muted-foreground" />
                           </div>
                           <div className="flex-1">
                             <h4 className="text-sm font-semibold text-foreground">{machine.name}</h4>
@@ -630,27 +621,27 @@ export function WorkstationDetailSheet({
                         Contenido del Instructivo
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="bg-white dark:bg-card">
+                    <CardContent className="bg-card">
                       <div
                         className="prose prose-sm max-w-none dark:prose-invert
-                          [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-gray-900 dark:[&_h1]:text-gray-100
-                          [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-gray-800 dark:[&_h2]:text-gray-200
-                          [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-gray-700 dark:[&_h3]:text-gray-300
-                          [&_p]:text-sm [&_p]:leading-relaxed [&_p]:mb-3 [&_p]:text-gray-700 dark:[&_p]:text-gray-300
+                          [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-foreground
+                          [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-foreground
+                          [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-foreground
+                          [&_p]:text-sm [&_p]:leading-relaxed [&_p]:mb-3 [&_p]:text-foreground
                           [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-3 [&_ul]:space-y-1
                           [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-3 [&_ol]:space-y-1
-                          [&_li]:text-sm [&_li]:text-gray-700 dark:[&_li]:text-gray-300
-                          [&_strong]:font-semibold [&_strong]:text-gray-900 dark:[&_strong]:text-gray-100
+                          [&_li]:text-sm [&_li]:text-foreground
+                          [&_strong]:font-semibold [&_strong]:text-foreground
                           [&_em]:italic
                           [&_table]:border-collapse [&_table]:w-full [&_table]:my-4
-                          [&_th]:border [&_th]:border-gray-300 [&_th]:bg-gray-100 dark:[&_th]:bg-gray-800 [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-sm
-                          [&_td]:border [&_td]:border-gray-300 [&_td]:p-2 [&_td]:text-sm
-                          [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4
-                          [&_code]:bg-gray-100 dark:[&_code]:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono
-                          [&_pre]:bg-gray-100 dark:[&_pre]:bg-gray-800 [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto [&_pre]:my-3
+                          [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-sm
+                          [&_td]:border [&_td]:border-border [&_td]:p-2 [&_td]:text-sm
+                          [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4
+                          [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono
+                          [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto [&_pre]:my-3
                           [&_img]:max-w-full [&_img]:h-auto [&_img]:my-4 [&_img]:rounded [&_img]:shadow-sm
                           py-6 px-8"
-                        dangerouslySetInnerHTML={{ __html: selectedInstructive.contentHtml }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedInstructive.contentHtml) }}
                       />
                     </CardContent>
                   </Card>
@@ -750,7 +741,7 @@ export function WorkstationDetailSheet({
                           {machineIds.length > 0 && (
                             <div className="space-y-2">
                               <div className="flex items-center gap-1.5">
-                                <Wrench className="h-3.5 w-3.5 text-amber-600" />
+                                <Wrench className="h-3.5 w-3.5 text-warning-muted-foreground" />
                                 <span className="text-xs font-medium text-muted-foreground">
                                   Máquinas ({machineIds.length})
                                 </span>
@@ -759,10 +750,10 @@ export function WorkstationDetailSheet({
                                 {machineIds.map((id: any) => (
                                   <div
                                     key={`machine-${id}`}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 border border-amber-500/20"
+                                    className="flex items-center gap-2 p-2 rounded-lg bg-warning-muted border border-warning-muted"
                                   >
-                                    <div className="h-6 w-6 rounded bg-amber-500/10 flex items-center justify-center shrink-0">
-                                      <Wrench className="h-3 w-3 text-amber-600" />
+                                    <div className="h-6 w-6 rounded bg-warning-muted flex items-center justify-center shrink-0">
+                                      <Wrench className="h-3 w-3 text-warning-muted-foreground" />
                                     </div>
                                     <span className="text-xs font-medium flex-1">
                                       {machines.find(m => m.id === id || m.id === String(id))?.name || `Máquina #${id}`}

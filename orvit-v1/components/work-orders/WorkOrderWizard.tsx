@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogBody } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DateInput } from '@/components/ui/DateInput';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,6 +61,8 @@ interface WorkOrderWizardProps {
   preselectedMachine?: any;
   preselectedUnidadMovil?: { id: number; nombre: string } | null;
   preselectedType?: string | null;
+  preselectedComponentId?: string | number;
+  preselectedSubcomponentId?: string | number;
 }
 
 // Definición de tipos de trabajo con íconos y colores usando tokens
@@ -71,10 +73,10 @@ const workOrderTypes = [
     subtitle: 'Correctivo - Algo dejó de funcionar',
     icon: Wrench,
     examples: ['La máquina no enciende', 'Se rompió una pieza', 'Hay una fuga', 'Ruido extraño'],
-    bgColor: 'bg-orange-500/10 hover:bg-orange-500/20',
-    borderColor: 'border-orange-500/30',
-    iconColor: 'text-orange-500',
-    ringColor: 'ring-orange-500',
+    bgColor: 'bg-warning-muted hover:bg-warning-muted/80',
+    borderColor: 'border-warning/30',
+    iconColor: 'text-warning-muted-foreground',
+    ringColor: 'ring-warning',
   },
   {
     id: MaintenanceType.PREVENTIVE,
@@ -82,10 +84,10 @@ const workOrderTypes = [
     subtitle: 'Preventivo - Mantenimiento programado',
     icon: Calendar,
     examples: ['Cambio de aceite', 'Limpiar filtros', 'Revisión general', 'Calibración'],
-    bgColor: 'bg-blue-500/10 hover:bg-blue-500/20',
-    borderColor: 'border-blue-500/30',
-    iconColor: 'text-blue-500',
-    ringColor: 'ring-blue-500',
+    bgColor: 'bg-info-muted hover:bg-info-muted/80',
+    borderColor: 'border-info/30',
+    iconColor: 'text-info-muted-foreground',
+    ringColor: 'ring-info',
   },
   {
     id: MaintenanceType.EMERGENCY,
@@ -93,10 +95,10 @@ const workOrderTypes = [
     subtitle: 'Emergencia - Requiere atención inmediata',
     icon: AlertTriangle,
     examples: ['Peligro para operarios', 'Producción parada', 'Emergencia de seguridad'],
-    bgColor: 'bg-rose-500/10 hover:bg-rose-500/20',
-    borderColor: 'border-rose-500/30',
-    iconColor: 'text-rose-500',
-    ringColor: 'ring-rose-500',
+    bgColor: 'bg-destructive/10 hover:bg-destructive/20',
+    borderColor: 'border-destructive/30',
+    iconColor: 'text-destructive',
+    ringColor: 'ring-destructive',
   },
   {
     id: MaintenanceType.PREDICTIVE,
@@ -104,10 +106,10 @@ const workOrderTypes = [
     subtitle: 'Predictivo - Basado en análisis',
     icon: TrendingUp,
     examples: ['Cambiar pieza', 'Automatizar proceso', 'Mejorar eficiencia', 'Modernizar'],
-    bgColor: 'bg-emerald-500/10 hover:bg-emerald-500/20',
-    borderColor: 'border-emerald-500/30',
-    iconColor: 'text-emerald-500',
-    ringColor: 'ring-emerald-500',
+    bgColor: 'bg-success-muted hover:bg-success-muted/80',
+    borderColor: 'border-success/30',
+    iconColor: 'text-success',
+    ringColor: 'ring-success',
   },
 ];
 
@@ -119,7 +121,7 @@ const priorityOptions = [
   { id: Priority.URGENT, name: 'Urgente', description: 'Hacerlo ya mismo' },
 ];
 
-export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselectedMachine, preselectedUnidadMovil, preselectedType }: WorkOrderWizardProps) {
+export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselectedMachine, preselectedUnidadMovil, preselectedType, preselectedComponentId, preselectedSubcomponentId }: WorkOrderWizardProps) {
   const { currentCompany, currentSector } = useCompany();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
@@ -142,6 +144,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
     priority: '' as Priority | '',
     machineId: '',
     componentId: '',
+    subcomponentId: '',
     unidadMovilId: '',
     unidadMovilName: '',
     title: '',
@@ -171,7 +174,8 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
         type: (preselectedType as MaintenanceType) || '',
         priority: '',
         machineId: preselectedMachine?.id?.toString() || '',
-        componentId: '',
+        componentId: preselectedComponentId ? preselectedComponentId.toString() : '',
+        subcomponentId: preselectedSubcomponentId ? preselectedSubcomponentId.toString() : '',
         unidadMovilId: preselectedUnidadMovil?.id?.toString() || '',
         unidadMovilName: preselectedUnidadMovil?.nombre || '',
         title: '',
@@ -188,7 +192,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
         fetchFailures(preselectedMachine.id);
       }
     }
-  }, [isOpen, preselectedMachine, preselectedUnidadMovil, preselectedType]);
+  }, [isOpen, preselectedMachine, preselectedUnidadMovil, preselectedType, preselectedComponentId, preselectedSubcomponentId]);
 
   // Auto-suggest priority based on type
   useEffect(() => {
@@ -254,7 +258,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
   };
 
   const handleMachineChange = (machineId: string) => {
-    setFormData(prev => ({ ...prev, machineId, componentId: '', failureId: '' }));
+    setFormData(prev => ({ ...prev, machineId, componentId: '', subcomponentId: '', failureId: '' }));
     if (machineId) {
       fetchComponents(Number(machineId));
       fetchFailures(Number(machineId));
@@ -345,6 +349,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
         priority: formData.priority,
         machineId: formData.machineId ? Number(formData.machineId) : null,
         componentId: formData.componentId ? Number(formData.componentId) : null,
+        subcomponentId: formData.subcomponentId ? Number(formData.subcomponentId) : null,
         unidadMovilId: formData.unidadMovilId ? Number(formData.unidadMovilId) : null,
         assignedToId: formData.assignedToId ? Number(formData.assignedToId) : null,
         scheduledDate: formData.scheduledDate ? new Date(formData.scheduledDate) : null,
@@ -473,14 +478,15 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
               value={{
                 machineId: formData.machineId ? Number(formData.machineId) : undefined,
                 componentId: formData.componentId ? Number(formData.componentId) : undefined,
+                subcomponentIds: formData.subcomponentId ? [Number(formData.subcomponentId)] : undefined,
               }}
               onChange={(selection) => {
                 setFormData(prev => ({
                   ...prev,
                   machineId: selection.machineId?.toString() || '',
                   componentId: selection.componentId?.toString() || '',
+                  subcomponentId: selection.subcomponentIds?.[0]?.toString() || '',
                 }));
-                // Fetch componentes si cambió la máquina (ya lo hace internamente el selector)
               }}
               machines={machines}
             />
@@ -522,7 +528,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
         {/* Fecha programada */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">Fecha programada (opcional)</Label>
-          <DateInput
+          <DatePicker
             value={formData.scheduledDate}
             onChange={(value) => setFormData(prev => ({ ...prev, scheduledDate: value }))}
             placeholder="dd/mm/yyyy"
@@ -712,18 +718,18 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
           <>
             {/* Option to create new failure */}
             <Card
-              className="cursor-pointer transition-all border-2 border-dashed border-orange-500/50 hover:border-orange-500 hover:bg-orange-500/5"
+              className="cursor-pointer transition-all border-2 border-dashed border-warning/50 hover:border-warning hover:bg-warning-muted/50"
               onClick={() => setShowFailureCreateDialog(true)}
             >
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-500/10">
-                  <Plus className="h-5 w-5 text-orange-500" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-warning-muted">
+                  <Plus className="h-5 w-5 text-warning-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm text-orange-600">Crear nueva falla</p>
+                  <p className="font-medium text-sm text-warning-muted-foreground">Crear nueva falla</p>
                   <p className="text-xs text-muted-foreground">Registrar una falla y vincularla a esta orden</p>
                 </div>
-                <Zap className="h-4 w-4 text-orange-500" />
+                <Zap className="h-4 w-4 text-warning-muted-foreground" />
               </CardContent>
             </Card>
 
@@ -767,14 +773,14 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
                   className={cn(
                     'cursor-pointer transition-all border-2',
                     isSelected
-                      ? 'border-orange-500 bg-orange-500/5 ring-1 ring-orange-500/20'
+                      ? 'border-warning bg-warning-muted/50 ring-1 ring-warning/20'
                       : 'border-transparent bg-muted/30 hover:bg-muted/50'
                   )}
                   onClick={() => setFormData(prev => ({ ...prev, failureId: failure.id.toString() }))}
                 >
                   <CardContent className="p-4 flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-500/10">
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-warning-muted">
+                      <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">
@@ -785,7 +791,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
                         {failure.reportedAt ? new Date(failure.reportedAt).toLocaleDateString('es-ES') : 'Sin fecha'}
                       </p>
                     </div>
-                    {isSelected && <Check className="h-4 w-4 text-orange-500" />}
+                    {isSelected && <Check className="h-4 w-4 text-warning-muted-foreground" />}
                   </CardContent>
                 </Card>
               );
@@ -841,14 +847,10 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
     <>
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent
-          className="p-0 overflow-hidden rounded-2xl border border-border bg-card shadow-xl [&>button:last-child]:hidden"
-          style={{
-            width: 'min(95vw, 700px)',
-            maxWidth: '700px',
-            maxHeight: 'min(90vh, 750px)',
-          }}
+          size="md"
+          className="p-0 rounded-2xl border border-border bg-card shadow-xl [&>button:last-child]:hidden"
         >
-          <div className="flex flex-col h-full max-h-[min(90vh,750px)]">
+          <div className="flex flex-col h-full">
             {/* Header sticky */}
             <div className="flex-shrink-0 border-b border-border bg-card px-6 py-4">
               <div className="flex items-center justify-between gap-4">
@@ -913,7 +915,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
                     <Button
                       onClick={handleNext}
                       disabled={!canProceed() || isLoading}
-                      className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-black hover:bg-gray-800 text-white h-9 text-xs"
+                      className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-foreground hover:bg-foreground/90 text-white h-9 text-xs"
                     >
                       Siguiente
                       <ChevronRight className="h-3 w-3 ml-1" />
@@ -922,7 +924,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
                     <Button
                       onClick={handleSubmit}
                       disabled={isLoading}
-                      className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-black hover:bg-gray-800 text-white h-9 text-xs gap-1.5"
+                      className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-foreground hover:bg-foreground/90 text-white h-9 text-xs gap-1.5"
                     >
                       {isLoading ? (
                         <>

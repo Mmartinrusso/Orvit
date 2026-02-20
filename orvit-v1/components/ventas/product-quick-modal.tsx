@@ -143,7 +143,7 @@ export function ProductQuickModal({
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-6 w-6 text-blue-600" />
+            <Package className="h-6 w-6 text-info-muted-foreground" />
             Agregar Producto Rapido
           </DialogTitle>
           <DialogDescription>
@@ -163,7 +163,7 @@ export function ProductQuickModal({
                 onBlur={generateCode}
               />
               {errors.name && (
-                <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
               )}
             </div>
 
@@ -185,7 +185,7 @@ export function ProductQuickModal({
                 </Button>
               </div>
               {errors.code && (
-                <p className="text-sm text-red-500 mt-1">{errors.code.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.code.message}</p>
               )}
             </div>
           </div>
@@ -198,7 +198,7 @@ export function ProductQuickModal({
               className="min-h-[80px]"
             />
             {errors.description && (
-              <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>
+              <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
             )}
           </div>
 
@@ -222,7 +222,7 @@ export function ProductQuickModal({
                 </SelectContent>
               </Select>
               {errors.category && (
-                <p className="text-sm text-red-500 mt-1">{errors.category.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.category.message}</p>
               )}
             </div>
 
@@ -244,7 +244,7 @@ export function ProductQuickModal({
                 </SelectContent>
               </Select>
               {errors.unit && (
-                <p className="text-sm text-red-500 mt-1">{errors.unit.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.unit.message}</p>
               )}
             </div>
           </div>
@@ -261,7 +261,7 @@ export function ProductQuickModal({
                 placeholder="0.00"
               />
               {errors.costPrice && (
-                <p className="text-sm text-red-500 mt-1">{errors.costPrice.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.costPrice.message}</p>
               )}
             </div>
 
@@ -274,7 +274,7 @@ export function ProductQuickModal({
                 placeholder="0"
               />
               {errors.currentStock && (
-                <p className="text-sm text-red-500 mt-1">{errors.currentStock.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.currentStock.message}</p>
               )}
             </div>
 
@@ -285,7 +285,7 @@ export function ProductQuickModal({
                 placeholder="ej. Depósito A-1"
               />
               {errors.location && (
-                <p className="text-sm text-red-500 mt-1">{errors.location.message}</p>
+                <p className="text-sm text-destructive mt-1">{errors.location.message}</p>
               )}
             </div>
           </div>

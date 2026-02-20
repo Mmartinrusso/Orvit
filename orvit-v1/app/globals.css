@@ -2,218 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Variables CSS para temas */
-:root {
-  /* Tema Claro (como la foto) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-sidebar: #f1f5f9;
-  --bg-accent: #f8fafc;
-  
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --text-accent: #3b82f6;
-  
-  --border-primary: #e2e8f0;
-  --border-secondary: #f1f5f9;
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  
-  --kpi-bg: #f8fafc;
-  --kpi-icon-bg: #e2e8f0;
-  --kpi-text: #1e293b;
-  
-  --chart-bg: #ffffff;
-  --chart-border: #e2e8f0;
-  --chart-text: #64748b;
-  
-  --table-header: #f8fafc;
-  --table-row: #ffffff;
-  --table-row-hover: #f1f5f9;
-  --table-border: #e2e8f0;
-}
+/* Legacy theme variables and utility classes removed —
+   all theming now handled by @layer base CSS variables + Tailwind tokens */
 
-/* Tema Oscuro (neutro, sin azules) */
-.dark {
-  --bg-primary: #101010;
-  --bg-secondary: #171717;
-  --bg-card: #1a1a1a;
-  --bg-sidebar: #101010;
-  --bg-accent: #1f1f1f;
-  
-  --text-primary: #ffffff;
-  --text-secondary: #e5e5e5;
-  --text-muted: #a3a3a3;
-  --text-accent: #ffffff;
-  
-  --border-primary: #262626;
-  --border-secondary: #2e2e2e;
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
-  
-  --kpi-bg: #1f1f1f;
-  --kpi-icon-bg: #262626;
-  --kpi-text: #ffffff;
-  
-  --chart-bg: #1a1a1a;
-  --chart-border: #262626;
-  --chart-text: #e5e5e5;
-  
-  --table-header: #1f1f1f;
-  --table-row: #1a1a1a;
-  --table-row-hover: #1f1f1f;
-  --table-border: #262626;
-}
-
-/* Clases utilitarias para temas */
-.theme-bg-primary { background-color: var(--bg-primary); }
-.theme-bg-secondary { background-color: var(--bg-secondary); }
-.theme-bg-card { background-color: var(--bg-card); }
-.theme-bg-sidebar { background-color: var(--bg-sidebar); }
-.theme-bg-accent { background-color: var(--bg-accent); }
-
-.theme-text-primary { color: var(--text-primary); }
-.theme-text-secondary { color: var(--text-secondary); }
-.theme-text-muted { color: var(--text-muted); }
-.theme-text-accent { color: var(--text-accent); }
-
-.theme-border-primary { border-color: var(--border-primary); }
-.theme-border-secondary { border-color: var(--border-secondary); }
-
-.theme-shadow-sm { box-shadow: var(--shadow-sm); }
-.theme-shadow-md { box-shadow: var(--shadow-md); }
-.theme-shadow-lg { box-shadow: var(--shadow-lg); }
-
-/* Transiciones suaves para cambio de tema */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-/* Estilos específicos del dashboard */
-.dashboard-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.dashboard-card:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.kpi-card {
-  background-color: var(--kpi-bg);
-  border: 1px solid var(--border-secondary);
-}
-
-.kpi-icon {
-  background-color: var(--kpi-icon-bg);
-  color: var(--kpi-text);
-}
-
-.chart-container {
-  background-color: var(--chart-bg);
-  border: 1px solid var(--chart-border);
-}
-
-.table-header {
-  background-color: var(--table-header);
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--table-border);
-}
-
-.table-row {
-  background-color: var(--table-row);
-  border-bottom: 1px solid var(--table-border);
-}
-
-.table-row:hover {
-  background-color: var(--table-row-hover);
-}
-
-/* Botón de toggle de tema */
-.theme-toggle {
-  background-color: var(--bg-accent);
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
-}
-
-.theme-toggle:hover {
-  background-color: var(--bg-secondary);
-}
-
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
-/* Reglas específicas para mejorar consistencia en diferentes frecuencias de refresco - SOLO TEMA CLARO */
-@media screen and (min-resolution: 75dpi) {
-  /* Para monitores de alta frecuencia (75Hz+) - solo en tema claro */
-  :root:not(.dark):not(.metal) .sidebar-bg,
-  :root:not(.dark):not(.metal) .navbar-bg {
-    background-color: #f8fafc !important; /* Gris muy claro y definido */
-    color: #0f172a !important; /* Texto oscuro sólido */
-  }
-  
-  /* Bordes más claros para 75Hz en tema claro */
-  :root:not(.dark):not(.black) .sidebar-bg {
-    border-right-color: #cbd5e1 !important; /* Gris más claro */
-  }
-  
-  :root:not(.dark):not(.black) .navbar-bg {
-    border-bottom-color: #cbd5e1 !important; /* Gris más claro */
-  }
-}
-
-/* Regla específica para problemas en 75Hz - SOLO TEMA CLARO */
-@media screen and (min-resolution: 75dpi) and (max-resolution: 76dpi) {
-  :root:not(.dark):not(.black) .sidebar-bg,
-  :root:not(.dark):not(.black) .navbar-bg {
-    background-color: #f1f5f9 !important; /* Gris más definido para 75Hz */
-    color: #0f172a !important;
-  }
-  
-  /* Bordes más claros para 75Hz específico */
-  :root:not(.dark):not(.black) .sidebar-bg {
-    border-right-color: #94a3b8 !important; /* Gris más claro */
-  }
-  
-  :root:not(.dark):not(.black) .navbar-bg {
-    border-bottom-color: #94a3b8 !important; /* Gris más claro */
-  }
-}
-
-/* Fallback general para problemas de renderizado - SOLO TEMA CLARO */
-@media screen and (max-resolution: 60dpi) {
-  /* Para monitores de baja frecuencia - solo en tema claro */
-  :root:not(.dark):not(.metal) .sidebar-bg,
-  :root:not(.dark):not(.metal) .navbar-bg {
-    background-color: #f8fafc !important; /* Gris muy claro */
-    color: #0f172a !important;
-  }
-}
-
-/* Reglas específicas para theme Metal */
-.metal .sidebar-bg,
-.metal .navbar-bg {
-  background-color: #182B31 !important;
-  color: #F4FEFE !important;
-}
+/* Monitor refresh rate hacks and legacy Next.js boilerplate removed —
+   sidebar/navbar colors now handled by CSS variables */
 
 
 
@@ -264,6 +57,20 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* Status semánticos */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 76% 94%;
+    --success-muted-foreground: 142 64% 24%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 48 96% 89%;
+    --warning-muted-foreground: 40 82% 28%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 214 95% 93%;
+    --info-muted-foreground: 221 83% 28%;
   }
 
   .dark {
@@ -310,6 +117,20 @@
     --chart-3: 0 0% 45%;
     --chart-4: 0 0% 35%;
     --chart-5: 0 0% 25%;
+
+    /* Status semánticos — dark */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 40% 15%;
+    --success-muted-foreground: 142 60% 75%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 40% 15%;
+    --warning-muted-foreground: 38 80% 75%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 217 40% 15%;
+    --info-muted-foreground: 217 80% 75%;
   }
 
   .black {
@@ -356,6 +177,20 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Status semánticos — black */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 40% 12%;
+    --success-muted-foreground: 142 60% 75%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 40% 12%;
+    --warning-muted-foreground: 38 80% 75%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 217 40% 12%;
+    --info-muted-foreground: 217 80% 75%;
   }
 
   .metal {
@@ -404,6 +239,20 @@
     --chart-3: 40 96% 57%; /* #FBBF24 (Yellow) */
     --chart-4: 205 70% 50%; /* Metal accent */
     --chart-5: 195 75% 55%; /* Metal secondary accent */
+
+    /* Status semánticos — metal (hue shift a 200-210) */
+    --success: 160 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 160 35% 15%;
+    --success-muted-foreground: 160 50% 70%;
+    --warning: 40 85% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 40 35% 15%;
+    --warning-muted-foreground: 40 70% 70%;
+    --info: 205 80% 55%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 205 35% 18%;
+    --info-muted-foreground: 205 60% 72%;
   }
 
 
@@ -827,24 +676,7 @@
     background-color: hsl(var(--main-content-background));
   }
   
-  /* Clases para mejorar consistencia de colores en diferentes Hz */
-  .color-stable {
-    /* Forzar renderizado consistente en diferentes frecuencias */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    /* Asegurar que los colores se rendericen correctamente */
-    color-rendering: optimizeQuality;
-    image-rendering: optimizeQuality;
-  }
-  
-  /* Fallback para colores que pueden desaparecer - SOLO TEMA CLARO */
-  :root:not(.dark):not(.black) .sidebar-fallback {
-    background-color: #f8fafc !important; /* Fallback gris claro */
-  }
-  
-  :root:not(.dark):not(.black) .navbar-fallback {
-    background-color: #f8fafc !important; /* Fallback gris claro */
-  }
+  /* Removed: .color-stable, .sidebar-fallback, .navbar-fallback (unused) */
   
   /* Fondo general gris claro para tema claro */
   :root:not(.dark):not(.black) body {
@@ -1203,7 +1035,7 @@
 /* Estilos específicos para el componente LogoUpload */
 @layer components {
   .logo-container {
-    @apply flex-shrink-0 w-16 h-16 border rounded-lg bg-gray-50 dark:bg-gray-800 overflow-hidden;
+    @apply flex-shrink-0 w-16 h-16 border rounded-lg bg-muted overflow-hidden;
     position: relative !important;
     display: flex !important;
     align-items: center !important;

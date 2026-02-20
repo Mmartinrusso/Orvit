@@ -104,7 +104,7 @@ export default function LubricationPage() {
   const getMethodBadge = (method: string) => {
     switch (method) {
       case 'MANUAL': return <Badge variant="outline">Manual</Badge>;
-      case 'AUTOMATIC': return <Badge className="bg-blue-100 text-blue-800">Automático</Badge>;
+      case 'AUTOMATIC': return <Badge className="bg-info-muted text-info-muted-foreground">Automático</Badge>;
       case 'CENTRALIZED': return <Badge className="bg-purple-100 text-purple-800">Centralizado</Badge>;
       default: return <Badge variant="outline">{method}</Badge>;
     }
@@ -112,10 +112,10 @@ export default function LubricationPage() {
 
   const getConditionBadge = (condition: string) => {
     switch (condition) {
-      case 'NORMAL': return <Badge className="bg-green-100 text-green-800">Normal</Badge>;
-      case 'CONTAMINATED': return <Badge className="bg-orange-100 text-orange-800">Contaminado</Badge>;
-      case 'LOW_LEVEL': return <Badge className="bg-yellow-100 text-yellow-800">Bajo Nivel</Badge>;
-      case 'NEEDS_REPLACEMENT': return <Badge className="bg-red-100 text-red-800">Reemplazar</Badge>;
+      case 'NORMAL': return <Badge className="bg-success-muted text-success">Normal</Badge>;
+      case 'CONTAMINATED': return <Badge className="bg-warning-muted text-warning-muted-foreground">Contaminado</Badge>;
+      case 'LOW_LEVEL': return <Badge className="bg-warning-muted text-warning-muted-foreground">Bajo Nivel</Badge>;
+      case 'NEEDS_REPLACEMENT': return <Badge className="bg-destructive/10 text-destructive">Reemplazar</Badge>;
       default: return <Badge variant="outline">{condition}</Badge>;
     }
   };
@@ -125,7 +125,7 @@ export default function LubricationPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Droplet className="h-6 w-6 text-amber-500" />
+            <Droplet className="h-6 w-6 text-warning-muted-foreground" />
             Gestión de Lubricación
           </h1>
           <p className="text-muted-foreground">
@@ -212,7 +212,7 @@ export default function LubricationPage() {
                 <p className="text-sm text-muted-foreground">Puntos Totales</p>
                 <p className="text-2xl font-bold">{points.length}</p>
               </div>
-              <MapPin className="h-8 w-8 text-amber-500" />
+              <MapPin className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -223,7 +223,7 @@ export default function LubricationPage() {
                 <p className="text-sm text-muted-foreground">Manuales</p>
                 <p className="text-2xl font-bold">{points.filter(p => p.method === 'MANUAL').length}</p>
               </div>
-              <Droplet className="h-8 w-8 text-blue-500" />
+              <Droplet className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -243,13 +243,13 @@ export default function LubricationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ejecuciones Hoy</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-success">
                   {executions.filter(e =>
                     new Date(e.executedAt).toDateString() === new Date().toDateString()
                   ).length}
                 </p>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>

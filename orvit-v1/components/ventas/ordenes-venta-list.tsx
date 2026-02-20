@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,8 +32,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
 import {
+  ShoppingCart as ShoppingCartIcon,
   ShoppingBag,
   Plus,
   Search,
@@ -117,14 +119,14 @@ type EstadoOV =
   | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<EstadoOV, { label: string; color: string; icon: React.ElementType }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: FileEdit },
-  CONFIRMADA: { label: 'Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle2 },
-  EN_PREPARACION: { label: 'Preparación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
-  PARCIALMENTE_ENTREGADA: { label: 'Parcial', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Truck },
-  ENTREGADA: { label: 'Entregada', color: 'bg-green-100 text-green-700 border-green-200', icon: Truck },
-  FACTURADA: { label: 'Facturada', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Receipt },
-  COMPLETADA: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: XCircle },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground border-border', icon: FileEdit },
+  CONFIRMADA: { label: 'Confirmada', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
+  EN_PREPARACION: { label: 'Preparación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Clock },
+  PARCIALMENTE_ENTREGADA: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Truck },
+  ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success border-success-muted', icon: Truck },
+  FACTURADA: { label: 'Facturada', color: 'bg-primary/10 text-primary border-primary/30', icon: Receipt },
+  COMPLETADA: { label: 'Completada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground border-border', icon: XCircle },
 };
 
 interface OrdenesVentaListProps {
@@ -282,7 +284,7 @@ export function OrdenesVentaList({
     const config = ESTADOS_CONFIG[estado as EstadoOV] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={`${config.color} border text-[10px] px-1.5 py-0.5 font-medium`}>
+      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -409,13 +411,13 @@ export function OrdenesVentaList({
       {showKPIs && (
         <div className="grid grid-cols-5 gap-3">
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'BORRADOR' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'BORRADOR' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'BORRADOR' ? 'all' : 'BORRADOR')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-gray-100">
-                  <FileEdit className="w-3.5 h-3.5 text-gray-600" />
+                <div className="p-1.5 rounded-md bg-muted">
+                  <FileEdit className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.borradores}</p>
@@ -426,13 +428,13 @@ export function OrdenesVentaList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'CONFIRMADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'CONFIRMADA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'CONFIRMADA' ? 'all' : 'CONFIRMADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-blue-100">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                <div className="p-1.5 rounded-md bg-info-muted">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-info-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.confirmadas}</p>
@@ -443,13 +445,13 @@ export function OrdenesVentaList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'EN_PREPARACION' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'EN_PREPARACION' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'EN_PREPARACION' ? 'all' : 'EN_PREPARACION')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-yellow-100">
-                  <Clock className="w-3.5 h-3.5 text-yellow-600" />
+                <div className="p-1.5 rounded-md bg-warning-muted">
+                  <Clock className="w-3.5 h-3.5 text-warning-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.enPreparacion}</p>
@@ -460,13 +462,13 @@ export function OrdenesVentaList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'ENTREGADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'ENTREGADA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'ENTREGADA' ? 'all' : 'ENTREGADA')}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-green-100">
-                  <Truck className="w-3.5 h-3.5 text-green-600" />
+                <div className="p-1.5 rounded-md bg-success-muted">
+                  <Truck className="w-3.5 h-3.5 text-success" />
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.entregadas}</p>
@@ -477,7 +479,7 @@ export function OrdenesVentaList({
           </Card>
 
           <Card
-            className={`cursor-pointer transition-all ${statusFilter === 'FACTURADA' ? 'ring-2 ring-primary' : 'hover:shadow-md'}`}
+            className={cn('cursor-pointer transition-all', statusFilter === 'FACTURADA' ? 'ring-2 ring-primary' : 'hover:shadow-md')}
             onClick={() => setStatusFilter(statusFilter === 'FACTURADA' ? 'all' : 'FACTURADA')}
           >
             <CardContent className="p-3">
@@ -541,37 +543,20 @@ export function OrdenesVentaList({
           onClick={() => { loadOrdenes(); loadKPIs(); }}
           disabled={loading}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
         </Button>
       </div>
 
       {/* Tabla */}
       {loading ? (
-        <div className="space-y-3">
-          <div className="border rounded-lg">
-            <div className="p-3 bg-muted/30">
-              <Skeleton className="h-4 w-full" />
-            </div>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="p-3 border-t">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-32 hidden md:block" />
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-16 ml-auto" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <SkeletonTable rows={5} cols={9} />
       ) : ordenes.length === 0 ? (
         <div className="text-center py-12">
-          <ShoppingBag className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No se encontraron órdenes de venta</p>
+          <ShoppingCartIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm font-medium">No hay órdenes de venta</p>
+          <p className="text-xs text-muted-foreground mt-1">Crea una nueva orden para comenzar a gestionar tus ventas</p>
           {hasActiveFilters && (
-            <Button variant="link" size="sm" onClick={clearFilters}>
+            <Button variant="link" size="sm" onClick={clearFilters} className="mt-2">
               Limpiar filtros
             </Button>
           )}
@@ -667,7 +652,7 @@ export function OrdenesVentaList({
                           )}
                           {canCancelar(orden.estado) && (
                             <DropdownMenuItem
-                              className="text-orange-600"
+                              className="text-warning-muted-foreground"
                               onClick={() => {
                                 setOrdenToCancel(orden);
                                 setCancelDialogOpen(true);
@@ -681,7 +666,7 @@ export function OrdenesVentaList({
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="text-red-600"
+                                className="text-destructive"
                                 onClick={() => {
                                   setOrdenToDelete(orden);
                                   setDeleteDialogOpen(true);
@@ -750,7 +735,7 @@ export function OrdenesVentaList({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Eliminar'}
             </AlertDialogAction>
@@ -776,7 +761,7 @@ export function OrdenesVentaList({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleBulkAction(bulkActionDialog.action)}
-              className={bulkActionDialog.action === 'cancel' ? 'bg-red-600 hover:bg-red-700' : ''}
+              className={bulkActionDialog.action === 'cancel' ? 'bg-destructive hover:bg-destructive/90' : ''}
             >
               Confirmar
             </AlertDialogAction>
@@ -815,7 +800,7 @@ export function OrdenesVentaList({
             <AlertDialogAction
               onClick={handleCancelar}
               disabled={cancelling || !cancelMotivo.trim()}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-warning-muted-foreground hover:bg-warning-muted-foreground/90"
             >
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cancelar Orden'}
             </AlertDialogAction>

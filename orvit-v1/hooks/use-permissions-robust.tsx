@@ -138,7 +138,7 @@ export function withPermissionRobust<T extends object>(
     const { hasPermission, isLoading } = useMultiplePermissionsRobust(permissions, mode);
 
     if (isLoading) {
-      return <div className="animate-pulse bg-gray-200 h-4 w-4 rounded"></div>;
+      return <div className="animate-pulse bg-muted h-4 w-4 rounded"></div>;
     }
 
     if (!hasPermission) {
@@ -162,7 +162,7 @@ export function PermissionGuardRobust({
   permission,
   mode = 'any',
   fallback = null,
-  loading = <div className="animate-pulse bg-gray-200 h-4 w-4 rounded"></div>,
+  loading = <div className="animate-pulse bg-muted h-4 w-4 rounded"></div>,
   children
 }: PermissionGuardRobustProps) {
   const permissions = Array.isArray(permission) ? permission : [permission];

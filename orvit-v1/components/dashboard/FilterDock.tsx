@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -55,32 +56,32 @@ export function FilterDock() {
   ];
 
   return (
-    <div className="bg-gray-50 border-b border-gray-200 shadow-sm w-full">
+    <div className="bg-muted border-b border-border shadow-sm w-full">
       <div className="max-w-[1400px] mx-auto px-6 py-4">
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-900">Filtros y Controles</span>
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Filtros y Controles</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Modo de Comparación */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-gray-600">Modo de Comparación</Label>
+            <Label className="text-xs font-medium text-muted-foreground">Modo de Comparación</Label>
             <Select 
               value={filters.comparisonMode} 
               onValueChange={(value) => updateFilter('comparisonMode', value as any)}
             >
-              <SelectTrigger className="h-10 bg-white border-gray-300 text-gray-900">
+              <SelectTrigger className="h-10 bg-card border-border text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
+              <SelectContent className="bg-card border-border">
                 {comparisonModes.map((mode) => {
                   const Icon = mode.icon;
                   return (
                     <SelectItem 
                       key={mode.value} 
                       value={mode.value}
-                      className="text-gray-900 hover:bg-gray-50"
+                      className="text-foreground hover:bg-accent"
                     >
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4" />
@@ -95,7 +96,7 @@ export function FilterDock() {
 
           {/* Rango de Tiempo */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-gray-600">Rango de Tiempo</Label>
+            <Label className="text-xs font-medium text-muted-foreground">Rango de Tiempo</Label>
             <div className="flex gap-1">
               {timeRanges.map((range) => (
                 <Button
@@ -103,11 +104,11 @@ export function FilterDock() {
                   variant={filters.timeRange === range.value ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => updateFilter('timeRange', range.value as any)}
-                  className={`h-8 px-3 text-xs ${
+                  className={cn('h-8 px-3 text-xs',
                     filters.timeRange === range.value
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                      ? 'bg-info text-white'
+                      : 'bg-card border-border text-foreground hover:bg-accent'
+                  )}
                 >
                   {range.label}
                 </Button>
@@ -117,20 +118,20 @@ export function FilterDock() {
 
           {/* Categoría */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-gray-600">Categoría</Label>
+            <Label className="text-xs font-medium text-muted-foreground">Categoría</Label>
             <Select 
               value={filters.category} 
               onValueChange={(value) => updateFilter('category', value as any)}
             >
-              <SelectTrigger className="h-10 bg-white border-gray-300 text-gray-900">
+              <SelectTrigger className="h-10 bg-card border-border text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
+              <SelectContent className="bg-card border-border">
                 {categories.map((category) => (
                   <SelectItem 
                     key={category.value} 
                     value={category.value}
-                    className="text-gray-900 hover:bg-gray-50"
+                    className="text-foreground hover:bg-accent"
                   >
                     {category.label}
                   </SelectItem>
@@ -141,7 +142,7 @@ export function FilterDock() {
 
           {/* Visualización */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-gray-600">Visualización</Label>
+            <Label className="text-xs font-medium text-muted-foreground">Visualización</Label>
             <div className="flex gap-1">
               {chartTypes.map((type) => {
                 const Icon = type.icon;
@@ -151,11 +152,11 @@ export function FilterDock() {
                     variant={filters.chartType === type.value ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => updateFilter('chartType', type.value as any)}
-                    className={`h-8 px-2 text-xs ${
+                    className={cn('h-8 px-2 text-xs',
                       filters.chartType === type.value
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                        ? 'bg-info text-white'
+                        : 'bg-card border-border text-foreground hover:bg-accent'
+                    )}
                   >
                     <Icon className="h-3 w-3" />
                   </Button>
@@ -166,17 +167,17 @@ export function FilterDock() {
 
           {/* Vista */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-gray-600">Vista</Label>
+            <Label className="text-xs font-medium text-muted-foreground">Vista</Label>
             <div className="flex gap-1">
               <Button
                 variant={filters.viewMode === 'compact' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => updateFilter('viewMode', 'compact')}
-                className={`h-8 px-3 text-xs ${
+                className={cn('h-8 px-3 text-xs',
                   filters.viewMode === 'compact'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                    ? 'bg-info text-white'
+                    : 'bg-card border-border text-foreground hover:bg-accent'
+                )}
               >
                 Compacta
               </Button>
@@ -184,11 +185,11 @@ export function FilterDock() {
                 variant={filters.viewMode === 'detailed' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => updateFilter('viewMode', 'detailed')}
-                className={`h-8 px-3 text-xs ${
+                className={cn('h-8 px-3 text-xs',
                   filters.viewMode === 'detailed'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                    ? 'bg-info text-white'
+                    : 'bg-card border-border text-foreground hover:bg-accent'
+                )}
               >
                 Detallada
               </Button>
@@ -197,7 +198,7 @@ export function FilterDock() {
         </div>
 
         {/* Toggles avanzados */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-border">
           <div className="flex items-center space-x-2">
             <Switch
               id="nominal-adjusted"
@@ -206,7 +207,7 @@ export function FilterDock() {
                 updateFilter('nominalVsAdjusted', checked ? 'adjusted' : 'nominal')
               }
             />
-            <Label htmlFor="nominal-adjusted" className="text-xs text-gray-600">
+            <Label htmlFor="nominal-adjusted" className="text-xs text-muted-foreground">
               Ajustado por inflación
             </Label>
           </div>
@@ -217,7 +218,7 @@ export function FilterDock() {
               checked={filters.fxNormalized}
               onCheckedChange={(checked) => updateFilter('fxNormalized', checked)}
             />
-            <Label htmlFor="fx-normalized" className="text-xs text-gray-600">
+            <Label htmlFor="fx-normalized" className="text-xs text-muted-foreground">
               FX normalizado
             </Label>
           </div>
@@ -228,13 +229,13 @@ export function FilterDock() {
               checked={filters.showOutliers}
               onCheckedChange={(checked) => updateFilter('showOutliers', checked)}
             />
-            <Label htmlFor="show-outliers" className="text-xs text-gray-600">
+            <Label htmlFor="show-outliers" className="text-xs text-muted-foreground">
               Mostrar outliers
             </Label>
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-gray-600">
+            <Label className="text-xs text-muted-foreground">
               Solo variaciones &gt; {filters.showOnlyVariationsAbove}%
             </Label>
             <Slider

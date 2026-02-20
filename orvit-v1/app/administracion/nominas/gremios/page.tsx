@@ -23,6 +23,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Users,
   Plus,
@@ -100,6 +101,7 @@ function getScheduleLabel(type: string): string {
 }
 
 export default function GremiosPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -435,12 +437,18 @@ export default function GremiosPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
+                                onClick={async () => {
                                   if (union.employeeCount > 0) {
                                     toast.error('No se puede eliminar un gremio con empleados');
                                     return;
                                   }
-                                  if (confirm('Eliminar este gremio y todas sus categorias?')) {
+                                  const ok = await confirm({
+                                    title: 'Eliminar gremio',
+                                    description: '¿Eliminar este gremio y todas sus categorías?',
+                                    confirmText: 'Eliminar',
+                                    variant: 'destructive',
+                                  });
+                                  if (ok) {
                                     deleteUnionMutation.mutate(union.id);
                                   }
                                 }}
@@ -519,12 +527,18 @@ export default function GremiosPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8"
-                                        onClick={() => {
+                                        onClick={async () => {
                                           if (cat.employeeCount > 0) {
                                             toast.error('No se puede eliminar una categoria con empleados');
                                             return;
                                           }
-                                          if (confirm('Eliminar esta categoria?')) {
+                                          const ok = await confirm({
+                                            title: 'Eliminar categoría',
+                                            description: '¿Eliminar esta categoría?',
+                                            confirmText: 'Eliminar',
+                                            variant: 'destructive',
+                                          });
+                                          if (ok) {
                                             deleteCategoryMutation.mutate({
                                               unionId: union.id,
                                               categoryId: cat.id,
@@ -559,7 +573,7 @@ export default function GremiosPage() {
             {availableTemplates.length === 0 && enabledTemplates.length > 0 ? (
               <Card>
                 <CardContent className="py-10 text-center">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-success" />
                   <h3 className="text-lg font-medium mb-2">Todos los gremios habilitados</h3>
                   <p className="text-muted-foreground">
                     Ya tienes todos los gremios disponibles habilitados para tu empresa
@@ -576,7 +590,7 @@ export default function GremiosPage() {
                           <CardTitle className="text-lg flex items-center gap-2">
                             {template.name}
                             {template.isEnabled && (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <CheckCircle className="h-4 w-4 text-success" />
                             )}
                           </CardTitle>
                           {template.conventionCode && (
@@ -634,15 +648,15 @@ export default function GremiosPage() {
             )}
 
             {/* Info box */}
-            <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
+            <Card className="bg-info-muted border-info-muted">
               <CardContent className="py-4">
                 <div className="flex gap-3">
-                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <FileText className="h-5 w-5 text-info-muted-foreground flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-blue-900 dark:text-blue-100">
+                    <p className="font-medium text-info-muted-foreground">
                       Gremios con categorias pre-cargadas
                     </p>
-                    <p className="text-blue-700 dark:text-blue-300 mt-1">
+                    <p className="text-info-muted-foreground mt-1">
                       Al habilitar un gremio, se crean automaticamente todas sus categorias segun el convenio colectivo.
                       Luego podras agregar categorias personalizadas o cargar las tasas de cada categoria.
                     </p>

@@ -17,6 +17,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -391,14 +392,14 @@ export function NotificationTemplatesConfig({ config, onSave }: NotificationTemp
             Usa estas variables en tus plantillas. Se reemplazarán automáticamente.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
+        <DialogBody className="space-y-2">
           {TEMPLATE_VARIABLES[category as keyof typeof TEMPLATE_VARIABLES]?.map(v => (
             <div key={v.var} className="flex items-center justify-between p-2 bg-muted rounded">
               <code className="text-sm font-mono">{v.var}</code>
               <span className="text-sm text-muted-foreground">{v.desc}</span>
             </div>
           ))}
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );
@@ -504,7 +505,7 @@ export function NotificationTemplatesConfig({ config, onSave }: NotificationTemp
       </div>
 
       <Tabs defaultValue="quotes" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="quotes">
             <FileText className="w-4 h-4 mr-1" />
             Cotizaciones

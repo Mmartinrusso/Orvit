@@ -60,7 +60,8 @@ export async function fetchAgendaTasks(
     const error = await res.json().catch(() => ({ error: 'Error desconocido' }));
     throw new Error(error.error || 'Error al obtener tareas');
   }
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 /**

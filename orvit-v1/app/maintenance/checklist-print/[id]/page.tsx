@@ -381,7 +381,7 @@ export default function ChecklistPrintPage() {
   if (error || !executionData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <p className="text-red-600 mb-4">{error || 'No se encontraron datos'}</p>
+        <p className="text-destructive mb-4">{error || 'No se encontraron datos'}</p>
         <Button onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
@@ -467,7 +467,7 @@ export default function ChecklistPrintPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
         </Button>
-        <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90">
           <Printer className="h-4 w-4 mr-2" />
           Imprimir
         </Button>
@@ -476,7 +476,7 @@ export default function ChecklistPrintPage() {
       {/* Contenido imprimible */}
       <div className="max-w-4xl mx-auto bg-white print:max-w-full print:mx-0 print:bg-white print:shadow-none">
         {/* Encabezado */}
-        <div className="border-b-2 border-gray-800 pb-4 mb-8 print-header">
+        <div className="border-b-2 border-foreground pb-4 mb-8 print-header">
           <h1 className="text-3xl font-bold mb-6 text-center mt-4" key={`title-${finalTitle}`}>
             {finalTitle}
           </h1>
@@ -600,17 +600,17 @@ export default function ChecklistPrintPage() {
                         {index + 1}. {maintenanceInfo.title}
                       </h3>
                       {maintenanceInfo.description && (
-                        <p className="text-gray-600 text-sm mb-2">{maintenanceInfo.description}</p>
+                        <p className="text-muted-foreground text-sm mb-2">{maintenanceInfo.description}</p>
                       )}
                     </div>
                     <div className="flex gap-2 ml-4">
                       {item.completedDate && (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm whitespace-nowrap">
+                        <span className="bg-success-muted text-success-muted-foreground px-2 py-1 rounded text-sm whitespace-nowrap">
                           Completado: {item.completedDate}
                         </span>
                       )}
                       {item.rescheduleDate && (
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm whitespace-nowrap">
+                        <span className="bg-warning-muted text-warning-muted-foreground px-2 py-1 rounded text-sm whitespace-nowrap">
                           Reprogramado: {item.rescheduleDate}
                         </span>
                       )}
@@ -632,7 +632,7 @@ export default function ChecklistPrintPage() {
                   )}
 
                   {(item.currentKilometers && item.currentKilometers > 0) || (item.currentHours && item.currentHours > 0) ? (
-                    <div className="mb-2 text-sm text-gray-600">
+                    <div className="mb-2 text-sm text-muted-foreground">
                       {item.currentKilometers && item.currentKilometers > 0 && <span>Kilómetros: {item.currentKilometers} km</span>}
                       {item.currentKilometers && item.currentKilometers > 0 && item.currentHours && item.currentHours > 0 && ' | '}
                       {item.currentHours && item.currentHours > 0 && <span>Horas: {item.currentHours} h</span>}
@@ -676,7 +676,7 @@ export default function ChecklistPrintPage() {
 
           {/* Si realmente no hay nada */}
           {maintenanceItems.length === 0 && !hasAnyDetails && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               No hay datos de mantenimientos asociados a esta ejecución.
             </p>
           )}
@@ -755,9 +755,9 @@ export default function ChecklistPrintPage() {
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="text-left border-b-2 border-gray-300">
-                          <th className="py-3 pr-4 font-semibold text-gray-700">Empleado</th>
-                          <th className="py-3 pr-4 font-semibold text-gray-700">Mantenimientos Realizados</th>
-                          <th className="py-3 pr-4 font-semibold text-gray-700 w-48">Firma</th>
+                          <th className="py-3 pr-4 font-semibold text-foreground">Empleado</th>
+                          <th className="py-3 pr-4 font-semibold text-foreground">Mantenimientos Realizados</th>
+                          <th className="py-3 pr-4 font-semibold text-foreground w-48">Firma</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -767,9 +767,9 @@ export default function ChecklistPrintPage() {
                             <td className="py-4 pr-4">
                               <ul className="list-disc pl-5 space-y-1">
                                 {executorToTasks[name].map((task) => (
-                                  <li key={task.id} className="text-gray-700">
+                                  <li key={task.id} className="text-foreground">
                                     {task.title}
-                                    <span className="text-xs text-gray-500 ml-1">(ID {task.id})</span>
+                                    <span className="text-xs text-muted-foreground ml-1">(ID {task.id})</span>
                                   </li>
                                 ))}
                               </ul>
@@ -784,7 +784,7 @@ export default function ChecklistPrintPage() {
                                   />
                                 </div>
                               ) : (
-                                <div className="text-gray-400 text-xs italic">Sin firma</div>
+                                <div className="text-muted-foreground text-xs italic">Sin firma</div>
                               )}
                             </td>
                           </tr>
@@ -803,9 +803,9 @@ export default function ChecklistPrintPage() {
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="text-left border-b-2 border-gray-300">
-                          <th className="py-3 pr-4 font-semibold text-gray-700">Empleado</th>
-                          <th className="py-3 pr-4 font-semibold text-gray-700">Mantenimientos Supervisados</th>
-                          <th className="py-3 pr-4 font-semibold text-gray-700 w-48">Firma</th>
+                          <th className="py-3 pr-4 font-semibold text-foreground">Empleado</th>
+                          <th className="py-3 pr-4 font-semibold text-foreground">Mantenimientos Supervisados</th>
+                          <th className="py-3 pr-4 font-semibold text-foreground w-48">Firma</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -815,9 +815,9 @@ export default function ChecklistPrintPage() {
                             <td className="py-4 pr-4">
                               <ul className="list-disc pl-5 space-y-1">
                                 {supervisorToTasks[name].map((task) => (
-                                  <li key={task.id} className="text-gray-700">
+                                  <li key={task.id} className="text-foreground">
                                     {task.title}
-                                    <span className="text-xs text-gray-500 ml-1">(ID {task.id})</span>
+                                    <span className="text-xs text-muted-foreground ml-1">(ID {task.id})</span>
                                   </li>
                                 ))}
                               </ul>
@@ -832,7 +832,7 @@ export default function ChecklistPrintPage() {
                                   />
                                 </div>
                               ) : (
-                                <div className="text-gray-400 text-xs italic">Sin firma</div>
+                                <div className="text-muted-foreground text-xs italic">Sin firma</div>
                               )}
                             </td>
                           </tr>
@@ -847,7 +847,7 @@ export default function ChecklistPrintPage() {
         })()}
 
         {/* Pie de página */}
-        <div className="mt-8 pt-4 border-t text-sm text-gray-600 text-center">
+        <div className="mt-8 pt-4 border-t text-sm text-muted-foreground text-center">
           <p>Documento generado el {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
         </div>
       </div>

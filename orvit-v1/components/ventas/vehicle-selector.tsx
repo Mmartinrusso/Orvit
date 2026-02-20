@@ -76,7 +76,7 @@ export function VehicleSelector({ selectedVehicle, onVehicleChange, error }: Veh
                 aria-expanded={open}
                 className={cn(
                   'w-full justify-between',
-                  error && 'border-red-500'
+                  error && 'border-destructive'
                 )}
               >
                 {selectedVehicle?.vehiculo ? (
@@ -137,7 +137,7 @@ export function VehicleSelector({ selectedVehicle, onVehicleChange, error }: Veh
               </Command>
             </PopoverContent>
           </Popover>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </>
       ) : (
         <>
@@ -152,7 +152,7 @@ export function VehicleSelector({ selectedVehicle, onVehicleChange, error }: Veh
                   transportista: selectedVehicle?.transportista,
                 })
               }
-              className={error ? 'border-red-500' : ''}
+              className={error ? 'border-destructive' : ''}
             />
           </div>
           <div className="space-y-2">
@@ -178,7 +178,7 @@ export function VehicleSelector({ selectedVehicle, onVehicleChange, error }: Veh
           >
             Volver a selección
           </Button>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </>
       )}
     </div>

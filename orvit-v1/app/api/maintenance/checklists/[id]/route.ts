@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Flag de módulo: DDL se ejecuta solo una vez por proceso del servidor
+let instructiveTableInitialized = false;
+
+async function ensureInstructiveTable() {
+  if (instructiveTableInitialized) return;
+  try {
+    await prisma.$executeRaw`
+      CREATE TABLE IF NOT EXISTS "ChecklistInstructive" (
+        "id" SERIAL PRIMARY KEY,
+        "checklistId" INTEGER NOT NULL,
+        "title" TEXT NOT NULL,
+        "content" TEXT NOT NULL,
+        "order" INTEGER NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await prisma.$executeRaw`
+      CREATE INDEX IF NOT EXISTS "ChecklistInstructive_checklistId_idx"
+      ON "ChecklistInstructive"("checklistId")
+    `;
+    instructiveTableInitialized = true;
+  } catch {
+    // La tabla puede ya existir
+  }
+}
+
 // GET /api/maintenance/checklists/[id] - Obtener checklist por ID
 export async function GET(
   request: NextRequest,
@@ -15,8 +42,6 @@ export async function GET(
         { status: 400 }
       );
     }
-
-    console.log(`🔍 Obteniendo checklist con ID: ${checklistId}`);
 
     const checklist = await prisma.maintenanceChecklist.findUnique({
       where: {
@@ -63,7 +88,6 @@ export async function GET(
         ORDER BY "order" ASC
       `;
       instructives = instructivesData || [];
-      console.log('📚 Instructivos cargados desde BD:', instructives.length);
     } catch (instructiveError) {
       console.error('⚠️ Error cargando instructivos (tabla puede no existir):', instructiveError);
       // Si la tabla no existe, usar instructivos del JSON como fallback
@@ -119,9 +143,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
-    console.log(`✏️ Actualizando checklist con ID: ${checklistId}`);
-    console.log('📋 Datos recibidos para actualización:', JSON.stringify(body, null, 2));
 
     const existingChecklist = await prisma.maintenanceChecklist.findUnique({
       where: {
@@ -208,28 +229,10 @@ export async function PUT(
 
     // Guardar instructivos en la tabla ChecklistInstructive
     if (body.instructives !== undefined && Array.isArray(body.instructives)) {
-      console.log('📚 Actualizando instructivos en la base de datos:', body.instructives.length);
       
       try {
-        // Verificar si la tabla existe, si no, crearla
-        await prisma.$executeRaw`
-          CREATE TABLE IF NOT EXISTS "ChecklistInstructive" (
-            "id" SERIAL PRIMARY KEY,
-            "checklistId" INTEGER NOT NULL,
-            "title" TEXT NOT NULL,
-            "content" TEXT NOT NULL,
-            "order" INTEGER NOT NULL DEFAULT 0,
-            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
-        
-        // Crear índice si no existe
-        await prisma.$executeRaw`
-          CREATE INDEX IF NOT EXISTS "ChecklistInstructive_checklistId_idx" 
-          ON "ChecklistInstructive"("checklistId")
-        `;
-        
+        await ensureInstructiveTable();
+
         // Eliminar instructivos existentes
         await prisma.$executeRaw`
           DELETE FROM "ChecklistInstructive" WHERE "checklistId" = ${checklistId}
@@ -244,7 +247,6 @@ export async function PUT(
           `;
         }
         
-        console.log('✅ Instructivos actualizados exitosamente en la base de datos');
       } catch (instructiveError) {
         console.error('❌ Error actualizando instructivos:', instructiveError);
         // No fallar el proceso si hay error con instructivos
@@ -265,8 +267,6 @@ export async function PUT(
       console.error('⚠️ Error cargando instructivos:', instructiveError);
       instructives = body.instructives || updatedChecklistData.instructives || [];
     }
-
-    console.log('✅ Checklist actualizado en tabla dedicada:', updatedChecklist.id);
 
     return NextResponse.json({
       success: true,
@@ -326,8 +326,6 @@ export async function DELETE(
       );
     }
 
-    console.log(`🗑️ Eliminando checklist con ID: ${checklistId}`);
-
     // PRIMERO: Eliminar todas las ejecuciones del checklist
     try {
       const deletedExecutions = await prisma.checklistExecution.deleteMany({
@@ -336,7 +334,6 @@ export async function DELETE(
         }
       });
       
-      console.log('🗑️ Eliminadas ejecuciones del checklist:', deletedExecutions.count);
     } catch (executionError) {
       console.error('⚠️ Error eliminando ejecuciones del checklist:', executionError);
       // Continuar con la eliminación del checklist aunque falle la limpieza del historial
@@ -348,8 +345,6 @@ export async function DELETE(
         id: checklistId
       }
     });
-
-    console.log('✅ Checklist eliminado de tabla dedicada:', deletedChecklist.id);
 
     return NextResponse.json({
       success: true,

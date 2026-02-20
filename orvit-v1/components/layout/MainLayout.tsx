@@ -113,7 +113,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   variant="ghost"
                   size="sm"
                   onClick={(e) => {
-                    console.log('[MAIN LAYOUT] Botón menú clickeado, abriendo sidebar');
                     e.stopPropagation();
                     e.preventDefault();
                     setIsSidebarOpen(true);

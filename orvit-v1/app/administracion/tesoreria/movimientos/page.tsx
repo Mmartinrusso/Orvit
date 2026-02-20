@@ -228,11 +228,11 @@ export default function MovimientosPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Ingresos</p>
-                  <p className="text-2xl font-bold mt-1 text-green-600">{formatCurrency(summary.ingresos)}</p>
+                  <p className="text-2xl font-bold mt-1 text-success">{formatCurrency(summary.ingresos)}</p>
                   <p className="text-xs text-muted-foreground mt-1">Período filtrado</p>
                 </div>
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                <div className="p-2 rounded-lg bg-success-muted">
+                  <ArrowUpCircle className="h-4 w-4 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -243,11 +243,11 @@ export default function MovimientosPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Egresos</p>
-                  <p className="text-2xl font-bold mt-1 text-red-600">{formatCurrency(summary.egresos)}</p>
+                  <p className="text-2xl font-bold mt-1 text-destructive">{formatCurrency(summary.egresos)}</p>
                   <p className="text-xs text-muted-foreground mt-1">Período filtrado</p>
                 </div>
-                <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                  <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <ArrowDownCircle className="h-4 w-4 text-destructive" />
                 </div>
               </div>
             </CardContent>
@@ -260,7 +260,7 @@ export default function MovimientosPage() {
                   <p className="text-xs font-medium text-muted-foreground">Neto</p>
                   <p className={cn(
                     "text-2xl font-bold mt-1",
-                    summary.neto >= 0 ? "text-green-600" : "text-red-600"
+                    summary.neto >= 0 ? "text-success" : "text-destructive"
                   )}>
                     {formatCurrency(summary.neto)}
                   </p>
@@ -400,9 +400,9 @@ export default function MovimientosPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {mov.tipo === 'INGRESO' && <ArrowUpCircle className="h-3.5 w-3.5 text-green-600" />}
-                            {mov.tipo === 'EGRESO' && <ArrowDownCircle className="h-3.5 w-3.5 text-red-600" />}
-                            {mov.tipo === 'AJUSTE' && <FileCheck2 className="h-3.5 w-3.5 text-yellow-600" />}
+                            {mov.tipo === 'INGRESO' && <ArrowUpCircle className="h-3.5 w-3.5 text-success" />}
+                            {mov.tipo === 'EGRESO' && <ArrowDownCircle className="h-3.5 w-3.5 text-destructive" />}
+                            {mov.tipo === 'AJUSTE' && <FileCheck2 className="h-3.5 w-3.5 text-warning-muted-foreground" />}
                             <span className="text-xs">{mov.tipo}</span>
                           </div>
                         </TableCell>
@@ -423,7 +423,7 @@ export default function MovimientosPage() {
                         </TableCell>
                         <TableCell className={cn(
                           "text-sm text-right font-mono",
-                          mov.tipo === 'INGRESO' ? 'text-green-600' : mov.tipo === 'EGRESO' ? 'text-red-600' : ''
+                          mov.tipo === 'INGRESO' ? 'text-success' : mov.tipo === 'EGRESO' ? 'text-destructive' : ''
                         )}>
                           {mov.tipo === 'EGRESO' ? '-' : ''}
                           {formatCurrency(mov.monto)}

@@ -84,10 +84,10 @@ interface Movement {
 }
 
 const ITEM_TYPE_CONFIG = {
-  TOOL: { label: 'Herramientas', icon: Wrench, color: 'bg-blue-500', textColor: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
-  SUPPLY: { label: 'Insumos', icon: Box, color: 'bg-green-500', textColor: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/30' },
+  TOOL: { label: 'Herramientas', icon: Wrench, color: 'bg-info', textColor: 'text-info-muted-foreground', bgColor: 'bg-info-muted' },
+  SUPPLY: { label: 'Insumos', icon: Box, color: 'bg-success', textColor: 'text-success', bgColor: 'bg-success-muted' },
   SPARE_PART: { label: 'Repuestos', icon: Cog, color: 'bg-purple-500', textColor: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
-  HAND_TOOL: { label: 'Herr. Manuales', icon: Wrench, color: 'bg-amber-500', textColor: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/30' },
+  HAND_TOOL: { label: 'Herr. Manuales', icon: Wrench, color: 'bg-warning', textColor: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted' },
 };
 
 export default function PanolDashboardPage() {
@@ -346,16 +346,16 @@ export default function PanolDashboardPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-muted-foreground">Hoy</p>
-                  <Zap className="h-4 w-4 text-amber-500" />
+                  <Zap className="h-4 w-4 text-warning-muted-foreground" />
                 </div>
                 <div className="flex items-center gap-4">
                   <div>
-                    <span className="text-lg font-bold text-green-600">+{stats.todayEntries}</span>
+                    <span className="text-lg font-bold text-success">+{stats.todayEntries}</span>
                     <p className="text-xs text-muted-foreground">Entradas</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
                   <div>
-                    <span className="text-lg font-bold text-red-600">-{stats.todayExits}</span>
+                    <span className="text-lg font-bold text-destructive">-{stats.todayExits}</span>
                     <p className="text-xs text-muted-foreground">Salidas</p>
                   </div>
                 </div>
@@ -367,12 +367,12 @@ export default function PanolDashboardPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-muted-foreground">Salud del Stock</p>
-                  <Target className={cn("h-4 w-4", stats.stockHealth >= 80 ? "text-green-600" : stats.stockHealth >= 50 ? "text-amber-600" : "text-red-600")} />
+                  <Target className={cn("h-4 w-4", stats.stockHealth >= 80 ? "text-success" : stats.stockHealth >= 50 ? "text-warning-muted-foreground" : "text-destructive")} />
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className={cn(
                     "text-2xl font-bold",
-                    stats.stockHealth >= 80 ? "text-green-600" : stats.stockHealth >= 50 ? "text-amber-600" : "text-red-600"
+                    stats.stockHealth >= 80 ? "text-success" : stats.stockHealth >= 50 ? "text-warning-muted-foreground" : "text-destructive"
                   )}>
                     {stats.stockHealth}%
                   </span>
@@ -385,16 +385,16 @@ export default function PanolDashboardPage() {
             </Card>
 
             {/* Alerts */}
-            <Card className={stats.lowStock + stats.outOfStock > 0 ? 'border-amber-500/50' : ''}>
+            <Card className={stats.lowStock + stats.outOfStock > 0 ? 'border-warning-muted/50' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-muted-foreground">Alertas</p>
-                  <AlertTriangle className={cn("h-4 w-4", stats.lowStock + stats.outOfStock > 0 ? "text-amber-600" : "text-muted-foreground")} />
+                  <AlertTriangle className={cn("h-4 w-4", stats.lowStock + stats.outOfStock > 0 ? "text-warning-muted-foreground" : "text-muted-foreground")} />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-amber-600">{stats.lowStock}</span>
+                  <span className="text-2xl font-bold text-warning-muted-foreground">{stats.lowStock}</span>
                   <span className="text-sm text-muted-foreground">bajo</span>
-                  <span className="text-2xl font-bold text-red-600">{stats.outOfStock}</span>
+                  <span className="text-2xl font-bold text-destructive">{stats.outOfStock}</span>
                   <span className="text-sm text-muted-foreground">sin</span>
                 </div>
               </CardContent>
@@ -436,8 +436,8 @@ export default function PanolDashboardPage() {
               <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                      <Layers className="h-4 w-4 text-blue-600" />
+                    <div className="p-2 rounded-lg bg-info-muted">
+                      <Layers className="h-4 w-4 text-info-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Lotes</p>
@@ -451,8 +451,8 @@ export default function PanolDashboardPage() {
               <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                      <BarChart3 className="h-4 w-4 text-amber-600" />
+                    <div className="p-2 rounded-lg bg-warning-muted">
+                      <BarChart3 className="h-4 w-4 text-warning-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Consumo</p>
@@ -466,8 +466,8 @@ export default function PanolDashboardPage() {
               <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
+                    <div className="p-2 rounded-lg bg-success-muted">
+                      <TrendingUp className="h-4 w-4 text-success" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Pronóstico</p>
@@ -491,8 +491,8 @@ export default function PanolDashboardPage() {
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Bell className={cn(
                       "h-4 w-4",
-                      alertsSummary.critical > 0 ? "text-red-600" :
-                      alertsSummary.warning > 0 ? "text-amber-600" : "text-blue-600"
+                      alertsSummary.critical > 0 ? "text-destructive" :
+                      alertsSummary.warning > 0 ? "text-warning-muted-foreground" : "text-info-muted-foreground"
                     )} />
                     Alertas Inteligentes
                     {alertsSummary.total > 0 && (
@@ -501,12 +501,12 @@ export default function PanolDashboardPage() {
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {alertsSummary.critical > 0 && (
-                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                      <Badge className="bg-destructive/10 text-destructive">
                         {alertsSummary.critical} críticas
                       </Badge>
                     )}
                     {alertsSummary.warning > 0 && (
-                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                      <Badge className="bg-warning-muted text-warning-muted-foreground">
                         {alertsSummary.warning} alertas
                       </Badge>
                     )}
@@ -520,26 +520,26 @@ export default function PanolDashboardPage() {
                       key={alert.id}
                       className={cn(
                         "p-3 rounded-lg border flex items-start gap-3",
-                        alert.type === 'CRITICAL' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
-                        alert.type === 'WARNING' ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' :
-                        'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800'
+                        alert.type === 'CRITICAL' ? 'bg-destructive/10 border-destructive/30' :
+                        alert.type === 'WARNING' ? 'bg-warning-muted border-warning-muted' :
+                        'bg-info-muted border-info-muted'
                       )}
                     >
                       {alert.type === 'CRITICAL' ? (
-                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+                        <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
                       ) : alert.type === 'WARNING' ? (
-                        <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                        <AlertTriangle className="h-5 w-5 text-warning-muted-foreground mt-0.5 shrink-0" />
                       ) : (
-                        <Bell className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                        <Bell className="h-5 w-5 text-info-muted-foreground mt-0.5 shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className={cn(
                               "font-medium text-sm",
-                              alert.type === 'CRITICAL' ? 'text-red-800 dark:text-red-400' :
-                              alert.type === 'WARNING' ? 'text-amber-800 dark:text-amber-400' :
-                              'text-blue-800 dark:text-blue-400'
+                              alert.type === 'CRITICAL' ? 'text-destructive' :
+                              alert.type === 'WARNING' ? 'text-warning-muted-foreground' :
+                              'text-info-muted-foreground'
                             )}>
                               {alert.title}
                             </p>
@@ -578,16 +578,16 @@ export default function PanolDashboardPage() {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-blue-600" />
+                      <Activity className="h-4 w-4 text-info-muted-foreground" />
                       Movimientos - Últimos {dateRange} días
                     </CardTitle>
                     <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-success" />
                         <span>Entradas ({stats.entriesQty})</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
                         <span>Salidas ({stats.exitsQty})</span>
                       </div>
                     </div>
@@ -609,11 +609,11 @@ export default function PanolDashboardPage() {
                             <div className="flex-1 flex flex-col items-center gap-1 cursor-default min-w-0">
                               <div className="w-full flex gap-0.5 h-28 items-end justify-center">
                                 <div
-                                  className="w-2 sm:w-3 bg-green-500 rounded-t transition-all"
+                                  className="w-2 sm:w-3 bg-success rounded-t transition-all"
                                   style={{ height: `${entryHeight}%`, minHeight: day.entries > 0 ? '4px' : '0' }}
                                 />
                                 <div
-                                  className="w-2 sm:w-3 bg-red-500 rounded-t transition-all"
+                                  className="w-2 sm:w-3 bg-destructive rounded-t transition-all"
                                   style={{ height: `${exitHeight}%`, minHeight: day.exits > 0 ? '4px' : '0' }}
                                 />
                               </div>
@@ -623,8 +623,8 @@ export default function PanolDashboardPage() {
                           <TooltipContent>
                             <div className="text-xs">
                               <p className="font-medium mb-1">{day.fullDate}</p>
-                              <p className="text-green-500">+{day.entries} entradas</p>
-                              <p className="text-red-500">-{day.exits} salidas</p>
+                              <p className="text-success">+{day.entries} entradas</p>
+                              <p className="text-destructive">-{day.exits} salidas</p>
                             </div>
                           </TooltipContent>
                         </Tooltip>
@@ -679,7 +679,7 @@ export default function PanolDashboardPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Package className="h-4 w-4 text-blue-600" />
+                      <Package className="h-4 w-4 text-info-muted-foreground" />
                       Top Categorías
                     </CardTitle>
                   </CardHeader>
@@ -694,7 +694,7 @@ export default function PanolDashboardPage() {
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="text-xs">{cat.count}</Badge>
                                 {cat.lowStock > 0 && (
-                                  <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                                  <Badge variant="outline" className="text-xs border-warning-muted text-warning-muted-foreground">
                                     {cat.lowStock} bajo
                                   </Badge>
                                 )}
@@ -717,9 +717,9 @@ export default function PanolDashboardPage() {
             <div className="space-y-4">
               {/* Critical Items */}
               {stats.critical > 0 && (
-                <Card className="border-red-500/50">
+                <Card className="border-destructive/30/50">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-600">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
                       <ShieldAlert className="h-4 w-4" />
                       Items Críticos ({stats.critical})
                     </CardTitle>
@@ -727,7 +727,7 @@ export default function PanolDashboardPage() {
                   <CardContent className="pt-0">
                     <div className="space-y-2">
                       {stats.criticalItems.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
+                        <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/10">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{item.name}</p>
                             <p className="text-xs text-muted-foreground">{item.location || 'Sin ubicación'}</p>
@@ -739,7 +739,7 @@ export default function PanolDashboardPage() {
                       ))}
                     </div>
                     {stats.critical > 5 && (
-                      <Button variant="ghost" size="sm" className="w-full mt-2 text-red-600" asChild>
+                      <Button variant="ghost" size="sm" className="w-full mt-2 text-destructive" asChild>
                         <Link href="/panol?status=critical">
                           Ver todos <ArrowRight className="h-4 w-4 ml-1" />
                         </Link>
@@ -751,9 +751,9 @@ export default function PanolDashboardPage() {
 
               {/* Low Stock Items */}
               {stats.lowStock > 0 && (
-                <Card className="border-amber-500/50">
+                <Card className="border-warning-muted/50">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-600">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2 text-warning-muted-foreground">
                       <AlertTriangle className="h-4 w-4" />
                       Stock Bajo ({stats.lowStock})
                     </CardTitle>
@@ -767,7 +767,7 @@ export default function PanolDashboardPage() {
                             <p className="text-xs text-muted-foreground">{item.category || 'Sin categoría'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-semibold text-amber-600">{item.stockQuantity}</p>
+                            <p className="text-sm font-semibold text-warning-muted-foreground">{item.stockQuantity}</p>
                             <p className="text-xs text-muted-foreground">mín: {item.minStockLevel}</p>
                           </div>
                         </div>
@@ -788,7 +788,7 @@ export default function PanolDashboardPage() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <TrendingUp className="h-4 w-4 text-success" />
                     Más Movimiento ({dateRange}d)
                   </CardTitle>
                 </CardHeader>
@@ -830,7 +830,7 @@ export default function PanolDashboardPage() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
+                    <Clock className="h-4 w-4 text-info-muted-foreground" />
                     Actividad Reciente
                   </CardTitle>
                 </CardHeader>
@@ -849,17 +849,17 @@ export default function PanolDashboardPage() {
                           <div key={mov.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                             <div className={cn(
                               "p-1 rounded mt-0.5",
-                              isEntry ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"
+                              isEntry ? "bg-success-muted" : "bg-destructive/10"
                             )}>
                               {isEntry ? (
-                                <ArrowUpCircle className="h-3 w-3 text-green-600" />
+                                <ArrowUpCircle className="h-3 w-3 text-success" />
                               ) : (
-                                <ArrowDownCircle className="h-3 w-3 text-red-600" />
+                                <ArrowDownCircle className="h-3 w-3 text-destructive" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm truncate">
-                                <span className={isEntry ? "text-green-600" : "text-red-600"}>
+                                <span className={isEntry ? "text-success" : "text-destructive"}>
                                   {isEntry ? '+' : '-'}{mov.quantity}
                                 </span>
                                 {' '}{mov.tool.name}
@@ -884,16 +884,16 @@ export default function PanolDashboardPage() {
 
               {/* Value Card - Only for admins */}
               {permissions.canViewCosts && (
-                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-success-muted">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-green-700 dark:text-green-400">Valor del Inventario</p>
-                      <DollarSign className="h-4 w-4 text-green-600" />
+                      <p className="text-xs font-medium text-success">Valor del Inventario</p>
+                      <DollarSign className="h-4 w-4 text-success" />
                     </div>
-                    <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                    <p className="text-2xl font-bold text-success">
                       {formatCurrency(stats.totalValue)}
                     </p>
-                    <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                    <p className="text-xs text-success mt-1">
                       {stats.totalStock} unidades totales
                     </p>
                   </CardContent>

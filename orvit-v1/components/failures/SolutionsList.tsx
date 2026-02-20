@@ -3,6 +3,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   Clock,
   User,
@@ -46,7 +47,7 @@ function SolutionCard({ solution, isFirst }: { solution: FailureSolution; isFirs
             key={star}
             className={cn(
               'h-3 w-3',
-              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              star <= rating ? 'fill-warning-muted-foreground text-warning-muted-foreground' : 'text-muted-foreground'
             )}
           />
         ))}
@@ -58,7 +59,7 @@ function SolutionCard({ solution, isFirst }: { solution: FailureSolution; isFirs
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className={cn(
         'border',
-        solution.isPreferred && 'border-green-200 bg-green-50/50'
+        solution.isPreferred && 'border-success-muted bg-success-muted/50'
       )}>
         <CollapsibleTrigger asChild>
           <CardHeader className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -69,7 +70,7 @@ function SolutionCard({ solution, isFirst }: { solution: FailureSolution; isFirs
                     {solution.title}
                   </CardTitle>
                   {solution.isPreferred && (
-                    <Badge variant="default" className="bg-green-600 text-xs">
+                    <Badge variant="default" className="bg-success text-success-foreground text-xs">
                       <Star className="h-3 w-3 mr-1 fill-current" />
                       Preferida
                     </Badge>
@@ -111,7 +112,7 @@ function SolutionCard({ solution, isFirst }: { solution: FailureSolution; isFirs
               <h4 className="text-xs font-medium text-muted-foreground mb-1">Descripción</h4>
               <div
                 className="text-sm prose prose-sm max-w-none prose-p:my-1"
-                dangerouslySetInnerHTML={{ __html: solution.description }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(solution.description) }}
               />
             </div>
 
@@ -219,7 +220,7 @@ export function SolutionsList({
 
   if (error) {
     return (
-      <div className={cn('p-4 bg-red-50 text-red-600 rounded-lg text-sm', className)}>
+      <div className={cn('p-4 bg-destructive/10 text-destructive rounded-lg text-sm', className)}>
         Error al cargar soluciones: {error.message}
       </div>
     );

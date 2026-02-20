@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Package, AlertCircle, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
 import { mlForecastDemand } from '@/lib/ai/ml-demand-forecasting';
+import { toast } from 'sonner';
 
 interface SaleItem {
   id: number;
@@ -194,13 +196,13 @@ export default function PartialDeliverySelector({
     const selectedItems = selections.filter(sel => sel.selected && sel.cantidad > 0);
 
     if (selectedItems.length === 0) {
-      alert('Debe seleccionar al menos un producto para entregar');
+      toast.warning('Debe seleccionar al menos un producto para entregar');
       return;
     }
 
     // Check for errors
     if (Object.keys(errors).length > 0) {
-      alert('Por favor corrija los errores antes de continuar');
+      toast.warning('Por favor corrija los errores antes de continuar');
       return;
     }
 
@@ -272,7 +274,7 @@ export default function PartialDeliverySelector({
               return (
                 <Card
                   key={item.id}
-                  className={`${selection.selected ? 'border-primary' : ''} transition-all`}
+                  className={cn(selection.selected && 'border-primary', 'transition-all')}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -300,9 +302,9 @@ export default function PartialDeliverySelector({
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                        <div className="w-full bg-muted rounded-full h-2 mb-3">
                           <div
-                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            className="bg-primary h-2 rounded-full transition-all"
                             style={{ width: `${progressPercent}%` }}
                           />
                         </div>
@@ -322,14 +324,14 @@ export default function PartialDeliverySelector({
                                 value={selection.cantidad}
                                 onChange={e => handleQuantityChange(item.id, e.target.value)}
                                 disabled={!selection.selected}
-                                className={error ? 'border-red-500' : ''}
+                                className={error ? 'border-destructive' : ''}
                               />
                               <span className="flex items-center text-sm text-muted-foreground min-w-[60px]">
                                 {item.unidad}
                               </span>
                             </div>
                             {error && (
-                              <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                              <p className="text-sm text-destructive mt-1 flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3" />
                                 {error}
                               </p>
@@ -342,10 +344,10 @@ export default function PartialDeliverySelector({
                           {/* AI Suggestion */}
                           {suggestion && (
                             <div className="flex-1">
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <div className="bg-info-muted border border-info rounded-lg p-3">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Sparkles className="w-4 h-4 text-blue-600" />
-                                  <span className="text-sm font-medium text-blue-900">
+                                  <Sparkles className="w-4 h-4 text-primary" />
+                                  <span className="text-sm font-medium text-foreground">
                                     Sugerencia IA
                                   </span>
                                   <Badge
@@ -355,14 +357,14 @@ export default function PartialDeliverySelector({
                                     {suggestion.urgencyScore >= 7 ? 'Alta prioridad' : 'Normal'}
                                   </Badge>
                                 </div>
-                                <p className="text-sm text-blue-800 mb-2">
+                                <p className="text-sm text-foreground mb-2">
                                   {suggestion.suggestedQuantity} {item.unidad}
                                 </p>
-                                <p className="text-xs text-blue-700 mb-2">
+                                <p className="text-xs text-muted-foreground mb-2">
                                   {suggestion.reasoning}
                                 </p>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-blue-600">
+                                  <span className="text-xs text-info-muted-foreground">
                                     Confianza: {suggestion.confidence}%
                                   </span>
                                   <Button

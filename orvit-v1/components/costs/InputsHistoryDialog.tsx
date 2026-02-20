@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -100,15 +101,15 @@ export function InputsHistoryDialog({ children }: InputsHistoryDialogProps) {
   const getChangeIcon = (changePercent?: number) => {
     if (!changePercent || changePercent === 0) return null;
     return changePercent > 0 ? (
-      <TrendingUp className="h-3 w-3 text-green-600" />
+      <TrendingUp className="h-3 w-3 text-success" />
     ) : (
-      <TrendingDown className="h-3 w-3 text-red-600" />
+      <TrendingDown className="h-3 w-3 text-destructive" />
     );
   };
 
   const getChangeColor = (changePercent?: number) => {
     if (!changePercent || changePercent === 0) return 'text-muted-foreground';
-    return changePercent > 0 ? 'text-green-600' : 'text-red-600';
+    return changePercent > 0 ? 'text-success' : 'text-destructive';
   };
 
   return (
@@ -204,9 +205,11 @@ export function InputsHistoryDialog({ children }: InputsHistoryDialogProps) {
                   {filteredHistory.map((entry, index) => (
                     <div
                       key={entry.id}
-                      className={`p-4 flex items-center justify-between ${
-                        index % 2 === 0 ? 'bg-background' : 'bg-muted/5'
-                      } ${index < filteredHistory.length - 1 ? 'border-b border-border/30' : ''}`}
+                      className={cn(
+                        'p-4 flex items-center justify-between',
+                        index % 2 === 0 ? 'bg-background' : 'bg-muted/5',
+                        index < filteredHistory.length - 1 && 'border-b border-border/30'
+                      )}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
@@ -227,7 +230,7 @@ export function InputsHistoryDialog({ children }: InputsHistoryDialogProps) {
 
                       <div className="text-right">
                         {entry.changePercent !== undefined && (
-                          <div className={`flex items-center gap-1 text-sm font-medium ${getChangeColor(entry.changePercent)}`}>
+                          <div className={cn('flex items-center gap-1 text-sm font-medium', getChangeColor(entry.changePercent))}>
                             {getChangeIcon(entry.changePercent)}
                             <span>
                               {entry.changePercent >= 0 ? '+' : ''}
@@ -265,11 +268,11 @@ export function InputsHistoryDialog({ children }: InputsHistoryDialogProps) {
                       <>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Aumentos:</span>
-                          <span className="font-medium text-green-600">{increases.length}</span>
+                          <span className="font-medium text-success">{increases.length}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Disminuciones:</span>
-                          <span className="font-medium text-red-600">{decreases.length}</span>
+                          <span className="font-medium text-destructive">{decreases.length}</span>
                         </div>
                       </>
                     );
@@ -286,7 +289,7 @@ export function InputsHistoryDialog({ children }: InputsHistoryDialogProps) {
                       <>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Cambio promedio:</span>
-                          <span className={`font-medium ${getChangeColor(avgChange)}`}>
+                          <span className={cn('font-medium', getChangeColor(avgChange))}>
                             {avgChange >= 0 ? '+' : ''}{avgChange.toFixed(1)}%
                           </span>
                         </div>

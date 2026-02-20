@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,9 +62,9 @@ const CURRENCY_OPTIONS: Record<string, { label: string; symbol: string }> = {
 
 // Tipos de costo
 const COST_TYPE_LABELS: Record<string, { label: string; icon: typeof Pencil; color: string; bg: string }> = {
-  MANUAL: { label: 'Manual', icon: Pencil, color: 'text-orange-600', bg: 'bg-orange-50' },
-  PRODUCTION: { label: 'Produccion', icon: Factory, color: 'text-purple-600', bg: 'bg-purple-50' },
-  PURCHASE: { label: 'Compra', icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-50' },
+  MANUAL: { label: 'Manual', icon: Pencil, color: 'text-warning-muted-foreground', bg: 'bg-warning-muted' },
+  PRODUCTION: { label: 'Produccion', icon: Factory, color: 'text-primary', bg: 'bg-primary/10' },
+  PURCHASE: { label: 'Compra', icon: ShoppingCart, color: 'text-info-muted-foreground', bg: 'bg-info-muted' },
 };
 
 export function ProductDetailModal({ product, isOpen, onClose, onEdit }: ProductDetailModalProps) {
@@ -90,15 +91,15 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
     const min = product.minStock || 0;
 
     if (current === 0) {
-      return { color: 'text-red-600', bg: 'bg-red-50', label: 'Sin Stock', icon: XCircle, progress: 0 };
+      return { color: 'text-destructive', bg: 'bg-destructive/10', label: 'Sin Stock', icon: XCircle, progress: 0 };
     }
     if (current <= min) {
-      return { color: 'text-red-600', bg: 'bg-red-50', label: 'Stock Bajo', icon: AlertTriangle, progress: (current / min) * 100 };
+      return { color: 'text-destructive', bg: 'bg-destructive/10', label: 'Stock Bajo', icon: AlertTriangle, progress: (current / min) * 100 };
     }
     if (current <= min * 1.5) {
-      return { color: 'text-amber-600', bg: 'bg-amber-50', label: 'Stock Medio', icon: AlertTriangle, progress: Math.min((current / (min * 2)) * 100, 100) };
+      return { color: 'text-warning-muted-foreground', bg: 'bg-warning-muted', label: 'Stock Medio', icon: AlertTriangle, progress: Math.min((current / (min * 2)) * 100, 100) };
     }
-    return { color: 'text-green-600', bg: 'bg-green-50', label: 'Stock OK', icon: CheckCircle2, progress: 100 };
+    return { color: 'text-success', bg: 'bg-success-muted', label: 'Stock OK', icon: CheckCircle2, progress: 100 };
   };
 
   const stockStatus = getStockStatus();
@@ -140,7 +141,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent size="xl" className="max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent size="xl">
           {/* Header con info principal */}
           <DialogHeader className="pb-0">
             <div className="flex items-start justify-between gap-4">
@@ -153,7 +154,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                     {product.category?.name || 'Sin categoria'}
                   </Badge>
                   {product.costType && (
-                    <Badge className={`text-xs ${costInfo.bg} ${costInfo.color} border-0`}>
+                    <Badge className={cn('text-xs border-0', costInfo.bg, costInfo.color)}>
                       <CostIcon className="w-3 h-3 mr-1" />
                       {costInfo.label}
                     </Badge>
@@ -186,32 +187,32 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
             <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t">
               <div className="text-center p-2 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground">Costo</p>
-                <p className="text-lg font-bold text-green-600">{formatCurrency(product.costPrice)}</p>
+                <p className="text-lg font-bold text-success">{formatCurrency(product.costPrice)}</p>
               </div>
               <div className="text-center p-2 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground">Venta</p>
-                <p className="text-lg font-bold text-blue-600">
+                <p className="text-lg font-bold text-info-muted-foreground">
                   {product.salePrice ? formatCurrency(product.salePrice, saleCurrency) : '-'}
                 </p>
               </div>
               <div className="text-center p-2 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground">Margen</p>
-                <p className={`text-lg font-bold ${margin && margin > 0 ? 'text-green-600' : margin && margin < 0 ? 'text-red-600' : ''}`}>
+                <p className={cn('text-lg font-bold', margin && margin > 0 ? 'text-success' : margin && margin < 0 ? 'text-destructive' : '')}>
                   {margin ? `${margin.toFixed(1)}%` : '-'}
                 </p>
               </div>
-              <div className={`text-center p-2 rounded-lg ${stockStatus.bg}`}>
+              <div className={cn('text-center p-2 rounded-lg', stockStatus.bg)}>
                 <p className="text-xs text-muted-foreground">Stock</p>
-                <p className={`text-lg font-bold ${stockStatus.color}`}>
+                <p className={cn('text-lg font-bold', stockStatus.color)}>
                   {product.currentStock} <span className="text-xs font-normal">{product.unit}</span>
                 </p>
               </div>
             </div>
           </DialogHeader>
 
-          <DialogBody className="flex-1 overflow-y-auto pt-4">
+          <DialogBody className="pt-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4 mb-4">
+              <TabsList className="w-full justify-start overflow-x-auto mb-4">
                 <TabsTrigger value="general" className="text-xs">
                   <Info className="w-3.5 h-3.5 mr-1.5" />
                   General
@@ -287,7 +288,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                       {product.costType === 'PRODUCTION' ? (
                         <Factory className="w-4 h-4 text-purple-500" />
                       ) : (
-                        <ShoppingCart className="w-4 h-4 text-blue-500" />
+                        <ShoppingCart className="w-4 h-4 text-info-muted-foreground" />
                       )}
                       Origen del Costo
                     </h4>
@@ -305,13 +306,13 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                       </div>
                     )}
                     {product.purchaseInput && (
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-info-muted">
                         <div>
-                          <p className="text-xs text-blue-600">Insumo de Compra</p>
+                          <p className="text-xs text-info-muted-foreground">Insumo de Compra</p>
                           <p className="font-medium">{product.purchaseInput.name}</p>
                         </div>
                         {product.purchaseInput.currentPrice && (
-                          <p className="font-semibold text-blue-600">
+                          <p className="font-semibold text-info-muted-foreground">
                             {formatCurrency(product.purchaseInput.currentPrice)}
                           </p>
                         )}
@@ -349,7 +350,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg border bg-card">
                     <p className="text-xs text-muted-foreground mb-1">Precio de Costo</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(product.costPrice)}</p>
+                    <p className="text-2xl font-bold text-success">{formatCurrency(product.costPrice)}</p>
                     <p className="text-xs text-muted-foreground">{currencyInfo.label}</p>
                     {product.lastCostUpdate && (
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -362,7 +363,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                     <p className="text-xs text-muted-foreground mb-1">Precio de Venta</p>
                     {product.salePrice ? (
                       <>
-                        <p className="text-2xl font-bold text-blue-600">{formatCurrency(product.salePrice, saleCurrency)}</p>
+                        <p className="text-2xl font-bold text-info-muted-foreground">{formatCurrency(product.salePrice, saleCurrency)}</p>
                         <p className="text-xs text-muted-foreground">{CURRENCY_OPTIONS[saleCurrency]?.label || saleCurrency}</p>
                       </>
                     ) : (
@@ -395,8 +396,8 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                       />
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>0%</span>
-                        {product.marginMin && <span className="text-red-600">Min: {product.marginMin}%</span>}
-                        {product.marginMax && <span className="text-blue-600">Max: {product.marginMax}%</span>}
+                        {product.marginMin && <span className="text-destructive">Min: {product.marginMin}%</span>}
+                        {product.marginMax && <span className="text-info-muted-foreground">Max: {product.marginMax}%</span>}
                         <span>100%</span>
                       </div>
                     </div>
@@ -408,13 +409,13 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                   <div className="p-4 rounded-lg border bg-card">
                     <h4 className="text-sm font-medium text-muted-foreground mb-3">Limites de Margen Configurados</h4>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 rounded-lg bg-red-50">
-                        <p className="text-xs text-red-600">Margen Minimo</p>
-                        <p className="text-lg font-bold text-red-600">{product.marginMin || '-'}%</p>
+                      <div className="p-3 rounded-lg bg-destructive/10">
+                        <p className="text-xs text-destructive">Margen Minimo</p>
+                        <p className="text-lg font-bold text-destructive">{product.marginMin || '-'}%</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-blue-50">
-                        <p className="text-xs text-blue-600">Margen Maximo</p>
-                        <p className="text-lg font-bold text-blue-600">{product.marginMax || '-'}%</p>
+                      <div className="p-3 rounded-lg bg-info-muted">
+                        <p className="text-xs text-info-muted-foreground">Margen Maximo</p>
+                        <p className="text-lg font-bold text-info-muted-foreground">{product.marginMax || '-'}%</p>
                       </div>
                     </div>
                   </div>
@@ -444,11 +445,11 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
               {/* Tab Stock */}
               <TabsContent value="stock" className="space-y-4">
                 {/* Estado del stock */}
-                <div className={`p-4 rounded-lg border ${stockStatus.bg}`}>
+                <div className={cn('p-4 rounded-lg border', stockStatus.bg)}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <StockIcon className={`w-5 h-5 ${stockStatus.color}`} />
-                      <span className={`font-medium ${stockStatus.color}`}>{stockStatus.label}</span>
+                      <StockIcon className={cn('w-5 h-5', stockStatus.color)} />
+                      <span className={cn('font-medium', stockStatus.color)}>{stockStatus.label}</span>
                     </div>
                     <Badge variant="outline">{product.unit}</Badge>
                   </div>
@@ -499,12 +500,12 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
 
                 {/* Alerta de stock bajo */}
                 {product.currentStock <= product.minStock && (
-                  <div className="p-4 rounded-lg border border-red-200 bg-red-50">
+                  <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/10">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-red-800">Stock Bajo - Se recomienda reabastecer</p>
-                        <p className="text-sm text-red-600 mt-1">
+                        <p className="font-medium text-destructive">Stock Bajo - Se recomienda reabastecer</p>
+                        <p className="text-sm text-destructive mt-1">
                           El stock actual ({product.currentStock} {product.unit}) esta en o por debajo del minimo ({product.minStock} {product.unit}).
                         </p>
                       </div>

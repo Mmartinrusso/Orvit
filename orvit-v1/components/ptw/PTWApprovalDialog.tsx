@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -84,7 +85,7 @@ export default function PTWApprovalDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Revision de Permiso de Trabajo
@@ -95,7 +96,7 @@ export default function PTWApprovalDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             {/* Header Info */}
             <div className="flex items-start justify-between">
               <div>
@@ -171,12 +172,12 @@ export default function PTWApprovalDialog({
             {/* Hazards */}
             <div>
               <Label className="flex items-center gap-2 text-muted-foreground mb-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                 Peligros Identificados
               </Label>
               <div className="flex flex-wrap gap-2">
                 {permit.hazardsIdentified.map((hazard, idx) => (
-                  <Badge key={idx} variant="secondary" className="bg-yellow-50 text-yellow-800">
+                  <Badge key={idx} variant="secondary" className="bg-warning-muted text-warning-muted-foreground">
                     {hazard}
                   </Badge>
                 ))}
@@ -186,12 +187,12 @@ export default function PTWApprovalDialog({
             {/* Control Measures */}
             <div>
               <Label className="flex items-center gap-2 text-muted-foreground mb-2">
-                <Shield className="h-4 w-4 text-green-500" />
+                <Shield className="h-4 w-4 text-success" />
                 Medidas de Control
               </Label>
               <div className="flex flex-wrap gap-2">
                 {permit.controlMeasures.map((measure, idx) => (
-                  <Badge key={idx} variant="outline" className="border-green-300 text-green-700">
+                  <Badge key={idx} variant="outline" className="border-success/30 text-success">
                     {measure}
                   </Badge>
                 ))}
@@ -249,7 +250,7 @@ export default function PTWApprovalDialog({
                 className="mt-1"
               />
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter className="flex gap-2 sm:gap-0">
             <Button
@@ -270,7 +271,7 @@ export default function PTWApprovalDialog({
             <Button
               onClick={handleApprove}
               disabled={isApproving || isRejecting}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-success hover:bg-success/90 text-success-foreground"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {isApproving ? 'Aprobando...' : 'Aprobar'}

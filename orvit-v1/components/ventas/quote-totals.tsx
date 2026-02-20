@@ -33,7 +33,7 @@ export function QuoteTotals({ totals }: QuoteTotalsProps) {
           </div>
           
           {totals.totalDiscount > 0 && (
-            <div className="flex justify-between text-green-600">
+            <div className="flex justify-between text-success">
               <span>Descuento:</span>
               <span>-{formatCurrency(totals.totalDiscount)}</span>
             </div>

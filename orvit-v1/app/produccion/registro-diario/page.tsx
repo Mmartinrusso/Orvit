@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Package,
@@ -47,13 +48,9 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart5: '#10b981',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-};
+
 
 interface SectorProduct {
   id: string;
@@ -106,7 +103,8 @@ interface Shift {
 export default function ProduccionDelDiaPage() {
   const { currentSector } = useCompany();
   const { user } = useAuth();
-  const userColors = DEFAULT_COLORS;
+  const confirm = useConfirm();
+  const userColors = useUserColors();
 
   // State
   const [loading, setLoading] = useState(true);
@@ -288,7 +286,13 @@ export default function ProduccionDelDiaPage() {
 
   // Delete entry
   const handleDeleteEntry = async (entryId: number) => {
-    if (!confirm('¿Eliminar este registro?')) return;
+    const ok = await confirm({
+      title: 'Eliminar registro',
+      description: '¿Eliminar este registro?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/production/daily-entries/${entryId}`, {
         method: 'DELETE',
@@ -413,10 +417,10 @@ export default function ProduccionDelDiaPage() {
   }, [session, sectorProducts]);
 
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-    DRAFT: { label: 'Borrador', color: 'bg-amber-100 text-amber-800', icon: <Clock className="h-3.5 w-3.5" /> },
-    SUBMITTED: { label: 'Enviado', color: 'bg-blue-100 text-blue-800', icon: <Send className="h-3.5 w-3.5" /> },
-    APPROVED: { label: 'Aprobado', color: 'bg-green-100 text-green-800', icon: <Check className="h-3.5 w-3.5" /> },
-    LOCKED: { label: 'Cerrado', color: 'bg-gray-100 text-gray-800', icon: <Lock className="h-3.5 w-3.5" /> },
+    DRAFT: { label: 'Borrador', color: 'bg-warning-muted text-warning-muted-foreground', icon: <Clock className="h-3.5 w-3.5" /> },
+    SUBMITTED: { label: 'Enviado', color: 'bg-info-muted text-info-muted-foreground', icon: <Send className="h-3.5 w-3.5" /> },
+    APPROVED: { label: 'Aprobado', color: 'bg-success-muted text-success', icon: <Check className="h-3.5 w-3.5" /> },
+    LOCKED: { label: 'Cerrado', color: 'bg-muted text-foreground', icon: <Lock className="h-3.5 w-3.5" /> },
   };
 
   if (!currentSector) {
@@ -579,7 +583,7 @@ export default function ProduccionDelDiaPage() {
                 </div>
                 <div className="text-right">
                   {isReadOnly ? (
-                    <span className={Number(entry.scrapQuantity) > 0 ? 'text-red-500' : 'text-muted-foreground'}>
+                    <span className={Number(entry.scrapQuantity) > 0 ? 'text-destructive' : 'text-muted-foreground'}>
                       {Number(entry.scrapQuantity) > 0 ? Number(entry.scrapQuantity).toLocaleString() : '-'}
                     </span>
                   ) : (
@@ -598,7 +602,7 @@ export default function ProduccionDelDiaPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       onClick={() => handleDeleteEntry(entry.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -695,7 +699,7 @@ export default function ProduccionDelDiaPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground">Scrap:</span>
-                    <span className={cn('font-medium', totals.scrap > 0 ? 'text-red-500' : 'text-muted-foreground')}>
+                    <span className={cn('font-medium', totals.scrap > 0 ? 'text-destructive' : 'text-muted-foreground')}>
                       {totals.scrap.toLocaleString()} ({totals.scrapPct}%)
                     </span>
                   </div>

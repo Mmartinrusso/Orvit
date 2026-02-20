@@ -34,11 +34,11 @@ interface Cheque {
 }
 
 const ESTADO_CONFIG = {
-  CARTERA: { label: 'En Cartera', color: 'bg-blue-100 text-blue-700', icon: Wallet },
+  CARTERA: { label: 'En Cartera', color: 'bg-info-muted text-info-muted-foreground', icon: Wallet },
   DEPOSITADO: { label: 'Depositado', color: 'bg-purple-100 text-purple-700', icon: TrendingUp },
-  COBRADO: { label: 'Cobrado', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  RECHAZADO: { label: 'Rechazado', color: 'bg-red-100 text-red-700', icon: XCircle },
-  ENDOSADO: { label: 'Endosado', color: 'bg-orange-100 text-orange-700', icon: ArrowRightLeft },
+  COBRADO: { label: 'Cobrado', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  RECHAZADO: { label: 'Rechazado', color: 'bg-destructive/10 text-destructive', icon: XCircle },
+  ENDOSADO: { label: 'Endosado', color: 'bg-warning-muted text-warning-muted-foreground', icon: ArrowRightLeft },
 };
 
 export default function ValoresPage() {
@@ -89,7 +89,7 @@ export default function ValoresPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-blue-600" />
+                <Wallet className="w-4 h-4 text-info-muted-foreground" />
                 En Cartera
               </CardTitle>
             </CardHeader>
@@ -115,7 +115,7 @@ export default function ValoresPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-success" />
                 Cobrados
               </CardTitle>
             </CardHeader>
@@ -128,7 +128,7 @@ export default function ValoresPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-blue-600" />
+                <CreditCard className="w-4 h-4 text-info-muted-foreground" />
                 Echeqs
               </CardTitle>
             </CardHeader>
@@ -169,8 +169,8 @@ export default function ValoresPage() {
                         <div className="flex items-start justify-between">
                           <div className="space-y-2 flex-1">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                                <CreditCard className="w-6 h-6 text-blue-600" />
+                              <div className="w-12 h-12 rounded-lg bg-info-muted flex items-center justify-center">
+                                <CreditCard className="w-6 h-6 text-info-muted-foreground" />
                               </div>
                               <div>
                                 <div className="font-semibold text-lg">{cheque.numero}</div>
@@ -205,7 +205,7 @@ export default function ValoresPage() {
                           </div>
 
                           <div className="text-right space-y-2">
-                            <div className="text-2xl font-bold text-green-600">
+                            <div className="text-2xl font-bold text-success">
                               {formatCurrency(cheque.monto)}
                             </div>
                             <Badge className={config.color}>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import { FileText, Trash2, Zap, History, Pencil, AlertTriangle, Wrench, Settings, MapPin, Activity, Calendar, Copy, MoreVertical, QrCode, LayoutGrid, List, ArrowUpDown, Clock, Heart, Shield, ShieldAlert, ShieldCheck, Star, CheckCircle, Circle, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -49,6 +50,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import MachineHistoryDialog from './MachineHistoryDialog';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 export type ViewMode = 'grid' | 'list' | 'table' | 'schema';
 export type SortField = 'name' | 'healthScore' | 'status' | 'updatedAt' | 'createdAt';
@@ -83,10 +85,10 @@ function SortableItem({ id, children }: SortableItemProps) {
         {/* Drag handle - aparece arriba a la izquierda */}
         <div
           {...listeners}
-          className="absolute top-2 left-2 z-20 p-2 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg cursor-grab active:cursor-grabbing hover:bg-white dark:hover:bg-gray-800 transition-colors"
+          className="absolute top-2 left-2 z-20 p-2 rounded-full bg-background/90 shadow-lg cursor-grab active:cursor-grabbing hover:bg-background transition-colors"
           title="Arrastrá para reordenar"
         >
-          <GripVertical className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         {children}
       </div>
@@ -151,18 +153,19 @@ export default function MachineGrid({
   onToggleFavorite,
 }: MachineGridProps) {
   const { theme } = useTheme();
+  const confirm = useConfirm();
   
   // Helper function to get card styles based on theme
   const getCardContentClasses = () => {
     switch (theme) {
       case 'light':
-        return 'p-2 bg-white shadow-sm backdrop-blur-sm rounded-b-2xl';
+        return 'p-2 bg-background shadow-sm backdrop-blur-sm rounded-b-2xl';
       case 'dark':
         return 'p-2 bg-zinc-900 shadow-sm backdrop-blur-sm rounded-b-2xl';
       case 'metal':
         return 'p-2 bg-[#1E3A46] shadow-sm backdrop-blur-sm rounded-b-2xl border border-[#3A4F5A]';
       default:
-        return 'p-2 bg-white shadow-sm backdrop-blur-sm rounded-b-2xl';
+        return 'p-2 bg-background shadow-sm backdrop-blur-sm rounded-b-2xl';
     }
   };
 
@@ -172,7 +175,7 @@ export default function MachineGrid({
       case 'light':
         return 'text-muted-foreground';
       case 'dark':
-        return 'text-gray-400';
+        return 'text-muted-foreground';
       case 'metal':
         return 'text-[#B4C3CC]';
       default:
@@ -210,31 +213,24 @@ export default function MachineGrid({
   const getButtonClasses = (variant: 'primary' | 'outline' | 'secondary' = 'primary') => {
     switch (theme) {
       case 'light':
-        return variant === 'primary' ? 'bg-black hover:bg-gray-800 text-white' : 
-               variant === 'outline' ? 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700' :
-               'bg-gray-100 hover:bg-gray-200 text-gray-900';
+        return variant === 'primary' ? 'bg-foreground hover:bg-foreground/90 text-background' :
+               variant === 'outline' ? 'border border-border bg-background hover:bg-muted text-foreground' :
+               'bg-muted hover:bg-muted/80 text-foreground';
       case 'dark':
-        return variant === 'primary' ? 'bg-white hover:bg-gray-200 text-black' : 
-               variant === 'outline' ? 'border border-gray-600 bg-zinc-800 hover:bg-zinc-700 text-white' :
+        return variant === 'primary' ? 'bg-background hover:bg-muted text-foreground' :
+               variant === 'outline' ? 'border border-border bg-zinc-800 hover:bg-zinc-700 text-white' :
                'bg-zinc-700 hover:bg-zinc-600 text-white';
       case 'metal':
-        return variant === 'primary' ? 'bg-[#58717D] hover:bg-[#4A6068] text-[#F4FEFE]' : 
+        return variant === 'primary' ? 'bg-[#58717D] hover:bg-[#4A6068] text-[#F4FEFE]' :
                variant === 'outline' ? 'border border-[#3A4F5A] bg-[#1E3A46] hover:bg-[#182B31] text-[#F4FEFE]' :
                'bg-[#58717D] hover:bg-[#4A6068] text-[#F4FEFE]';
       default:
-        return variant === 'primary' ? 'bg-black hover:bg-gray-800 text-white' : 
-               variant === 'outline' ? 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700' :
-               'bg-gray-100 hover:bg-gray-200 text-gray-900';
+        return variant === 'primary' ? 'bg-foreground hover:bg-foreground/90 text-background' :
+               variant === 'outline' ? 'border border-border bg-background hover:bg-muted text-foreground' :
+               'bg-muted hover:bg-muted/80 text-foreground';
     }
   };
   
-  // console.log('🔥 DEBUG MachineGrid recibió props:', {
-  //   canEditMachine,
-  //   canDeleteMachine,
-  //   onEdit: onEdit ? 'FUNCTION' : 'UNDEFINED',
-  //   onDelete: onDelete ? 'FUNCTION' : 'UNDEFINED',
-  //   machinesCount: machines.length
-  // });
   const [historyDialog, setHistoryDialog] = useState<{
     isOpen: boolean;
     machineId: number;
@@ -388,22 +384,22 @@ export default function MachineGrid({
   const getHealthScoreBadge = (score: number | null | undefined) => {
     if (score === null || score === undefined) return null;
 
-    let bgColor = 'bg-gray-500';
+    let bgColor = 'bg-muted-foreground';
     let label = 'Sin datos';
 
     if (score >= 80) {
-      bgColor = 'bg-green-500';
+      bgColor = 'bg-success';
       label = 'Bueno';
     } else if (score >= 50) {
-      bgColor = 'bg-yellow-500';
+      bgColor = 'bg-warning';
       label = 'Regular';
     } else {
-      bgColor = 'bg-red-500';
+      bgColor = 'bg-destructive';
       label = 'Crítico';
     }
 
     return (
-      <Badge className={`${bgColor} text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5`}>
+      <Badge className={cn(bgColor, "text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5")}>
         <Activity className="h-2.5 w-2.5" />
         {score}
       </Badge>
@@ -426,7 +422,7 @@ export default function MachineGrid({
 
     if (isExpired) {
       return (
-        <Badge className="bg-red-500/90 hover:bg-red-500 text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title="Garantía vencida">
+        <Badge className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title="Garantía vencida">
           <ShieldAlert className="h-2.5 w-2.5" />
           Vencida
         </Badge>
@@ -435,7 +431,7 @@ export default function MachineGrid({
 
     if (daysUntilExpiration <= 30) {
       return (
-        <Badge className="bg-amber-500/90 hover:bg-amber-500 text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title={`Garantía vence en ${daysUntilExpiration} días`}>
+        <Badge className="bg-warning/90 hover:bg-warning text-warning-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title={`Garantía vence en ${daysUntilExpiration} días`}>
           <Shield className="h-2.5 w-2.5" />
           {daysUntilExpiration}d
         </Badge>
@@ -444,7 +440,7 @@ export default function MachineGrid({
 
     if (daysUntilExpiration <= 90) {
       return (
-        <Badge className="bg-green-500/90 hover:bg-green-500 text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title={`Garantía válida por ${daysUntilExpiration} días`}>
+        <Badge className="bg-success/90 hover:bg-success text-success-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title={`Garantía válida por ${daysUntilExpiration} días`}>
           <ShieldCheck className="h-2.5 w-2.5" />
           {Math.round(daysUntilExpiration / 30)}m
         </Badge>
@@ -527,15 +523,15 @@ export default function MachineGrid({
     const statusStr = String(status).toUpperCase();
     switch (statusStr) {
       case 'ACTIVE':
-        return <span className="w-3 h-3 rounded-full bg-green-500 shadow-md shadow-green-500/50" title="Activo" />;
+        return <span className="w-3 h-3 rounded-full bg-success shadow-md shadow-success/50" title="Activo" />;
       case 'OUT_OF_SERVICE':
-        return <span className="w-3 h-3 rounded-full bg-amber-500 shadow-md shadow-amber-500/50" title="Fuera de servicio" />;
+        return <span className="w-3 h-3 rounded-full bg-warning shadow-md shadow-warning/50" title="Fuera de servicio" />;
       case 'MAINTENANCE':
-        return <span className="w-3 h-3 rounded-full bg-blue-500 shadow-md shadow-blue-500/50" title="En Mantenimiento" />;
+        return <span className="w-3 h-3 rounded-full bg-info shadow-md shadow-info/50" title="En Mantenimiento" />;
       case 'DECOMMISSIONED':
-        return <span className="w-3 h-3 rounded-full bg-red-500 shadow-md shadow-red-500/50" title="Baja" />;
+        return <span className="w-3 h-3 rounded-full bg-destructive shadow-md shadow-destructive/50" title="Baja" />;
       default:
-        return <span className="w-3 h-3 rounded-full bg-gray-400 shadow-md" title={String(status)} />;
+        return <span className="w-3 h-3 rounded-full bg-muted-foreground shadow-md" title={String(status)} />;
     }
   };
 
@@ -544,15 +540,15 @@ export default function MachineGrid({
     const statusStr = String(status).toUpperCase();
     switch (statusStr) {
       case 'ACTIVE':
-        return 'border-l-4 border-l-green-500';
+        return 'border-l-4 border-l-success';
       case 'OUT_OF_SERVICE':
-        return 'border-l-4 border-l-amber-500';
+        return 'border-l-4 border-l-warning';
       case 'MAINTENANCE':
-        return 'border-l-4 border-l-blue-500';
+        return 'border-l-4 border-l-info';
       case 'DECOMMISSIONED':
-        return 'border-l-4 border-l-red-500';
+        return 'border-l-4 border-l-destructive';
       default:
-        return 'border-l-4 border-l-gray-400';
+        return 'border-l-4 border-l-muted-foreground';
     }
   };
 
@@ -632,7 +628,7 @@ export default function MachineGrid({
       {sortedMachines.map((machine) => (
         <div
           key={machine.id}
-          className={`flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer ${getStatusBorderColor(machine.status)}`}
+          className={cn("flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer", getStatusBorderColor(machine.status))}
           onClick={() => onSelect && onSelect(machine)}
         >
           {/* Imagen miniatura */}
@@ -650,12 +646,12 @@ export default function MachineGrid({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               {getStatusDot(machine.status)}
-              <h3 className={`font-medium truncate ${getPrimaryTextClasses()}`}>{machine.name}</h3>
+              <h3 className={cn("font-medium truncate", getPrimaryTextClasses())}>{machine.name}</h3>
               {machine.nickname && (
-                <span className={`text-sm truncate ${getMutedTextClasses()}`}>"{machine.nickname}"</span>
+                <span className={cn("text-sm truncate", getMutedTextClasses())}>"{machine.nickname}"</span>
               )}
             </div>
-            <div className={`flex items-center gap-3 text-xs mt-1 ${getMutedTextClasses()}`}>
+            <div className={cn("flex items-center gap-3 text-xs mt-1", getMutedTextClasses())}>
               {machine.brand && <span>{machine.brand}</span>}
               {machine.model && <span>• {machine.model}</span>}
               {machine.serialNumber && <span>• S/N: {machine.serialNumber}</span>}
@@ -667,13 +663,13 @@ export default function MachineGrid({
             {getHealthScoreBadge((machine as any).healthScore)}
             {getWarrantyBadge((machine as any).warrantyExpiration)}
             {(machine as any).pendingWorkOrders > 0 && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              <Badge variant="secondary" className="bg-warning-muted text-warning-muted-foreground">
                 <Wrench className="h-3 w-3 mr-1" />
                 {(machine as any).pendingWorkOrders}
               </Badge>
             )}
             {(machine as any).openFailures > 0 && (
-              <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+              <Badge variant="secondary" className="bg-destructive/10 text-destructive">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 {(machine as any).openFailures}
               </Badge>
@@ -716,7 +712,7 @@ export default function MachineGrid({
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600"
+                      className="text-destructive focus:text-destructive"
                       onClick={() => onDelete(machine)}
                     >
                       <Trash2 className="h-4 w-4 mr-2" /> Eliminar
@@ -785,14 +781,14 @@ export default function MachineGrid({
               <TableCell>{getHealthScoreBadge((machine as any).healthScore)}</TableCell>
               <TableCell>
                 {(machine as any).pendingWorkOrders > 0 ? (
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-xs">
+                  <Badge variant="secondary" className="bg-warning-muted text-warning-muted-foreground text-xs">
                     {(machine as any).pendingWorkOrders}
                   </Badge>
                 ) : '-'}
               </TableCell>
               <TableCell>
                 {(machine as any).openFailures > 0 ? (
-                  <Badge variant="secondary" className="bg-red-100 text-red-700 text-xs">
+                  <Badge variant="secondary" className="bg-destructive/10 text-destructive text-xs">
                     {(machine as any).openFailures}
                   </Badge>
                 ) : '-'}
@@ -823,7 +819,7 @@ export default function MachineGrid({
                     {onDelete && canDeleteMachine && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600" onClick={() => onDelete(machine)}>
+                        <DropdownMenuItem className="text-destructive" onClick={() => onDelete(machine)}>
                           <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                         </DropdownMenuItem>
                       </>
@@ -845,7 +841,7 @@ export default function MachineGrid({
         const cardContent = (
           <Card
             key={machine.id}
-            className={`group overflow-hidden bg-card border shadow-lg hover:shadow-2xl transition-all duration-300 rounded-2xl cursor-pointer ${getStatusBorderColor(machine.status)}`}
+            className={cn("group overflow-hidden bg-card border shadow-lg hover:shadow-2xl transition-all duration-300 rounded-2xl cursor-pointer", getStatusBorderColor(machine.status))}
             onClick={(e) => {
               // No abrir el detalle si el clic viene de un botón de acción o del drag handle
               if (e.target instanceof Element) {
@@ -903,9 +899,10 @@ export default function MachineGrid({
                         e.preventDefault();
                       }
                     }}
-                    className={`p-1.5 rounded-full transition-all bg-white/80 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 shadow-md ${
-                      isMobile && lastTapTime[`menu-${machine.id}`] ? 'ring-2 ring-primary/50' : ''
-                    }`}
+                    className={cn(
+                      "p-1.5 rounded-full transition-all bg-background/80 text-muted-foreground hover:bg-background shadow-md",
+                      isMobile && lastTapTime[`menu-${machine.id}`] && "ring-2 ring-primary/50"
+                    )}
                     title={isMobile ? "Toca dos veces para opciones" : "Más opciones"}
                   >
                     <MoreVertical className="h-3.5 w-3.5" />
@@ -946,10 +943,15 @@ export default function MachineGrid({
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => {
-                          if (window.confirm(`¿Estás seguro de eliminar la máquina "${machine.name}"?`)) {
-                            handleDelete(machine);
-                          }
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Eliminar máquina',
+                            description: `¿Estás seguro de eliminar la máquina "${machine.name}"?`,
+                            confirmText: 'Eliminar',
+                            variant: 'destructive',
+                          });
+                          if (!ok) return;
+                          handleDelete(machine);
                         }}
                         className="text-destructive focus:text-destructive"
                       >
@@ -970,19 +972,20 @@ export default function MachineGrid({
                       e
                     );
                   }}
-                  className={`p-1.5 rounded-full transition-all ${
+                  className={cn(
+                    "p-1.5 rounded-full transition-all",
                     favorites.has(machine.id)
-                      ? 'bg-amber-500 text-white shadow-lg'
-                    : isMobile && lastTapTime[`fav-${machine.id}`]
-                      ? 'bg-white/80 dark:bg-gray-800/80 text-amber-400 ring-2 ring-amber-400/50 shadow-md'
-                      : 'bg-white/80 dark:bg-gray-800/80 text-gray-400 hover:text-amber-500 hover:bg-white dark:hover:bg-gray-800 shadow-md'
-                  }`}
+                      ? "bg-warning text-warning-foreground shadow-lg"
+                      : isMobile && lastTapTime[`fav-${machine.id}`]
+                        ? "bg-background/80 text-warning ring-2 ring-warning/50 shadow-md"
+                        : "bg-background/80 text-muted-foreground hover:text-warning hover:bg-background shadow-md"
+                  )}
                   title={isMobile
                     ? (favorites.has(machine.id) ? 'Toca 2 veces para quitar' : 'Toca 2 veces para destacar')
                     : (favorites.has(machine.id) ? 'Quitar de favoritos' : 'Agregar a favoritos')
                   }
                 >
-                  <Star className={`h-3.5 w-3.5 ${favorites.has(machine.id) ? 'fill-current' : ''}`} />
+                  <Star className={cn("h-3.5 w-3.5", favorites.has(machine.id) && "fill-current")} />
                 </button>
               )}
               {/* Checkbox de selección */}
@@ -992,11 +995,12 @@ export default function MachineGrid({
                     e.stopPropagation();
                     onToggleSelection(machine.id);
                   }}
-                  className={`p-1.5 rounded-full transition-all ${
+                  className={cn(
+                    "p-1.5 rounded-full transition-all",
                     selectedMachineIds.has(machine.id)
-                      ? 'bg-primary text-white shadow-lg'
-                      : 'bg-white/80 dark:bg-gray-800/80 text-gray-400 hover:text-primary hover:bg-white dark:hover:bg-gray-800 shadow-md'
-                  }`}
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-background/80 text-muted-foreground hover:text-primary hover:bg-background shadow-md"
+                  )}
                 >
                   {selectedMachineIds.has(machine.id) ? (
                     <CheckCircle className="h-3.5 w-3.5" />
@@ -1016,13 +1020,13 @@ export default function MachineGrid({
               {getWarrantyBadge((machine as any).warrantyExpiration)}
               {/* KPI Badges */}
               {(machine as any).pendingWorkOrders > 0 && (
-                <Badge className="bg-amber-500/90 hover:bg-amber-500 text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5">
+                <Badge className="bg-warning/90 hover:bg-warning text-warning-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5">
                   <Wrench className="h-2.5 w-2.5" />
                   {(machine as any).pendingWorkOrders}
                 </Badge>
               )}
               {(machine as any).openFailures > 0 && (
-                <Badge className="bg-red-500/90 hover:bg-red-500 text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5">
+                <Badge className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   {(machine as any).openFailures}
                 </Badge>
@@ -1034,9 +1038,9 @@ export default function MachineGrid({
           <CardContent className={getCardContentClasses()}>
             {/* Sector */}
             {(machine as any).sector?.name && (
-              <div className="flex items-center justify-center gap-1 mb-2 pb-2 border-b border-gray-200/50">
+              <div className="flex items-center justify-center gap-1 mb-2 pb-2 border-b border-border/50">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
-                <span className={`text-xs ${getMutedTextClasses()}`}>
+                <span className={cn("text-xs", getMutedTextClasses())}>
                   {(machine as any).sector.name}
                 </span>
               </div>
@@ -1046,35 +1050,35 @@ export default function MachineGrid({
             <div className="space-y-2">
 
               <div className="flex items-center justify-center gap-2">
-                <span className={`text-[11px] ${getMutedTextClasses()}`}>
+                <span className={cn("text-[11px]", getMutedTextClasses())}>
                   Marca
                 </span>
-                <span className={`text-sm ${getPrimaryTextClasses()}`}>
+                <span className={cn("text-sm", getPrimaryTextClasses())}>
                   {machine.brand || '—'}
                 </span>
               </div>
 
               <div className="flex items-center justify-center gap-2">
-                <span className={`text-[11px] ${getMutedTextClasses()}`}>
+                <span className={cn("text-[11px]", getMutedTextClasses())}>
                   Modelo
                 </span>
-                <span className={`text-sm ${getPrimaryTextClasses()}`}>
+                <span className={cn("text-sm", getPrimaryTextClasses())}>
                   {machine.model || '—'}
                 </span>
               </div>
 
               <div className="flex items-center justify-center gap-2">
-                <span className={`text-[11px] ${getMutedTextClasses()}`}>
+                <span className={cn("text-[11px]", getMutedTextClasses())}>
                   Serie
                 </span>
                 {machine.serialNumber ? (
-                  <span className={`text-xs font-mono ${getPrimaryTextClasses()} ${getBackgroundAccentClasses()} px-2 py-1 rounded-md`}>
+                  <span className={cn("text-xs font-mono px-2 py-1 rounded-md", getPrimaryTextClasses(), getBackgroundAccentClasses())}>
                     {machine.serialNumber.length > 12
                       ? `${machine.serialNumber.substring(0, 12)}...`
                       : machine.serialNumber}
                   </span>
                 ) : (
-                  <span className={`text-sm ${getPrimaryTextClasses()}`}>
+                  <span className={cn("text-sm", getPrimaryTextClasses())}>
                     No especificado
                   </span>
                 )}
@@ -1084,7 +1088,7 @@ export default function MachineGrid({
               {(machine as any)._count?.components > 0 && (
                 <div className="flex items-center justify-center gap-1.5">
                   <Settings className="h-3 w-3 text-muted-foreground" />
-                  <span className={`text-xs ${getMutedTextClasses()}`}>
+                  <span className={cn("text-xs", getMutedTextClasses())}>
                     {(machine as any)._count.components} componentes
                   </span>
                 </div>
@@ -1092,14 +1096,14 @@ export default function MachineGrid({
             </div>
             
             {/* Botones de acción */}
-            <div className="mt-2 pt-1.5 border-t border-gray-200 space-y-1">
+            <div className="mt-2 pt-1.5 border-t border-border space-y-1">
               {onCreateWorkOrder && (
                               <Button
                 onClick={(e) => {
                   e.stopPropagation();
                   onCreateWorkOrder(machine);
                 }}
-                className={`w-full h-7 ${getButtonClasses('primary')}`}
+                className={cn("w-full h-7", getButtonClasses('primary'))}
                 size="sm"
               >
                 <Zap className="h-3 w-3 mr-1" />
@@ -1114,7 +1118,7 @@ export default function MachineGrid({
                   openHistoryDialog(machine);
                 }}
                 variant="outline"
-                className={`w-full h-7 ${getButtonClasses('outline')}`}
+                className={cn("w-full h-7", getButtonClasses('outline'))}
                 size="sm"
               >
                 <History className="h-3 w-3 mr-1" />
@@ -1130,7 +1134,10 @@ export default function MachineGrid({
                   onReportFailure(machine);
                 }}
                 variant="outline"
-                className={`w-full h-7 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 ${theme === 'dark' ? 'border-red-500/50 text-red-400 hover:bg-red-500/10' : ''} ${theme === 'metal' ? 'border-red-500/50 text-red-400 hover:bg-red-500/10' : ''}`}
+                className={cn(
+                  "w-full h-7 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive",
+                  theme === 'metal' && "border-destructive/50 text-destructive hover:bg-destructive/10"
+                )}
                 size="sm"
               >
                 <AlertTriangle className="h-3 w-3 mr-1" />
@@ -1144,7 +1151,7 @@ export default function MachineGrid({
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex-1 h-7 px-2 text-sm ${getButtonClasses('outline')}`}
+                  className={cn("flex-1 h-7 px-2 text-sm", getButtonClasses('outline'))}
                   onClick={(e) => {
                     e.stopPropagation();
                     onReorder(machine.id, 'left');
@@ -1156,7 +1163,7 @@ export default function MachineGrid({
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex-1 h-7 px-2 text-sm ${getButtonClasses('outline')}`}
+                  className={cn("flex-1 h-7 px-2 text-sm", getButtonClasses('outline'))}
                   onClick={(e) => {
                     e.stopPropagation();
                     onReorder(machine.id, 'right');

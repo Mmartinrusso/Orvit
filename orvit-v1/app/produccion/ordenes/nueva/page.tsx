@@ -195,8 +195,8 @@ export default function NewProductionOrderPage() {
     return (
       <div className="px-4 md:px-6 py-6 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-          <p className="mt-2 text-gray-500">Cargando datos...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+          <p className="mt-2 text-muted-foreground">Cargando datos...</p>
         </div>
       </div>
     );

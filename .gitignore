@@ -10,10 +10,13 @@ out/
 build/
 *.tsbuildinfo
 
-# Environment files (secrets)
+# Environment files (secrets - NUNCA commitear)
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+# NOTA: .env.example es SEGURO para commitear (solo tiene placeholders)
 
 # IDE
 .vscode/
@@ -42,3 +45,14 @@ C:UsersUsuarioDesktopMawirtmp_tasks.json
 # Coverage
 coverage/
 .nyc_output/
+
+# AGX — herramienta de desarrollo interna, no va a producción
+agx-v1/
+
+# Tests standalone del root (no son tests de orvit-v1)
+tests/
+
+# Archivos temporales / artefactos locales
+IndirectViewV2_err.txt
+plan.md
+*.txt

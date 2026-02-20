@@ -2,7 +2,7 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Package, Plus, Edit, Trash2, X, Printer, Search, LayoutGrid, Table2, Filter, Copy, Download, CheckSquare, Sparkles } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import LoadPrintView, { type LoadPrintViewRef } from './LoadPrintView';
 import LoadsToolbar from './LoadsToolbar';
 import LoadsMetrics from './LoadsMetrics';
@@ -47,6 +48,7 @@ import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useCargasBootstrap } from '@/hooks/use-cargas-bootstrap';
 import { DatePicker } from '@/components/ui/date-picker';
 import { exportLoadsToCSV, downloadCSV } from '@/lib/cargas/utils';
+import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -127,6 +129,8 @@ interface ClientData {
 }
 
 export default function LoadsManager({ companyId }: LoadsManagerProps) {
+  const confirm = useConfirm();
+
   // ✨ OPTIMIZACIÓN: Usar catálogos consolidados
   const { data: catalogsData, isLoading: catalogsLoading } = useAdminCatalogs(companyId);
   
@@ -193,21 +197,20 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
   // ✨ OPTIMIZADO: Solo procesar catalogsData cuando cambie (productos y clientes)
   useEffect(() => {
     if (!catalogsData || catalogsLoading) return;
-    
+
     const catalogsKey = JSON.stringify({
       products: catalogsData.products?.length || 0,
       clients: catalogsData.clients?.length || 0,
     });
     const lastKey = lastCatalogsDataRef.current;
-    
+
     if (catalogsKey === lastKey) return;
-    
+
     lastCatalogsDataRef.current = catalogsKey;
-    
+
     loadProducts();
     loadClients();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catalogsData, catalogsLoading]);
+  }, [catalogsData, catalogsLoading, loadProducts, loadClients]);
 
   // ✨ FIX: Memoizar funciones para evitar recreaciones y dependencias circulares
   const loadClients = useCallback(() => {
@@ -399,7 +402,13 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
   const handleBulkDelete = async () => {
     if (selectedLoadIds.length === 0) return;
 
-    if (!confirm(`¿Eliminar ${selectedLoadIds.length} cargas? Esta acción no se puede deshacer.`)) {
+    const ok = await confirm({
+      title: 'Eliminar cargas',
+      description: `¿Eliminar ${selectedLoadIds.length} cargas? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) {
       return;
     }
 
@@ -1697,7 +1706,13 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Está seguro de que desea eliminar esta carga?')) {
+    const ok = await confirm({
+      title: 'Eliminar carga',
+      description: '¿Está seguro de que desea eliminar esta carga?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) {
       return;
     }
 
@@ -3137,7 +3152,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           )}
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Peso Chasis (cargado):</span>
-                            <span className={`font-medium ${selectedTruckData.chasisWeight && chasisWeight > (selectedTruckData.chasisWeight || 0) ? 'text-destructive' : ''}`}>
+                            <span className={cn("font-medium", selectedTruckData.chasisWeight && chasisWeight > (selectedTruckData.chasisWeight || 0) && "text-destructive")}>
                               {chasisWeight.toFixed(2)} Tn
                             </span>
                           </div>
@@ -3149,13 +3164,13 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           )}
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Peso Acoplado (cargado):</span>
-                            <span className={`font-medium ${selectedTruckData.acopladoWeight && acopladoWeight > (selectedTruckData.acopladoWeight || 0) ? 'text-destructive' : ''}`}>
+                            <span className={cn("font-medium", selectedTruckData.acopladoWeight && acopladoWeight > (selectedTruckData.acopladoWeight || 0) && "text-destructive")}>
                               {acopladoWeight.toFixed(2)} Tn
                             </span>
                           </div>
                           <div className="flex justify-between text-sm pt-1 border-t">
                             <span className="text-muted-foreground">Peso Total:</span>
-                            <span className={`font-medium ${totalWeight > (selectedTruckData.maxWeight || 0) ? 'text-destructive' : ''}`}>
+                            <span className={cn("font-medium", totalWeight > (selectedTruckData.maxWeight || 0) && "text-destructive")}>
                               {totalWeight.toFixed(2)} Tn
                             </span>
                           </div>
@@ -3168,7 +3183,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Peso cargado:</span>
-                            <span className={`font-medium ${totalWeight > (selectedTruckData.maxWeight || 0) ? 'text-destructive' : ''}`}>
+                            <span className={cn("font-medium", totalWeight > (selectedTruckData.maxWeight || 0) && "text-destructive")}>
                               {totalWeight.toFixed(2)} Tn
                             </span>
                           </div>
@@ -3345,7 +3360,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                             <tr 
                               key={index} 
                               data-casillero-index={index}
-                              className={`border-b hover:bg-muted/30 ${!item.productId ? 'bg-muted/20' : ''}`}
+                              className={cn("border-b hover:bg-muted/30", !item.productId && "bg-muted/20")}
                             >
                               <td className="p-2 text-xs text-muted-foreground">{index + 1}</td>
                               <td className="p-2">
@@ -3704,7 +3719,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
       ) : loads.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Sparkles className="h-12 w-12 text-purple-500 mb-4" />
+            <Sparkles className="h-12 w-12 text-info-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No hay cargas registradas</h3>
             <p className="text-muted-foreground text-center mb-6">
               Creá tu primera carga usando la inteligencia artificial
@@ -3798,9 +3813,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
               return (
                 <Card
                   key={load.id}
-                  className={`group cursor-pointer hover:shadow-lg transition-all relative ${
-                    selectionMode && isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
-                  }`}
+                  className={cn("group cursor-pointer hover:shadow-lg transition-all relative", selectionMode && isSelected && "ring-2 ring-primary bg-primary/5")}
                   onClick={() => {
                     if (selectionMode) {
                       toggleLoadSelection(load.id);
@@ -3820,7 +3833,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                   )}
 
                   {/* Botones de acción que aparecen en hover */}
-                  <div className={`absolute top-2 right-2 flex gap-1 transition-opacity z-10 ${selectionMode ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className={cn("absolute top-2 right-2 flex gap-1 transition-opacity z-10", selectionMode ? "hidden" : "opacity-0 group-hover:opacity-100")}>
                     {canManageLoads && (
                       <>
                         <Button
@@ -3873,11 +3886,12 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <Badge className={`${
-                          load.truck.type === 'CHASIS' ? 'bg-blue-500' :
-                          load.truck.type === 'EQUIPO' ? 'bg-green-500' :
-                          'bg-orange-500'
-                        } text-white text-xs`}>
+                        <Badge className={cn(
+                          load.truck.type === 'CHASIS' ? 'bg-info' :
+                          load.truck.type === 'EQUIPO' ? 'bg-success' :
+                          'bg-warning',
+                          "text-white text-xs"
+                        )}>
                           {load.truck.type === 'CHASIS' ? 'Chasis' :
                            load.truck.type === 'EQUIPO' ? 'Equipo' : 'Semi'}
                         </Badge>
@@ -3992,9 +4006,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                     return (
                       <tr
                         key={load.id}
-                        className={`border-b border-border hover:bg-muted/50 cursor-pointer transition-colors ${
-                          selectionMode && isSelected ? 'bg-primary/5' : 'bg-background'
-                        }`}
+                        className={cn("border-b border-border hover:bg-muted/50 cursor-pointer transition-colors", selectionMode && isSelected ? "bg-primary/5" : "bg-background")}
                         onClick={() => {
                           if (selectionMode) {
                             toggleLoadSelection(load.id);
@@ -4041,11 +4053,12 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                         <td className="px-4 py-3 text-sm">{new Date(load.date).toLocaleDateString('es-AR')}</td>
                         <td className="px-4 py-3 text-sm font-medium">{load.truck.name}</td>
                         <td className="px-4 py-3 text-sm">
-                          <Badge className={`${
-                            load.truck.type === 'CHASIS' ? 'bg-blue-500' :
-                            load.truck.type === 'EQUIPO' ? 'bg-green-500' :
-                            'bg-orange-500'
-                          } text-white`}>
+                          <Badge className={cn(
+                            load.truck.type === 'CHASIS' ? 'bg-info' :
+                            load.truck.type === 'EQUIPO' ? 'bg-success' :
+                            'bg-warning',
+                            "text-white"
+                          )}>
                             {load.truck.type === 'CHASIS' ? 'Chasis' :
                              load.truck.type === 'EQUIPO' ? 'Equipo' : 'Semi'}
                           </Badge>
@@ -4110,7 +4123,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
       {/* Dialog de detalle */}
       {detailLoad && (
           <Dialog open={!!detailLoad} onOpenChange={(open) => !open && setDetailLoad(null)}>
-            <DialogContent size="full" className="flex flex-col p-0">
+            <DialogContent size="full" className="p-0">
               <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
                 <DialogTitle className="text-lg sm:text-xl">
                   Detalle de Carga - {detailLoad.truck.name}

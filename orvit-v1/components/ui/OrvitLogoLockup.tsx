@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import OrvitLogoMotion from './OrvitLogoMotion';
 
 interface OrvitLogoLockupProps {
@@ -18,7 +19,7 @@ export default function OrvitLogoLockup({
   const textColor = theme === 'dark' ? 'text-white' : 'text-black';
 
   return (
-    <div className={`flex flex-col items-center gap-4 ${className}`}>
+    <div className={cn('flex flex-col items-center gap-4', className)}>
       <OrvitLogoMotion
         size={size}
         density={100}
@@ -29,7 +30,7 @@ export default function OrvitLogoLockup({
       />
       {showText && (
         <span
-          className={`font-light tracking-[0.3em] text-lg ${textColor}`}
+          className={cn('font-light tracking-[0.3em] text-lg', textColor)}
           style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
         >
           ORVIT

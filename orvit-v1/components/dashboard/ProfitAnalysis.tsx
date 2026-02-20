@@ -96,14 +96,14 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
           <div className={cn(
             "p-3 rounded-lg",
             totalProfit >= 0
-              ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50"
-              : "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50"
+              ? "bg-success-muted border border-success-muted"
+              : "bg-destructive/10 border border-destructive/30"
           )}>
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Ganancia Neta del Mes</span>
               <span className={cn(
                 "text-lg font-bold",
-                totalProfit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                totalProfit >= 0 ? "text-success" : "text-destructive"
               )}>
                 {formatCurrency(totalProfit)}
               </span>
@@ -125,7 +125,7 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className={cn(
                         "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold",
-                        index === 0 ? "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900" : "bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        index === 0 ? "bg-foreground text-background" : "bg-muted text-muted-foreground"
                       )}>
                         {index + 1}
                       </div>
@@ -137,7 +137,7 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-2">
-                      <p className="text-xs font-bold text-green-600 dark:text-green-400">
+                      <p className="text-xs font-bold text-success">
                         {formatCurrency(product.totalProfit)}
                       </p>
                     </div>
@@ -166,7 +166,7 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
                           <span className="text-foreground font-medium">{category.name}</span>
                           <span className={cn(
                             "font-semibold",
-                            category.profit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                            category.profit >= 0 ? "text-success" : "text-destructive"
                           )}>
                             {formatCurrency(category.profit)}
                           </span>
@@ -175,7 +175,7 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
                           <div
                             className={cn(
                               "h-full rounded-full transition-all",
-                              category.profit >= 0 ? "bg-gray-600 dark:bg-gray-400" : "bg-red-500"
+                              category.profit >= 0 ? "bg-muted-foreground" : "bg-destructive"
                             )}
                             style={{ width: `${Math.min(Math.abs(percentage), 100)}%` }}
                           />
@@ -193,10 +193,10 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
 
           {/* Alerta de productos con pérdida */}
           {losingProducts.length > 0 && (
-            <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50">
+            <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/30">
               <div className="flex items-center gap-1.5 mb-1">
-                <TrendingDown className="h-3 w-3 text-red-600 dark:text-red-400" />
-                <p className="text-xs font-bold text-red-700 dark:text-red-400">
+                <TrendingDown className="h-3 w-3 text-destructive" />
+                <p className="text-xs font-bold text-destructive">
                   {losingProducts.length} producto{losingProducts.length > 1 ? 's' : ''} con pérdida
                 </p>
               </div>

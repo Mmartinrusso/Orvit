@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,24 +36,31 @@ import {
   getAssigneeName,
 } from '@/lib/agenda/types';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
+
+
+// Mapeo para statuses unificados (lowercase) que no están en TASK_STATUS_CONFIG (uppercase)
+const STATUS_LABEL_MAP: Record<string, { label: string; labelShort: string; bgColor: string; color: string }> = {
+  'pending':     { label: 'Pendiente',  labelShort: 'Pend.',    bgColor: 'bg-muted', color: 'text-muted-foreground' },
+  'in_progress': { label: 'En Progreso',labelShort: 'En prog.', bgColor: 'bg-info-muted',  color: 'text-info-muted-foreground'  },
+  'waiting':     { label: 'Esperando',  labelShort: 'Esp.',     bgColor: 'bg-warning-muted', color: 'text-warning-muted-foreground' },
+  'completed':   { label: 'Completada', labelShort: 'Comp.',    bgColor: 'bg-success-muted', color: 'text-success' },
+  'cancelled':   { label: 'Cancelada',  labelShort: 'Canc.',    bgColor: 'bg-destructive/10',   color: 'text-destructive'   },
+};
+
+// Mapeo para prioridades unificadas (lowercase) que no están en PRIORITY_CONFIG (uppercase)
+const PRIORITY_LABEL_MAP: Record<string, { label: string; color: string; bgColor: string; borderColor: string }> = {
+  'low':    { label: 'Baja',    color: 'text-muted-foreground',  bgColor: 'bg-muted',  borderColor: 'border-border'  },
+  'medium': { label: 'Media',   color: 'text-info-muted-foreground',   bgColor: 'bg-info-muted',   borderColor: 'border-info-muted'   },
+  'high':   { label: 'Alta',    color: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted', borderColor: 'border-warning-muted' },
+  'urgent': { label: 'Urgente', color: 'text-destructive',    bgColor: 'bg-destructive/10',    borderColor: 'border-destructive/30'    },
 };
 
 interface AgendaListViewProps {
   tasks: AgendaTask[];
-  onSelect: (task: AgendaTask) => void;
+  onSelect?: (task: AgendaTask) => void;
   onEdit: (task: AgendaTask) => void;
-  onDelete: (taskId: number) => void;
-  onStatusChange: (taskId: number, status: AgendaTaskStatus) => void;
+  onDelete: (task: AgendaTask) => void;
+  onStatusChange: (task: AgendaTask, status: AgendaTaskStatus) => void;
 }
 
 export function AgendaListView({
@@ -62,7 +70,7 @@ export function AgendaListView({
   onDelete,
   onStatusChange,
 }: AgendaListViewProps) {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   if (tasks.length === 0) {
     return (
@@ -83,31 +91,35 @@ export function AgendaListView({
   return (
     <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-380px)]">
       {tasks.map((task) => {
-        const statusConfig = TASK_STATUS_CONFIG[task.status];
-        const priorityConfig = PRIORITY_CONFIG[task.priority];
+        const statusConfig = TASK_STATUS_CONFIG[task.status as AgendaTaskStatus]
+          ?? STATUS_LABEL_MAP[task.status]
+          ?? { bgColor: 'bg-muted', color: 'text-muted-foreground', labelShort: task.status, label: task.status };
+        const priorityConfig = PRIORITY_CONFIG[task.priority as Priority]
+          ?? PRIORITY_LABEL_MAP[task.priority]
+          ?? { color: 'text-muted-foreground', borderColor: 'border-border', bgColor: 'bg-muted', label: task.priority, labelShort: task.priority };
         const overdue = isTaskOverdue(task);
         const dueToday = task.dueDate && isToday(new Date(task.dueDate));
 
         return (
           <Card
-            key={task.id}
+            key={(task as any).uid || task.id}
             className={cn(
               'cursor-pointer transition-all hover:shadow-md',
-              task.status === 'COMPLETED' && 'opacity-60',
-              task.status === 'CANCELLED' && 'opacity-50'
+              (task.status === 'COMPLETED' || task.status === 'completed') && 'opacity-60',
+              (task.status === 'CANCELLED' || task.status === 'cancelled') && 'opacity-50'
             )}
-            onClick={() => onSelect(task)}
+            onClick={() => onSelect?.(task)}
           >
             {/* Left border accent */}
             <div
               className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-lg')}
               style={{
                 backgroundColor:
-                  task.priority === 'URGENT'
+                  (task.priority === 'URGENT' || task.priority === 'urgent')
                     ? userColors.kpiNegative
-                    : task.priority === 'HIGH'
+                    : (task.priority === 'HIGH' || task.priority === 'high')
                       ? userColors.chart4
-                      : task.priority === 'MEDIUM'
+                      : (task.priority === 'MEDIUM' || task.priority === 'medium')
                         ? userColors.chart1
                         : userColors.kpiNeutral,
               }}
@@ -118,11 +130,11 @@ export function AgendaListView({
                 {/* Checkbox para completar rápido */}
                 <div onClick={(e) => e.stopPropagation()}>
                   <Checkbox
-                    checked={task.status === 'COMPLETED'}
+                    checked={task.status === 'COMPLETED' || task.status === 'completed'}
                     onCheckedChange={(checked) => {
-                      onStatusChange(task.id, checked ? 'COMPLETED' : 'PENDING');
+                      onStatusChange(task, checked ? 'COMPLETED' : 'PENDING');
                     }}
-                    disabled={task.status === 'CANCELLED'}
+                    disabled={task.status === 'CANCELLED' || task.status === 'cancelled'}
                   />
                 </div>
 
@@ -133,7 +145,7 @@ export function AgendaListView({
                       <h3
                         className={cn(
                           'font-medium text-sm',
-                          task.status === 'COMPLETED' && 'line-through text-muted-foreground'
+                          (task.status === 'COMPLETED' || task.status === 'completed') && 'line-through text-muted-foreground'
                         )}
                       >
                         {task.title}
@@ -150,7 +162,7 @@ export function AgendaListView({
                       <Badge className={cn(statusConfig.bgColor, statusConfig.color, 'text-xs')}>
                         {statusConfig.labelShort}
                       </Badge>
-                      {overdue && task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
+                      {overdue && task.status !== 'COMPLETED' && task.status !== 'completed' && task.status !== 'CANCELLED' && task.status !== 'cancelled' && (
                         <Badge
                           variant="destructive"
                           className="text-xs gap-1"
@@ -179,8 +191,8 @@ export function AgendaListView({
                       <div
                         className={cn(
                           'flex items-center gap-1',
-                          overdue && 'text-red-600 font-medium',
-                          dueToday && !overdue && 'text-amber-600 font-medium'
+                          overdue && 'text-destructive font-medium',
+                          dueToday && !overdue && 'text-warning-muted-foreground font-medium'
                         )}
                       >
                         <Calendar className="h-3.5 w-3.5" />
@@ -206,12 +218,12 @@ export function AgendaListView({
                 <div onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Opciones">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onSelect(task)}>
+                      <DropdownMenuItem onClick={() => onSelect?.(task)}>
                         <Eye className="h-4 w-4 mr-2" />
                         Ver detalles
                       </DropdownMenuItem>
@@ -222,23 +234,23 @@ export function AgendaListView({
                       <DropdownMenuSeparator />
 
                       {/* Quick status changes */}
-                      {task.status !== 'COMPLETED' && (
+                      {task.status !== 'COMPLETED' && task.status !== 'completed' && (
                         <DropdownMenuItem
-                          onClick={() => onStatusChange(task.id, 'COMPLETED')}
-                          className="text-green-600"
+                          onClick={() => onStatusChange(task, 'COMPLETED')}
+                          className="text-success"
                         >
                           <CheckCircle2 className="h-4 w-4 mr-2" />
                           Marcar completada
                         </DropdownMenuItem>
                       )}
-                      {task.status === 'PENDING' && (
-                        <DropdownMenuItem onClick={() => onStatusChange(task.id, 'IN_PROGRESS')}>
+                      {(task.status === 'PENDING' || task.status === 'pending') && (
+                        <DropdownMenuItem onClick={() => onStatusChange(task, 'IN_PROGRESS')}>
                           <PlayCircle className="h-4 w-4 mr-2" />
                           Marcar en progreso
                         </DropdownMenuItem>
                       )}
-                      {task.status !== 'WAITING' && task.status !== 'COMPLETED' && (
-                        <DropdownMenuItem onClick={() => onStatusChange(task.id, 'WAITING')}>
+                      {task.status !== 'WAITING' && task.status !== 'waiting' && task.status !== 'COMPLETED' && task.status !== 'completed' && (
+                        <DropdownMenuItem onClick={() => onStatusChange(task, 'WAITING')}>
                           <Clock className="h-4 w-4 mr-2" />
                           Marcar esperando
                         </DropdownMenuItem>
@@ -246,8 +258,8 @@ export function AgendaListView({
 
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => onDelete(task.id)}
-                        className="text-red-600 focus:text-red-600"
+                        onClick={() => onDelete(task)}
+                        className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Eliminar

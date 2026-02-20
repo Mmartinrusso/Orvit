@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { LOTOProcedure, LOTOExecution, LOTOStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,6 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -157,7 +159,7 @@ export default function LOTOExecutionDialog({
   const renderEnergySources = () => (
     <div className="space-y-2">
       <h4 className="text-sm font-medium flex items-center gap-2">
-        <Zap className="h-4 w-4 text-yellow-500" />
+        <Zap className="h-4 w-4 text-warning-muted-foreground" />
         Fuentes de Energia a Aislar
       </h4>
       <div className="grid grid-cols-2 gap-2">
@@ -194,7 +196,7 @@ export default function LOTOExecutionDialog({
       {procedure.requiredPPE && procedure.requiredPPE.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-blue-500" />
+            <ShieldCheck className="h-4 w-4 text-primary" />
             EPP Requerido
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -226,9 +228,7 @@ export default function LOTOExecutionDialog({
           {lockSteps.map((step, idx) => (
             <div
               key={step.id}
-              className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
-                step.completed ? 'bg-green-50 border-green-200' : 'hover:bg-muted/50'
-              }`}
+              className={cn('flex items-start gap-3 p-3 border rounded-lg transition-colors', step.completed ? 'bg-success-muted border-success/20' : 'hover:bg-muted/50')}
             >
               <Checkbox
                 id={step.id}
@@ -238,7 +238,7 @@ export default function LOTOExecutionDialog({
               <div className="flex-1">
                 <label
                   htmlFor={step.id}
-                  className={`font-medium cursor-pointer ${step.completed ? 'line-through text-muted-foreground' : ''}`}
+                  className={cn('font-medium cursor-pointer', step.completed && 'line-through text-muted-foreground')}
                 >
                   {idx + 1}. {step.description}
                 </label>
@@ -267,8 +267,8 @@ export default function LOTOExecutionDialog({
 
   const renderVerifyMode = () => (
     <div className="space-y-4">
-      <Alert className="border-blue-200 bg-blue-50">
-        <CheckCircle className="h-4 w-4 text-blue-500" />
+      <Alert className="border-primary/20 bg-info-muted">
+        <CheckCircle className="h-4 w-4 text-primary" />
         <AlertTitle>Verificacion de Energia Cero</AlertTitle>
         <AlertDescription>
           Confirme que todas las fuentes de energia han sido efectivamente aisladas antes de iniciar el trabajo.
@@ -294,7 +294,7 @@ export default function LOTOExecutionDialog({
           <div className="space-y-2">
             {procedure.verificationSteps.map((step: any, idx: number) => (
               <div key={idx} className="flex items-center gap-2 p-2 border rounded">
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-success" />
                 <span className="text-sm">{step.description || step}</span>
               </div>
             ))}
@@ -324,8 +324,8 @@ export default function LOTOExecutionDialog({
 
   const renderUnlockMode = () => (
     <div className="space-y-4">
-      <Alert className="border-green-200 bg-green-50">
-        <Unlock className="h-4 w-4 text-green-600" />
+      <Alert className="border-success/20 bg-success-muted">
+        <Unlock className="h-4 w-4 text-success" />
         <AlertTitle>Procedimiento de Desbloqueo</AlertTitle>
         <AlertDescription>
           Complete todos los pasos de desbloqueo en orden inverso. Asegurese de que el area este despejada y segura.
@@ -359,9 +359,7 @@ export default function LOTOExecutionDialog({
           {[...unlockSteps].reverse().map((step, idx) => (
             <div
               key={step.id}
-              className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
-                step.completed ? 'bg-green-50 border-green-200' : 'hover:bg-muted/50'
-              }`}
+              className={cn('flex items-start gap-3 p-3 border rounded-lg transition-colors', step.completed ? 'bg-success-muted border-success/20' : 'hover:bg-muted/50')}
             >
               <Checkbox
                 id={`unlock-${step.id}`}
@@ -371,7 +369,7 @@ export default function LOTOExecutionDialog({
               <div className="flex-1">
                 <label
                   htmlFor={`unlock-${step.id}`}
-                  className={`font-medium cursor-pointer ${step.completed ? 'line-through text-muted-foreground' : ''}`}
+                  className={cn('font-medium cursor-pointer', step.completed && 'line-through text-muted-foreground')}
                 >
                   {unlockSteps.length - idx}. Desbloquear: {step.description}
                 </label>
@@ -409,7 +407,7 @@ export default function LOTOExecutionDialog({
             <Button
               onClick={handleLock}
               disabled={!allLockStepsCompleted || isSubmitting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               <Lock className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Bloqueando...' : 'Confirmar Bloqueo'}
@@ -425,7 +423,7 @@ export default function LOTOExecutionDialog({
             <Button
               onClick={handleVerifyZeroEnergy}
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary hover:bg-primary/90"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Verificando...' : 'Confirmar Energia Cero'}
@@ -441,7 +439,7 @@ export default function LOTOExecutionDialog({
             <Button
               onClick={handleUnlock}
               disabled={!allUnlockStepsCompleted || isSubmitting}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-success hover:bg-success/90 text-success-foreground"
             >
               <Unlock className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Desbloqueando...' : 'Confirmar Desbloqueo'}
@@ -453,12 +451,12 @@ export default function LOTOExecutionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {mode === 'lock' && <Lock className="h-5 w-5 text-red-500" />}
-            {mode === 'verify' && <CheckCircle className="h-5 w-5 text-blue-500" />}
-            {mode === 'unlock' && <Unlock className="h-5 w-5 text-green-500" />}
+            {mode === 'lock' && <Lock className="h-5 w-5 text-destructive" />}
+            {mode === 'verify' && <CheckCircle className="h-5 w-5 text-primary" />}
+            {mode === 'unlock' && <Unlock className="h-5 w-5 text-success" />}
             {mode === 'lock' && 'Ejecutar Bloqueo LOTO'}
             {mode === 'verify' && 'Verificar Energia Cero'}
             {mode === 'unlock' && 'Ejecutar Desbloqueo LOTO'}
@@ -473,11 +471,11 @@ export default function LOTOExecutionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
+        <DialogBody>
           {mode === 'lock' && renderLockMode()}
           {mode === 'verify' && renderVerifyMode()}
           {mode === 'unlock' && renderUnlockMode()}
-        </ScrollArea>
+        </DialogBody>
 
         <DialogFooter>{getFooterButtons()}</DialogFooter>
       </DialogContent>

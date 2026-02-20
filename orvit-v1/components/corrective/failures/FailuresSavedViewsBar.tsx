@@ -40,35 +40,35 @@ export const FAILURE_PRESETS: FailurePreset[] = [
     label: 'Abiertas',
     icon: AlertCircle,
     filters: { status: ['OPEN', 'IN_PROGRESS'] },
-    color: 'text-blue-600'
+    color: 'text-info-muted-foreground'
   },
   {
     key: 'no_ot',
     label: 'Sin OT',
     icon: Wrench,
     filters: { hasWorkOrder: false, status: ['OPEN', 'IN_PROGRESS'] },
-    color: 'text-amber-600'
+    color: 'text-warning-muted-foreground'
   },
   {
     key: 'downtime',
     label: 'Con downtime',
     icon: Zap,
     filters: { causedDowntime: true },
-    color: 'text-red-600'
+    color: 'text-destructive'
   },
   {
     key: 'unassigned',
     label: 'Sin asignar',
     icon: UserX,
     filters: { hasWorkOrder: false, status: 'OPEN' },
-    color: 'text-orange-600'
+    color: 'text-warning-muted-foreground'
   },
   {
     key: 'p1_p2',
     label: 'P1/P2',
     icon: AlertTriangle,
     filters: { priority: ['URGENT', 'HIGH'] },
-    color: 'text-red-500'
+    color: 'text-destructive'
   },
   {
     key: 'duplicates',

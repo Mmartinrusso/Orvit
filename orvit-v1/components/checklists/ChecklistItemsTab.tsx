@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -109,34 +110,34 @@ function getItemIcon(title: string): React.ReactNode {
   const titleLower = title.toLowerCase();
 
   if (titleLower.includes('lubric') || titleLower.includes('aceite') || titleLower.includes('grasa')) {
-    return <Droplets className="h-3.5 w-3.5 text-amber-500" />;
+    return <Droplets className="h-3.5 w-3.5 text-warning-muted-foreground" />;
   }
   if (titleLower.includes('limpi') || titleLower.includes('lavar')) {
-    return <Sparkles className="h-3.5 w-3.5 text-cyan-500" />;
+    return <Sparkles className="h-3.5 w-3.5 text-info-muted-foreground" />;
   }
   if (titleLower.includes('inspecci') || titleLower.includes('verific') || titleLower.includes('revis') || titleLower.includes('control')) {
-    return <Search className="h-3.5 w-3.5 text-blue-500" />;
+    return <Search className="h-3.5 w-3.5 text-primary" />;
   }
   if (titleLower.includes('ajust') || titleLower.includes('calibr') || titleLower.includes('torque')) {
-    return <Settings className="h-3.5 w-3.5 text-purple-500" />;
+    return <Settings className="h-3.5 w-3.5 text-primary" />;
   }
   if (titleLower.includes('cambio') || titleLower.includes('reempla') || titleLower.includes('sustitu')) {
-    return <Wrench className="h-3.5 w-3.5 text-orange-500" />;
+    return <Wrench className="h-3.5 w-3.5 text-warning-muted-foreground" />;
   }
   if (titleLower.includes('medi') || titleLower.includes('nivel') || titleLower.includes('presi')) {
-    return <Gauge className="h-3.5 w-3.5 text-green-500" />;
+    return <Gauge className="h-3.5 w-3.5 text-success" />;
   }
 
-  return <ClipboardCheck className="h-3.5 w-3.5 text-gray-400" />;
+  return <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
 // Color del badge de tiempo según duración
 function getTimeColor(minutes: number): string {
-  if (minutes <= 5) return 'bg-green-50 text-green-700 border-green-200';
-  if (minutes <= 15) return 'bg-blue-50 text-blue-700 border-blue-200';
-  if (minutes <= 30) return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-  if (minutes <= 60) return 'bg-orange-50 text-orange-700 border-orange-200';
-  return 'bg-red-50 text-red-700 border-red-200';
+  if (minutes <= 5) return 'bg-success-muted text-success border-success/20';
+  if (minutes <= 15) return 'bg-info-muted text-info-muted-foreground border-info-muted-foreground/20';
+  if (minutes <= 30) return 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20';
+  if (minutes <= 60) return 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20';
+  return 'bg-destructive/10 text-destructive border-destructive/20';
 }
 
 export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
@@ -358,11 +359,11 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
         
         {/* Tree skeleton */}
         <div className="space-y-4">
-          <div className="bg-gray-100 border-l-4 border-blue-500 p-4 rounded-r-lg">
+          <div className="bg-muted border-l-4 border-primary p-4 rounded-r-lg">
             <Skeleton className="h-5 w-64" />
           </div>
           <div className="ml-4 space-y-3">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
+            <div className="bg-info-muted border-l-4 border-primary/40 p-3 rounded-r-lg">
               <Skeleton className="h-4 w-48" />
             </div>
             <div className="ml-4 space-y-2">
@@ -414,7 +415,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">
+        <h3 className="text-sm font-semibold text-foreground">
           Items del Checklist ({data.totalItems})
         </h3>
         <Badge variant="outline" className="text-xs">
@@ -427,15 +428,15 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
         {tree?.machines.map((machine, machineIndex) => (
           <div key={`machine-${machine.machineId || machineIndex}`} className="space-y-3">
             {/* Nivel 1: Máquina */}
-            <div className={`border-l-4 p-4 rounded-r-lg ${machine.isUnidadMovil ? 'bg-emerald-50 border-emerald-500' : 'bg-blue-50 border-blue-500'}`}>
+            <div className={cn('border-l-4 p-4 rounded-r-lg', machine.isUnidadMovil ? 'bg-success-muted border-success' : 'bg-info-muted border-primary')}>
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <h4 className="font-semibold text-foreground flex items-center gap-2">
                   {machine.isUnidadMovil ? (
-                    <Truck className="h-5 w-5 text-emerald-600" />
+                    <Truck className="h-5 w-5 text-success" />
                   ) : (
-                    <Cpu className="h-5 w-5 text-blue-600" />
+                    <Cpu className="h-5 w-5 text-primary" />
                   )}
-                  <span className="text-xs text-gray-500 font-normal">
+                  <span className="text-xs text-muted-foreground font-normal">
                     {machine.isUnidadMovil ? 'Unidad Móvil' : 'Máquina'}
                   </span>
                   <span>{safeText(machine.machineName)}</span>
@@ -453,9 +454,9 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
               <div key={`component-${component.componentId || componentIndex}`} className="ml-4 space-y-3">
                 {/* Nivel 2: Componente */}
                 {component.componentId && (
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
-                    <h5 className="font-medium text-gray-800 flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-blue-500" />
+                  <div className="bg-info-muted border-l-4 border-primary/40 p-3 rounded-r-lg">
+                    <h5 className="font-medium text-foreground flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-primary" />
                       Componente: {safeText(component.componentName)}
                     </h5>
                   </div>
@@ -469,9 +470,9 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                   >
                     {/* Nivel 3: Subcomponente */}
                     {subcomponent.subcomponentId && (
-                      <div className="bg-blue-50/50 border-l-4 border-blue-300 p-2 rounded-r-lg mb-2">
-                        <h6 className="font-medium text-xs text-gray-700 flex items-center gap-2">
-                          <Layers className="h-3 w-3 text-blue-400" />
+                      <div className="bg-info-muted/50 border-l-4 border-primary/30 p-2 rounded-r-lg mb-2">
+                        <h6 className="font-medium text-xs text-foreground flex items-center gap-2">
+                          <Layers className="h-3 w-3 text-primary" />
                           Subcomponente: {safeText(subcomponent.subcomponentName)}
                         </h6>
                       </div>
@@ -482,7 +483,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                       {subcomponent.items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-start gap-3 p-3 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                          className="flex items-start gap-3 p-3 bg-card border rounded-lg shadow-sm hover:shadow-md transition-shadow"
                           tabIndex={0}
                         >
                           {/* Icono del tipo de tarea */}
@@ -495,15 +496,15 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-mono font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                                  <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                                     {item.code}
                                   </span>
-                                  <h5 className="font-medium text-sm text-gray-900 truncate">
+                                  <h5 className="font-medium text-sm text-foreground truncate">
                                     {item.title}
                                   </h5>
                                 </div>
                                 {item.description && (
-                                  <p className="text-xs text-gray-600 whitespace-pre-line mt-1 line-clamp-2">
+                                  <p className="text-xs text-muted-foreground whitespace-pre-line mt-1 line-clamp-2">
                                     {normalizeDescription(item.description)}
                                   </p>
                                 )}
@@ -512,7 +513,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                               {/* Badge de tiempo con color */}
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] shrink-0 ${getTimeColor(item.minutes)} flex items-center gap-1`}
+                                className={cn('text-[10px] shrink-0 flex items-center gap-1', getTimeColor(item.minutes))}
                               >
                                 <Clock className="h-3 w-3" />
                                 {formatMinutes(item.minutes)}
@@ -532,9 +533,9 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
         {/* Items sin máquina asignada */}
         {tree && tree.itemsWithoutMachine.length > 0 && (
           <div className="space-y-3">
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-r-lg">
-              <h4 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <div className="bg-warning-muted border-l-4 border-warning-muted-foreground p-3 rounded-r-lg">
+              <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                 Tareas generales ({tree.itemsWithoutMachine.length})
               </h4>
             </div>
@@ -542,7 +543,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
               {tree.itemsWithoutMachine.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-start gap-3 p-3 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                  className="flex items-start gap-3 p-3 bg-card border rounded-lg shadow-sm hover:shadow-md transition-shadow"
                   tabIndex={0}
                 >
                   {/* Icono del tipo de tarea */}
@@ -555,15 +556,15 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                             {item.code}
                           </span>
-                          <h5 className="font-medium text-sm text-gray-900 truncate">
+                          <h5 className="font-medium text-sm text-foreground truncate">
                             {item.title}
                           </h5>
                         </div>
                         {item.description && (
-                          <p className="text-xs text-gray-600 whitespace-pre-line mt-1 line-clamp-2">
+                          <p className="text-xs text-muted-foreground whitespace-pre-line mt-1 line-clamp-2">
                             {normalizeDescription(item.description)}
                           </p>
                         )}
@@ -572,7 +573,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                       {/* Badge de tiempo con color */}
                       <Badge
                         variant="outline"
-                        className={`text-[10px] shrink-0 ${getTimeColor(item.minutes)} flex items-center gap-1`}
+                        className={cn('text-[10px] shrink-0 flex items-center gap-1', getTimeColor(item.minutes))}
                       >
                         <Clock className="h-3 w-3" />
                         {formatMinutes(item.minutes)}

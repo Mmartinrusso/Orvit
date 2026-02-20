@@ -33,6 +33,8 @@ import { CostVersionToggle } from "@/components/costos/CostVersionToggle";
 import { useCompany } from '@/contexts/CompanyContext';
 import { useRouter } from 'next/navigation';
 import { useCostConfig } from '@/hooks/use-cost-consolidation';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useViewMode } from '@/contexts/ViewModeContext';
 
 // V2 Components
 import { ExecutiveDashboardV2 } from '@/components/costos/v2';
@@ -46,6 +48,7 @@ const formatCurrency = (value: number | string | undefined): string => {
 };
 
 export default function CostosPage() {
+  const confirm = useConfirm();
   const { currentArea, currentCompany } = useCompany();
   const router = useRouter();
   
@@ -66,6 +69,16 @@ export default function CostosPage() {
     updateEmployee,
     refreshData
   } = useEmployeeCosts(selectedMonth);
+
+  // View Mode - Costos requiere T2 (Extended)
+  const { mode: viewMode, isLoading: vmLoading } = useViewMode();
+
+  // Redirigir si no está en T2
+  useEffect(() => {
+    if (!vmLoading && viewMode !== 'E') {
+      router.replace('/administracion');
+    }
+  }, [vmLoading, viewMode, router]);
 
   // V2 Config - determina qué versión mostrar
   const { data: configData, isLoading: configLoading } = useCostConfig();
@@ -183,7 +196,13 @@ export default function CostosPage() {
   };
 
   const handleDeleteCategory = async (categoryId: number) => {
-    if (confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
+    const ok = await confirm({
+      title: 'Eliminar categoría',
+      description: '¿Estás seguro de que quieres eliminar esta categoría?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) {
       try {
         // TODO: Implementar eliminación de categorías
         refreshData();
@@ -194,7 +213,13 @@ export default function CostosPage() {
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este empleado? Esta acción no se puede deshacer.')) {
+    const ok = await confirm({
+      title: 'Eliminar empleado',
+      description: '¿Estás seguro de que quieres eliminar este empleado? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) {
       try {
         const response = await fetch(`/api/employees/delete?employeeId=${employeeId}&companyId=${currentCompany?.id || 1}`, {
           method: 'DELETE',
@@ -215,18 +240,21 @@ export default function CostosPage() {
     }
   };
 
-  if (loading || configLoading) {
+  if (loading || configLoading || vmLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Cargando datos...</p>
           </div>
         </div>
       </div>
     );
   }
+
+  // T2 GATE - redirigir si no está en modo Extendido (manejado por useEffect)
+  if (viewMode !== 'E') return null;
 
   // ========================================
   // V2 MODE - Centro de Costos completo
@@ -351,7 +379,7 @@ export default function CostosPage() {
                 onClick={() => setShowNotesDialog(true)}
                 variant="outline"
                 size="sm"
-                className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
               >
                 <BookOpen className="h-4 w-4 mr-2" />
                 Notas
@@ -502,7 +530,7 @@ export default function CostosPage() {
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleDeleteCategory(category.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Eliminar
@@ -623,7 +651,7 @@ export default function CostosPage() {
                               <p className="text-sm text-muted-foreground">{employee.role || 'Sin rol'}</p>
                               <div className="flex items-center gap-4 mt-2 text-sm">
                                 {employee.categoryName && <span>Categoría: {employee.categoryName}</span>}
-                                <span className="text-blue-600">💡 Sueldos se registran mensualmente</span>
+                                <span className="text-info-muted-foreground">💡 Sueldos se registran mensualmente</span>
                               </div>
                             </div>
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -631,7 +659,7 @@ export default function CostosPage() {
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => openEmployeeDetail(employee)}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                className="text-info-muted-foreground hover:text-info-muted-foreground hover:bg-info-muted"
                               >
                                 <User className="h-4 w-4 mr-1" />
                                 Ver Detalle
@@ -648,7 +676,7 @@ export default function CostosPage() {
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleDeleteEmployee(employee.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Eliminar
@@ -769,7 +797,7 @@ export default function CostosPage() {
                       type="checkbox"
                       checked={editingEmployee.active}
                       onChange={(e) => setEditingEmployee({...editingEmployee, active: e.target.checked})}
-                      className="rounded border-gray-300"
+                      className="rounded border-border"
                     />
                     <Label htmlFor="editActive" className="text-sm">Empleado activo</Label>
               </div>

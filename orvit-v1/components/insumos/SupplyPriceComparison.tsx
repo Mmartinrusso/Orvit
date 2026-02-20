@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,22 +124,22 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
+        return <TrendingUp className="h-4 w-4 text-success" />;
       case 'down':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
+        return <TrendingDown className="h-4 w-4 text-destructive" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-foreground" />;
     }
   };
 
   const getTrendColor = (trend: string) => {
     switch (trend) {
       case 'up':
-        return 'text-green-600';
+        return 'text-success';
       case 'down':
-        return 'text-red-600';
+        return 'text-destructive';
       default:
-        return 'text-gray-600';
+        return 'text-foreground';
     }
   };
 
@@ -147,14 +148,14 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+            <BarChart3 className="h-5 w-5 text-info-muted-foreground" />
             Comparativa Mensual - {supplyName}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-center gap-2 text-yellow-800">
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="bg-warning-muted border border-warning-muted rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-center gap-2 text-warning-muted-foreground">
                 <Calendar className="h-5 w-5" />
                 <span className="font-medium">Se necesitan al menos 2 meses para comparar</span>
               </div>
@@ -173,7 +174,7 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+            <BarChart3 className="h-5 w-5 text-info-muted-foreground" />
             Comparativa Mensual - {supplyName}
           </CardTitle>
         </CardHeader>
@@ -246,10 +247,10 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cambio Total</CardTitle>
-              <ArrowUpDown className="h-4 w-4 text-blue-600" />
+              <ArrowUpDown className="h-4 w-4 text-info-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${stats.totalChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={cn('text-2xl font-bold', stats.totalChange >= 0 ? 'text-success' : 'text-destructive')}>
                 {stats.totalChange >= 0 ? '+' : ''}{formatCurrency(stats.totalChange)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -261,10 +262,10 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
-              <DollarSign className="h-4 w-4 text-purple-600" />
+              <DollarSign className="h-4 w-4 text-info-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-info-muted-foreground">
                 {formatCurrency(stats.avgPrice)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -276,10 +277,10 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rango de Precios</CardTitle>
-              <TrendingUp className="h-4 w-4 text-orange-600" />
+              <TrendingUp className="h-4 w-4 text-warning-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-warning-muted-foreground">
                 {formatCurrency(stats.priceRange)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -291,10 +292,10 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Volatilidad</CardTitle>
-              <Activity className="h-4 w-4 text-red-600" />
+              <Activity className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-bold text-destructive">
                 {formatCurrency(stats.volatility)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -409,14 +410,14 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
               </thead>
               <tbody>
                 {chartData.map((data, index) => (
-                  <tr key={data.month} className="border-b hover:bg-gray-50">
+                  <tr key={data.month} className="border-b hover:bg-accent">
                     <td className="p-2 font-medium">{data.monthFormatted}</td>
                     <td className="p-2 font-bold text-lg">{formatCurrency(data.price)}</td>
                     <td className="p-2">
                       {index > 0 && (
                         <div className="flex items-center gap-1">
                           {getTrendIcon(data.trend)}
-                          <span className={`text-sm ${getTrendColor(data.trend)}`}>
+                          <span className={cn('text-sm', getTrendColor(data.trend))}>
                             {data.priceChange > 0 ? '+' : ''}{formatCurrency(data.priceChange)}
                           </span>
                         </div>
@@ -432,7 +433,7 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
                     <td className="p-2">
                       <div className="flex items-center gap-1">
                         {getTrendIcon(data.trend)}
-                        <span className={`text-sm ${getTrendColor(data.trend)}`}>
+                        <span className={cn('text-sm', getTrendColor(data.trend))}>
                           {data.trend === 'up' ? 'Sube' : data.trend === 'down' ? 'Baja' : 'Estable'}
                         </span>
                       </div>

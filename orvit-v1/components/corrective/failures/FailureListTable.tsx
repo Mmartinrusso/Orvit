@@ -124,22 +124,22 @@ interface FailureListTableProps {
 }
 
 const priorityColors: Record<string, string> = {
-  P1: 'bg-red-500',
-  P2: 'bg-orange-500',
-  P3: 'bg-yellow-500',
-  P4: 'bg-blue-500',
-  URGENT: 'bg-red-500',
-  HIGH: 'bg-orange-500',
-  MEDIUM: 'bg-yellow-500',
-  LOW: 'bg-blue-500',
+  P1: 'bg-destructive',
+  P2: 'bg-warning',
+  P3: 'bg-warning',
+  P4: 'bg-info',
+  URGENT: 'bg-destructive',
+  HIGH: 'bg-warning',
+  MEDIUM: 'bg-warning',
+  LOW: 'bg-info',
 };
 
 const statusColors: Record<string, string> = {
-  REPORTED: 'bg-blue-100 text-blue-800',
-  OPEN: 'bg-blue-100 text-blue-800',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-  RESOLVED: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-gray-100 text-gray-800',
+  REPORTED: 'bg-info-muted text-info-muted-foreground',
+  OPEN: 'bg-info-muted text-info-muted-foreground',
+  IN_PROGRESS: 'bg-warning-muted text-warning-muted-foreground',
+  RESOLVED: 'bg-success-muted text-success',
+  CANCELLED: 'bg-muted text-foreground',
 };
 
 const statusLabels: Record<string, string> = {
@@ -325,7 +325,7 @@ export function FailureListTable({
 
   return (
     <TooltipProvider>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -366,9 +366,7 @@ export function FailureListTable({
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div
-                        className={`h-2 w-2 rounded-full ${
-                          priorityColors[failure.priority] || priorityColors[displayPriority] || 'bg-gray-400'
-                        }`}
+                        className={cn('h-2 w-2 rounded-full', priorityColors[failure.priority] || priorityColors[displayPriority] || 'bg-muted-foreground')}
                       />
                       <span className="text-xs font-medium">
                         {displayPriority}
@@ -406,7 +404,7 @@ export function FailureListTable({
                             <Badge
                               key={symptom.id}
                               variant="secondary"
-                              className="h-5 text-xs bg-blue-100 text-blue-800 hover:bg-blue-100"
+                              className="h-5 text-xs bg-info-muted text-info-muted-foreground hover:bg-info-muted"
                             >
                               {symptom.label}
                             </Badge>
@@ -414,7 +412,7 @@ export function FailureListTable({
                           {failure.symptomsList.length > 3 && (
                             <Badge
                               variant="secondary"
-                              className="h-5 text-xs bg-gray-100 text-gray-600"
+                              className="h-5 text-xs bg-muted text-muted-foreground"
                             >
                               +{failure.symptomsList.length - 3} más
                             </Badge>
@@ -475,7 +473,7 @@ export function FailureListTable({
 
                   {/* Estado */}
                   <TableCell>
-                    <Badge className={cn(statusColors[failure.status] || 'bg-gray-100', 'text-xs')}>
+                    <Badge className={cn(statusColors[failure.status] || 'bg-muted', 'text-xs')}>
                       {statusLabels[failure.status] || failure.status}
                     </Badge>
                   </TableCell>

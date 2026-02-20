@@ -38,11 +38,11 @@ function PriorityBadge({ priority }: { priority: string }) {
     switch (priority.toLowerCase()) {
       case "alta":
       case "urgente":
-        return "text-red-500";
+        return "text-destructive";
       case "media":
-        return "text-yellow-500";
+        return "text-warning-muted-foreground";
       case "baja":
-        return "text-green-500";
+        return "text-success";
       default:
         return "text-muted-foreground";
     }

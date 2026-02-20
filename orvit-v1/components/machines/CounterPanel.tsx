@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ import {
 } from 'lucide-react';
 import { CounterReadingDialog } from './CounterReadingDialog';
 import { CounterFormDialog } from './CounterFormDialog';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -208,7 +210,7 @@ function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: Cou
   const SourceIcon = sourceIcon;
 
   return (
-    <div className={`p-4 border rounded-lg ${isNearTrigger ? 'border-amber-300 bg-amber-50' : ''}`}>
+    <div className={cn('p-4 border rounded-lg', isNearTrigger && 'border-warning-muted bg-warning-muted')}>
       <div className="flex items-start justify-between mb-3">
         <div>
           <h4 className="font-medium flex items-center gap-2">
@@ -237,7 +239,7 @@ function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: Cou
               <Pencil className="h-4 w-4 mr-2" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-red-600">
+            <DropdownMenuItem onClick={onDelete} className="text-destructive">
               <Trash2 className="h-4 w-4 mr-2" />
               Eliminar
             </DropdownMenuItem>
@@ -251,7 +253,7 @@ function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: Cou
             <span>Próximo PM: {trigger.checklist.title}</span>
             <span>{Math.round(progressPercent)}%</span>
           </div>
-          <Progress value={progressPercent} className={isNearTrigger ? 'bg-amber-200' : ''} />
+          <Progress value={progressPercent} className={isNearTrigger ? 'bg-warning-muted' : ''} />
           <p className="text-xs text-muted-foreground mt-1">
             Cada {Number(trigger.triggerEvery).toLocaleString()} {counter.unit} |
             Próximo: {Number(trigger.nextTriggerValue).toLocaleString()} {counter.unit}
@@ -260,7 +262,7 @@ function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: Cou
       )}
 
       {isNearTrigger && (
-        <div className="flex items-center gap-2 text-amber-600 text-sm mb-3">
+        <div className="flex items-center gap-2 text-warning-muted-foreground text-sm mb-3">
           <AlertTriangle className="h-4 w-4" />
           <span>Cerca del próximo mantenimiento</span>
         </div>
@@ -302,48 +304,50 @@ function CounterHistoryDialog({ counter, open, onClose }: CounterHistoryDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent size="default">
         <DialogHeader>
           <DialogTitle>
             Historial: {counter.name}
           </DialogTitle>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16" />)}
-          </div>
-        ) : readings.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No hay lecturas registradas
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {readings.map((reading: any) => (
-              <div key={reading.id} className="p-3 border rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">
-                      {Number(reading.value).toLocaleString()} {counter.unit}
-                    </p>
-                    {reading.delta > 0 && (
-                      <p className="text-sm text-green-600">
-                        +{Number(reading.delta).toLocaleString()} {counter.unit}
+        <DialogBody>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16" />)}
+            </div>
+          ) : readings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay lecturas registradas
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {readings.map((reading: any) => (
+                <div key={reading.id} className="p-3 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">
+                        {Number(reading.value).toLocaleString()} {counter.unit}
                       </p>
-                    )}
+                      {reading.delta > 0 && (
+                        <p className="text-sm text-success">
+                          +{Number(reading.delta).toLocaleString()} {counter.unit}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant="outline">{reading.source}</Badge>
                   </div>
-                  <Badge variant="outline">{reading.source}</Badge>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(reading.recordedAt).toLocaleString()} por {reading.recordedBy?.name}
+                  </p>
+                  {reading.notes && (
+                    <p className="text-sm mt-1">{reading.notes}</p>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(reading.recordedAt).toLocaleString()} por {reading.recordedBy?.name}
-                </p>
-                {reading.notes && (
-                  <p className="text-sm mt-1">{reading.notes}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

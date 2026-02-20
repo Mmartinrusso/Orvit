@@ -22,7 +22,7 @@ interface AreaChartProps {
 export function AreaChart({
   data,
   height = 150,
-  color = '#3b82f6',
+  color = 'hsl(var(--primary))',
   gradientFrom,
   gradientTo,
   showLabels = true,
@@ -86,7 +86,7 @@ export function AreaChart({
         
         {/* Grid lines */}
         {showGrid && (
-          <g className="text-gray-200">
+          <g className="text-border">
             {[0.25, 0.5, 0.75].map((ratio, i) => (
               <line
                 key={i}

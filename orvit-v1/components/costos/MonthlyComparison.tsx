@@ -254,7 +254,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
       const total = payload.reduce((sum: number, entry: any) => sum + entry.value, 0);
       
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg min-w-[300px]">
+        <div className="bg-card p-4 border border-border rounded-lg shadow-lg min-w-[300px]">
           <p className="font-semibold text-[#333333] mb-3 text-center text-lg">{label}</p>
           
           {/* Total del mes */}
@@ -269,7 +269,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
             {payload.map((entry: any, index: number) => {
               const percentage = ((entry.value / total) * 100).toFixed(1);
               return (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
                   <div className="flex items-center gap-3">
                     <div 
                       className="w-4 h-4 rounded-full" 
@@ -427,17 +427,17 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'sueldos':
-        return 'text-yellow-600';
+        return 'text-warning-muted-foreground';
       case 'insumos':
-        return 'text-cyan-600';
+        return 'text-info-muted-foreground';
       case 'ventas':
-        return 'text-green-600';
+        return 'text-success';
       case 'produccion':
-        return 'text-orange-600';
+        return 'text-warning-muted-foreground';
       case 'costos':
-        return 'text-purple-600';
+        return 'text-info-muted-foreground';
       default:
-        return 'text-blue-600';
+        return 'text-info-muted-foreground';
     }
   };
 
@@ -464,25 +464,25 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
   if (monthlyData.length < 2) {
     return (
       <div className="min-h-[600px] flex items-center justify-center">
-        <Card className="w-full max-w-2xl border-0 shadow-2xl bg-gradient-to-br from-slate-50 to-slate-100">
+        <Card className="w-full max-w-2xl border-0 shadow-2xl bg-gradient-to-br from-muted to-muted">
           <CardContent className="p-12 text-center">
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <Calendar className="h-12 w-12 text-white" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Análisis Comparativo Insuficiente</h3>
-            <p className="text-lg text-gray-600 mb-6">
-              Se requieren al menos <span className="font-semibold text-blue-600">2 meses</span> de datos para generar comparativas significativas.
+            <h3 className="text-2xl font-bold text-foreground mb-4">Análisis Comparativo Insuficiente</h3>
+            <p className="text-lg text-muted-foreground mb-6">
+              Se requieren al menos <span className="font-semibold text-info-muted-foreground">2 meses</span> de datos para generar comparativas significativas.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-              <div className="flex items-center justify-center gap-3 text-blue-800 mb-2">
+            <div className="bg-info-muted border border-info-muted rounded-xl p-6 mb-6">
+              <div className="flex items-center justify-center gap-3 text-info-muted-foreground mb-2">
                 <Info className="h-5 w-5" />
                 <span className="font-semibold">Estado Actual</span>
               </div>
-              <p className="text-blue-700">
+              <p className="text-info-muted-foreground">
                 Datos disponibles: <span className="font-bold">{monthlyData.length} mes(es)</span>
               </p>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Selecciona diferentes períodos en el modal de comparativas para ver análisis detallados.
             </p>
           </CardContent>
@@ -495,35 +495,35 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
     <div className="min-h-screen bg-[#F5F5F5] p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Profesional */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
           <div className="bg-[#333333] p-8 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Análisis Comparativo Ejecutivo</h1>
-                <p className="text-gray-300 text-lg">
+                <p className="text-muted-foreground text-lg">
                   Dashboard de rendimiento financiero y operacional
                 </p>
                 <div className="flex items-center gap-4 mt-4">
-                  <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+                  <Badge variant="secondary" className="bg-background/10 text-white border-background/20">
                     <Calendar className="h-4 w-4 mr-2" />
                     {stats?.monthsAnalyzed} meses analizados
                   </Badge>
-                  <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+                  <Badge variant="secondary" className="bg-background/10 text-white border-background/20">
                     <Clock className="h-4 w-4 mr-2" />
                     Actualizado hace 5 min
                   </Badge>
                 </div>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                <Button variant="outline" size="sm" className="bg-background/10 border-background/20 text-white hover:bg-background/20">
                   <Download className="h-4 w-4 mr-2" />
                   Exportar
                 </Button>
-                <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                <Button variant="outline" size="sm" className="bg-background/10 border-background/20 text-white hover:bg-background/20">
                   <Share2 className="h-4 w-4 mr-2" />
                   Compartir
                 </Button>
-                <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                <Button variant="outline" size="sm" className="bg-background/10 border-background/20 text-white hover:bg-background/20">
                   <Settings className="h-4 w-4" />
                 </Button>
               </div>
@@ -531,12 +531,12 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
           </div>
           
           {/* Controles Avanzados */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-border">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-[#333333] mb-3">Categoría de Análisis</label>
                 <Select value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)}>
-                  <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-blue-500">
+                  <SelectTrigger className="h-12 border-2 border-border focus:border-info">
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
@@ -599,7 +599,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
               <div>
                 <label className="block text-sm font-semibold text-[#333333] mb-3">Modo de Comparación</label>
                 <Select value={comparisonMode} onValueChange={(value: any) => setComparisonMode(value)}>
-                  <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-blue-500">
+                  <SelectTrigger className="h-12 border-2 border-border focus:border-info">
                     <SelectValue placeholder="Seleccionar modo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -724,14 +724,14 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Ingresos Totales */}
                   <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <div className={`absolute inset-0 ${growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-green-500' : 'bg-red-500'} opacity-5`}></div>
+                    <div className={cn('absolute inset-0', growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-success' : 'bg-destructive', 'opacity-5')}></div>
                     <CardContent className="p-6 relative">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 rounded-xl ${growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <DollarSign className={`h-6 w-6 ${growthMetrics.metrics.variacionIngresosPct >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                        <div className={cn('p-3 rounded-xl', growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-success-muted' : 'bg-destructive/10')}>
+                          <DollarSign className={cn('h-6 w-6', growthMetrics.metrics.variacionIngresosPct >= 0 ? 'text-success' : 'text-destructive')} />
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${growthMetrics.metrics.variacionIngresosPct >= 5 ? 'bg-green-500' : growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                          <div className={cn('w-3 h-3 rounded-full', growthMetrics.metrics.variacionIngresosPct >= 5 ? 'bg-success' : growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-warning' : 'bg-destructive')}></div>
                           <Badge variant={growthMetrics.metrics.variacionIngresosPct >= 0 ? 'default' : 'destructive'} className="text-xs">
                             {growthMetrics.metrics.variacionIngresosPct >= 0 ? '+' : ''}{growthMetrics.metrics.variacionIngresosPct.toFixed(1)}%
                           </Badge>
@@ -749,14 +749,14 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
 
                   {/* Costos Totales */}
                   <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <div className={`absolute inset-0 ${growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-green-500' : 'bg-red-500'} opacity-5`}></div>
+                    <div className={cn('absolute inset-0', growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-success' : 'bg-destructive', 'opacity-5')}></div>
                     <CardContent className="p-6 relative">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 rounded-xl ${growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <TrendingDown className={`h-6 w-6 ${growthMetrics.metrics.variacionCostosPct <= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                        <div className={cn('p-3 rounded-xl', growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-success-muted' : 'bg-destructive/10')}>
+                          <TrendingDown className={cn('h-6 w-6', growthMetrics.metrics.variacionCostosPct <= 0 ? 'text-success' : 'text-destructive')} />
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-green-500' : growthMetrics.metrics.variacionCostosPct <= 5 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                          <div className={cn('w-3 h-3 rounded-full', growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-success' : growthMetrics.metrics.variacionCostosPct <= 5 ? 'bg-warning' : 'bg-destructive')}></div>
                           <Badge variant={growthMetrics.metrics.variacionCostosPct <= 0 ? 'default' : 'destructive'} className="text-xs">
                             {growthMetrics.metrics.variacionCostosPct >= 0 ? '+' : ''}{growthMetrics.metrics.variacionCostosPct.toFixed(1)}%
                           </Badge>
@@ -803,8 +803,8 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
               {/* Modo Índice Base 100 */}
               {comparisonMode === 'index100' && growthMetrics.data && (
                 <div className="space-y-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
+                  <div className="text-center p-4 bg-info-muted rounded-lg">
+                    <p className="text-sm text-info-muted-foreground">
                       <strong>Mes Base:</strong> {formatMonth(growthMetrics.baseMonth.month)} = 100
                     </p>
                   </div>
@@ -833,7 +833,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
           {/* Gráfico Principal */}
           <div className="xl:col-span-2">
             <Card className="border-0 shadow-xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              <CardHeader className="bg-gradient-to-r from-muted to-muted border-b border-border">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-xl font-bold text-[#333333]">
@@ -1017,12 +1017,12 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-success-muted rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-success rounded-full"></div>
                       <span className="font-medium text-[#333333]">Tendencia General</span>
                     </div>
-                    <Badge variant="default" className="bg-green-100 text-green-800">
+                    <Badge variant="default" className="bg-success-muted text-success">
                       {stats?.totalChange >= 0 ? 'Positiva' : 'Negativa'}
                     </Badge>
                   </div>
@@ -1053,7 +1053,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
             <Card className="border-0 shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-[#333333]">
-                  <Star className="h-5 w-5 text-yellow-500" />
+                  <Star className="h-5 w-5 text-warning" />
                   Top Categorías
                 </CardTitle>
               </CardHeader>
@@ -1063,11 +1063,11 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                     .sort(([,a], [,b]) => b.total - a.total)
                     .slice(0, 3)
                     .map(([category, data], index) => (
-                    <div key={category} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={category} className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                          index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
-                        }`}>
+                        <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm',
+                          index === 0 ? 'bg-warning' : index === 1 ? 'bg-muted-foreground' : 'bg-warning-muted-foreground'
+                        )}>
                           {index + 1}
                         </div>
                         <div>
@@ -1077,7 +1077,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-lg text-[#333333]">{formatCurrency(data.total)}</p>
-                        <p className={`text-sm ${data.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={cn('text-sm', data.change >= 0 ? 'text-success' : 'text-destructive')}>
                           {data.change >= 0 ? '+' : ''}{formatCurrency(data.change)}
                         </p>
                       </div>
@@ -1092,10 +1092,10 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
         {/* Análisis Detallado por Categoría */}
         {stats && (
           <Card className="border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-100 border-b border-gray-200">
+            <CardHeader className="bg-gradient-to-r from-muted to-muted border-b border-border">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold text-[#333333] flex items-center gap-2">
-                  <Layers className="h-6 w-6 text-blue-600" />
+                  <Layers className="h-6 w-6 text-info-muted-foreground" />
                   Análisis Detallado por Categoría
                 </CardTitle>
                 <Button variant="outline" size="sm">
@@ -1111,7 +1111,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className={`p-3 rounded-xl ${categoryColors[category as keyof typeof categoryColors]?.secondary || 'bg-gray-100'}`}>
+                          <div className={cn('p-3 rounded-xl', categoryColors[category as keyof typeof categoryColors]?.secondary || 'bg-muted')}>
                             {getCategoryIcon(category)}
                           </div>
                           <div>
@@ -1129,13 +1129,13 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                       
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                          <div className="text-center p-3 bg-muted rounded-lg">
                             <p className="text-xs text-[#666666] mb-1">Total</p>
                             <p className="font-bold text-lg text-[#333333]">
                               {formatCurrency(categoryStat.total)}
                             </p>
                           </div>
-                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                          <div className="text-center p-3 bg-muted rounded-lg">
                             <p className="text-xs text-[#666666] mb-1">Promedio</p>
                             <p className="font-bold text-lg text-[#333333]">
                               {formatCurrency(categoryStat.avg)}
@@ -1143,17 +1143,17 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                           </div>
                         </div>
                         
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                        <div className="p-4 bg-gradient-to-r from-info-muted to-info-muted rounded-lg">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-[#333333]">Cambio en el período</span>
-                            <span className={`font-bold text-lg ${categoryStat.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <span className={cn('font-bold text-lg', categoryStat.change >= 0 ? 'text-success' : 'text-destructive')}>
                               {categoryStat.change >= 0 ? '+' : ''}{formatCurrency(categoryStat.change)}
                             </span>
                           </div>
                           <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-1 bg-white rounded-full h-2 overflow-hidden">
+                            <div className="flex-1 bg-background rounded-full h-2 overflow-hidden">
                               <div 
-                                className={`h-full transition-all duration-1000 ${categoryStat.change >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                                className={cn('h-full transition-all duration-1000', categoryStat.change >= 0 ? 'bg-success' : 'bg-destructive')}
                                 style={{ 
                                   width: `${Math.min(Math.abs(categoryStat.change / categoryStat.avg * 100), 100)}%` 
                                 }}
@@ -1170,13 +1170,13 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                           <div className="flex items-center gap-1">
                             {categoryStat.change >= 0 ? (
                               <>
-                                <TrendingUp className="h-4 w-4 text-green-500" />
-                                <span className="text-green-600 font-medium">Positivo</span>
+                                <TrendingUp className="h-4 w-4 text-success" />
+                                <span className="text-success font-medium">Positivo</span>
                               </>
                             ) : (
                               <>
-                                <TrendingDown className="h-4 w-4 text-red-500" />
-                                <span className="text-red-600 font-medium">Negativo</span>
+                                <TrendingDown className="h-4 w-4 text-destructive" />
+                                <span className="text-destructive font-medium">Negativo</span>
                               </>
                             )}
                           </div>
@@ -1191,7 +1191,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
         )}
 
         {/* Footer con información adicional */}
-        <Card className="border-0 shadow-lg bg-gradient-to-r from-gray-50 to-slate-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-r from-muted to-muted">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

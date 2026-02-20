@@ -21,6 +21,7 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  Wrench,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ import {
 import { Machine, MachineStatus } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface MachineDetailHeaderProps {
   machine: Machine;
@@ -47,6 +49,8 @@ interface MachineDetailHeaderProps {
   onDelete?: () => void;
   onDisassemble?: () => void;
   onNewOrder?: () => void;
+  onNewPreventive?: () => void;
+  onNewCorrective?: () => void;
   onReportFailure?: () => void;
   onShowQR?: () => void;
   onClose?: () => void;
@@ -65,6 +69,8 @@ export function MachineDetailHeader({
   onDelete,
   onDisassemble,
   onNewOrder,
+  onNewPreventive,
+  onNewCorrective,
   onReportFailure,
   onShowQR,
   onClose,
@@ -81,10 +87,10 @@ export function MachineDetailHeader({
     switch (status) {
       case MachineStatus.ACTIVE:
       case 'ACTIVE':
-        return <Badge variant="default" className="bg-green-500 text-white text-[10px] px-1.5 py-0">Activo</Badge>;
+        return <Badge variant="default" className="bg-success text-success-foreground text-[10px] px-1.5 py-0">Activo</Badge>;
       case MachineStatus.OUT_OF_SERVICE:
       case 'OUT_OF_SERVICE':
-        return <Badge variant="secondary" className="bg-amber-500 text-white text-[10px] px-1.5 py-0">Fuera de servicio</Badge>;
+        return <Badge variant="secondary" className="bg-warning text-warning-foreground text-[10px] px-1.5 py-0">Fuera de servicio</Badge>;
       case MachineStatus.DECOMMISSIONED:
       case 'DECOMMISSIONED':
         return <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Baja</Badge>;
@@ -121,13 +127,13 @@ export function MachineDetailHeader({
             </div>
           )}
           {/* Status indicator */}
-          <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
+          <div className={cn('absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background',
             machine.status === 'ACTIVE' || machine.status === MachineStatus.ACTIVE
-              ? 'bg-green-500'
+              ? 'bg-success'
               : machine.status === 'OUT_OF_SERVICE' || machine.status === MachineStatus.OUT_OF_SERVICE
-                ? 'bg-amber-500'
-                : 'bg-red-500'
-          }`} />
+                ? 'bg-warning'
+                : 'bg-destructive'
+          )} />
         </div>
 
         {/* Name + Meta */}
@@ -150,16 +156,44 @@ export function MachineDetailHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1 shrink-0">
-          {canCreateOrder && onNewOrder && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onNewOrder}
-              className="h-7 text-xs px-2 sm:px-3"
-            >
-              <Plus className="h-3.5 w-3.5 sm:mr-1" />
-              <span className="hidden sm:inline">Nueva OT</span>
-            </Button>
+          {(canCreateOrder || canReportFailure) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm" className="h-7 text-xs px-2 sm:px-3">
+                  <Plus className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Nuevo</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canCreateOrder && onNewPreventive && (
+                  <DropdownMenuItem onClick={onNewPreventive}>
+                    <CalendarDays className="h-4 w-4 mr-2 text-info" />
+                    Nuevo Preventivo
+                  </DropdownMenuItem>
+                )}
+                {canCreateOrder && onNewCorrective && (
+                  <DropdownMenuItem onClick={onNewCorrective}>
+                    <Wrench className="h-4 w-4 mr-2 text-warning" />
+                    Nuevo Correctivo
+                  </DropdownMenuItem>
+                )}
+                {canCreateOrder && (onNewPreventive || onNewCorrective) && (onNewOrder || (canReportFailure && onReportFailure)) && (
+                  <DropdownMenuSeparator />
+                )}
+                {canCreateOrder && onNewOrder && (
+                  <DropdownMenuItem onClick={onNewOrder}>
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Nueva OT
+                  </DropdownMenuItem>
+                )}
+                {canReportFailure && onReportFailure && (
+                  <DropdownMenuItem onClick={onReportFailure}>
+                    <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
+                    Nueva Falla
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {onShowQR && (
             <Button variant="ghost" size="icon" onClick={onShowQR} className="h-8 w-8">
@@ -219,18 +253,18 @@ export function MachineDetailHeader({
           {showKpis ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>
       </div>
-      <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 ${!showKpis ? 'hidden sm:grid' : ''}`}>
+      <div className={cn('grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2', !showKpis ? 'hidden sm:grid' : '')}>
         {/* OT Pendientes */}
-        <Card className={`p-3 ${
+        <Card className={cn('p-3',
           stats.pendingOrders > 0
-            ? 'bg-amber-50 border-amber-200'
+            ? 'bg-warning-muted border-warning-muted'
             : 'bg-muted/30 border-border/50'
-        }`}>
+        )}>
           <div className="flex items-center gap-2">
-            <ClipboardList className={`h-5 w-5 ${stats.pendingOrders > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+            <ClipboardList className={cn('h-5 w-5', stats.pendingOrders > 0 ? 'text-warning' : 'text-muted-foreground')} />
             <div>
               <p className="text-[10px] text-muted-foreground leading-none">OT Pendientes</p>
-              <p className={`text-xl font-bold leading-tight ${stats.pendingOrders > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+              <p className={cn('text-xl font-bold leading-tight', stats.pendingOrders > 0 ? 'text-warning' : 'text-foreground')}>
                 {stats.pendingOrders}
               </p>
             </div>
@@ -238,16 +272,16 @@ export function MachineDetailHeader({
         </Card>
 
         {/* Fallas Abiertas */}
-        <Card className={`p-3 ${
+        <Card className={cn('p-3',
           stats.openFailures > 0
-            ? 'bg-red-50 border-red-200'
+            ? 'bg-destructive/10 border-destructive/20'
             : 'bg-muted/30 border-border/50'
-        }`}>
+        )}>
           <div className="flex items-center gap-2">
-            <AlertTriangle className={`h-5 w-5 ${stats.openFailures > 0 ? 'text-red-600' : 'text-muted-foreground'}`} />
+            <AlertTriangle className={cn('h-5 w-5', stats.openFailures > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
               <p className="text-[10px] text-muted-foreground leading-none">Fallas Abiertas</p>
-              <p className={`text-xl font-bold leading-tight ${stats.openFailures > 0 ? 'text-red-700' : 'text-foreground'}`}>
+              <p className={cn('text-xl font-bold leading-tight', stats.openFailures > 0 ? 'text-destructive' : 'text-foreground')}>
                 {stats.openFailures}
               </p>
             </div>

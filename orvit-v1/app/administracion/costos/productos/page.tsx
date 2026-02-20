@@ -374,9 +374,9 @@ export default function ProductosPage() {
 
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
     const variants = {
-      ok: 'bg-green-100 text-green-800 hover:bg-green-100',
-      warning: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
-      danger: 'bg-red-100 text-red-800 hover:bg-red-100'
+      ok: 'bg-success-muted text-success hover:bg-success-muted',
+      warning: 'bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted',
+      danger: 'bg-destructive/10 text-destructive hover:bg-destructive/10'
     };
     
     const labels = {
@@ -390,11 +390,11 @@ export default function ProductosPage() {
 
   const getVariacionIcon = (variacion: number) => {
     if (variacion > 0) {
-      return <TrendingUp className="h-4 w-4 text-red-500" />;
+      return <TrendingUp className="h-4 w-4 text-destructive" />;
     } else if (variacion < 0) {
-      return <TrendingDown className="h-4 w-4 text-green-500" />;
+      return <TrendingDown className="h-4 w-4 text-success" />;
     } else {
-      return <TrendingUp className="h-4 w-4 text-gray-500" />;
+      return <TrendingUp className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -424,15 +424,15 @@ export default function ProductosPage() {
   const getComponenteColor = (tipo: string) => {
     switch (tipo) {
       case 'materia_prima':
-        return 'text-blue-600';
+        return 'text-info-muted-foreground';
       case 'laboral':
-        return 'text-green-600';
+        return 'text-success';
       case 'servicios':
-        return 'text-orange-600';
+        return 'text-warning-muted-foreground';
       case 'indirectos':
         return 'text-purple-600';
       default:
-        return 'text-gray-600';
+        return 'text-muted-foreground';
     }
   };
 
@@ -496,7 +496,7 @@ export default function ProductosPage() {
               {formatCurrency(productos.reduce((sum, p) => sum + p.costoTotal, 0) / productos.length)}
             </div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-red-500" />
+              <TrendingUp className="h-4 w-4 text-destructive" />
               <span>+2.1% vs mes anterior</span>
             </div>
           </CardContent>
@@ -528,7 +528,7 @@ export default function ProductosPage() {
               {productos.filter(p => p.estado === 'ok').length}/{productos.length}
             </div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
               <span>Productos OK</span>
             </div>
           </CardContent>
@@ -596,13 +596,13 @@ export default function ProductosPage() {
                           <div className="font-medium text-lg">{formatCurrency(producto.costoTotal)}</div>
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getVariacionIcon(producto.variacion)}
-                            <span className={producto.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                            <span className={producto.variacion > 0 ? 'text-destructive' : 'text-success'}>
                               {producto.variacion > 0 ? '+' : ''}{producto.variacion.toFixed(1)}%
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                          <Badge className="bg-info-muted text-info-muted-foreground hover:bg-info-muted">
                             {formatPercentage(producto.margen)}
                           </Badge>
                           {getEstadoBadge(producto.estado)}
@@ -672,7 +672,7 @@ export default function ProductosPage() {
                     return (
                       <div key={tipo} className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-info"></div>
                           <span className="text-sm font-medium">{tipo}</span>
                         </div>
                         <div className="text-right">
@@ -803,7 +803,7 @@ export default function ProductosPage() {
                         <div className="font-medium">{formatCurrency(componente.monto)}</div>
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           {getVariacionIcon(componente.variacion)}
-                          <span className={componente.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                          <span className={componente.variacion > 0 ? 'text-destructive' : 'text-success'}>
                             {componente.variacion > 0 ? '+' : ''}{componente.variacion.toFixed(1)}%
                           </span>
                         </div>

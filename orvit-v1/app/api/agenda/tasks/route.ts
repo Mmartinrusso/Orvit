@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/agenda/tasks - Obtener tareas del usuario
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
+    const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -30,11 +30,15 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
     const search = searchParams.get('search');
     const category = searchParams.get('category');
+    const groupId = searchParams.get('groupId');
 
-    // Construir where clause
+    // Construir where clause — incluye tareas creadas por o asignadas al usuario
     const where: any = {
       companyId,
-      createdById: user.id, // Solo tareas creadas por el usuario actual
+      OR: [
+        { createdById: user.id },
+        { assignedToUserId: user.id },
+      ],
     };
 
     if (status && status !== 'all') {
@@ -76,6 +80,10 @@ export async function GET(request: NextRequest) {
       where.category = category;
     }
 
+    if (groupId) {
+      where.groupId = groupId === 'null' ? null : parseInt(groupId);
+    }
+
     // Pagination
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const pageSize = Math.min(Math.max(1, parseInt(searchParams.get('pageSize') || '100')), 200);
@@ -93,6 +101,9 @@ export async function GET(request: NextRequest) {
           },
           assignedToContact: {
             select: { id: true, name: true, avatar: true },
+          },
+          group: {
+            select: { id: true, name: true, color: true, icon: true },
           },
           reminders: {
             orderBy: { remindAt: 'asc' },
@@ -114,6 +125,8 @@ export async function GET(request: NextRequest) {
       priority: task.priority,
       status: task.status,
       category: task.category,
+      groupId: (task as any).groupId || null,
+      group: (task as any).group || null,
       createdById: task.createdById,
       createdBy: task.createdBy,
       assignedToUserId: task.assignedToUserId,
@@ -165,7 +178,7 @@ export async function GET(request: NextRequest) {
 // POST /api/agenda/tasks - Crear nueva tarea
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request);
+    const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -202,6 +215,7 @@ export async function POST(request: NextRequest) {
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         priority: data.priority,
         category: data.category,
+        groupId: data.groupId || null,
         status: 'PENDING',
         source: 'WEB',
         createdById: user.id,
@@ -232,6 +246,9 @@ export async function POST(request: NextRequest) {
         assignedToContact: {
           select: { id: true, name: true, avatar: true },
         },
+        group: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
         reminders: true,
       },
     });
@@ -245,6 +262,8 @@ export async function POST(request: NextRequest) {
       priority: task.priority,
       status: task.status,
       category: task.category,
+      groupId: (task as any).groupId || null,
+      group: (task as any).group || null,
       createdById: task.createdById,
       createdBy: task.createdBy,
       assignedToUserId: task.assignedToUserId,

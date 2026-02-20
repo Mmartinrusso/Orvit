@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { 
   Calendar, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { cn } from '@/lib/utils';
@@ -172,7 +173,7 @@ export function MonthSelector({
       <Card className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+            <Loader2 className="h-8 w-8 mr-3 animate-spin" />
             <span className="text-muted-foreground">Cargando meses disponibles...</span>
           </div>
         </CardContent>
@@ -254,13 +255,13 @@ export function MonthSelector({
                     </span>
                     <div className="flex gap-1">
                       {monthInfo?.hasSales && (
-                        <div className="w-2 h-2 bg-green-500 rounded-full" title="Ventas" />
+                        <div className="w-2 h-2 bg-success rounded-full" title="Ventas" />
                       )}
                       {monthInfo?.hasCosts && (
-                        <div className="w-2 h-2 bg-red-500 rounded-full" title="Costos" />
+                        <div className="w-2 h-2 bg-destructive rounded-full" title="Costos" />
                       )}
                       {monthInfo?.hasProduction && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" title="Producción" />
+                        <div className="w-2 h-2 bg-info rounded-full" title="Producción" />
                       )}
                     </div>
                   </Button>

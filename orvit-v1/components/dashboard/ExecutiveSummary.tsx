@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,17 +104,17 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
   if (isLoading && !summaryData) {
     return (
       <div className="space-y-6">
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="bg-gradient-to-r from-info-muted to-info-muted border-info-muted">
           <CardContent className="p-6">
             <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-4 bg-muted rounded w-1/3"></div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
                     <div className="space-y-2">
                       {[1, 2, 3].map((j) => (
-                        <div key={j} className="h-3 bg-gray-200 rounded"></div>
+                        <div key={j} className="h-3 bg-muted rounded"></div>
                       ))}
                     </div>
                   </div>
@@ -136,26 +137,26 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
       <Card className="mb-6">
         <CardContent className="p-8">
           <div className="text-center">
-            <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Sin datos de ventas para el resumen</h3>
-            <p className="text-gray-600 mb-6">
+            <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">Sin datos de ventas para el resumen</h3>
+            <p className="text-muted-foreground mb-6">
               No se encontraron datos de ventas para generar el resumen ejecutivo de <strong>{selectedMonth}</strong>.
               {summaryData?.currentMetrics.costos > 0 && (
-                <span className="block mt-2 text-sm text-amber-600">
+                <span className="block mt-2 text-sm text-warning-muted-foreground">
                   ⚠️ Se detectaron costos pero sin ventas correspondientes.
                 </span>
               )}
             </p>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+            <div className="bg-info-muted border border-info-muted rounded-lg p-4 max-w-md mx-auto">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-sm">📊</span>
+                  <div className="w-8 h-8 bg-info-muted rounded-full flex items-center justify-center">
+                    <span className="text-info-muted-foreground text-sm">📊</span>
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm text-blue-800 font-medium mb-1">Para generar un resumen ejecutivo necesitas:</p>
-                  <ul className="text-sm text-blue-700 space-y-1">
+                  <p className="text-sm text-info-muted-foreground font-medium mb-1">Para generar un resumen ejecutivo necesitas:</p>
+                  <ul className="text-sm text-info-muted-foreground space-y-1">
                     <li>• Registrar ventas en el módulo de Ventas</li>
                     <li>• Seleccionar un mes con datos de ventas</li>
                     <li>• Verificar que los productos estén configurados</li>
@@ -172,9 +173,9 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
   if (!summaryData) {
     return (
       <div className="space-y-6">
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="bg-gradient-to-r from-info-muted to-info-muted border-info-muted">
           <CardContent className="p-6">
-            <p className="text-gray-600">No se pudieron cargar los datos del resumen</p>
+            <p className="text-muted-foreground">No se pudieron cargar los datos del resumen</p>
           </CardContent>
         </Card>
       </div>
@@ -182,10 +183,10 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
   }
 
   const getPerformanceColor = (percentage: number) => {
-    if (percentage > 5) return 'text-green-600 bg-green-50 border-green-200';
-    if (percentage > 0) return 'text-blue-600 bg-blue-50 border-blue-200';
-    if (percentage > -5) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    return 'text-red-600 bg-red-50 border-red-200';
+    if (percentage > 5) return 'text-success bg-success-muted border-success-muted';
+    if (percentage > 0) return 'text-info-muted-foreground bg-info-muted border-info-muted';
+    if (percentage > -5) return 'text-warning-muted-foreground bg-warning-muted border-warning-muted';
+    return 'text-destructive bg-destructive/10 border-destructive/30';
   };
 
   const getPerformanceIcon = (percentage: number) => {
@@ -195,20 +196,20 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
   return (
     <div className="space-y-6">
       {/* Resumen Ejecutivo Principal */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-info-muted to-info-muted border-info-muted">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">
+              <CardTitle className="text-2xl font-bold text-foreground">
                 Resumen Ejecutivo
               </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {summaryData.period.current} {summaryData.period.previous && `vs ${summaryData.period.previous}`}
               </p>
             </div>
             <Button
               onClick={onShowFullAnalysis}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-info text-white hover:bg-info/90"
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Análisis Comparativo
@@ -220,26 +221,26 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Métricas Principales */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
                 Ingresos
               </h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Ventas Totales</span>
-                  <span className="text-lg font-bold text-gray-900">
+                  <span className="text-sm text-muted-foreground">Ventas Totales</span>
+                  <span className="text-lg font-bold text-foreground">
                     {formatCurrency(summaryData.currentMetrics.ventas)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Margen Bruto</span>
-                  <span className="text-lg font-bold text-green-600">
+                  <span className="text-sm text-muted-foreground">Margen Bruto</span>
+                  <span className="text-lg font-bold text-success">
                     {formatCurrency(summaryData.currentMetrics.margenBruto)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Margen Neto</span>
-                  <span className="text-lg font-bold text-blue-600">
+                  <span className="text-sm text-muted-foreground">Margen Neto</span>
+                  <span className="text-lg font-bold text-info-muted-foreground">
                     {formatCurrency(summaryData.currentMetrics.margenNeto)}
                   </span>
                 </div>
@@ -248,7 +249,7 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
 
             {/* Cambios MoM */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Cambios vs Mes Anterior
               </h4>
@@ -264,8 +265,8 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
                   
                   return (
                     <div key={key} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">{labels[key as keyof typeof labels]}</span>
-                      <Badge className={`text-xs ${colorClass}`}>
+                      <span className="text-sm text-muted-foreground">{labels[key as keyof typeof labels]}</span>
+                      <Badge className={cn('text-xs', colorClass)}>
                         <Icon className="h-3 w-3 mr-1" />
                         {formatPercentage(Math.abs(change.percentage))}
                       </Badge>
@@ -277,26 +278,26 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
 
             {/* Indicadores de Rendimiento */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Target className="h-4 w-4" />
                 Indicadores Clave
               </h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Margen Bruto %</span>
-                  <span className="text-sm font-bold text-green-600">
+                  <span className="text-sm text-muted-foreground">Margen Bruto %</span>
+                  <span className="text-sm font-bold text-success">
                     {formatPercentage(summaryData.currentMetrics.margenBrutoPct)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Margen Neto %</span>
-                  <span className="text-sm font-bold text-blue-600">
+                  <span className="text-sm text-muted-foreground">Margen Neto %</span>
+                  <span className="text-sm font-bold text-info-muted-foreground">
                     {formatPercentage(summaryData.currentMetrics.margenNetoPct)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Eficiencia</span>
-                  <Badge className="text-xs bg-green-50 text-green-700 border-green-200">
+                  <span className="text-sm text-muted-foreground">Eficiencia</span>
+                  <Badge className="text-xs bg-success-muted text-success border-success-muted">
                     Excelente
                   </Badge>
                 </div>
@@ -308,13 +309,13 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
 
       {/* Alertas y Recomendaciones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-yellow-200 bg-yellow-50">
+        <Card className="border-warning-muted bg-warning-muted">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+              <div className="w-2 h-2 bg-warning rounded-full mt-2"></div>
               <div>
-                <h4 className="text-sm font-semibold text-yellow-800">Recomendación</h4>
-                <p className="text-xs text-yellow-700 mt-1">
+                <h4 className="text-sm font-semibold text-warning-muted-foreground">Recomendación</h4>
+                <p className="text-xs text-warning-muted-foreground mt-1">
                   Los costos han disminuido un 4% este mes. Considera mantener esta tendencia.
                 </p>
               </div>
@@ -322,13 +323,13 @@ export function ExecutiveSummary({ companyId, selectedMonth, onShowFullAnalysis 
           </CardContent>
         </Card>
 
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-success-muted bg-success-muted">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+              <div className="w-2 h-2 bg-success rounded-full mt-2"></div>
               <div>
-                <h4 className="text-sm font-semibold text-green-800">Logro</h4>
-                <p className="text-xs text-green-700 mt-1">
+                <h4 className="text-sm font-semibold text-success">Logro</h4>
+                <p className="text-xs text-success mt-1">
                   Las ventas han crecido un 6.4% este mes, superando el objetivo.
                 </p>
               </div>

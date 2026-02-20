@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   ArrowLeft,
   Plus,
@@ -151,6 +152,7 @@ function formatDate(dateStr: string): string {
 // ========== COMPONENT ==========
 
 export default function EmpleadoDetallePage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -544,10 +546,10 @@ export default function EmpleadoDetallePage() {
 
             {/* Tasa de convenio vigente */}
             {data.employee.currentRate && (
-              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="p-3 bg-success-muted rounded-lg border border-success-muted">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  <span className="text-sm font-medium text-success">
                     Tasa de Convenio Vigente
                   </span>
                 </div>
@@ -600,10 +602,10 @@ export default function EmpleadoDetallePage() {
 
             {/* Alerta si no tiene gremio */}
             {!data.employee.unionId && !selectedUnionId && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="p-3 bg-warning-muted rounded-lg border border-warning-muted">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm text-amber-800 dark:text-amber-200">
+                  <AlertCircle className="h-4 w-4 text-warning-muted-foreground" />
+                  <span className="text-sm text-warning-muted-foreground">
                     Este empleado no tiene gremio asignado. Selecciona uno para aplicar las tasas de convenio.
                   </span>
                 </div>
@@ -621,12 +623,12 @@ export default function EmpleadoDetallePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Haberes Brutos</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-2xl font-bold text-success">
                     {formatCurrency(data.totals.earnings)}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -637,12 +639,12 @@ export default function EmpleadoDetallePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Deducciones</p>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-2xl font-bold text-destructive">
                     {formatCurrency(data.totals.deductions)}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-red-600" />
+                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-destructive" />
                 </div>
               </div>
             </CardContent>
@@ -657,8 +659,8 @@ export default function EmpleadoDetallePage() {
                     {formatCurrency(data.totals.remunerative)}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Briefcase className="h-5 w-5 text-blue-600" />
+                <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+                  <Briefcase className="h-5 w-5 text-info-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -669,7 +671,7 @@ export default function EmpleadoDetallePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <DollarSign className="h-4 w-4 text-success" />
               Haberes
             </CardTitle>
             <CardDescription>Conceptos que suman al salario bruto</CardDescription>
@@ -718,7 +720,7 @@ export default function EmpleadoDetallePage() {
                       <TableCell className="text-right">
                         {formatCurrency(concept.unitAmount)}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-success">
                         {formatCurrency(concept.total)}
                       </TableCell>
                       <TableCell>
@@ -744,8 +746,14 @@ export default function EmpleadoDetallePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                if (confirm('¿Eliminar este concepto?')) {
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: 'Eliminar concepto',
+                                  description: '¿Eliminar este concepto?',
+                                  confirmText: 'Eliminar',
+                                  variant: 'destructive',
+                                });
+                                if (ok) {
                                   deleteMutation.mutate(concept.id);
                                 }
                               }}
@@ -767,7 +775,7 @@ export default function EmpleadoDetallePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-red-600" />
+              <DollarSign className="h-4 w-4 text-destructive" />
               Deducciones
             </CardTitle>
             <CardDescription>Conceptos que restan del salario bruto</CardDescription>
@@ -811,7 +819,7 @@ export default function EmpleadoDetallePage() {
                       <TableCell className="text-right">
                         {formatCurrency(concept.unitAmount)}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
+                      <TableCell className="text-right font-medium text-destructive">
                         -{formatCurrency(concept.total)}
                       </TableCell>
                       <TableCell>
@@ -837,8 +845,14 @@ export default function EmpleadoDetallePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                if (confirm('¿Eliminar este concepto?')) {
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: 'Eliminar concepto',
+                                  description: '¿Eliminar este concepto?',
+                                  confirmText: 'Eliminar',
+                                  variant: 'destructive',
+                                });
+                                if (ok) {
                                   deleteMutation.mutate(concept.id);
                                 }
                               }}

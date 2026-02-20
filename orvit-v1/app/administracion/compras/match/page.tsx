@@ -111,18 +111,18 @@ interface MatchResult {
 }
 
 const estadoColors: Record<string, string> = {
-  'PENDIENTE': 'bg-gray-500',
-  'MATCH_OK': 'bg-green-500',
-  'DISCREPANCIA': 'bg-yellow-500',
-  'RESUELTO': 'bg-blue-500',
-  'BLOQUEADO': 'bg-red-500'
+  'PENDIENTE': 'bg-muted-foreground',
+  'MATCH_OK': 'bg-success',
+  'DISCREPANCIA': 'bg-warning',
+  'RESUELTO': 'bg-info',
+  'BLOQUEADO': 'bg-destructive'
 };
 
 const prioridadConfig: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
-  'URGENTE': { color: 'bg-red-500 text-white', icon: <Flame className="w-3 h-3" />, label: 'Urgente' },
-  'ALTA': { color: 'bg-orange-500 text-white', icon: <ArrowUp className="w-3 h-3" />, label: 'Alta' },
-  'NORMAL': { color: 'bg-blue-500 text-white', icon: <Minus className="w-3 h-3" />, label: 'Normal' },
-  'BAJA': { color: 'bg-gray-400 text-white', icon: <ArrowDown className="w-3 h-3" />, label: 'Baja' },
+  'URGENTE': { color: 'bg-destructive text-white', icon: <Flame className="w-3 h-3" />, label: 'Urgente' },
+  'ALTA': { color: 'bg-warning text-white', icon: <ArrowUp className="w-3 h-3" />, label: 'Alta' },
+  'NORMAL': { color: 'bg-info text-white', icon: <Minus className="w-3 h-3" />, label: 'Normal' },
+  'BAJA': { color: 'bg-muted-foreground text-white', icon: <ArrowDown className="w-3 h-3" />, label: 'Baja' },
 };
 
 // Helper to calculate SLA status
@@ -270,12 +270,12 @@ export default function MatchPage() {
 
   const MatchIndicator = ({ value }: { value?: boolean }) => {
     if (value === undefined || value === null) {
-      return <span className="text-gray-400">-</span>;
+      return <span className="text-muted-foreground">-</span>;
     }
     return value ? (
-      <CheckCircle className="w-5 h-5 text-green-500" />
+      <CheckCircle className="w-5 h-5 text-success" />
     ) : (
-      <XCircle className="w-5 h-5 text-red-500" />
+      <XCircle className="w-5 h-5 text-destructive" />
     );
   };
 
@@ -298,7 +298,7 @@ export default function MatchPage() {
                 </Badge>
               )}
               {stats.urgentes > 0 && (
-                <Badge className="bg-red-500 flex items-center gap-1">
+                <Badge className="bg-destructive flex items-center gap-1">
                   <Flame className="w-3 h-3" />
                   {stats.urgentes} urgente{stats.urgentes !== 1 && 's'}
                 </Badge>
@@ -312,15 +312,15 @@ export default function MatchPage() {
         <CardContent className="p-6">
           <div className="flex items-center justify-center gap-4">
             <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <ShoppingCart className="w-8 h-8 text-blue-600" />
+              <div className="w-16 h-16 rounded-full bg-info-muted flex items-center justify-center">
+                <ShoppingCart className="w-8 h-8 text-info-muted-foreground" />
               </div>
               <span className="text-sm mt-2">Orden Compra</span>
             </div>
             <ArrowRight className="w-6 h-6 text-muted-foreground" />
             <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Package className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 rounded-full bg-success-muted flex items-center justify-center">
+                <Package className="w-8 h-8 text-success" />
               </div>
               <span className="text-sm mt-2">Recepción</span>
             </div>
@@ -346,7 +346,7 @@ export default function MatchPage() {
                   {matchResults.filter(m => m.estado === 'PENDIENTE').length}
                 </p>
               </div>
-              <Clock className="w-7 h-7 text-gray-500" />
+              <Clock className="w-7 h-7 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -359,46 +359,46 @@ export default function MatchPage() {
                   {matchResults.filter(m => m.estado === 'DISCREPANCIA').length}
                 </p>
               </div>
-              <AlertTriangle className="w-7 h-7 text-yellow-500" />
+              <AlertTriangle className="w-7 h-7 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        <Card className={stats.slaBreached > 0 ? 'border-red-500' : ''}>
+        <Card className={stats.slaBreached > 0 ? 'border-destructive/30' : ''}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase">SLA Vencido</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-2xl font-bold text-destructive">
                   {stats.slaBreached}
                 </p>
               </div>
-              <AlertOctagon className="w-7 h-7 text-red-500" />
+              <AlertOctagon className="w-7 h-7 text-destructive" />
             </div>
           </CardContent>
         </Card>
-        <Card className={stats.slaWarning > 0 ? 'border-orange-500' : ''}>
+        <Card className={stats.slaWarning > 0 ? 'border-warning-muted' : ''}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase">SLA Alerta</p>
-                <p className="text-2xl font-bold text-orange-500">
+                <p className="text-2xl font-bold text-warning-muted-foreground">
                   {stats.slaWarning}
                 </p>
               </div>
-              <Timer className="w-7 h-7 text-orange-500" />
+              <Timer className="w-7 h-7 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        <Card className={stats.urgentes > 0 ? 'border-red-500' : ''}>
+        <Card className={stats.urgentes > 0 ? 'border-destructive/30' : ''}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase">Urgentes</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-2xl font-bold text-destructive">
                   {stats.urgentes}
                 </p>
               </div>
-              <Flame className="w-7 h-7 text-red-500" />
+              <Flame className="w-7 h-7 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -411,7 +411,7 @@ export default function MatchPage() {
                   {matchResults.filter(m => m.estado === 'BLOQUEADO').length}
                 </p>
               </div>
-              <XCircle className="w-7 h-7 text-red-500" />
+              <XCircle className="w-7 h-7 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -443,25 +443,25 @@ export default function MatchPage() {
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="URGENTE">
                   <div className="flex items-center gap-2">
-                    <Flame className="w-3 h-3 text-red-500" />
+                    <Flame className="w-3 h-3 text-destructive" />
                     Urgente
                   </div>
                 </SelectItem>
                 <SelectItem value="ALTA">
                   <div className="flex items-center gap-2">
-                    <ArrowUp className="w-3 h-3 text-orange-500" />
+                    <ArrowUp className="w-3 h-3 text-warning-muted-foreground" />
                     Alta
                   </div>
                 </SelectItem>
                 <SelectItem value="NORMAL">
                   <div className="flex items-center gap-2">
-                    <Minus className="w-3 h-3 text-blue-500" />
+                    <Minus className="w-3 h-3 text-info-muted-foreground" />
                     Normal
                   </div>
                 </SelectItem>
                 <SelectItem value="BAJA">
                   <div className="flex items-center gap-2">
-                    <ArrowDown className="w-3 h-3 text-gray-500" />
+                    <ArrowDown className="w-3 h-3 text-muted-foreground" />
                     Baja
                   </div>
                 </SelectItem>
@@ -491,7 +491,7 @@ export default function MatchPage() {
             </div>
           ) : matchResults.length === 0 ? (
             <div className="text-center py-12">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <CheckCircle className="w-12 h-12 text-success mx-auto mb-4" />
               <p className="text-muted-foreground">No hay matches pendientes de revisión</p>
             </div>
           ) : (
@@ -521,7 +521,7 @@ export default function MatchPage() {
                     return (
                       <TableRow
                         key={match.id}
-                        className={slaStatus.status === 'breached' ? 'bg-red-50 dark:bg-red-900/10' : ''}
+                        className={slaStatus.status === 'breached' ? 'bg-destructive/10' : ''}
                       >
                         <TableCell>
                           <Tooltip>
@@ -562,9 +562,9 @@ export default function MatchPage() {
                                 <Badge
                                   variant="outline"
                                   className={
-                                    slaStatus.status === 'breached' ? 'border-red-500 text-red-500' :
-                                    slaStatus.status === 'warning' ? 'border-orange-500 text-orange-500' :
-                                    'border-green-500 text-green-500'
+                                    slaStatus.status === 'breached' ? 'border-destructive/30 text-destructive' :
+                                    slaStatus.status === 'warning' ? 'border-warning-muted text-warning-muted-foreground' :
+                                    'border-success-muted text-success'
                                   }
                                 >
                                   {slaStatus.status === 'breached' && <AlertOctagon className="w-3 h-3 mr-1" />}
@@ -668,9 +668,9 @@ export default function MatchPage() {
                       <Badge
                         variant="outline"
                         className={
-                          slaStatus.status === 'breached' ? 'border-red-500 text-red-500 bg-red-50' :
-                          slaStatus.status === 'warning' ? 'border-orange-500 text-orange-500 bg-orange-50' :
-                          'border-green-500 text-green-500 bg-green-50'
+                          slaStatus.status === 'breached' ? 'border-destructive/30 text-destructive bg-destructive/10' :
+                          slaStatus.status === 'warning' ? 'border-warning-muted text-warning-muted-foreground bg-warning-muted' :
+                          'border-success-muted text-success bg-success-muted'
                         }
                       >
                         {slaStatus.status === 'breached' && <AlertOctagon className="w-3 h-3 mr-1" />}
@@ -734,7 +734,7 @@ export default function MatchPage() {
               {selectedMatch.exceptions.length > 0 && (
                 <div>
                   <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                    <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />
                     Excepciones detectadas ({selectedMatch.exceptions.filter(e => !e.resuelto).length} pendientes)
                   </h4>
                   <div className="space-y-3">
@@ -747,10 +747,10 @@ export default function MatchPage() {
                           key={exc.id}
                           className={`p-4 border rounded-lg ${
                             exc.resuelto
-                              ? 'bg-green-50 dark:bg-green-900/10 border-green-200'
+                              ? 'bg-success-muted border-success-muted'
                               : excSla.status === 'breached'
-                              ? 'bg-red-50 dark:bg-red-900/20 border-red-200'
-                              : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200'
+                              ? 'bg-destructive/10 border-destructive/30'
+                              : 'bg-warning-muted border-warning-muted'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -774,16 +774,16 @@ export default function MatchPage() {
                                 <Badge
                                   variant="outline"
                                   className={
-                                    excSla.status === 'breached' ? 'border-red-500 text-red-500 text-xs' :
-                                    excSla.status === 'warning' ? 'border-orange-500 text-orange-500 text-xs' :
-                                    'border-green-500 text-green-500 text-xs'
+                                    excSla.status === 'breached' ? 'border-destructive/30 text-destructive text-xs' :
+                                    excSla.status === 'warning' ? 'border-warning-muted text-warning-muted-foreground text-xs' :
+                                    'border-success-muted text-success text-xs'
                                   }
                                 >
                                   {excSla.timeLeft}
                                 </Badge>
                               )}
                               {exc.resuelto && (
-                                <Badge variant="outline" className="border-green-500 text-green-500">
+                                <Badge variant="outline" className="border-success-muted text-success">
                                   <CheckCircle className="w-3 h-3 mr-1" />
                                   Resuelto
                                 </Badge>
@@ -804,12 +804,12 @@ export default function MatchPage() {
                                 <span className="font-medium">{exc.valorRecibido}</span>
                               </span>
                               {exc.porcentajeDiff !== undefined && (
-                                <span className="text-red-600 font-medium">
+                                <span className="text-destructive font-medium">
                                   ({exc.porcentajeDiff.toFixed(1)}% diferencia)
                                 </span>
                               )}
                               {exc.montoAfectado !== undefined && (
-                                <span className="text-red-600">
+                                <span className="text-destructive">
                                   Monto afectado: {formatCurrency(exc.montoAfectado)}
                                 </span>
                               )}

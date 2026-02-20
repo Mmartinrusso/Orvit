@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -143,7 +145,7 @@ export function UserSkillAssignDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
@@ -155,7 +157,8 @@ export function UserSkillAssignDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+        <DialogBody className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -202,7 +205,7 @@ export function UserSkillAssignDialog({
           {selectedSkill && (
             <>
               {selectedSkill.description && (
-                <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded">
+                <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
                   {selectedSkill.description}
                 </p>
               )}
@@ -271,7 +274,9 @@ export function UserSkillAssignDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          </DialogBody>
+
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
@@ -284,7 +289,7 @@ export function UserSkillAssignDialog({
               )}
               Asignar Habilidad
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

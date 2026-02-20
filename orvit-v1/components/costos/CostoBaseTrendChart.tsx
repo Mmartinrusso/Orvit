@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, BarChart3 } from 'lucide-react';
@@ -75,7 +76,7 @@ export function CostoBaseTrendChart({ costoName, monthlyRecords }: CostoBaseTren
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No hay registros mensuales para mostrar
             </div>
           </CardContent>
@@ -95,9 +96,7 @@ export function CostoBaseTrendChart({ costoName, monthlyRecords }: CostoBaseTren
             <TrendingUp className="h-5 w-5" />
             Evolución de Cambios
             {trend !== 'stable' && (
-              <span className={`text-sm font-normal ${
-                trend === 'up' ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <span className={cn('text-sm font-normal', trend === 'up' ? 'text-success' : 'text-destructive')}>
                 ({trend === 'up' ? '+' : ''}{trendPercentage.toFixed(1)}%)
               </span>
             )}
@@ -204,40 +203,30 @@ export function CostoBaseTrendChart({ costoName, monthlyRecords }: CostoBaseTren
                   const variationPercentage = previousAmount ? (variation / previousAmount) * 100 : 0;
                   
                   return (
-                    <tr key={`${record.fullMonth}-${index}`} className="border-b hover:bg-gray-50">
-                      <td className="p-2 font-medium text-gray-600">#{record.index}</td>
+                    <tr key={`${record.fullMonth}-${index}`} className="border-b hover:bg-accent">
+                      <td className="p-2 font-medium text-muted-foreground">#{record.index}</td>
                       <td className="p-2 font-medium">{record.month}</td>
                       <td className="p-2 text-right font-semibold">{formatCurrency(record.amount)}</td>
                       <td className="p-2 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          record.status === 'paid' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={cn('px-2 py-1 rounded-full text-xs', record.status === 'paid' ? 'bg-success-muted text-success' : 'bg-warning-muted text-warning-muted-foreground')}>
                           {record.status === 'paid' ? 'Pagado' : 'Pendiente'}
                         </span>
                       </td>
                       <td className="p-2 text-right">
                         {previousAmount ? (
                           <div className="flex flex-col items-end">
-                            <span className={`text-sm font-medium ${
-                              variation > 0 ? 'text-green-600' : 
-                              variation < 0 ? 'text-red-600' : 'text-gray-600'
-                            }`}>
+                            <span className={cn('text-sm font-medium', variation > 0 ? 'text-success' : variation < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                               {variation > 0 ? '+' : ''}{formatCurrency(variation)}
                             </span>
-                            <span className={`text-xs ${
-                              variation > 0 ? 'text-green-500' : 
-                              variation < 0 ? 'text-red-500' : 'text-gray-500'
-                            }`}>
+                            <span className={cn('text-xs', variation > 0 ? 'text-success' : variation < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                               ({variationPercentage > 0 ? '+' : ''}{variationPercentage.toFixed(1)}%)
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Primer registro</span>
+                          <span className="text-xs text-muted-foreground">Primer registro</span>
                         )}
                       </td>
-                      <td className="p-2 text-xs text-gray-500">
+                      <td className="p-2 text-xs text-muted-foreground">
                         {new Date(record.createdAt).toLocaleDateString('es-AR', {
                           day: '2-digit',
                           month: '2-digit',

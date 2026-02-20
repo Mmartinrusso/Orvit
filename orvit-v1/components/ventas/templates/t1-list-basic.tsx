@@ -28,6 +28,8 @@ import {
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Search, Plus, MoreVertical, Edit, Trash2, Eye, Package } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 interface Product {
   id: number;
@@ -47,6 +49,7 @@ const MOCK_PRODUCTS: Product[] = [
 ];
 
 export function T1ListBasic() {
+  const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [loading, setLoading] = useState(false);
@@ -58,21 +61,26 @@ export function T1ListBasic() {
   );
 
   const handleCreate = () => {
-    alert('Abrir modal de creación');
+    toast.info('Abrir modal de creación');
   };
 
   const handleEdit = (id: number) => {
-    alert(`Editar producto ${id}`);
+    toast.info(`Editar producto ${id}`);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('¿Eliminar este producto?')) {
-      setProducts(products.filter(p => p.id !== id));
-    }
+  const handleDelete = async (id: number) => {
+    const ok = await confirm({
+      title: 'Eliminar producto',
+      description: '¿Eliminar este producto?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    setProducts(products.filter(p => p.id !== id));
   };
 
   const handleView = (id: number) => {
-    alert(`Ver detalles de producto ${id}`);
+    toast.info(`Ver detalles de producto ${id}`);
   };
 
   if (loading) {
@@ -184,7 +192,7 @@ export function T1ListBasic() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(product.id)}
-                            className="text-red-600"
+                            className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Eliminar

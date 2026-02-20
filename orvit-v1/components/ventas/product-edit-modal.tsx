@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -60,7 +60,7 @@ export function ProductEditModal({ product, isOpen, onClose, onProductUpdated }:
   const [newLocationName, setNewLocationName] = useState('');
   const [showNewLocationInput, setShowNewLocationInput] = useState(false);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     setLoadingCategories(true);
     try {
       const response = await fetch('/api/categories');
@@ -74,9 +74,9 @@ export function ProductEditModal({ product, isOpen, onClose, onProductUpdated }:
     } finally {
       setLoadingCategories(false);
     }
-  };
+  }, []);
 
-  const loadLocations = async () => {
+  const loadLocations = useCallback(async () => {
     if (!currentCompany?.id) return;
     setLoadingLocations(true);
     try {
@@ -95,7 +95,7 @@ export function ProductEditModal({ product, isOpen, onClose, onProductUpdated }:
     } finally {
       setLoadingLocations(false);
     }
-  };
+  }, [currentCompany?.id]);
 
   const handleAddNewLocation = () => {
     if (newLocationName.trim()) {
@@ -138,15 +138,16 @@ export function ProductEditModal({ product, isOpen, onClose, onProductUpdated }:
   });
 
   // Resetear el formulario cuando se abre el modal o cambia el producto
+  const productId = product.id;
   useEffect(() => {
     if (isOpen) {
       loadCategories();
       loadLocations().then((loadedLocations) => {
         // Después de cargar las ubicaciones, asegurarse de que la ubicación del producto esté en la lista
-        const locationValue = product.location !== undefined && product.location !== null 
-          ? String(product.location).trim() 
+        const locationValue = product.location !== undefined && product.location !== null
+          ? String(product.location).trim()
           : '';
-        
+
         // Preparar la lista final de ubicaciones incluyendo la del producto si no está
         let finalLocations = loadedLocations || [];
         if (locationValue && !finalLocations.includes(locationValue)) {
@@ -156,13 +157,13 @@ export function ProductEditModal({ product, isOpen, onClose, onProductUpdated }:
         } else {
           setLocations(finalLocations);
         }
-        
+
         // Actualizar la imagen del producto cuando se abre el modal
-        const currentImage = product.images && Array.isArray(product.images) && product.images.length > 0 
-          ? product.images[0] 
+        const currentImage = product.images && Array.isArray(product.images) && product.images.length > 0
+          ? product.images[0]
           : undefined;
         setProductImage(currentImage);
-        
+
         // Resetear el formulario con los valores actuales del producto cuando se abre el modal
         // Usar setTimeout para asegurar que el estado de locations se haya actualizado
         setTimeout(() => {
@@ -185,8 +186,7 @@ export function ProductEditModal({ product, isOpen, onClose, onProductUpdated }:
         }, 0);
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, product.id, product.location, reset]);
+  }, [isOpen, productId, product, reset, loadCategories, loadLocations]);
 
   const watchedCategoryId = watch('categoryId');
   const watchedActive = watch('isActive');

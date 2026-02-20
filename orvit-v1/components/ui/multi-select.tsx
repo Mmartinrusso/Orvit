@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/popover';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -35,6 +34,7 @@ interface MultiSelectProps {
   maxCount?: number;
   className?: string;
   disabled?: boolean;
+  onCreateNew?: (name: string) => Promise<void> | void;
 }
 
 export function MultiSelect({
@@ -46,9 +46,18 @@ export function MultiSelect({
   searchPlaceholder = 'Buscar...',
   maxCount = 3,
   className,
-  disabled = false
+  disabled = false,
+  onCreateNew,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState('');
+
+  // Filtrado manual para poder mostrar siempre la opción "Crear"
+  const filteredOptions = React.useMemo(() => {
+    if (!searchValue.trim()) return options;
+    const lower = searchValue.toLowerCase();
+    return options.filter(opt => opt.label.toLowerCase().includes(lower));
+  }, [options, searchValue]);
 
   const selectedValues = React.useMemo(() => {
     return options.filter(option => selected.includes(option.value));
@@ -67,7 +76,7 @@ export function MultiSelect({
   };
 
   const handleSelectAll = () => {
-    const availableOptions = options.filter(opt => !opt.disabled);
+    const availableOptions = filteredOptions.filter(opt => !opt.disabled);
     if (selected.length === availableOptions.length) {
       onChange([]);
     } else {
@@ -75,8 +84,21 @@ export function MultiSelect({
     }
   };
 
+  const handleCreate = async () => {
+    if (!onCreateNew) return;
+    const name = searchValue.trim();
+    setSearchValue('');
+    setOpen(false);
+    await onCreateNew(name);
+  };
+
+  const showCreateOption = !!onCreateNew;
+  // Evitar duplicado exacto solo cuando hay texto
+  const exactMatch = searchValue.trim().length > 0 &&
+    options.some(o => o.label.toLowerCase() === searchValue.trim().toLowerCase());
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearchValue(''); }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -141,20 +163,21 @@ export function MultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={onCreateNew ? `${searchPlaceholder} o escribir para crear...` : searchPlaceholder}
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <CommandList className="max-h-56 overflow-y-auto">
             <CommandGroup>
-              {options.length > 1 && (
-                <CommandItem
-                  onSelect={handleSelectAll}
-                  className="font-semibold"
-                >
+              {/* Seleccionar todos (solo sin búsqueda activa) */}
+              {filteredOptions.length > 1 && !searchValue.trim() && (
+                <CommandItem onSelect={handleSelectAll} className="font-semibold">
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      selected.length === options.filter(opt => !opt.disabled).length
+                      selected.length === filteredOptions.filter(opt => !opt.disabled).length
                         ? 'opacity-100'
                         : 'opacity-0'
                     )}
@@ -162,7 +185,9 @@ export function MultiSelect({
                   Seleccionar todos
                 </CommandItem>
               )}
-              {options.map(option => (
+
+              {/* Opciones existentes */}
+              {filteredOptions.map(option => (
                 <CommandItem
                   key={option.value}
                   onSelect={() => !option.disabled && handleSelect(option.value)}
@@ -177,6 +202,34 @@ export function MultiSelect({
                   {option.label}
                 </CommandItem>
               ))}
+
+              {/* Opción "Crear nuevo" */}
+              {showCreateOption && !exactMatch && (
+                <CommandItem
+                  onSelect={handleCreate}
+                  className="text-primary font-medium border-t mt-1 pt-2"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {searchValue.trim() ? `Crear "${searchValue.trim()}"` : 'Crear nuevo'}
+                </CommandItem>
+              )}
+
+              {/* Estado vacío */}
+              {filteredOptions.length === 0 && !showCreateOption && (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  {emptyMessage}
+                </div>
+              )}
+              {filteredOptions.length === 0 && showCreateOption && !exactMatch && searchValue.trim() && (
+                <div className="py-2 text-center text-xs text-muted-foreground">
+                  Sin resultados para &quot;{searchValue.trim()}&quot;
+                </div>
+              )}
+              {exactMatch && (
+                <div className="py-2 text-center text-xs text-muted-foreground">
+                  Ya existe un elemento con ese nombre
+                </div>
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

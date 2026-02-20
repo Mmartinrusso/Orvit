@@ -49,12 +49,9 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
       try {
         setIsLoading(true);
         const currentMonth = selectedMonth || new Date().toISOString().slice(0, 7);
-        console.log(`🔄 Cargando top productos para mes: ${currentMonth}`);
-        
         const response = await fetch(`/api/dashboard/top-products?companyId=${companyId}&month=${currentMonth}&limit=10`);
         if (response.ok) {
           const productsData = await response.json();
-          console.log(`✅ Top productos cargados para ${currentMonth}:`, productsData);
           setData(productsData);
         } else {
           console.error('Error fetching top products:', response.status);
@@ -74,10 +71,10 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
       <Card className="mb-6">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-4 bg-muted rounded w-1/3"></div>
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                <div key={i} className="h-12 bg-muted rounded"></div>
               ))}
             </div>
           </div>
@@ -96,13 +93,13 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
       <Card className="mb-6">
         <CardContent className="p-6">
           <div className="text-center">
-            <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin ventas de productos</h3>
-            <p className="text-gray-600 mb-4">
+            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">Sin ventas de productos</h3>
+            <p className="text-muted-foreground mb-4">
               No se encontraron ventas de productos para <strong>{selectedMonth}</strong>.
             </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-sm text-amber-800">
+            <div className="bg-warning-muted border border-warning-muted rounded-lg p-3">
+              <p className="text-sm text-warning-muted-foreground">
                 💡 <strong>Sugerencia:</strong> Para ver productos aquí, necesitas registrar ventas en el módulo de Ventas Mensuales.
               </p>
             </div>
@@ -118,24 +115,24 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
         {products.map((product, index) => (
           <div
             key={product.id}
-            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-accent transition-colors"
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-gray-900">
+              <div className="flex-shrink-0 w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-foreground">
                   {index + 1}
                 </span>
               </div>
               
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {product.name}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge variant="secondary" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
                     {product.salesCount} ventas
                   </Badge>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-muted-foreground">
                     ${formatCurrency(product.unitPrice)} c/u
                   </span>
                 </div>
@@ -144,23 +141,23 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
 
             <div className="flex items-center gap-4 flex-shrink-0">
               <div className="text-right">
-                <p className="text-sm font-bold text-gray-900">
+                <p className="text-sm font-bold text-foreground">
                   {type === 'quantity' && `${product.totalQuantity} unidades`}
                   {type === 'revenue' && formatCurrency(product.totalRevenue)}
                   {type === 'margin' && formatCurrency(product.margin || 0)}
                 </p>
                 {type === 'margin' && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     {formatPercentage(product.marginPct || 0)} margen
                   </p>
                 )}
                 {type === 'revenue' && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     {product.totalQuantity} unidades
                   </p>
                 )}
                 {type === 'quantity' && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     {formatCurrency(product.totalRevenue)} total
                   </p>
                 )}
@@ -177,10 +174,10 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-gray-900">
+            <CardTitle className="text-xl font-bold text-foreground">
               Top Productos
             </CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {data.period}
             </p>
           </div>
@@ -208,7 +205,7 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
       <CardContent>
         {isExpanded ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="quantity" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Por Cantidad
@@ -240,24 +237,24 @@ export function TopProducts({ companyId, selectedMonth }: TopProductsProps) {
             {data.topByQuantity.slice(0, 5).map((product, index) => (
               <div
                 key={product.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-muted rounded-lg"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-gray-900">
+                  <div className="flex-shrink-0 w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-foreground">
                       {index + 1}
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {product.name}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       {product.totalQuantity} unidades • {formatCurrency(product.totalRevenue)}
                     </p>
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                <Badge variant="secondary" className="text-xs bg-success-muted text-success border-success-muted">
                   {product.salesCount} ventas
                 </Badge>
               </div>

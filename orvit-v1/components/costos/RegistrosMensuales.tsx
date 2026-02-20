@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,7 +89,7 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
   if (error) {
     return (
       <div className="text-center p-8">
-        <p className="text-red-500 mb-4">Error: {error}</p>
+        <p className="text-destructive mb-4">Error: {error}</p>
         <Button onClick={refreshData} variant="outline">
           Reintentar
         </Button>
@@ -102,29 +103,29 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Registros por Mes</h2>
-          <p className="text-gray-600">Selecciona un mes para ver todos los registros</p>
+          <p className="text-muted-foreground">Selecciona un mes para ver todos los registros</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Mostrar:</label>
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-muted rounded-lg p-1">
               <button
                 onClick={() => setShowAmounts(true)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  showAmounts 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={cn('px-3 py-1 rounded-md text-sm font-medium transition-colors',
+                  showAmounts
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
               >
                 Montos ($)
               </button>
               <button
                 onClick={() => setShowAmounts(false)}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  !showAmounts 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={cn('px-3 py-1 rounded-md text-sm font-medium transition-colors',
+                  !showAmounts
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
               >
                 Cantidades
               </button>
@@ -156,10 +157,10 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sueldos</CardTitle>
-            <DollarSign className="h-4 w-4 text-yellow-600" />
+            <DollarSign className="h-4 w-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-warning-muted-foreground">
               {showAmounts 
                 ? formatCurrency(totals.totalSueldos)
                 : (data?.totales.sueldosEmpleados || 0).toLocaleString('es-AR')
@@ -174,10 +175,10 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Precios Insumos</CardTitle>
-            <Package className="h-4 w-4 text-cyan-600" />
+            <Package className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-cyan-600">
+            <div className="text-2xl font-bold text-info-muted-foreground">
               {showAmounts 
                 ? formatCurrency(totals.totalInsumos)
                 : (data?.totales.preciosInsumos || 0).toLocaleString('es-AR')
@@ -192,10 +193,10 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ventas</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-green-600" />
+            <ShoppingCart className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {showAmounts 
                 ? formatCurrency(totals.totalVentas)
                 : (data?.totales.ventas || 0).toLocaleString('es-AR')
@@ -210,10 +211,10 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Producción</CardTitle>
-            <Package className="h-4 w-4 text-orange-600" />
+            <Package className="h-4 w-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-warning-muted-foreground">
               {showAmounts 
                 ? totals.totalProduccion.toLocaleString('es-AR')
                 : (data?.totales.produccion || 0).toLocaleString('es-AR')
@@ -228,10 +229,10 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Costos Indirectos</CardTitle>
-            <DollarSign className="h-4 w-4 text-purple-600" />
+            <DollarSign className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-info-muted-foreground">
               {showAmounts 
                 ? formatCurrency(totals.totalCostos)
                 : (data?.totales.registrosMensuales || 0).toLocaleString('es-AR')
@@ -251,13 +252,13 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
         </CardHeader>
         <CardContent>
           {!data || Object.values(data.totales).every(total => total === 0) ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               <p>Selecciona un mes para ver los registros</p>
               <p className="text-sm">Los registros se mostrarán aquí organizados por fecha de imputación</p>
             </div>
           ) : (
             <Tabs defaultValue="sueldos" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="w-full justify-start overflow-x-auto">
                 <TabsTrigger value="sueldos">Sueldos ({data.totales.sueldosEmpleados})</TabsTrigger>
                 <TabsTrigger value="insumos">Insumos ({data.totales.preciosInsumos})</TabsTrigger>
                 <TabsTrigger value="ventas">Ventas ({data.totales.ventas})</TabsTrigger>
@@ -268,25 +269,25 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
 
               <TabsContent value="sueldos" className="space-y-4">
                 {data.sueldosEmpleados.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No hay sueldos registrados para este mes</p>
+                  <p className="text-muted-foreground text-center py-4">No hay sueldos registrados para este mes</p>
                 ) : (
                   <div className="space-y-2">
                     {data.sueldosEmpleados.map((sueldo) => (
                       <div key={sueldo.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">{sueldo.employee_name}</p>
-                          <p className="text-sm text-gray-600">{sueldo.employee_role} - {sueldo.category_name}</p>
+                          <p className="text-sm text-muted-foreground">{sueldo.employee_role} - {sueldo.category_name}</p>
                           {sueldo.notes && (
-                            <p className="text-sm text-gray-500 mt-1">{sueldo.notes}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{sueldo.notes}</p>
                           )}
                         </div>
                         <div className="text-right">
                           <p className="font-medium">{formatCurrency(sueldo.total_cost || 0)}</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             Bruto: {formatCurrency(sueldo.gross_salary || 0)} | 
                             Impuestos: {formatCurrency(sueldo.payroll_taxes || 0)}
                           </p>
-                          <p className="text-sm text-gray-600">{formatMonth(sueldo.fecha_imputacion)}</p>
+                          <p className="text-sm text-muted-foreground">{formatMonth(sueldo.fecha_imputacion)}</p>
                         </div>
                       </div>
                     ))}
@@ -296,21 +297,21 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
 
               <TabsContent value="insumos" className="space-y-4">
                 {data.preciosInsumos.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No hay precios de insumos registrados para este mes</p>
+                  <p className="text-muted-foreground text-center py-4">No hay precios de insumos registrados para este mes</p>
                 ) : (
                   <div className="space-y-2">
                     {data.preciosInsumos.map((insumo) => (
                       <div key={insumo.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">{insumo.supply_name}</p>
-                          <p className="text-sm text-gray-600">{insumo.unit_measure}</p>
+                          <p className="text-sm text-muted-foreground">{insumo.unit_measure}</p>
                           {insumo.notes && (
-                            <p className="text-sm text-gray-500 mt-1">{insumo.notes}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{insumo.notes}</p>
                           )}
                         </div>
                         <div className="text-right">
                           <p className="font-medium">{formatCurrency(insumo.amount || 0)}</p>
-                          <p className="text-sm text-gray-600">{formatMonth(insumo.fecha_imputacion)}</p>
+                          <p className="text-sm text-muted-foreground">{formatMonth(insumo.fecha_imputacion)}</p>
                         </div>
                       </div>
                     ))}
@@ -320,18 +321,18 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
 
               <TabsContent value="ventas" className="space-y-4">
                 {data.ventas.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No hay ventas registradas para este mes</p>
+                  <p className="text-muted-foreground text-center py-4">No hay ventas registradas para este mes</p>
                 ) : (
                   <div className="space-y-2">
                     {data.ventas.map((venta) => (
                       <div key={venta.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">{venta.product_name}</p>
-                          <p className="text-sm text-gray-600">{venta.units_sold} unidades</p>
+                          <p className="text-sm text-muted-foreground">{venta.units_sold} unidades</p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium">{formatCurrency(venta.total_amount || 0)}</p>
-                          <p className="text-sm text-gray-600">{formatMonth(venta.fecha_imputacion)}</p>
+                          <p className="text-sm text-muted-foreground">{formatMonth(venta.fecha_imputacion)}</p>
                         </div>
                       </div>
                     ))}
@@ -341,17 +342,17 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
 
               <TabsContent value="produccion" className="space-y-4">
                 {data.produccion.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No hay producción registrada para este mes</p>
+                  <p className="text-muted-foreground text-center py-4">No hay producción registrada para este mes</p>
                 ) : (
                   <div className="space-y-2">
                     {data.produccion.map((prod) => (
                       <div key={prod.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">{prod.product_name}</p>
-                          <p className="text-sm text-gray-600">Cantidad: {prod.quantity}</p>
+                          <p className="text-sm text-muted-foreground">Cantidad: {prod.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">{formatMonth(prod.fecha_imputacion)}</p>
+                          <p className="text-sm text-muted-foreground">{formatMonth(prod.fecha_imputacion)}</p>
                         </div>
                       </div>
                     ))}
@@ -361,16 +362,16 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
 
               <TabsContent value="costos" className="space-y-4">
                 {data.registrosMensuales.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No hay costos indirectos registrados para este mes</p>
+                  <p className="text-muted-foreground text-center py-4">No hay costos indirectos registrados para este mes</p>
                 ) : (
                   <div className="space-y-2">
                     {data.registrosMensuales.map((costo) => (
                       <div key={costo.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <p className="font-medium">{costo.base_name}</p>
-                          <p className="text-sm text-gray-600">{costo.category_name}</p>
+                          <p className="text-sm text-muted-foreground">{costo.category_name}</p>
                           {costo.notes && (
-                            <p className="text-sm text-gray-500 mt-1">{costo.notes}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{costo.notes}</p>
                           )}
                         </div>
                         <div className="text-right">
@@ -379,7 +380,7 @@ export function RegistrosMensuales({ companyId }: RegistrosMensualesProps) {
                             <Badge variant={costo.status === 'paid' ? 'default' : 'secondary'}>
                               {costo.status === 'paid' ? 'Pagado' : 'Pendiente'}
                             </Badge>
-                            <p className="text-sm text-gray-600">{formatMonth(costo.fecha_imputacion)}</p>
+                            <p className="text-sm text-muted-foreground">{formatMonth(costo.fecha_imputacion)}</p>
                           </div>
                         </div>
                       </div>

@@ -135,8 +135,8 @@ function KPICard({
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
         <p className="text-xs text-muted-foreground flex items-center gap-1">
-          {trend === 'up' && <TrendingUp className="h-3 w-3 text-red-500" />}
-          {trend === 'down' && <TrendingDown className="h-3 w-3 text-green-500" />}
+          {trend === 'up' && <TrendingUp className="h-3 w-3 text-destructive" />}
+          {trend === 'down' && <TrendingDown className="h-3 w-3 text-success" />}
           {subtitle}
         </p>
       </CardContent>
@@ -160,7 +160,7 @@ function CostDistributionChart({ data }: { data: CostsData['distribution'] }) {
         <div className="flex-1">
           <div className="flex justify-between text-sm mb-1">
             <span className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-blue-500" />
+              <Users className="h-4 w-4 text-info-muted-foreground" />
               Mano de obra
             </span>
             <span>{data.laborPercent}%</span>
@@ -174,7 +174,7 @@ function CostDistributionChart({ data }: { data: CostsData['distribution'] }) {
         <div className="flex-1">
           <div className="flex justify-between text-sm mb-1">
             <span className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-green-500" />
+              <Package className="h-4 w-4 text-success" />
               Repuestos
             </span>
             <span>{data.partsPercent}%</span>
@@ -188,7 +188,7 @@ function CostDistributionChart({ data }: { data: CostsData['distribution'] }) {
         <div className="flex-1">
           <div className="flex justify-between text-sm mb-1">
             <span className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-orange-500" />
+              <Truck className="h-4 w-4 text-warning-muted-foreground" />
               Terceros
             </span>
             <span>{data.thirdPartyPercent}%</span>
@@ -270,7 +270,7 @@ function BudgetComparisonCard({ data }: { data: CostsData['budgetComparison'] })
             <div className="pt-2 border-t">
               <div className="flex justify-between items-center text-sm">
                 <span>Disponible</span>
-                <span className={isOverBudget ? 'text-red-500' : 'text-green-500'}>
+                <span className={isOverBudget ? 'text-destructive' : 'text-success'}>
                   {formatCurrency(data.variance.total)}
                 </span>
               </div>
@@ -351,14 +351,14 @@ export default function CostosPage() {
             value={formatCurrency(data.kpis.totalCostPeriod)}
             subtitle={`${data.kpis.totalWorkOrders} órdenes de trabajo`}
             icon={DollarSign}
-            iconColor="text-green-500"
+            iconColor="text-success"
           />
           <KPICard
             title="Costo Promedio por OT"
             value={formatCurrency(data.kpis.avgCostPerOT)}
             subtitle="Por orden completada"
             icon={TrendingUp}
-            iconColor="text-blue-500"
+            iconColor="text-info-muted-foreground"
           />
           <KPICard
             title="Mano de Obra"
@@ -372,7 +372,7 @@ export default function CostosPage() {
             value={formatCurrency(data.distribution.parts)}
             subtitle={`${data.distribution.partsPercent}% del total`}
             icon={Package}
-            iconColor="text-orange-500"
+            iconColor="text-warning-muted-foreground"
           />
         </div>
       ) : null}

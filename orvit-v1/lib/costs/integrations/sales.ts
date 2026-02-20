@@ -61,9 +61,9 @@ export interface SalesDetail {
 }
 
 // Estados de factura que consideramos como "confirmadas"
+// Nota: 'ENVIADA' no existe aún en el enum de la DB — ver migration add_enum_enviada.sql
 const CONFIRMED_STATUSES = [
   'EMITIDA',
-  'ENVIADA',
   'PARCIALMENTE_COBRADA',
   'COBRADA'
 ];

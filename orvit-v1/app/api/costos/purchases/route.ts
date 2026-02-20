@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         month,
-        source: 'GoodsReceipt',
+        source: 'PurchaseReceipt',
         bySupplier
       });
     }
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       month,
-      source: 'GoodsReceipt',
+      source: 'PurchaseReceipt',
       hasData: data.receiptCount > 0,
       summary: {
         totalPurchases: data.totalPurchases,

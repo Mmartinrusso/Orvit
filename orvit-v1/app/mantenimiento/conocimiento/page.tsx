@@ -56,17 +56,17 @@ interface KnowledgeArticle {
 }
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  PROCEDURE: { label: 'Procedimiento', icon: <FileText className="h-4 w-4" />, color: 'bg-blue-100 text-blue-800' },
-  TROUBLESHOOTING: { label: 'Solución de Problemas', icon: <Wrench className="h-4 w-4" />, color: 'bg-orange-100 text-orange-800' },
-  SAFETY: { label: 'Seguridad', icon: <Shield className="h-4 w-4" />, color: 'bg-red-100 text-red-800' },
+  PROCEDURE: { label: 'Procedimiento', icon: <FileText className="h-4 w-4" />, color: 'bg-info-muted text-info-muted-foreground' },
+  TROUBLESHOOTING: { label: 'Solución de Problemas', icon: <Wrench className="h-4 w-4" />, color: 'bg-warning-muted text-warning-muted-foreground' },
+  SAFETY: { label: 'Seguridad', icon: <Shield className="h-4 w-4" />, color: 'bg-destructive/10 text-destructive' },
   MANUAL: { label: 'Manual', icon: <Book className="h-4 w-4" />, color: 'bg-purple-100 text-purple-800' },
-  BEST_PRACTICE: { label: 'Buenas Prácticas', icon: <Lightbulb className="h-4 w-4" />, color: 'bg-green-100 text-green-800' },
+  BEST_PRACTICE: { label: 'Buenas Prácticas', icon: <Lightbulb className="h-4 w-4" />, color: 'bg-success-muted text-success' },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-800' },
-  PUBLISHED: { label: 'Publicado', color: 'bg-green-100 text-green-800' },
-  ARCHIVED: { label: 'Archivado', color: 'bg-yellow-100 text-yellow-800' },
+  DRAFT: { label: 'Borrador', color: 'bg-muted text-foreground' },
+  PUBLISHED: { label: 'Publicado', color: 'bg-success-muted text-success' },
+  ARCHIVED: { label: 'Archivado', color: 'bg-warning-muted text-warning-muted-foreground' },
 };
 
 export default function KnowledgeBasePage() {
@@ -251,7 +251,7 @@ export default function KnowledgeBasePage() {
           </div>
         ) : (
           articles.map((article) => {
-            const categoryConfig = CATEGORY_CONFIG[article.category] || { label: article.category, icon: <FileText className="h-4 w-4" />, color: 'bg-gray-100' };
+            const categoryConfig = CATEGORY_CONFIG[article.category] || { label: article.category, icon: <FileText className="h-4 w-4" />, color: 'bg-muted' };
             const statusConfig = STATUS_CONFIG[article.status] || STATUS_CONFIG.DRAFT;
 
             return (

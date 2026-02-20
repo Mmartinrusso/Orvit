@@ -38,6 +38,7 @@ model Company {
   FactPurchasesMonthly      FactPurchasesMonthly[]
   FactSalesMonthly          FactSalesMonthly[]
   fixedTasks                FixedTask[]
+  taskGroups                TaskGroup[]
   indirectItems             IndirectItem[]
   inputItems                InputItem[]
   lines                     Line[]
@@ -229,8 +230,9 @@ model Company {
   ideas Idea[]
 
   // Centro de Costos V2
-  costSystemConfig          CostSystemConfig?
-  monthlyCostConsolidations MonthlyCostConsolidation[]
+  costSystemConfig              CostSystemConfig?
+  monthlyCostConsolidations     MonthlyCostConsolidation[]
+  indirectDistributionConfigs   IndirectDistributionConfig[]
 
   // Discord Bot - Configuración por empresa
   discordBotToken String? // Token del bot de Discord (encriptado)
@@ -292,6 +294,9 @@ model Company {
   agendaReminders AgendaReminder[]
   voiceTaskLogs   VoiceTaskLog[]
 
+  // Mantenimiento Preventivo
+  preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateCompany")
+
   // Módulo Almacén
   stockReservations     StockReservation[]
   materialRequests      MaterialRequest[]
@@ -330,6 +335,9 @@ model Company {
   salesZones   SalesZone[]
   salesReps    SalesRep[]
   paymentTerms PaymentTerm[]
+
+  // Feature Flags
+  featureFlags FeatureFlag[]
 
   @@index([subscriptionId])
   @@index([primaryAdminId])
@@ -393,6 +401,7 @@ model User {
   reminders               Reminder[]                @relation("UserReminders")
   assignedTasks           Task[]                    @relation("TaskAssignee")
   createdTasks            Task[]                    @relation("TaskCreator")
+  taskGroups              TaskGroup[]               @relation("TaskGroupCreator")
   taskAttachments         TaskAttachment[]          @relation("TaskAttachmentUploader")
   taskComments            TaskComment[]             @relation("TaskCommentAuthor")
   taxBasesCreated         TaxBase[]                 @relation("TaxBaseCreatedBy")
@@ -696,6 +705,14 @@ model User {
   // Feedback del usuario
   feedbacks Feedback[]
 
+  // Feature Flags
+  featureFlags FeatureFlag[]
+
+  // Mantenimiento Preventivo
+  preventiveTemplatesAssigned  PreventiveTemplate[]  @relation("PreventiveTemplateAssigned")
+  preventiveTemplatesCreated   PreventiveTemplate[]  @relation("PreventiveTemplateCreator")
+  preventiveInstancesCompleted PreventiveInstance[]   @relation("PreventiveInstanceCompletedBy")
+
   @@index([role, isActive])
   @@index([isActive])
   @@map("User")
@@ -835,6 +852,9 @@ model Sector {
   dailyProductionSessions DailyProductionSession[]
   dailyProductionEntries  DailyProductionEntry[]   @relation("EntryBySector")
 
+  // Mantenimiento Preventivo
+  preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateSector")
+
   @@map("Sector")
 }
 
@@ -902,6 +922,9 @@ model UnidadMovil {
   sector               Sector?           @relation(fields: [sectorId], references: [id], onDelete: Cascade)
   workOrders           WorkOrder[]
   kilometrajeLogs      KilometrajeLog[]
+
+  // Mantenimiento Preventivo
+  preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateUnidad")
 
   @@unique([companyId, patente])
   @@index([companyId]) // Listado por empresa
@@ -1038,6 +1061,9 @@ model Machine {
 
   // === Contratos de Servicios y Seguros ===
   serviceContracts ServiceContract[] @relation("MachineServiceContracts")
+
+  // === Mantenimiento Preventivo ===
+  preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateMachine")
 
   // === Performance Indexes ===
   @@index([companyId])
@@ -1921,12 +1947,14 @@ model Task {
   completedAt  DateTime?
   tags         Json?
   progress     Int              @default(0)
+  groupId      Int?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   subtasks     Subtask[]
   assignedTo   User?            @relation("TaskAssignee", fields: [assignedToId], references: [id])
   company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy    User             @relation("TaskCreator", fields: [createdById], references: [id])
+  group        TaskGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
   attachments  TaskAttachment[]
   comments     TaskComment[]
 
@@ -3474,14 +3502,15 @@ model indirect_cost_monthly_records {
 }
 
 model product_categories {
-  id            Int                     @id @default(autoincrement())
-  name          String                  @db.VarChar(255)
+  id            Int                          @id @default(autoincrement())
+  name          String                       @db.VarChar(255)
   description   String?
   company_id    Int
-  created_at    DateTime?               @default(now()) @db.Timestamp(6)
-  updated_at    DateTime?               @default(now()) @db.Timestamp(6)
+  created_at    DateTime?                    @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?                    @default(now()) @db.Timestamp(6)
   subcategories product_subcategories[]
   products      products[]
+  indirectDistributionConfigs IndirectDistributionConfig[]
 }
 
 model product_subcategories {
@@ -4762,6 +4791,10 @@ model PurchaseReceipt {
   requiereRevisionDuplicado Boolean @default(false)
   motivoBloqueo             String?
 
+  // Clasificación como costo indirecto (Costos V2)
+  esIndirecto      Boolean           @default(false)
+  indirectCategory IndirectCategory?
+
   // Relaciones de control
   ingresoConfirmadoByUser User?         @relation("ReceiptIngresoConfirmado", fields: [ingresoConfirmadoPor], references: [id])
   pagoForzadoByUser       User?         @relation("ReceiptPagoForzado", fields: [pagoForzadoPor], references: [id])
@@ -4792,6 +4825,7 @@ model PurchaseReceipt {
   @@index([prontoPagoDisponible, prontoPagoFechaLimite])
   // Índice compuesto para listados optimizados por proveedor y fecha
   @@index([companyId, proveedorId, fechaEmision], map: "idx_purchase_receipt_provider_date")
+  @@index([companyId, esIndirecto], map: "idx_purchase_receipt_indirect")
   @@map("PurchaseReceipt")
 }
 
@@ -14495,6 +14529,10 @@ model AgendaTask {
   // Notas adicionales (JSON array)
   notes Json?
 
+  // Grupo al que pertenece (opcional)
+  groupId Int?
+  group   TaskGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
   // Completado
   completedAt   DateTime?
   completedNote String?
@@ -15607,4 +15645,189 @@ model Feedback {
   @@index([companyId, createdAt(sort: Desc)])
   @@index([userId])
   @@map("feedback")
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Feature Flags
+// ═════════════════════════════════════════════════════════════════
+
+model FeatureFlag {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  enabled   Boolean  @default(false)
+  companyId Int?     @map("company_id")
+  userId    Int?     @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([name, companyId, userId])
+  @@index([name])
+  @@index([companyId])
+  @@index([userId])
+  @@map("feature_flags")
+}
+
+// === Mantenimiento Preventivo: Templates e Instancias ===
+
+model PreventiveTemplate {
+  id                    Int       @id @default(autoincrement())
+  title                 String
+  description           String?   @db.Text
+  priority              String    @default("MEDIUM") @db.VarChar(20)
+  notes                 String?   @db.Text
+
+  // Equipo asignado
+  machineId             Int?
+  machineName           String?
+  unidadMovilId         Int?
+  isMobileUnit          Boolean   @default(false)
+  componentIds          Int[]     @default([])
+  componentNames        String[]  @default([])
+  subcomponentIds       Int[]     @default([])
+  subcomponentNames     String[]  @default([])
+
+  // Programación
+  frequencyDays         Int       @default(30)
+  nextMaintenanceDate   DateTime?
+  lastMaintenanceDate   DateTime?
+  weekdaysOnly          Boolean   @default(true)
+
+  // Ejecución
+  estimatedHours        Float?
+  timeUnit              String    @default("HOURS") @db.VarChar(20)
+  timeValue             Float?
+  executionWindow       String    @default("ANY_TIME") @db.VarChar(30)
+  toolsRequired         Json      @default("[]")
+
+  // Asignación
+  assignedToId          Int?
+  assignedToName        String?
+
+  // Empresa
+  companyId             Int
+  sectorId              Int?
+  createdById           Int?
+
+  // Estado
+  isActive              Boolean   @default(true)
+  maintenanceCount      Int       @default(0)
+
+  // Alertas
+  alertDaysBefore       Int[]     @default([3, 2, 1, 0])
+
+  // Métricas de ejecución
+  averageDuration       Float?
+  lastExecutionDuration Float?
+  executionHistory      Json      @default("[]")
+
+  // Instructivos (URLs de archivos S3)
+  instructives          Json      @default("[]")
+
+  // Referencia al Document legacy (para migración)
+  legacyDocumentId      Int?      @unique
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+
+  // Relaciones
+  machine               Machine?       @relation("PreventiveTemplateMachine", fields: [machineId], references: [id])
+  unidadMovil           UnidadMovil?   @relation("PreventiveTemplateUnidad", fields: [unidadMovilId], references: [id])
+  assignedTo            User?          @relation("PreventiveTemplateAssigned", fields: [assignedToId], references: [id])
+  company               Company        @relation("PreventiveTemplateCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  sector                Sector?        @relation("PreventiveTemplateSector", fields: [sectorId], references: [id])
+  createdBy             User?          @relation("PreventiveTemplateCreator", fields: [createdById], references: [id])
+  instances             PreventiveInstance[]
+
+  @@index([companyId])
+  @@index([machineId])
+  @@index([isActive])
+  @@index([nextMaintenanceDate])
+  @@index([companyId, isActive])
+  @@index([companyId, machineId])
+  @@map("PreventiveTemplate")
+}
+
+model PreventiveInstance {
+  id                    Int       @id @default(autoincrement())
+  templateId            Int
+  scheduledDate         DateTime
+  status                String    @default("PENDING") @db.VarChar(20) // PENDING, IN_PROGRESS, COMPLETED, OVERDUE, CANCELLED
+
+  // Datos de ejecución
+  actualStartDate       DateTime?
+  actualEndDate         DateTime?
+  actualHours           Float?
+  completedById         Int?
+  completionNotes       String?   @db.Text
+  toolsUsed             Json      @default("[]")
+  photoUrls             Json      @default("[]")
+
+  // Referencia al Document legacy (para migración)
+  legacyDocumentId      Int?      @unique
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+
+  // Relaciones
+  template              PreventiveTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  completedBy           User?              @relation("PreventiveInstanceCompletedBy", fields: [completedById], references: [id])
+
+  @@index([templateId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([templateId, status])
+  @@map("PreventiveInstance")
+}
+
+// ===============================================
+// DISTRIBUCIÓN DE COSTOS INDIRECTOS V2
+// ===============================================
+
+// Configuración persistente de cómo se distribuye cada categoría de costo
+// indirecto entre las categorías de producto de la empresa.
+// Ejemplo: UTILITIES → Adoquines: 60%, Bloques: 40%
+model IndirectDistributionConfig {
+  id                  Int              @id @default(autoincrement())
+  companyId           Int
+  indirectCategory    IndirectCategory
+  productCategoryId   Int              // FK a product_categories
+  productCategoryName String           // Desnormalizado para display rápido
+  percentage          Float            @default(0) // 0-100; la suma por (companyId, indirectCategory) debe ser 100
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productCategory product_categories @relation(fields: [productCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, indirectCategory, productCategoryId])
+  @@index([companyId, indirectCategory])
+  @@map("indirect_distribution_configs")
+}
+
+// ============================================================
+// TASK GROUPS: Agrupación de Task y AgendaTask
+// ============================================================
+
+model TaskGroup {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  color       String    @default("#6366f1") @db.VarChar(7)
+  icon        String?   @db.VarChar(50)
+  description String?   @db.Text
+  isArchived  Boolean   @default(false)
+  companyId   Int
+  createdById Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy   User       @relation("TaskGroupCreator", fields: [createdById], references: [id])
+  tasks       Task[]
+  agendaTasks AgendaTask[]
+
+  @@index([companyId])
+  @@map("task_groups")
 }

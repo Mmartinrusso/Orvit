@@ -117,7 +117,7 @@ export function ContactDialog({ isOpen, onClose, onSave, contact }: ContactDialo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="md" className="[&>button]:hidden">
+      <DialogContent size="md" hideCloseButton>
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-xl font-semibold">
             {contact ? 'Editar Contacto' : 'Nuevo Contacto'}

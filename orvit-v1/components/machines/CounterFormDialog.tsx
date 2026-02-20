@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -146,7 +147,7 @@ export function CounterFormDialog({ machineId, counter, open, onClose }: Counter
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gauge className="h-5 w-5" />
@@ -155,7 +156,8 @@ export function CounterFormDialog({ machineId, counter, open, onClose }: Counter
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+          <DialogBody>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del Contador *</Label>
               <Input
@@ -224,6 +226,7 @@ export function CounterFormDialog({ machineId, counter, open, onClose }: Counter
               </Select>
             </div>
           </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

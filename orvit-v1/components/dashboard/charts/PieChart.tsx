@@ -20,16 +20,16 @@ interface PieChartProps {
 }
 
 const DEFAULT_COLORS = [
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#eab308', // yellow
-  '#ef4444', // red
-  '#a855f7', // purple
-  '#6366f1', // indigo
-  '#ec4899', // pink
-  '#f97316', // orange
-  '#14b8a6', // teal
-  '#06b6d4', // cyan
+  'hsl(var(--primary))',           // blue
+  'hsl(var(--success))',           // green
+  'hsl(var(--warning))',           // yellow
+  'hsl(var(--destructive))',       // red
+  'hsl(var(--chart-1))',           // purple
+  'hsl(var(--chart-1))',           // indigo
+  'hsl(var(--chart-3))',           // pink
+  'hsl(var(--chart-5))',           // orange
+  'hsl(var(--info))',              // teal
+  'hsl(var(--info))',              // cyan
 ];
 
 export function PieChart({

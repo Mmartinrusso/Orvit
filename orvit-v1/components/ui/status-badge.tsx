@@ -12,18 +12,18 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       case 'realizada':
       case 'completed':
       case 'COMPLETED':
-        return 'default'; // Usar default y aplicar color verde manualmente
+        return 'completed' as const;
       case 'en-curso':
       case 'in-progress':
       case 'IN_PROGRESS':
-        return 'default';
+        return 'in_progress' as const;
       case 'pendiente':
       case 'pending':
       case 'PENDING':
       case 'TODO':
-        return 'destructive';
+        return 'pending' as const;
       default:
-        return 'secondary';
+        return 'secondary' as const;
     }
   };
 
@@ -47,14 +47,9 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     }
   };
 
-  const isRealizada = ['realizada', 'completed', 'COMPLETED'].includes(status);
-
   return (
-    <Badge 
-      variant={getVariant(status) as any} 
-      className={cn(className, isRealizada && 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300')}
-    >
+    <Badge variant={getVariant(status)} className={cn(className)}>
       {getStatusText(status)}
     </Badge>
   );
-} 
+}

@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Eraser, Check, PenTool } from 'lucide-react';
 import { toast } from 'sonner';
@@ -157,7 +158,7 @@ export function SignaturePad({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PenTool className="h-5 w-5" />
@@ -166,9 +167,9 @@ export function SignaturePad({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Canvas container */}
-          <div className="relative border-2 border-dashed border-muted-foreground/25 rounded-lg overflow-hidden bg-white">
+          <div className="relative border-2 border-dashed border-muted-foreground/25 rounded-lg overflow-hidden bg-background">
             <canvas
               ref={canvasRef}
               className="w-full touch-none cursor-crosshair"
@@ -209,7 +210,7 @@ export function SignaturePad({
               Limpiar
             </Button>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
