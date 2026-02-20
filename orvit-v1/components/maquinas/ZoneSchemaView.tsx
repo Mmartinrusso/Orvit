@@ -746,7 +746,7 @@ export default function ZoneSchemaView({
         <g key={node.id} transform={`translate(${nodeX}, ${nodeY})`}>
           <foreignObject width={node.width} height={node.height}>
             <div className="w-full h-full">
-              <div className="relative bg-white dark:bg-background border border-border/60 rounded-2xl shadow-[0_6px_18px_rgba(15,23,42,0.08)] flex flex-col items-center justify-center w-full h-full px-4 py-3">
+              <div className="relative bg-background border border-border/60 rounded-2xl shadow-[0_6px_18px_rgba(15,23,42,0.08)] flex flex-col items-center justify-center w-full h-full px-4 py-3">
                 <div className="mb-1.5 text-foreground/80 h-5 w-5">
                   <Building2 className="h-full w-full" />
                 </div>
@@ -779,7 +779,7 @@ export default function ZoneSchemaView({
             <div className="w-full h-full">
               <div
                 className={cn(
-                  "relative bg-white dark:bg-background",
+                  "relative bg-background",
                   "border border-border/60",
                   "rounded-2xl",
                   "shadow-[0_6px_18px_rgba(15,23,42,0.08)]",

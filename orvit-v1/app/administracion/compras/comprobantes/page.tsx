@@ -93,6 +93,7 @@ import { DevolucionFromDocumentModal } from '@/components/compras/devolucion-fro
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Proveedor {
   id: string;
@@ -156,6 +157,7 @@ interface Comprobante {
 }
 
 export default function ComprobantesPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   // const { company } = useCompany();
   const { mode: viewMode } = useViewMode();
@@ -521,9 +523,13 @@ export default function ComprobantesPage() {
 
   // Eliminar cuenta
   const handleDeleteCuenta = async (cuentaId: string) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta cuenta?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar cuenta',
+      description: '¿Estás seguro de que deseas eliminar esta cuenta?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/cuentas/${cuentaId}`, {
@@ -1520,12 +1526,18 @@ export default function ComprobantesPage() {
       return;
     }
 
-    let confirmMessage = `¿Eliminar ${deletableComprobantes.length} comprobante(s)?`;
+    let deleteMessage = `¿Eliminar ${deletableComprobantes.length} comprobante(s)?`;
     if (nonDeletableCount > 0) {
-      confirmMessage = `Se eliminarán ${deletableComprobantes.length} comprobante(s). ${nonDeletableCount} comprobante(s) pagado(s) no se pueden eliminar.`;
+      deleteMessage = `Se eliminarán ${deletableComprobantes.length} comprobante(s). ${nonDeletableCount} comprobante(s) pagado(s) no se pueden eliminar.`;
     }
 
-    if (!confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Eliminar comprobantes',
+      description: deleteMessage,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     setIsBulkDeleting(true);
     let deletedCount = 0;
@@ -1693,12 +1705,12 @@ export default function ComprobantesPage() {
                 <span className="text-sm font-semibold">{kpis.total}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-yellow-600 dark:text-yellow-400">Pend:</span>
-                <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">{kpis.pendientes}</span>
+                <span className="text-xs text-warning-muted-foreground">Pend:</span>
+                <span className="text-sm font-semibold text-warning-muted-foreground">{kpis.pendientes}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-red-600 dark:text-red-400">Venc:</span>
-                <span className="text-sm font-semibold text-red-700 dark:text-red-300">{kpis.vencidos}</span>
+                <span className="text-xs text-destructive">Venc:</span>
+                <span className="text-sm font-semibold text-destructive">{kpis.vencidos}</span>
               </div>
               <div className="h-4 w-px bg-border" />
               <div className="flex items-center gap-1.5">
@@ -1706,8 +1718,8 @@ export default function ComprobantesPage() {
                 <span className="text-sm font-semibold">{formatCurrency(kpis.montoTotal)}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-blue-600 dark:text-blue-400">Pend $:</span>
-                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{formatCurrency(kpis.montoPendiente)}</span>
+                <span className="text-xs text-info-muted-foreground">Pend $:</span>
+                <span className="text-sm font-semibold text-info-muted-foreground">{formatCurrency(kpis.montoPendiente)}</span>
               </div>
             </div>
           )}
@@ -1837,7 +1849,7 @@ export default function ComprobantesPage() {
                         <span className="text-muted-foreground">{comprobante.numeroSerie}-</span>
                         <span className="font-medium">{comprobante.numeroFactura}</span>
                         {comprobante.pagoUrgente && (
-                          <AlertCircle className="w-3 h-3 text-red-500 inline ml-1" />
+                          <AlertCircle className="w-3 h-3 text-destructive inline ml-1" />
                         )}
                       </TableCell>
                       <TableCell>
@@ -1860,17 +1872,17 @@ export default function ComprobantesPage() {
                       <TableCell>{getEstadoBadge(comprobante.estado)}</TableCell>
                       <TableCell className="text-center">
                         {comprobante.remitoEstado === 'confirmado' ? (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success-muted text-success border-success-muted">
                             <Package className="w-3 h-3 mr-1" />
                             Confirmado
                           </Badge>
                         ) : comprobante.remitoEstado === 'borrador' ? (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-200">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-info-muted text-info-muted-foreground border-info-muted">
                             <Package className="w-3 h-3 mr-1" />
                             Borrador
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-warning-muted text-warning-muted-foreground border-warning-muted">
                             <Truck className="w-3 h-3 mr-1" />
                             Sin remito
                           </Badge>

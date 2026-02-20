@@ -1,8 +1,11 @@
 /**
  * API: /api/cron/sla-check
  *
- * GET - Verificar SLA de órdenes correctivas
+ * GET - Verificar SLA de órdenes de mantenimiento (correctivas + preventivas)
  *       Detecta órdenes que excedieron o están por exceder SLA
+ *       - Correctivas: SLA basado en slaDueAt o createdAt + prioridad
+ *       - Preventivas: SLA basado en scheduledDate (alerta 3 días antes)
+ *       Notifica vía: Discord (canal + DM técnico) + in-app + supervisores
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -51,6 +54,29 @@ export async function GET(request: NextRequest) {
           assignedToId: true,
           slaDueAt: true,
           slaStatus: true
+        }
+      });
+
+      // 2b. Obtener preventivos activos con scheduledDate (SLA basado en fecha programada)
+      const activePreventives = await prisma.workOrder.findMany({
+        where: {
+          companyId: company.id,
+          type: 'PREVENTIVE',
+          status: { in: ['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'pending'] },
+          scheduledDate: { not: null }
+        },
+        select: {
+          id: true,
+          title: true,
+          priority: true,
+          scheduledDate: true,
+          createdAt: true,
+          status: true,
+          assignedToId: true,
+          slaStatus: true,
+          sectorId: true,
+          machine: { select: { name: true } },
+          assignedTo: { select: { id: true, name: true } }
         }
       });
 
@@ -133,13 +159,160 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (violations.length > 0 || warnings.length > 0) {
+      // 3. Procesar preventivos (SLA basado en scheduledDate)
+      const preventiveViolations: any[] = [];
+      const preventiveWarnings: any[] = [];
+      const PREVENTIVE_WARNING_DAYS = 3; // Alertar 3 días antes de vencer
+
+      for (const pm of activePreventives) {
+        if (!pm.scheduledDate) continue;
+
+        const scheduledDate = new Date(pm.scheduledDate);
+        const daysRemaining = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+        if (daysRemaining < 0) {
+          // PM vencido
+          const daysOverdue = Math.abs(Math.ceil(daysRemaining));
+          preventiveViolations.push({
+            workOrderId: pm.id,
+            title: pm.title,
+            priority: pm.priority || 'MEDIUM',
+            scheduledDate: scheduledDate.toISOString(),
+            daysOverdue,
+            status: pm.status,
+            assignedToId: pm.assignedToId,
+            sectorId: pm.sectorId,
+            machineName: pm.machine?.name,
+            assignedToName: pm.assignedTo?.name
+          });
+
+          // Actualizar slaStatus
+          if (pm.slaStatus !== 'BREACHED') {
+            await prisma.workOrder.update({
+              where: { id: pm.id },
+              data: { slaStatus: 'BREACHED', slaBreachedAt: now }
+            });
+          }
+        } else if (daysRemaining <= PREVENTIVE_WARNING_DAYS) {
+          // PM próximo a vencer
+          preventiveWarnings.push({
+            workOrderId: pm.id,
+            title: pm.title,
+            priority: pm.priority || 'MEDIUM',
+            scheduledDate: scheduledDate.toISOString(),
+            daysRemaining: Math.ceil(daysRemaining),
+            status: pm.status,
+            assignedToId: pm.assignedToId,
+            sectorId: pm.sectorId,
+            machineName: pm.machine?.name,
+            assignedToName: pm.assignedTo?.name
+          });
+
+          if (pm.slaStatus !== 'AT_RISK') {
+            await prisma.workOrder.update({
+              where: { id: pm.id },
+              data: { slaStatus: 'AT_RISK' }
+            });
+          }
+        }
+      }
+
+      // Notificaciones para preventivos vencidos
+      for (const pv of preventiveViolations) {
+        try {
+          // Discord: canal de preventivos
+          if (pv.sectorId) {
+            try {
+              await notifySLABreached({
+                workOrderId: pv.workOrderId,
+                title: `[PM] ${pv.title}`,
+                machineName: pv.machineName,
+                sectorId: pv.sectorId,
+                priority: pv.priority,
+                assignedTo: pv.assignedToName,
+                assignedToId: pv.assignedToId,
+                hoursOverdue: pv.daysOverdue * 24,
+                slaDueAt: pv.scheduledDate
+              });
+            } catch (discordError) {
+              console.warn('⚠️ Error enviando notificación Discord PM SLA:', discordError);
+            }
+          }
+
+          // In-app al asignado
+          if (pv.assignedToId) {
+            await prisma.notification.create({
+              data: {
+                userId: pv.assignedToId,
+                type: 'maintenance_due',
+                title: `Preventivo vencido (${pv.daysOverdue} día${pv.daysOverdue !== 1 ? 's' : ''})`,
+                message: `"${pv.title}" debía realizarse el ${new Date(pv.scheduledDate).toLocaleDateString('es-AR')}${pv.machineName ? ` - ${pv.machineName}` : ''}`,
+                metadata: JSON.stringify({ workOrderId: pv.workOrderId, type: 'PREVENTIVE', daysOverdue: pv.daysOverdue }),
+                isRead: false,
+                companyId: company.id
+              }
+            });
+          }
+        } catch (notifError) {
+          console.warn('⚠️ Error creando notificación PM vencido:', notifError);
+        }
+      }
+
+      // Notificaciones para preventivos próximos a vencer
+      for (const pw of preventiveWarnings) {
+        try {
+          if (pw.sectorId) {
+            try {
+              await notifySLAAtRisk({
+                workOrderId: pw.workOrderId,
+                title: `[PM] ${pw.title}`,
+                machineName: pw.machineName,
+                sectorId: pw.sectorId,
+                priority: pw.priority,
+                assignedTo: pw.assignedToName,
+                assignedToId: pw.assignedToId,
+                hoursRemaining: pw.daysRemaining * 24,
+                slaDueAt: pw.scheduledDate
+              });
+            } catch (discordError) {
+              console.warn('⚠️ Error enviando notificación Discord PM warning:', discordError);
+            }
+          }
+
+          if (pw.assignedToId) {
+            await prisma.notification.create({
+              data: {
+                userId: pw.assignedToId,
+                type: 'work_order_due_soon',
+                title: `Preventivo vence en ${pw.daysRemaining} día${pw.daysRemaining !== 1 ? 's' : ''}`,
+                message: `"${pw.title}" programado para ${new Date(pw.scheduledDate).toLocaleDateString('es-AR')}${pw.machineName ? ` - ${pw.machineName}` : ''}`,
+                metadata: JSON.stringify({ workOrderId: pw.workOrderId, type: 'PREVENTIVE', daysRemaining: pw.daysRemaining }),
+                isRead: false,
+                companyId: company.id
+              }
+            });
+          }
+        } catch (notifError) {
+          console.warn('⚠️ Error creando notificación PM warning:', notifError);
+        }
+      }
+
+      // Consolidar resultados
+      const allViolations = [...violations, ...preventiveViolations];
+      const allWarnings = [...warnings, ...preventiveWarnings];
+
+      if (allViolations.length > 0 || allWarnings.length > 0) {
         results.push({
           companyId: company.id,
           companyName: company.name,
-          violations,
-          warnings,
-          totalActive: activeOrders.length
+          violations: allViolations,
+          warnings: allWarnings,
+          totalActive: activeOrders.length + activePreventives.length,
+          preventiveStats: {
+            violations: preventiveViolations.length,
+            warnings: preventiveWarnings.length,
+            checked: activePreventives.length
+          }
         });
       }
 
@@ -272,14 +445,27 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ SLA check completado. ${results.reduce((sum, r) => sum + r.violations.length, 0)} violaciones encontradas.`);
 
+    const totalViolations = results.reduce((sum, r) => sum + r.violations.length, 0);
+    const totalWarnings = results.reduce((sum, r) => sum + r.warnings.length, 0);
+    const totalPreventiveViolations = results.reduce((sum, r) => sum + (r.preventiveStats?.violations || 0), 0);
+    const totalPreventiveWarnings = results.reduce((sum, r) => sum + (r.preventiveStats?.warnings || 0), 0);
+
     return NextResponse.json({
       success: true,
       timestamp: now.toISOString(),
       companiesChecked: companies.length,
       results,
       summary: {
-        totalViolations: results.reduce((sum, r) => sum + r.violations.length, 0),
-        totalWarnings: results.reduce((sum, r) => sum + r.warnings.length, 0)
+        totalViolations,
+        totalWarnings,
+        corrective: {
+          violations: totalViolations - totalPreventiveViolations,
+          warnings: totalWarnings - totalPreventiveWarnings
+        },
+        preventive: {
+          violations: totalPreventiveViolations,
+          warnings: totalPreventiveWarnings
+        }
       }
     });
 

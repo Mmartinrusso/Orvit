@@ -205,8 +205,8 @@ export function FailuresReincidenciasView({
     return (
       <Card className={cn('p-6', className)}>
         <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-10 w-10 text-red-500" />
-          <p className="text-red-500">Error al cargar reincidencias</p>
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <p className="text-destructive">Error al cargar reincidencias</p>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -222,7 +222,7 @@ export function FailuresReincidenciasView({
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Repeat className="h-5 w-5 text-amber-500" />
+            <Repeat className="h-5 w-5 text-warning-muted-foreground" />
             Fallas Reincidentes
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -273,7 +273,7 @@ export function FailuresReincidenciasView({
           {stats.totalOccurrences} ocurrencias totales
         </Badge>
         {stats.openIssues > 0 && (
-          <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+          <Badge variant="outline" className="gap-1 border-warning-muted text-warning-muted-foreground">
             <AlertCircle className="h-3 w-3" />
             {stats.openIssues} abiertas
           </Badge>
@@ -375,13 +375,13 @@ function RecurrenceGroupCard({
                 </Badge>
 
                 {group.openCount > 0 && (
-                  <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                  <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground text-xs">
                     {group.openCount} abiertas
                   </Badge>
                 )}
 
                 {group.totalDowntimes > 0 && (
-                  <Badge variant="outline" className="border-red-500 text-red-600 text-xs">
+                  <Badge variant="outline" className="border-destructive text-destructive text-xs">
                     {group.totalDowntimes} paradas
                   </Badge>
                 )}
@@ -423,9 +423,9 @@ function RecurrenceGroupCard({
                           variant="outline"
                           className={cn(
                             'text-[10px]',
-                            occ.status === 'OPEN' && 'border-blue-500 text-blue-600',
-                            occ.status === 'IN_PROGRESS' && 'border-amber-500 text-amber-600',
-                            occ.status === 'RESOLVED' && 'border-green-500 text-green-600'
+                            occ.status === 'OPEN' && 'border-info text-info-muted-foreground',
+                            occ.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
+                            occ.status === 'RESOLVED' && 'border-success text-success'
                           )}
                         >
                           {occ.status}

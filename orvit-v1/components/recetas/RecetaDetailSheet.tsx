@@ -14,7 +14,7 @@ import { useCompany } from '@/contexts/CompanyContext';
 import {
   Edit, Package, Scale, DollarSign, Layers, Hash, FileText,
   Clock, CheckCircle2, XCircle, Calculator, PieChart, BarChart3,
-  TrendingUp, Info, Copy, Printer
+  TrendingUp, Info, Copy, Printer, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -103,7 +103,7 @@ export default function RecetaDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl flex flex-col">
+      <SheetContent size="md" className="flex flex-col">
         <SheetHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -115,7 +115,7 @@ export default function RecetaDetailSheet({
             </div>
             <Badge
               variant={recipe.isActive ? 'default' : 'secondary'}
-              className={cn(recipe.isActive && 'bg-green-500')}
+              className={cn(recipe.isActive && 'bg-success')}
             >
               {recipe.isActive ? 'Activa' : 'Inactiva'}
             </Badge>
@@ -141,7 +141,7 @@ export default function RecetaDetailSheet({
         <ScrollArea className="flex-1 -mx-6 px-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
             <Tabs defaultValue="info" className="space-y-4">
@@ -291,7 +291,7 @@ export default function RecetaDetailSheet({
                                     </p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-medium text-green-600">
+                                    <p className="font-medium text-success">
                                       ${cost.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
@@ -315,9 +315,9 @@ export default function RecetaDetailSheet({
 
                     {/* Bank ingredients (for PER_BANK) */}
                     {recipe.baseType === 'PER_BANK' && bankIngredients.length > 0 && (
-                      <Card className="border-purple-200">
+                      <Card className="border-info-muted">
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2 text-purple-700">
+                          <CardTitle className="text-sm flex items-center gap-2 text-info-muted-foreground">
                             <Layers className="h-4 w-4" />
                             Insumos del Banco
                           </CardTitle>
@@ -329,7 +329,7 @@ export default function RecetaDetailSheet({
                               const cost = Number(ing.quantity || 0) * price;
 
                               return (
-                                <div key={index} className="p-4 hover:bg-purple-50/50 transition-colors">
+                                <div key={index} className="p-4 hover:bg-info-muted/50 transition-colors">
                                   <div className="flex items-start justify-between">
                                     <div>
                                       <p className="font-medium">{ing.supplyName}</p>
@@ -337,7 +337,7 @@ export default function RecetaDetailSheet({
                                         {Number(ing.quantity || 0).toFixed(2)} {ing.unitMeasure}
                                       </p>
                                     </div>
-                                    <p className="font-medium text-purple-600">
+                                    <p className="font-medium text-info-muted-foreground">
                                       ${cost.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                                     </p>
                                   </div>
@@ -397,7 +397,7 @@ export default function RecetaDetailSheet({
                         <span className="font-bold">
                           Total {recipe.baseType === 'PER_BANK' ? 'banco' : 'batea'}
                         </span>
-                        <span className="font-bold text-lg text-green-600">
+                        <span className="font-bold text-lg text-success">
                           ${totalRecipeCost.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -406,7 +406,7 @@ export default function RecetaDetailSheet({
                         <span className="text-sm">
                           Costo por {recipe.baseType === 'PER_BANK' ? 'metro' : 'unidad'}
                         </span>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-success">
                           ${costPerUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Machine, MachineStatus } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -66,10 +67,10 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
     switch (status) {
       case 'ACTIVE':
       case MachineStatus.ACTIVE:
-        return <Badge className="bg-green-500 text-white">Activo</Badge>;
+        return <Badge className="bg-success text-success-foreground">Activo</Badge>;
       case 'OUT_OF_SERVICE':
       case MachineStatus.OUT_OF_SERVICE:
-        return <Badge className="bg-amber-500 text-white">Fuera de servicio</Badge>;
+        return <Badge className="bg-warning text-warning-foreground">Fuera de servicio</Badge>;
       case 'DECOMMISSIONED':
       case MachineStatus.DECOMMISSIONED:
         return <Badge variant="destructive">Baja</Badge>;
@@ -148,26 +149,26 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
     <div className="space-y-4">
       {/* ✨ Alerta de Garantía */}
       {warrantyStatus && (warrantyStatus.isExpired || warrantyStatus.isExpiringSoon) && (
-        <Card className={`border-l-4 ${warrantyStatus.isExpired ? 'border-l-red-500 bg-red-50 dark:bg-red-950/20' : 'border-l-amber-500 bg-amber-50 dark:bg-amber-950/20'}`}>
+        <Card className={cn('border-l-4', warrantyStatus.isExpired ? 'border-l-destructive bg-destructive/10' : 'border-l-warning bg-warning-muted')}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               {warrantyStatus.isExpired ? (
-                <ShieldAlert className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+                <ShieldAlert className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
               ) : (
-                <AlertTriangle className="h-6 w-6 text-amber-500 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0 mt-0.5" />
               )}
               <div className="flex-1">
-                <h3 className={`font-semibold ${warrantyStatus.isExpired ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'}`}>
+                <h3 className={cn('font-semibold', warrantyStatus.isExpired ? 'text-destructive' : 'text-warning-muted-foreground')}>
                   {warrantyStatus.isExpired ? '¡Garantía Vencida!' : '¡Garantía por Vencer!'}
                 </h3>
-                <p className={`text-sm mt-1 ${warrantyStatus.isExpired ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                <p className={cn('text-sm mt-1', warrantyStatus.isExpired ? 'text-destructive' : 'text-warning-muted-foreground')}>
                   {warrantyStatus.isExpired
                     ? `La garantía de esta máquina venció el ${formatDate(warrantyStatus.expirationDate, 'dd MMM yyyy', { locale: es })}.`
                     : `La garantía vence en ${warrantyStatus.daysUntilExpiration} día${warrantyStatus.daysUntilExpiration !== 1 ? 's' : ''} (${formatDate(warrantyStatus.expirationDate, 'dd MMM yyyy', { locale: es })}).`
                   }
                 </p>
                 {machine.warrantySupplier && (
-                  <p className={`text-xs mt-2 ${warrantyStatus.isExpired ? 'text-red-500 dark:text-red-400' : 'text-amber-500 dark:text-amber-400'}`}>
+                  <p className={cn('text-xs mt-2', warrantyStatus.isExpired ? 'text-destructive' : 'text-warning')}>
                     Proveedor: {machine.warrantySupplier}
                   </p>
                 )}
@@ -216,7 +217,7 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
             <div className="text-center space-y-2">
               <p className="text-xs text-muted-foreground">Código QR para acceso móvil</p>
               <div
-                className="mx-auto w-24 h-24 bg-white rounded-lg p-2 border cursor-pointer hover:shadow-md transition-shadow"
+                className="mx-auto w-24 h-24 bg-background rounded-lg p-2 border cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setShowQRModal(true)}
               >
                 <img
@@ -322,15 +323,15 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
 
         {/* ✨ Columna 6: Garantía */}
         {machine.warrantyExpiration && (
-          <Card className={warrantyStatus?.isExpired ? 'border-red-200 dark:border-red-800' : warrantyStatus?.isExpiringSoon ? 'border-amber-200 dark:border-amber-800' : ''}>
+          <Card className={warrantyStatus?.isExpired ? 'border-destructive/20' : warrantyStatus?.isExpiringSoon ? 'border-warning/20' : ''}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 {warrantyStatus?.isExpired ? (
-                  <ShieldAlert className="h-4 w-4 text-red-500" />
+                  <ShieldAlert className="h-4 w-4 text-destructive" />
                 ) : warrantyStatus?.isExpiringSoon ? (
-                  <Shield className="h-4 w-4 text-amber-500" />
+                  <Shield className="h-4 w-4 text-warning" />
                 ) : (
-                  <ShieldCheck className="h-4 w-4 text-green-500" />
+                  <ShieldCheck className="h-4 w-4 text-success" />
                 )}
                 Garantía
               </CardTitle>
@@ -339,7 +340,7 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
               <InfoField
                 label="Vencimiento"
                 value={
-                  <span className={`${warrantyStatus?.isExpired ? 'text-red-600 dark:text-red-400 font-medium' : warrantyStatus?.isExpiringSoon ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}`}>
+                  <span className={cn(warrantyStatus?.isExpired ? 'text-destructive font-medium' : warrantyStatus?.isExpiringSoon ? 'text-warning font-medium' : '')}>
                     {format(new Date(machine.warrantyExpiration), 'dd MMM yyyy', { locale: es })}
                   </span>
                 }
@@ -349,7 +350,7 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
                 <InfoField
                   label="Días Restantes"
                   value={
-                    <span className={warrantyStatus.isExpiringSoon ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-green-600 dark:text-green-400'}>
+                    <span className={warrantyStatus.isExpiringSoon ? 'text-warning font-medium' : 'text-success'}>
                       {warrantyStatus.daysUntilExpiration} días
                     </span>
                   }
@@ -409,7 +410,7 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
 
       {/* Modal de imagen ampliada */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>{machine.name}</DialogTitle>
           </DialogHeader>
@@ -425,12 +426,12 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
 
       {/* Modal de QR ampliado */}
       <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
-        <DialogContent className="max-w-sm">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="text-center">Código QR - {machine.name}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
-            <div className="bg-white p-4 rounded-lg">
+            <div className="bg-background p-4 rounded-lg">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`}
                 alt="QR Code"

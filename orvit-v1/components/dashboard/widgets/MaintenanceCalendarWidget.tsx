@@ -152,7 +152,7 @@ export function MaintenanceCalendarWidget({ companyId, sectorId, style = 'calend
               className={cn(
                 'h-8 flex flex-col items-center justify-center rounded-md text-xs relative transition-colors',
                 isToday(day) && 'bg-primary text-primary-foreground font-bold',
-                !isToday(day) && hasMaintenances && 'bg-blue-50 hover:bg-blue-100',
+                !isToday(day) && hasMaintenances && 'bg-info-muted hover:bg-accent',
                 !isToday(day) && !hasMaintenances && 'hover:bg-accent'
               )}
               title={hasMaintenances ? `${dayMaintenances.length} mantenimiento(s)` : undefined}
@@ -161,10 +161,10 @@ export function MaintenanceCalendarWidget({ companyId, sectorId, style = 'calend
               {hasMaintenances && (
                 <div className="absolute -bottom-0.5 flex gap-0.5">
                   {pending > 0 && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-warning" />
                   )}
                   {completed > 0 && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-success" />
                   )}
                 </div>
               )}
@@ -176,11 +176,11 @@ export function MaintenanceCalendarWidget({ companyId, sectorId, style = 'calend
       {/* Leyenda */}
       <div className="flex items-center justify-center gap-4 pt-2 border-t">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-yellow-500" />
+          <div className="w-2 h-2 rounded-full bg-warning" />
           <span className="text-xs text-muted-foreground">Pendiente</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <div className="w-2 h-2 rounded-full bg-success" />
           <span className="text-xs text-muted-foreground">Completado</span>
         </div>
       </div>
@@ -193,14 +193,14 @@ export function MaintenanceCalendarWidget({ companyId, sectorId, style = 'calend
             <div className="space-y-1">
               {(maintenancesByDay[today.getDate()] || []).slice(0, 3).map((m: any) => (
                 <div key={m.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-accent/50">
-                  <Wrench className="h-3 w-3 text-blue-500" />
+                  <Wrench className="h-3 w-3 text-info-muted-foreground" />
                   <span className="truncate">{m.title}</span>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <CheckCircle className="h-3 w-3 text-green-500" />
+              <CheckCircle className="h-3 w-3 text-success" />
               Sin mantenimientos hoy
             </p>
           )}

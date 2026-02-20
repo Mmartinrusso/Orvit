@@ -462,7 +462,7 @@ export default function TesoreriaPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
               Pagos Pendientes (7 días)
             </CardTitle>
           </CardHeader>
@@ -479,7 +479,7 @@ export default function TesoreriaPage() {
                         <p className="text-xs text-muted-foreground">{factura.numeroFactura}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-yellow-600">{formatCurrency(Number(factura.total))}</p>
+                        <p className="text-sm font-bold text-warning-muted-foreground">{formatCurrency(Number(factura.total))}</p>
                         <p className="text-xs text-muted-foreground">
                           {factura.fechaVencimiento
                             ? new Date(factura.fechaVencimiento).toLocaleDateString('es-AR')

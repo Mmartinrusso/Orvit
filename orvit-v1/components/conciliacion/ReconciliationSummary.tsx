@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   CheckCircle2,
@@ -11,17 +12,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 interface ReconciliationSummaryProps {
   saldoContable: number;
@@ -42,7 +33,7 @@ export default function ReconciliationSummary({
   itemsSuspense,
   matchBreakdown,
 }: ReconciliationSummaryProps) {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
   const diferencia = saldoBancario - saldoContable;
   const porcentajeConciliado = totalItems > 0 ? (itemsConciliados / totalItems) * 100 : 0;
 

@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 import { History, TrendingUp, Plus, Loader2, Calendar, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const UpdatePriceSchema = z.object({
   effectiveFrom: z.string().min(1, 'Fecha requerida'),
@@ -263,9 +264,10 @@ export function InputPriceHistoryDialog({
                     <div className="p-3 bg-muted/5 rounded border border-border/20">
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">Cambio:</span>
-                        <span className={`font-medium ${
-                          form.watch('price') > currentPrice ? 'text-red-600' : 'text-green-600'
-                        }`}>
+                        <span className={cn(
+                          'font-medium',
+                          form.watch('price') > currentPrice ? 'text-destructive' : 'text-success'
+                        )}>
                           {form.watch('price') > currentPrice ? '+' : ''}
                           {calculateChange(form.watch('price'), currentPrice).toFixed(2)}%
                         </span>
@@ -335,11 +337,12 @@ export function InputPriceHistoryDialog({
                   return (
                     <div
                       key={record.id}
-                      className={`p-4 rounded-lg border ${
+                      className={cn(
+                        'p-4 rounded-lg border',
                         record.isCurrent
                           ? 'bg-primary/5 border-primary/20'
                           : 'bg-card border-border'
-                      }`}
+                      )}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -363,9 +366,10 @@ export function InputPriceHistoryDialog({
                         
                         {change !== null && (
                           <div className="text-right">
-                            <div className={`text-sm font-medium ${
-                              change >= 0 ? 'text-red-600' : 'text-green-600'
-                            }`}>
+                            <div className={cn(
+                              'text-sm font-medium',
+                              change >= 0 ? 'text-destructive' : 'text-success'
+                            )}>
                               {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                             </div>
                             <div className="text-xs text-muted-foreground">

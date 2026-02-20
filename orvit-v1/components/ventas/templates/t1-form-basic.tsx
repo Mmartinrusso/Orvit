@@ -13,6 +13,11 @@ import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,7 +61,6 @@ export function T1FormBasic({ open, onOpenChange, onSuccess }: T1FormBasicProps)
 
       // Simular API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Form data:', data);
 
       toast({
         title: 'Guardado exitoso',
@@ -79,62 +83,60 @@ export function T1FormBasic({ open, onOpenChange, onSuccess }: T1FormBasicProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-primary/10">
-            <Package className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold">Nuevo Producto</h2>
-            <p className="text-xs text-muted-foreground">Completa los datos básicos</p>
-          </div>
-        </div>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Nuevo Producto
+          </DialogTitle>
+          <DialogDescription>Completa los datos básicos</DialogDescription>
+        </DialogHeader>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form id="t1-form" onSubmit={handleSubmit(onSubmit)}>
+        <DialogBody className="space-y-4">
           <div>
             <Label className="text-xs">
-              Nombre <span className="text-red-500">*</span>
+              Nombre <span className="text-destructive">*</span>
             </Label>
             <Input
               {...register('nombre')}
               placeholder="Ej: Tornillo M8"
-              className={errors.nombre ? 'border-red-500' : ''}
+              className={errors.nombre ? 'border-destructive' : ''}
             />
             {errors.nombre && (
-              <p className="text-xs text-red-500 mt-1">{errors.nombre.message}</p>
+              <p className="text-xs text-destructive mt-1">{errors.nombre.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">
-                Código <span className="text-red-500">*</span>
+                Código <span className="text-destructive">*</span>
               </Label>
               <Input
                 {...register('codigo')}
                 placeholder="PRD-001"
-                className={errors.codigo ? 'border-red-500' : ''}
+                className={errors.codigo ? 'border-destructive' : ''}
               />
               {errors.codigo && (
-                <p className="text-xs text-red-500 mt-1">{errors.codigo.message}</p>
+                <p className="text-xs text-destructive mt-1">{errors.codigo.message}</p>
               )}
             </div>
 
             <div>
               <Label className="text-xs">
-                Precio <span className="text-red-500">*</span>
+                Precio <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="number"
                 step="0.01"
                 {...register('precio', { valueAsNumber: true })}
                 placeholder="0.00"
-                className={errors.precio ? 'border-red-500' : ''}
+                className={errors.precio ? 'border-destructive' : ''}
               />
               {errors.precio && (
-                <p className="text-xs text-red-500 mt-1">{errors.precio.message}</p>
+                <p className="text-xs text-destructive mt-1">{errors.precio.message}</p>
               )}
             </div>
           </div>
@@ -148,8 +150,9 @@ export function T1FormBasic({ open, onOpenChange, onSuccess }: T1FormBasicProps)
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
+        </DialogBody>
+
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -158,7 +161,7 @@ export function T1FormBasic({ open, onOpenChange, onSuccess }: T1FormBasicProps)
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" form="t1-form" disabled={saving}>
               <LoadingButtonContent
                 isLoading={saving}
                 icon={<Save className="h-3.5 w-3.5" />}
@@ -166,7 +169,7 @@ export function T1FormBasic({ open, onOpenChange, onSuccess }: T1FormBasicProps)
                 Guardar
               </LoadingButtonContent>
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

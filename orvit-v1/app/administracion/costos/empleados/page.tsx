@@ -92,7 +92,7 @@ export default function EmpleadosPage() {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Cargando datos...</p>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function EmpleadosPage() {
         <Button 
           onClick={() => setShowNotesDialog(true)} 
           variant="outline" 
-          className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+          className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
         >
           <BookOpen className="h-4 w-4 mr-2" />
           Notas

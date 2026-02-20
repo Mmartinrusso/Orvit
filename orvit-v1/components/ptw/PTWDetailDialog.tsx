@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { PermitToWork, PTWStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Sheet,
@@ -96,7 +98,7 @@ export default function PTWDetailDialog({
       label: 'Creado',
       user: permit.requestedBy?.name,
       icon: FileText,
-      color: 'text-gray-500',
+      color: 'text-muted-foreground',
     });
 
     if (permit.approvedAt) {
@@ -105,7 +107,7 @@ export default function PTWDetailDialog({
         label: 'Aprobado',
         user: permit.approvedBy?.name,
         icon: CheckCircle,
-        color: 'text-blue-500',
+        color: 'text-primary',
         notes: permit.approvalNotes,
       });
     }
@@ -116,7 +118,7 @@ export default function PTWDetailDialog({
         label: 'Rechazado',
         user: permit.rejectedBy?.name,
         icon: XCircle,
-        color: 'text-red-500',
+        color: 'text-destructive',
         notes: permit.rejectionReason,
       });
     }
@@ -127,7 +129,7 @@ export default function PTWDetailDialog({
         label: 'Activado',
         user: permit.activatedBy?.name,
         icon: PlayCircle,
-        color: 'text-green-500',
+        color: 'text-success',
       });
     }
 
@@ -148,7 +150,7 @@ export default function PTWDetailDialog({
         label: 'Reanudado',
         user: permit.resumedBy?.name,
         icon: PlayCircle,
-        color: 'text-green-500',
+        color: 'text-success',
       });
     }
 
@@ -169,7 +171,7 @@ export default function PTWDetailDialog({
           const Icon = event.icon;
           return (
             <div key={idx} className="flex gap-3">
-              <div className={`${event.color} mt-0.5`}>
+              <div className={cn(event.color, 'mt-0.5')}>
                 <Icon className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
@@ -274,12 +276,12 @@ export default function PTWDetailDialog({
       {/* Hazards */}
       <div>
         <h4 className="flex items-center gap-2 text-sm font-medium mb-2">
-          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
           Peligros Identificados
         </h4>
         <div className="flex flex-wrap gap-2">
           {permit.hazardsIdentified.map((hazard, idx) => (
-            <Badge key={idx} variant="secondary" className="bg-yellow-50 text-yellow-800">
+            <Badge key={idx} variant="secondary" className="bg-warning-muted text-warning-muted-foreground">
               {hazard}
             </Badge>
           ))}
@@ -289,12 +291,12 @@ export default function PTWDetailDialog({
       {/* Control Measures */}
       <div>
         <h4 className="flex items-center gap-2 text-sm font-medium mb-2">
-          <Shield className="h-4 w-4 text-green-500" />
+          <Shield className="h-4 w-4 text-success" />
           Medidas de Control
         </h4>
         <div className="flex flex-wrap gap-2">
           {permit.controlMeasures.map((measure, idx) => (
-            <Badge key={idx} variant="outline" className="border-green-300 text-green-700">
+            <Badge key={idx} variant="outline" className="border-success/40 text-success">
               {measure}
             </Badge>
           ))}
@@ -331,7 +333,7 @@ export default function PTWDetailDialog({
       {permit.emergencyContacts && permit.emergencyContacts.length > 0 && (
         <div>
           <h4 className="flex items-center gap-2 text-sm font-medium mb-2">
-            <Phone className="h-4 w-4 text-blue-500" />
+            <Phone className="h-4 w-4 text-primary" />
             Contactos de Emergencia
           </h4>
           <div className="space-y-1">
@@ -355,7 +357,7 @@ export default function PTWDetailDialog({
           <Separator />
           <div>
             <h4 className="flex items-center gap-2 text-sm font-medium mb-2">
-              <Lock className="h-4 w-4 text-red-500" />
+              <Lock className="h-4 w-4 text-destructive" />
               Ejecuciones LOTO Asociadas
             </h4>
             <div className="space-y-2">
@@ -414,16 +416,16 @@ export default function PTWDetailDialog({
   if (mode === 'dialog') {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Detalle del Permiso de Trabajo</DialogTitle>
             <DialogDescription>
               Informacion completa del PTW {permit.number}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <DialogBody>
             {content}
-          </ScrollArea>
+          </DialogBody>
           <DialogFooter>{footer}</DialogFooter>
         </DialogContent>
       </Dialog>
@@ -432,7 +434,7 @@ export default function PTWDetailDialog({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent size="md" className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Detalle del Permiso de Trabajo</SheetTitle>
           <SheetDescription>

@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Edit(*)",
+      "Bash(*)",
+      "Bash(git pull:*)",
+      "Bash(npx tsc:*)",
+      "Bash(dir:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma validate)",
+      "Bash(npx next build:*)",
+      "Bash(timeout 180 npx next build:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx next build)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''app\\\\api'' -Recurse -Filter ''*.ts'' | ForEach-Object { \\(Get-Content $_FullName\\) -replace \"\"import prisma from ''@/lib/prisma''\"\", \"\"import { prisma } from ''@/lib/prisma''\"\" | Set-Content $_FullName }\")",
+      "Bash(npx ts-node:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx next lint:*)"
+    ],
+    "ask": [
+      "Bash(prisma:*)",
+      "Bash(npx prisma:*)",
+      "Bash(node_modules/.bin/prisma:*)",
+      "Bash(npm exec prisma:*)",
+      "Bash(pnpm prisma:*)",
+      "Bash(pnpm dlx prisma:*)",
+      "Bash(yarn prisma:*)",
+      "Bash(bunx prisma:*)"
+    ]
+  }
+}

@@ -257,7 +257,7 @@ export function ComprasMensuales({
               </SelectContent>
             </Select>
           </div>
-          <Card className="bg-blue-50 border-blue-200 text-blue-900">
+          <Card className="bg-info-muted border-info-muted text-info-muted-foreground">
             <CardContent className="p-4">
               <div className="text-xs uppercase font-semibold tracking-wide">
                 {months[currentMonthNumber - 1]?.label ?? ''} {actualYear}
@@ -265,7 +265,7 @@ export function ComprasMensuales({
               <div className="text-xl font-bold">
                 {formatCurrency(currentMonthAmount)}
               </div>
-              <div className="text-xs flex items-center gap-1 text-blue-700">
+              <div className="text-xs flex items-center gap-1 text-info-muted-foreground">
                 <CalendarDays className="h-3 w-3" />
                 Mes seleccionado
               </div>
@@ -284,7 +284,7 @@ export function ComprasMensuales({
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -297,7 +297,7 @@ export function ComprasMensuales({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm border rounded-lg">
-                <thead className="bg-gray-100">
+                <thead className="bg-muted">
                   <tr>
                     <th className="text-left p-3 border-b">Mes</th>
                     <th className="text-right p-3 border-b">
@@ -316,9 +316,9 @@ export function ComprasMensuales({
                       selectedYear === actualYear;
                     const rowClass = `border-b ${
                       isCurrentMonth
-                        ? 'bg-blue-50'
+                        ? 'bg-info-muted'
                         : index % 2 === 0
-                        ? 'bg-white'
+                        ? 'bg-background'
                         : 'bg-muted/30'
                     }`;
                     return (
@@ -327,7 +327,7 @@ export function ComprasMensuales({
                           <div className="flex items-center gap-2">
                             <span>{month.label}</span>
                             {isCurrentMonth && (
-                              <span className="text-xs font-semibold text-blue-600">
+                              <span className="text-xs font-semibold text-info-muted-foreground">
                                 (actual)
                               </span>
                             )}
@@ -367,7 +367,7 @@ export function ComprasMensuales({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="font-semibold bg-gray-100">
+                  <tr className="font-semibold bg-muted">
                     <td className="p-3" colSpan={2}>
                       Total anual registrado
                     </td>

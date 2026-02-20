@@ -67,6 +67,7 @@ import {
 } from 'recharts';
 import { format, subDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Client {
   id: number;
@@ -122,6 +123,7 @@ interface AccountStatement {
 }
 
 export default function CuentaCorrientePage() {
+  const confirm = useConfirm();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<Client[]>([]);
@@ -242,7 +244,13 @@ export default function CuentaCorrientePage() {
   const handleSendReminder = async () => {
     if (!selectedClient || !accountData) return;
 
-    if (!confirm(`¿Enviar recordatorio de pago a ${selectedClient.legalName}?`)) return;
+    const ok = await confirm({
+      title: 'Enviar recordatorio',
+      description: `¿Enviar recordatorio de pago a ${selectedClient.legalName}?`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch('/api/ventas/cuenta-corriente/send-reminder', {
@@ -323,20 +331,20 @@ export default function CuentaCorrientePage() {
 
     if (score >= 80) {
       return (
-        <Badge variant="default" className="bg-green-100 text-green-700">
+        <Badge variant="default" className="bg-success-muted text-success">
           <CheckCircle2 className="w-3 h-3 mr-1" />
           Excelente ({score})
         </Badge>
       );
     } else if (score >= 60) {
       return (
-        <Badge variant="default" className="bg-blue-100 text-blue-700">
+        <Badge variant="default" className="bg-info-muted text-info-muted-foreground">
           Bueno ({score})
         </Badge>
       );
     } else if (score >= 40) {
       return (
-        <Badge variant="default" className="bg-yellow-100 text-yellow-700">
+        <Badge variant="default" className="bg-warning-muted text-warning-muted-foreground">
           <AlertCircle className="w-3 h-3 mr-1" />
           Regular ({score})
         </Badge>
@@ -364,14 +372,14 @@ export default function CuentaCorrientePage() {
       );
     } else if (risk >= 0.4) {
       return (
-        <Badge variant="default" className="bg-yellow-100 text-yellow-700">
+        <Badge variant="default" className="bg-warning-muted text-warning-muted-foreground">
           <AlertCircle className="w-3 h-3 mr-1" />
           Riesgo medio
         </Badge>
       );
     } else {
       return (
-        <Badge variant="default" className="bg-green-100 text-green-700">
+        <Badge variant="default" className="bg-success-muted text-success">
           <CheckCircle2 className="w-3 h-3 mr-1" />
           Bajo riesgo
         </Badge>
@@ -381,25 +389,25 @@ export default function CuentaCorrientePage() {
 
   // Transaction type config
   const TIPO_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-    FACTURA: { label: 'Factura', color: 'bg-blue-100 text-blue-700', icon: FileText },
-    NOTA_CREDITO: { label: 'N/C', color: 'bg-green-100 text-green-700', icon: TrendingDown },
-    PAGO: { label: 'Pago', color: 'bg-emerald-100 text-emerald-700', icon: DollarSign },
-    AJUSTE: { label: 'Ajuste', color: 'bg-gray-100 text-gray-700', icon: ArrowUpDown },
+    FACTURA: { label: 'Factura', color: 'bg-info-muted text-info-muted-foreground', icon: FileText },
+    NOTA_CREDITO: { label: 'N/C', color: 'bg-success-muted text-success', icon: TrendingDown },
+    PAGO: { label: 'Pago', color: 'bg-success-muted text-success', icon: DollarSign },
+    AJUSTE: { label: 'Ajuste', color: 'bg-muted text-foreground', icon: ArrowUpDown },
   };
 
   const ESTADO_CONFIG: Record<string, { label: string; color: string }> = {
-    PENDIENTE: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
-    PAGADA: { label: 'Pagada', color: 'bg-green-100 text-green-700' },
-    VENCIDA: { label: 'Vencida', color: 'bg-red-100 text-red-700' },
-    PARCIAL: { label: 'Parcial', color: 'bg-blue-100 text-blue-700' },
+    PENDIENTE: { label: 'Pendiente', color: 'bg-warning-muted text-warning-muted-foreground' },
+    PAGADA: { label: 'Pagada', color: 'bg-success-muted text-success' },
+    VENCIDA: { label: 'Vencida', color: 'bg-destructive/10 text-destructive' },
+    PARCIAL: { label: 'Parcial', color: 'bg-info-muted text-info-muted-foreground' },
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 md:px-6 py-6">
+    <div className="min-h-screen bg-muted px-4 md:px-6 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Cuentas Corrientes</h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Cuentas Corrientes</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Gestión avanzada de cuentas corrientes con análisis predictivo y aging
         </p>
       </div>
@@ -427,7 +435,7 @@ export default function CuentaCorrientePage() {
                 }}
                 className="pr-10"
               />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             </div>
 
             {loadingClients && (
@@ -442,12 +450,12 @@ export default function CuentaCorrientePage() {
                   <button
                     key={client.id}
                     onClick={() => handleSelectClient(client)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    className="w-full px-4 py-3 text-left hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-gray-900">{client.legalName}</div>
-                        <div className="text-sm text-gray-600">CUIT: {client.taxId}</div>
+                        <div className="font-medium text-foreground">{client.legalName}</div>
+                        <div className="text-sm text-muted-foreground">CUIT: {client.taxId}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         {getCreditScoreBadge(client.creditScore)}
@@ -476,14 +484,14 @@ export default function CuentaCorrientePage() {
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Building2 className="w-6 h-6 text-blue-600" />
+                <div className="p-3 bg-info-muted rounded-lg">
+                  <Building2 className="w-6 h-6 text-info-muted-foreground" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{selectedClient.legalName}</h2>
-                  <p className="text-sm text-gray-600">CUIT: {selectedClient.taxId}</p>
+                  <h2 className="text-xl font-bold text-foreground">{selectedClient.legalName}</h2>
+                  <p className="text-sm text-muted-foreground">CUIT: {selectedClient.taxId}</p>
                   {selectedClient.paymentTermDays && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       Plazo de pago: {selectedClient.paymentTermDays} días
                     </p>
                   )}
@@ -552,14 +560,14 @@ export default function CuentaCorrientePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-gray-600">Saldo Actual</p>
-                  <DollarSign className="w-4 h-4 text-gray-400" />
+                  <p className="text-sm font-medium text-muted-foreground">Saldo Actual</p>
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <p className={`text-2xl font-bold ${accountData.summary.saldoFinal > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <p className={`text-2xl font-bold ${accountData.summary.saldoFinal > 0 ? 'text-destructive' : 'text-success'}`}>
                   ${accountData.summary.saldoFinal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </p>
                 {accountData.summary.saldoVencido > 0 && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xs text-destructive mt-1">
                     Vencido: ${accountData.summary.saldoVencido.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </p>
                 )}
@@ -570,13 +578,13 @@ export default function CuentaCorrientePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-gray-600">DSO (Días)</p>
-                  <Clock className="w-4 h-4 text-gray-400" />
+                  <p className="text-sm font-medium text-muted-foreground">DSO (Días)</p>
+                  <Clock className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {accountData.summary.dso.toFixed(0)}
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Promedio: {accountData.summary.promedioVencimiento.toFixed(0)} días
                 </p>
               </CardContent>
@@ -587,26 +595,26 @@ export default function CuentaCorrientePage() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600">Crédito Disponible</p>
-                    <CreditCard className="w-4 h-4 text-gray-400" />
+                    <p className="text-sm font-medium text-muted-foreground">Crédito Disponible</p>
+                    <CreditCard className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-foreground">
                     ${accountData.summary.creditoDisponible.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex-1 bg-muted rounded-full h-2">
                       <div
                         className={`h-2 rounded-full ${
                           accountData.summary.utilizacionCredito > 90
-                            ? 'bg-red-600'
+                            ? 'bg-destructive'
                             : accountData.summary.utilizacionCredito > 70
-                            ? 'bg-yellow-600'
-                            : 'bg-green-600'
+                            ? 'bg-warning'
+                            : 'bg-success'
                         }`}
                         style={{ width: `${Math.min(accountData.summary.utilizacionCredito, 100)}%` }}
                       />
                     </div>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-muted-foreground">
                       {accountData.summary.utilizacionCredito.toFixed(0)}%
                     </span>
                   </div>
@@ -618,13 +626,13 @@ export default function CuentaCorrientePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-gray-600">Comportamiento</p>
-                  <Target className="w-4 h-4 text-gray-400" />
+                  <p className="text-sm font-medium text-muted-foreground">Comportamiento</p>
+                  <Target className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {accountData.paymentBehavior.onTimePaymentRate.toFixed(0)}%
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Pagos a tiempo ({accountData.paymentBehavior.paidInvoices}/{accountData.paymentBehavior.totalInvoices})
                 </p>
               </CardContent>
@@ -715,7 +723,7 @@ export default function CuentaCorrientePage() {
 
                   {/* Advanced Filters */}
                   {showFilters && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 p-4 bg-muted rounded-lg">
                       <div>
                         <label className="text-sm font-medium mb-1 block">Desde</label>
                         <Input
@@ -770,28 +778,28 @@ export default function CuentaCorrientePage() {
                 </CardHeader>
                 <CardContent>
                   {/* Summary Bar */}
-                  <div className="grid grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-4 gap-4 mb-4 p-4 bg-muted rounded-lg">
                     <div>
-                      <p className="text-xs text-gray-600 mb-1">Saldo Inicial</p>
+                      <p className="text-xs text-muted-foreground mb-1">Saldo Inicial</p>
                       <p className="text-sm font-semibold">
                         ${accountData.summary.saldoInicial.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600 mb-1">Total Debe</p>
-                      <p className="text-sm font-semibold text-red-600">
+                      <p className="text-xs text-muted-foreground mb-1">Total Debe</p>
+                      <p className="text-sm font-semibold text-destructive">
                         ${accountData.summary.totalDebe.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600 mb-1">Total Haber</p>
-                      <p className="text-sm font-semibold text-green-600">
+                      <p className="text-xs text-muted-foreground mb-1">Total Haber</p>
+                      <p className="text-sm font-semibold text-success">
                         ${accountData.summary.totalHaber.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600 mb-1">Saldo Final</p>
-                      <p className={`text-sm font-semibold ${accountData.summary.saldoFinal > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      <p className="text-xs text-muted-foreground mb-1">Saldo Final</p>
+                      <p className={`text-sm font-semibold ${accountData.summary.saldoFinal > 0 ? 'text-destructive' : 'text-success'}`}>
                         ${accountData.summary.saldoFinal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
@@ -807,16 +815,16 @@ export default function CuentaCorrientePage() {
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-muted border-b">
                           <tr>
-                            <th className="text-left p-3 font-medium text-gray-700">Fecha</th>
-                            <th className="text-left p-3 font-medium text-gray-700">Tipo</th>
-                            <th className="text-left p-3 font-medium text-gray-700">Número</th>
-                            <th className="text-left p-3 font-medium text-gray-700">Concepto</th>
-                            <th className="text-right p-3 font-medium text-gray-700">Debe</th>
-                            <th className="text-right p-3 font-medium text-gray-700">Haber</th>
-                            <th className="text-right p-3 font-medium text-gray-700">Saldo</th>
-                            <th className="text-center p-3 font-medium text-gray-700">Estado</th>
+                            <th className="text-left p-3 font-medium text-foreground">Fecha</th>
+                            <th className="text-left p-3 font-medium text-foreground">Tipo</th>
+                            <th className="text-left p-3 font-medium text-foreground">Número</th>
+                            <th className="text-left p-3 font-medium text-foreground">Concepto</th>
+                            <th className="text-right p-3 font-medium text-foreground">Debe</th>
+                            <th className="text-right p-3 font-medium text-foreground">Haber</th>
+                            <th className="text-right p-3 font-medium text-foreground">Saldo</th>
+                            <th className="text-center p-3 font-medium text-foreground">Estado</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -826,14 +834,14 @@ export default function CuentaCorrientePage() {
                             const TipoIcon = tipoConfig.icon;
 
                             return (
-                              <tr key={transaction.id} className="hover:bg-gray-50">
+                              <tr key={transaction.id} className="hover:bg-muted">
                                 <td className="p-3">
                                   <div className="flex flex-col">
                                     <span className="font-medium">
                                       {format(new Date(transaction.fecha), 'dd/MM/yyyy', { locale: es })}
                                     </span>
                                     {transaction.fechaVencimiento && (
-                                      <span className="text-xs text-gray-600">
+                                      <span className="text-xs text-muted-foreground">
                                         Vto: {format(new Date(transaction.fechaVencimiento), 'dd/MM/yyyy', { locale: es })}
                                       </span>
                                     )}
@@ -849,24 +857,24 @@ export default function CuentaCorrientePage() {
                                   <span className="font-mono text-xs">{transaction.numero}</span>
                                 </td>
                                 <td className="p-3">
-                                  <span className="text-gray-700">{transaction.concepto}</span>
+                                  <span className="text-foreground">{transaction.concepto}</span>
                                 </td>
                                 <td className="p-3 text-right">
                                   {transaction.debe > 0 && (
-                                    <span className="font-semibold text-red-600">
+                                    <span className="font-semibold text-destructive">
                                       ${transaction.debe.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                     </span>
                                   )}
                                 </td>
                                 <td className="p-3 text-right">
                                   {transaction.haber > 0 && (
-                                    <span className="font-semibold text-green-600">
+                                    <span className="font-semibold text-success">
                                       ${transaction.haber.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                     </span>
                                   )}
                                 </td>
                                 <td className="p-3 text-right">
-                                  <span className={`font-semibold ${transaction.saldo > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                  <span className={`font-semibold ${transaction.saldo > 0 ? 'text-destructive' : 'text-success'}`}>
                                     ${transaction.saldo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                   </span>
                                 </td>
@@ -875,7 +883,7 @@ export default function CuentaCorrientePage() {
                                     {estadoConfig.label}
                                   </Badge>
                                   {transaction.diasVencido && transaction.diasVencido > 0 && (
-                                    <div className="text-xs text-red-600 mt-1">
+                                    <div className="text-xs text-destructive mt-1">
                                       +{transaction.diasVencido}d
                                     </div>
                                   )}
@@ -959,27 +967,27 @@ export default function CuentaCorrientePage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Promedio de Retraso</p>
-                      <p className="text-3xl font-bold text-gray-900">
+                      <p className="text-sm text-muted-foreground mb-2">Promedio de Retraso</p>
+                      <p className="text-3xl font-bold text-foreground">
                         {accountData.paymentBehavior.avgDaysLate.toFixed(0)} días
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Tasa de Pago a Tiempo</p>
+                      <p className="text-sm text-muted-foreground mb-2">Tasa de Pago a Tiempo</p>
                       <div className="flex items-center gap-2">
-                        <p className="text-3xl font-bold text-gray-900">
+                        <p className="text-3xl font-bold text-foreground">
                           {accountData.paymentBehavior.onTimePaymentRate.toFixed(0)}%
                         </p>
                         {accountData.paymentBehavior.onTimePaymentRate >= 80 ? (
-                          <CheckCircle2 className="w-6 h-6 text-green-600" />
+                          <CheckCircle2 className="w-6 h-6 text-success" />
                         ) : (
-                          <AlertCircle className="w-6 h-6 text-yellow-600" />
+                          <AlertCircle className="w-6 h-6 text-warning-muted-foreground" />
                         )}
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Facturas Pagadas</p>
-                      <p className="text-3xl font-bold text-gray-900">
+                      <p className="text-sm text-muted-foreground mb-2">Facturas Pagadas</p>
+                      <p className="text-3xl font-bold text-foreground">
                         {accountData.paymentBehavior.paidInvoices}/{accountData.paymentBehavior.totalInvoices}
                       </p>
                     </div>
@@ -998,11 +1006,11 @@ export default function CuentaCorrientePage() {
                   {/* Aging Bars */}
                   <div className="space-y-4 mb-6">
                     {[
-                      { label: 'Corriente', value: accountData.aging.corriente, color: 'bg-green-600' },
-                      { label: '1-30 días', value: accountData.aging.dias30, color: 'bg-blue-600' },
-                      { label: '31-60 días', value: accountData.aging.dias60, color: 'bg-yellow-600' },
-                      { label: '61-90 días', value: accountData.aging.dias90, color: 'bg-orange-600' },
-                      { label: '+90 días', value: accountData.aging.mas90, color: 'bg-red-600' },
+                      { label: 'Corriente', value: accountData.aging.corriente, color: 'bg-success' },
+                      { label: '1-30 días', value: accountData.aging.dias30, color: 'bg-info' },
+                      { label: '31-60 días', value: accountData.aging.dias60, color: 'bg-warning' },
+                      { label: '61-90 días', value: accountData.aging.dias90, color: 'bg-warning' },
+                      { label: '+90 días', value: accountData.aging.mas90, color: 'bg-destructive' },
                     ].map((bucket) => {
                       const percentage =
                         accountData.summary.saldoFinal > 0
@@ -1012,18 +1020,18 @@ export default function CuentaCorrientePage() {
                       return (
                         <div key={bucket.label}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">{bucket.label}</span>
-                            <span className="text-sm font-semibold text-gray-900">
+                            <span className="text-sm font-medium text-foreground">{bucket.label}</span>
+                            <span className="text-sm font-semibold text-foreground">
                               ${bucket.value.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div className="w-full bg-muted rounded-full h-3">
                             <div
                               className={`h-3 rounded-full ${bucket.color} transition-all`}
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">{percentage.toFixed(1)}% del total</p>
+                          <p className="text-xs text-muted-foreground mt-1">{percentage.toFixed(1)}% del total</p>
                         </div>
                       );
                     })}

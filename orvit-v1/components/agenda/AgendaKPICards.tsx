@@ -1,21 +1,11 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, AlertTriangle, CalendarDays, CheckCircle2, Users } from 'lucide-react';
 import type { AgendaStats } from '@/lib/agenda/types';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
 
 interface AgendaKPICardsProps {
   stats?: AgendaStats;
@@ -23,7 +13,7 @@ interface AgendaKPICardsProps {
 }
 
 export function AgendaKPICards({ stats, onKpiClick }: AgendaKPICardsProps) {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   if (!stats) {
     return (

@@ -84,8 +84,6 @@ export async function POST(
       }
     });
 
-    // console.log(`✅ Instructivo agregado al mantenimiento ${templateId}: ${originalName}`) // Log reducido;
-
     return NextResponse.json({
       success: true,
       instructive: {
@@ -144,8 +142,6 @@ export async function DELETE(
         id: instructiveId
       }
     });
-
-    // console.log(`✅ Instructivo eliminado: ${instructive.originalName}`) // Log reducido;
 
     return NextResponse.json({
       success: true,

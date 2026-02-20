@@ -78,10 +78,10 @@ interface Supplier {
 }
 
 const URGENCIA_CONFIG: Record<string, { label: string; color: string; icon: any; bgColor: string }> = {
-  CRITICA: { label: 'Crítica', color: 'text-red-700 dark:text-red-300', icon: AlertTriangle, bgColor: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900' },
-  ALTA: { label: 'Alta', color: 'text-orange-700 dark:text-orange-300', icon: AlertCircle, bgColor: 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900' },
-  NORMAL: { label: 'Normal', color: 'text-yellow-700 dark:text-yellow-300', icon: Clock, bgColor: 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900' },
-  BAJA: { label: 'Baja', color: 'text-green-700 dark:text-green-300', icon: CheckCircle, bgColor: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' },
+  CRITICA: { label: 'Crítica', color: 'text-destructive', icon: AlertTriangle, bgColor: 'bg-destructive/10 border-destructive/30' },
+  ALTA: { label: 'Alta', color: 'text-warning-muted-foreground', icon: AlertCircle, bgColor: 'bg-warning-muted border-warning-muted' },
+  NORMAL: { label: 'Normal', color: 'text-warning-muted-foreground', icon: Clock, bgColor: 'bg-warning-muted border-warning-muted' },
+  BAJA: { label: 'Baja', color: 'text-success', icon: CheckCircle, bgColor: 'bg-success-muted border-success-muted' },
 };
 
 export default function ReposicionPage() {
@@ -254,47 +254,47 @@ export default function ReposicionPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 dark:border-red-900">
+        <Card className="border-destructive/30">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Críticas</p>
-                <p className="text-2xl font-bold text-red-600">{kpis.criticas}</p>
+                <p className="text-2xl font-bold text-destructive">{kpis.criticas}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-400" />
+              <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-orange-200 dark:border-orange-900">
+        <Card className="border-warning-muted">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Altas</p>
-                <p className="text-2xl font-bold text-orange-600">{kpis.altas}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{kpis.altas}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-orange-400" />
+              <AlertCircle className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-yellow-200 dark:border-yellow-900">
+        <Card className="border-warning-muted">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Normales</p>
-                <p className="text-2xl font-bold text-yellow-600">{kpis.normales}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{kpis.normales}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-400" />
+              <Clock className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-green-200 dark:border-green-900">
+        <Card className="border-success-muted">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Bajas</p>
-                <p className="text-2xl font-bold text-green-600">{kpis.bajas}</p>
+                <p className="text-2xl font-bold text-success">{kpis.bajas}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -393,7 +393,7 @@ export default function ReposicionPage() {
         <Card>
           <CardContent className="py-12">
             <div className="text-center">
-              <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
+              <CheckCircle className="h-12 w-12 mx-auto text-success mb-4" />
               <h3 className="text-lg font-medium mb-2">Stock en buen estado</h3>
               <p className="text-muted-foreground">
                 No hay items que necesiten reposición en este momento.
@@ -470,7 +470,7 @@ export default function ReposicionPage() {
                             <Badge variant="outline">{item.warehouseCodigo}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className={item.stockDisponible <= 0 ? 'text-red-600 font-medium' : ''}>
+                            <span className={item.stockDisponible <= 0 ? 'text-destructive font-medium' : ''}>
                               {item.stockDisponible.toLocaleString('es-AR')}
                             </span>
                           </TableCell>
@@ -498,11 +498,11 @@ export default function ReposicionPage() {
       )}
 
       {/* Info */}
-      <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
+      <Card className="bg-info-muted border-info-muted">
         <CardContent className="pt-4">
           <div className="flex gap-2">
-            <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-            <div className="text-sm text-blue-800 dark:text-blue-300">
+            <AlertCircle className="h-4 w-4 text-info-muted-foreground mt-0.5 shrink-0" />
+            <div className="text-sm text-info-muted-foreground">
               <p className="font-medium">Fórmula de reposición</p>
               <p className="mt-1">
                 Se sugiere reposición cuando: <strong>Disponible + En Camino ≤ Punto de Reposición</strong>

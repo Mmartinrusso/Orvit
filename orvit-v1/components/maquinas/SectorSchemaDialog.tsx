@@ -73,17 +73,7 @@ export default function SectorSchemaDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        className="w-[95vw] h-[90vh] max-w-[1800px] max-h-[90vh] overflow-hidden p-6"
-        style={{
-          width: '95vw',
-          height: '90vh',
-          maxWidth: '1800px',
-          maxHeight: '90vh',
-          margin: 0,
-          padding: '24px'
-        }}
-      >
+      <DialogContent size="full">
         <DialogHeader className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">

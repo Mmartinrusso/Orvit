@@ -39,13 +39,15 @@ export function useCostosCategorias(companyId: number | string | undefined, enab
       
       const url = `/api/costos/categorias?companyId=${Number(companyId)}`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Error al obtener categorías');
       }
-      
-      return response.json() as Promise<EmployeeCategory[]>;
+
+      const data = await response.json();
+      // La API devuelve paginado { items, page, ... } — extraer el array
+      return (Array.isArray(data) ? data : (data.items ?? [])) as EmployeeCategory[];
     },
     enabled: enabled && !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutos

@@ -105,19 +105,19 @@ interface ProductionOrder {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  DRAFT: { label: 'Borrador', color: 'text-gray-600', bgColor: 'bg-gray-100' },
-  RELEASED: { label: 'Liberada', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  IN_PROGRESS: { label: 'En Progreso', color: 'text-green-600', bgColor: 'bg-green-100' },
-  PAUSED: { label: 'Pausada', color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
+  DRAFT: { label: 'Borrador', color: 'text-muted-foreground', bgColor: 'bg-muted' },
+  RELEASED: { label: 'Liberada', color: 'text-info-muted-foreground', bgColor: 'bg-info-muted' },
+  IN_PROGRESS: { label: 'En Progreso', color: 'text-success', bgColor: 'bg-success-muted' },
+  PAUSED: { label: 'Pausada', color: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted' },
   COMPLETED: { label: 'Completada', color: 'text-purple-600', bgColor: 'bg-purple-100' },
-  CANCELLED: { label: 'Cancelada', color: 'text-red-600', bgColor: 'bg-red-100' },
+  CANCELLED: { label: 'Cancelada', color: 'text-destructive', bgColor: 'bg-destructive/10' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   LOW: { label: 'Baja', color: 'text-muted-foreground' },
-  NORMAL: { label: 'Normal', color: 'text-blue-500' },
-  HIGH: { label: 'Alta', color: 'text-orange-500' },
-  URGENT: { label: 'Urgente', color: 'text-red-500' },
+  NORMAL: { label: 'Normal', color: 'text-info-muted-foreground' },
+  HIGH: { label: 'Alta', color: 'text-warning-muted-foreground' },
+  URGENT: { label: 'Urgente', color: 'text-destructive' },
 };
 
 export default function ProductionOrderDetailPage() {
@@ -204,7 +204,7 @@ export default function ProductionOrderDetailPage() {
     return (
       <div className="px-4 md:px-6 py-6 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <AlertCircle className="h-8 w-8 mx-auto text-red-400" />
+          <AlertCircle className="h-8 w-8 mx-auto text-destructive" />
           <p className="mt-2 text-muted-foreground">Orden no encontrada</p>
           <Button
             variant="outline"
@@ -259,7 +259,7 @@ export default function ProductionOrderDetailPage() {
               variant="outline"
               onClick={() => setStatusChangeDialog({ open: true, status: 'RELEASED' })}
             >
-              <CheckCircle2 className="h-4 w-4 mr-2 text-blue-500" />
+              <CheckCircle2 className="h-4 w-4 mr-2 text-info-muted-foreground" />
               Liberar
             </Button>
           )}
@@ -279,7 +279,7 @@ export default function ProductionOrderDetailPage() {
                 variant="outline"
                 onClick={() => setStatusChangeDialog({ open: true, status: 'PAUSED' })}
               >
-                <Pause className="h-4 w-4 mr-2 text-yellow-500" />
+                <Pause className="h-4 w-4 mr-2 text-warning-muted-foreground" />
                 Pausar
               </Button>
               {canComplete && (
@@ -338,7 +338,7 @@ export default function ProductionOrderDetailPage() {
                 Scrap
               </p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className={`text-2xl font-bold ${order.metrics.scrapPercentage > 5 ? 'text-red-500' : ''}`}>
+                <span className={`text-2xl font-bold ${order.metrics.scrapPercentage > 5 ? 'text-destructive' : ''}`}>
                   {order.metrics.scrapPercentage.toFixed(1)}%
                 </span>
                 <span className="text-sm text-muted-foreground">
@@ -455,7 +455,7 @@ export default function ProductionOrderDetailPage() {
                 {order.actualStartDate && (
                   <div>
                     <p className="text-sm text-muted-foreground">Inicio Real</p>
-                    <p className="font-medium text-green-600">
+                    <p className="font-medium text-success">
                       {format(new Date(order.actualStartDate), "dd/MM/yyyy HH:mm", { locale: es })}
                     </p>
                   </div>
@@ -463,7 +463,7 @@ export default function ProductionOrderDetailPage() {
                 {order.actualEndDate && (
                   <div>
                     <p className="text-sm text-muted-foreground">Fin Real</p>
-                    <p className="font-medium text-green-600">
+                    <p className="font-medium text-success">
                       {format(new Date(order.actualEndDate), "dd/MM/yyyy HH:mm", { locale: es })}
                     </p>
                   </div>
@@ -573,11 +573,11 @@ export default function ProductionOrderDetailPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-green-600">
+                        <p className="font-medium text-success">
                           +{Number(report.goodQuantity).toLocaleString()} {order.targetUom}
                         </p>
                         {Number(report.scrapQuantity) > 0 && (
-                          <p className="text-sm text-red-500">
+                          <p className="text-sm text-destructive">
                             Scrap: {Number(report.scrapQuantity).toLocaleString()}
                           </p>
                         )}
@@ -657,7 +657,7 @@ export default function ProductionOrderDetailPage() {
                   {order.events.map((event: any) => (
                     <div key={event.id} className="flex gap-4">
                       <div className="flex-shrink-0">
-                        <div className="w-2 h-2 mt-2 rounded-full bg-blue-500" />
+                        <div className="w-2 h-2 mt-2 rounded-full bg-info" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-sm">
@@ -667,7 +667,7 @@ export default function ProductionOrderDetailPage() {
                           {event.performedBy?.name} - {formatDistanceToNow(new Date(event.performedAt), { addSuffix: true, locale: es })}
                         </p>
                         {event.notes && (
-                          <p className="text-sm mt-1 text-gray-600">{event.notes}</p>
+                          <p className="text-sm mt-1 text-muted-foreground">{event.notes}</p>
                         )}
                       </div>
                     </div>

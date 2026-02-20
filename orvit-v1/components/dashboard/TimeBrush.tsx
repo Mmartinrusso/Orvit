@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDashboardStore } from './useDashboardStore';
@@ -67,11 +68,11 @@ export function TimeBrush({ data, onRangeChange }: TimeBrushProps) {
       index >= Math.min(dragStart, dragEnd) && 
       index <= Math.max(dragStart, dragEnd);
     
-    if (isSelected) return 'bg-blue-500';
-    if (value > maxValue * 0.8) return 'bg-green-500';
-    if (value > maxValue * 0.6) return 'bg-yellow-500';
-    if (value > maxValue * 0.4) return 'bg-orange-500';
-    return 'bg-red-500';
+    if (isSelected) return 'bg-info';
+    if (value > maxValue * 0.8) return 'bg-success';
+    if (value > maxValue * 0.6) return 'bg-warning';
+    if (value > maxValue * 0.4) return 'bg-warning';
+    return 'bg-destructive';
   };
 
   const formatMonthShort = (month: string) => {
@@ -81,25 +82,25 @@ export function TimeBrush({ data, onRangeChange }: TimeBrushProps) {
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+    <div className="bg-muted border border-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-900">Selección de Período</span>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Selección de Período</span>
         </div>
         
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 px-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="h-8 px-2 bg-card border-border text-foreground hover:bg-accent"
           >
             <ChevronLeft className="h-3 w-3" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-8 px-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="h-8 px-2 bg-card border-border text-foreground hover:bg-accent"
           >
             <ChevronRight className="h-3 w-3" />
           </Button>
@@ -117,9 +118,9 @@ export function TimeBrush({ data, onRangeChange }: TimeBrushProps) {
         {sortedData.map((point, index) => (
           <div
             key={point.month}
-            className={`flex-1 rounded-t transition-all duration-200 hover:opacity-80 ${
+            className={cn('flex-1 rounded-t transition-all duration-200 hover:opacity-80',
               getBarColor(point.value, index)
-            }`}
+            )}
             style={{ height: `${getBarHeight(point.value)}px` }}
             onMouseDown={(e) => handleMouseDown(e, index)}
             title={`${formatMonthShort(point.month)}: ${point.value.toLocaleString()}`}
@@ -128,15 +129,15 @@ export function TimeBrush({ data, onRangeChange }: TimeBrushProps) {
       </div>
 
       {/* Etiquetas de meses */}
-      <div className="flex justify-between mt-2 text-xs text-gray-600">
+      <div className="flex justify-between mt-2 text-xs text-muted-foreground">
         <span>{formatMonthShort(sortedData[0]?.month || '')}</span>
         <span>{formatMonthShort(sortedData[sortedData.length - 1]?.month || '')}</span>
       </div>
 
       {/* Información de selección */}
       {dragStart !== null && dragEnd !== null && (
-        <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="text-xs text-blue-800">
+        <div className="mt-3 p-2 bg-info-muted rounded-lg border border-info-muted">
+          <div className="text-xs text-info-muted-foreground">
             <strong>Período seleccionado:</strong> {formatMonthShort(sortedData[Math.min(dragStart, dragEnd)].month)} - {formatMonthShort(sortedData[Math.max(dragStart, dragEnd)].month)}
           </div>
         </div>

@@ -28,7 +28,7 @@ export function InProgressOrdersWidget({
   return (
     <WidgetWrapper
       title="Órdenes en Progreso"
-      icon={<Wrench className="h-4 w-4 text-blue-500" />}
+      icon={<Wrench className="h-4 w-4 text-info-muted-foreground" />}
       isLoading={isLoading}
       isError={isError}
       onRefresh={() => refetch()}
@@ -40,11 +40,11 @@ export function InProgressOrdersWidget({
           {inProgressOrders.map((order: any) => (
             <div 
               key={order.id} 
-              className="flex items-center justify-between p-2 rounded-lg bg-blue-50 border border-blue-100"
+              className="flex items-center justify-between p-2 rounded-lg bg-info-muted border border-info-muted"
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center bg-blue-100">
-                  <Wrench className="h-3.5 w-3.5 text-blue-600" />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center bg-info-muted">
+                  <Wrench className="h-3.5 w-3.5 text-info-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-xs text-foreground truncate">
@@ -55,7 +55,7 @@ export function InProgressOrdersWidget({
                   </div>
                 </div>
               </div>
-              <Badge variant="default" className="text-xs bg-blue-600 ml-2 flex-shrink-0">
+              <Badge variant="default" className="text-xs bg-info ml-2 flex-shrink-0">
                 En Progreso
               </Badge>
             </div>
@@ -63,8 +63,8 @@ export function InProgressOrdersWidget({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-full py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-            <Wrench className="h-6 w-6 text-gray-400" />
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Wrench className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-xs text-muted-foreground">No hay órdenes en progreso</p>
         </div>

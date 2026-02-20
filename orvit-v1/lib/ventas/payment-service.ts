@@ -107,7 +107,11 @@ export async function createClientPayment(
       where: { key: idempotencyKey },
     });
     if (existing && existing.status === 'COMPLETED') {
-      return JSON.parse(existing.response as string) as PaymentResult;
+      try {
+        return JSON.parse(existing.response as string) as PaymentResult;
+      } catch {
+        // respuesta almacenada corrupta — continuar con nuevo procesamiento
+      }
     }
   }
 

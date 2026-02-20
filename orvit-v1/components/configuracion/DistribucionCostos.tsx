@@ -1,11 +1,12 @@
 'use client';
 
+import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Plus, Edit, Trash2, Settings, Users, DollarSign, Package, Save, X, Table, BookOpen, TrendingUp, PieChart, BarChart3, ArrowRight, Layers, Target, Activity, Percent, CheckCircle2 } from 'lucide-react';
@@ -13,60 +14,18 @@ import { NotesDialog } from '@/components/ui/NotesDialog';
 import CostDistributionMatrix from './CostDistributionMatrix';
 import EmployeeCostDistributionMatrix from './EmployeeCostDistributionMatrix';
 import { useAdminCatalogs } from '@/hooks/use-admin-catalogs'; // ✨ OPTIMIZADO
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false; // Desactivado para mejor rendimiento
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 const warn = DEBUG ? console.warn.bind(console) : () => {};
 
 // Interfaz de colores de usuario
-interface UserColorPreferences {
-  themeName: string;
-  chart1: string;
-  chart2: string;
-  chart3: string;
-  chart4: string;
-  chart5: string;
-  chart6: string;
-  progressPrimary: string;
-  progressSecondary: string;
-  progressWarning: string;
-  progressDanger: string;
-  kpiPositive: string;
-  kpiNegative: string;
-  kpiNeutral: string;
-  cardHighlight: string;
-  cardMuted: string;
-  donut1: string;
-  donut2: string;
-  donut3: string;
-  donut4: string;
-  donut5: string;
-}
 
-const DEFAULT_COLORS: UserColorPreferences = {
-  themeName: 'Predeterminado',
-  chart1: '#3b82f6',
-  chart2: '#10b981',
-  chart3: '#f59e0b',
-  chart4: '#8b5cf6',
-  chart5: '#06b6d4',
-  chart6: '#ef4444',
-  progressPrimary: '#3b82f6',
-  progressSecondary: '#10b981',
-  progressWarning: '#f59e0b',
-  progressDanger: '#ef4444',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-  cardHighlight: '#ede9fe',
-  cardMuted: '#f1f5f9',
-  donut1: '#3b82f6',
-  donut2: '#10b981',
-  donut3: '#f59e0b',
-  donut4: '#8b5cf6',
-  donut5: '#94a3b8',
-};
+
+
 
 interface CostDistribution {
   id: number;
@@ -112,6 +71,7 @@ interface IndirectCost {
 
 export default function DistribucionCostos() {
   const { currentCompany } = useCompany();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
 
   // ✨ OPTIMIZADO: Usar catálogos consolidados para categorías de productos
@@ -383,11 +343,11 @@ export default function DistribucionCostos() {
         resetCostForm();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error creando configuración de costo:', error);
-      alert('Error al crear la configuración');
+      toast.error('Error al crear la configuración');
     }
   };
 
@@ -412,16 +372,22 @@ export default function DistribucionCostos() {
         resetCostForm();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error actualizando configuración de costo:', error);
-      alert('Error al actualizar la configuración');
+      toast.error('Error al actualizar la configuración');
     }
   };
 
   const handleDeleteCost = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta configuración?')) return;
+    const ok = await confirm({
+      title: 'Eliminar configuración',
+      description: '¿Estás seguro de que quieres eliminar esta configuración?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       log('Eliminando configuración con ID:', id);
@@ -435,20 +401,20 @@ export default function DistribucionCostos() {
         const result = await response.json();
         log('Eliminación exitosa:', result);
         await loadData();
-        alert('Configuración eliminada exitosamente');
+        toast.success('Configuración eliminada exitosamente');
       } else {
         const errorText = await response.text();
         console.error('Error en respuesta:', errorText);
         try {
           const error = JSON.parse(errorText);
-          alert(`Error: ${error.error}`);
+          toast.error(`Error: ${error.error}`);
         } catch {
-          alert(`Error: ${response.status} - ${response.statusText}`);
+          toast.error(`Error: ${response.status} - ${response.statusText}`);
         }
       }
     } catch (error) {
       console.error('Error eliminando configuración de costo:', error);
-      alert('Error al eliminar la configuración');
+      toast.error('Error al eliminar la configuración');
     }
   };
 
@@ -484,11 +450,11 @@ export default function DistribucionCostos() {
         resetEmployeeForm();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error creando configuración de empleado:', error);
-      alert('Error al crear la configuración');
+      toast.error('Error al crear la configuración');
     }
   };
 
@@ -512,16 +478,22 @@ export default function DistribucionCostos() {
         resetEmployeeForm();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error actualizando configuración de empleado:', error);
-      alert('Error al actualizar la configuración');
+      toast.error('Error al actualizar la configuración');
     }
   };
 
   const handleDeleteEmployee = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta configuración?')) return;
+    const ok = await confirm({
+      title: 'Eliminar configuración',
+      description: '¿Estás seguro de que quieres eliminar esta configuración?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       log('Eliminando configuración de empleado con ID:', id);
@@ -535,20 +507,20 @@ export default function DistribucionCostos() {
         const result = await response.json();
         log('Eliminación exitosa:', result);
         await loadData();
-        alert('Configuración eliminada exitosamente');
+        toast.success('Configuración eliminada exitosamente');
       } else {
         const errorText = await response.text();
         console.error('Error en respuesta:', errorText);
         try {
           const error = JSON.parse(errorText);
-          alert(`Error: ${error.error}`);
+          toast.error(`Error: ${error.error}`);
         } catch {
-          alert(`Error: ${response.status} - ${response.statusText}`);
+          toast.error(`Error: ${response.status} - ${response.statusText}`);
         }
       }
     } catch (error) {
       console.error('Error eliminando configuración de empleado:', error);
-      alert('Error al eliminar la configuración');
+      toast.error('Error al eliminar la configuración');
     }
   };
 
@@ -580,11 +552,11 @@ export default function DistribucionCostos() {
       } else {
         const error = await response.json();
         console.error('Error guardando distribuciones:', error);
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error guardando distribuciones:', error);
-      alert('Error al guardar las distribuciones');
+      toast.error('Error al guardar las distribuciones');
     }
   };
 
@@ -607,11 +579,11 @@ export default function DistribucionCostos() {
       } else {
         const error = await response.json();
         console.error('Error guardando distribuciones de empleados:', error);
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error guardando distribuciones de empleados:', error);
-      alert('Error al guardar las distribuciones de empleados');
+      toast.error('Error al guardar las distribuciones de empleados');
     }
   };
 
@@ -640,7 +612,7 @@ export default function DistribucionCostos() {
             onClick={() => setShowNotesDialog(true)}
             variant="outline"
             size="sm"
-            className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+            className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
           >
             <BookOpen className="h-4 w-4 mr-2" />
             Notas
@@ -820,7 +792,7 @@ export default function DistribucionCostos() {
                       <span>Distribución proporcional</span>
                       <span className="font-medium">Total: ${grandTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
                     </div>
-                    <div className="h-4 rounded-full overflow-hidden bg-gray-100 flex">
+                    <div className="h-4 rounded-full overflow-hidden bg-muted flex">
                       {categoryData
                         .filter(cat => cat.total > 0)
                         .map((cat, i) => {
@@ -872,7 +844,7 @@ export default function DistribucionCostos() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: catColor }} />
-                            <h3 className="font-semibold text-sm text-gray-900">{category.name}</h3>
+                            <h3 className="font-semibold text-sm text-foreground">{category.name}</h3>
                           </div>
                           <div className="flex items-center gap-1">
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
@@ -890,7 +862,7 @@ export default function DistribucionCostos() {
                           {/* Costos Indirectos */}
                           <div className="space-y-1">
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-gray-600 flex items-center gap-1">
+                              <span className="text-muted-foreground flex items-center gap-1">
                                 <DollarSign className="h-3 w-3" />
                                 Indirectos
                               </span>
@@ -898,7 +870,7 @@ export default function DistribucionCostos() {
                                 ${category.totalIndirectCosts.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                               </span>
                             </div>
-                            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
                                 style={{ width: `${indirectPercentage}%`, backgroundColor: userColors.chart1 }}
@@ -909,7 +881,7 @@ export default function DistribucionCostos() {
                           {/* Empleados */}
                           <div className="space-y-1">
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-gray-600 flex items-center gap-1">
+                              <span className="text-muted-foreground flex items-center gap-1">
                                 <Users className="h-3 w-3" />
                                 Empleados
                               </span>
@@ -917,7 +889,7 @@ export default function DistribucionCostos() {
                                 ${category.totalEmployeeCosts.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                               </span>
                             </div>
-                            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full transition-all duration-500"
                                 style={{ width: `${100 - indirectPercentage}%`, backgroundColor: userColors.chart4 }}
@@ -926,8 +898,8 @@ export default function DistribucionCostos() {
                           </div>
 
                           {/* Total */}
-                          <div className="pt-2 border-t border-gray-300/50 flex justify-between items-center">
-                            <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                          <div className="pt-2 border-t border-border flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground flex items-center gap-1">
                               <CheckCircle2 className="h-3 w-3" />
                               Total
                             </span>
@@ -966,7 +938,7 @@ export default function DistribucionCostos() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMatrixDialog(true)}
-                className="bg-green-50 hover:bg-green-100 border-green-200"
+                className="bg-success-muted hover:bg-success-muted border-success-muted"
               >
                 <Table className="h-4 w-4 mr-1" />
                 Matriz Excel
@@ -992,7 +964,7 @@ export default function DistribucionCostos() {
                 const progressColors = [userColors.chart1, userColors.chart2, userColors.chart3, userColors.chart4];
                 const progressColor = progressColors[index % progressColors.length];
                 return (
-                  <div key={cost.id} className="p-4 border rounded-lg hover:shadow-md transition-all bg-white group">
+                  <div key={cost.id} className="p-4 border rounded-lg hover:shadow-md transition-all bg-card group">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
@@ -1016,7 +988,7 @@ export default function DistribucionCostos() {
                               <span>de ${cost.totalCost.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
                             )}
                           </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{ width: `${cost.percentage}%`, backgroundColor: progressColor }}
@@ -1046,7 +1018,7 @@ export default function DistribucionCostos() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => handleDeleteCost(cost.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1081,7 +1053,7 @@ export default function DistribucionCostos() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowEmployeeMatrixDialog(true)}
-                className="bg-green-50 hover:bg-green-100 border-green-200"
+                className="bg-success-muted hover:bg-success-muted border-success-muted"
               >
                 <Table className="h-4 w-4 mr-1" />
                 Matriz Excel
@@ -1107,7 +1079,7 @@ export default function DistribucionCostos() {
                 const empProgressColors = [userColors.chart4, userColors.chart5, userColors.donut3, userColors.donut4];
                 const progressColor = empProgressColors[index % empProgressColors.length];
                 return (
-                  <div key={emp.id} className="p-4 border rounded-lg hover:shadow-md transition-all bg-white group">
+                  <div key={emp.id} className="p-4 border rounded-lg hover:shadow-md transition-all bg-card group">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
@@ -1141,7 +1113,7 @@ export default function DistribucionCostos() {
                               </span>
                             )}
                           </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{ width: `${emp.percentage}%`, backgroundColor: progressColor }}
@@ -1170,7 +1142,7 @@ export default function DistribucionCostos() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => handleDeleteEmployee(emp.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1193,11 +1165,12 @@ export default function DistribucionCostos() {
               {editingCost ? 'Editar Costo' : 'Agregar Nuevo Costo'}
             </DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Costo Indirecto</label>
-              <Select 
-                value={costForm.costName} 
+              <Select
+                value={costForm.costName}
                 onValueChange={(value) => {
                   const selectedCost = indirectCosts.find(c => c.costName === value);
                   setCostForm({
@@ -1219,11 +1192,11 @@ export default function DistribucionCostos() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">Categoría de Producto</label>
-              <Select 
-                value={costForm.productCategoryId} 
+              <Select
+                value={costForm.productCategoryId}
                 onValueChange={(value) => setCostForm({...costForm, productCategoryId: value})}
               >
                 <SelectTrigger>
@@ -1238,7 +1211,7 @@ export default function DistribucionCostos() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">Porcentaje (%)</label>
               <Input
@@ -1252,8 +1225,9 @@ export default function DistribucionCostos() {
               />
             </div>
           </div>
-          
-          <div className="flex justify-end space-x-2 pt-4">
+          </DialogBody>
+
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowCostDialog(false)}>
               <X className="h-4 w-4 mr-2" />
               Cancelar
@@ -1262,7 +1236,7 @@ export default function DistribucionCostos() {
               <Save className="h-4 w-4 mr-2" />
               {editingCost ? 'Actualizar' : 'Crear'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1274,11 +1248,12 @@ export default function DistribucionCostos() {
               {editingEmployee ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
             </DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Categoría de Empleado</label>
-              <Select 
-                value={employeeForm.employeeId} 
+              <Select
+                value={employeeForm.employeeId}
                 onValueChange={(value) => setEmployeeForm({...employeeForm, employeeId: value})}
               >
                 <SelectTrigger>
@@ -1293,11 +1268,11 @@ export default function DistribucionCostos() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">Categoría de Producto</label>
-              <Select 
-                value={employeeForm.productCategoryId} 
+              <Select
+                value={employeeForm.productCategoryId}
                 onValueChange={(value) => setEmployeeForm({...employeeForm, productCategoryId: value})}
               >
                 <SelectTrigger>
@@ -1312,7 +1287,7 @@ export default function DistribucionCostos() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">Porcentaje (%)</label>
               <Input
@@ -1326,8 +1301,9 @@ export default function DistribucionCostos() {
               />
             </div>
           </div>
-          
-          <div className="flex justify-end space-x-2 pt-4">
+          </DialogBody>
+
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowEmployeeDialog(false)}>
               <X className="h-4 w-4 mr-2" />
               Cancelar
@@ -1336,7 +1312,7 @@ export default function DistribucionCostos() {
               <Save className="h-4 w-4 mr-2" />
               {editingEmployee ? 'Actualizar' : 'Crear'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

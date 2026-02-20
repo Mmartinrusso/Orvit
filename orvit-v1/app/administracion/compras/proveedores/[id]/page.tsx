@@ -1805,19 +1805,19 @@ export default function ProveedorDetailPage() {
       return {
         dias: Math.abs(diffDays),
         texto: `${Math.abs(diffDays)}d vencida`,
-        color: 'text-red-600 bg-red-50 dark:bg-red-900/20'
+        color: 'text-destructive bg-destructive/10'
       };
     } else if (diffDays === 0) {
       return {
         dias: 0,
         texto: 'Vence hoy',
-        color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20'
+        color: 'text-warning-muted-foreground bg-warning-muted'
       };
     } else if (diffDays <= 7) {
       return {
         dias: diffDays,
         texto: `${diffDays}d`,
-        color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20'
+        color: 'text-warning-muted-foreground bg-warning-muted'
       };
     } else {
       return {
@@ -1997,7 +1997,7 @@ export default function ProveedorDetailPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="general">
             <Info className="w-4 h-4 mr-2" />
             Información
@@ -2124,7 +2124,7 @@ export default function ProveedorDetailPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-green-600 hover:text-green-700"
+                                    className="h-7 w-7 text-success hover:text-success"
                                     onClick={() => {
                                       const phone = proveedor.telefono!.replace(/\D/g, '');
                                       window.open(`https://wa.me/54${phone}`, '_blank');
@@ -2267,7 +2267,7 @@ export default function ProveedorDetailPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6 text-green-600"
+                                      className="h-6 w-6 text-success"
                                       onClick={() => {
                                         const phone = proveedor.contactoTelefono!.replace(/\D/g, '');
                                         window.open(`https://wa.me/54${phone}`, '_blank');
@@ -2420,12 +2420,12 @@ export default function ProveedorDetailPage() {
                   {proveedor.saldoActual !== undefined && (
                     <div className={`p-3 rounded-lg ${
                       proveedor.saldoActual === 0 ? 'bg-muted' :
-                      proveedor.saldoActual > 0 ? 'bg-red-50 dark:bg-red-950/30' : 'bg-green-50 dark:bg-green-950/30'
+                      proveedor.saldoActual > 0 ? 'bg-destructive/10' : 'bg-success-muted'
                     }`}>
                       <p className="text-xs text-muted-foreground">Saldo Actual</p>
                       <p className={`text-xl font-bold ${
                         proveedor.saldoActual === 0 ? 'text-muted-foreground' :
-                        proveedor.saldoActual > 0 ? 'text-red-600' : 'text-green-600'
+                        proveedor.saldoActual > 0 ? 'text-destructive' : 'text-success'
                       }`}>
                         {proveedor.saldoActual === 0 ? 'Al día' : formatCurrency(proveedor.saldoActual)}
                       </p>
@@ -2569,7 +2569,7 @@ export default function ProveedorDetailPage() {
                           className="h-7 text-xs px-2"
                           onClick={() => setItemsFilterVariacion('subio')}
                         >
-                          <TrendingUp className="w-3 h-3 mr-1 text-red-500" />
+                          <TrendingUp className="w-3 h-3 mr-1 text-destructive" />
                           Subió
                         </Button>
                         <Button
@@ -2578,7 +2578,7 @@ export default function ProveedorDetailPage() {
                           className="h-7 text-xs px-2"
                           onClick={() => setItemsFilterVariacion('bajo')}
                         >
-                          <TrendingDown className="w-3 h-3 mr-1 text-green-500" />
+                          <TrendingDown className="w-3 h-3 mr-1 text-success" />
                           Bajó
                         </Button>
                         <Button
@@ -2587,7 +2587,7 @@ export default function ProveedorDetailPage() {
                           className="h-7 text-xs px-2"
                           onClick={() => setItemsFilterVariacion('alto')}
                         >
-                          <AlertCircle className="w-3 h-3 mr-1 text-orange-500" />
+                          <AlertCircle className="w-3 h-3 mr-1 text-warning-muted-foreground" />
                           Alta var. (&gt;10%)
                         </Button>
                       </div>
@@ -3153,7 +3153,7 @@ export default function ProveedorDetailPage() {
                     <span className="h-3 w-px bg-border" />
                     <span>
                       Anticipos aplicados:{' '}
-                      <span className="font-semibold text-green-600">
+                      <span className="font-semibold text-success">
                         -{formatCurrency(totalAnticiposSeleccionados)}
                       </span>
                     </span>
@@ -3514,7 +3514,7 @@ export default function ProveedorDetailPage() {
           {pagoDetalleSeleccionado && (
             <>
               {/* Header con número y fecha */}
-              <div className="bg-primary/5 border-b px-4 py-3 print:bg-white print:border-b print:pb-3">
+              <div className="bg-primary/5 border-b px-4 py-3 print:bg-background print:border-b print:pb-3">
                 <div className="flex items-center justify-between print:hidden">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
@@ -3546,12 +3546,12 @@ export default function ProveedorDetailPage() {
               {/* Contenido scrolleable */}
               <div className="overflow-y-auto max-h-[calc(90vh-180px)] px-4 py-4 space-y-4">
                 {/* Total pagado - destacado */}
-                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-success-muted border border-success-muted rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Banknote className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800 dark:text-green-200">Total Pagado</span>
+                    <Banknote className="w-4 h-4 text-success" />
+                    <span className="text-sm font-medium text-success">Total Pagado</span>
                   </div>
-                  <span className="text-lg font-bold text-green-600">
+                  <span className="text-lg font-bold text-success">
                     {formatCurrency(Number(pagoDetalleSeleccionado.totalPago || 0))}
                   </span>
                 </div>
@@ -3594,21 +3594,21 @@ export default function ProveedorDetailPage() {
                       </div>
                     )}
                     {Number(pagoDetalleSeleccionado.retIVA || 0) > 0 && (
-                      <div className="flex items-center justify-between p-2.5 rounded-md border bg-amber-50 dark:bg-amber-900/20">
+                      <div className="flex items-center justify-between p-2.5 rounded-md border bg-warning-muted">
                         <span className="text-xs text-muted-foreground">Ret. IVA</span>
-                        <span className="text-xs font-semibold text-amber-600">{formatCurrency(Number(pagoDetalleSeleccionado.retIVA))}</span>
+                        <span className="text-xs font-semibold text-warning-muted-foreground">{formatCurrency(Number(pagoDetalleSeleccionado.retIVA))}</span>
                       </div>
                     )}
                     {Number(pagoDetalleSeleccionado.retGanancias || 0) > 0 && (
-                      <div className="flex items-center justify-between p-2.5 rounded-md border bg-amber-50 dark:bg-amber-900/20">
+                      <div className="flex items-center justify-between p-2.5 rounded-md border bg-warning-muted">
                         <span className="text-xs text-muted-foreground">Ret. Ganancias</span>
-                        <span className="text-xs font-semibold text-amber-600">{formatCurrency(Number(pagoDetalleSeleccionado.retGanancias))}</span>
+                        <span className="text-xs font-semibold text-warning-muted-foreground">{formatCurrency(Number(pagoDetalleSeleccionado.retGanancias))}</span>
                       </div>
                     )}
                     {Number(pagoDetalleSeleccionado.retIngBrutos || 0) > 0 && (
-                      <div className="flex items-center justify-between p-2.5 rounded-md border bg-amber-50 dark:bg-amber-900/20">
+                      <div className="flex items-center justify-between p-2.5 rounded-md border bg-warning-muted">
                         <span className="text-xs text-muted-foreground">Ret. Ing. Brutos</span>
-                        <span className="text-xs font-semibold text-amber-600">{formatCurrency(Number(pagoDetalleSeleccionado.retIngBrutos))}</span>
+                        <span className="text-xs font-semibold text-warning-muted-foreground">{formatCurrency(Number(pagoDetalleSeleccionado.retIngBrutos))}</span>
                       </div>
                     )}
                   </div>
@@ -3647,7 +3647,7 @@ export default function ProveedorDetailPage() {
                               <TableRow key={r.id}>
                                 <TableCell className="text-xs py-2">{numero}</TableCell>
                                 <TableCell className="text-xs text-right py-2">{formatCurrency(Number(recibo?.total || 0))}</TableCell>
-                                <TableCell className="text-xs text-right py-2 font-medium text-green-600">{formatCurrency(Number(r.montoAplicado || 0))}</TableCell>
+                                <TableCell className="text-xs text-right py-2 font-medium text-success">{formatCurrency(Number(r.montoAplicado || 0))}</TableCell>
                               </TableRow>
                             );
                           })}
@@ -4211,13 +4211,13 @@ export default function ProveedorDetailPage() {
                     </div>
                     <div className="p-2 bg-muted/50 rounded-md">
                       <p className="text-xs text-muted-foreground">Mínimo</p>
-                      <p className="font-semibold text-sm text-green-600">
+                      <p className="font-semibold text-sm text-success">
                         ${precioMinimo.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
                     </div>
                     <div className="p-2 bg-muted/50 rounded-md">
                       <p className="text-xs text-muted-foreground">Máximo</p>
-                      <p className="font-semibold text-sm text-red-600">
+                      <p className="font-semibold text-sm text-destructive">
                         ${precioMaximo.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
                     </div>
@@ -4227,15 +4227,15 @@ export default function ProveedorDetailPage() {
                         ${precioPromedio.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
                     </div>
-                    <div className={`p-2 rounded-md ${variacionTotal > 0 ? 'bg-red-50 border border-red-200' : variacionTotal < 0 ? 'bg-green-50 border border-green-200' : 'bg-muted/50'}`}>
+                    <div className={`p-2 rounded-md ${variacionTotal > 0 ? 'bg-destructive/10 border border-destructive/30' : variacionTotal < 0 ? 'bg-success-muted border border-success-muted' : 'bg-muted/50'}`}>
                       <p className="text-xs text-muted-foreground">Var. Total</p>
                       <div className="flex items-center gap-1">
                         {variacionTotal > 0 ? (
-                          <TrendingUp className="w-3 h-3 text-red-600" />
+                          <TrendingUp className="w-3 h-3 text-destructive" />
                         ) : variacionTotal < 0 ? (
-                          <TrendingDown className="w-3 h-3 text-green-600" />
+                          <TrendingDown className="w-3 h-3 text-success" />
                         ) : null}
-                        <p className={`font-bold text-sm ${variacionTotal > 0 ? 'text-red-600' : variacionTotal < 0 ? 'text-green-600' : ''}`}>
+                        <p className={`font-bold text-sm ${variacionTotal > 0 ? 'text-destructive' : variacionTotal < 0 ? 'text-success' : ''}`}>
                           {variacionTotal > 0 ? '+' : ''}{variacionTotal.toFixed(1)}%
                         </p>
                       </div>
@@ -4360,8 +4360,8 @@ export default function ProveedorDetailPage() {
                                       isLast
                                         ? 'bg-primary shadow-lg'
                                         : isIncrease
-                                          ? 'bg-red-400/60'
-                                          : 'bg-green-400/60'
+                                          ? 'bg-destructive/60'
+                                          : 'bg-success/60'
                                     }`}
                                     style={{ height: `${Math.max(height, 8)}%`, minWidth: '12px' }}
                                   />
@@ -4370,7 +4370,7 @@ export default function ProveedorDetailPage() {
                                   <p className="font-bold">${Number(h.precioUnitario).toLocaleString('es-AR', { minimumFractionDigits: 0 })}</p>
                                   <p className="text-xs">{new Date(h.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</p>
                                   {diff !== 0 && (
-                                    <p className={`text-xs font-medium ${isIncrease ? 'text-red-400' : 'text-green-400'}`}>
+                                    <p className={`text-xs font-medium ${isIncrease ? 'text-destructive' : 'text-success'}`}>
                                       {isIncrease ? '▲' : '▼'} {Math.abs(diff).toLocaleString('es-AR')} ({((diff / Number(prev?.precioUnitario || 1)) * 100).toFixed(1)}%)
                                     </p>
                                   )}
@@ -4400,11 +4400,11 @@ export default function ProveedorDetailPage() {
                   {/* Leyenda */}
                   <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-green-400/60" />
+                      <div className="w-3 h-3 rounded bg-success/60" />
                       <span>Bajó</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-red-400/60" />
+                      <div className="w-3 h-3 rounded bg-destructive/60" />
                       <span>Subió</span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -4459,7 +4459,7 @@ export default function ProveedorDetailPage() {
                                   <div className="flex items-center justify-end gap-1">
                                     <Badge
                                       variant="outline"
-                                      className={`text-[10px] px-1 py-0 ${diff > 0 ? 'border-red-300 text-red-600' : 'border-green-300 text-green-600'}`}
+                                      className={`text-[10px] px-1 py-0 ${diff > 0 ? 'border-destructive/30 text-destructive' : 'border-success-muted text-success'}`}
                                     >
                                       {diff > 0 ? '+' : ''}{diffPercent.toFixed(1)}%
                                     </Badge>
@@ -4533,15 +4533,15 @@ export default function ProveedorDetailPage() {
                               ${(qty * precioActual).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
-                          <div className="text-center px-2 py-1 bg-green-50 rounded-md border border-green-200">
+                          <div className="text-center px-2 py-1 bg-success-muted rounded-md border border-success-muted">
                             <p className="text-[10px] text-muted-foreground">Mín</p>
-                            <p className="font-semibold text-sm text-green-600">
+                            <p className="font-semibold text-sm text-success">
                               ${(qty * precioMin).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
-                          <div className="text-center px-2 py-1 bg-red-50 rounded-md border border-red-200">
+                          <div className="text-center px-2 py-1 bg-destructive/10 rounded-md border border-destructive/30">
                             <p className="text-[10px] text-muted-foreground">Máx</p>
-                            <p className="font-semibold text-sm text-red-600">
+                            <p className="font-semibold text-sm text-destructive">
                               ${(qty * precioMax).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
@@ -4700,7 +4700,7 @@ export default function ProveedorDetailPage() {
             {recepcionVistaModal?.firma && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Firma de Confirmación</h4>
-                <div className="border rounded p-2 bg-white">
+                <div className="border rounded p-2 bg-background">
                   <img src={recepcionVistaModal.firma} alt="Firma" className="max-h-32 mx-auto" />
                 </div>
               </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Clock, FileText, Users, Calendar, Plus, X, Edit } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Clock, FileText, Users, Calendar, Plus, X, Edit, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useUsers } from "@/hooks/use-users";
 import {
   Dialog,
@@ -57,6 +58,7 @@ interface NewFixedTaskData {
   priority: 'baja' | 'media' | 'alta';
   isActive: boolean;
   nextExecution: string;
+  executionTime: string;
   createdAt: string;
 }
 
@@ -77,8 +79,8 @@ const frequencies: { value: TaskFrequency; label: string; description: string }[
 
 function getPriorityColor(priority: string) {
   switch (priority) {
-    case 'alta': return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800/50';
-    case 'media': return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800/50';
+    case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
+    case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
     case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/50';
     default: return 'bg-muted text-muted-foreground border-border';
   }
@@ -120,70 +122,78 @@ export function CreateFixedTaskModal({
 
   const [isCreating, setIsCreating] = useState(false);
 
+  // Ref para saber si el formulario ya fue inicializado en esta sesión del modal
+  const formInitializedForRef = useRef<string | null>(null);
+
   const selectedUser = availableUsers.find(user => `${user.type}-${user.id}` === formData.assignedUserId);
   const selectedFrequency = frequencies.find(f => f.value === formData.frequency);
 
-  // Inicializar formulario cuando se está editando una tarea
+  // Inicializar formulario cuando se abre el modal.
+  // availableUsers está en las deps para resolver assignedUserId, pero tras la primera
+  // inicialización solo actualiza ese campo (sin resetear executionTime ni otros valores).
   useEffect(() => {
-    if (editingTask && isOpen) {
-      // Buscar el usuario asignado en la lista de usuarios disponibles
-      let assignedUserId = '';
-      if (editingTask.assignedTo?.id) {
-        const foundUser = availableUsers.find(user => 
-          user.id.toString() === editingTask.assignedTo.id.toString()
-        );
-        if (foundUser) {
-          assignedUserId = `${foundUser.type}-${foundUser.id}`;
-        } else {
-          // Fallback si no se encuentra el usuario
-          assignedUserId = editingTask.assignedTo.id;
-        }
-      }
+    if (!isOpen) {
+      formInitializedForRef.current = null;
+      return;
+    }
 
-      setFormData({
-        title: editingTask.title || '',
-        description: editingTask.description || '',
-        frequency: editingTask.frequency || 'diaria',
-        assignedUserId: assignedUserId,
-        estimatedTime: editingTask.estimatedTime || 30,
-        priority: editingTask.priority || 'media',
-        isActive: editingTask.isActive !== undefined ? editingTask.isActive : true,
-        executionTime: '08:00' // Default time
-      });
-      
-      // Cargar instructivos si existen
-      if (editingTask.instructives && editingTask.instructives.length > 0) {
-        setInstructives(editingTask.instructives.map((inst: any) => ({
-          title: inst.title || '',
-          content: inst.content || '',
-          attachments: (inst.attachments || []).map((attachment: any) => {
-            if (typeof attachment === 'string') {
-              // Convertir string URL a FileAttachment
-              return {
-                url: attachment,
-                name: attachment.split('/').pop() || 'archivo',
-                size: 0,
-                type: 'unknown'
-              };
-            }
-            return attachment;
-          })
-        })));
+    const sessionKey = editingTask ? `edit-${editingTask.id}` : 'new';
+    const alreadyInitialized = formInitializedForRef.current === sessionKey;
+
+    // Helper: resolver assignedUserId desde availableUsers
+    const resolveAssignedUserId = () => {
+      if (!editingTask?.assignedTo?.id) return '';
+      const found = availableUsers.find(u => u.id.toString() === editingTask.assignedTo.id.toString());
+      return found ? `${found.type}-${found.id}` : String(editingTask.assignedTo.id);
+    };
+
+    if (editingTask) {
+      const assignedUserId = resolveAssignedUserId();
+      if (!alreadyInitialized) {
+        formInitializedForRef.current = sessionKey;
+        setFormData({
+          title: editingTask.title || '',
+          description: editingTask.description || '',
+          frequency: editingTask.frequency || 'diaria',
+          assignedUserId,
+          estimatedTime: editingTask.estimatedTime || 30,
+          priority: editingTask.priority || 'media',
+          isActive: editingTask.isActive !== undefined ? editingTask.isActive : true,
+          executionTime: (editingTask as any).executionTime || '08:00',
+        });
+        if (editingTask.instructives && editingTask.instructives.length > 0) {
+          setInstructives(editingTask.instructives.map((inst: any) => ({
+            title: inst.title || '',
+            content: inst.content || '',
+            attachments: (inst.attachments || []).map((attachment: any) => {
+              if (typeof attachment === 'string') {
+                return { url: attachment, name: attachment.split('/').pop() || 'archivo', size: 0, type: 'unknown' };
+              }
+              return attachment;
+            })
+          })));
+        }
+      } else {
+        // availableUsers recargó: solo actualizar assignedUserId sin tocar el resto
+        setFormData(prev => ({ ...prev, assignedUserId }));
       }
-    } else if (!editingTask && isOpen) {
-      // Reset para nueva tarea
-      setFormData({
-        title: '',
-        description: '',
-        frequency: (preselectedFrequency as TaskFrequency) || 'diaria',
-        assignedUserId: '',
-        estimatedTime: 30,
-        priority: 'media',
-        isActive: true,
-        executionTime: '08:00'
-      });
-      setInstructives([]);
-      setCurrentInstructive({ title: '', content: '', attachments: [] });
+    } else {
+      if (!alreadyInitialized) {
+        formInitializedForRef.current = sessionKey;
+        setFormData({
+          title: '',
+          description: '',
+          frequency: (preselectedFrequency as TaskFrequency) || 'diaria',
+          assignedUserId: '',
+          estimatedTime: 30,
+          priority: 'media',
+          isActive: true,
+          executionTime: '08:00',
+        });
+        setInstructives([]);
+        setCurrentInstructive({ title: '', content: '', attachments: [] });
+      }
+      // Si ya fue inicializado (nueva tarea), no resetear al recargar availableUsers
     }
   }, [editingTask, isOpen, preselectedFrequency, availableUsers]);
 
@@ -215,7 +225,7 @@ export function CreateFixedTaskModal({
     
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
-      alert(`Por favor corrige los siguientes errores:\n\n${validationErrors.join('\n')}`);
+      toast.error(`Corregí los errores: ${validationErrors.join(', ')}`);
       return;
     }
 
@@ -254,6 +264,7 @@ export function CreateFixedTaskModal({
         priority: formData.priority,
         isActive: formData.isActive,
         nextExecution: nextExecution.toISOString(),
+        executionTime: formData.executionTime,
         createdAt: new Date().toISOString()
       };
 
@@ -278,8 +289,7 @@ export function CreateFixedTaskModal({
         onClose();
       }, 100);
     } catch (error) {
-      console.error('Error creating task:', error);
-      alert('Error al crear la tarea');
+      toast.error('Error al crear la tarea');
     } finally {
       setIsCreating(false);
     }
@@ -300,7 +310,7 @@ export function CreateFixedTaskModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="lg" className="flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -447,7 +457,7 @@ export function CreateFixedTaskModal({
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {selectedFrequency?.description}
+                        {getFrequencyDescription(formData.frequency, formData.executionTime)}
                       </div>
                     </div>
                   )}
@@ -552,7 +562,7 @@ export function CreateFixedTaskModal({
                             variant="ghost"
                             size="sm"
                             onClick={() => removeInstructive(index)}
-                            className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                            className="text-destructive hover:bg-destructive/10"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -630,7 +640,7 @@ export function CreateFixedTaskModal({
             >
               {isCreating ? (
                 <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {editingTask ? 'Guardando...' : 'Creando...'}
                 </>
               ) : (

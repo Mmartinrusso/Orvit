@@ -65,11 +65,11 @@ export default function NuevaEmpresaPage() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-background text-foreground transition-colors">
       <div className="flex flex-col items-center mb-8">
-        <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-4 mb-2">
-          <Building2 className="h-10 w-10 text-blue-500" />
+        <div className="bg-info-muted rounded-full p-4 mb-2">
+          <Building2 className="h-10 w-10 text-primary" />
         </div>
         <h2 className="text-3xl font-bold">Crear Nueva Empresa</h2>
-        <p className="mt-1 text-gray-500 dark:text-gray-400">Registra una nueva empresa en el sistema</p>
+        <p className="mt-1 text-muted-foreground">Registra una nueva empresa en el sistema</p>
       </div>
       
       <div className="bg-card text-card-foreground p-8 rounded-lg shadow-md w-full max-w-2xl border border-border">
@@ -101,7 +101,7 @@ export default function NuevaEmpresaPage() {
                 autoComplete="off"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
               />
             </div>
             <div>
@@ -113,7 +113,7 @@ export default function NuevaEmpresaPage() {
                 autoComplete="off"
                 value={formData.cuit}
                 onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
               />
             </div>
             <div>
@@ -125,7 +125,7 @@ export default function NuevaEmpresaPage() {
                 autoComplete="off"
                 value={formData.direccion}
                 onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
               />
             </div>
             <div>
@@ -137,7 +137,7 @@ export default function NuevaEmpresaPage() {
                 autoComplete="off"
                 value={formData.telefono}
                 onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
               />
             </div>
             <div>
@@ -149,7 +149,7 @@ export default function NuevaEmpresaPage() {
                 autoComplete="off"
                 value={formData.gmail}
                 onChange={(e) => setFormData({ ...formData, gmail: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
               />
             </div>
             <div>
@@ -160,29 +160,29 @@ export default function NuevaEmpresaPage() {
                 autoComplete="off"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-input bg-background text-foreground px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
               />
             </div>
           </div>
           
           {error && (
-            <div className="p-3 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900 rounded-lg">{error}</div>
+            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-lg">{error}</div>
           )}
           {success && (
-            <div className="p-3 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900 rounded-lg">{success}</div>
+            <div className="p-3 text-sm text-success bg-success-muted rounded-lg">{success}</div>
           )}
           
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
           >
             {loading ? 'Creando...' : 'Crear Empresa'}
           </button>
         </form>
       </div>
       
-              <footer className="mt-8 text-gray-400 text-xs">© 2025 ORVIT. Todos los derechos reservados.</footer>
+              <footer className="mt-8 text-muted-foreground text-xs">© 2025 ORVIT. Todos los derechos reservados.</footer>
     </div>
   );
 } 

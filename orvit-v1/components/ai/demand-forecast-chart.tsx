@@ -87,17 +87,17 @@ export function DemandForecastChart({
     const riskConfig = {
       LOW: {
         label: 'Riesgo Bajo',
-        color: 'bg-green-100 text-green-700 border-green-300',
+        color: 'bg-success-muted text-success border-success/30',
         icon: CheckCircle2,
       },
       MEDIUM: {
         label: 'Riesgo Medio',
-        color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+        color: 'bg-warning-muted text-warning-muted-foreground border-warning/30',
         icon: AlertTriangle,
       },
       HIGH: {
         label: 'Riesgo Alto',
-        color: 'bg-red-100 text-red-700 border-red-300',
+        color: 'bg-destructive/10 text-destructive border-destructive/30',
         icon: AlertCircle,
       },
     };
@@ -121,7 +121,7 @@ export function DemandForecastChart({
 
     if (Math.abs(change) < 5) {
       return (
-        <div className="flex items-center text-gray-600">
+        <div className="flex items-center text-muted-foreground">
           <Minus className="w-4 h-4 mr-1" />
           <span className="text-sm">Estable ({change.toFixed(1)}%)</span>
         </div>
@@ -130,7 +130,7 @@ export function DemandForecastChart({
 
     if (change > 0) {
       return (
-        <div className="flex items-center text-green-600">
+        <div className="flex items-center text-success">
           <TrendingUp className="w-4 h-4 mr-1" />
           <span className="text-sm">Creciente (+{change.toFixed(1)}%)</span>
         </div>
@@ -138,7 +138,7 @@ export function DemandForecastChart({
     }
 
     return (
-      <div className="flex items-center text-red-600">
+      <div className="flex items-center text-destructive">
         <TrendingDown className="w-4 h-4 mr-1" />
         <span className="text-sm">Decreciente ({change.toFixed(1)}%)</span>
       </div>
@@ -175,23 +175,23 @@ export function DemandForecastChart({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-gray-500">Stock Actual</p>
+              <p className="text-sm text-muted-foreground">Stock Actual</p>
               <p className="text-2xl font-bold">{currentStock.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Demanda Promedio</p>
+              <p className="text-sm text-muted-foreground">Demanda Promedio</p>
               <p className="text-2xl font-bold">
-                {summary.avgDailyDemand.toFixed(1)} <span className="text-sm font-normal text-gray-500">/día</span>
+                {summary.avgDailyDemand.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">/día</span>
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Punto de Reorden</p>
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-sm text-muted-foreground">Punto de Reorden</p>
+              <p className="text-2xl font-bold text-warning-muted-foreground">
                 {summary.recommendedReorderPoint.toLocaleString()}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Riesgo de Quiebre</p>
+              <p className="text-sm text-muted-foreground">Riesgo de Quiebre</p>
               <div className="mt-1">
                 {getRiskBadge()}
               </div>
@@ -205,24 +205,24 @@ export function DemandForecastChart({
         <div className={cn(
           'p-4 rounded-lg border-l-4',
           summary.daysUntilStockout <= 3
-            ? 'bg-red-50 border-red-500'
-            : 'bg-yellow-50 border-yellow-500'
+            ? 'bg-destructive/10 border-destructive'
+            : 'bg-warning-muted border-warning'
         )}>
           <div className="flex items-start">
             <AlertCircle className={cn(
               'w-5 h-5 mt-0.5 mr-3',
-              summary.daysUntilStockout <= 3 ? 'text-red-600' : 'text-yellow-600'
+              summary.daysUntilStockout <= 3 ? 'text-destructive' : 'text-warning-muted-foreground'
             )} />
             <div>
               <h4 className={cn(
                 'font-semibold',
-                summary.daysUntilStockout <= 3 ? 'text-red-900' : 'text-yellow-900'
+                summary.daysUntilStockout <= 3 ? 'text-destructive' : 'text-warning-muted-foreground'
               )}>
-                ⚠️ Alerta de Quiebre de Stock
+                Alerta de Quiebre de Stock
               </h4>
               <p className={cn(
                 'text-sm mt-1',
-                summary.daysUntilStockout <= 3 ? 'text-red-700' : 'text-yellow-700'
+                summary.daysUntilStockout <= 3 ? 'text-destructive' : 'text-warning-muted-foreground'
               )}>
                 Se prevé quiebre de stock en <strong>{summary.daysUntilStockout} días</strong>.
                 Se recomienda ordenar <strong>{summary.recommendedReorderQuantity} unidades</strong> urgentemente.
@@ -245,7 +245,7 @@ export function DemandForecastChart({
             <div className="flex items-center gap-4">
               {getTrendIndicator()}
               {seasonality?.detected && (
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                <Badge variant="outline" className="bg-info-muted text-info-muted-foreground border-border">
                   📊 Patrón {seasonality.pattern}
                 </Badge>
               )}
@@ -280,19 +280,19 @@ export function DemandForecastChart({
                   if (!active || !payload || !payload.length) return null;
 
                   return (
-                    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-                      <p className="font-semibold text-gray-900">
+                    <div className="bg-card p-3 border border-border rounded-lg shadow-lg">
+                      <p className="font-semibold text-foreground">
                         {payload[0].payload.fullDate}
                       </p>
                       <div className="mt-2 space-y-1 text-sm">
-                        <p className="text-blue-600">
+                        <p className="text-primary">
                           Demanda: <strong>{payload[0].payload.demand}</strong> unidades
                         </p>
-                        <p className="text-green-600">
+                        <p className="text-success">
                           Stock: <strong>{payload[0].payload.stock}</strong> unidades
                         </p>
                         {showConfidence && (
-                          <p className="text-purple-600">
+                          <p className="text-muted-foreground">
                             Confianza: <strong>{payload[0].payload.confidence}%</strong>
                           </p>
                         )}
@@ -360,7 +360,7 @@ export function DemandForecastChart({
                 onChange={(e) => setShowConfidence(e.target.checked)}
                 className="rounded"
               />
-              <span className="text-gray-600">Mostrar nivel de confianza</span>
+              <span className="text-muted-foreground">Mostrar nivel de confianza</span>
             </label>
           </div>
         </CardContent>
@@ -373,37 +373,37 @@ export function DemandForecastChart({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-start p-3 bg-blue-50 rounded-lg">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold mr-3">
+            <div className="flex items-start p-3 bg-info-muted rounded-lg">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold mr-3">
                 1
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-blue-900">Punto de Reorden</h4>
-                <p className="text-sm text-blue-700 mt-1">
+                <h4 className="font-semibold text-info-muted-foreground">Punto de Reorden</h4>
+                <p className="text-sm text-info-muted-foreground mt-1">
                   Cuando el stock baje a <strong>{summary.recommendedReorderPoint} unidades</strong>, generar orden de compra.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start p-3 bg-purple-50 rounded-lg">
-              <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold mr-3">
+            <div className="flex items-start p-3 bg-muted rounded-lg">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold mr-3">
                 2
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-purple-900">Cantidad Económica</h4>
-                <p className="text-sm text-purple-700 mt-1">
+                <h4 className="font-semibold text-foreground">Cantidad Económica</h4>
+                <p className="text-sm text-muted-foreground mt-1">
                   Ordenar <strong>{summary.recommendedReorderQuantity} unidades</strong> en cada reposición para optimizar costos.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start p-3 bg-green-50 rounded-lg">
-              <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold mr-3">
+            <div className="flex items-start p-3 bg-success-muted rounded-lg">
+              <div className="w-8 h-8 rounded-full bg-success text-white flex items-center justify-center font-bold mr-3">
                 3
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-green-900">Demanda Total Proyectada</h4>
-                <p className="text-sm text-green-700 mt-1">
+                <h4 className="font-semibold text-success-muted-foreground">Demanda Total Proyectada</h4>
+                <p className="text-sm text-success-muted-foreground mt-1">
                   Se espera una demanda total de <strong>{summary.totalForecastedDemand.toFixed(0)} unidades</strong> en
                   los próximos {forecasts.length} días ({summary.avgDailyDemand.toFixed(1)} por día).
                 </p>
@@ -411,13 +411,13 @@ export function DemandForecastChart({
             </div>
 
             {seasonality?.detected && seasonality.peakDays && (
-              <div className="flex items-start p-3 bg-orange-50 rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold mr-3">
+              <div className="flex items-start p-3 bg-warning-muted rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-warning text-white flex items-center justify-center font-bold mr-3">
                   📊
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-orange-900">Patrón Estacional Detectado</h4>
-                  <p className="text-sm text-orange-700 mt-1">
+                  <h4 className="font-semibold text-warning-muted-foreground">Patrón Estacional Detectado</h4>
+                  <p className="text-sm text-warning-muted-foreground mt-1">
                     Se detectó un patrón <strong>{seasonality.pattern}</strong> con picos de demanda
                     los días: {seasonality.peakDays.map(d => ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d]).join(', ')}.
                     Considerar aumentar stock en estos días.

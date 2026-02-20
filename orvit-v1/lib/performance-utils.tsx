@@ -21,7 +21,7 @@ export const Skeleton = ({ className = '', height = '20px', width = '100%' }: {
 }) => {
   return (
     <div
-      className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`}
+      className={`animate-pulse bg-muted rounded ${className}`}
       style={{ height, width }}
     />
   );

@@ -186,8 +186,8 @@ export default function ConsumoPage() {
                     <p className="text-xs font-medium text-muted-foreground">Items Consumidos</p>
                     <p className="text-2xl font-bold">{summary.totalConsumed.toLocaleString()}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <ArrowDownCircle className="h-5 w-5 text-blue-600" />
+                  <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+                    <ArrowDownCircle className="h-5 w-5 text-info-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -214,25 +214,25 @@ export default function ConsumoPage() {
                     <p className="text-xs font-medium text-muted-foreground">Repuestos Únicos</p>
                     <p className="text-2xl font-bold">{summary.uniqueTools}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-amber-600" />
+                  <div className="h-10 w-10 rounded-full bg-warning-muted flex items-center justify-center">
+                    <Package className="h-5 w-5 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {permissions.canViewCosts && (
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
+              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-success-muted">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-green-700 dark:text-green-400">Costo Total</p>
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                      <p className="text-xs font-medium text-success">Costo Total</p>
+                      <p className="text-2xl font-bold text-success">
                         {formatCurrency(summary.totalCost)}
                       </p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                      <DollarSign className="h-5 w-5 text-green-600" />
+                    <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                      <DollarSign className="h-5 w-5 text-success" />
                     </div>
                   </div>
                 </CardContent>
@@ -279,7 +279,7 @@ export default function ConsumoPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
+                  <TrendingUp className="h-4 w-4 text-info-muted-foreground" />
                   Top 10 Repuestos Más Consumidos
                 </CardTitle>
               </CardHeader>
@@ -391,7 +391,7 @@ export default function ConsumoPage() {
                           <div className="text-right mr-4">
                             <p className="font-semibold">{woc.items.reduce((a, i) => a + i.consumed, 0)} items</p>
                             {permissions.canViewCosts && woc.totalCost > 0 && (
-                              <p className="text-xs text-green-600">{formatCurrency(woc.totalCost)}</p>
+                              <p className="text-xs text-success">{formatCurrency(woc.totalCost)}</p>
                             )}
                           </div>
                         </div>

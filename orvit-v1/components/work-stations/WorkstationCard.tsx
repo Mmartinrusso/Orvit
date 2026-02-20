@@ -71,17 +71,7 @@ interface WorkstationCardProps {
   className?: string;
 }
 
-const statusLabels: Record<string, string> = {
-  'ACTIVE': 'Activo',
-  'INACTIVE': 'Inactivo',
-  'MAINTENANCE': 'En mantenimiento',
-};
-
-const statusColors: Record<string, string> = {
-  'ACTIVE': 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-  'INACTIVE': 'bg-muted text-muted-foreground border-border',
-  'MAINTENANCE': 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-};
+import { statusLabels, statusColors } from './workstation.helpers';
 
 export function WorkstationCard({
   workstation,
@@ -161,13 +151,13 @@ export function WorkstationCard({
               {statusLabels[workstation.status] || workstation.status}
             </Badge>
             {!selectionMode && (
+            <div className="contents" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 opacity-70 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-3.5 w-3.5" />
                   <span className="sr-only">Más opciones</span>
@@ -230,6 +220,7 @@ export function WorkstationCard({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
             )}
           </div>
         </div>
@@ -274,7 +265,7 @@ export function WorkstationCard({
                 e.stopPropagation();
                 onView(workstation);
               }}
-              className="h-8 text-xs flex-1 bg-black hover:bg-gray-800 text-white"
+              className="h-8 text-xs flex-1"
             >
               <Eye className="h-3.5 w-3.5 mr-1" />
               Ver

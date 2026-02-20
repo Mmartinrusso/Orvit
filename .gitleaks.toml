@@ -1,0 +1,102 @@
+# =============================================================================
+# Gitleaks Configuration - ORVIT
+# =============================================================================
+# Escanea el repositorio en busca de secretos expuestos.
+# Se ejecuta en pre-commit hook y en CI/CD.
+# Docs: https://github.com/gitleaks/gitleaks
+# =============================================================================
+
+title = "Orvit Gitleaks Config"
+
+# Reglas de detección
+[[rules]]
+id = "aws-access-key-id"
+description = "AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["aws", "credentials"]
+
+[[rules]]
+id = "aws-secret-access-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws_secret_access_key\s*=\s*[A-Za-z0-9/+=]{40}'''
+tags = ["aws", "credentials"]
+
+[[rules]]
+id = "aws-secret-inline"
+description = "AWS Secret Access Key (inline)"
+regex = '''(?i)(aws_secret|secret_access_key|aws_key)\s*[:=]\s*['"][A-Za-z0-9/+=]{20,}['"]'''
+tags = ["aws", "credentials"]
+
+[[rules]]
+id = "jwt-secret-hardcoded"
+description = "JWT Secret hardcoded (ej: 'Messi', literal strings)"
+regex = '''JWT_SECRET\s*=\s*['"][^'"]{1,20}['"]'''
+tags = ["jwt", "auth"]
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''sk-[A-Za-z0-9]{20,}'''
+tags = ["openai", "api-key"]
+
+[[rules]]
+id = "discord-bot-token"
+description = "Discord Bot Token"
+regex = '''(?i)(discord[_-]?(?:bot[_-]?)?token)\s*[:=]\s*['"][A-Za-z0-9._-]{50,}['"]'''
+tags = ["discord", "token"]
+
+[[rules]]
+id = "sentry-auth-token"
+description = "Sentry Auth Token"
+regex = '''(?i)sentry[_-]auth[_-]token\s*[:=]\s*['"][a-f0-9]{64}['"]'''
+tags = ["sentry", "token"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key assignment"
+regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret)\s*[:=]\s*['"][A-Za-z0-9_\-]{16,}['"]'''
+tags = ["generic", "api-key"]
+
+[[rules]]
+id = "generic-secret"
+description = "Generic Secret assignment"
+regex = '''(?i)(secret|password|passwd|pwd)\s*[:=]\s*['"][^'"]{8,}['"]'''
+tags = ["generic", "secret"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key file content"
+regex = '''-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----'''
+tags = ["key", "private"]
+
+[[rules]]
+id = "next-public-aws"
+description = "AWS credentials exposed via NEXT_PUBLIC_"
+regex = '''NEXT_PUBLIC_AWS_'''
+tags = ["aws", "next", "critical"]
+
+[[rules]]
+id = "database-url"
+description = "Database connection string with credentials"
+regex = '''(?i)(postgresql|mysql|mongodb|redis):\/\/[^:]+:[^@]+@[^/]+'''
+tags = ["database", "connection-string"]
+
+# Archivos/paths a ignorar (allowlist)
+[allowlist]
+description = "Archivos seguros que contienen patrones de ejemplo, no secretos reales"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.sample$''',
+  '''\.env\.template$''',
+  '''\.gitleaks\.toml$''',
+  '''docs/SECURITY\.md$''',
+  '''node_modules/''',
+  '''\.next/''',
+  '''package-lock\.json$''',
+  '''\.git/''',
+  # Prisma generated files
+  '''lib/generated/''',
+  # Test files que usan secretos mock
+  '''\.test\.(ts|tsx|js)$''',
+  '''vitest\..*\.config\.(ts|mts)$''',
+]

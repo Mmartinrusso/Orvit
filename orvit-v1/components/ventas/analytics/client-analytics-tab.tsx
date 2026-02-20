@@ -71,16 +71,16 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
   };
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
-    if (trend === 'up') return <TrendingUp className="w-4 h-4 text-green-600" />;
-    if (trend === 'down') return <TrendingDown className="w-4 h-4 text-red-600" />;
-    return <Minus className="w-4 h-4 text-gray-600" />;
+    if (trend === 'up') return <TrendingUp className="w-4 h-4 text-success" />;
+    if (trend === 'down') return <TrendingDown className="w-4 h-4 text-destructive" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600 bg-green-100';
-    if (score >= 75) return 'text-blue-600 bg-blue-100';
-    if (score >= 60) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
+    if (score >= 90) return 'text-success bg-success-muted';
+    if (score >= 75) return 'text-info-muted-foreground bg-info-muted';
+    if (score >= 60) return 'text-warning-muted-foreground bg-warning-muted';
+    return 'text-destructive bg-destructive/10';
   };
 
   const getScoreLabel = (score: number) => {
@@ -222,30 +222,30 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
                 <span>Utilización</span>
                 <span className={cn(
                   'font-semibold',
-                  data.creditMetrics.utilizationRate >= 90 ? 'text-red-600' :
-                  data.creditMetrics.utilizationRate >= 75 ? 'text-orange-600' :
-                  'text-green-600'
+                  data.creditMetrics.utilizationRate >= 90 ? 'text-destructive' :
+                  data.creditMetrics.utilizationRate >= 75 ? 'text-warning-muted-foreground' :
+                  'text-success'
                 )}>
                   {data.creditMetrics.utilizationRate.toFixed(1)}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
                   className={cn(
                     'h-2 rounded-full',
-                    data.creditMetrics.utilizationRate >= 90 ? 'bg-red-600' :
-                    data.creditMetrics.utilizationRate >= 75 ? 'bg-orange-600' :
-                    'bg-green-600'
+                    data.creditMetrics.utilizationRate >= 90 ? 'bg-destructive' :
+                    data.creditMetrics.utilizationRate >= 75 ? 'bg-warning-muted-foreground' :
+                    'bg-success'
                   )}
                   style={{ width: `${Math.min(data.creditMetrics.utilizationRate, 100)}%` }}
                 />
               </div>
             </div>
             {data.creditMetrics.nearLimit && (
-              <p className="text-xs text-orange-600 mt-2 font-semibold">⚠️ Cerca del límite</p>
+              <p className="text-xs text-warning-muted-foreground mt-2 font-semibold">⚠️ Cerca del límite</p>
             )}
             {data.creditMetrics.exceeded && (
-              <p className="text-xs text-red-600 mt-2 font-semibold">⚠️ Límite excedido</p>
+              <p className="text-xs text-destructive mt-2 font-semibold">⚠️ Límite excedido</p>
             )}
           </CardContent>
         </Card>
@@ -330,14 +330,14 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
               {data.paymentMetrics.overdueAmount > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground">Vencido</p>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-2xl font-bold text-destructive">
                     {formatCurrency(data.paymentMetrics.overdueAmount)}
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-xs text-muted-foreground">Al Día</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-success">
                   {formatCurrency(data.paymentMetrics.pendingAmount - data.paymentMetrics.overdueAmount)}
                 </p>
               </div>

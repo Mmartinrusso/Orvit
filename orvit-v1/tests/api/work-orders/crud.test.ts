@@ -3,7 +3,9 @@
  *
  * Tests:
  * - GET /api/work-orders - List work orders with filters
+ * - GET /api/work-orders/[id] - Get single work order
  * - POST /api/work-orders - Create work order
+ * - PUT /api/work-orders/[id] - Update work order
  * - DELETE /api/work-orders - Delete work order
  * - Permission checks
  * - Company-scoped queries
@@ -29,6 +31,11 @@ vi.mock('@/lib/automation/engine', () => ({
   triggerWorkOrderCreated: vi.fn().mockResolvedValue(undefined),
   triggerWorkOrderStatusChanged: vi.fn().mockResolvedValue(undefined),
   triggerWorkOrderAssigned: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/lib/metrics', () => ({
+  trackCount: vi.fn().mockResolvedValue(undefined),
+  trackDuration: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('Work Orders CRUD', () => {
@@ -308,5 +315,235 @@ describe('Work Orders CRUD', () => {
     const { status } = await parseJsonResponse(response);
 
     expect(status).toBe(400);
+  });
+
+  // ========================================================================
+  // GET /api/work-orders/[id] - Single work order
+  // ========================================================================
+
+  it('should return a single work order by id', async () => {
+    const { company, sector } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const workOrder = await createWorkOrder({
+      title: 'Single WO',
+      description: 'Test detail view',
+      priority: 'HIGH',
+      type: 'PREVENTIVE',
+      createdById: user.id,
+      companyId: company.id,
+      sectorId: sector.id,
+    });
+
+    const { GET } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      `/api/work-orders/${workOrder.id}`,
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+    );
+
+    const response = await GET(request, { params: { id: String(workOrder.id) } });
+    const { status, data } = await parseJsonResponse(response);
+
+    expect(status).toBe(200);
+    expect(data.id).toBe(workOrder.id);
+    expect(data.title).toBe('Single WO');
+    expect(data.priority).toBe('HIGH');
+    expect(data.type).toBe('PREVENTIVE');
+    expect(data.createdBy).toBeDefined();
+    expect(data.createdBy.id).toBe(user.id);
+  });
+
+  it('should return 404 for non-existent work order', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const { GET } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      '/api/work-orders/999999',
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+    );
+
+    const response = await GET(request, { params: { id: '999999' } });
+    const { status } = await parseJsonResponse(response);
+
+    expect(status).toBe(404);
+  });
+
+  // ========================================================================
+  // PUT /api/work-orders/[id] - Update work order
+  // ========================================================================
+
+  it('should update a work order title and priority', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const workOrder = await createWorkOrder({
+      title: 'Original Title',
+      priority: 'LOW',
+      createdById: user.id,
+      companyId: company.id,
+    });
+
+    const { PUT } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      `/api/work-orders/${workOrder.id}`,
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+      {
+        method: 'PUT',
+        body: {
+          title: 'Updated Title',
+          priority: 'URGENT',
+        },
+      }
+    );
+
+    const response = await PUT(request, { params: { id: String(workOrder.id) } });
+    const { status, data } = await parseJsonResponse(response);
+
+    expect(status).toBe(200);
+    expect(data.title).toBe('Updated Title');
+    expect(data.priority).toBe('URGENT');
+
+    // Verify in database
+    const dbWO = await prisma.workOrder.findUnique({ where: { id: workOrder.id } });
+    expect(dbWO?.title).toBe('Updated Title');
+    expect(dbWO?.priority).toBe('URGENT');
+  });
+
+  it('should update work order status to IN_PROGRESS and auto-set startedDate', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const workOrder = await createWorkOrder({
+      title: 'Status WO',
+      status: 'PENDING',
+      createdById: user.id,
+      companyId: company.id,
+    });
+
+    const { PUT } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      `/api/work-orders/${workOrder.id}`,
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+      {
+        method: 'PUT',
+        body: { status: 'IN_PROGRESS' },
+      }
+    );
+
+    const response = await PUT(request, { params: { id: String(workOrder.id) } });
+    const { status, data } = await parseJsonResponse(response);
+
+    expect(status).toBe(200);
+    expect(data.status).toBe('IN_PROGRESS');
+    expect(data.startedDate).not.toBeNull();
+  });
+
+  it('should update work order status to COMPLETED and auto-set completedDate', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const workOrder = await createWorkOrder({
+      title: 'Complete WO',
+      status: 'IN_PROGRESS',
+      createdById: user.id,
+      companyId: company.id,
+    });
+
+    const { PUT } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      `/api/work-orders/${workOrder.id}`,
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+      {
+        method: 'PUT',
+        body: { status: 'COMPLETED' },
+      }
+    );
+
+    const response = await PUT(request, { params: { id: String(workOrder.id) } });
+    const { status, data } = await parseJsonResponse(response);
+
+    expect(status).toBe(200);
+    expect(data.status).toBe('COMPLETED');
+    expect(data.completedDate).not.toBeNull();
+  });
+
+  it('should return 404 when updating non-existent work order', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const { PUT } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      '/api/work-orders/999999',
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+      {
+        method: 'PUT',
+        body: { title: 'Nope' },
+      }
+    );
+
+    const response = await PUT(request, { params: { id: '999999' } });
+    const { status } = await parseJsonResponse(response);
+
+    expect(status).toBe(404);
+  });
+
+  it('should assign work order to another user', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user: admin } = await createAdmin(company.id);
+    const { user: technician } = await createUser({ companyId: company.id });
+
+    const workOrder = await createWorkOrder({
+      title: 'Assign WO',
+      createdById: admin.id,
+      companyId: company.id,
+    });
+
+    const { PUT } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      `/api/work-orders/${workOrder.id}`,
+      { userId: admin.id, companyId: company.id, role: 'ADMIN' },
+      {
+        method: 'PUT',
+        body: { assignedToId: technician.id },
+      }
+    );
+
+    const response = await PUT(request, { params: { id: String(workOrder.id) } });
+    const { status, data } = await parseJsonResponse(response);
+
+    expect(status).toBe(200);
+    expect(data.assignedToId).toBe(technician.id);
+    expect(data.assignedTo).toBeDefined();
+    expect(data.assignedTo.id).toBe(technician.id);
+  });
+
+  // ========================================================================
+  // DELETE /api/work-orders/[id] - Delete via [id] route
+  // ========================================================================
+
+  it('should delete a work order via [id] route', async () => {
+    const { company } = await createFullCompanySetup();
+    const { user } = await createAdmin(company.id);
+
+    const workOrder = await createWorkOrder({
+      title: 'Delete Via ID',
+      createdById: user.id,
+      companyId: company.id,
+    });
+
+    const { DELETE } = await import('@/app/api/work-orders/[id]/route');
+    const request = await createAuthenticatedRequest(
+      `/api/work-orders/${workOrder.id}`,
+      { userId: user.id, companyId: company.id, role: 'ADMIN' },
+    );
+
+    const response = await DELETE(request, { params: { id: String(workOrder.id) } });
+
+    expect(response.status).toBe(204);
+
+    // Verify deleted from database
+    const dbWO = await prisma.workOrder.findUnique({ where: { id: workOrder.id } });
+    expect(dbWO).toBeNull();
   });
 });

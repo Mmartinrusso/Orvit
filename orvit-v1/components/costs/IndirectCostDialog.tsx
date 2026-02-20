@@ -290,7 +290,7 @@ export function IndirectCostDialog({ children, onIndirectCreated }: IndirectCost
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-300">
+                <div className="mt-3 p-2 bg-info-muted rounded text-xs text-info-muted-foreground">
                   <strong>Nota:</strong> Este costo se distribuirá proporcionalmente entre las líneas de producción 
                   según la configuración de porcentajes globales.
                 </div>

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -116,8 +117,8 @@ export function WaitingStateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+      <DialogContent size="sm" className="p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Poner en Espera</DialogTitle>
           <DialogDescription>
             Indique el motivo y el tiempo estimado de espera. La orden se
@@ -127,7 +128,7 @@ export function WaitingStateDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} id="waiting-form">
-            <div className="px-6 py-5 space-y-5">
+            <DialogBody className="px-6 py-5 space-y-5">
               {/* Motivo */}
               <FormField
                 control={form.control}
@@ -190,25 +191,25 @@ export function WaitingStateDialog({
                   </FormItem>
                 )}
               />
-            </div>
-
-            <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={waitingMutation.isPending}>
-                {waitingMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Poner en Espera
-              </Button>
-            </DialogFooter>
+            </DialogBody>
           </form>
         </Form>
+
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" form="waiting-form" disabled={waitingMutation.isPending}>
+            {waitingMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Poner en Espera
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -19,9 +19,13 @@ import {
   Minus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface RichTextEditorProps {
-  content: string;
+  /** HTML content string. Use `content` or `value` (alias). */
+  content?: string;
+  /** Alias for `content` — backwards compatible with legacy editor. */
+  value?: string;
   onChange: (content: string) => void;
   placeholder?: string;
   className?: string;
@@ -168,6 +172,7 @@ const MenuBar = ({
 
 export function RichTextEditor({
   content,
+  value,
   onChange,
   placeholder = 'Escribe aquí...',
   className,
@@ -175,6 +180,8 @@ export function RichTextEditor({
   disabled = false,
   onImageUpload
 }: RichTextEditorProps) {
+  // Support both `content` and `value` props (value is alias for backward compat)
+  const htmlContent = content ?? value ?? '';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
@@ -196,7 +203,7 @@ export function RichTextEditor({
         emptyEditorClass: 'is-editor-empty'
       })
     ],
-    content,
+    content: htmlContent,
     editable: !disabled,
     immediatelyRender: false, // Fix SSR hydration issue
     onUpdate: ({ editor }) => {
@@ -225,13 +232,13 @@ export function RichTextEditor({
 
     // Validar que sea una imagen
     if (!file.type.startsWith('image/')) {
-      alert('Por favor selecciona un archivo de imagen válido');
+      toast.error('Por favor selecciona un archivo de imagen válido');
       return;
     }
 
     // Validar tamaño (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen no debe superar los 5MB');
+      toast.error('La imagen no debe superar los 5MB');
       return;
     }
 
@@ -254,7 +261,7 @@ export function RichTextEditor({
       editor.chain().focus().setImage({ src: imageUrl }).run();
     } catch (error) {
       console.error('Error al insertar imagen:', error);
-      alert('Error al insertar la imagen');
+      toast.error('Error al insertar la imagen');
     }
 
     // Limpiar el input para permitir seleccionar el mismo archivo de nuevo

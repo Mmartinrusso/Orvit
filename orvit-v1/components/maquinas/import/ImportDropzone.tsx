@@ -195,10 +195,6 @@ export function ImportDropzone({ onUploadComplete, disabled }: ImportDropzonePro
     }
 
     if (valid.length > 0) {
-      console.log('[Dropzone] Adding validated files:');
-      for (const f of valid) {
-        console.log(`  - ${f.file.name}: ${f.file.size} bytes`);
-      }
       setFiles(prev => [...prev, ...valid]);
     }
   }, [disabled, validateFiles]);
@@ -207,10 +203,6 @@ export function ImportDropzone({ onUploadComplete, disabled }: ImportDropzonePro
     if (!e.target.files) return;
 
     const inputFiles = Array.from(e.target.files);
-    console.log('[Dropzone] Files selected from input:', inputFiles.length);
-    for (const f of inputFiles) {
-      console.log(`  - ${f.name}: ${f.size} bytes, type: ${f.type}`);
-    }
 
     const newFiles: FileWithPath[] = inputFiles.map(file => {
       // For webkitdirectory, webkitRelativePath contains the relative path
@@ -275,7 +267,6 @@ export function ImportDropzone({ onUploadComplete, disabled }: ImportDropzonePro
       }
 
       for (const fileItem of files) {
-        console.log(`[Dropzone] Adding file to FormData: ${fileItem.file.name}, size: ${fileItem.file.size}, type: ${fileItem.file.type}`);
         formData.append('files', fileItem.file, fileItem.relativePath);
       }
 
@@ -400,8 +391,8 @@ export function ImportDropzone({ onUploadComplete, disabled }: ImportDropzonePro
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Languages className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+                <Languages className="h-5 w-5 text-info" />
               </div>
               <div>
                 <Label htmlFor="translate-toggle" className="font-medium cursor-pointer">

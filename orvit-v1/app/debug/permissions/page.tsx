@@ -14,8 +14,8 @@ export default function DebugPermissionsPage() {
     return (
       <div className="p-8">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="h-32 bg-muted rounded"></div>
         </div>
       </div>
     );
@@ -26,7 +26,7 @@ export default function DebugPermissionsPage() {
       <div className="p-8">
         <Card>
           <CardContent className="pt-6">
-            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <AlertCircle className="h-12 w-12 text-warning-muted-foreground mx-auto mb-4" />
             <p className="text-center">No hay usuario autenticado</p>
           </CardContent>
         </Card>
@@ -114,7 +114,7 @@ export default function DebugPermissionsPage() {
     <div className="p-8 space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold mb-2">🔐 Debug de Permisos</h1>
-        <p className="text-gray-600">Diagnóstico del sistema de permisos optimizado</p>
+        <p className="text-muted-foreground">Diagnóstico del sistema de permisos optimizado</p>
       </div>
 
       {/* Información del Usuario */}
@@ -125,27 +125,27 @@ export default function DebugPermissionsPage() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600">ID</p>
+              <p className="text-sm text-muted-foreground">ID</p>
               <p className="font-mono">{user.id}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Nombre</p>
+              <p className="text-sm text-muted-foreground">Nombre</p>
               <p className="font-semibold">{user.name}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Email</p>
+              <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-mono">{user.email}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Rol</p>
+              <p className="text-sm text-muted-foreground">Rol</p>
               <Badge className="text-sm">{user.role}</Badge>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Sector ID</p>
+              <p className="text-sm text-muted-foreground">Sector ID</p>
               <p className="font-mono">{user.sectorId || 'null'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Permisos Cargados</p>
+              <p className="text-sm text-muted-foreground">Total Permisos Cargados</p>
               <p className="font-bold text-2xl">{user.permissions?.length || 0}</p>
             </div>
           </div>
@@ -160,19 +160,19 @@ export default function DebugPermissionsPage() {
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Empresa</p>
+              <p className="text-sm text-muted-foreground">Empresa</p>
               <p className="font-semibold">{currentCompany?.name || 'No seleccionada'}</p>
-              <p className="text-xs text-gray-500">ID: {currentCompany?.id || 'null'}</p>
+              <p className="text-xs text-muted-foreground">ID: {currentCompany?.id || 'null'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Área</p>
+              <p className="text-sm text-muted-foreground">Área</p>
               <p className="font-semibold">{currentArea?.name || 'No seleccionada'}</p>
-              <p className="text-xs text-gray-500">ID: {currentArea?.id || 'null'}</p>
+              <p className="text-xs text-muted-foreground">ID: {currentArea?.id || 'null'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Sector</p>
+              <p className="text-sm text-muted-foreground">Sector</p>
               <p className="font-semibold">{currentSector?.name || 'No seleccionado'}</p>
-              <p className="text-xs text-gray-500">ID: {currentSector?.id || 'null'}</p>
+              <p className="text-xs text-muted-foreground">ID: {currentSector?.id || 'null'}</p>
             </div>
           </div>
         </CardContent>
@@ -183,24 +183,24 @@ export default function DebugPermissionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">{granted.length}</p>
-              <p className="text-sm text-gray-600">Permisos Concedidos</p>
+              <p className="text-3xl font-bold text-success">{granted.length}</p>
+              <p className="text-sm text-muted-foreground">Permisos Concedidos</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-3xl font-bold text-red-600">{denied.length}</p>
-              <p className="text-sm text-gray-600">Permisos Denegados</p>
+              <p className="text-3xl font-bold text-destructive">{denied.length}</p>
+              <p className="text-sm text-muted-foreground">Permisos Denegados</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-3xl font-bold text-blue-600">{user.permissions?.length || 0}</p>
-              <p className="text-sm text-gray-600">Total en Memoria</p>
+              <p className="text-3xl font-bold text-info-muted-foreground">{user.permissions?.length || 0}</p>
+              <p className="text-sm text-muted-foreground">Total en Memoria</p>
             </div>
           </CardContent>
         </Card>
@@ -218,16 +218,16 @@ export default function DebugPermissionsPage() {
                 key={permission}
                 className={`flex items-center gap-2 p-3 rounded-lg border ${
                   hasAccess
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
+                    ? 'bg-success-muted border-success-muted'
+                    : 'bg-destructive/10 border-destructive/20'
                 }`}
               >
                 {hasAccess ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
                 )}
-                <span className={`font-mono text-sm ${hasAccess ? 'text-green-900' : 'text-red-900'}`}>
+                <span className={`font-mono text-sm ${hasAccess ? 'text-success' : 'text-destructive'}`}>
                   {permission}
                 </span>
               </div>
@@ -247,7 +247,7 @@ export default function DebugPermissionsPage() {
               {user.permissions.map((perm) => (
                 <div
                   key={perm}
-                  className="px-3 py-2 bg-blue-50 border border-blue-200 rounded text-sm font-mono"
+                  className="px-3 py-2 bg-info-muted border border-info-muted rounded text-sm font-mono"
                 >
                   {perm}
                 </div>
@@ -255,13 +255,13 @@ export default function DebugPermissionsPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <p className="font-bold text-red-600">⚠️ NO HAY PERMISOS CARGADOS</p>
-              <p className="text-sm text-gray-600 mt-2">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <p className="font-bold text-destructive">⚠️ NO HAY PERMISOS CARGADOS</p>
+              <p className="text-sm text-muted-foreground mt-2">
                 El array de permisos está vacío. Esto causa que todos los elementos del sidebar 
                 y botones se oculten.
               </p>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 Verifica que `/api/auth/me` esté devolviendo el campo `permissions` correctamente.
               </p>
             </div>
@@ -276,21 +276,21 @@ export default function DebugPermissionsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded">
               <code className="flex-1">hasPermission('ingresar_mantenimiento')</code>
               <Badge variant={hasPermission('ingresar_mantenimiento') ? 'default' : 'destructive'}>
                 {String(hasPermission('ingresar_mantenimiento'))}
               </Badge>
             </div>
             
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded">
               <code className="flex-1">hasAnyPermission(['ventas', 'costos', 'produccion'])</code>
               <Badge variant={hasAnyPermission(['ventas', 'costos', 'produccion']) ? 'default' : 'destructive'}>
                 {String(hasAnyPermission(['ventas', 'costos', 'produccion']))}
               </Badge>
             </div>
             
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded">
               <code className="flex-1">hasAllPermissions(['ingresar_mantenimiento', 'ingresar_administracion'])</code>
               <Badge variant={hasAllPermissions(['ingresar_mantenimiento', 'ingresar_administracion']) ? 'default' : 'destructive'}>
                 {String(hasAllPermissions(['ingresar_mantenimiento', 'ingresar_administracion']))}
@@ -315,7 +315,7 @@ export default function DebugPermissionsPage() {
             <p><strong>Rol es ADMIN/SUPERADMIN:</strong> {String(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN')}</p>
           </div>
           
-          <div className="mt-4 p-4 bg-gray-100 rounded font-mono text-xs overflow-auto max-h-64">
+          <div className="mt-4 p-4 bg-muted rounded font-mono text-xs overflow-auto max-h-64">
             <pre>{JSON.stringify({ user, currentCompany, currentArea, currentSector }, null, 2)}</pre>
           </div>
         </CardContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 
 interface CacheEntry<T> {
   data: T;
@@ -112,7 +112,8 @@ export function useGlobalCache() {
     globalCache.clear();
   }, []);
 
-  return { get, set, has, remove, clear };
+  // Objeto estable: solo se recrea si alguna función interna cambia (nunca pasa)
+  return useMemo(() => ({ get, set, has, remove, clear }), [get, set, has, remove, clear]);
 }
 
 // Helper para generar keys de caché consistentes

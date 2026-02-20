@@ -1,5 +1,8 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
+import { AVATAR_COLORS } from '@/lib/colors';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { useState, useMemo, useEffect } from 'react';
 import { useUnifiedTasks, type OriginFilter } from '@/hooks/use-unified-tasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +35,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -66,10 +70,14 @@ import { cn } from '@/lib/utils';
 
 import { AgendaCalendarView } from './AgendaCalendarView';
 import { AgendaKanbanView } from './AgendaKanbanView';
+import { AgendaKPICards } from './AgendaKPICards';
 import { AgendaListView } from './AgendaListView';
 import { UnifiedTaskDetailPanel } from './UnifiedTaskDetailPanel';
 import { TaskDialog } from './TaskDialog';
-import type { AgendaTask, AgendaTaskStatus } from '@/lib/agenda/types';
+import TaskGroupsSidebar, { type TaskGroup } from '@/components/tasks/TaskGroupsSidebar';
+import { useCompany } from '@/contexts/CompanyContext';
+import { useQuery } from '@tanstack/react-query';
+import type { AgendaTask, AgendaTaskStatus, AgendaStats } from '@/lib/agenda/types';
 import { getAssigneeName, isTaskOverdue } from '@/lib/agenda/types';
 import type { UnifiedTask, UnifiedTaskStatus, UnifiedTaskPriority } from '@/types/unified-task';
 import {
@@ -79,22 +87,9 @@ import {
   isUnifiedTaskOverdue,
 } from '@/types/unified-task';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
 
-const AVATAR_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
-  '#06b6d4', '#3b82f6', '#ef4444', '#84cc16', '#f97316'
-];
+
+
 
 type ViewMode = 'kanban' | 'list' | 'calendar';
 
@@ -108,7 +103,9 @@ interface PersonStats {
 }
 
 export function AgendaPage() {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
+  const confirm = useConfirm();
+  const { currentCompany } = useCompany();
 
   // Vista y filtros
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -123,9 +120,15 @@ export function AgendaPage() {
     }
     return 'all';
   });
-  const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('agenda_selected_person') || null;
+    }
+    return null;
+  });
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<AgendaTask | null>(null);
+  const [detailTask, setDetailTask] = useState<UnifiedTask | null>(null);
   const [quickTaskInput, setQuickTaskInput] = useState('');
 
   // Filtros
@@ -149,13 +152,54 @@ export function AgendaPage() {
   const [editingPersonName, setEditingPersonName] = useState('');
   const [showDiscordHelp, setShowDiscordHelp] = useState(false);
 
-  // Persistir viewMode y originFilter
+  // Stats de agenda (KPI cards)
+  const [agendaStats, setAgendaStats] = useState<AgendaStats | null>(null);
+
+  // Grupos de agenda
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const { data: agendaGroupsData, refetch: refetchAgendaGroups } = useQuery({
+    queryKey: ['task-groups', currentCompany?.id],
+    queryFn: async () => {
+      if (!currentCompany?.id) return [];
+      const res = await fetch(`/api/task-groups?companyId=${currentCompany.id}`, {
+        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.data as TaskGroup[];
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 30 * 1000,
+  });
+  const agendaGroups = agendaGroupsData || [];
+
+  // Persistir viewMode, originFilter y selectedPerson
   useEffect(() => {
     localStorage.setItem('agenda_view_mode', viewMode);
   }, [viewMode]);
   useEffect(() => {
     localStorage.setItem('agenda_origin_filter', originFilter);
   }, [originFilter]);
+  useEffect(() => {
+    if (selectedPerson) {
+      localStorage.setItem('agenda_selected_person', selectedPerson);
+    } else {
+      localStorage.removeItem('agenda_selected_person');
+    }
+  }, [selectedPerson]);
+
+  // Fetch stats de agenda para KPI cards
+  useEffect(() => {
+    if (!currentCompany?.id) return;
+    fetch(`/api/agenda/stats?companyId=${currentCompany.id}`, {
+      credentials: 'include',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setAgendaStats(data); })
+      .catch(() => {});
+  }, [currentCompany?.id]);
 
   // Hook unificado
   const {
@@ -174,6 +218,16 @@ export function AgendaPage() {
     showOnlyToday,
     selectedPerson,
   });
+
+  // Filtrar tareas por grupo seleccionado
+  const groupFilteredTasks = useMemo(() => {
+    if (selectedGroupId === null) return tasks;
+    return tasks.filter(task => {
+      const agendaGroupId = (task.originalAgendaTask as any)?.groupId;
+      const regularGroupId = (task.originalRegularTask as any)?.groupId;
+      return agendaGroupId === selectedGroupId || regularGroupId === selectedGroupId;
+    });
+  }, [tasks, selectedGroupId]);
 
   // Agrupar por persona para sidebar
   const personStats = useMemo(() => {
@@ -199,7 +253,7 @@ export function AgendaPage() {
       inProgressTasks: 0,
     });
 
-    tasks.forEach((task) => {
+    groupFilteredTasks.forEach((task) => {
       const assignee = task.assigneeName;
 
       if (!grouped.has(assignee)) {
@@ -233,21 +287,51 @@ export function AgendaPage() {
         if (a.overdueTasks !== b.overdueTasks) return b.overdueTasks - a.overdueTasks;
         return b.pendingTasks - a.pendingTasks;
       });
-  }, [tasks, fixedPeople]);
+  }, [groupFilteredTasks, fixedPeople]);
+
+  // Optimistic updates: map de taskId → status provisional
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, UnifiedTaskStatus>>(new Map());
+
+  // Tasks con statuses optimistas aplicados
+  const displayTasks = useMemo(() => {
+    if (optimisticStatuses.size === 0) return groupFilteredTasks;
+    return groupFilteredTasks.map(task => {
+      const optimistic = optimisticStatuses.get(String(task.id));
+      return optimistic ? { ...task, status: optimistic } : task;
+    });
+  }, [groupFilteredTasks, optimisticStatuses]);
 
   // Handlers
   const handleUnifiedStatusChange = async (task: UnifiedTask, newStatus: string) => {
+    // Normalizar status
+    const NORMALIZE_STATUS: Record<string, UnifiedTaskStatus> = {
+      'COMPLETED': 'completed', 'PENDING': 'pending', 'IN_PROGRESS': 'in_progress',
+      'CANCELLED': 'cancelled', 'WAITING': 'waiting',
+    };
+    const normalizedStatus = (NORMALIZE_STATUS[newStatus] || newStatus) as UnifiedTaskStatus;
+    const taskKey = String(task.id);
+
+    // Aplicar optimistic update inmediatamente
+    setOptimisticStatuses(prev => new Map(prev).set(taskKey, normalizedStatus));
+
     try {
       if (task.origin === 'agenda' && task.originalAgendaTask) {
-        const agendaStatus = UNIFIED_TO_AGENDA_STATUS[newStatus as UnifiedTaskStatus];
+        const agendaStatus = UNIFIED_TO_AGENDA_STATUS[normalizedStatus];
         await agenda.updateTask(task.originalAgendaTask.id, { status: agendaStatus });
       } else if (task.origin === 'regular' && task.originalRegularTask) {
-        const regularStatus = UNIFIED_TO_REGULAR_STATUS[newStatus as UnifiedTaskStatus];
+        const regularStatus = UNIFIED_TO_REGULAR_STATUS[normalizedStatus];
         await taskStore.updateTaskAPI(task.originalRegularTask.id, { status: regularStatus });
       }
       toast.success('Estado actualizado');
     } catch {
+      // Revertir si falla
+      setOptimisticStatuses(prev => { const m = new Map(prev); m.delete(taskKey); return m; });
       toast.error('Error al actualizar estado');
+    } finally {
+      // Limpiar después de que el hook se re-sincronice
+      setTimeout(() => {
+        setOptimisticStatuses(prev => { const m = new Map(prev); m.delete(taskKey); return m; });
+      }, 2000);
     }
   };
 
@@ -262,7 +346,13 @@ export function AgendaPage() {
   };
 
   const handleUnifiedDelete = async (task: UnifiedTask) => {
-    if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
+    const ok = await confirm({
+      title: 'Eliminar tarea',
+      description: '¿Eliminar esta tarea? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       if (task.origin === 'agenda' && task.originalAgendaTask) {
         await agenda.deleteTask(task.originalAgendaTask.id);
@@ -394,8 +484,8 @@ export function AgendaPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-[calc(100vh-120px)] gap-4 px-6 py-4">
-        {/* Header con Stats Rápidos */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        {/* Header */}
+        <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Calendar className="h-6 w-6" style={{ color: userColors.chart1 }} />
@@ -405,45 +495,7 @@ export function AgendaPage() {
               Todas tus tareas en un solo lugar
             </p>
           </div>
-
-          {/* Quick Stats Pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant="outline"
-              className="cursor-pointer hover:bg-muted transition-colors px-3 py-1"
-              style={showOnlyOverdue ? { backgroundColor: `${userColors.kpiNegative}15`, borderColor: userColors.kpiNegative } : {}}
-              onClick={() => { setShowOnlyOverdue(!showOnlyOverdue); setShowOnlyToday(false); }}
-            >
-              <AlertTriangle className="h-3 w-3 mr-1" style={{ color: userColors.kpiNegative }} />
-              <span className="font-semibold" style={{ color: userColors.kpiNegative }}>{stats.overdue}</span>
-              <span className="ml-1 text-muted-foreground">vencidas</span>
-            </Badge>
-
-            <Badge
-              variant="outline"
-              className="cursor-pointer hover:bg-muted transition-colors px-3 py-1"
-              style={showOnlyToday ? { backgroundColor: `${userColors.chart4}15`, borderColor: userColors.chart4 } : {}}
-              onClick={() => { setShowOnlyToday(!showOnlyToday); setShowOnlyOverdue(false); }}
-            >
-              <CalendarDays className="h-3 w-3 mr-1" style={{ color: userColors.chart4 }} />
-              <span className="font-semibold" style={{ color: userColors.chart4 }}>{stats.today}</span>
-              <span className="ml-1 text-muted-foreground">para hoy</span>
-            </Badge>
-
-            <Badge variant="outline" className="px-3 py-1">
-              <Zap className="h-3 w-3 mr-1" style={{ color: userColors.chart3 }} />
-              <span className="font-semibold" style={{ color: userColors.chart3 }}>{stats.urgent}</span>
-              <span className="ml-1 text-muted-foreground">urgentes</span>
-            </Badge>
-
-            <Badge variant="outline" className="px-3 py-1">
-              <CheckCircle2 className="h-3 w-3 mr-1" style={{ color: userColors.kpiPositive }} />
-              <span className="font-semibold" style={{ color: userColors.kpiPositive }}>{stats.completedToday}</span>
-              <span className="ml-1 text-muted-foreground">completadas hoy</span>
-            </Badge>
-
-            <Separator orientation="vertical" className="h-6" />
-
+          <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="sm" onClick={() => setShowDiscordHelp(true)}>
@@ -453,7 +505,6 @@ export function AgendaPage() {
               </TooltipTrigger>
               <TooltipContent>¿Cómo usar desde Discord?</TooltipContent>
             </Tooltip>
-
             <Button onClick={handleCreateTask}>
               <Plus className="h-4 w-4 mr-2" />
               Nueva Tarea
@@ -461,8 +512,29 @@ export function AgendaPage() {
           </div>
         </div>
 
-        {/* Main Layout: Sidebar de Personas + Content */}
-        <div className="flex flex-1 gap-4 min-h-0">
+        {/* KPI Cards */}
+        <AgendaKPICards
+          stats={agendaStats ?? undefined}
+          onKpiClick={(filter) => {
+            if (filter === 'overdue') { setShowOnlyOverdue(true); setShowOnlyToday(false); }
+            else if (filter === 'today') { setShowOnlyToday(true); setShowOnlyOverdue(false); }
+            else if (filter === 'pending') { setStatusFilter('pendiente'); setShowOnlyOverdue(false); setShowOnlyToday(false); }
+          }}
+        />
+
+        {/* Main Layout: Sidebars + Content */}
+        <div className="flex flex-1 gap-3 min-h-0">
+          {/* Sidebar de Grupos */}
+          {currentCompany?.id && (
+            <TaskGroupsSidebar
+              groups={agendaGroups}
+              selectedGroupId={selectedGroupId}
+              onGroupSelect={setSelectedGroupId}
+              companyId={currentCompany.id}
+              onGroupsChange={refetchAgendaGroups}
+            />
+          )}
+
           {/* Sidebar de Personas */}
           <Card className="w-72 flex-shrink-0 flex flex-col">
             <CardHeader className="pb-2">
@@ -545,7 +617,7 @@ export function AgendaPage() {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>{person.pendingTasks} pendiente{person.pendingTasks !== 1 ? 's' : ''}</span>
                             {person.overdueTasks > 0 && (
-                              <span className="text-red-500 font-medium">
+                              <span className="text-destructive font-medium">
                                 • {person.overdueTasks} vencida{person.overdueTasks !== 1 ? 's' : ''}
                               </span>
                             )}
@@ -769,7 +841,7 @@ export function AgendaPage() {
                 <div className="flex-1">
                   <h2 className="font-semibold">{selectedPerson}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {tasks.length} tarea{tasks.length !== 1 ? 's' : ''}
+                    {displayTasks.length} tarea{displayTasks.length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedPerson(null)}>
@@ -783,36 +855,48 @@ export function AgendaPage() {
             <div className="flex-1 overflow-hidden">
               {viewMode === 'kanban' && (
                 <AgendaKanbanView
-                  tasks={tasks}
+                  tasks={displayTasks}
                   onSelect={(task) => {
-                    // Para kanban, abrir detail panel en lista
-                    setViewMode('list');
+                    setDetailTask(task);
                   }}
-                  onStatusChange={handleUnifiedStatusChange}
+                  onStatusChange={(task, status) => handleUnifiedStatusChange(task as any, status)}
+                  onEdit={(task) => handleUnifiedEdit(task as any)}
+                  onDelete={(task) => handleUnifiedDelete(task as any)}
                 />
               )}
 
               {viewMode === 'list' && (
                 <AgendaListView
-                  tasks={tasks}
-                  onStatusChange={handleUnifiedStatusChange}
-                  onEdit={handleUnifiedEdit}
-                  onDelete={handleUnifiedDelete}
+                  tasks={displayTasks}
+                  onStatusChange={(task, status) => handleUnifiedStatusChange(task as any, status)}
+                  onEdit={(task) => handleUnifiedEdit(task as any)}
+                  onDelete={(task) => handleUnifiedDelete(task as any)}
                 />
               )}
 
               {viewMode === 'calendar' && (
                 <AgendaCalendarView
-                  tasks={tasks}
+                  tasks={displayTasks}
                   onSelect={(task) => {
-                    // Cambiar a lista para ver detalles
-                    setViewMode('list');
+                    // Abrir panel de detalle sin cambiar de vista
+                    setDetailTask(task);
                   }}
                 />
               )}
             </div>
           </div>
         </div>
+
+        {/* Detail Panel — se abre al hacer click en kanban */}
+        {detailTask && (
+          <UnifiedTaskDetailPanel
+            task={detailTask}
+            onClose={() => setDetailTask(null)}
+            onEdit={() => { handleUnifiedEdit(detailTask); setDetailTask(null); }}
+            onDelete={() => { handleUnifiedDelete(detailTask); setDetailTask(null); }}
+            onStatusChange={(status) => handleUnifiedStatusChange(detailTask as any, status)}
+          />
+        )}
 
         {/* Task Dialog */}
         <TaskDialog
@@ -822,11 +906,12 @@ export function AgendaPage() {
           onSave={handleTaskSave}
           onSaveRegular={handleSaveRegular}
           isSaving={agenda.isCreating || agenda.isUpdating}
+          defaultGroupId={selectedGroupId}
         />
 
         {/* Dialog para gestionar personas fijas */}
         <Dialog open={showPersonDialog} onOpenChange={setShowPersonDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" style={{ color: userColors.chart1 }} />
@@ -837,7 +922,7 @@ export function AgendaPage() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
+            <DialogBody className="space-y-4">
               <div className="flex gap-2">
                 <Input
                   placeholder="Nombre de la persona..."
@@ -889,7 +974,7 @@ export function AgendaPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              className="h-8 w-8 p-0 text-success hover:text-success hover:bg-success-muted"
                               aria-label="Guardar nombre editado"
                               onClick={handleSaveEditPerson}
                             >
@@ -932,7 +1017,7 @@ export function AgendaPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                               aria-label={`Eliminar a ${person}`}
                               onClick={() => handleRemovePerson(person)}
                             >
@@ -945,7 +1030,7 @@ export function AgendaPage() {
                   ))
                 )}
               </div>
-            </div>
+            </DialogBody>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowPersonDialog(false)}>
@@ -957,7 +1042,7 @@ export function AgendaPage() {
 
         {/* Dialog de ayuda de Discord */}
         <Dialog open={showDiscordHelp} onOpenChange={setShowDiscordHelp}>
-          <DialogContent className="max-w-lg">
+          <DialogContent size="default">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" style={{ color: userColors.chart2 }} />
@@ -968,7 +1053,7 @@ export function AgendaPage() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <DialogBody className="space-y-6">
               <div className="space-y-2">
                 <h4 className="font-semibold flex items-center gap-2">
                   <MessageCircle className="h-4 w-4" style={{ color: userColors.chart1 }} />
@@ -1011,7 +1096,7 @@ export function AgendaPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </DialogBody>
 
             <DialogFooter>
               <Button onClick={() => setShowDiscordHelp(false)}>

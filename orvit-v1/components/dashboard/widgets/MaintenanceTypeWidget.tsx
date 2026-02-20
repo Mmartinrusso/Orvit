@@ -33,8 +33,8 @@ export function MaintenanceTypeWidget({ companyId, sectorId, style = 'donut-char
   const total = preventive + corrective;
 
   const chartData = [
-    { label: 'Preventivo', value: preventive, color: '#22c55e' },
-    { label: 'Correctivo', value: corrective, color: '#f97316' },
+    { label: 'Preventivo', value: preventive, color: 'hsl(var(--success))' },
+    { label: 'Correctivo', value: corrective, color: 'hsl(var(--chart-5))' },
   ].filter(d => d.value > 0);
 
   if (isLoading) {
@@ -69,8 +69,8 @@ export function MaintenanceTypeWidget({ companyId, sectorId, style = 'donut-char
             <span className="text-muted-foreground">Preventivo</span>
             <span className="font-medium">{preventive} ({Math.round((preventive/total)*100)}%)</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2">
-            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(preventive/total)*100}%` }} />
+          <div className="w-full bg-muted rounded-full h-2">
+            <div className="bg-success h-2 rounded-full" style={{ width: `${(preventive/total)*100}%` }} />
           </div>
         </div>
         <div>
@@ -78,8 +78,8 @@ export function MaintenanceTypeWidget({ companyId, sectorId, style = 'donut-char
             <span className="text-muted-foreground">Correctivo</span>
             <span className="font-medium">{corrective} ({Math.round((corrective/total)*100)}%)</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2">
-            <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${(corrective/total)*100}%` }} />
+          <div className="w-full bg-muted rounded-full h-2">
+            <div className="bg-warning h-2 rounded-full" style={{ width: `${(corrective/total)*100}%` }} />
           </div>
         </div>
       </div>

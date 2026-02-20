@@ -36,6 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -247,19 +248,20 @@ export function RCADialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-purple-600" />
+            <Target className="h-5 w-5 text-primary" />
             Análisis de Causa Raíz (5-Whys)
           </DialogTitle>
           <DialogDescription>
             {workOrderTitle && (
-              <span className="text-gray-700">OT: {workOrderTitle}</span>
+              <span className="text-foreground">OT: {workOrderTitle}</span>
             )}
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         {isLoading ? (
           <div className="space-y-4 py-4">
             <Skeleton className="h-20 w-full" />
@@ -268,19 +270,19 @@ export function RCADialog({
           </div>
         ) : isReviewed ? (
           <div className="py-8 text-center">
-            <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <p className="font-medium text-gray-900">RCA Revisado y Aprobado</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <CheckCircle2 className="h-12 w-12 text-success mx-auto mb-4" />
+            <p className="font-medium text-foreground">RCA Revisado y Aprobado</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Este análisis ya fue revisado y no puede modificarse
             </p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto py-4 space-y-6">
+          <div className="space-y-6">
             {/* Los 5 Por Qué */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium flex items-center gap-2">
-                  <HelpCircle className="h-4 w-4 text-purple-600" />
+                  <HelpCircle className="h-4 w-4 text-primary" />
                   Los 5 Por Qué
                 </Label>
                 <Badge variant="outline" className="text-xs">
@@ -296,16 +298,16 @@ export function RCADialog({
                     className={cn(
                       'relative p-4 rounded-lg border-2 transition-colors',
                       index === currentWhys.length - 1
-                        ? 'border-purple-200 bg-purple-50/50'
-                        : 'border-gray-200 bg-gray-50/50'
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border bg-muted/50'
                     )}
                   >
                     {/* Número de nivel */}
                     <div className={cn(
                       'absolute -left-3 -top-3 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold',
                       index === currentWhys.length - 1
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-400 text-white'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted-foreground text-background'
                     )}>
                       {index + 1}
                     </div>
@@ -313,7 +315,7 @@ export function RCADialog({
                     <div className="space-y-3 ml-2">
                       {/* Pregunta */}
                       <div>
-                        <Label className="text-sm text-gray-600">
+                        <Label className="text-sm text-foreground">
                           Pregunta
                         </Label>
                         <Input
@@ -325,7 +327,7 @@ export function RCADialog({
 
                       {/* Respuesta */}
                       <div>
-                        <Label className="text-sm text-gray-600">
+                        <Label className="text-sm text-foreground">
                           Respuesta
                         </Label>
                         <Textarea
@@ -335,7 +337,7 @@ export function RCADialog({
                           placeholder="¿Por qué ocurrió esto?"
                         />
                         {form.formState.errors.whys?.[index]?.answer && (
-                          <p className="text-xs text-red-500 mt-1">
+                          <p className="text-xs text-destructive mt-1">
                             {form.formState.errors.whys[index]?.answer?.message}
                           </p>
                         )}
@@ -347,7 +349,7 @@ export function RCADialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => removeWhy(index)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
@@ -376,7 +378,7 @@ export function RCADialog({
             {/* Causa Raíz */}
             <div className="space-y-2">
               <Label className="text-base font-medium flex items-center gap-2">
-                <Target className="h-4 w-4 text-red-600" />
+                <Target className="h-4 w-4 text-destructive" />
                 Causa Raíz Identificada
               </Label>
               <Textarea
@@ -384,7 +386,7 @@ export function RCADialog({
                 placeholder="Resumen de la causa raíz principal..."
                 rows={2}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Se pre-llenará con la última respuesta si no se especifica
               </p>
             </div>
@@ -392,7 +394,7 @@ export function RCADialog({
             {/* Conclusión */}
             <div className="space-y-2">
               <Label className="text-base font-medium flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-yellow-600" />
+                <Lightbulb className="h-4 w-4 text-warning-muted-foreground" />
                 Conclusión
               </Label>
               <Textarea
@@ -411,7 +413,7 @@ export function RCADialog({
                   className="w-full justify-between"
                 >
                   <span className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-success" />
                     Acciones Correctivas
                     {actionFields.length > 0 && (
                       <Badge variant="secondary" className="text-xs">
@@ -431,7 +433,7 @@ export function RCADialog({
                 {actionFields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="p-3 border rounded-lg bg-gray-50 space-y-2"
+                    className="p-3 border rounded-lg bg-muted space-y-2"
                   >
                     <div className="flex items-start gap-2">
                       <div className="flex-1">
@@ -444,7 +446,7 @@ export function RCADialog({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="shrink-0 text-red-600 hover:text-red-700"
+                        className="shrink-0 text-destructive hover:text-destructive"
                         onClick={() => removeAction(index)}
                       >
                         <X className="h-4 w-4" />
@@ -502,6 +504,7 @@ export function RCADialog({
             </Collapsible>
           </div>
         )}
+        </DialogBody>
 
         {!isLoading && !isReviewed && (
           <DialogFooter className="gap-2 sm:gap-0">

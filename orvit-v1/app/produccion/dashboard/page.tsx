@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import React, { useState, useEffect, useCallback } from 'react';
 import EmployeeDashboard from '@/components/production/EmployeeDashboard';
 import {
@@ -104,23 +105,30 @@ interface KPIData {
 
 const COLORS = ['#6366f1', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+interface OEEMetric {
+  availability: number;
+  performance: number | null;
+  quality: number;
+  oee: number | null;
+  oeePartial: number;
+}
+
+interface OEEData {
+  reportCount: number;
+  summary: OEEMetric;
+  trend: Array<{ date: string } & OEEMetric>;
+  byWorkCenter: Array<{ workCenterId: number; workCenterName: string; reportCount: number } & OEEMetric>;
+}
+
+
 
 function ManagerDashboard() {
   const { currentSector, currentCompany } = useCompany();
   const { user } = useAuth();
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData | null>(null);
+  const [oeeData, setOeeData] = useState<OEEData | null>(null);
   const [dateFrom, setDateFrom] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [workCenters, setWorkCenters] = useState<{ id: number; name: string }[]>([]);
@@ -130,19 +138,17 @@ function ManagerDashboard() {
     if (!currentSector) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        dateFrom,
-        dateTo,
-      });
-      if (selectedWorkCenter) {
-        params.set('workCenterId', selectedWorkCenter);
-      }
+      const params = new URLSearchParams({ dateFrom, dateTo });
+      if (selectedWorkCenter) params.set('workCenterId', selectedWorkCenter);
 
-      const res = await fetch(`/api/production/kpis?${params}`);
-      const data = await res.json();
-      if (data.success) {
-        setKpis(data.kpis);
-      }
+      const [kpiRes, oeeRes] = await Promise.all([
+        fetch(`/api/production/kpis?${params}`),
+        fetch(`/api/production/oee?${params}`),
+      ]);
+      const [kpiJson, oeeJson] = await Promise.all([kpiRes.json(), oeeRes.json()]);
+
+      if (kpiJson.success) setKpis(kpiJson.kpis);
+      if (oeeJson.success) setOeeData(oeeJson);
     } catch (error) {
       console.error('Error fetching KPIs:', error);
     } finally {
@@ -209,6 +215,20 @@ function ManagerDashboard() {
     }
   };
 
+  const getOEEColor = (value: number | null) => {
+    if (value === null) return userColors.kpiNeutral;
+    if (value >= 85) return userColors.kpiPositive;
+    if (value >= 65) return userColors.chart4;
+    return userColors.kpiNegative;
+  };
+
+  const getOEEStatusLabel = (value: number | null) => {
+    if (value === null) return null;
+    if (value >= 85) return 'Clase mundial ✓';
+    if (value >= 65) return 'Aceptable';
+    return 'Bajo — requiere atención';
+  };
+
   const formatMinutes = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -244,7 +264,7 @@ function ManagerDashboard() {
   if (loading && !kpis) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-info-muted-foreground" />
       </div>
     );
   }
@@ -424,6 +444,179 @@ function ManagerDashboard() {
               </Card>
             ))}
           </div>
+
+          {/* OEE — Eficiencia Global del Equipo */}
+          {oeeData && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-1 rounded-full" style={{ backgroundColor: userColors.chart1 }} />
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  OEE — Eficiencia Global del Equipo
+                </h2>
+                {oeeData.summary.performance === null && (
+                  <Badge variant="outline" className="text-[10px] text-warning-muted-foreground border-warning-muted">
+                    OEE Parcial · sin ciclo de referencia
+                  </Badge>
+                )}
+              </div>
+
+              {oeeData.reportCount === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Sin reportes de parte diario en el período</p>
+                    <p className="text-xs text-muted-foreground mt-1">Completá el registro diario para ver el OEE</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {/* 4 OEE metric cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      {
+                        label: oeeData.summary.oee !== null ? 'OEE Global' : 'OEE Parcial (A×Q)',
+                        value: oeeData.summary.oee ?? oeeData.summary.oeePartial,
+                        note: oeeData.summary.oee === null ? 'Configurá tiempo de ciclo en centros de trabajo' : null,
+                        metric: 'OEE',
+                      },
+                      {
+                        label: 'Disponibilidad',
+                        value: oeeData.summary.availability,
+                        note: null,
+                        metric: 'A',
+                      },
+                      {
+                        label: 'Eficiencia',
+                        value: oeeData.summary.performance,
+                        note: oeeData.summary.performance === null ? 'Configure ciclo estándar en centros de trabajo' : null,
+                        metric: 'P',
+                      },
+                      {
+                        label: 'Calidad',
+                        value: oeeData.summary.quality,
+                        note: null,
+                        metric: 'Q',
+                      },
+                    ].map((item) => {
+                      const color = getOEEColor(item.value);
+                      const statusLabel = getOEEStatusLabel(item.value);
+                      return (
+                        <Card key={item.metric}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                                <p className="text-2xl font-bold mt-1" style={{ color: item.value !== null ? color : userColors.kpiNeutral }}>
+                                  {item.value !== null ? `${item.value}%` : 'N/D'}
+                                </p>
+                              </div>
+                              <div
+                                className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                                style={{ backgroundColor: `${color}15`, color }}
+                              >
+                                {item.metric}
+                              </div>
+                            </div>
+                            {item.value !== null && (
+                              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mb-2">
+                                <div
+                                  className="h-full rounded-full transition-all"
+                                  style={{ backgroundColor: color, width: `${Math.min(100, item.value)}%` }}
+                                />
+                              </div>
+                            )}
+                            {statusLabel ? (
+                              <p className="text-[11px] font-medium" style={{ color }}>{statusLabel}</p>
+                            ) : item.note ? (
+                              <p className="text-[11px] text-warning-muted-foreground">{item.note}</p>
+                            ) : null}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+
+                  {/* Tendencia OEE + Comparativa centros */}
+                  {(oeeData.trend.length > 1 || oeeData.byWorkCenter.length > 1) && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Trend chart */}
+                      {oeeData.trend.length > 1 && (
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4" style={{ color: userColors.chart1 }} />
+                              Tendencia OEE
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                              OEE {oeeData.summary.oee === null ? 'parcial (A×Q)' : 'completo'} por día
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <ResponsiveContainer width="100%" height={200}>
+                              <LineChart data={oeeData.trend}>
+                                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                <XAxis dataKey="date" tickFormatter={(v) => format(new Date(v), 'dd/MM', { locale: es })} fontSize={11} />
+                                <YAxis domain={[0, 100]} fontSize={11} tickFormatter={(v) => `${v}%`} />
+                                <Tooltip
+                                  labelFormatter={(v) => format(new Date(v), 'dd MMM', { locale: es })}
+                                  formatter={(val: number) => [`${val}%`]}
+                                />
+                                <Legend />
+                                <Line type="monotone" dataKey={oeeData.summary.oee !== null ? 'oee' : 'oeePartial'} name="OEE" stroke={userColors.chart1} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                                <Line type="monotone" dataKey="availability" name="Disp." stroke={userColors.kpiPositive} strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
+                                <Line type="monotone" dataKey="quality" name="Calidad" stroke={userColors.chart6} strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Por centro de trabajo */}
+                      {oeeData.byWorkCenter.length > 1 && (
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                              <Factory className="h-4 w-4" style={{ color: userColors.chart2 }} />
+                              OEE por Centro de Trabajo
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              {oeeData.byWorkCenter.map((wc) => {
+                                const oeeVal = wc.oee ?? wc.oeePartial;
+                                const color = getOEEColor(oeeVal);
+                                return (
+                                  <div key={wc.workCenterId} className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium truncate max-w-[160px]">{wc.workCenterName}</span>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex gap-2 text-[10px] text-muted-foreground">
+                                          <span>A:{wc.availability}%</span>
+                                          <span>P:{wc.performance !== null ? `${wc.performance}%` : 'N/D'}</span>
+                                          <span>Q:{wc.quality}%</span>
+                                        </div>
+                                        <span className="text-sm font-bold w-10 text-right" style={{ color }}>{oeeVal}%</span>
+                                      </div>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all"
+                                        style={{ backgroundColor: color, width: `${Math.min(100, oeeVal)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

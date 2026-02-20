@@ -58,10 +58,12 @@ export function startAllWorkers() {
     const { startInvoiceProcessorWorker } = require('./workers/invoice-processor.worker');
     const { startNotificationSenderWorker } = require('./workers/notification-sender.worker');
     const { startReportGeneratorWorker } = require('./workers/report-generator.worker');
+    const { startRoutineDeadlineWorker } = require('./workers/routine-deadline.worker');
 
     startInvoiceProcessorWorker();
     startNotificationSenderWorker();
     startReportGeneratorWorker();
+    startRoutineDeadlineWorker();
 
     console.log('[Jobs] All workers started');
   }

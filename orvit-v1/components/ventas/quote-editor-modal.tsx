@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -249,11 +250,11 @@ export function QuoteEditorModal({
 
   const getStatusBadge = (status: string) => {
     const config = {
-      sent: { variant: 'default' as const, icon: Send, color: 'text-blue-600' },
-      pending_closure: { variant: 'secondary' as const, icon: Clock, color: 'text-yellow-600' },
-      payment_confirmed: { variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
-      rejected: { variant: 'destructive' as const, icon: XCircle, color: 'text-red-600' },
-      expired: { variant: 'secondary' as const, icon: Clock, color: 'text-gray-600' }
+      sent: { variant: 'default' as const, icon: Send, color: 'text-primary' },
+      pending_closure: { variant: 'secondary' as const, icon: Clock, color: 'text-warning-muted-foreground' },
+      payment_confirmed: { variant: 'default' as const, icon: CheckCircle, color: 'text-success' },
+      rejected: { variant: 'destructive' as const, icon: XCircle, color: 'text-destructive' },
+      expired: { variant: 'secondary' as const, icon: Clock, color: 'text-muted-foreground' }
     };
     
     const statusConfig = config[status as keyof typeof config];
@@ -330,9 +331,7 @@ export function QuoteEditorModal({
                                     }}
                                   >
                                     <Check
-                                      className={`mr-2 h-4 w-4 ${
-                                        selectedClient?.id === client.id ? "opacity-100" : "opacity-0"
-                                      }`}
+                                      className={cn('mr-2 h-4 w-4', selectedClient?.id === client.id ? 'opacity-100' : 'opacity-0')}
                                     />
                                     <div>
                                       <p className="font-medium">{client.name}</p>

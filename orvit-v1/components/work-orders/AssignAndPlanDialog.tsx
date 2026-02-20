@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -176,11 +177,12 @@ export function AssignAndPlanDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-lg max-h-[90vh] flex flex-col p-0"
+        size="default"
+        className="p-0"
         onEscapeKeyDown={() => onOpenChange(false)}
         onPointerDownOutside={() => onOpenChange(false)}
       >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Asignar y Planificar
@@ -299,17 +301,17 @@ export function AssignAndPlanDialog({
 
               {/* SLA calculado */}
               {calculatedSla && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+                <div className="rounded-lg border border-warning-muted bg-warning-muted/50 p-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-amber-600" />
-                    <span className="font-medium text-amber-900">
+                    <Clock className="h-4 w-4 text-warning-muted-foreground" />
+                    <span className="font-medium text-foreground">
                       SLA: {format(calculatedSla, "dd/MM/yyyy HH:mm", { locale: es })}
                     </span>
                     <Badge variant="outline" className="ml-auto text-xs">
                       {DEFAULT_SLA_HOURS[priority]}h
                     </Badge>
                   </div>
-                  <p className="text-xs text-amber-700 mt-1.5">
+                  <p className="text-xs text-warning-muted-foreground mt-1.5">
                     Vencimiento calculado según prioridad {PRIORITY_LABELS[priority]}
                   </p>
                 </div>
@@ -358,7 +360,7 @@ export function AssignAndPlanDialog({
             </div>
 
             {/* Footer fijo */}
-            <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+            <DialogFooter className="px-6 py-4 border-t">
               <Button
                 type="button"
                 variant="outline"

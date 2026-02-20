@@ -82,11 +82,11 @@ export function SolutionCard({
       case 'CRITICAL':
         return <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Crítica</Badge>;
       case 'HIGH':
-        return <Badge className="bg-orange-500 text-[10px] px-1.5 py-0">Alta</Badge>;
+        return <Badge className="bg-warning-muted-foreground text-[10px] px-1.5 py-0">Alta</Badge>;
       case 'MEDIUM':
-        return <Badge className="bg-amber-500 text-[10px] px-1.5 py-0">Media</Badge>;
+        return <Badge className="bg-warning-muted-foreground text-[10px] px-1.5 py-0">Media</Badge>;
       case 'LOW':
-        return <Badge className="bg-green-500 text-[10px] px-1.5 py-0">Baja</Badge>;
+        return <Badge className="bg-success text-[10px] px-1.5 py-0">Baja</Badge>;
       default:
         return null;
     }
@@ -116,7 +116,7 @@ export function SolutionCard({
         )}
         onClick={() => onClick?.(solution)}
       >
-        <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 shrink-0">
+        <div className="p-1.5 rounded-md bg-warning-muted text-warning-muted-foreground shrink-0">
           <Lightbulb className="h-3.5 w-3.5" />
         </div>
         <div className="flex-1 min-w-0">
@@ -135,13 +135,13 @@ export function SolutionCard({
     return (
       <Card
         className={cn(
-          "p-3 cursor-pointer hover:bg-accent/50 transition-colors group border-l-4 border-l-amber-500",
+          "p-3 cursor-pointer hover:bg-accent/50 transition-colors group border-l-4 border-l-warning-muted-foreground",
           className
         )}
         onClick={() => onClick?.(solution)}
       >
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 shrink-0">
+          <div className="p-2 rounded-lg bg-warning-muted text-warning-muted-foreground shrink-0">
             <Lightbulb className="h-4 w-4" />
           </div>
 
@@ -166,7 +166,7 @@ export function SolutionCard({
 
             {solution.rootCause && (
               <p className="text-xs text-muted-foreground line-clamp-1">
-                <span className="text-red-500 font-medium">Causa:</span> {solution.rootCause}
+                <span className="text-destructive font-medium">Causa:</span> {solution.rootCause}
               </p>
             )}
 
@@ -204,18 +204,18 @@ export function SolutionCard({
       onClick={() => onClick?.(solution)}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b bg-amber-50/50 dark:bg-amber-950/10">
+      <div className="px-4 py-3 border-b bg-warning-muted/50">
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 shrink-0">
+          <div className="p-2 rounded-lg bg-warning-muted text-warning-muted-foreground shrink-0">
             <Lightbulb className="h-5 w-5" />
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-amber-600 transition-colors">
+              <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-warning-muted-foreground transition-colors">
                 {solution.title}
               </h3>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-amber-500 transition-colors shrink-0 mt-0.5" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-warning-muted-foreground transition-colors shrink-0 mt-0.5" />
             </div>
 
             {showMachine && solution.machineName && (
@@ -240,7 +240,7 @@ export function SolutionCard({
         {/* Root Cause */}
         {solution.rootCause && (
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 flex items-center gap-1">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-destructive flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
               Causa Raíz
             </span>
@@ -251,7 +251,7 @@ export function SolutionCard({
         {/* Solution */}
         {(solution.solution || solution.correctiveActions) && (
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-green-600 flex items-center gap-1">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-success flex items-center gap-1">
               <Wrench className="h-3 w-3" />
               Solución
             </span>

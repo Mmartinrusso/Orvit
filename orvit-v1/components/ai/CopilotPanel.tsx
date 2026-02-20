@@ -13,7 +13,8 @@ import {
   TrendingDown,
   Clock,
   Package,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react';
 import { CopilotChat } from './CopilotChat';
 import { ContextualSuggestions } from './ContextualSuggestions';
@@ -44,34 +45,34 @@ interface CopilotPanelProps {
 const alertTypeConfig = {
   RISK: {
     icon: AlertTriangle,
-    color: 'text-red-500',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/20',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
+    borderColor: 'border-destructive/20',
   },
   OPPORTUNITY: {
     icon: TrendingDown,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/20',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+    borderColor: 'border-success/20',
   },
   ANOMALY: {
     icon: Activity,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500/20',
+    color: 'text-warning-muted-foreground',
+    bgColor: 'bg-warning-muted',
+    borderColor: 'border-warning/20',
   },
   REMINDER: {
     icon: Clock,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+    borderColor: 'border-primary/20',
   },
 };
 
 const priorityColors = {
-  HIGH: 'bg-red-500',
-  MEDIUM: 'bg-yellow-500',
-  LOW: 'bg-green-500',
+  HIGH: 'bg-destructive',
+  MEDIUM: 'bg-warning',
+  LOW: 'bg-success',
 };
 
 export function CopilotPanel({ context, onEntityClick }: CopilotPanelProps) {
@@ -128,13 +129,13 @@ export function CopilotPanel({ context, onEntityClick }: CopilotPanelProps) {
         >
           <Bot className="h-6 w-6" />
           {highPriorityCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
               {highPriorityCount}
             </span>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+      <SheetContent side="right" size="md" className="p-0 flex flex-col">
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -175,7 +176,7 @@ export function CopilotPanel({ context, onEntityClick }: CopilotPanelProps) {
           <TabsContent value="alerts" className="flex-1 m-0 overflow-auto p-4">
             {isLoadingAlerts ? (
               <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : alerts.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-center text-muted-foreground">

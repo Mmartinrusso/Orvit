@@ -208,11 +208,11 @@ export function YieldConfigDialog({ product, productId, children, onConfigSaved 
                 <h4 className="text-lg font-medium text-foreground flex items-center gap-2">
                   Configuración Directa
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300">
+                    <span className="px-2 py-1 bg-info-muted rounded text-info-muted-foreground">
                       Batch
                     </span>
                     <ArrowRight className="h-4 w-4" />
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded text-green-700 dark:text-green-300">
+                    <span className="px-2 py-1 bg-success-muted rounded text-success">
                       Salida
                     </span>
                   </div>
@@ -252,7 +252,7 @@ export function YieldConfigDialog({ product, productId, children, onConfigSaved 
                       <FormItem>
                         <FormLabel className="text-foreground flex items-center gap-2">
                           Merma Global (0-1)
-                          <TrendingDown className="h-4 w-4 text-orange-500" />
+                          <TrendingDown className="h-4 w-4 text-warning-muted-foreground" />
                         </FormLabel>
                         <FormControl>
                           <Input 
@@ -287,7 +287,7 @@ export function YieldConfigDialog({ product, productId, children, onConfigSaved 
                       </div>
                       <div>
                         <span className="text-muted-foreground">Merma:</span>
-                        <span className="ml-2 font-medium text-orange-600">
+                        <span className="ml-2 font-medium text-warning-muted-foreground">
                           -{((form.watch('scrapGlobal') || 0) * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -309,15 +309,15 @@ export function YieldConfigDialog({ product, productId, children, onConfigSaved 
                 <h4 className="text-lg font-medium text-foreground flex items-center gap-2">
                   Configuración Encadenada
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300">
+                    <span className="px-2 py-1 bg-info-muted rounded text-info-muted-foreground">
                       Batch
                     </span>
                     <ArrowRight className="h-4 w-4" />
-                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 rounded text-yellow-700 dark:text-yellow-300">
+                    <span className="px-2 py-1 bg-warning-muted rounded text-warning-muted-foreground">
                       Intermedio
                     </span>
                     <ArrowRight className="h-4 w-4" />
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded text-green-700 dark:text-green-300">
+                    <span className="px-2 py-1 bg-success-muted rounded text-success">
                       Salida
                     </span>
                   </div>
@@ -355,7 +355,7 @@ export function YieldConfigDialog({ product, productId, children, onConfigSaved 
                       <FormItem>
                         <FormLabel className="text-foreground flex items-center gap-2">
                           Merma A (Batch→Intermedio)
-                          <TrendingDown className="h-4 w-4 text-orange-500" />
+                          <TrendingDown className="h-4 w-4 text-warning-muted-foreground" />
                         </FormLabel>
                         <FormControl>
                           <Input 
@@ -409,7 +409,7 @@ export function YieldConfigDialog({ product, productId, children, onConfigSaved 
                       <FormItem>
                         <FormLabel className="text-foreground flex items-center gap-2">
                           Merma B (Intermedio→Salida)
-                          <TrendingDown className="h-4 w-4 text-orange-500" />
+                          <TrendingDown className="h-4 w-4 text-warning-muted-foreground" />
                         </FormLabel>
                         <FormControl>
                           <Input 

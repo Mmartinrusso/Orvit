@@ -205,7 +205,7 @@ export default function OrdenDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="detalles" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="detalles">Detalles</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>

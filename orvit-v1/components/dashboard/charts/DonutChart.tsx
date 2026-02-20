@@ -21,14 +21,14 @@ interface DonutChartProps {
 }
 
 const DEFAULT_COLORS = [
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#eab308', // yellow
-  '#ef4444', // red
-  '#a855f7', // purple
-  '#6366f1', // indigo
-  '#ec4899', // pink
-  '#f97316', // orange
+  'hsl(var(--primary))',
+  'hsl(var(--success))',
+  'hsl(var(--warning))',
+  'hsl(var(--destructive))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
 ];
 
 export function DonutChart({
@@ -90,7 +90,7 @@ export function DonutChart({
             cy={center}
             r={segments[0]?.radius || 0}
             fill="none"
-            stroke="#e5e7eb"
+            stroke="hsl(var(--border))"
             strokeWidth={thickness}
           />
           

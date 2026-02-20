@@ -14,7 +14,8 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,7 @@ import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
 import { useIndirectCosts } from '@/hooks/use-indirect-costs';
 import { useIndirectCostsStats } from '@/hooks/use-indirect-costs-stats';
 
@@ -103,9 +104,9 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Pagado</Badge>;
+        return <Badge variant="default" className="bg-success-muted text-success">Pagado</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-700">Pendiente</Badge>;
+        return <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground">Pendiente</Badge>;
       case 'overdue':
         return <Badge variant="destructive">Vencido</Badge>;
       default:
@@ -182,11 +183,11 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Building2 className="h-6 w-6" />
             Costos Indirectos
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Gestión de gastos operativos, impuestos y servicios de la empresa
           </p>
         </div>
@@ -199,7 +200,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
             <Plus className="h-4 w-4 mr-2" />
             Nueva Categoría
           </Button>
-          <Button onClick={() => setShowCostDialog(true)} className="bg-black hover:bg-gray-800">
+          <Button onClick={() => setShowCostDialog(true)} className="bg-black hover:bg-foreground/90">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Costo
           </Button>
@@ -211,7 +212,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Costos</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalCosts)}</div>
@@ -224,10 +225,10 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pagados</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(paidCosts)}</div>
+            <div className="text-2xl font-bold text-success">{formatCurrency(paidCosts)}</div>
             <p className="text-xs text-muted-foreground">
               {totalCosts > 0 ? ((paidCosts / totalCosts) * 100).toFixed(1) : 0}% del total
             </p>
@@ -237,10 +238,10 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(pendingCosts)}</div>
+            <div className="text-2xl font-bold text-warning-muted-foreground">{formatCurrency(pendingCosts)}</div>
             <p className="text-xs text-muted-foreground">
               {totalCosts > 0 ? ((pendingCosts / totalCosts) * 100).toFixed(1) : 0}% del total
             </p>
@@ -250,7 +251,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Categorías</CardTitle>
-            <BarChart3 className="h-4 w-4 text-purple-600" />
+            <BarChart3 className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{categories.length}</div>
@@ -263,7 +264,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
 
       {/* Tabs principales */}
       <Tabs defaultValue="categorias" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="categorias">Categorías</TabsTrigger>
           <TabsTrigger value="costos">Costos Mensuales</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
@@ -279,12 +280,12 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
             <CardContent>
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Cargando categorías...</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-foreground mx-auto" />
+                  <p className="mt-2 text-muted-foreground">Cargando categorías...</p>
                 </div>
               ) : categories.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No hay categorías disponibles</p>
                   <p className="text-sm">Crea tu primera categoría para comenzar</p>
                 </div>
@@ -301,7 +302,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                         </div>
                         <div>
                           <h4 className="font-semibold">{category.name}</h4>
-                          <p className="text-sm text-gray-600">{category.description}</p>
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
                           <div className="flex gap-2 mt-2">
                             {getTypeBadge(category.type)}
                           </div>
@@ -312,7 +313,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                           <Edit className="h-4 w-4 mr-1" />
                           Editar
                         </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                           <Trash2 className="h-4 w-4 mr-1" />
                           Eliminar
                         </Button>
@@ -334,28 +335,28 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
             <CardContent>
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Cargando costos...</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-foreground mx-auto" />
+                  <p className="mt-2 text-muted-foreground">Cargando costos...</p>
                 </div>
               ) : costs.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No hay costos registrados</p>
                   <p className="text-sm">Crea tu primer costo para comenzar</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {costs.map((cost) => (
-                    <div key={cost.id} className="group relative flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={cost.id} className="group relative flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-accent transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-info-muted text-info-muted-foreground flex items-center justify-center">
                           <DollarSign className="h-5 w-5" />
                         </div>
                         <div>
                           <div className="font-semibold">{cost.name}</div>
-                          <div className="text-sm text-gray-600">{cost.categoryName}</div>
-                          <div className="text-sm text-gray-500">{cost.description}</div>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                          <div className="text-sm text-muted-foreground">{cost.categoryName}</div>
+                          <div className="text-sm text-muted-foreground">{cost.description}</div>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                             <span>Vencimiento: {new Date(cost.dueDate).toLocaleDateString('es-AR')}</span>
                             <span>•</span>
                             <span>Creado: {new Date(cost.createdAt).toLocaleDateString('es-AR')}</span>
@@ -372,7 +373,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                             <Edit className="h-4 w-4 mr-1" />
                             Editar
                           </Button>
-                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-4 w-4 mr-1" />
                             Eliminar
                           </Button>
@@ -401,33 +402,33 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
             <CardContent>
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Cargando historial...</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-foreground mx-auto" />
+                  <p className="mt-2 text-muted-foreground">Cargando historial...</p>
                 </div>
               ) : history.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No hay historial disponible</p>
                   <p className="text-sm">Los cambios se registrarán automáticamente</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {history.map((entry) => (
-                    <div key={entry.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={entry.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-info-muted text-info-muted-foreground flex items-center justify-center">
                           <DollarSign className="h-5 w-5" />
                         </div>
                         <div>
                           <div className="font-semibold">{entry.costName}</div>
-                          <div className="text-sm text-gray-600">{entry.categoryName}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-sm text-muted-foreground">{entry.categoryName}</div>
+                          <div className="text-xs text-muted-foreground">
                             {new Date(entry.createdAt).toLocaleDateString('es-AR')} • {entry.month}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           {entry.oldAmount ? `${formatCurrency(entry.oldAmount)} → ` : ''}
                           {formatCurrency(entry.newAmount)}
                         </div>
@@ -460,17 +461,17 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
             <CardContent>
               {statsLoading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Cargando estadísticas...</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-foreground mx-auto" />
+                  <p className="mt-2 text-muted-foreground">Cargando estadísticas...</p>
                 </div>
               ) : statsError ? (
-                <div className="text-center py-8 text-red-500">
+                <div className="text-center py-8 text-destructive">
                   <AlertTriangle className="h-12 w-12 mx-auto mb-4" />
                   <p>Error: {statsError}</p>
                 </div>
               ) : !stats ? (
-                <div className="text-center py-8 text-gray-500">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p>No hay datos disponibles</p>
                 </div>
               ) : (
@@ -502,11 +503,11 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                       <CardContent>
                         <div className="flex items-center gap-2">
                           {stats.tendencias.tendencia === 'incremento' ? (
-                            <TrendingUp className="h-5 w-5 text-green-600" />
+                            <TrendingUp className="h-5 w-5 text-success" />
                           ) : stats.tendencias.tendencia === 'decremento' ? (
-                            <TrendingDown className="h-5 w-5 text-red-600" />
+                            <TrendingDown className="h-5 w-5 text-destructive" />
                           ) : (
-                            <BarChart3 className="h-5 w-5 text-gray-600" />
+                            <BarChart3 className="h-5 w-5 text-muted-foreground" />
                           )}
                           <span className="text-2xl font-bold">{stats.tendencias.variacion}%</span>
                         </div>
@@ -523,14 +524,14 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                     <CardContent>
                       <div className="space-y-4">
                         {stats.distribucionPorCategoria.map((categoria) => (
-                          <div key={categoria.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={categoria.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                             <div>
                               <div className="font-medium">{categoria.name}</div>
-                              <div className="text-sm text-gray-600">{categoria.costoCount} costos</div>
+                              <div className="text-sm text-muted-foreground">{categoria.costoCount} costos</div>
                             </div>
                             <div className="text-right">
                               <div className="font-bold">{formatCurrency(categoria.totalCost)}</div>
-                              <div className="text-sm text-gray-600">{categoria.porcentaje.toFixed(1)}%</div>
+                              <div className="text-sm text-muted-foreground">{categoria.porcentaje.toFixed(1)}%</div>
                             </div>
                           </div>
                         ))}
@@ -549,7 +550,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                           <div key={costo.id} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                               <div className="font-medium">{costo.name}</div>
-                              <div className="text-sm text-gray-600">{costo.categoryName} • {costo.month}</div>
+                              <div className="text-sm text-muted-foreground">{costo.categoryName} • {costo.month}</div>
                             </div>
                             <div className="text-right">
                               <div className="font-bold">{formatCurrency(costo.amount)}</div>
@@ -569,49 +570,51 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
 
       {/* Diálogo para Nueva Categoría */}
       <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-        <DialogContent>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Nueva Categoría de Costo</DialogTitle>
             <DialogDescription>
               Crea una nueva categoría para organizar tus costos indirectos
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="categoryName">Nombre *</Label>
-              <Input
-                id="categoryName"
-                value={newCategory.name}
-                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                placeholder="Ej: Impuestos, Marketing, Servicios"
-              />
+          <DialogBody>
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="categoryName">Nombre *</Label>
+                <Input
+                  id="categoryName"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  placeholder="Ej: Impuestos, Marketing, Servicios"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="categoryDescription">Descripción</Label>
+                <Textarea
+                  id="categoryDescription"
+                  value={newCategory.description}
+                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                  placeholder="Descripción opcional de la categoría"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="categoryType">Tipo</Label>
+                <Select
+                  value={newCategory.type}
+                  onValueChange={(value) => setNewCategory({ ...newCategory, type: value as 'fixed' | 'variable' | 'periodic' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Fijo</SelectItem>
+                    <SelectItem value="variable">Variable</SelectItem>
+                    <SelectItem value="periodic">Periódico</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="categoryDescription">Descripción</Label>
-              <Textarea
-                id="categoryDescription"
-                value={newCategory.description}
-                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                placeholder="Descripción opcional de la categoría"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="categoryType">Tipo</Label>
-              <Select
-                value={newCategory.type}
-                onValueChange={(value) => setNewCategory({ ...newCategory, type: value as 'fixed' | 'variable' | 'periodic' })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">Fijo</SelectItem>
-                  <SelectItem value="variable">Variable</SelectItem>
-                  <SelectItem value="periodic">Periódico</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCategoryDialog(false)}>
               Cancelar
@@ -628,14 +631,15 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
 
       {/* Diálogo para Nuevo Costo */}
       <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
-        <DialogContent>
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>Nuevo Costo Indirecto</DialogTitle>
             <DialogDescription>
               Registra un nuevo costo indirecto para tu empresa
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <DialogBody>
+          <div className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="costName">Nombre *</Label>
               <Input
@@ -720,6 +724,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
               </div>
             </div>
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCostDialog(false)}>
               Cancelar

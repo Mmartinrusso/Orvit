@@ -189,13 +189,11 @@ async function getCompletedTodayMaintenances(
   sectorId: number | null,
   limit: number
 ) {
-  // Calcular inicio y fin del día de hoy (zona horaria Argentina UTC-3)
+  // Calcular inicio y fin del día de hoy usando zona horaria configurable (TZ en .env)
   const now = new Date();
-  const argOffset = -3 * 60;
-  const argTime = new Date(now.getTime() + (argOffset * 60 * 1000));
-  
-  const today = new Date(argTime);
-  today.setHours(0, 0, 0, 0);
+  const tz = process.env.APP_TIMEZONE || 'America/Argentina/Buenos_Aires';
+  const todayStr = now.toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
+  const today = new Date(`${todayStr}T00:00:00`);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 

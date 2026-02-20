@@ -297,7 +297,7 @@ export function withPermissionOptimized<T extends object>(
     const { hasPermission, isLoading } = useMultiplePermissionsOptimized(permissions, mode, contextOverride);
 
     if (isLoading) {
-      return <div className="animate-pulse bg-gray-200 h-4 w-4 rounded"></div>;
+      return <div className="animate-pulse bg-muted h-4 w-4 rounded"></div>;
     }
 
     if (!hasPermission) {
@@ -323,7 +323,7 @@ export function PermissionGuardOptimized({
   mode = 'any',
   contextOverride,
   fallback = null,
-  loading = <div className="animate-pulse bg-gray-200 h-4 w-4 rounded"></div>,
+  loading = <div className="animate-pulse bg-muted h-4 w-4 rounded"></div>,
   children
 }: PermissionGuardOptimizedProps) {
   const permissions = Array.isArray(permission) ? permission : [permission];

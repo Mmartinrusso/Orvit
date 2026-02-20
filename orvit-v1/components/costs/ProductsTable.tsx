@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -67,9 +68,9 @@ const costMethodLabels = {
 };
 
 const costMethodColors = {
-  BATCH: 'bg-blue-100 text-blue-800 border-blue-200',
-  VOLUMETRIC: 'bg-green-100 text-green-800 border-green-200',
-  PER_UNIT_BOM: 'bg-purple-100 text-purple-800 border-purple-200',
+  BATCH: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  VOLUMETRIC: 'bg-success-muted text-success border-success-muted',
+  PER_UNIT_BOM: 'bg-info-muted text-info-muted-foreground border-info-muted',
 };
 
 export function ProductsTable() {
@@ -218,7 +219,7 @@ export function ProductsTable() {
       </div>
 
       {/* Products table */}
-      <div className="surface-card border-2 border-border/30 rounded-xl">
+      <div className="surface-card border-2 border-border/30 rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border/30">
@@ -274,7 +275,7 @@ export function ProductsTable() {
                       {product.line.name}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${costMethodColors[product.costMethod as keyof typeof costMethodColors]} hover:bg-opacity-80`}>
+                      <Badge className={cn(costMethodColors[product.costMethod as keyof typeof costMethodColors], 'hover:bg-opacity-80')}>
                         {costMethodLabels[product.costMethod as keyof typeof costMethodLabels]}
                       </Badge>
                     </TableCell>
@@ -292,10 +293,7 @@ export function ProductsTable() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${product.active 
-                        ? 'bg-green-100 text-green-800 border-green-200' 
-                        : 'bg-gray-100 text-gray-800 border-gray-200'
-                      } hover:bg-opacity-80`}>
+                      <Badge className={cn(product.active ? 'bg-success-muted text-success border-success-muted' : 'bg-muted text-foreground border-border', 'hover:bg-opacity-80')}>
                         {product.active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </TableCell>

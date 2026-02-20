@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -224,8 +225,8 @@ export default function PromoteToMachineDialog({
       return (
         <div className="space-y-6">
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="h-16 w-16 rounded-full bg-success-muted flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <h3 className="text-lg font-semibold mb-2">¡Conversión exitosa!</h3>
             <p className="text-sm text-muted-foreground text-center max-w-md">
@@ -290,8 +291,8 @@ export default function PromoteToMachineDialog({
             )}
           </div>
           <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-2" />
-          <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-            <Wrench className="h-5 w-5 text-green-600" />
+          <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+            <Wrench className="h-5 w-5 text-success" />
           </div>
         </div>
 
@@ -325,13 +326,13 @@ export default function PromoteToMachineDialog({
 
         {/* Warning de OTs activas */}
         {previewData.warnings.hasActiveWorkOrders && (
-          <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3 bg-warning-muted border border-warning-muted rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-medium text-warning-muted-foreground">
                 Hay {previewData.warnings.activeWorkOrdersCount} OT(s) activa(s)
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+              <p className="text-xs text-warning">
                 Las órdenes de trabajo en progreso serán migradas a la nueva máquina
               </p>
             </div>
@@ -463,7 +464,7 @@ export default function PromoteToMachineDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent size="default">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
@@ -475,7 +476,9 @@ export default function PromoteToMachineDialog({
             </DialogDescription>
           )}
         </DialogHeader>
-        {renderContent()}
+        <DialogBody>
+          {renderContent()}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

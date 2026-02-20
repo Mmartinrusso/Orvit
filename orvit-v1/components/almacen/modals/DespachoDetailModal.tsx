@@ -7,6 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -98,7 +99,7 @@ export function DespachoDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         {isLoading ? (
           <DetailSkeleton />
         ) : despacho ? (
@@ -120,6 +121,7 @@ export function DespachoDetailModal({
               </div>
             </DialogHeader>
 
+            <DialogBody className="space-y-4">
             <Separator />
 
             {/* Información general */}
@@ -203,6 +205,8 @@ export function DespachoDetailModal({
                 </div>
               </>
             )}
+
+            </DialogBody>
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={onClose}>

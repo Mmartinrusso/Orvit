@@ -46,7 +46,7 @@ export function NotesDialog({ open, onOpenChange, moduleName, storageKey }: Note
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-amber-700" />
+            <BookOpen className="h-5 w-5 text-warning-muted-foreground" />
             Notas de {moduleName}
           </DialogTitle>
         </DialogHeader>
@@ -69,8 +69,8 @@ export function NotesDialog({ open, onOpenChange, moduleName, storageKey }: Note
           ) : (
             <>
               {notesContent ? (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
+                <div className="p-4 bg-warning-muted border border-warning-muted rounded-lg">
+                  <p className="text-sm text-warning-muted-foreground whitespace-pre-wrap leading-relaxed">
                     {notesContent}
                   </p>
                 </div>

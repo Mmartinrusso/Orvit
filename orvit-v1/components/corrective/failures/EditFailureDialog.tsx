@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -59,10 +60,10 @@ interface EditFailureDialogProps {
 }
 
 const priorityOptions = [
-  { value: 'P1', label: 'P1 - Urgente', color: 'text-red-600' },
-  { value: 'P2', label: 'P2 - Alta', color: 'text-orange-600' },
-  { value: 'P3', label: 'P3 - Media', color: 'text-yellow-600' },
-  { value: 'P4', label: 'P4 - Baja', color: 'text-blue-600' },
+  { value: 'P1', label: 'P1 - Urgente', color: 'text-destructive' },
+  { value: 'P2', label: 'P2 - Alta', color: 'text-warning-muted-foreground' },
+  { value: 'P3', label: 'P3 - Media', color: 'text-warning-muted-foreground' },
+  { value: 'P4', label: 'P4 - Baja', color: 'text-info-muted-foreground' },
 ];
 
 const statusOptions = [
@@ -156,8 +157,8 @@ export function EditFailureDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 flex flex-col max-h-[90vh]">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+      <DialogContent size="sm" className="p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-5 w-5" />
             Editar Falla
@@ -176,7 +177,7 @@ export function EditFailureDialog({
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} id="edit-failure-form">
-              <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+              <DialogBody className="px-6 py-5 space-y-5">
               {/* Título */}
               <FormField
                 control={form.control}
@@ -337,12 +338,12 @@ export function EditFailureDialog({
                   )}
                 />
               </div>
-              </div>
+              </DialogBody>
             </form>
           </Form>
         )}
 
-        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+        <DialogFooter className="px-6 py-4 border-t">
           <Button
             type="button"
             variant="outline"

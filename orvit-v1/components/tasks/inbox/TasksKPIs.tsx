@@ -61,8 +61,8 @@ function KpiCard({
           className={cn(
             "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
             up
-              ? "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400"
-              : "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-400"
+              ? "border-success-muted bg-success-muted text-success"
+              : "border-destructive/30 bg-destructive/10 text-destructive"
           )}
         >
           <Icon className="h-3 w-3 mr-1" />

@@ -82,22 +82,22 @@ interface FailuresGridProps {
 }
 
 const priorityConfig: Record<string, { color: string; bg: string; label: string }> = {
-  P1: { color: 'bg-red-500', bg: 'bg-red-50 dark:bg-red-950/20', label: 'Urgente' },
-  P2: { color: 'bg-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/20', label: 'Alta' },
-  P3: { color: 'bg-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20', label: 'Media' },
-  P4: { color: 'bg-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/20', label: 'Baja' },
-  URGENT: { color: 'bg-red-500', bg: 'bg-red-50 dark:bg-red-950/20', label: 'Urgente' },
-  HIGH: { color: 'bg-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/20', label: 'Alta' },
-  MEDIUM: { color: 'bg-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20', label: 'Media' },
-  LOW: { color: 'bg-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/20', label: 'Baja' },
+  P1: { color: 'bg-destructive', bg: 'bg-destructive/10', label: 'Urgente' },
+  P2: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Alta' },
+  P3: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Media' },
+  P4: { color: 'bg-info', bg: 'bg-info-muted', label: 'Baja' },
+  URGENT: { color: 'bg-destructive', bg: 'bg-destructive/10', label: 'Urgente' },
+  HIGH: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Alta' },
+  MEDIUM: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Media' },
+  LOW: { color: 'bg-info', bg: 'bg-info-muted', label: 'Baja' },
 };
 
 const statusConfig: Record<string, { color: string; bgBadge: string; label: string }> = {
-  REPORTED: { color: 'bg-blue-500', bgBadge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: 'Reportada' },
-  OPEN: { color: 'bg-blue-500', bgBadge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: 'Abierta' },
-  IN_PROGRESS: { color: 'bg-yellow-500', bgBadge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', label: 'En Proceso' },
-  RESOLVED: { color: 'bg-green-500', bgBadge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'Resuelta' },
-  CANCELLED: { color: 'bg-gray-400', bgBadge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400', label: 'Cancelada' },
+  REPORTED: { color: 'bg-info', bgBadge: 'bg-info-muted text-info-muted-foreground', label: 'Reportada' },
+  OPEN: { color: 'bg-info', bgBadge: 'bg-info-muted text-info-muted-foreground', label: 'Abierta' },
+  IN_PROGRESS: { color: 'bg-warning', bgBadge: 'bg-warning-muted text-warning-muted-foreground', label: 'En Proceso' },
+  RESOLVED: { color: 'bg-success', bgBadge: 'bg-success-muted text-success', label: 'Resuelta' },
+  CANCELLED: { color: 'bg-muted-foreground', bgBadge: 'bg-muted text-foreground', label: 'Cancelada' },
 };
 
 const formatPriority = (priority: string) => {
@@ -160,8 +160,8 @@ export function FailuresGrid({
                 <div className={cn(
                   'p-2 rounded-lg shrink-0',
                   failure.causedDowntime
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-muted text-muted-foreground'
                 )}>
                   <Zap className="h-5 w-5" />
                 </div>
@@ -257,7 +257,7 @@ export function FailuresGrid({
                 </p>
               ) : failure.symptomsList && failure.symptomsList.length > 0 ? (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-amber-600 flex items-center gap-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-warning-muted-foreground flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Síntomas
                   </span>
@@ -266,7 +266,7 @@ export function FailuresGrid({
                       <Badge
                         key={symptom.id}
                         variant="secondary"
-                        className="text-[10px] px-1.5 py-0 h-5 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                        className="text-[10px] px-1.5 py-0 h-5 bg-warning-muted text-warning-muted-foreground"
                       >
                         {symptom.label}
                       </Badge>
@@ -291,7 +291,7 @@ export function FailuresGrid({
               {/* Badges de características */}
               <div className="flex flex-wrap gap-1.5">
                 {hasWorkOrder && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-info-muted text-info-muted-foreground">
                     <FileText className="mr-0.5 h-2.5 w-2.5" />
                     OT
                   </Badge>

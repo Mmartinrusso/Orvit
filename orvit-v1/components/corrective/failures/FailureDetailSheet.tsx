@@ -146,14 +146,14 @@ interface FailureDetail {
 }
 
 const priorityColors: Record<string, string> = {
-  P1: 'bg-red-500',
-  P2: 'bg-orange-500',
-  P3: 'bg-yellow-500',
-  P4: 'bg-blue-500',
-  URGENT: 'bg-red-500',
-  HIGH: 'bg-orange-500',
-  MEDIUM: 'bg-yellow-500',
-  LOW: 'bg-blue-500',
+  P1: 'bg-destructive',
+  P2: 'bg-warning',
+  P3: 'bg-warning',
+  P4: 'bg-info',
+  URGENT: 'bg-destructive',
+  HIGH: 'bg-warning',
+  MEDIUM: 'bg-warning',
+  LOW: 'bg-info',
 };
 
 const statusLabels: Record<string, string> = {
@@ -165,11 +165,11 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  REPORTED: 'bg-yellow-100 text-yellow-800',
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  RESOLVED: 'bg-green-100 text-green-800',
-  RESOLVED_IMMEDIATE: 'bg-green-100 text-green-800',
-  CLOSED: 'bg-gray-100 text-gray-800',
+  REPORTED: 'bg-warning-muted text-warning-muted-foreground',
+  IN_PROGRESS: 'bg-info-muted text-info-muted-foreground',
+  RESOLVED: 'bg-success-muted text-success',
+  RESOLVED_IMMEDIATE: 'bg-success-muted text-success',
+  CLOSED: 'bg-muted text-foreground',
 };
 
 const commentTypeConfig: Record<string, { label: string; icon: typeof MessageSquare; badgeClass: string }> = {
@@ -181,7 +181,7 @@ const commentTypeConfig: Record<string, { label: string; icon: typeof MessageSqu
   update: {
     label: 'Actualización',
     icon: Info,
-    badgeClass: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
+    badgeClass: 'bg-success-muted text-success border-success-muted',
   },
   issue: {
     label: 'Problema',
@@ -191,7 +191,7 @@ const commentTypeConfig: Record<string, { label: string; icon: typeof MessageSqu
   system: {
     label: 'Sistema',
     icon: Info,
-    badgeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+    badgeClass: 'bg-info-muted text-info-muted-foreground border-info-muted',
   },
 };
 
@@ -377,7 +377,7 @@ export function FailureDetailSheet({
   return (
     <>
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:w-[700px] sm:max-w-4xl overflow-y-auto px-6">
+      <SheetContent size="lg" className="overflow-y-auto px-6">
           {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-8 w-3/4" />
@@ -391,14 +391,12 @@ export function FailureDetailSheet({
                 <div className="flex items-center justify-between">
                   <SheetTitle className="flex items-center gap-2">
                     <div
-                      className={`h-3 w-3 rounded-full ${
-                        priorityColors[failure.priority] || 'bg-gray-400'
-                      }`}
+                      className={cn('h-3 w-3 rounded-full', priorityColors[failure.priority] || 'bg-muted-foreground')}
                     />
                     {failure.title || 'Sin título'}
                   </SheetTitle>
                   <div className="flex items-center gap-2">
-                    <Badge className={statusColors[failure.status] || 'bg-gray-100 text-gray-800'}>
+                    <Badge className={statusColors[failure.status] || 'bg-muted text-foreground'}>
                       {statusLabels[failure.status] || failure.status}
                     </Badge>
                     <Button
@@ -491,7 +489,7 @@ export function FailureDetailSheet({
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2 -mx-6 px-6">
-                <TabsList className="!w-full grid grid-cols-6 h-9">
+                <TabsList className="w-full justify-start overflow-x-auto h-9">
                   <TabsTrigger value="info">Info</TabsTrigger>
                   <TabsTrigger value="recurrence">Reincidencia</TabsTrigger>
                   <TabsTrigger value="duplicates">
@@ -505,7 +503,7 @@ export function FailureDetailSheet({
                   <TabsTrigger value="downtime">
                     Paradas
                     {(failure.downtimeLogs?.filter(d => !d.endedAt).length ?? 0) > 0 && (
-                      <span className="ml-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="ml-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="solutions">Soluciones</TabsTrigger>
@@ -529,7 +527,7 @@ export function FailureDetailSheet({
                             <Badge
                               key={symptom.id}
                               variant="secondary"
-                              className="bg-blue-100 text-blue-800 hover:bg-blue-100"
+                              className="bg-info-muted text-info-muted-foreground hover:bg-info-muted"
                             >
                               {symptom.label}
                             </Badge>
@@ -710,7 +708,7 @@ export function FailureDetailSheet({
                       return (
                         <div
                           key={log.id}
-                          className={`rounded-lg border p-4 ${isActive ? 'border-red-300 bg-red-50/50' : 'bg-muted/20'}`}
+                          className={cn('rounded-lg border p-4', isActive ? 'border-destructive/50 bg-destructive/5' : 'bg-muted/20')}
                         >
                           <div className="flex items-center justify-between mb-3">
                             <Badge
@@ -726,7 +724,7 @@ export function FailureDetailSheet({
                                 'Finalizada'
                               )}
                             </Badge>
-                            <span className={`text-lg font-bold ${isActive ? 'text-red-600' : 'text-muted-foreground'}`}>
+                            <span className={cn('text-lg font-bold', isActive ? 'text-destructive' : 'text-muted-foreground')}>
                               {timeDisplay}
                             </span>
                           </div>
@@ -750,7 +748,7 @@ export function FailureDetailSheet({
                           {/* Botón Retorno a Producción si está activo */}
                           {isActive && (
                             <Button
-                              className="w-full mt-4 bg-green-600 hover:bg-green-700"
+                              className="w-full mt-4 bg-success hover:bg-success/90"
                               onClick={() => {
                                 setSelectedDowntimeLog({
                                   id: log.id,
@@ -785,7 +783,7 @@ export function FailureDetailSheet({
                     failure.solutionsApplied?.map((solution, idx) => (
                       <div
                         key={solution.id}
-                        className={`rounded-lg border bg-green-50/50 p-4 ${solution.workOrderId ? 'cursor-pointer hover:bg-green-100/50 transition-colors' : ''}`}
+                        className={cn('rounded-lg border bg-success-muted/50 p-4', solution.workOrderId && 'cursor-pointer hover:bg-success-muted transition-colors')}
                         onClick={() => {
                           if (solution.workOrderId) {
                             handleGoToMaintenance(solution.workOrderId);
@@ -793,7 +791,7 @@ export function FailureDetailSheet({
                         }}
                       >
                         <div className="flex items-center justify-between mb-3">
-                          <Badge className="bg-green-600">Solución #{idx + 1}</Badge>
+                          <Badge className="bg-success">Solución #{idx + 1}</Badge>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
                               {format(
@@ -950,7 +948,7 @@ export function FailureDetailSheet({
                     {/* Resolver Ahora - siempre visible para fallas abiertas */}
                     <Button
                       variant="outline"
-                      className="flex-1 border-green-600 text-green-600 hover:bg-green-50"
+                      className="flex-1 border-success text-success hover:bg-success-muted"
                       onClick={() => setImmediateCloseOpen(true)}
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />

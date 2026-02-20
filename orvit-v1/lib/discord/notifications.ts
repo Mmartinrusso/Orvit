@@ -40,7 +40,8 @@ type NotificationType =
   | 'OT_COMPLETADA'
   | 'PREVENTIVO_RECORDATORIO'
   | 'PREVENTIVO_COMPLETADO'
-  | 'RESUMEN_DIA';
+  | 'RESUMEN_DIA'
+  | 'RUTINA_RECORDATORIO';
 
 interface DiscordDestination {
   webhookUrl: string | null;
@@ -94,6 +95,11 @@ async function getDiscordDestination(
     case 'INICIO_DIA':
       return {
         webhookUrl: null, // Ya no usamos webhooks para estos
+        channelId: sector.discordGeneralChannelId,
+      };
+    case 'RUTINA_RECORDATORIO':
+      return {
+        webhookUrl: null,
         channelId: sector.discordGeneralChannelId,
       };
     default:
@@ -200,6 +206,21 @@ async function sendNotification(
   } else if (!destination.channelId && !destination.webhookUrl) {
     console.warn(`⚠️ [Discord] Sector ${sectorId} no tiene Discord configurado para ${type}`);
   }
+}
+
+/**
+ * Envía una notificación de recordatorio de rutina al canal de un sector
+ */
+export async function sendNotificationToSector(
+  sectorId: number,
+  embed: { title: string; description: string; color: number }
+): Promise<void> {
+  await sendNotification(sectorId, 'RUTINA_RECORDATORIO', {
+    title: embed.title,
+    description: embed.description,
+    color: embed.color,
+    timestamp: new Date().toISOString(),
+  }, 'ORVIT — Rutinas');
 }
 
 /**
@@ -1438,4 +1459,59 @@ export async function notifySectorDayStart(data: SectorDayStartData): Promise<{ 
   }
 
   return { success: false, error: 'No se pudo enviar mensaje' };
+}
+
+// ============================================================================
+// NOTIFICACIONES DE TAREAS DEL SISTEMA (DM directo al asignado)
+// ============================================================================
+
+export interface TaskAssignedData {
+  assigneeUserId: number;
+  taskId: number;
+  taskTitle: string;
+  description?: string | null;
+  priority: string;
+  dueDate?: Date | null;
+  createdByName: string;
+  source: 'DISCORD_TEXT' | 'DISCORD_VOICE';
+}
+
+/**
+ * Envía un DM de Discord al usuario asignado cuando se le crea una tarea desde Discord.
+ * Reutiliza sendTechnicianDM que ya maneja el lookup de discordUserId.
+ */
+export async function notifyTaskAssignedDiscord(data: TaskAssignedData): Promise<void> {
+  const { emoji, color } = getPriorityStyle(data.priority);
+  const sourceLabel = data.source === 'DISCORD_VOICE' ? '🎙️ Mensaje de voz' : '💬 Mensaje de texto';
+
+  const dueDateText = data.dueDate
+    ? new Date(data.dueDate).toLocaleDateString('es-AR', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      })
+    : 'Sin fecha';
+
+  const result = await sendTechnicianDM(data.assigneeUserId, {
+    embed: {
+      title: '📋 Nueva tarea asignada',
+      description: `**${data.taskTitle}**`,
+      color,
+      fields: [
+        ...(data.description
+          ? [{ name: '📝 Descripción', value: data.description.substring(0, 200), inline: false }]
+          : []),
+        { name: `${emoji} Prioridad`, value: data.priority, inline: true },
+        { name: '📅 Vence', value: dueDateText, inline: true },
+        { name: '👤 Asignada por', value: data.createdByName, inline: true },
+        { name: '📌 Fuente', value: sourceLabel, inline: true },
+      ],
+      footer: `Tarea #${data.taskId} | ORVIT`,
+      timestamp: true,
+    },
+  });
+
+  if (!result.success) {
+    console.warn(`[notifyTaskAssignedDiscord] No se pudo enviar DM al usuario ${data.assigneeUserId}: ${result.error}`);
+  }
 }

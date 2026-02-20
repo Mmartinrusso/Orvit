@@ -80,44 +80,44 @@ export function getMaintenanceTypeLabel(type: MaintenanceType): string {
 // =============================================================================
 
 export const statusColors: Record<WorkOrderStatus, string> = {
-  PENDING: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-  IN_PROGRESS: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
-  COMPLETED: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+  PENDING: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  IN_PROGRESS: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  COMPLETED: 'bg-success-muted text-success border-success-muted',
   CANCELLED: 'bg-muted text-muted-foreground border-border',
-  ON_HOLD: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20',
+  ON_HOLD: 'bg-primary/10 text-primary border-primary/20',
 };
 
 export const priorityColors: Record<Priority, string> = {
-  LOW: 'bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20',
-  MEDIUM: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-  HIGH: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
-  URGENT: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+  LOW: 'bg-muted text-muted-foreground border-border',
+  MEDIUM: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  HIGH: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  URGENT: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 export const maintenanceTypeColors: Record<MaintenanceType, string> = {
-  PREVENTIVE: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20',
-  CORRECTIVE: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
-  PREDICTIVE: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20',
-  EMERGENCY: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+  PREVENTIVE: 'bg-success-muted text-success border-success-muted',
+  CORRECTIVE: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  PREDICTIVE: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  EMERGENCY: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 // Colores para indicadores laterales de estado (barra izquierda de cards)
 export const statusIndicatorColors: Record<WorkOrderStatus, string> = {
-  PENDING: 'bg-amber-500',
-  IN_PROGRESS: 'bg-blue-500',
-  COMPLETED: 'bg-emerald-500',
+  PENDING: 'bg-warning',
+  IN_PROGRESS: 'bg-info',
+  COMPLETED: 'bg-success',
   CANCELLED: 'bg-muted-foreground',
-  ON_HOLD: 'bg-violet-500',
+  ON_HOLD: 'bg-primary',
 };
 
 // Colores para dots de KPIs
 export const kpiDotColors = {
   total: 'bg-primary',
-  pending: 'bg-amber-500',
-  inProgress: 'bg-blue-500',
-  overdue: 'bg-rose-500',
-  unassigned: 'bg-slate-500',
-  completed: 'bg-emerald-500',
+  pending: 'bg-warning',
+  inProgress: 'bg-info',
+  overdue: 'bg-destructive',
+  unassigned: 'bg-muted-foreground',
+  completed: 'bg-success',
 };
 
 // =============================================================================

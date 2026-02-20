@@ -93,7 +93,7 @@ export function SkillForm({ skill, categories, onSubmit, onCancel, isLoading }: 
         />
       </div>
 
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
         <div className="space-y-0.5">
           <Label htmlFor="certification">Requiere Certificación</Label>
           <p className="text-sm text-muted-foreground">

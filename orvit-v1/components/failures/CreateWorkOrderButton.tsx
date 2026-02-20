@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -162,10 +163,10 @@ export function CreateWorkOrderButton({
 
   // Colores de prioridad
   const priorityColors: Record<string, string> = {
-    P1: 'bg-red-100 text-red-700 border-red-200',
-    P2: 'bg-orange-100 text-orange-700 border-orange-200',
-    P3: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    P4: 'bg-green-100 text-green-700 border-green-200'
+    P1: 'bg-destructive/10 text-destructive border-destructive/20',
+    P2: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+    P3: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+    P4: 'bg-success-muted text-success border-success-muted'
   };
 
   return (
@@ -182,10 +183,10 @@ export function CreateWorkOrderButton({
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
+              <FileText className="h-5 w-5 text-info-muted-foreground" />
               Crear Orden de Trabajo
             </DialogTitle>
             <DialogDescription>
@@ -193,16 +194,17 @@ export function CreateWorkOrderButton({
             </DialogDescription>
           </DialogHeader>
 
+          <DialogBody className="space-y-4">
           {/* Info de la falla */}
-          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="bg-muted rounded-lg p-3 space-y-2">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-gray-900 truncate">
+                <p className="font-medium text-sm text-foreground truncate">
                   {failureTitle}
                 </p>
                 {(machineName || componentName) && (
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {[machineName, componentName].filter(Boolean).join(' → ')}
                   </p>
                 )}
@@ -216,14 +218,14 @@ export function CreateWorkOrderButton({
                 </Badge>
               )}
               {causedDowntime && (
-                <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20">
                   Con Downtime
                 </Badge>
               )}
             </div>
           </div>
 
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" id="create-wo-form">
             {/* Título */}
             <div className="space-y-2">
               <Label htmlFor="title">Título de la OT *</Label>
@@ -233,7 +235,7 @@ export function CreateWorkOrderButton({
                 placeholder="Título descriptivo de la orden"
               />
               {form.formState.errors.title && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {form.formState.errors.title.message}
                 </p>
               )}
@@ -259,7 +261,7 @@ export function CreateWorkOrderButton({
                   </Button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {form.watch('priority') === 'P1' && 'Urgente - Requiere atención inmediata'}
                 {form.watch('priority') === 'P2' && 'Alta - Atender en las próximas horas'}
                 {form.watch('priority') === 'P3' && 'Media - Programar para esta semana'}
@@ -290,7 +292,10 @@ export function CreateWorkOrderButton({
               />
             </div>
 
-            <DialogFooter>
+          </form>
+          </DialogBody>
+
+          <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -301,6 +306,7 @@ export function CreateWorkOrderButton({
               </Button>
               <Button
                 type="submit"
+                form="create-wo-form"
                 disabled={createMutation.isPending}
                 className="gap-2"
               >
@@ -316,8 +322,7 @@ export function CreateWorkOrderButton({
                   </>
                 )}
               </Button>
-            </DialogFooter>
-          </form>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

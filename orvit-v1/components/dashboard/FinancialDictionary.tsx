@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, X, TrendingUp, Calendar, Target, BarChart3, DollarSign, ArrowUp } from 'lucide-react';
@@ -99,10 +99,10 @@ const financialTerms: DictionaryTerm[] = [
 ];
 
 const categoryColors = {
-  metric: 'bg-blue-50 text-blue-700 border-blue-200',
-  calculation: 'bg-green-50 text-green-700 border-green-200',
-  forecast: 'bg-purple-50 text-purple-700 border-purple-200',
-  progress: 'bg-orange-50 text-orange-700 border-orange-200'
+  metric: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  calculation: 'bg-success-muted text-success border-success-muted',
+  forecast: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  progress: 'bg-warning-muted text-warning-muted-foreground border-warning-muted'
 };
 
 const categoryLabels = {
@@ -149,7 +149,7 @@ export function FinancialDictionary() {
           Diccionario
         </Button>
       </DialogTrigger>
-      <DialogContent size="lg" className="max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between text-xl">
             <div className="flex items-center gap-2">
@@ -161,19 +161,19 @@ export function FinancialDictionary() {
             </Badge>
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="flex flex-col h-full min-h-0">
+
+        <DialogBody className="flex flex-col min-h-0">
           {/* Filtros de categoría */}
-          <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-gray-200 flex-shrink-0">
+          <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-border flex-shrink-0">
             {categories.map((category) => (
               <Button
                 key={category.value}
                 variant={selectedCategory === category.value ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedCategory(category.value)}
-                className={selectedCategory === category.value 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                className={selectedCategory === category.value
+                  ? 'bg-info text-white'
+                  : 'bg-card border-border text-foreground hover:bg-accent'
                 }
               >
                 {category.label} ({category.count})
@@ -191,24 +191,24 @@ export function FinancialDictionary() {
             onScroll={handleScroll}
           >
             {/* Indicador de scroll */}
-            <div className="absolute top-0 right-0 w-1 h-full bg-gray-100 rounded-full">
-              <div className="w-full bg-blue-200 rounded-full transition-all duration-200" 
+            <div className="absolute top-0 right-0 w-1 h-full bg-muted rounded-full">
+              <div className="w-full bg-info-muted rounded-full transition-all duration-200"
                    style={{ height: '20%' }}></div>
             </div>
             {filteredTerms.map((term, index) => {
               const Icon = term.icon;
               return (
-                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div key={index} className="bg-muted rounded-lg p-4 border border-border">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-lg border border-gray-200">
-                        <Icon className="h-5 w-5 text-gray-600" />
+                      <div className="p-2 bg-card rounded-lg border border-border">
+                        <Icon className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-foreground">
                           {term.term}
                         </h3>
-                        <p className="text-sm font-mono text-gray-600">
+                        <p className="text-sm font-mono text-muted-foreground">
                           {term.acronym}
                         </p>
                       </div>
@@ -220,13 +220,13 @@ export function FinancialDictionary() {
                   
                   <div className="space-y-2">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Definición:</h4>
-                      <p className="text-sm text-gray-600">{term.definition}</p>
+                      <h4 className="text-sm font-medium text-foreground mb-1">Definición:</h4>
+                      <p className="text-sm text-muted-foreground">{term.definition}</p>
                     </div>
                     
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Ejemplo:</h4>
-                      <p className="text-sm text-gray-600 italic bg-white p-2 rounded border-l-4 border-blue-200">
+                      <h4 className="text-sm font-medium text-foreground mb-1">Ejemplo:</h4>
+                      <p className="text-sm text-muted-foreground italic bg-card p-2 rounded border-l-4 border-info-muted">
                         {term.example}
                       </p>
                     </div>
@@ -241,7 +241,7 @@ export function FinancialDictionary() {
                 <Button
                   onClick={scrollToTop}
                   size="sm"
-                  className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg"
+                  className="bg-info text-white hover:bg-info/90 shadow-lg"
                 >
                   <ArrowUp className="h-4 w-4 mr-1" />
                   Volver arriba
@@ -251,18 +251,18 @@ export function FinancialDictionary() {
           </div>
 
           {/* Footer con información adicional */}
-          <div className="mt-6 pt-4 border-t border-gray-200 flex-shrink-0">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">
-                💡 Consejo de Uso
+          <div className="mt-6 pt-4 border-t border-border flex-shrink-0">
+            <div className="bg-info-muted rounded-lg p-4">
+              <h4 className="text-sm font-medium text-info-muted-foreground mb-2">
+                Consejo de Uso
               </h4>
-              <p className="text-sm text-blue-700">
-                Estos términos te ayudan a interpretar correctamente las métricas del dashboard. 
+              <p className="text-sm text-info-muted-foreground">
+                Estos términos te ayudan a interpretar correctamente las métricas del dashboard.
                 Usa el run-rate para proyectar el cierre del mes y el burn rate para controlar los costos diarios.
               </p>
             </div>
           </div>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

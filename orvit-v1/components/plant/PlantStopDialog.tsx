@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +11,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { 
-  AlertTriangle, 
-  Cog, 
+import {
+  AlertTriangle,
+  Cog,
   CheckCircle2,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { useMachinesInitial } from '@/hooks/use-machines-initial';
 
@@ -139,10 +141,10 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
   const canSubmit = formData.reason.trim();
 
   const priorities = [
-    { id: 'baja', name: 'Baja', color: 'bg-gray-100 text-gray-700' },
-    { id: 'media', name: 'Media', color: 'bg-yellow-100 text-yellow-700' },
-    { id: 'alta', name: 'Alta', color: 'bg-orange-100 text-orange-700' },
-    { id: 'critica', name: 'Crítica', color: 'bg-red-100 text-red-700' },
+    { id: 'baja', name: 'Baja', color: 'bg-muted text-foreground' },
+    { id: 'media', name: 'Media', color: 'bg-warning-muted text-warning-muted-foreground' },
+    { id: 'alta', name: 'Alta', color: 'bg-warning-muted text-warning-muted-foreground' },
+    { id: 'critica', name: 'Crítica', color: 'bg-destructive/10 text-destructive' },
   ];
 
   return (
@@ -150,7 +152,7 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+            <AlertTriangle className="h-6 w-6 text-destructive" />
             Parar Planta - {currentSector?.name}
           </DialogTitle>
           <p className="text-muted-foreground">
@@ -182,19 +184,15 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
               {priorities.map((priority) => (
                 <Card 
                   key={priority.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                    formData.priority === priority.id 
-                      ? 'ring-2 ring-blue-500 shadow-lg' 
-                      : 'hover:shadow-md'
-                  }`}
+                  className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.priority === priority.id ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                   onClick={() => setFormData(prev => ({ ...prev, priority: priority.id as any }))}
                 >
                   <CardContent className="p-3 text-center">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${priority.color}`}>
+                    <span className={cn('inline-block px-3 py-1 rounded-full text-sm font-medium', priority.color)}>
                       {priority.name}
                     </span>
                     {formData.priority === priority.id && (
-                      <CheckCircle2 className="h-4 w-4 text-blue-600 mx-auto mt-2" />
+                      <CheckCircle2 className="h-4 w-4 text-primary mx-auto mt-2" />
                     )}
                   </CardContent>
                 </Card>
@@ -211,22 +209,18 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
               {machines.map((machine) => (
                 <Card 
                   key={machine.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                    formData.machineId === machine.id.toString() 
-                      ? 'ring-2 ring-blue-500 shadow-lg' 
-                      : 'hover:shadow-md'
-                  }`}
+                  className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.machineId === machine.id.toString() ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                   onClick={() => handleMachineSelect(machine.id.toString())}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-3">
-                      <Cog className="h-6 w-6 text-blue-600" />
+                      <Cog className="h-6 w-6 text-primary" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold truncate">{machine.name}</h4>
-                        <p className="text-sm text-gray-500 truncate">{machine.nickname || 'Sin apodo'}</p>
+                        <p className="text-sm text-muted-foreground truncate">{machine.nickname || 'Sin apodo'}</p>
                       </div>
                       {formData.machineId === machine.id.toString() && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
                       )}
                     </div>
                   </CardContent>
@@ -245,11 +239,7 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
                 {components.map((component) => (
                   <Card 
                     key={component.id}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                      formData.componentId === component.id.toString() 
-                        ? 'ring-2 ring-blue-500 shadow-lg' 
-                        : 'hover:shadow-md'
-                    }`}
+                    className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.componentId === component.id.toString() ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                     onClick={() => setFormData(prev => ({ 
                       ...prev, 
                       componentId: component.id.toString(),
@@ -260,12 +250,12 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-semibold">{component.name}</h4>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {component.subcomponents?.length || 0} subcomponentes
                           </p>
                         </div>
                         {formData.componentId === component.id.toString() && (
-                          <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
                         )}
                       </div>
                     </CardContent>
@@ -287,11 +277,7 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
                   ?.subcomponents?.map((subcomponent: any) => (
                     <Card 
                       key={subcomponent.id}
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                        formData.subcomponentId === subcomponent.id.toString() 
-                          ? 'ring-2 ring-blue-500 shadow-lg' 
-                          : 'hover:shadow-md'
-                      }`}
+                      className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.subcomponentId === subcomponent.id.toString() ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                       onClick={() => setFormData(prev => ({ 
                         ...prev, 
                         subcomponentId: subcomponent.id.toString() 
@@ -301,7 +287,7 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{subcomponent.name}</span>
                           {formData.subcomponentId === subcomponent.id.toString() && (
-                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
                           )}
                         </div>
                       </CardContent>
@@ -322,11 +308,11 @@ export default function PlantStopDialog({ isOpen, onClose }: PlantStopDialogProp
             size="sm"
             onClick={handleSubmit}
             disabled={!canSubmit || isLoading}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Parando Planta...
               </>
             ) : (

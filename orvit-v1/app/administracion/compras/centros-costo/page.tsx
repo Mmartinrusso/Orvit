@@ -40,6 +40,7 @@ import {
   FolderTree
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface CentroCosto {
   id: number;
@@ -54,6 +55,7 @@ interface CentroCosto {
 }
 
 export default function CentrosCostoPage() {
+  const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -139,7 +141,13 @@ export default function CentrosCostoPage() {
   };
 
   const handleDelete = async (centro: CentroCosto) => {
-    if (!confirm(`¿Desactivar "${centro.nombre}"?`)) return;
+    const ok = await confirm({
+      title: 'Desactivar centro de costo',
+      description: `¿Desactivar "${centro.nombre}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/centros-costo/${centro.id}`, {
@@ -187,7 +195,7 @@ export default function CentrosCostoPage() {
                 <p className="text-sm text-muted-foreground">Total Centros</p>
                 <p className="text-2xl font-bold">{centrosCosto.filter(c => c.isActive).length}</p>
               </div>
-              <Building className="w-8 h-8 text-blue-500" />
+              <Building className="w-8 h-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -200,7 +208,7 @@ export default function CentrosCostoPage() {
                   {centrosCosto.reduce((acc, c) => acc + c._count.purchaseOrders, 0)}
                 </p>
               </div>
-              <FolderTree className="w-8 h-8 text-green-500" />
+              <FolderTree className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>

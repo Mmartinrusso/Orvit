@@ -153,16 +153,16 @@ export const formatMonth = (month: string): string => {
 
 // Obtener color según tendencia
 export const getTrendColor = (value: number): string => {
-  if (value > 5) return 'text-green-500';
-  if (value > 0) return 'text-yellow-500';
-  if (value > -5) return 'text-orange-500';
-  return 'text-red-500';
+  if (value > 5) return 'text-success';
+  if (value > 0) return 'text-warning-muted-foreground';
+  if (value > -5) return 'text-warning-muted-foreground';
+  return 'text-destructive';
 };
 
 // Obtener color de fondo según tendencia
 export const getTrendBgColor = (value: number): string => {
-  if (value > 5) return 'bg-green-500';
-  if (value > 0) return 'bg-yellow-500';
-  if (value > -5) return 'bg-orange-500';
-  return 'bg-red-500';
+  if (value > 5) return 'bg-success';
+  if (value > 0) return 'bg-warning';
+  if (value > -5) return 'bg-warning';
+  return 'bg-destructive';
 };

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Plus,
   RefreshCw,
@@ -94,15 +95,15 @@ const estadoLabels: Record<string, string> = {
 };
 
 const estadoColors: Record<string, string> = {
-  BORRADOR: 'bg-gray-100 text-gray-800',
-  SOLICITADA: 'bg-blue-100 text-blue-800',
+  BORRADOR: 'bg-muted text-foreground',
+  SOLICITADA: 'bg-info-muted text-info-muted-foreground',
   APROBADA_PROVEEDOR: 'bg-purple-100 text-purple-800',
-  ENVIADA: 'bg-amber-100 text-amber-800',
+  ENVIADA: 'bg-warning-muted text-warning-muted-foreground',
   RECIBIDA_PROVEEDOR: 'bg-cyan-100 text-cyan-800',
-  EN_EVALUACION: 'bg-yellow-100 text-yellow-800',
-  RESUELTA: 'bg-green-100 text-green-800',
-  RECHAZADA: 'bg-red-100 text-red-800',
-  CANCELADA: 'bg-gray-100 text-gray-500',
+  EN_EVALUACION: 'bg-warning-muted text-warning-muted-foreground',
+  RESUELTA: 'bg-success-muted text-success',
+  RECHAZADA: 'bg-destructive/10 text-destructive',
+  CANCELADA: 'bg-muted text-muted-foreground',
 };
 
 const tipoLabels: Record<string, string> = {
@@ -114,6 +115,7 @@ const tipoLabels: Record<string, string> = {
 };
 
 export default function DevolucionesPage() {
+  const confirm = useConfirm();
   const searchParams = useSearchParams();
   const { mode: viewMode } = useViewMode();
   const [devoluciones, setDevoluciones] = useState<Devolucion[]>([]);
@@ -169,7 +171,13 @@ export default function DevolucionesPage() {
   }, [fetchDevoluciones]);
 
   const handleSolicitar = async (devolucion: Devolucion) => {
-    if (!confirm(`¿Enviar solicitud ${devolucion.numero} al proveedor?`)) return;
+    const ok = await confirm({
+      title: 'Enviar solicitud',
+      description: `¿Enviar solicitud ${devolucion.numero} al proveedor?`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
     try {
       const response = await fetch(`/api/compras/devoluciones/${devolucion.id}`, {
         method: 'PUT',
@@ -188,7 +196,13 @@ export default function DevolucionesPage() {
   };
 
   const handleAprobarProveedor = async (devolucion: Devolucion) => {
-    if (!confirm(`¿Marcar ${devolucion.numero} como aprobada por el proveedor?`)) return;
+    const ok = await confirm({
+      title: 'Aprobar devolución',
+      description: `¿Marcar ${devolucion.numero} como aprobada por el proveedor?`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
     try {
       const response = await fetch(`/api/compras/devoluciones/${devolucion.id}`, {
         method: 'PUT',
@@ -210,7 +224,13 @@ export default function DevolucionesPage() {
     const carrier = prompt('Transportista (opcional):');
     const trackingNumber = prompt('Número de seguimiento (opcional):');
 
-    if (!confirm(`¿Confirmar envío de ${devolucion.numero}? Esto descontará el stock.`)) return;
+    const okEnviar = await confirm({
+      title: 'Confirmar envío',
+      description: `¿Confirmar envío de ${devolucion.numero}? Esto descontará el stock.`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!okEnviar) return;
 
     try {
       toast.loading('Enviando devolución...', { id: 'enviar' });
@@ -236,7 +256,13 @@ export default function DevolucionesPage() {
   };
 
   const handleConfirmarRecepcion = async (devolucion: Devolucion) => {
-    if (!confirm(`¿Confirmar que el proveedor recibió ${devolucion.numero}?`)) return;
+    const ok = await confirm({
+      title: 'Confirmar recepción',
+      description: `¿Confirmar que el proveedor recibió ${devolucion.numero}?`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/devoluciones/${devolucion.id}/confirmar-recepcion`, {
@@ -264,7 +290,13 @@ export default function DevolucionesPage() {
       return;
     }
 
-    if (!confirm(`¿Cancelar ${devolucion.numero}? ${devolucion.stockMovementCreated ? 'El stock será reingresado.' : ''}`)) return;
+    const okCancelar = await confirm({
+      title: 'Cancelar devolución',
+      description: `¿Cancelar ${devolucion.numero}? ${devolucion.stockMovementCreated ? 'El stock será reingresado.' : ''}`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!okCancelar) return;
 
     try {
       toast.loading('Cancelando devolución...', { id: 'cancelar' });
@@ -369,7 +401,7 @@ export default function DevolucionesPage() {
           </DropdownMenuItem>
         );
         acciones.push(
-          <DropdownMenuItem key="delete" onClick={() => abrirEliminarDevolucion(devolucion)} className="text-red-600">
+          <DropdownMenuItem key="delete" onClick={() => abrirEliminarDevolucion(devolucion)} className="text-destructive">
             <XCircle className="h-4 w-4 mr-2" />
             Eliminar
           </DropdownMenuItem>
@@ -384,7 +416,7 @@ export default function DevolucionesPage() {
           </DropdownMenuItem>
         );
         acciones.push(
-          <DropdownMenuItem key="rechazar" onClick={() => handleRechazar(devolucion)} className="text-red-600">
+          <DropdownMenuItem key="rechazar" onClick={() => handleRechazar(devolucion)} className="text-destructive">
             <XCircle className="h-4 w-4 mr-2" />
             Marcar rechazada
           </DropdownMenuItem>
@@ -402,7 +434,7 @@ export default function DevolucionesPage() {
           <DropdownMenuSeparator key="sep1" />
         );
         acciones.push(
-          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-red-600">
+          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
             <XCircle className="h-4 w-4 mr-2" />
             Cancelar
           </DropdownMenuItem>
@@ -413,7 +445,7 @@ export default function DevolucionesPage() {
         // Cargar NCA si no tiene una asociada
         if (devolucion._count.creditNotes === 0) {
           acciones.push(
-            <DropdownMenuItem key="nca" onClick={() => setShowNcaModal(devolucion)} className="text-green-600">
+            <DropdownMenuItem key="nca" onClick={() => setShowNcaModal(devolucion)} className="text-success">
               <FileText className="h-4 w-4 mr-2" />
               Cargar NCA
             </DropdownMenuItem>
@@ -423,7 +455,7 @@ export default function DevolucionesPage() {
           <DropdownMenuSeparator key="sep2" />
         );
         acciones.push(
-          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-red-600">
+          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
             <XCircle className="h-4 w-4 mr-2" />
             Cancelar (revertir stock)
           </DropdownMenuItem>
@@ -434,7 +466,7 @@ export default function DevolucionesPage() {
         // Cargar NCA si no tiene una asociada
         if (devolucion._count.creditNotes === 0) {
           acciones.push(
-            <DropdownMenuItem key="nca" onClick={() => setShowNcaModal(devolucion)} className="text-green-600">
+            <DropdownMenuItem key="nca" onClick={() => setShowNcaModal(devolucion)} className="text-success">
               <FileText className="h-4 w-4 mr-2" />
               Cargar NCA
             </DropdownMenuItem>
@@ -444,7 +476,7 @@ export default function DevolucionesPage() {
           <DropdownMenuSeparator key="sep3" />
         );
         acciones.push(
-          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-red-600">
+          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
             <XCircle className="h-4 w-4 mr-2" />
             Cancelar (revertir stock)
           </DropdownMenuItem>
@@ -482,7 +514,7 @@ export default function DevolucionesPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" />
+              <Clock className="h-4 w-4 text-info-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Pendientes envío</p>
                 <p className="text-xl font-bold">
@@ -495,7 +527,7 @@ export default function DevolucionesPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-amber-500" />
+              <Truck className="h-4 w-4 text-warning-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">En tránsito</p>
                 <p className="text-xl font-bold">
@@ -508,7 +540,7 @@ export default function DevolucionesPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Sin NCA</p>
                 <p className="text-xl font-bold">
@@ -524,7 +556,7 @@ export default function DevolucionesPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
               <div>
                 <p className="text-xs text-muted-foreground">Resueltas</p>
                 <p className="text-xl font-bold">
@@ -537,7 +569,7 @@ export default function DevolucionesPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <PackageX className="h-4 w-4 text-gray-500" />
+              <PackageX className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Total</p>
                 <p className="text-xl font-bold">{pagination.total}</p>
@@ -642,14 +674,14 @@ export default function DevolucionesPage() {
                     </TableCell>
                     <TableCell>
                       {devolucion._count.creditNotes > 0 ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        <Badge variant="secondary" className="bg-success-muted text-success">
                           <FileText className="h-3 w-3 mr-1" />
                           {devolucion._count.creditNotes}
                         </Badge>
                       ) : ['CANCELADA', 'RECHAZADA'].includes(devolucion.estado) ? (
                         <span className="text-muted-foreground">-</span>
                       ) : devolucion.stockMovementCreated ? (
-                        <Badge variant="outline" className="text-amber-600 border-amber-300">
+                        <Badge variant="outline" className="text-warning-muted-foreground border-warning-muted">
                           Pendiente
                         </Badge>
                       ) : (

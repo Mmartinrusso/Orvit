@@ -76,7 +76,7 @@ export function DriverSelector({ selectedDriver, onDriverChange, error }: Driver
                 aria-expanded={open}
                 className={cn(
                   'w-full justify-between',
-                  error && 'border-red-500'
+                  error && 'border-destructive'
                 )}
               >
                 {selectedDriver?.nombre ? (
@@ -135,7 +135,7 @@ export function DriverSelector({ selectedDriver, onDriverChange, error }: Driver
               </Command>
             </PopoverContent>
           </Popover>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </>
       ) : (
         <>
@@ -150,7 +150,7 @@ export function DriverSelector({ selectedDriver, onDriverChange, error }: Driver
                   dni: selectedDriver?.dni,
                 })
               }
-              className={error ? 'border-red-500' : ''}
+              className={error ? 'border-destructive' : ''}
             />
           </div>
           <div className="space-y-2">
@@ -176,7 +176,7 @@ export function DriverSelector({ selectedDriver, onDriverChange, error }: Driver
           >
             Volver a selección
           </Button>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </>
       )}
     </div>

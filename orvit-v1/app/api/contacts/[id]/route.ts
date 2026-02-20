@@ -93,7 +93,7 @@ export async function GET(
       notes: contact.notes,
       avatar: contact.avatar,
       category: contact.category,
-      tags: contact.tags ? (typeof contact.tags === 'string' ? JSON.parse(contact.tags) : contact.tags) : [],
+      tags: (() => { if (!contact.tags) return []; if (typeof contact.tags !== 'string') return contact.tags; try { return JSON.parse(contact.tags); } catch { return []; } })(),
       isActive: contact.isActive,
       pendingReminders: 0, // Temporal: sin recordatorios por ahora
       totalInteractions: 0, // Temporal: sin interacciones por ahora
@@ -215,7 +215,7 @@ export async function PUT(
       notes: updatedContact.notes,
       avatar: updatedContact.avatar,
       category: updatedContact.category,
-      tags: updatedContact.tags ? JSON.parse(updatedContact.tags as string) : [],
+      tags: (() => { if (!updatedContact.tags) return []; try { return JSON.parse(updatedContact.tags as string); } catch { return []; } })(),
       isActive: updatedContact.isActive,
       pendingReminders: 0, // Se puede actualizar después
       totalInteractions: 0, // Se puede actualizar después

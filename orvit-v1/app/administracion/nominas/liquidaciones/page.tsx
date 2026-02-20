@@ -388,7 +388,7 @@ export default function LiquidacionesPage() {
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Neto a Pagar</p>
-                          <p className="font-medium text-green-600">{formatCurrency(payroll.totalNet)}</p>
+                          <p className="font-medium text-success">{formatCurrency(payroll.totalNet)}</p>
                         </div>
                       </div>
                       <p className="text-[10px] text-muted-foreground">
@@ -411,7 +411,7 @@ export default function LiquidacionesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 text-green-600 border-green-200 hover:bg-green-50"
+                          className="h-8 text-success border-success-muted hover:bg-success-muted"
                           onClick={() => handleApprove(payroll.id)}
                           disabled={updatePayrollMutation.isPending}
                         >
@@ -424,7 +424,7 @@ export default function LiquidacionesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          className="h-8 text-info-muted-foreground border-info-muted hover:bg-info-muted"
                           onClick={() => handlePay(payroll.id)}
                           disabled={updatePayrollMutation.isPending}
                         >
@@ -437,7 +437,7 @@ export default function LiquidacionesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 text-red-600 border-red-200 hover:bg-red-50"
+                          className="h-8 text-destructive border-destructive/30 hover:bg-destructive/10"
                           onClick={() => handleCancel(payroll.id)}
                           disabled={updatePayrollMutation.isPending}
                         >
@@ -487,11 +487,11 @@ export default function LiquidacionesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Deducciones</p>
-                  <p className="text-xl font-bold text-red-600">{formatCurrency(selectedPayroll.totalDeductions)}</p>
+                  <p className="text-xl font-bold text-destructive">{formatCurrency(selectedPayroll.totalDeductions)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Neto a Pagar</p>
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedPayroll.totalNet)}</p>
+                  <p className="text-xl font-bold text-success">{formatCurrency(selectedPayroll.totalNet)}</p>
                 </div>
               </div>
 
@@ -536,8 +536,8 @@ export default function LiquidacionesPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">{formatCurrency(item.totalEarnings)}</TableCell>
-                          <TableCell className="text-right text-red-600">{formatCurrency(item.totalDeductions)}</TableCell>
-                          <TableCell className="text-right font-medium text-green-600">{formatCurrency(item.netSalary)}</TableCell>
+                          <TableCell className="text-right text-destructive">{formatCurrency(item.totalDeductions)}</TableCell>
+                          <TableCell className="text-right font-medium text-success">{formatCurrency(item.netSalary)}</TableCell>
                         </TableRow>
                         {expandedEmployee === item.employeeId && (
                           <TableRow>
@@ -562,13 +562,13 @@ export default function LiquidacionesPage() {
                                       .map((line, i) => (
                                         <div key={i} className="flex justify-between text-xs py-1">
                                           <span>{line.name}</span>
-                                          <span className="text-red-600">-{formatCurrency(line.finalAmount)}</span>
+                                          <span className="text-destructive">-{formatCurrency(line.finalAmount)}</span>
                                         </div>
                                       ))}
                                     {item.advancesDiscounted > 0 && (
                                       <div className="flex justify-between text-xs py-1 border-t mt-2 pt-2">
                                         <span className="font-medium">Adelantos</span>
-                                        <span className="text-red-600">-{formatCurrency(item.advancesDiscounted)}</span>
+                                        <span className="text-destructive">-{formatCurrency(item.advancesDiscounted)}</span>
                                       </div>
                                     )}
                                   </div>

@@ -222,7 +222,7 @@ function CardsView({ data }: { data: WidgetDataItem[] }) {
 }
 
 function StatCardsView({ data }: { data: WidgetDataItem[] }) {
-  const colors = ['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-red-50', 'bg-purple-50', 'bg-indigo-50'];
+  const colors = ['bg-info-muted', 'bg-success-muted', 'bg-warning-muted', 'bg-destructive/10', 'bg-info-muted', 'bg-info-muted'];
   
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -251,7 +251,7 @@ function ProgressView({ data, max = 100 }: { data: WidgetDataItem[]; max?: numbe
           value={item.value}
           max={max}
           label={item.label}
-          color={item.color || 'bg-blue-500'}
+          color={item.color || 'bg-info'}
         />
       ))}
     </div>
@@ -296,7 +296,7 @@ function TimelineView({ data }: { data: WidgetDataItem[] }) {
       <div className="space-y-4">
         {data.slice(0, 5).map((item, index) => (
           <div key={index} className="relative flex items-start gap-3">
-            <div className="absolute -left-3 w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+            <div className="absolute -left-3 w-2 h-2 rounded-full bg-info mt-1.5" />
             <div className="flex-1">
               <div className="font-medium text-xs text-foreground">{item.label}</div>
               {item.date && (

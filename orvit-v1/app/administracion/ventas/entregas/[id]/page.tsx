@@ -137,7 +137,7 @@ export default function DeliveryDetailPage() {
       <DeliveryDetailHeader delivery={delivery} onRefresh={fetchDelivery} />
 
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="details">Detalles</TabsTrigger>
           <TabsTrigger value="items">Items ({delivery._count?.items || delivery.items?.length || 0})</TabsTrigger>
           <TabsTrigger value="timeline">Línea de Tiempo</TabsTrigger>

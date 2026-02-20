@@ -41,15 +41,15 @@ export default function CapacityWarning({
       )}
 
       {itemsNotPlaced.length > 0 && (
-        <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-          <Package className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-700">
+        <Alert variant="default" className="border-warning/50 bg-warning-muted">
+          <Package className="h-4 w-4 text-warning-muted-foreground" />
+          <AlertTitle className="text-warning-muted-foreground">
             Items sin espacio disponible
           </AlertTitle>
           <AlertDescription>
             <ul className="list-disc list-inside mt-2 space-y-1">
               {itemsNotPlaced.map((item, index) => (
-                <li key={index} className="text-sm text-amber-700">
+                <li key={index} className="text-sm text-warning-muted-foreground">
                   <span className="font-medium">{item.productName}</span>:{' '}
                   {item.quantity} unidades - {item.reason}
                 </li>

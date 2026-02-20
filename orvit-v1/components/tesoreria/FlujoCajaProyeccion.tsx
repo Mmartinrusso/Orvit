@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,17 +38,6 @@ import {
 } from 'recharts';
 import { formatCurrency } from '@/lib/utils';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
 
 interface Assumptions {
   cobranzaPct: number;
@@ -132,11 +122,11 @@ function getRiskBadge(riskLevel: string) {
     case 'critical':
       return <Badge variant="destructive">Critico</Badge>;
     case 'high':
-      return <Badge className="bg-orange-500 hover:bg-orange-600 text-white">Alto</Badge>;
+      return <Badge className="bg-warning hover:bg-warning/90 text-warning-foreground">Alto</Badge>;
     case 'medium':
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">Medio</Badge>;
+      return <Badge className="bg-warning hover:bg-warning/90 text-warning-foreground">Medio</Badge>;
     default:
-      return <Badge className="bg-green-500 hover:bg-green-600 text-white">Bajo</Badge>;
+      return <Badge className="bg-success hover:bg-success/90 text-success-foreground">Bajo</Badge>;
   }
 }
 
@@ -158,7 +148,7 @@ interface ChartDataPoint {
 }
 
 export default function FlujoCajaProyeccion() {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   const [assumptions, setAssumptions] = useState<Assumptions>(DEFAULT_ASSUMPTIONS);
   const [debouncedAssumptions, setDebouncedAssumptions] = useState<Assumptions>(DEFAULT_ASSUMPTIONS);

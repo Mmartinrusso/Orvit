@@ -13,10 +13,10 @@ interface TasksByStatusWidgetProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendiente', color: '#eab308' },
-  IN_PROGRESS: { label: 'En Progreso', color: '#3b82f6' },
-  COMPLETED: { label: 'Completada', color: '#22c55e' },
-  CANCELLED: { label: 'Cancelada', color: '#ef4444' },
+  PENDING: { label: 'Pendiente', color: 'hsl(var(--warning))' },
+  IN_PROGRESS: { label: 'En Progreso', color: 'hsl(var(--primary))' },
+  COMPLETED: { label: 'Completada', color: 'hsl(var(--success))' },
+  CANCELLED: { label: 'Cancelada', color: 'hsl(var(--destructive))' },
 };
 
 export function TasksByStatusWidget({ companyId, sectorId, style = 'donut-chart' }: TasksByStatusWidgetProps) {
@@ -47,7 +47,7 @@ export function TasksByStatusWidget({ companyId, sectorId, style = 'donut-chart'
   const chartData = Object.entries(data || {}).map(([status, count]) => ({
     label: STATUS_CONFIG[status]?.label || status,
     value: count as number,
-    color: STATUS_CONFIG[status]?.color || '#6b7280',
+    color: STATUS_CONFIG[status]?.color || 'hsl(var(--muted-foreground))',
   })).filter(d => d.value > 0);
 
   if (isLoading) {

@@ -100,7 +100,7 @@ export default function AIComponentImportDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent size="lg" className="max-h-[95vh]">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
@@ -111,7 +111,7 @@ export default function AIComponentImportDialog({
           </p>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto space-y-5">
+        <DialogBody className="space-y-5">
           {/* Step 1: Copy Prompt */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -215,12 +215,12 @@ export default function AIComponentImportDialog({
           </div>
 
           {/* Info card */}
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <div className="rounded-lg border border-warning-muted bg-warning-muted p-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-amber-800 text-xs">Cómo funciona</p>
-                <ol className="mt-1 space-y-0.5 text-[11px] text-amber-700 list-decimal list-inside">
+                <p className="font-medium text-warning-muted-foreground text-xs">Cómo funciona</p>
+                <ol className="mt-1 space-y-0.5 text-[11px] text-warning list-decimal list-inside">
                   <li>Copiá el prompt de arriba</li>
                   <li>Abrí ChatGPT, Gemini o Claude</li>
                   <li>Subí tus documentos técnicos (PDF, imágenes)</li>

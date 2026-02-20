@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User, Plus, Edit, Trash2, Search, DollarSign, Target, TrendingUp, Mail, Phone, MapPin } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Vendedor {
   id: number;
@@ -40,6 +41,7 @@ interface Vendedor {
 }
 
 export default function VendedoresPage() {
+  const confirm = useConfirm();
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,7 +139,13 @@ export default function VendedoresPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este vendedor?')) return;
+    const ok = await confirm({
+      title: 'Eliminar vendedor',
+      description: '¿Eliminar este vendedor?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/ventas/vendedores/${id}`, {
@@ -195,7 +203,7 @@ export default function VendedoresPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <User className="w-4 h-4 text-blue-600" />
+                <User className="w-4 h-4 text-info-muted-foreground" />
                 Vendedores Activos
               </CardTitle>
             </CardHeader>
@@ -208,7 +216,7 @@ export default function VendedoresPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-green-600" />
+                <DollarSign className="w-4 h-4 text-success" />
                 Ventas del Mes
               </CardTitle>
             </CardHeader>
@@ -221,7 +229,7 @@ export default function VendedoresPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Target className="w-4 h-4 text-orange-600" />
+                <Target className="w-4 h-4 text-warning-muted-foreground" />
                 Comisión Promedio
               </CardTitle>
             </CardHeader>
@@ -299,8 +307,8 @@ export default function VendedoresPage() {
                   <TableRow key={vendedor.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <User className="w-4 h-4 text-blue-600" />
+                        <div className="w-8 h-8 rounded-full bg-info-muted flex items-center justify-center">
+                          <User className="w-4 h-4 text-info-muted-foreground" />
                         </div>
                         <div className="font-medium">{vendedor.nombre}</div>
                       </div>

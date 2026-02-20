@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTheme } from '@/components/providers/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -30,7 +29,6 @@ interface NavbarProps {
 }
 
 export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
-  const { theme } = useTheme();
   const { user, logout } = useAuth();
   const { currentCompany, currentSector, currentArea } = useCompany();
   const { canStopPlant } = useNavigationPermissions();
@@ -62,7 +60,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
         }
       }
     } catch (error) {
-      console.error('Error fetching active plant stop:', error);
+
     }
   };
 
@@ -72,9 +70,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const isPlantStopped = false;
   
   return (
-    <header className={`border-b h-16 px-4 flex items-center ${
-      theme === 'light' ? 'bg-white border-border/20' : 'bg-black border-white/5'
-    }`}>
+    <header className="border-b border-border h-16 px-4 flex items-center bg-background">
       <div className="flex items-center md:hidden mr-2">
         <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <Menu className="h-5 w-5" />
@@ -100,7 +96,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsToolRequestOpen(true)}
-                  className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 hover:border-blue-300"
+                  className="border-info-muted text-info-muted-foreground hover:bg-info-muted hover:text-info-muted-foreground hover:border-info-muted"
                 >
                   <Package className="h-4 w-4 mr-2" />
                                       <span className="hidden sm:inline">Solicitar Productos</span>
@@ -110,7 +106,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsPlantResumeOpen(true)}
-                  className="border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 hover:border-green-300"
+                  className="border-success-muted text-success hover:bg-success-muted hover:text-success hover:border-success-muted"
                 >
                   <Play className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Reactivar Planta</span>
@@ -122,7 +118,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsPlantStopOpen(true)}
-                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 hover:border-red-300"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
               >
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Parar Planta</span>

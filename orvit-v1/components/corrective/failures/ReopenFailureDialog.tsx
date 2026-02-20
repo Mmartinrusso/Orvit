@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -99,10 +100,10 @@ export function ReopenFailureDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RotateCcw className="h-5 w-5 text-orange-600" />
+            <RotateCcw className="h-5 w-5 text-warning-muted-foreground" />
             Reabrir Falla
           </DialogTitle>
           <DialogDescription>
@@ -112,8 +113,9 @@ export function ReopenFailureDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" id="reopen-failure-form">
             {/* Motivo */}
             <FormField
               control={form.control}
@@ -156,28 +158,30 @@ export function ReopenFailureDialog({
                 </FormItem>
               )}
             />
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={reopenMutation.isPending}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                {reopenMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Reabrir Falla
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
+        </DialogBody>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="reopen-failure-form"
+            disabled={reopenMutation.isPending}
+            className="bg-warning hover:bg-warning/90"
+          >
+            {reopenMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Reabrir Falla
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

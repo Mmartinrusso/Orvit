@@ -260,11 +260,11 @@ export default function ConciliacionPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Pendientes</p>
-                  <p className="text-2xl font-bold mt-1 text-blue-600">{pendientes}</p>
+                  <p className="text-2xl font-bold mt-1 text-info-muted-foreground">{pendientes}</p>
                   <p className="text-xs text-muted-foreground mt-1">Por conciliar</p>
                 </div>
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <Clock className="h-4 w-4 text-blue-600" />
+                <div className="p-2 rounded-lg bg-info-muted">
+                  <Clock className="h-4 w-4 text-info-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -275,11 +275,11 @@ export default function ConciliacionPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Completadas</p>
-                  <p className="text-2xl font-bold mt-1 text-green-600">{completadas}</p>
+                  <p className="text-2xl font-bold mt-1 text-success">{completadas}</p>
                   <p className="text-xs text-muted-foreground mt-1">100% conciliadas</p>
                 </div>
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <div className="p-2 rounded-lg bg-success-muted">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -290,11 +290,11 @@ export default function ConciliacionPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Con Diferencias</p>
-                  <p className="text-2xl font-bold mt-1 text-yellow-600">{conDiferencias}</p>
+                  <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{conDiferencias}</p>
                   <p className="text-xs text-muted-foreground mt-1">Items suspense</p>
                 </div>
-                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <div className="p-2 rounded-lg bg-warning-muted">
+                  <AlertCircle className="h-4 w-4 text-warning-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -320,7 +320,7 @@ export default function ConciliacionPage() {
       {/* ═══ Content Tabs ═══ */}
       <div className="px-4 md:px-6 pt-4 pb-6">
         <Tabs defaultValue="statements" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="w-full max-w-lg justify-start overflow-x-auto">
             <TabsTrigger value="statements" className="text-xs">
               <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />
               Extractos
@@ -437,12 +437,12 @@ export default function ConciliacionPage() {
                             </TableCell>
                             <TableCell className="text-sm text-center">{stmt.totalItems}</TableCell>
                             <TableCell className="text-sm text-center">
-                              <span className="text-green-600">{stmt.itemsConciliados}</span>
+                              <span className="text-success">{stmt.itemsConciliados}</span>
                               <span className="text-muted-foreground">/{stmt.totalItems}</span>
                             </TableCell>
                             <TableCell className="text-sm text-center">
                               {stmt.itemsSuspense > 0 ? (
-                                <span className="text-yellow-600">{stmt.itemsSuspense}</span>
+                                <span className="text-warning-muted-foreground">{stmt.itemsSuspense}</span>
                               ) : (
                                 <span className="text-muted-foreground">0</span>
                               )}
@@ -628,16 +628,16 @@ export default function ConciliacionPage() {
             {/* Resumen */}
             {summary && (
               <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/10">
-                  <p className="text-xl font-bold text-green-600">{summary.matched}</p>
+                <div className="p-3 rounded-lg bg-success-muted">
+                  <p className="text-xl font-bold text-success">{summary.matched}</p>
                   <p className="text-xs text-muted-foreground">Conciliados</p>
                 </div>
-                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10">
-                  <p className="text-xl font-bold text-yellow-600">{summary.pending}</p>
+                <div className="p-3 rounded-lg bg-warning-muted">
+                  <p className="text-xl font-bold text-warning-muted-foreground">{summary.pending}</p>
                   <p className="text-xs text-muted-foreground">Pendientes</p>
                 </div>
-                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/10">
-                  <p className="text-xl font-bold text-red-600">{summary.suspense}</p>
+                <div className="p-3 rounded-lg bg-destructive/10">
+                  <p className="text-xl font-bold text-destructive">{summary.suspense}</p>
                   <p className="text-xs text-muted-foreground">Suspense</p>
                 </div>
               </div>

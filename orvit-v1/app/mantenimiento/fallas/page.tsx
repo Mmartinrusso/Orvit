@@ -373,7 +373,7 @@ export default function FallasPage() {
           {/* Lado derecho: Acciones */}
           <div className="flex gap-2 items-center">
             {canCreate && (
-              <Button onClick={() => setQuickReportOpen(true)} size="sm" className="bg-black hover:bg-gray-800 text-white">
+              <Button onClick={() => setQuickReportOpen(true)} size="sm" className="bg-black hover:bg-muted-foreground text-white">
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nueva Falla</span>
                 <span className="sm:hidden">Nueva</span>

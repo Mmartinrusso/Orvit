@@ -17,47 +17,47 @@ const badgeVariants = cva(
           'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
         outline: 'text-foreground border-border',
 
-        // Status variants
+        // Status variants (usan tokens semánticos — sin dark: prefixes)
         pending:
-          'border-yellow-200 bg-yellow-100 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
+          'border-warning-muted bg-warning-muted text-warning-muted-foreground',
         in_progress:
-          'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+          'border-info-muted bg-info-muted text-info-muted-foreground',
         completed:
-          'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200',
+          'border-success-muted bg-success-muted text-success-muted-foreground',
         cancelled:
-          'border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800/30 dark:text-gray-300',
+          'border-border bg-muted text-muted-foreground',
         overdue:
-          'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200',
+          'border-destructive/30 bg-destructive/10 text-destructive',
 
         // Priority variants
         low:
-          'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300',
+          'border-border bg-muted text-muted-foreground',
         medium:
-          'border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+          'border-warning-muted bg-warning-muted text-warning-muted-foreground',
         high:
-          'border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+          'border-warning/30 bg-warning/10 text-warning-muted-foreground',
         critical:
-          'border-red-200 bg-red-100 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300',
+          'border-destructive/30 bg-destructive/10 text-destructive',
 
         // Maintenance type variants
         preventive:
-          'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+          'border-info-muted bg-info-muted text-info-muted-foreground',
         corrective:
-          'border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+          'border-warning/30 bg-warning/10 text-warning-muted-foreground',
         predictive:
           'border-purple-200 bg-purple-100 text-purple-700 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
 
         // Solid versions (for emphasis)
         'pending-solid':
-          'border-transparent bg-yellow-500 text-white',
+          'border-transparent bg-warning text-warning-foreground',
         'in_progress-solid':
-          'border-transparent bg-blue-500 text-white',
+          'border-transparent bg-info text-info-foreground',
         'completed-solid':
-          'border-transparent bg-green-500 text-white',
+          'border-transparent bg-success text-success-foreground',
         'preventive-solid':
-          'border-transparent bg-blue-500 text-white',
+          'border-transparent bg-info text-info-foreground',
         'corrective-solid':
-          'border-transparent bg-orange-500 text-white',
+          'border-transparent bg-warning text-warning-foreground',
         'predictive-solid':
           'border-transparent bg-purple-500 text-white',
       },

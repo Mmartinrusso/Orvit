@@ -99,14 +99,14 @@ interface WorkOrderCard {
 }
 
 const priorityConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  P1: { label: 'P1', color: 'text-white', bgColor: 'bg-red-500' },
-  P2: { label: 'P2', color: 'text-white', bgColor: 'bg-orange-500' },
-  P3: { label: 'P3', color: 'text-black', bgColor: 'bg-yellow-400' },
-  P4: { label: 'P4', color: 'text-white', bgColor: 'bg-green-500' },
-  URGENT: { label: 'P1', color: 'text-white', bgColor: 'bg-red-500' },
-  HIGH: { label: 'P2', color: 'text-white', bgColor: 'bg-orange-500' },
-  MEDIUM: { label: 'P3', color: 'text-black', bgColor: 'bg-yellow-400' },
-  LOW: { label: 'P4', color: 'text-white', bgColor: 'bg-green-500' },
+  P1: { label: 'P1', color: 'text-destructive-foreground', bgColor: 'bg-destructive' },
+  P2: { label: 'P2', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  P3: { label: 'P3', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  P4: { label: 'P4', color: 'text-success-foreground', bgColor: 'bg-success' },
+  URGENT: { label: 'P1', color: 'text-destructive-foreground', bgColor: 'bg-destructive' },
+  HIGH: { label: 'P2', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  MEDIUM: { label: 'P3', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  LOW: { label: 'P4', color: 'text-success-foreground', bgColor: 'bg-success' },
 };
 
 const waitingReasonLabels: Record<string, string> = {
@@ -119,9 +119,9 @@ const waitingReasonLabels: Record<string, string> = {
 };
 
 const slaStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  OK: { label: 'OK', color: 'text-green-700', bgColor: 'bg-green-100' },
-  AT_RISK: { label: 'En riesgo', color: 'text-amber-700', bgColor: 'bg-amber-100' },
-  BREACHED: { label: 'Vencido', color: 'text-red-700', bgColor: 'bg-red-100' },
+  OK: { label: 'OK', color: 'text-success', bgColor: 'bg-success-muted' },
+  AT_RISK: { label: 'En riesgo', color: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted' },
+  BREACHED: { label: 'Vencido', color: 'text-destructive', bgColor: 'bg-destructive/10' },
 };
 
 export function DispatcherView({
@@ -265,8 +265,8 @@ export function DispatcherView({
     return (
       <Card className={cn('p-6', className)}>
         <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-10 w-10 text-red-500" />
-          <p className="text-red-500">Error al cargar dispatcher</p>
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <p className="text-destructive">Error al cargar dispatcher</p>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -321,13 +321,13 @@ export function DispatcherView({
               </Badge>
             )}
             {summary?.slaAtRisk > 0 && (
-              <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+              <Badge variant="outline" className="gap-1 border-warning-muted text-warning-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {summary.slaAtRisk} en riesgo
               </Badge>
             )}
             {summary?.totalOverdueETA > 0 && (
-              <Badge variant="outline" className="gap-1 border-red-500 text-red-600">
+              <Badge variant="outline" className="gap-1 border-destructive text-destructive">
                 <Timer className="h-3 w-3" />
                 {summary.totalOverdueETA} ETAs vencidas
               </Badge>
@@ -355,17 +355,17 @@ export function DispatcherView({
         </div>
         <div className="rounded-lg border bg-card p-3">
           <p className="text-xs text-muted-foreground">Bloqueadas</p>
-          <p className="text-2xl font-bold text-amber-600">{summary?.totalWaiting || 0}</p>
+          <p className="text-2xl font-bold text-warning-muted-foreground">{summary?.totalWaiting || 0}</p>
         </div>
       </div>
 
       {/* Buckets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Bucket 1: Entrantes */}
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-info">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <div className="w-2 h-2 rounded-full bg-info" />
               Entrantes
               <Badge variant="secondary" className="ml-auto">
                 {filteredEntrantes.length}
@@ -396,10 +396,10 @@ export function DispatcherView({
         </Card>
 
         {/* Bucket 2: A Planificar */}
-        <Card className="border-l-4 border-l-yellow-500">
+        <Card className="border-l-4 border-l-warning">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-500" />
+              <div className="w-2 h-2 rounded-full bg-warning" />
               A Planificar
               <Badge variant="secondary" className="ml-auto">
                 {filteredAPlanificar.length}
@@ -430,10 +430,10 @@ export function DispatcherView({
         </Card>
 
         {/* Bucket 3: En Ejecución / Bloqueadas */}
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-success">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="w-2 h-2 rounded-full bg-success" />
               En Ejecución
               <Badge variant="secondary" className="ml-auto">
                 {filteredInProgress.length + filteredWaiting.length}
@@ -451,7 +451,7 @@ export function DispatcherView({
                   <Pause className="h-3 w-3 mr-1" />
                   Bloqueadas ({filteredWaiting.length})
                   {buckets?.enEjecucion?.waitingWithOverdueETA > 0 && (
-                    <AlertTriangle className="h-3 w-3 ml-1 text-red-500" />
+                    <AlertTriangle className="h-3 w-3 ml-1 text-destructive" />
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -575,9 +575,9 @@ function WorkOrderCardItem({
     <div
       className={cn(
         'p-3 border rounded-lg transition-all hover:shadow-md cursor-pointer bg-card',
-        workOrder.etaOverdue && 'border-red-400 bg-red-50/50',
-        workOrder.slaStatus === 'BREACHED' && !workOrder.etaOverdue && 'border-red-300',
-        workOrder.slaStatus === 'AT_RISK' && !workOrder.etaOverdue && 'border-amber-300',
+        workOrder.etaOverdue && 'border-destructive bg-destructive/5',
+        workOrder.slaStatus === 'BREACHED' && !workOrder.etaOverdue && 'border-destructive/50',
+        workOrder.slaStatus === 'AT_RISK' && !workOrder.etaOverdue && 'border-warning-muted',
       )}
       onClick={onClick}
     >
@@ -672,7 +672,7 @@ function WorkOrderCardItem({
         <span className="flex items-center gap-1">
           <User className="h-3 w-3" />
           {workOrder.assignedTo?.name || (
-            <span className="text-amber-600 font-medium">Sin asignar</span>
+            <span className="text-warning-muted-foreground font-medium">Sin asignar</span>
           )}
         </span>
         {workOrder.scheduledDate && (
@@ -714,7 +714,7 @@ function WorkOrderCardItem({
       {showWaiting && workOrder.waitingReason && (
         <div className={cn(
           'mt-2 p-2 rounded text-xs',
-          workOrder.etaOverdue ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+          workOrder.etaOverdue ? 'bg-destructive/10 text-destructive' : 'bg-warning-muted text-warning-muted-foreground'
         )}>
           <div className="flex items-center gap-1 font-medium">
             <Timer className="h-3 w-3" />
@@ -727,7 +727,7 @@ function WorkOrderCardItem({
             <div className="mt-1 font-medium">
               ETA: {format(new Date(workOrder.waitingETA), 'dd/MM HH:mm', { locale: es })}
               {workOrder.etaOverdue && (
-                <span className="ml-1 text-red-600 font-bold">
+                <span className="ml-1 text-destructive font-bold">
                   ({workOrder.etaOverdueHours}h vencida)
                 </span>
               )}
@@ -753,7 +753,7 @@ function WorkOrderCardItem({
       {bucket === 'aPlanificar' && onStart && workOrder.assignedTo && (
         <Button
           size="sm"
-          className="w-full mt-3 h-8 text-xs bg-green-600 hover:bg-green-700"
+          className="w-full mt-3 h-8 text-xs bg-success hover:bg-success/90"
           onClick={(e) => { e.stopPropagation(); onStart(); }}
         >
           <Play className="h-3 w-3 mr-1" />

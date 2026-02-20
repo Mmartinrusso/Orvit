@@ -106,7 +106,7 @@ export function CotizacionesAlertasPopover() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />
             <span className="font-medium">Cotizaciones por Vencer</span>
           </div>
           <Button
@@ -228,17 +228,17 @@ export function CotizacionesAlertaBanner({ onDismiss }: { onDismiss?: () => void
   const montoTotal = urgentes.reduce((sum, a) => sum + a.total, 0);
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
+    <div className="bg-warning-muted border border-warning-muted rounded-lg px-4 py-3 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <AlertTriangle className="w-5 h-5 text-warning-muted-foreground" />
           <div>
-            <p className="font-medium text-amber-800">
+            <p className="font-medium text-warning-muted-foreground">
               {urgentes.length === 1
                 ? '1 cotización vence hoy'
                 : `${urgentes.length} cotizaciones vencen hoy`}
             </p>
-            <p className="text-sm text-amber-700">
+            <p className="text-sm text-warning-muted-foreground">
               Total: {formatCurrency(montoTotal)}
             </p>
           </div>
@@ -247,7 +247,7 @@ export function CotizacionesAlertaBanner({ onDismiss }: { onDismiss?: () => void
           <Button
             variant="outline"
             size="sm"
-            className="border-amber-300 text-amber-800 hover:bg-amber-100"
+            className="border-warning-muted text-warning-muted-foreground hover:bg-warning-muted"
             onClick={() => router.push('/administracion/ventas/cotizaciones?estado=ENVIADA')}
           >
             Ver cotizaciones
@@ -255,7 +255,7 @@ export function CotizacionesAlertaBanner({ onDismiss }: { onDismiss?: () => void
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-amber-600 hover:text-amber-800 hover:bg-amber-100"
+            className="h-8 w-8 text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
             onClick={handleDismiss}
           >
             <X className="w-4 h-4" />
@@ -301,21 +301,21 @@ export function CotizacionesAlertasWidget() {
 
   return (
     <button
-      className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors text-left"
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-warning-muted border border-warning-muted hover:bg-warning-muted/80 transition-colors text-left"
       onClick={() => router.push('/administracion/ventas/cotizaciones?estado=ENVIADA')}
     >
-      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+      <AlertTriangle className="w-4 h-4 text-warning-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-amber-800 truncate">
+        <p className="text-sm font-medium text-warning-muted-foreground truncate">
           {alertas.cantidad} por vencer
         </p>
         {urgentes > 0 && (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-warning-muted-foreground">
             {urgentes} urgente{urgentes > 1 ? 's' : ''}
           </p>
         )}
       </div>
-      <ChevronRight className="w-4 h-4 text-amber-400 shrink-0" />
+      <ChevronRight className="w-4 h-4 text-warning-muted-foreground shrink-0" />
     </button>
   );
 }

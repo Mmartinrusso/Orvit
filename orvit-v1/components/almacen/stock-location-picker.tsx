@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -218,14 +219,14 @@ export function StockLocationPicker({
     }
     if (days <= 30) {
       return (
-        <Badge className="bg-orange-100 text-orange-800 text-xs">
+        <Badge className="bg-warning-muted text-warning-muted-foreground text-xs">
           {days} días
         </Badge>
       );
     }
     if (days <= 90) {
       return (
-        <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+        <Badge className="bg-warning-muted text-warning-muted-foreground text-xs">
           {days} días
         </Badge>
       );
@@ -239,7 +240,7 @@ export function StockLocationPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
@@ -247,13 +248,13 @@ export function StockLocationPicker({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Item Info */}
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="font-medium">{supplierItemName}</p>
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
               <span>Necesario: <strong className="text-foreground">{quantityNeeded}</strong></span>
-              <span>Disponible: <strong className={totalAvailable >= quantityNeeded ? 'text-green-600' : 'text-red-600'}>{totalAvailable.toFixed(2)}</strong></span>
+              <span>Disponible: <strong className={totalAvailable >= quantityNeeded ? 'text-success' : 'text-destructive'}>{totalAvailable.toFixed(2)}</strong></span>
             </div>
           </div>
 
@@ -387,13 +388,13 @@ export function StockLocationPicker({
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               {isComplete ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CheckCircle2 className="h-5 w-5 text-success" />
               ) : (
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
               )}
               <span>
                 Total seleccionado:{' '}
-                <strong className={isComplete ? 'text-green-600' : 'text-orange-600'}>
+                <strong className={isComplete ? 'text-success' : 'text-warning-muted-foreground'}>
                   {totalSelected.toFixed(2)}
                 </strong>{' '}
                 de {quantityNeeded}
@@ -403,7 +404,7 @@ export function StockLocationPicker({
               <Badge variant="destructive">Stock insuficiente</Badge>
             )}
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

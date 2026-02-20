@@ -98,24 +98,24 @@ export function StockAlertsPanel({
   const getAlertColor = (level: string) => {
     switch (level) {
       case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/30';
       case 'danger':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
       case 'warning':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
       default:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
     }
   };
 
   const getAlertIcon = (level: string) => {
     switch (level) {
       case 'critical':
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+        return <AlertTriangle className="w-4 h-4 text-destructive" />;
       case 'danger':
-        return <TrendingDown className="w-4 h-4 text-orange-600" />;
+        return <TrendingDown className="w-4 h-4 text-warning-muted-foreground" />;
       default:
-        return <Bell className="w-4 h-4 text-amber-600" />;
+        return <Bell className="w-4 h-4 text-warning-muted-foreground" />;
     }
   };
 
@@ -126,7 +126,7 @@ export function StockAlertsPanel({
         <CardHeader className="p-3 pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />
               Stock Bajo
             </CardTitle>
             <Badge variant="secondary" className="text-xs">
@@ -186,7 +186,7 @@ export function StockAlertsPanel({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <AlertTriangle className="w-5 h-5 text-warning-muted-foreground" />
             Alertas de Stock Bajo
             {products.length > 0 && (
               <Badge variant="destructive">{products.length}</Badge>
@@ -277,17 +277,17 @@ export function StockAlertsPanel({
 
                     {/* Barra de progreso */}
                     <div className="mt-3">
-                      <div className="h-2 w-full bg-white/50 rounded-full overflow-hidden">
+                      <div className="h-2 w-full bg-background/50 rounded-full overflow-hidden">
                         <div
                           className={cn(
                             'h-full transition-all',
                             level === 'critical'
-                              ? 'bg-red-500'
+                              ? 'bg-destructive'
                               : level === 'danger'
-                              ? 'bg-orange-500'
+                              ? 'bg-warning-muted-foreground'
                               : level === 'warning'
-                              ? 'bg-amber-500'
-                              : 'bg-yellow-500'
+                              ? 'bg-warning-muted-foreground'
+                              : 'bg-warning-muted-foreground'
                           )}
                           style={{ width: `${Math.min(product.percentageOfMin, 100)}%` }}
                         />

@@ -49,14 +49,14 @@ const DEFAULT_ACCEPTED_TYPES = [
 const getFileIcon = (mime?: string, name?: string) => {
   if (!mime && name) {
     const ext = name.split('.').pop()?.toLowerCase();
-    if (['pdf'].includes(ext || '')) return <FileText className="h-5 w-5 text-red-500" />;
-    if (['doc', 'docx'].includes(ext || '')) return <FileText className="h-5 w-5 text-blue-500" />;
-    if (['xls', 'xlsx'].includes(ext || '')) return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
+    if (['pdf'].includes(ext || '')) return <FileText className="h-5 w-5 text-destructive" />;
+    if (['doc', 'docx'].includes(ext || '')) return <FileText className="h-5 w-5 text-info-muted-foreground" />;
+    if (['xls', 'xlsx'].includes(ext || '')) return <FileSpreadsheet className="h-5 w-5 text-success" />;
     if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext || '')) return <FileImage className="h-5 w-5 text-purple-500" />;
   }
-  if (mime?.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
-  if (mime?.includes('word') || mime?.includes('document')) return <FileText className="h-5 w-5 text-blue-500" />;
-  if (mime?.includes('excel') || mime?.includes('spreadsheet')) return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
+  if (mime?.includes('pdf')) return <FileText className="h-5 w-5 text-destructive" />;
+  if (mime?.includes('word') || mime?.includes('document')) return <FileText className="h-5 w-5 text-info-muted-foreground" />;
+  if (mime?.includes('excel') || mime?.includes('spreadsheet')) return <FileSpreadsheet className="h-5 w-5 text-success" />;
   if (mime?.includes('image')) return <FileImage className="h-5 w-5 text-purple-500" />;
   return <File className="h-5 w-5 text-muted-foreground" />;
 };

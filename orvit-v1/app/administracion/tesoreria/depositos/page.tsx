@@ -564,11 +564,11 @@ export default function DepositosPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Pendientes</p>
-                  <p className="text-2xl font-bold mt-1 text-yellow-600">{pendientes}</p>
+                  <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{pendientes}</p>
                   <p className="text-xs text-muted-foreground mt-1">Por confirmar</p>
                 </div>
-                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                  <FileCheck2 className="h-4 w-4 text-yellow-600" />
+                <div className="p-2 rounded-lg bg-warning-muted">
+                  <FileCheck2 className="h-4 w-4 text-warning-muted-foreground" />
                 </div>
               </div>
             </CardContent>

@@ -68,38 +68,38 @@ export function calculateNextExecution(frequency: TaskFrequency, lastCompleted?:
 }
 
 /**
- * Tareas diarias: Al día siguiente a las 00:00
+ * Tareas diarias: Al día siguiente a la hora configurada
  */
 function calculateNextDaily(baseDate: Date, now: Date): Date {
   const nextDate = new Date(now);
   nextDate.setDate(nextDate.getDate() + 1);
-  nextDate.setHours(0, 0, 0, 0); // Siempre a las 00:00
-  
+  nextDate.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+
   return nextDate;
 }
 
 /**
- * Tareas semanales: Próximo lunes a las 00:00
+ * Tareas semanales: Próximo lunes a la hora configurada
  */
 function calculateNextWeekly(baseDate: Date, now: Date): Date {
   const nextMonday = new Date(now);
-  
+
   // Calcular días hasta el próximo lunes (0 = domingo, 1 = lunes)
   const currentDay = nextMonday.getDay();
   const daysUntilMonday = currentDay === 0 ? 1 : (8 - currentDay);
-  
+
   nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
-  nextMonday.setHours(0, 0, 0, 0); // Siempre a las 00:00
-  
+  nextMonday.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+
   return nextMonday;
 }
 
 /**
- * Tareas quincenales: Día 15 del próximo mes a las 00:00
+ * Tareas quincenales: Día 15 del próximo mes a la hora configurada
  */
 function calculateNextBiweekly(baseDate: Date, now: Date): Date {
   const nextDate = new Date(now);
-  
+
   // Si estamos antes del día 15 del mes actual, usar día 15 de este mes
   if (now.getDate() < 15) {
     nextDate.setDate(15);
@@ -108,55 +108,55 @@ function calculateNextBiweekly(baseDate: Date, now: Date): Date {
     nextDate.setMonth(nextDate.getMonth() + 1);
     nextDate.setDate(15);
   }
-  
-  nextDate.setHours(0, 0, 0, 0); // Siempre a las 00:00
+
+  nextDate.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
   return nextDate;
 }
 
 /**
- * Tareas mensuales: Día 1 del próximo mes a las 00:00
+ * Tareas mensuales: Día 1 del próximo mes a la hora configurada
  */
 function calculateNextMonthly(baseDate: Date, now: Date): Date {
   const nextDate = new Date(now);
   nextDate.setMonth(nextDate.getMonth() + 1);
   nextDate.setDate(1);
-  nextDate.setHours(0, 0, 0, 0); // Siempre a las 00:00
-  
+  nextDate.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+
   return nextDate;
 }
 
 /**
- * Tareas trimestrales: Cada 3 meses el día 1 a las 00:00
+ * Tareas trimestrales: Cada 3 meses el día 1 a la hora configurada
  */
 function calculateNextQuarterly(baseDate: Date, now: Date): Date {
   const nextDate = new Date(now);
   nextDate.setMonth(nextDate.getMonth() + 3);
   nextDate.setDate(1);
-  nextDate.setHours(0, 0, 0, 0); // Siempre a las 00:00
-  
+  nextDate.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+
   return nextDate;
 }
 
 /**
- * Tareas semestrales: Cada 6 meses el día 1 a las 00:00
+ * Tareas semestrales: Cada 6 meses el día 1 a la hora configurada
  */
 function calculateNextSemestral(baseDate: Date, now: Date): Date {
   const nextDate = new Date(now);
   nextDate.setMonth(nextDate.getMonth() + 6);
   nextDate.setDate(1);
-  nextDate.setHours(0, 0, 0, 0); // Siempre a las 00:00
-  
+  nextDate.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+
   return nextDate;
 }
 
 /**
- * Tareas anuales: Mismo día y mes del próximo año a las 00:00
+ * Tareas anuales: Mismo día y mes del próximo año a la hora configurada
  */
 function calculateNextAnnual(baseDate: Date, now: Date): Date {
   const nextDate = new Date(baseDate);
   nextDate.setFullYear(nextDate.getFullYear() + 1);
-  nextDate.setHours(0, 0, 0, 0); // Siempre a las 00:00
-  
+  nextDate.setHours(baseDate.getHours(), baseDate.getMinutes(), 0, 0);
+
   return nextDate;
 }
 
@@ -198,17 +198,18 @@ export function resetCompletedTask(
 /**
  * Obtiene una descripción legible de cuándo se ejecuta cada frecuencia
  */
-export function getFrequencyDescription(frequency: TaskFrequency): string {
-  const descriptions = {
-    'diaria': 'Todos los días a las 00:00',
-    'semanal': 'Todos los lunes a las 00:00',
-    'quincenal': 'El día 15 de cada mes a las 00:00',
-    'mensual': 'El día 1 de cada mes a las 00:00',
-    'trimestral': 'El día 1 cada 3 meses a las 00:00',
-    'semestral': 'El día 1 cada 6 meses a las 00:00',
-    'anual': 'El mismo día cada año a las 00:00'
+export function getFrequencyDescription(frequency: TaskFrequency, executionTime?: string): string {
+  const timeStr = executionTime || '00:00';
+  const descriptions: Record<TaskFrequency, string> = {
+    'diaria': `Todos los días a las ${timeStr}`,
+    'semanal': `Todos los lunes a las ${timeStr}`,
+    'quincenal': `El día 15 de cada mes a las ${timeStr}`,
+    'mensual': `El día 1 de cada mes a las ${timeStr}`,
+    'trimestral': `El día 1 cada 3 meses a las ${timeStr}`,
+    'semestral': `El día 1 cada 6 meses a las ${timeStr}`,
+    'anual': `El mismo día cada año a las ${timeStr}`
   };
-  
+
   return descriptions[frequency] || frequency;
 }
 

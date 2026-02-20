@@ -343,7 +343,7 @@ export function OrdenEditForm({ orden, clientes, vendedores, productos }: OrdenE
                   className="absolute top-2 right-2"
                   onClick={() => remove(index)}
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
 
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
@@ -526,7 +526,7 @@ export function OrdenEditForm({ orden, clientes, vendedores, productos }: OrdenE
                 <span className="font-mono">${totales.subtotalItems.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
               </div>
               {totales.descuentoGlobalMonto > 0 && (
-                <div className="flex justify-between text-sm text-amber-600">
+                <div className="flex justify-between text-sm text-warning-muted-foreground">
                   <span>Descuento Global ({watchDescuentoGlobal}%)</span>
                   <span className="font-mono">- ${totales.descuentoGlobalMonto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>

@@ -31,6 +31,15 @@ export interface Supply {
   supplierContactPerson: string | null;
   supplierPhone: string | null;
   supplierEmail: string | null;
+  // Stock actual (suma de todos los SupplierItems vinculados)
+  stockCantidad: number;
+  // Cantidad de SupplierItems que apuntan a este supply (> 0 = pasó por compras)
+  supplierItemCount: number;
+  // Último mes de compra registrado en supply_monthly_prices
+  ultimaCompraMonth: string | null;
+  // Categoría del insumo
+  categoryId: number | null;
+  categoryName: string | null;
 }
 
 export interface SupplyPrice {
@@ -531,19 +540,20 @@ export function useInsumos() {
   }, [currentCompany?.id, fetchSuppliers, fetchSupplies, fetchPrices, fetchHistory]);
 
   // Obtener el precio actual de un insumo específico (incluye flete)
-  const getCurrentPrice = (supplyId: number): number => {
+  // Memoizado para evitar referencias nuevas en cada render (evita re-fetches en RecetasV2)
+  const getCurrentPrice = useCallback((supplyId: number): number => {
     const supplyPrices = prices.filter(p => p.supplyId === supplyId);
     if (supplyPrices.length === 0) return 0;
-    
+
     // Ordenar por fecha y tomar el más reciente
-    const sortedPrices = supplyPrices.sort((a, b) => 
+    const sortedPrices = supplyPrices.sort((a, b) =>
       new Date(b.monthYear).getTime() - new Date(a.monthYear).getTime()
     );
-    
+
     const latestPrice = sortedPrices[0];
     // Retornar precio base + flete (totalPrice incluye ambos)
     return latestPrice.totalPrice || (latestPrice.pricePerUnit + (latestPrice.freightCost || 0));
-  };
+  }, [prices]);
 
 
 

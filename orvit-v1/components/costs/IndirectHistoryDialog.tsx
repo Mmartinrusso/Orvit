@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -52,12 +53,12 @@ const categoryLabels = {
 };
 
 const categoryColors = {
-  RENT: 'bg-blue-100 text-blue-800 border-blue-200',
-  UTILITIES: 'bg-green-100 text-green-800 border-green-200',
-  MAINTENANCE: 'bg-orange-100 text-orange-800 border-orange-200',
-  INSURANCE: 'bg-purple-100 text-purple-800 border-purple-200',
-  DEPRECIATION: 'bg-red-100 text-red-800 border-red-200',
-  OTHER: 'bg-gray-100 text-gray-800 border-gray-200',
+  RENT: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  UTILITIES: 'bg-success-muted text-success border-success-muted',
+  MAINTENANCE: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  INSURANCE: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  DEPRECIATION: 'bg-destructive/10 text-destructive border-destructive/30',
+  OTHER: 'bg-muted text-foreground border-border',
 };
 
 export function IndirectHistoryDialog({
@@ -132,7 +133,7 @@ export function IndirectHistoryDialog({
             <div className="flex items-center gap-2 mt-2">
               <Badge
                 variant="outline"
-                className={`${categoryColors[category as keyof typeof categoryColors]}`}
+                className={cn(categoryColors[category as keyof typeof categoryColors])}
               >
                 {categoryLabels[category as keyof typeof categoryLabels]}
               </Badge>
@@ -158,13 +159,13 @@ export function IndirectHistoryDialog({
               </div>
               <div className="p-3 bg-muted/10 rounded-lg border border-border/30">
                 <div className="text-sm text-muted-foreground">Máximo</div>
-                <div className="text-lg font-bold text-red-600">
+                <div className="text-lg font-bold text-destructive">
                   {formatCurrency(statistics.maxAmount)}
                 </div>
               </div>
               <div className="p-3 bg-muted/10 rounded-lg border border-border/30">
                 <div className="text-sm text-muted-foreground">Mínimo</div>
-                <div className="text-lg font-bold text-green-600">
+                <div className="text-lg font-bold text-success">
                   {formatCurrency(statistics.minAmount)}
                 </div>
               </div>
@@ -213,11 +214,7 @@ export function IndirectHistoryDialog({
                     <div className="flex items-center gap-4">
                       {record.variation !== null && record.variationPct !== null && (
                         <div className="text-right">
-                          <div className={`flex items-center gap-1 text-sm ${
-                            record.variation >= 0 
-                              ? 'text-red-600' 
-                              : 'text-green-600'
-                          }`}>
+                          <div className={cn('flex items-center gap-1 text-sm', record.variation >= 0 ? 'text-destructive' : 'text-success')}>
                             {record.variation >= 0 ? (
                               <TrendingUp className="h-3 w-3" />
                             ) : (

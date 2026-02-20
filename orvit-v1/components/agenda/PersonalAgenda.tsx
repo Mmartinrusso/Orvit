@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Users, Calendar, Bell, UserPlus, CalendarPlus, CheckCircle, Clock, AlertTriangle, Filter, CheckCircle2, AlertCircle } from "lucide-react";
+import { cn } from '@/lib/utils';
+import { Plus, Search, Users, Calendar, Bell, UserPlus, CalendarPlus, CheckCircle, Clock, AlertTriangle, Filter, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,7 +413,7 @@ export function PersonalAgenda() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
           <p className="text-muted-foreground">Cargando agenda...</p>
         </div>
       </div>
@@ -462,9 +463,9 @@ export function PersonalAgenda() {
 
         {/* Recordatorios Pendientes */}
         <Card
-          className={`cursor-pointer transition-all hover:bg-accent/50 ${
-            activeKpiFilter === 'pending' ? 'ring-2 ring-primary bg-accent/30' : ''
-          }`}
+          className={cn('cursor-pointer transition-all hover:bg-accent/50',
+            activeKpiFilter === 'pending' && 'ring-2 ring-primary bg-accent/30'
+          )}
           onClick={() => handleKpiClick('pending')}
         >
           <CardContent className="p-4">
@@ -482,9 +483,9 @@ export function PersonalAgenda() {
 
         {/* Para Hoy */}
         <Card
-          className={`cursor-pointer transition-all hover:bg-accent/50 ${
-            activeKpiFilter === 'today' ? 'ring-2 ring-primary bg-accent/30' : ''
-          }`}
+          className={cn('cursor-pointer transition-all hover:bg-accent/50',
+            activeKpiFilter === 'today' && 'ring-2 ring-primary bg-accent/30'
+          )}
           onClick={() => handleKpiClick('today')}
         >
           <CardContent className="p-4">
@@ -502,19 +503,19 @@ export function PersonalAgenda() {
 
         {/* Vencidos */}
         <Card
-          className={`cursor-pointer transition-all hover:bg-accent/50 ${
-            activeKpiFilter === 'overdue' ? 'ring-2 ring-destructive bg-destructive/5' : ''
-          }`}
+          className={cn('cursor-pointer transition-all hover:bg-accent/50',
+            activeKpiFilter === 'overdue' && 'ring-2 ring-destructive bg-destructive/5'
+          )}
           onClick={() => handleKpiClick('overdue')}
         >
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Vencidos</p>
-                <p className={`text-2xl font-bold mt-1 ${stats.overdueReminders > 0 ? 'text-destructive' : ''}`}>{stats.overdueReminders}</p>
+                <p className={cn('text-2xl font-bold mt-1', stats.overdueReminders > 0 && 'text-destructive')}>{stats.overdueReminders}</p>
               </div>
-              <div className={`p-2 rounded-lg ${stats.overdueReminders > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
-                <AlertTriangle className={`h-4 w-4 ${stats.overdueReminders > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+              <div className={cn('p-2 rounded-lg', stats.overdueReminders > 0 ? 'bg-destructive/10' : 'bg-muted')}>
+                <AlertTriangle className={cn('h-4 w-4', stats.overdueReminders > 0 ? 'text-destructive' : 'text-muted-foreground')} />
               </div>
             </div>
           </CardContent>
@@ -685,8 +686,8 @@ export function PersonalAgenda() {
             {reminders.filter(r => !r.isCompleted).length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <CheckCircle className="h-8 w-8 text-green-500" />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success-muted flex items-center justify-center">
+                    <CheckCircle className="h-8 w-8 text-success" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Todo al día</h3>
                   <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
@@ -729,7 +730,7 @@ export function PersonalAgenda() {
             <div className="space-y-3 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                   <h3 className="text-sm font-medium text-foreground">Completados Recientes</h3>
                 </div>
                 <span className="text-xs text-muted-foreground">{reminders.filter(r => r.isCompleted).length} completados</span>
@@ -770,6 +771,7 @@ export function PersonalAgenda() {
                     size="sm"
                     onClick={() => navigateCalendar('prev')}
                     className="h-8 w-8 p-0"
+                    aria-label="Anterior"
                   >
                     ←
                   </Button>
@@ -784,6 +786,7 @@ export function PersonalAgenda() {
                     size="sm"
                     onClick={() => navigateCalendar('next')}
                     className="h-8 w-8 p-0"
+                    aria-label="Siguiente"
                   >
                     →
                   </Button>
@@ -802,7 +805,7 @@ export function PersonalAgenda() {
               {/* Calendario navegable */}
               <div className="grid grid-cols-7 gap-2 mb-4">
                 {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
-                  <div key={day} className="text-center text-sm font-medium p-2 text-gray-600 dark:text-gray-400">
+                  <div key={day} className="text-center text-sm font-medium p-2 text-muted-foreground">
                     {day}
                   </div>
                 ))}
@@ -831,23 +834,23 @@ export function PersonalAgenda() {
                     <div 
                       key={i} 
                       onClick={() => isCurrentMonth && selectDay(dayNumber)}
-                      className={`
-                        text-center text-sm p-2 rounded cursor-pointer transition-all duration-200
-                        ${isCurrentMonth ? 'text-foreground hover:bg-gray-100 dark:hover:bg-gray-800' : 'text-gray-300 dark:text-gray-600 cursor-default'}
-                        ${isToday ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}
-                        ${isSelected && !isToday ? 'bg-gray-200 dark:bg-gray-700 ring-2 ring-blue-400' : ''}
-                        ${dayReminders.length > 0 ? 'ring-2 ring-orange-400' : ''}
-                      `}
+                      className={cn(
+                        'text-center text-sm p-2 rounded cursor-pointer transition-all duration-200',
+                        isCurrentMonth ? 'text-foreground hover:bg-accent' : 'text-muted-foreground/50 cursor-default',
+                        isToday && 'bg-primary text-primary-foreground hover:bg-primary/90',
+                        isSelected && !isToday && 'bg-muted ring-2 ring-primary',
+                        dayReminders.length > 0 && 'ring-2 ring-orange-400'
+                      )}
                     >
                       {isCurrentMonth ? (
                         <div>
                           <div className="font-medium">{dayNumber}</div>
                           <div className="flex justify-center gap-1 mt-1">
                             {dayReminders.length > 0 && (
-                              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                              <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
                             )}
                             {dayCompletedReminders.length > 0 && (
-                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                              <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
                             )}
                           </div>
                         </div>
@@ -871,8 +874,8 @@ export function PersonalAgenda() {
                 
                 {getSelectedDayReminders().length === 0 ? (
                   <div className="text-center py-8">
-                    <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
                       No hay recordatorios para este día
                     </p>
                   </div>
@@ -881,7 +884,7 @@ export function PersonalAgenda() {
                     {/* Pendientes */}
                     {getSelectedDayReminders().filter(r => !r.isCompleted).length > 0 && (
                       <div>
-                        <h5 className="text-sm font-medium text-orange-600 dark:text-orange-400 mb-2 flex items-center gap-1">
+                        <h5 className="text-sm font-medium text-warning-muted-foreground mb-2 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           Pendientes ({getSelectedDayReminders().filter(r => !r.isCompleted).length})
                         </h5>
@@ -905,7 +908,7 @@ export function PersonalAgenda() {
                     {/* Completados */}
                     {getSelectedDayReminders().filter(r => r.isCompleted).length > 0 && (
                       <div>
-                        <h5 className="text-sm font-medium text-green-600 dark:text-green-400 mb-2 flex items-center gap-1">
+                        <h5 className="text-sm font-medium text-success mb-2 flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Completados ({getSelectedDayReminders().filter(r => r.isCompleted).length})
                         </h5>

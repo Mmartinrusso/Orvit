@@ -274,9 +274,19 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     const savedArea = localStorage.getItem('currentArea');
     const savedSector = localStorage.getItem('currentSector');
 
-    const parsedCompany = savedCompany ? JSON.parse(savedCompany) : null;
-    const parsedArea = savedArea ? JSON.parse(savedArea) : null;
-    const parsedSector = savedSector ? JSON.parse(savedSector) : null;
+    let parsedCompany = null;
+    let parsedArea = null;
+    let parsedSector = null;
+    try {
+      parsedCompany = savedCompany ? JSON.parse(savedCompany) : null;
+      parsedArea = savedArea ? JSON.parse(savedArea) : null;
+      parsedSector = savedSector ? JSON.parse(savedSector) : null;
+    } catch {
+      // Datos de localStorage corruptos — limpiar y usar null
+      localStorage.removeItem('currentCompany');
+      localStorage.removeItem('currentArea');
+      localStorage.removeItem('currentSector');
+    }
 
     setCompanyState(prev => ({
       ...prev,

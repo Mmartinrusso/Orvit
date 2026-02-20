@@ -93,10 +93,10 @@ interface ForecastStats {
 }
 
 const priorityConfig = {
-  CRITICAL: { label: 'Crítico', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', textColor: 'text-red-600' },
-  HIGH: { label: 'Alto', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', textColor: 'text-amber-600' },
-  MEDIUM: { label: 'Medio', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', textColor: 'text-blue-600' },
-  LOW: { label: 'Bajo', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', textColor: 'text-gray-600' },
+  CRITICAL: { label: 'Crítico', color: 'bg-destructive/10 text-destructive', textColor: 'text-destructive' },
+  HIGH: { label: 'Alto', color: 'bg-warning-muted text-warning-muted-foreground', textColor: 'text-warning-muted-foreground' },
+  MEDIUM: { label: 'Medio', color: 'bg-info-muted text-info-muted-foreground', textColor: 'text-info-muted-foreground' },
+  LOW: { label: 'Bajo', color: 'bg-muted text-foreground', textColor: 'text-muted-foreground' },
 };
 
 export default function ForecastPage() {
@@ -222,36 +222,36 @@ export default function ForecastPage() {
                     <p className="text-xs font-medium text-muted-foreground">PMs Programados</p>
                     <p className="text-2xl font-bold">{stats.totalScheduledPMs}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-purple-600" />
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={cn(stats.criticalItems > 0 && 'border-red-500/50')}>
+            <Card className={cn(stats.criticalItems > 0 && 'border-destructive/30/50')}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Items Críticos</p>
-                    <p className="text-2xl font-bold text-red-600">{stats.criticalItems}</p>
+                    <p className="text-2xl font-bold text-destructive">{stats.criticalItems}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <AlertCircle className="h-5 w-5 text-red-600" />
+                  <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={cn(stats.stockoutRisk > 0 && 'border-amber-500/50')}>
+            <Card className={cn(stats.stockoutRisk > 0 && 'border-warning-muted/50')}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Riesgo Stockout</p>
-                    <p className="text-2xl font-bold text-amber-600">{stats.stockoutRisk}</p>
+                    <p className="text-2xl font-bold text-warning-muted-foreground">{stats.stockoutRisk}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  <div className="h-10 w-10 rounded-full bg-warning-muted flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -264,25 +264,25 @@ export default function ForecastPage() {
                     <p className="text-xs font-medium text-muted-foreground">Repuestos a Pedir</p>
                     <p className="text-2xl font-bold">{needs.filter(n => n.suggestedOrder > 0).length}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <ShoppingCart className="h-5 w-5 text-blue-600" />
+                  <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+                    <ShoppingCart className="h-5 w-5 text-info-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {permissions.canViewCosts && (
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
+              <Card className="bg-gradient-to-br from-success-muted to-success-muted/60 border-success-muted">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-green-700 dark:text-green-400">Costo Estimado</p>
-                      <p className="text-xl font-bold text-green-700 dark:text-green-400">
+                      <p className="text-xs font-medium text-success">Costo Estimado</p>
+                      <p className="text-xl font-bold text-success">
                         {formatCurrency(stats.estimatedCost)}
                       </p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                      <DollarSign className="h-5 w-5 text-green-600" />
+                    <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                      <DollarSign className="h-5 w-5 text-success" />
                     </div>
                   </div>
                 </CardContent>
@@ -339,8 +339,8 @@ export default function ForecastPage() {
                               <div className="text-center">
                                 <p className={cn(
                                   'font-semibold',
-                                  need.currentStock <= 0 ? 'text-red-600' :
-                                  need.currentStock < need.minStock ? 'text-amber-600' : ''
+                                  need.currentStock <= 0 ? 'text-destructive' :
+                                  need.currentStock < need.minStock ? 'text-warning-muted-foreground' : ''
                                 )}>
                                   {need.currentStock}
                                 </p>
@@ -348,8 +348,8 @@ export default function ForecastPage() {
                                   value={Math.min(stockRatio, 100)}
                                   className={cn(
                                     'h-1 mt-1 w-16 mx-auto',
-                                    stockRatio < 50 && '[&>div]:bg-red-500',
-                                    stockRatio >= 50 && stockRatio < 100 && '[&>div]:bg-amber-500'
+                                    stockRatio < 50 && '[&>div]:bg-destructive',
+                                    stockRatio >= 50 && stockRatio < 100 && '[&>div]:bg-warning'
                                   )}
                                 />
                               </div>
@@ -367,7 +367,7 @@ export default function ForecastPage() {
                             </TableCell>
                             <TableCell className="text-center">
                               {need.suggestedOrder > 0 ? (
-                                <Badge variant="outline" className="font-semibold text-blue-600 border-blue-600">
+                                <Badge variant="outline" className="font-semibold text-info-muted-foreground border-info-muted-foreground">
                                   +{need.suggestedOrder}
                                 </Badge>
                               ) : (
@@ -390,7 +390,7 @@ export default function ForecastPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-purple-600" />
+                  <Clock className="h-4 w-4 text-primary" />
                   PMs Programados
                 </CardTitle>
               </CardHeader>
@@ -445,13 +445,13 @@ export default function ForecastPage() {
 
           {/* Action Suggestions */}
           {(stats.criticalItems > 0 || stats.stockoutRisk > 0) && (
-            <Card className="border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/10">
+            <Card className="border-warning-muted/50 bg-warning-muted/30">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <AlertTriangle className="h-5 w-5 text-warning-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium text-amber-800 dark:text-amber-400">Acciones Recomendadas</p>
-                    <ul className="text-sm text-amber-700 dark:text-amber-300 mt-2 space-y-1">
+                    <p className="font-medium text-warning-muted-foreground">Acciones Recomendadas</p>
+                    <ul className="text-sm text-warning-muted-foreground mt-2 space-y-1">
                       {stats.criticalItems > 0 && (
                         <li>• Revisar {stats.criticalItems} items críticos para máquinas de alta criticidad</li>
                       )}

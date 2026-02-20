@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -160,25 +161,25 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset }: A
   };
 
   const statusOptions = [
-    { value: WorkOrderStatus.PENDING, label: 'Pendiente', color: 'bg-yellow-500' },
-    { value: WorkOrderStatus.IN_PROGRESS, label: 'En Proceso', color: 'bg-blue-500' },
-    { value: WorkOrderStatus.COMPLETED, label: 'Completada', color: 'bg-green-500' },
-    { value: WorkOrderStatus.CANCELLED, label: 'Cancelada', color: 'bg-red-500' },
-    { value: WorkOrderStatus.ON_HOLD, label: 'En Espera', color: 'bg-gray-500' },
+    { value: WorkOrderStatus.PENDING, label: 'Pendiente', color: 'bg-warning' },
+    { value: WorkOrderStatus.IN_PROGRESS, label: 'En Proceso', color: 'bg-info' },
+    { value: WorkOrderStatus.COMPLETED, label: 'Completada', color: 'bg-success' },
+    { value: WorkOrderStatus.CANCELLED, label: 'Cancelada', color: 'bg-destructive' },
+    { value: WorkOrderStatus.ON_HOLD, label: 'En Espera', color: 'bg-muted-foreground' },
   ];
 
   const priorityOptions = [
-    { value: Priority.LOW, label: 'Baja', color: 'bg-green-500' },
-    { value: Priority.MEDIUM, label: 'Media', color: 'bg-yellow-500' },
-    { value: Priority.HIGH, label: 'Alta', color: 'bg-orange-500' },
-    { value: Priority.URGENT, label: 'Urgente', color: 'bg-red-500' },
+    { value: Priority.LOW, label: 'Baja', color: 'bg-success' },
+    { value: Priority.MEDIUM, label: 'Media', color: 'bg-warning' },
+    { value: Priority.HIGH, label: 'Alta', color: 'bg-warning' },
+    { value: Priority.URGENT, label: 'Urgente', color: 'bg-destructive' },
   ];
 
   const typeOptions = [
-    { value: MaintenanceType.PREVENTIVE, label: 'Preventivo', color: 'bg-green-500' },
-    { value: MaintenanceType.CORRECTIVE, label: 'Correctivo', color: 'bg-orange-500' },
-    { value: MaintenanceType.PREDICTIVE, label: 'Predictivo', color: 'bg-blue-500' },
-    { value: MaintenanceType.EMERGENCY, label: 'Emergencia', color: 'bg-red-500' },
+    { value: MaintenanceType.PREVENTIVE, label: 'Preventivo', color: 'bg-success' },
+    { value: MaintenanceType.CORRECTIVE, label: 'Correctivo', color: 'bg-warning' },
+    { value: MaintenanceType.PREDICTIVE, label: 'Predictivo', color: 'bg-info' },
+    { value: MaintenanceType.EMERGENCY, label: 'Emergencia', color: 'bg-destructive' },
   ];
 
   return (
@@ -228,14 +229,10 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset }: A
                     <Badge
                       key={status.value}
                       variant={filters.status.includes(status.value) ? "default" : "outline"}
-                      className={`cursor-pointer ${
-                        filters.status.includes(status.value) 
-                          ? `${status.color} text-white` 
-                          : 'hover:bg-accent'
-                      }`}
+                      className={cn('cursor-pointer', filters.status.includes(status.value) ? [status.color, 'text-white'] : 'hover:bg-accent')}
                       onClick={() => toggleArrayFilter('status', status.value, filters.status)}
                     >
-                      <div className={`w-2 h-2 rounded-full mr-1 ${status.color}`}></div>
+                      <div className={cn('w-2 h-2 rounded-full mr-1', status.color)}></div>
                       {status.label}
                     </Badge>
                   ))}
@@ -250,14 +247,10 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset }: A
                     <Badge
                       key={priority.value}
                       variant={filters.priority.includes(priority.value) ? "default" : "outline"}
-                      className={`cursor-pointer ${
-                        filters.priority.includes(priority.value) 
-                          ? `${priority.color} text-white` 
-                          : 'hover:bg-accent'
-                      }`}
+                      className={cn('cursor-pointer', filters.priority.includes(priority.value) ? [priority.color, 'text-white'] : 'hover:bg-accent')}
                       onClick={() => toggleArrayFilter('priority', priority.value, filters.priority)}
                     >
-                      <div className={`w-2 h-2 rounded-full mr-1 ${priority.color}`}></div>
+                      <div className={cn('w-2 h-2 rounded-full mr-1', priority.color)}></div>
                       {priority.label}
                     </Badge>
                   ))}
@@ -272,14 +265,10 @@ export default function AdvancedFilters({ filters, onFiltersChange, onReset }: A
                     <Badge
                       key={type.value}
                       variant={filters.type.includes(type.value) ? "default" : "outline"}
-                      className={`cursor-pointer ${
-                        filters.type.includes(type.value) 
-                          ? `${type.color} text-white` 
-                          : 'hover:bg-accent'
-                      }`}
+                      className={cn('cursor-pointer', filters.type.includes(type.value) ? [type.color, 'text-white'] : 'hover:bg-accent')}
                       onClick={() => toggleArrayFilter('type', type.value, filters.type)}
                     >
-                      <div className={`w-2 h-2 rounded-full mr-1 ${type.color}`}></div>
+                      <div className={cn('w-2 h-2 rounded-full mr-1', type.color)}></div>
                       {type.label}
                     </Badge>
                   ))}

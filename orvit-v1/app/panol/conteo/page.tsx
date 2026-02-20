@@ -452,10 +452,10 @@ export default function ConteoPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Contados</p>
-                        <p className="text-2xl font-bold mt-1 text-green-600">{stats.counted}</p>
+                        <p className="text-2xl font-bold mt-1 text-success">{stats.counted}</p>
                       </div>
-                      <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <div className="p-2 rounded-lg bg-success-muted">
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                       </div>
                     </div>
                   </CardContent>
@@ -466,24 +466,24 @@ export default function ConteoPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Pendientes</p>
-                        <p className="text-2xl font-bold mt-1 text-amber-600">{stats.pending}</p>
+                        <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{stats.pending}</p>
                       </div>
-                      <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                        <Clock className="h-4 w-4 text-amber-600" />
+                      <div className="p-2 rounded-lg bg-warning-muted">
+                        <Clock className="h-4 w-4 text-warning-muted-foreground" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className={stats.withDifference > 0 ? 'border-red-500/50' : ''}>
+                <Card className={stats.withDifference > 0 ? 'border-destructive/30/50' : ''}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Con Diferencia</p>
-                        <p className="text-2xl font-bold mt-1 text-red-600">{stats.withDifference}</p>
+                        <p className="text-2xl font-bold mt-1 text-destructive">{stats.withDifference}</p>
                       </div>
-                      <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <div className="p-2 rounded-lg bg-destructive/10">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
                       </div>
                     </div>
                   </CardContent>
@@ -494,10 +494,10 @@ export default function ConteoPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Sobrante</p>
-                        <p className="text-2xl font-bold mt-1 text-green-600">+{stats.positiveAdjust}</p>
+                        <p className="text-2xl font-bold mt-1 text-success">+{stats.positiveAdjust}</p>
                       </div>
-                      <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
+                      <div className="p-2 rounded-lg bg-success-muted">
+                        <TrendingUp className="h-4 w-4 text-success" />
                       </div>
                     </div>
                   </CardContent>
@@ -508,10 +508,10 @@ export default function ConteoPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Faltante</p>
-                        <p className="text-2xl font-bold mt-1 text-red-600">-{stats.negativeAdjust}</p>
+                        <p className="text-2xl font-bold mt-1 text-destructive">-{stats.negativeAdjust}</p>
                       </div>
-                      <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                        <TrendingDown className="h-4 w-4 text-red-600" />
+                      <div className="p-2 rounded-lg bg-destructive/10">
+                        <TrendingDown className="h-4 w-4 text-destructive" />
                       </div>
                     </div>
                   </CardContent>
@@ -590,8 +590,8 @@ export default function ConteoPage() {
                       <TableRow
                         key={item.toolId}
                         className={cn(
-                          item.difference !== 0 && 'bg-amber-50/50 dark:bg-amber-950/20',
-                          item.status === 'adjusted' && 'bg-green-50/50 dark:bg-green-950/20'
+                          item.difference !== 0 && 'bg-warning-muted/50',
+                          item.status === 'adjusted' && 'bg-success-muted/50'
                         )}
                       >
                         <TableCell className="text-muted-foreground">{index + 1}</TableCell>
@@ -624,8 +624,8 @@ export default function ConteoPage() {
                             <Badge
                               variant={item.difference === 0 ? 'default' : 'destructive'}
                               className={cn(
-                                item.difference > 0 && 'bg-green-100 text-green-800',
-                                item.difference < 0 && 'bg-red-100 text-red-800'
+                                item.difference > 0 && 'bg-success-muted text-success',
+                                item.difference < 0 && 'bg-destructive/10 text-destructive'
                               )}
                             >
                               {item.difference > 0 ? '+' : ''}{item.difference}
@@ -646,12 +646,12 @@ export default function ConteoPage() {
                             <Badge variant="secondary">Pendiente</Badge>
                           )}
                           {item.status === 'counted' && (
-                            <Badge variant="default" className="bg-blue-100 text-blue-800">
+                            <Badge variant="default" className="bg-info-muted text-info-muted-foreground">
                               Contado
                             </Badge>
                           )}
                           {item.status === 'adjusted' && (
-                            <Badge variant="default" className="bg-green-100 text-green-800">
+                            <Badge variant="default" className="bg-success-muted text-success">
                               Ajustado
                             </Badge>
                           )}
@@ -691,24 +691,24 @@ export default function ConteoPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Con diferencias</p>
-                  <p className="text-xl font-bold text-amber-600">{stats.withDifference}</p>
+                  <p className="text-xl font-bold text-warning-muted-foreground">{stats.withDifference}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Sobrante total</p>
-                  <p className="text-lg font-bold text-green-600">+{stats.positiveAdjust}</p>
+                  <p className="text-lg font-bold text-success">+{stats.positiveAdjust}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Faltante total</p>
-                  <p className="text-lg font-bold text-red-600">-{stats.negativeAdjust}</p>
+                  <p className="text-lg font-bold text-destructive">-{stats.negativeAdjust}</p>
                 </div>
               </div>
 
               {stats.withDifference > 0 && (
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                <div className="p-4 bg-warning-muted rounded-lg border border-warning-muted">
+                  <p className="text-sm font-medium text-warning-muted-foreground">
                     Se aplicarán {stats.withDifference} ajustes de inventario
                   </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  <p className="text-xs text-warning-muted-foreground mt-1">
                     Esta acción no se puede deshacer.
                   </p>
                 </div>

@@ -192,24 +192,24 @@ export default function AccionesRapidasPage() {
       title: 'Entrada Rápida',
       description: 'Escanear para agregar stock',
       icon: ArrowUpCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 dark:bg-green-950/30',
+      color: 'text-success',
+      bgColor: 'bg-success-muted',
     },
     {
       id: 'scan-out' as QuickAction,
       title: 'Salida Rápida',
       description: 'Escanear para retirar stock',
       icon: ArrowDownCircle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50 dark:bg-red-950/30',
+      color: 'text-destructive',
+      bgColor: 'bg-destructive/10',
     },
     {
       id: 'scan-view' as QuickAction,
       title: 'Consultar Item',
       description: 'Escanear para ver detalles',
       icon: Search,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+      color: 'text-info-muted-foreground',
+      bgColor: 'bg-info-muted',
     },
     {
       id: 'ot-pick' as QuickAction,
@@ -440,13 +440,13 @@ export default function AccionesRapidasPage() {
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex items-center justify-center gap-1">
-                                <span className={cn(isLowStock && 'text-red-600 font-medium')}>
+                                <span className={cn(isLowStock && 'text-destructive font-medium')}>
                                   {res.tool.stockQuantity}
                                 </span>
                                 {isLowStock && (
                                   <Tooltip>
                                     <TooltipTrigger>
-                                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                                      <AlertTriangle className="h-3.5 w-3.5 text-warning-muted-foreground" />
                                     </TooltipTrigger>
                                     <TooltipContent>Stock insuficiente</TooltipContent>
                                   </Tooltip>
@@ -479,7 +479,7 @@ export default function AccionesRapidasPage() {
 
                 {selectedOT && otReservations.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
                     <p>No hay reservas pendientes para esta OT</p>
                   </div>
                 )}
@@ -489,11 +489,11 @@ export default function AccionesRapidasPage() {
 
           {/* Last Scanned */}
           {lastScanned && !activeAction && (
-            <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/10">
+            <Card className="border-success-muted/50 bg-success-muted/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div className="p-2 rounded-lg bg-success-muted">
+                    <CheckCircle2 className="h-5 w-5 text-success" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{lastScanned.action}</p>

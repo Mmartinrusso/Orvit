@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -105,10 +106,10 @@ export function ReturnToProductionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
             Confirmar Retorno a Producción
           </DialogTitle>
           <DialogDescription>
@@ -116,6 +117,7 @@ export function ReturnToProductionDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         {/* Info del downtime */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -149,11 +151,11 @@ export function ReturnToProductionDialog({
 
         {/* Alerta si downtime alto */}
         {downtimeMinutes > 60 && (
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+          <div className="rounded-lg border border-warning-muted bg-warning-muted p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning-muted-foreground mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-yellow-800">Downtime alto</p>
-              <p className="text-yellow-700 text-xs">
+              <p className="font-medium text-warning-muted-foreground">Downtime alto</p>
+              <p className="text-warning-muted-foreground text-xs">
                 Se recomienda documentar el impacto en producción.
               </p>
             </div>
@@ -186,6 +188,7 @@ export function ReturnToProductionDialog({
             />
           </div>
         </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button
@@ -198,7 +201,7 @@ export function ReturnToProductionDialog({
           <Button
             onClick={handleConfirm}
             disabled={confirmReturnMutation.isPending}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-success hover:bg-success/90"
           >
             {confirmReturnMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -199,7 +199,7 @@ export default function AprobacionPagosPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="w-4 h-4 text-yellow-600" />
+                <Clock className="w-4 h-4 text-warning-muted-foreground" />
                 Pendientes
               </CardTitle>
             </CardHeader>
@@ -212,7 +212,7 @@ export default function AprobacionPagosPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-green-600" />
+                <DollarSign className="w-4 h-4 text-success" />
                 Total Pendiente
               </CardTitle>
             </CardHeader>
@@ -227,7 +227,7 @@ export default function AprobacionPagosPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
+                <FileText className="w-4 h-4 text-info-muted-foreground" />
                 Con Cheques
               </CardTitle>
             </CardHeader>
@@ -268,7 +268,7 @@ export default function AprobacionPagosPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-lg">{payment.numero}</CardTitle>
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                        <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning-muted">
                           <Clock className="w-3 h-3 mr-1" />
                           Pendiente
                         </Badge>
@@ -279,7 +279,7 @@ export default function AprobacionPagosPage() {
                       </CardDescription>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-success">
                         {formatCurrency(payment.totalPago)}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -316,9 +316,9 @@ export default function AprobacionPagosPage() {
                       <Label className="text-xs text-muted-foreground">Cheques Recibidos</Label>
                       <div className="space-y-2 mt-2">
                         {payment.cheques.map((cheque) => (
-                          <div key={cheque.id} className="flex items-center justify-between p-2 bg-blue-50 rounded-md border border-blue-200">
+                          <div key={cheque.id} className="flex items-center justify-between p-2 bg-info-muted rounded-md border border-info-muted">
                             <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-blue-600" />
+                              <FileText className="w-4 h-4 text-info-muted-foreground" />
                               <div>
                                 <div className="text-sm font-medium">
                                   {cheque.numero} - {cheque.banco}

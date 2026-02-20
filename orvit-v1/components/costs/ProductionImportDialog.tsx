@@ -283,14 +283,14 @@ export function ProductionImportDialog({ children, onImportCompleted }: Producti
               {/* Results */}
               {importResult && (
                 <div className="space-y-3">
-                  <Alert className={importResult.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  <Alert className={importResult.success ? 'border-success-muted bg-success-muted' : 'border-destructive/30 bg-destructive/10'}>
                     <div className="flex items-center gap-2">
                       {importResult.success ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-success" />
                       ) : (
-                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
                       )}
-                      <AlertDescription className={importResult.success ? 'text-green-800' : 'text-red-800'}>
+                      <AlertDescription className={importResult.success ? 'text-success' : 'text-destructive'}>
                         {importResult.message || (importResult.success ? 'Importación exitosa' : 'Error en la importación')}
                       </AlertDescription>
                     </div>
@@ -310,11 +310,11 @@ export function ProductionImportDialog({ children, onImportCompleted }: Producti
                     <div className="space-y-1">
                       <div className="flex justify-between">
                         <span>Nuevos:</span>
-                        <Badge className="bg-green-100 text-green-800">{importResult.inserted}</Badge>
+                        <Badge className="bg-success-muted text-success">{importResult.inserted}</Badge>
                       </div>
                       <div className="flex justify-between">
                         <span>Actualizados:</span>
-                        <Badge className="bg-blue-100 text-blue-800">{importResult.updated}</Badge>
+                        <Badge className="bg-info-muted text-info-muted-foreground">{importResult.updated}</Badge>
                       </div>
                     </div>
                   </div>
@@ -323,12 +323,12 @@ export function ProductionImportDialog({ children, onImportCompleted }: Producti
                   {importResult.errors.length > 0 && (
                     <div className="space-y-2">
                       <h5 className="font-medium text-foreground flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                         Errores Encontrados ({importResult.errors.length})
                       </h5>
                       <div className="max-h-32 overflow-y-auto space-y-1">
                         {importResult.errors.slice(0, 5).map((error, index) => (
-                          <div key={index} className="text-xs p-2 bg-red-50 border border-red-200 rounded">
+                          <div key={index} className="text-xs p-2 bg-destructive/10 border border-destructive/30 rounded">
                             <span className="font-medium">Fila {error.row}:</span> {error.error}
                           </div>
                         ))}

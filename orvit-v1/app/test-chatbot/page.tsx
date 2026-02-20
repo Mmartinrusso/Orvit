@@ -10,43 +10,43 @@ import { ChatbotWidget } from '@/components/portal/chatbot-widget';
 
 export default function TestChatbotPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-info-muted to-primary/10 p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+        <div className="bg-card rounded-lg shadow-lg p-8 mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-4">
             🤖 AI Chatbot - Prueba de Funcionalidad
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             Chatbot inteligente con OpenAI GPT-4 que proporciona soporte 24/7
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Features */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800">✨ Funcionalidades</h2>
-              <ul className="space-y-2 text-sm text-gray-700">
+              <h2 className="text-xl font-semibold text-foreground">✨ Funcionalidades</h2>
+              <ul className="space-y-2 text-sm text-foreground">
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span className="text-success mt-0.5">✓</span>
                   <span><strong>Consulta de órdenes:</strong> Estado y seguimiento en tiempo real</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span className="text-success mt-0.5">✓</span>
                   <span><strong>Saldo de cuenta:</strong> Verificación de crédito disponible</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span className="text-success mt-0.5">✓</span>
                   <span><strong>Detalles de facturas:</strong> Información completa con CAE</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span className="text-success mt-0.5">✓</span>
                   <span><strong>Entregas pendientes:</strong> Tracking de envíos</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span className="text-success mt-0.5">✓</span>
                   <span><strong>Búsqueda de productos:</strong> Catálogo en tiempo real</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                  <span className="text-success mt-0.5">✓</span>
                   <span><strong>Tickets de soporte:</strong> Escalamiento automático</span>
                 </li>
               </ul>
@@ -54,23 +54,23 @@ export default function TestChatbotPage() {
 
             {/* Example Queries */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800">💬 Consultas de Ejemplo</h2>
+              <h2 className="text-xl font-semibold text-foreground">💬 Consultas de Ejemplo</h2>
               <div className="space-y-2 text-sm">
-                <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                  <p className="font-medium text-blue-900">Cliente:</p>
-                  <p className="text-gray-700 italic">"¿Cuál es el estado de mi orden OV-00123?"</p>
+                <div className="bg-info-muted p-3 rounded-md border border-info-muted">
+                  <p className="font-medium text-info-muted-foreground">Cliente:</p>
+                  <p className="text-foreground italic">"¿Cuál es el estado de mi orden OV-00123?"</p>
                 </div>
-                <div className="bg-green-50 p-3 rounded-md border border-green-200">
-                  <p className="font-medium text-green-900">Cliente:</p>
-                  <p className="text-gray-700 italic">"¿Cuánto saldo tengo disponible?"</p>
+                <div className="bg-success-muted p-3 rounded-md border border-success-muted">
+                  <p className="font-medium text-success-muted-foreground">Cliente:</p>
+                  <p className="text-foreground italic">"¿Cuánto saldo tengo disponible?"</p>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-md border border-purple-200">
                   <p className="font-medium text-purple-900">Cliente:</p>
-                  <p className="text-gray-700 italic">"Busco productos relacionados con acero"</p>
+                  <p className="text-foreground italic">"Busco productos relacionados con acero"</p>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-md border border-orange-200">
-                  <p className="font-medium text-orange-900">Cliente:</p>
-                  <p className="text-gray-700 italic">"¿Cuándo llega mi entrega?"</p>
+                <div className="bg-warning-muted p-3 rounded-md border border-warning-muted">
+                  <p className="font-medium text-warning-muted-foreground">Cliente:</p>
+                  <p className="text-foreground italic">"¿Cuándo llega mi entrega?"</p>
                 </div>
               </div>
             </div>
@@ -78,12 +78,12 @@ export default function TestChatbotPage() {
         </div>
 
         {/* Technical Details */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">⚙️ Detalles Técnicos</h2>
+        <div className="bg-card rounded-lg shadow-lg p-8">
+          <h2 className="text-xl font-semibold text-foreground mb-4">⚙️ Detalles Técnicos</h2>
           <div className="grid md:grid-cols-3 gap-6 text-sm">
             <div>
-              <h3 className="font-semibold text-gray-700 mb-2">Modelo de IA</h3>
-              <ul className="space-y-1 text-gray-600">
+              <h3 className="font-semibold text-foreground mb-2">Modelo de IA</h3>
+              <ul className="space-y-1 text-muted-foreground">
                 <li>• GPT-4 Turbo</li>
                 <li>• Function calling</li>
                 <li>• Temperature: 0.7</li>
@@ -91,8 +91,8 @@ export default function TestChatbotPage() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-700 mb-2">Características</h3>
-              <ul className="space-y-1 text-gray-600">
+              <h3 className="font-semibold text-foreground mb-2">Características</h3>
+              <ul className="space-y-1 text-muted-foreground">
                 <li>• Análisis de sentimiento</li>
                 <li>• Escalamiento automático</li>
                 <li>• Multi-idioma (ES/EN)</li>
@@ -100,8 +100,8 @@ export default function TestChatbotPage() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-700 mb-2">Integraciones</h3>
-              <ul className="space-y-1 text-gray-600">
+              <h3 className="font-semibold text-foreground mb-2">Integraciones</h3>
+              <ul className="space-y-1 text-muted-foreground">
                 <li>• Base de datos en tiempo real</li>
                 <li>• Sistema de tickets</li>
                 <li>• Portal del cliente</li>
@@ -110,16 +110,16 @@ export default function TestChatbotPage() {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
+          <div className="mt-6 p-4 bg-warning-muted border border-warning-muted rounded-md">
+            <p className="text-sm text-warning-muted-foreground">
               <strong>⚠️ Nota:</strong> Este chatbot requiere una API key de OpenAI configurada
-              en <code className="bg-yellow-100 px-1 rounded">OPENAI_API_KEY</code> en las
+              en <code className="bg-warning-muted px-1 rounded">OPENAI_API_KEY</code> en las
               variables de entorno.
             </p>
           </div>
 
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-800">
+          <div className="mt-4 p-4 bg-success-muted border border-success-muted rounded-md">
+            <p className="text-sm text-success-muted-foreground">
               <strong>💰 ROI Estimado:</strong> Automatización de 500 consultas/mes = 1 empleado
               de soporte ahorrado = <strong>$2,000 USD/mes</strong> ($24,000 USD/año)
             </p>

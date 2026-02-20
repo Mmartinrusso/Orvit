@@ -5,6 +5,7 @@ import { ConsolidatedDashboardV2 } from './ConsolidatedDashboardV2';
 import { useState, useEffect } from 'react';
 import { useDashboardMetrics } from '@/hooks/use-dashboard-metrics';
 import { useCostConfig } from '@/hooks/use-cost-consolidation';
+import { Loader2 } from 'lucide-react';
 
 interface ExecutiveDashboardProps {
   data?: any[];
@@ -65,7 +66,7 @@ export function ExecutiveDashboard({
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Cargando dashboard...</p>
         </div>
       </div>

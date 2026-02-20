@@ -1,7 +1,10 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { MachineComponent } from '@/lib/types';
-import { stripHtmlTags } from '@/lib/utils';
+import { stripHtmlTags, cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   Dialog,
   DialogContent,
@@ -44,15 +47,20 @@ import {
 import ComponentDialog from './ComponentDialog';
 import ComponentOverviewTab from './tabs/ComponentOverviewTab';
 import PromoteToMachineDialog from './PromoteToMachineDialog';
+import MachineMaintenanceTab from '@/components/maintenance/MachineMaintenanceTab';
+import PreventiveMaintenanceDialog from '../work-orders/PreventiveMaintenanceDialog';
+import WorkOrderWizard from '../work-orders/WorkOrderWizard';
+import { FailureQuickReportDialog } from '@/components/corrective/failures/FailureQuickReportDialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { toast } from '@/hooks/use-toast';
 import { DocumentListViewer } from './MachineDetailDialog';
 import { DocumentFolderViewer } from './DocumentFolderViewer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, User, MapPin, CheckCircle, Clock, Camera, ExternalLink } from 'lucide-react';
+import { Calendar, CalendarDays, User, MapPin, CheckCircle, Clock, Camera, ExternalLink } from 'lucide-react';
 
 // Lazy load del visor 3D - solo se carga cuando se accede a la pestaña 3D
 const Machine3DViewer = dynamic(
@@ -138,10 +146,10 @@ const ComponentFailuresContent: React.FC<{
 
   const getPriorityBadge = (priority: string) => {
     const colors = {
-      LOW: 'bg-green-100 text-green-800',
-      MEDIUM: 'bg-yellow-100 text-yellow-800',
-      HIGH: 'bg-orange-100 text-orange-800',
-      CRITICAL: 'bg-red-100 text-red-800'
+      LOW: 'bg-success-muted text-success',
+      MEDIUM: 'bg-warning-muted text-warning-muted-foreground',
+      HIGH: 'bg-warning-muted text-warning-muted-foreground',
+      CRITICAL: 'bg-destructive/10 text-destructive'
     };
     const labels = {
       LOW: 'BAJA',
@@ -160,7 +168,7 @@ const ComponentFailuresContent: React.FC<{
     // Si tiene solución aplicada, mostrar como solucionada
     if (failure.solution && failure.solution.trim() !== '') {
       return (
-        <Badge className="bg-green-100 text-green-800">
+        <Badge className="bg-success-muted text-success">
           Solucionada
         </Badge>
       );
@@ -168,10 +176,10 @@ const ComponentFailuresContent: React.FC<{
     
     // Si no tiene solución, usar el status original
     const colors = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      IN_PROGRESS: 'bg-blue-100 text-blue-800',
-      COMPLETED: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-gray-100 text-gray-800'
+      PENDING: 'bg-warning-muted text-warning-muted-foreground',
+      IN_PROGRESS: 'bg-info-muted text-info-muted-foreground',
+      COMPLETED: 'bg-success-muted text-success',
+      CANCELLED: 'bg-muted text-foreground'
     };
     const labels = {
       PENDING: 'Sin solución',
@@ -188,11 +196,11 @@ const ComponentFailuresContent: React.FC<{
 
   const getFailureTypeBadge = (type: string) => {
     const colors = {
-      MECANICA: 'bg-blue-100 text-blue-800',
-      ELECTRICA: 'bg-purple-100 text-purple-800',
-      HIDRAULICA: 'bg-cyan-100 text-cyan-800',
-      NEUMATICA: 'bg-indigo-100 text-indigo-800',
-      OTRO: 'bg-gray-100 text-gray-800'
+      MECANICA: 'bg-info-muted text-info-muted-foreground',
+      ELECTRICA: 'bg-primary/10 text-primary',
+      HIDRAULICA: 'bg-info-muted text-info-muted-foreground',
+      NEUMATICA: 'bg-primary/10 text-primary',
+      OTRO: 'bg-muted text-foreground'
     };
     return (
       <Badge className={colors[type as keyof typeof colors] || colors.OTRO}>
@@ -227,7 +235,7 @@ const ComponentFailuresContent: React.FC<{
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-8 text-red-600">
+      <div className="flex items-center justify-center py-8 text-destructive">
         <AlertTriangle className="h-6 w-6 mr-2" />
         <span>{error}</span>
       </div>
@@ -388,13 +396,13 @@ const ComponentHistoryContent: React.FC<{
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'PLANT_RESUME':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+        return 'bg-success-muted text-success';
       case 'MAINTENANCE':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'REPAIR':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+        return 'bg-warning-muted text-warning-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -437,7 +445,7 @@ const ComponentHistoryContent: React.FC<{
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Cargando historial...</span>
       </div>
     );
@@ -500,7 +508,7 @@ const ComponentHistoryContent: React.FC<{
                   <h4 className="font-semibold text-sm mb-1">Herramientas Utilizadas del Pañol:</h4>
                   <div className="flex flex-wrap gap-2">
                     {record.toolsUsed.map((tool, index) => (
-                      <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                      <Badge key={index} variant="outline" className="bg-info-muted text-info-muted-foreground border-info-muted">
                         {tool}
                       </Badge>
                     ))}
@@ -647,7 +655,7 @@ const FailureDetailModal: React.FC<{
       case 'HIDRAULICA':
         return <Badge variant="outline">Hidráulica</Badge>;
       case 'AUTOMATIZACION':
-        return <Badge variant="outline" className="border-green-500 text-green-500">Automatización</Badge>;
+        return <Badge variant="outline" className="border-success text-success">Automatización</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
@@ -670,7 +678,7 @@ const FailureDetailModal: React.FC<{
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            <AlertTriangle className="h-5 w-5 text-warning" />
             <span>Detalles de Falla</span>
           </DialogTitle>
           <div className="flex items-center gap-3 mt-2">
@@ -698,7 +706,7 @@ const FailureDetailModal: React.FC<{
                 </div>
                 <div
                   className="text-sm text-muted-foreground prose prose-sm max-w-none prose-p:my-1 prose-img:max-w-full prose-img:rounded-md"
-                  dangerouslySetInnerHTML={{ __html: failure.description || 'Sin descripción disponible' }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(failure.description || 'Sin descripción disponible') }}
                 />
               </CardContent>
             </Card>
@@ -888,10 +896,9 @@ export default function ComponentDetailsModal({
   onClose,
   onDeleted
 }: ComponentDetailsModalProps) {
-  // console.log('🔍 [ComponentDetailsModal] Componente recibido:', component);
-  // console.log('🔍 [ComponentDetailsModal] Tools del componente:', component?.tools);
-  
   const { user } = useAuth();
+  const { currentCompany } = useCompany();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState('overview');
   const [machineStatus, setMachineStatus] = useState<string>('');
   const [machineName, setMachineName] = useState<string>('');
@@ -948,6 +955,12 @@ export default function ComponentDetailsModal({
 
   // Estado para el dialog de eliminación
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Estados para dialogs de creación de mantenimiento
+  const [showPreventiveDialog, setShowPreventiveDialog] = useState(false);
+  const [showWorkOrderWizard, setShowWorkOrderWizard] = useState(false);
+  const [workOrderWizardType, setWorkOrderWizardType] = useState<string | null>(null);
+  const [showFailureReportDialog, setShowFailureReportDialog] = useState(false);
 
   // Estados para sugerencias de IA de modelos 3D
   const [aiSuggestions, setAiSuggestions] = useState<{
@@ -1268,11 +1281,11 @@ export default function ComponentDetailsModal({
     const normalizedType = type.toLowerCase();
     switch (normalizedType) {
       case 'part':
-        return <Badge variant="default" className="bg-blue-500">Parte Principal</Badge>;
+        return <Badge variant="default" className="bg-info">Parte Principal</Badge>;
       case 'piece':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">Pieza</Badge>;
+        return <Badge variant="outline" className="bg-success-muted text-success border-success-muted">Pieza</Badge>;
       case 'subpiece':
-        return <Badge variant="outline" className="bg-orange-500/10 text-orange-700 border-orange-200">Subpieza</Badge>;
+        return <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning-muted">Subpieza</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
@@ -1282,11 +1295,11 @@ export default function ComponentDetailsModal({
     const normalizedType = type.toLowerCase();
     switch (normalizedType) {
       case 'part':
-        return <Settings className="h-6 w-6 text-blue-500" />;
+        return <Settings className="h-6 w-6 text-info" />;
       case 'piece':
-        return <Wrench className="h-6 w-6 text-green-600" />;
+        return <Wrench className="h-6 w-6 text-success" />;
       case 'subpiece':
-        return <Settings className="h-6 w-6 text-orange-600" />;
+        return <Settings className="h-6 w-6 text-warning-muted-foreground" />;
       default:
         return <Wrench className="h-6 w-6 text-muted-foreground" />;
     }
@@ -1310,22 +1323,22 @@ export default function ComponentDetailsModal({
   const getCriticalityBadge = (criticality: number | undefined) => {
     if (criticality === undefined || criticality === null) return null;
 
-    let bgColor = 'bg-gray-100 text-gray-700';
+    let bgColor = 'bg-muted text-muted-foreground';
     let label = 'Sin datos';
 
     if (criticality >= 8) {
-      bgColor = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      bgColor = 'bg-destructive/10 text-destructive';
       label = 'Crítico';
     } else if (criticality >= 5) {
-      bgColor = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+      bgColor = 'bg-warning-muted text-warning-muted-foreground';
       label = 'Medio';
     } else {
-      bgColor = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      bgColor = 'bg-success-muted text-success';
       label = 'Bajo';
     }
 
     return (
-      <Badge className={`${bgColor} flex items-center gap-1 text-xs border-0`}>
+      <Badge className={cn(bgColor, 'flex items-center gap-1 text-xs border-0')}>
         <Gauge className="h-3 w-3" />
         {criticality}/10
       </Badge>
@@ -1337,7 +1350,7 @@ export default function ComponentDetailsModal({
     if (!isSafetyCritical) return null;
 
     return (
-      <Badge className="bg-red-500 text-white flex items-center gap-1 text-xs border-0 shadow-sm">
+      <Badge className="bg-destructive text-destructive-foreground flex items-center gap-1 text-xs border-0 shadow-sm">
         <Shield className="h-3 w-3" />
         Crítico Seguridad
       </Badge>
@@ -1601,7 +1614,13 @@ export default function ComponentDetailsModal({
   };
 
   const handleDeleteComponentDocument = async (docId: string | number) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este documento?')) return;
+    const ok = await confirm({
+      title: 'Eliminar documento',
+      description: '¿Seguro que deseas eliminar este documento?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     if (!user) {
       setErrorComponentDocs('Debes estar autenticado para eliminar documentos');
@@ -1658,7 +1677,9 @@ export default function ComponentDetailsModal({
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
-          className="w-[99vw] max-w-[99vw] md:w-[85vw] md:max-w-[1000px] lg:max-w-[1100px] h-[95vh] md:h-[90vh] max-h-[95vh] md:max-h-[90vh] p-0 flex flex-col [&>button]:hidden"
+          size="lg"
+          className="p-0"
+          hideCloseButton
         >
           {/* Header idéntico a MachineDetailDialog */}
           <DialogHeader className="p-3 md:p-4 flex-shrink-0 border-b space-y-0">
@@ -1684,9 +1705,9 @@ export default function ComponentDetailsModal({
                     </div>
                   )}
                   {/* Status indicator */}
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
-                    component.isActive !== false ? 'bg-green-500' : 'bg-gray-400'
-                  }`} />
+                  <div className={cn('absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background',
+                    component.isActive !== false ? 'bg-success' : 'bg-muted-foreground'
+                  )} />
                 </div>
 
                 {/* Name + Meta */}
@@ -1712,6 +1733,34 @@ export default function ComponentDetailsModal({
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-1 shrink-0">
+                  {/* Botón Nuevo para crear mantenimientos/fallas */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="default" size="sm" className="h-7 text-xs px-2 sm:px-3">
+                        <Plus className="h-3.5 w-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline">Nuevo</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowPreventiveDialog(true)}>
+                        <CalendarDays className="h-4 w-4 mr-2 text-info" />
+                        Nuevo Preventivo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setWorkOrderWizardType('CORRECTIVE'); setShowWorkOrderWizard(true); }}>
+                        <Wrench className="h-4 w-4 mr-2 text-warning" />
+                        Nuevo Correctivo
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => { setWorkOrderWizardType(null); setShowWorkOrderWizard(true); }}>
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        Nueva OT
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowFailureReportDialog(true)}>
+                        <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
+                        Nueva Falla
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   {/* Menú de 3 puntitos para editar/convertir/eliminar */}
                   {(canEditComponent || canPromoteComponent || canDeleteComponent) && (
                     <DropdownMenu>
@@ -1764,14 +1813,14 @@ export default function ComponentDetailsModal({
               </div>
 
               {/* Segunda fila: KPIs en grid responsivo */}
-              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 ${!showKpis ? 'hidden sm:grid' : ''}`}>
+              <div className={cn('grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2', !showKpis ? 'hidden sm:grid' : '')}>
                 {/* Subcomponentes */}
-                <Card className="p-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                <Card className="p-3 bg-info-muted border-info-muted">
                   <div className="flex items-center gap-2">
-                    <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <Wrench className="h-5 w-5 text-info-muted-foreground" />
                     <div>
                       <p className="text-[10px] text-muted-foreground leading-none">Subcomponentes</p>
-                      <p className="text-xl font-bold text-blue-700 dark:text-blue-300 leading-tight">
+                      <p className="text-xl font-bold text-info-muted-foreground leading-tight">
                         {subcomponents.length}
                       </p>
                     </div>
@@ -1779,16 +1828,16 @@ export default function ComponentDetailsModal({
                 </Card>
 
                 {/* Fallas Abiertas */}
-                <Card className={`p-3 ${
+                <Card className={cn('p-3',
                   componentStats.openFailuresCount > 0
-                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                    ? 'bg-destructive/10 border-destructive/20'
                     : 'bg-muted/30 border-border/50'
-                }`}>
+                )}>
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className={`h-5 w-5 ${componentStats.openFailuresCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                    <AlertTriangle className={cn('h-5 w-5', componentStats.openFailuresCount > 0 ? 'text-destructive' : 'text-muted-foreground')} />
                     <div>
                       <p className="text-[10px] text-muted-foreground leading-none">Fallas Abiertas</p>
-                      <p className={`text-xl font-bold leading-tight ${componentStats.openFailuresCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-foreground'}`}>
+                      <p className={cn('text-xl font-bold leading-tight', componentStats.openFailuresCount > 0 ? 'text-destructive' : 'text-foreground')}>
                         {componentStats.openFailuresCount}
                       </p>
                     </div>
@@ -1796,16 +1845,16 @@ export default function ComponentDetailsModal({
                 </Card>
 
                 {/* OT Pendientes */}
-                <Card className={`p-3 ${
+                <Card className={cn('p-3',
                   componentStats.pendingWorkOrdersCount > 0
-                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                    ? 'bg-warning-muted border-warning-muted'
                     : 'bg-muted/30 border-border/50'
-                }`}>
+                )}>
                   <div className="flex items-center gap-2">
-                    <ClipboardList className={`h-5 w-5 ${componentStats.pendingWorkOrdersCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`} />
+                    <ClipboardList className={cn('h-5 w-5', componentStats.pendingWorkOrdersCount > 0 ? 'text-warning-muted-foreground' : 'text-muted-foreground')} />
                     <div>
                       <p className="text-[10px] text-muted-foreground leading-none">OT Pendientes</p>
-                      <p className={`text-xl font-bold leading-tight ${componentStats.pendingWorkOrdersCount > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground'}`}>
+                      <p className={cn('text-xl font-bold leading-tight', componentStats.pendingWorkOrdersCount > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
                         {componentStats.pendingWorkOrdersCount}
                       </p>
                     </div>
@@ -1844,42 +1893,47 @@ export default function ComponentDetailsModal({
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             {/* TabsList responsive como MachineDetailDialog */}
             <div className="px-2 md:px-4 py-2 flex-shrink-0 flex justify-center">
-              <TabsList className="inline-flex h-8 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto max-w-full">
-                <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2 md:px-3 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
+              <TabsList className="inline-flex h-8 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto max-w-full gap-0.5">
+                <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                   <BarChart3 className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Resumen</span>
-                  <span className="sm:hidden">Res</span>
+                  <span>Resumen</span>
                 </TabsTrigger>
-                <TabsTrigger value="info" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2 md:px-3 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
+                <TabsTrigger value="info" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                   <Info className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Información</span>
-                  <span className="sm:hidden">Info</span>
+                  <span>Información</span>
                 </TabsTrigger>
-                <TabsTrigger value="subcomponents" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2 md:px-3 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
+                <TabsTrigger value="subcomponents" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                   <Wrench className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Subcomponentes</span>
-                  <span className="sm:hidden">Subs</span>
+                  <span>Subcomponentes</span>
                   {subcomponents.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-info-muted text-info-muted-foreground">
                       {subcomponents.length}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="failures" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2 md:px-3 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
+                <TabsTrigger value="maintenance" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <Settings className="h-3.5 w-3.5" />
+                  <span>Mantenimiento</span>
+                  {componentStats.pendingWorkOrdersCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-info-muted text-info-muted-foreground">
+                      {componentStats.pendingWorkOrdersCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="failures" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                   <AlertTriangle className="h-3.5 w-3.5" />
                   <span>Fallas</span>
                   {componentStats.openFailuresCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-destructive/10 text-destructive">
                       {componentStats.openFailuresCount}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2 md:px-3 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
+                <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                   <History className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Historial</span>
-                  <span className="sm:hidden">Hist</span>
+                  <span>Historial</span>
                 </TabsTrigger>
-                <TabsTrigger value="3d" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2 md:px-3 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
+                <TabsTrigger value="3d" className="flex items-center gap-1.5 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                   <Box className="h-3.5 w-3.5" />
                   <span>3D</span>
                 </TabsTrigger>
@@ -1943,7 +1997,7 @@ export default function ComponentDetailsModal({
                               title="Copiar ID"
                             >
                               {copiedId === 'ID' ? (
-                                <Check className="h-3 w-3 text-green-500" />
+                                <Check className="h-3 w-3 text-success" />
                               ) : (
                                 <Copy className="h-3 w-3" />
                               )}
@@ -1997,11 +2051,11 @@ export default function ComponentDetailsModal({
                         {/* Score de Criticidad */}
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <div className="flex items-center justify-center mb-2">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
-                              (component.criticality ?? 0) >= 8 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                              (component.criticality ?? 0) >= 5 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
-                              'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            }`}>
+                            <div className={cn('w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold',
+                              (component.criticality ?? 0) >= 8 ? 'bg-destructive/10 text-destructive' :
+                              (component.criticality ?? 0) >= 5 ? 'bg-warning-muted text-warning-muted-foreground' :
+                              'bg-success-muted text-success'
+                            )}>
                               {component.criticality ?? '—'}
                             </div>
                           </div>
@@ -2016,11 +2070,11 @@ export default function ComponentDetailsModal({
                         {/* Seguridad Crítica */}
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <div className="flex items-center justify-center mb-2">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                            <div className={cn('w-12 h-12 rounded-full flex items-center justify-center',
                               component.isSafetyCritical
-                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            }`}>
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'bg-success-muted text-success'
+                            )}>
                               <Shield className="h-6 w-6" />
                             </div>
                           </div>
@@ -2033,13 +2087,13 @@ export default function ComponentDetailsModal({
                         {/* Fallas Registradas */}
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <div className="flex items-center justify-center mb-2">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                            <div className={cn('w-12 h-12 rounded-full flex items-center justify-center',
                               (component.failureCount ?? 0) > 5
-                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                ? 'bg-destructive/10 text-destructive'
                                 : (component.failureCount ?? 0) > 0
-                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            }`}>
+                                  ? 'bg-warning-muted text-warning-muted-foreground'
+                                  : 'bg-success-muted text-success'
+                            )}>
                               <AlertTriangle className="h-6 w-6" />
                             </div>
                           </div>
@@ -2050,7 +2104,7 @@ export default function ComponentDetailsModal({
                         {/* OTs Asociadas */}
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <div className="flex items-center justify-center mb-2">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-info-muted text-info-muted-foreground">
                               <Wrench className="h-6 w-6" />
                             </div>
                           </div>
@@ -2061,14 +2115,14 @@ export default function ComponentDetailsModal({
 
                       {/* Nota sobre criticidad */}
                       {component.isSafetyCritical && (
-                        <div className="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                        <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                           <div className="flex items-start gap-2">
-                            <Shield className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                            <Shield className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                              <p className="text-sm font-medium text-destructive">
                                 Componente crítico para la seguridad
                               </p>
-                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              <p className="text-xs text-destructive mt-1">
                                 Este componente requiere atención especial durante el mantenimiento.
                                 Asegúrese de seguir todos los procedimientos LOTO y de seguridad.
                               </p>
@@ -2122,12 +2176,12 @@ export default function ComponentDetailsModal({
                     </CardHeader>
                     <CardContent>
                       {errorComponentDocs && (
-                        <div className="text-red-600 text-xs mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                        <div className="text-destructive text-xs mb-2 p-2 bg-destructive/10 rounded">
                           {errorComponentDocs}
                         </div>
                       )}
                       {successComponentDoc && (
-                        <div className="text-green-600 text-xs mb-2 p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                        <div className="text-success text-xs mb-2 p-2 bg-success-muted rounded">
                           {successComponentDoc}
                         </div>
                       )}
@@ -2386,6 +2440,25 @@ export default function ComponentDetailsModal({
 
 
 
+              <TabsContent value="maintenance" className="mt-0">
+                {activeTab === 'maintenance' && component && (
+                  <div className="h-full min-h-[500px]">
+                    <MachineMaintenanceTab
+                      machineId={
+                        typeof component.machineId === 'number'
+                          ? component.machineId
+                          : parseInt(String(component.machineId || '0'), 10)
+                      }
+                      machineName={machineName || component.machineName || component.name}
+                      companyId={currentCompany?.id || 0}
+                      componentId={component.id}
+                      componentName={component.name}
+                      parentComponentId={component.parentId}
+                    />
+                  </div>
+                )}
+              </TabsContent>
+
               <TabsContent value="failures" className="mt-0">
                 <ComponentFailuresContent
                   componentId={component.id}
@@ -2508,7 +2581,7 @@ export default function ComponentDetailsModal({
                       <Card className="border-primary/30 bg-primary/5">
                         <CardHeader className="p-3 pb-2">
                           <CardTitle className="flex items-center gap-2 text-sm">
-                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <Sparkles className="h-4 w-4 text-warning" />
                             <span>Sugerencias de la IA</span>
                             <Badge variant="secondary" className="ml-auto text-[10px]">
                               {aiSuggestions.suggestions.length} fuentes encontradas
@@ -2520,7 +2593,7 @@ export default function ComponentDetailsModal({
                           {aiSuggestions.aiAnalysis && (
                             <div className="p-2 bg-background rounded-lg border space-y-2">
                               <div className="flex items-center gap-2 text-xs font-medium">
-                                <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                                <Lightbulb className="h-3.5 w-3.5 text-warning" />
                                 Análisis del componente
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -2578,7 +2651,7 @@ export default function ComponentDetailsModal({
                                       {suggestion.confidence === 'high' ? 'Alta' : suggestion.confidence === 'medium' ? 'Media' : 'Baja'}
                                     </Badge>
                                     {suggestion.isPaid && (
-                                      <Badge variant="outline" className="text-[9px] h-4 text-amber-600">
+                                      <Badge variant="outline" className="text-[9px] h-4 text-warning-muted-foreground">
                                         Pago
                                       </Badge>
                                     )}
@@ -2613,10 +2686,10 @@ export default function ComponentDetailsModal({
 
                           {/* Tips */}
                           {aiSuggestions.tips && aiSuggestions.tips.length > 0 && (
-                            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+                            <div className="p-2 bg-info-muted rounded-lg border border-info-muted">
                               <div className="flex items-start gap-2">
-                                <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                <div className="text-[10px] text-blue-700 dark:text-blue-300 space-y-0.5">
+                                <Info className="h-4 w-4 text-info mt-0.5 flex-shrink-0" />
+                                <div className="text-[10px] text-info-muted-foreground space-y-0.5">
                                   {aiSuggestions.tips.map((tip, i) => (
                                     <p key={i}>• {tip}</p>
                                   ))}
@@ -2785,7 +2858,7 @@ export default function ComponentDetailsModal({
 
       {/* Dialog para establecer URL de modelo 3D */}
       <Dialog open={showSetModelUrlDialog} onOpenChange={setShowSetModelUrlDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5" />
@@ -2807,10 +2880,10 @@ export default function ComponentDetailsModal({
                 Formatos soportados: .glb, .gltf
               </p>
             </div>
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
+            <div className="p-3 bg-warning-muted rounded-lg border border-warning-muted">
               <div className="flex items-start gap-2">
-                <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5" />
-                <div className="text-xs text-amber-700 dark:text-amber-300">
+                <Lightbulb className="h-4 w-4 text-warning mt-0.5" />
+                <div className="text-xs text-warning-muted-foreground">
                   <p className="font-medium mb-1">¿Dónde obtener la URL?</p>
                   <ol className="list-decimal list-inside space-y-0.5 text-[10px]">
                     <li>Descarga el modelo de TraceParts, GrabCAD, etc.</li>
@@ -2842,6 +2915,61 @@ export default function ComponentDetailsModal({
         </DialogContent>
       </Dialog>
 
+      {/* Dialogs de creación de mantenimiento */}
+      {showPreventiveDialog && component && (() => {
+        // Si tiene parentId es subcomponente → el componente a pasar es el padre
+        const isSubcomponent = !!component.parentId;
+        const machineIdNum = typeof component.machineId === 'number'
+          ? component.machineId
+          : parseInt(String(component.machineId || '0'), 10);
+        return (
+          <PreventiveMaintenanceDialog
+            isOpen={showPreventiveDialog}
+            onClose={() => setShowPreventiveDialog(false)}
+            preselectedMachineId={machineIdNum}
+            preselectedComponentId={isSubcomponent ? component.parentId : component.id}
+            preselectedSubcomponentId={isSubcomponent ? component.id : undefined}
+            onSave={() => setShowPreventiveDialog(false)}
+          />
+        );
+      })()}
+
+      {showWorkOrderWizard && component && (() => {
+        const isSubcomponent = !!component.parentId;
+        const machineIdNum = typeof component.machineId === 'number'
+          ? component.machineId
+          : parseInt(String(component.machineId || '0'), 10);
+        return (
+          <WorkOrderWizard
+            isOpen={showWorkOrderWizard}
+            onClose={() => { setShowWorkOrderWizard(false); setWorkOrderWizardType(null); }}
+            preselectedMachine={{
+              id: machineIdNum,
+              name: machineName || component.machineName || '',
+            }}
+            preselectedType={workOrderWizardType}
+            preselectedComponentId={isSubcomponent ? component.parentId : component.id}
+            preselectedSubcomponentId={isSubcomponent ? component.id : undefined}
+            onSubmit={async () => { setShowWorkOrderWizard(false); setWorkOrderWizardType(null); }}
+          />
+        );
+      })()}
+
+      {component && (() => {
+        const isSubcomponent = !!component.parentId;
+        const machineIdNum = typeof component?.machineId === 'number'
+          ? component.machineId
+          : parseInt(String(component?.machineId || '0'), 10);
+        return (
+          <FailureQuickReportDialog
+            open={showFailureReportDialog}
+            onOpenChange={setShowFailureReportDialog}
+            preselectedMachineId={machineIdNum}
+            preselectedComponentId={isSubcomponent ? component.parentId : component.id}
+          />
+        );
+      })()}
+
       {/* Dialog para generar modelo 3D desde foto */}
       <Dialog open={showGenerateFromPhotoDialog} onOpenChange={(open) => {
         if (!open) {
@@ -2851,7 +2979,7 @@ export default function ComponentDetailsModal({
         }
         setShowGenerateFromPhotoDialog(open);
       }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent size="default">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Camera className="h-5 w-5" />
@@ -2901,10 +3029,10 @@ export default function ComponentDetailsModal({
                     </label>
                   )}
                 </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+                <div className="p-3 bg-info-muted rounded-lg border border-info-muted">
                   <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-blue-500 mt-0.5" />
-                    <div className="text-xs text-blue-700 dark:text-blue-300">
+                    <Info className="h-4 w-4 text-info mt-0.5" />
+                    <div className="text-xs text-info-muted-foreground">
                       <p className="font-medium mb-1">Recomendaciones para mejores resultados:</p>
                       <ul className="list-disc list-inside space-y-0.5 text-[10px]">
                         <li>Usa una foto clara con buena iluminación</li>
@@ -2940,8 +3068,8 @@ export default function ComponentDetailsModal({
             {/* Estado completado */}
             {generationProgress.status === 'completed' && (
               <div className="text-center py-6">
-                <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
-                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                <CheckCircle className="h-12 w-12 mx-auto text-success mb-4" />
+                <p className="text-sm font-medium text-success">
                   {generationProgress.message}
                 </p>
                 {generationProgress.resultUrl && (

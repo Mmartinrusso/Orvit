@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogFooter,
   DialogTitle,
   DialogDescription,
@@ -98,13 +99,13 @@ export function StandardDialog({
         </DialogHeader>
 
         {/* Contenido scrolleable */}
-        <div className="flex-1 overflow-y-auto py-4 min-h-0">
+        <DialogBody>
           {children}
-        </div>
+        </DialogBody>
 
         {/* Footer fijo */}
         {footer && (
-          <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2">
+          <DialogFooter>
             {footer}
           </DialogFooter>
         )}
@@ -149,7 +150,7 @@ export function StandardDialogContent({
         className
       )}
     >
-      <DialogHeader className="flex-shrink-0 pb-4 border-b">
+      <DialogHeader>
         <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
         {description && (
           <DialogDescription className="text-sm text-muted-foreground">
@@ -158,12 +159,12 @@ export function StandardDialogContent({
         )}
       </DialogHeader>
 
-      <div className="flex-1 overflow-y-auto py-4 min-h-0">
+      <DialogBody>
         {children}
-      </div>
+      </DialogBody>
 
       {footer && (
-        <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2">
+        <DialogFooter>
           {footer}
         </DialogFooter>
       )}

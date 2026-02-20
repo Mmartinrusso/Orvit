@@ -102,9 +102,9 @@ const estadoLabels: Record<string, string> = {
 };
 
 const estadoColors: Record<string, string> = {
-  'ACTIVO': 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-  'MANTENIMIENTO': 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-  'FUERA_SERVICIO': 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+  'ACTIVO': 'bg-success-muted text-success border-success/20',
+  'MANTENIMIENTO': 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20',
+  'FUERA_SERVICIO': 'bg-destructive/10 text-destructive border-destructive/20',
   'DESHABILITADO': 'bg-muted text-muted-foreground border-border',
 };
 
@@ -435,7 +435,7 @@ export function UnitDetailSheet({
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid w-full grid-cols-5 h-9">
+              <TabsList className="w-full justify-start overflow-x-auto h-9">
                 <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
                 <TabsTrigger value="km" className="text-xs">Km</TabsTrigger>
                 <TabsTrigger value="ots" className="text-xs">OTs</TabsTrigger>

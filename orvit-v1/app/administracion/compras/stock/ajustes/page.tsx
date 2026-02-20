@@ -104,10 +104,10 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-  PENDIENTE_APROBACION: { label: 'Pend. Aprobación', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300' },
-  CONFIRMADO: { label: 'Confirmado', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' },
-  RECHAZADO: { label: 'Rechazado', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground' },
+  PENDIENTE_APROBACION: { label: 'Pend. Aprobación', color: 'bg-warning-muted text-warning-muted-foreground' },
+  CONFIRMADO: { label: 'Confirmado', color: 'bg-success-muted text-success' },
+  RECHAZADO: { label: 'Rechazado', color: 'bg-destructive/10 text-destructive' },
 };
 
 export default function AjustesPage() {
@@ -309,9 +309,9 @@ export default function AjustesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Borradores</p>
-                <p className="text-2xl font-bold text-gray-600">{kpis.borradores}</p>
+                <p className="text-2xl font-bold text-muted-foreground">{kpis.borradores}</p>
               </div>
-              <Clock className="h-8 w-8 text-gray-400" />
+              <Clock className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -320,9 +320,9 @@ export default function AjustesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pend. Aprobación</p>
-                <p className="text-2xl font-bold text-yellow-600">{kpis.pendientes}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{kpis.pendientes}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-400" />
+              <Clock className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -331,9 +331,9 @@ export default function AjustesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Confirmados</p>
-                <p className="text-2xl font-bold text-green-600">{kpis.confirmados}</p>
+                <p className="text-2xl font-bold text-success">{kpis.confirmados}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -467,13 +467,13 @@ export default function AjustesPage() {
                           <TableCell className="text-right">
                             <div className="flex flex-col items-end gap-0.5">
                               {(ajuste.cantidadPositiva || 0) > 0 && (
-                                <span className="text-green-600 text-sm flex items-center gap-1">
+                                <span className="text-success text-sm flex items-center gap-1">
                                   <TrendingUp className="h-3 w-3" />
                                   +{Number(ajuste.cantidadPositiva).toLocaleString('es-AR')}
                                 </span>
                               )}
                               {(ajuste.cantidadNegativa || 0) > 0 && (
-                                <span className="text-red-600 text-sm flex items-center gap-1">
+                                <span className="text-destructive text-sm flex items-center gap-1">
                                   <TrendingDown className="h-3 w-3" />
                                   -{Number(ajuste.cantidadNegativa).toLocaleString('es-AR')}
                                 </span>

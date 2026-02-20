@@ -78,19 +78,19 @@ interface ConditionAlert {
 
 const MONITOR_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   VIBRATION: { label: 'Vibración', icon: <Activity className="h-4 w-4" />, color: 'text-purple-500' },
-  TEMPERATURE: { label: 'Temperatura', icon: <Thermometer className="h-4 w-4" />, color: 'text-red-500' },
-  PRESSURE: { label: 'Presión', icon: <Gauge className="h-4 w-4" />, color: 'text-blue-500' },
-  OIL_ANALYSIS: { label: 'Análisis de Aceite', icon: <Activity className="h-4 w-4" />, color: 'text-amber-500' },
-  ULTRASOUND: { label: 'Ultrasonido', icon: <Activity className="h-4 w-4" />, color: 'text-green-500' },
-  THERMOGRAPHY: { label: 'Termografía', icon: <Thermometer className="h-4 w-4" />, color: 'text-orange-500' },
-  CURRENT: { label: 'Corriente', icon: <Activity className="h-4 w-4" />, color: 'text-yellow-500' },
+  TEMPERATURE: { label: 'Temperatura', icon: <Thermometer className="h-4 w-4" />, color: 'text-destructive' },
+  PRESSURE: { label: 'Presión', icon: <Gauge className="h-4 w-4" />, color: 'text-info-muted-foreground' },
+  OIL_ANALYSIS: { label: 'Análisis de Aceite', icon: <Activity className="h-4 w-4" />, color: 'text-warning-muted-foreground' },
+  ULTRASOUND: { label: 'Ultrasonido', icon: <Activity className="h-4 w-4" />, color: 'text-success' },
+  THERMOGRAPHY: { label: 'Termografía', icon: <Thermometer className="h-4 w-4" />, color: 'text-warning-muted-foreground' },
+  CURRENT: { label: 'Corriente', icon: <Activity className="h-4 w-4" />, color: 'text-warning-muted-foreground' },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  NORMAL: { label: 'Normal', color: 'bg-green-100 text-green-800' },
-  WARNING: { label: 'Advertencia', color: 'bg-yellow-100 text-yellow-800' },
-  CRITICAL: { label: 'Crítico', color: 'bg-red-100 text-red-800' },
-  ERROR: { label: 'Error', color: 'bg-gray-100 text-gray-800' },
+  NORMAL: { label: 'Normal', color: 'bg-success-muted text-success' },
+  WARNING: { label: 'Advertencia', color: 'bg-warning-muted text-warning-muted-foreground' },
+  CRITICAL: { label: 'Crítico', color: 'bg-destructive/10 text-destructive' },
+  ERROR: { label: 'Error', color: 'bg-muted text-foreground' },
 };
 
 export default function ConditionMonitoringPage() {
@@ -240,7 +240,7 @@ export default function ConditionMonitoringPage() {
                 <p className="text-sm text-muted-foreground">Monitores Activos</p>
                 <p className="text-2xl font-bold">{monitors.length}</p>
               </div>
-              <Activity className="h-8 w-8 text-blue-500" />
+              <Activity className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -249,9 +249,9 @@ export default function ConditionMonitoringPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Alertas Activas</p>
-                <p className="text-2xl font-bold text-orange-600">{activeAlertsCount}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{activeAlertsCount}</p>
               </div>
-              <Bell className="h-8 w-8 text-orange-500" />
+              <Bell className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -260,9 +260,9 @@ export default function ConditionMonitoringPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Estado Crítico</p>
-                <p className="text-2xl font-bold text-red-600">{criticalCount}</p>
+                <p className="text-2xl font-bold text-destructive">{criticalCount}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
@@ -271,9 +271,9 @@ export default function ConditionMonitoringPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Advertencias</p>
-                <p className="text-2xl font-bold text-yellow-600">{warningCount}</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{warningCount}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-yellow-500" />
+              <TrendingUp className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -320,7 +320,7 @@ export default function ConditionMonitoringPage() {
               </div>
             ) : (
               filteredMonitors.map((monitor) => {
-                const typeConfig = MONITOR_TYPE_CONFIG[monitor.monitorType] || { label: monitor.monitorType, icon: <Activity className="h-4 w-4" />, color: 'text-gray-500' };
+                const typeConfig = MONITOR_TYPE_CONFIG[monitor.monitorType] || { label: monitor.monitorType, icon: <Activity className="h-4 w-4" />, color: 'text-muted-foreground' };
                 const statusConfig = STATUS_CONFIG[monitor.last_status || 'NORMAL'] || STATUS_CONFIG.NORMAL;
 
                 return (
@@ -425,18 +425,18 @@ export default function ConditionMonitoringPage() {
                         <TableCell>{alert.value} {alert.unit}</TableCell>
                         <TableCell>{alert.threshold} {alert.unit}</TableCell>
                         <TableCell>
-                          <Badge className={alert.alertType === 'CRITICAL' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
+                          <Badge className={alert.alertType === 'CRITICAL' ? 'bg-destructive/10 text-destructive' : 'bg-warning-muted text-warning-muted-foreground'}>
                             {alert.alertType === 'CRITICAL' ? 'Crítico' : 'Advertencia'}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           {alert.resolvedAt ? (
-                            <Badge className="bg-green-100 text-green-800">
+                            <Badge className="bg-success-muted text-success">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Resuelto
                             </Badge>
                           ) : alert.acknowledgedAt ? (
-                            <Badge className="bg-blue-100 text-blue-800">Reconocido</Badge>
+                            <Badge className="bg-info-muted text-info-muted-foreground">Reconocido</Badge>
                           ) : (
                             <Badge variant="destructive">Activo</Badge>
                           )}

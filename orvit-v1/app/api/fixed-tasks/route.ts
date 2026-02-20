@@ -12,6 +12,7 @@ import {
 } from '@/lib/tasks/constants';
 import {
   getUserFromToken,
+  hasAccessToCompany,
 } from '@/lib/tasks/auth-helper';
 import {
   validateFixedTaskCreate,
@@ -25,6 +26,12 @@ export const dynamic = 'force-dynamic';
 // GET /api/fixed-tasks - Obtener todas las tareas fijas de la empresa
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación requerida
+    const currentUser = await getUserFromToken();
+    if (!currentUser) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const companyIdParam = searchParams.get('companyId');
 
@@ -35,6 +42,11 @@ export async function GET(request: NextRequest) {
     const companyId = validateId(companyIdParam);
     if (!companyId) {
       return NextResponse.json({ error: 'CompanyId inválido' }, { status: 400 });
+    }
+
+    // Verificar que el usuario tiene acceso a esta empresa
+    if (!hasAccessToCompany(currentUser, companyId)) {
+      return NextResponse.json({ error: 'Acceso denegado a esta empresa' }, { status: 403 });
     }
 
     logger.debug('Buscando tareas fijas para empresa', { companyId });
@@ -88,6 +100,7 @@ export async function GET(request: NextRequest) {
       estimatedTime: task.estimatedTime || 30,
       priority: mapPriorityToFrontend(task.priority),
       isActive: task.isActive,
+      executionTime: task.executionTime || '08:00',
       lastExecuted: task.lastExecuted?.toISOString() || null,
       nextExecution: task.nextExecution?.toISOString() || null,
       createdAt: task.createdAt?.toISOString() || null,
@@ -141,6 +154,7 @@ export async function POST(request: NextRequest) {
       priority,
       isActive,
       nextExecution,
+      executionTime,
       companyId
     } = body;
 
@@ -235,28 +249,25 @@ export async function POST(request: NextRequest) {
         companyId: parsedCompanyId,
         department: sanitizedDepartment,
         nextExecution: nextExecDate,
+        executionTime: executionTime || null,
         isCompleted: false
       }
     });
 
     logger.info('Tarea fija creada', { taskId: newTask.id });
 
-    // Crear instructivos si existen
+    // Crear instructivos con createMany (en bloque, más eficiente)
     if (instructives && Array.isArray(instructives) && instructives.length > 0) {
       logger.debug('Creando instructivos', { count: instructives.length });
-
-      for (let i = 0; i < instructives.length; i++) {
-        const inst = instructives[i];
-        await (prisma as any).fixedTaskInstructive.create({
-          data: {
-            title: sanitizeText(inst.title || ''),
-            content: sanitizeText(inst.content || ''),
-            attachments: inst.attachments || [],
-            fixedTaskId: newTask.id,
-            order: i
-          }
-        });
-      }
+      await (prisma as any).fixedTaskInstructive.createMany({
+        data: instructives.map((inst: any, i: number) => ({
+          title: sanitizeText(inst.title || ''),
+          content: sanitizeText(inst.content || ''),
+          attachments: inst.attachments || [],
+          fixedTaskId: newTask.id,
+          order: i,
+        })),
+      });
     }
 
     // Obtener nombre del usuario/worker asignado
@@ -295,6 +306,7 @@ export async function POST(request: NextRequest) {
       estimatedTime: newTask.estimatedTime || 30,
       priority: mapPriorityToFrontend(newTask.priority),
       isActive: newTask.isActive,
+      executionTime: newTask.executionTime || '08:00',
       nextExecution: newTask.nextExecution?.toISOString() || null,
       createdAt: newTask.createdAt?.toISOString() || null,
       isCompleted: newTask.isCompleted

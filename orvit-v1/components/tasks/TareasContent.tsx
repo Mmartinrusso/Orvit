@@ -1,43 +1,46 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import {
-  LayoutGrid,
-  Plus,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  RotateCcw,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Search,
-  Trash2
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useUserColors } from '@/hooks/use-user-colors';
+import { AVATAR_COLORS } from '@/lib/colors';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useCompany } from '@/contexts/CompanyContext';
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TasksDashboard } from "@/components/tasks/tasks-dashboard";
-import { TaskCard } from "@/components/tasks/task-card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { NewTaskModal } from "@/components/tasks/new-task-modal";
-import { FixedTasksKanban } from "@/components/tasks/fixed-tasks-kanban";
 import { FixedTaskDetailModal } from "@/components/tasks/fixed-task-detail-modal";
 import { TaskExecutionModal } from "@/components/tasks/task-execution-modal";
 import { CreateFixedTaskModal } from "@/components/tasks/create-fixed-task-modal";
+import { TasksKanbanView } from "@/components/tasks/inbox/TasksKanbanView";
+import { TasksList } from "@/components/tasks/inbox/TasksList";
+import { TasksUserSidebar } from "@/components/tasks/TasksUserSidebar";
+import TaskGroupsSidebar, { type TaskGroup } from "@/components/tasks/TaskGroupsSidebar";
+import { TaskDetailModal } from "@/components/tasks/task-detail-modal";
 import { useTaskStore } from "@/hooks/use-task-store";
+import type { Task } from "@/hooks/use-task-store";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { useFixedTasks } from "@/hooks/use-fixed-tasks";
 import { getNextResetInfo } from "@/lib/task-scheduler";
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
-import { Badge } from "@/components/ui/badge";
-import { TaskHistoryDetailModal } from "@/components/tasks/task-history-detail-modal";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { EditTaskModal } from "@/components/tasks/edit-task-modal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,15 +52,48 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { TasksInbox } from "@/components/tasks/inbox/TasksInbox";
-import { EditTaskModal } from "@/components/tasks/edit-task-modal";
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  Columns3,
+  LayoutList,
+  Plus,
+  RefreshCw,
+  Search,
+  Send,
+  X,
+  Zap,
+} from "lucide-react";
+import { isToday } from "date-fns";
+import { cn } from "@/lib/utils";
+
+// Componentes extraídos
+import { TareasFijasTab } from "./tareas-fijas-tab";
+import { HistorialTab } from "./historial-tab";
+import { EstadisticasTab } from "./estadisticas-tab";
+
+
+
+
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
 
 // ─── Types ─────────────────────────────────────────
 interface FixedTask {
@@ -79,864 +115,32 @@ interface FixedTask {
 }
 
 type ActiveTab = 'tareas' | 'fijas' | 'dashboard' | 'historial' | 'metricas';
+type ViewMode = 'kanban' | 'lista';
 
 interface TareasContentProps {
   activeTab: ActiveTab;
 }
 
-// ─── Helper Components ─────────────────────────────
-
-function CircularProgress({ percentage, size = 120, strokeWidth = 8, color = "#3b82f6" }: {
-  percentage: number; size?: number; strokeWidth?: number; color?: string;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percentage / 100) * circumference;
-  return (
-    <div className="relative">
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="none" className="text-gray-200 dark:text-gray-700" />
-        <circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold" style={{ color }}>{percentage}%</span>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ title, value, trendValue, icon: Icon }: {
-  title: string; value: string | number; trend?: 'up' | 'down' | 'stable'; trendValue?: string; icon: any;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-            {trendValue && <p className="text-[10px] text-muted-foreground mt-1">{trendValue}</p>}
-          </div>
-          <div className="p-2 rounded-lg bg-muted"><Icon className="h-4 w-4 text-muted-foreground" /></div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SimpleLineChart({ data, title, color = "#3b82f6" }: { data: any[]; title: string; color?: string }) {
-  const validData = data.filter(d => typeof d.value === 'number' && !isNaN(d.value));
-  const maxValue = validData.length > 0 ? Math.max(...validData.map(d => d.value)) : 1;
-  if (validData.length === 0) {
-    return (
-      <div className="space-y-4">
-        <h4 className="text-lg font-semibold">{title}</h4>
-        <div className="relative">
-          <svg width="300" height="100" className="w-full h-24">
-            <text x="150" y="50" textAnchor="middle" className="text-sm fill-muted-foreground">Sin datos disponibles</text>
-          </svg>
-        </div>
-      </div>
-    );
-  }
-  const points = validData.map((item, index) => {
-    const x = validData.length > 1 ? (index / (validData.length - 1)) * 300 : 150;
-    const y = maxValue > 0 ? 100 - (item.value / maxValue) * 80 : 50;
-    return `${Math.max(0, Math.min(300, isNaN(x) ? 150 : x))},${Math.max(0, Math.min(100, isNaN(y) ? 50 : y))}`;
-  }).join(' ');
-  return (
-    <div className="space-y-4">
-      <h4 className="text-lg font-semibold">{title}</h4>
-      <div className="relative">
-        <svg width="300" height="100" className="w-full h-24">
-          <defs>
-            <linearGradient id={`gradient-${title}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-              <stop offset="100%" stopColor={color} stopOpacity="0.1" />
-            </linearGradient>
-          </defs>
-          <polyline points={points} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse" />
-          <polygon points={`0,100 ${points} 300,100`} fill={`url(#gradient-${title})`} />
-        </svg>
-        <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-          {validData.map((item, index) => (<span key={index}>{item.label}</span>))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HeatmapCalendar({ tasks }: { tasks: any[] }) {
-  const days = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
-  const weeks = 13;
-  const heatmapData = useMemo(() => {
-    const data: { date: Date; count: number }[] = [];
-    const today = new Date();
-    for (let w = weeks - 1; w >= 0; w--) {
-      for (let d = 0; d < 7; d++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - (w * 7 + (today.getDay() - d)));
-        const dateStr = date.toDateString();
-        const tasksArray = Array.isArray(tasks) ? tasks : [];
-        const count = tasksArray.filter(t => {
-          const taskDate = new Date(t.createdAt);
-          return taskDate.toDateString() === dateStr;
-        }).length;
-        data.push({ date, count });
-      }
-    }
-    return data;
-  }, [tasks]);
-  const maxCount = Math.max(...heatmapData.map(d => d.count), 1);
-  const getColor = (count: number) => {
-    if (count === 0) return 'bg-muted';
-    const intensity = Math.ceil((count / maxCount) * 4);
-    const colors = ['bg-primary/20', 'bg-primary/40', 'bg-primary/60', 'bg-primary/80'];
-    return colors[Math.min(intensity - 1, 3)];
-  };
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-1">
-        <div className="w-4" />
-        {days.map(day => (<div key={day} className="w-3 text-[10px] text-muted-foreground text-center">{day}</div>))}
-      </div>
-      <div className="flex gap-1">
-        {Array.from({ length: weeks }, (_, weekIndex) => (
-          <div key={weekIndex} className="flex flex-col gap-1">
-            {Array.from({ length: 7 }, (_, dayIndex) => {
-              const dataIndex = weekIndex * 7 + dayIndex;
-              const item = heatmapData[dataIndex];
-              if (!item) return <div key={dayIndex} className="w-3 h-3" />;
-              return (
-                <div
-                  key={dayIndex}
-                  className={cn("w-3 h-3 rounded-[2px] transition-colors", getColor(item.count))}
-                  title={`${item.date.toLocaleDateString('es-ES')}: ${item.count} tareas`}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-        <span>Menos</span>
-        <div className="w-3 h-3 rounded-[2px] bg-muted" />
-        <div className="w-3 h-3 rounded-[2px] bg-primary/20" />
-        <div className="w-3 h-3 rounded-[2px] bg-primary/40" />
-        <div className="w-3 h-3 rounded-[2px] bg-primary/60" />
-        <div className="w-3 h-3 rounded-[2px] bg-primary/80" />
-        <span>Más</span>
-      </div>
-    </div>
-  );
-}
-
-function UserRanking({ users }: { users: any[] }) {
-  if (!users || users.length === 0) {
-    return <div className="text-center py-4 text-sm text-muted-foreground">Sin datos de usuarios</div>;
-  }
-  return (
-    <div className="space-y-3">
-      {users.slice(0, 5).map((user, index) => (
-        <div key={index} className="flex items-center gap-3">
-          <span className="text-xs font-bold text-muted-foreground w-5">{index + 1}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user.name}</p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{user.value} creadas</span>
-              <span>•</span>
-              <span>{user.completed} completadas</span>
-            </div>
-          </div>
-          <Badge variant="secondary" className="text-xs">{user.percentage}%</Badge>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Tareas Fijas Tab ──────────────────────────────
-
-function TareasFijasTab({
-  tasks, onTaskClick, onEditTask, onDeleteTask, onCreateTask, onExecuteTask, onCheckResets, canCreateFixedTask = false
-}: {
-  tasks: FixedTask[];
-  onTaskClick: (task: FixedTask) => void;
-  onEditTask: (task: FixedTask) => void;
-  onDeleteTask: (taskId: string) => void;
-  onCreateTask: (frequency: string) => void;
-  onExecuteTask: (task: FixedTask) => void;
-  onCheckResets?: () => void;
-  canCreateFixedTask?: boolean;
-}) {
-  const totalTasks = tasks.length;
-  const pendingTasks = tasks.filter(t => !t.isCompleted && t.isActive).length;
-  const completedTasks = tasks.filter(t => t.isCompleted).length;
-  const inactiveTasks = tasks.filter(t => !t.isActive).length;
-  const tasksNeedingReset = tasks.filter(t => t.isCompleted && new Date() >= new Date(t.nextExecution)).length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Tareas Fijas y Recurrentes</h2>
-          <p className="text-sm text-muted-foreground mt-1">Gestiona tareas programadas por frecuencia temporal</p>
-        </div>
-        {canCreateFixedTask && (
-          <Button onClick={() => onCreateTask('')} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Tarea Fija
-          </Button>
-        )}
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-start justify-between"><div><p className="text-xs font-medium text-muted-foreground">Total Tareas</p><p className="text-2xl font-bold mt-1">{totalTasks}</p></div><div className="p-2 rounded-lg bg-muted"><LayoutGrid className="h-4 w-4 text-muted-foreground" /></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-start justify-between"><div><p className="text-xs font-medium text-muted-foreground">Pendientes</p><p className="text-2xl font-bold mt-1">{pendingTasks}</p></div><div className="p-2 rounded-lg bg-muted"><Clock className="h-4 w-4 text-muted-foreground" /></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-start justify-between"><div><p className="text-xs font-medium text-muted-foreground">Completadas</p><p className="text-2xl font-bold mt-1">{completedTasks}</p></div><div className="p-2 rounded-lg bg-muted"><CheckCircle2 className="h-4 w-4 text-muted-foreground" /></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-start justify-between mb-2"><div><p className="text-xs font-medium text-muted-foreground">Progreso</p><p className="text-2xl font-bold mt-1">{completionRate}%</p></div><div className="p-2 rounded-lg bg-muted"><BarChart3 className="h-4 w-4 text-muted-foreground" /></div></div><div className="w-full bg-muted rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full transition-all duration-500" style={{ width: `${completionRate}%` }} /></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-start justify-between"><div><p className="text-xs font-medium text-muted-foreground">{tasksNeedingReset > 0 ? 'Reiniciándose' : 'Inactivas'}</p><p className="text-2xl font-bold mt-1">{tasksNeedingReset > 0 ? tasksNeedingReset : inactiveTasks}</p></div><div className="p-2 rounded-lg bg-muted"><RotateCcw className={`h-4 w-4 text-muted-foreground ${tasksNeedingReset > 0 ? 'animate-spin' : ''}`} /></div></div>{tasksNeedingReset > 0 && (<p className="text-[10px] text-muted-foreground mt-2">Reinicio automático activo</p>)}</CardContent></Card>
-      </div>
-      <FixedTasksKanban tasks={tasks} onTaskClick={onTaskClick} onEditTask={onEditTask} onDeleteTask={onDeleteTask} onCreateTask={onCreateTask} onExecuteTask={onExecuteTask} />
-    </div>
-  );
-}
-
-// ─── Historial Tab ─────────────────────────────────
-
-function HistorialTab() {
-  const [history, setHistory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<string>("all");
-  const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState<any>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
-  const [isAutoDeleteDialogOpen, setIsAutoDeleteDialogOpen] = useState(false);
-  const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
-  const [autoDeleteDays, setAutoDeleteDays] = useState("30");
-  const [isSettingAutoDelete, setIsSettingAutoDelete] = useState(false);
-
-  const { toast } = useToast();
-  const { user } = useAuth();
-
-  const fetchHistory = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch('/api/tasks/history', {
-        credentials: 'include',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (!response.ok) throw new Error('Error al cargar el historial');
-      const data = await response.json();
-      if (data.success && Array.isArray(data.history)) {
-        const userHistory = data.history.filter((item: any) =>
-          item.task.assignedTo?.id?.toString() === user?.id ||
-          item.task.createdBy?.id?.toString() === user?.id
-        );
-        setHistory(userHistory);
-      } else {
-        setHistory([]);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      setHistory([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchHistory(); }, [user?.id]);
-
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
-
-  const getPriorityText = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'high': case 'alta': return 'Alta';
-      case 'medium': case 'media': return 'Media';
-      case 'low': case 'baja': return 'Baja';
-      default: return priority;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'high': case 'alta': return 'text-red-500';
-      case 'medium': case 'media': return 'text-yellow-500';
-      case 'low': case 'baja': return 'text-green-500';
-      default: return 'text-gray-500';
-    }
-  };
-
-  const handleTaskClick = (task: any) => {
-    if (isSelectionMode) {
-      handleTaskSelection(task.id);
-    } else {
-      setSelectedTask(task);
-      setIsModalOpen(true);
-    }
-  };
-
-  const handleTaskSelection = (taskId: number) => {
-    const newSelected = new Set(selectedTasks);
-    if (newSelected.has(taskId)) newSelected.delete(taskId);
-    else newSelected.add(taskId);
-    setSelectedTasks(newSelected);
-  };
-
-  const handleSelectAll = () => {
-    if (selectedTasks.size === history.length) setSelectedTasks(new Set());
-    else setSelectedTasks(new Set(history.map(task => task.id)));
-  };
-
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    setSelectedTasks(new Set());
-  };
-
-  const handleDeletePermanently = async () => {
-    if (!taskToDelete) return;
-    try {
-      const response = await fetch(`/api/tasks/history`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ historyId: taskToDelete.id })
-      });
-      if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Error al eliminar del historial'); }
-      fetchHistory();
-      toast({ title: "Eliminación permanente", description: "La tarea ha sido eliminada permanentemente del historial." });
-      setIsDeleteDialogOpen(false);
-      setTaskToDelete(null);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: error instanceof Error ? error.message : "No se pudo eliminar la tarea del historial." });
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedTasks.size === 0) return;
-    try {
-      const deletePromises = Array.from(selectedTasks).map(taskId =>
-        fetch(`/api/tasks/history`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-          body: JSON.stringify({ historyId: taskId })
-        })
-      );
-      const results = await Promise.allSettled(deletePromises);
-      const failed = results.filter(result => result.status === 'rejected').length;
-      if (failed > 0) {
-        toast({ variant: "destructive", title: "Eliminación parcial", description: `Se eliminaron ${selectedTasks.size - failed} tareas. ${failed} fallaron.` });
-      } else {
-        toast({ title: "Eliminación masiva completada", description: `Se eliminaron ${selectedTasks.size} tareas del historial.` });
-      }
-      fetchHistory();
-      setSelectedTasks(new Set());
-      setIsBulkDeleteDialogOpen(false);
-      setIsSelectionMode(false);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Error al eliminar las tareas seleccionadas." });
-    }
-  };
-
-  const handleSetAutoDelete = async () => {
-    setIsSettingAutoDelete(true);
-    try {
-      const response = await fetch('/api/tasks/history/auto-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ days: parseInt(autoDeleteDays) })
-      });
-      if (!response.ok) throw new Error('Error al configurar auto-eliminación');
-      toast({ title: "Auto-eliminación configurada", description: `Las tareas del historial se eliminarán automáticamente después de ${autoDeleteDays} días.` });
-      setIsAutoDeleteDialogOpen(false);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo configurar la auto-eliminación." });
-    } finally {
-      setIsSettingAutoDelete(false);
-    }
-  };
-
-  const handleClearAll = async () => {
-    try {
-      const response = await fetch('/api/tasks/history/clear-all', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (!response.ok) throw new Error('Error al limpiar historial');
-      toast({ title: "Historial limpiado", description: "Se ha eliminado todo el historial de tareas." });
-      fetchHistory();
-      setIsClearAllDialogOpen(false);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo limpiar el historial." });
-    }
-  };
-
-  const filteredHistory = useMemo(() => {
-    return history.filter(item => {
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        if (!item.task.title?.toLowerCase().includes(term) && !item.task.description?.toLowerCase().includes(term)) return false;
-      }
-      if (priorityFilter !== "all" && item.task.priority?.toLowerCase() !== priorityFilter.toLowerCase()) return false;
-      return true;
-    });
-  }, [history, searchTerm, priorityFilter]);
-
-  const groupTasksByDate = (tasks: any[]) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-    const thisWeek = new Date(today); thisWeek.setDate(thisWeek.getDate() - 7);
-    const thisMonth = new Date(today); thisMonth.setMonth(thisMonth.getMonth() - 1);
-    const groups: { [key: string]: any[] } = { 'Hoy': [], 'Ayer': [], 'Esta semana': [], 'Este mes': [], 'Más antiguas': [] };
-    tasks.forEach(task => {
-      const taskDate = new Date(task.deletedAt);
-      const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
-      if (taskDateOnly.getTime() === today.getTime()) groups['Hoy'].push(task);
-      else if (taskDateOnly.getTime() === yesterday.getTime()) groups['Ayer'].push(task);
-      else if (taskDate >= thisWeek) groups['Esta semana'].push(task);
-      else if (taskDate >= thisMonth) groups['Este mes'].push(task);
-      else groups['Más antiguas'].push(task);
-    });
-    return Object.entries(groups).filter(([_, tasks]) => tasks.length > 0);
-  };
-
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-muted-foreground">Cargando historial...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-4" />
-        <p className="text-destructive">{error}</p>
-        <Button variant="outline" onClick={fetchHistory} className="mt-4">Reintentar</Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border">
-        <div>
-          <h2 className="text-xl font-semibold">Historial de Tareas</h2>
-          <p className="text-sm text-muted-foreground mt-1">{history.length} tarea{history.length !== 1 ? 's' : ''} en el historial</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={toggleSelectionMode}>
-            {isSelectionMode ? 'Cancelar' : 'Seleccionar'}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsAutoDeleteDialogOpen(true)}>Auto-eliminar</Button>
-          <Button variant="destructive" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>Limpiar todo</Button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar en historial..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-        </div>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[130px]"><SelectValue placeholder="Prioridad" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="high">Alta</SelectItem>
-            <SelectItem value="medium">Media</SelectItem>
-            <SelectItem value="low">Baja</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {isSelectionMode && selectedTasks.size > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-          <Checkbox checked={selectedTasks.size === history.length && history.length > 0} onCheckedChange={handleSelectAll} />
-          <span className="text-sm text-muted-foreground">{selectedTasks.size} seleccionada{selectedTasks.size !== 1 ? 's' : ''}</span>
-          <Button variant="destructive" size="sm" className="ml-auto gap-1" onClick={() => setIsBulkDeleteDialogOpen(true)}>
-            <Trash2 className="h-4 w-4" /> Eliminar seleccionadas
-          </Button>
-        </div>
-      )}
-
-      {filteredHistory.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No hay tareas en el historial</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {groupTasksByDate(filteredHistory).map(([groupName, tasks]) => (
-            <div key={groupName} className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">{groupName}</h3>
-              <div className="space-y-2">
-                {tasks.map((item: any) => (
-                  <Card key={item.id} className={cn("cursor-pointer hover:shadow-md transition-all", isSelectionMode && selectedTasks.has(item.id) && "ring-2 ring-primary")} onClick={() => handleTaskClick(item)}>
-                    <CardContent className="p-4 flex items-center gap-4">
-                      {isSelectionMode && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Checkbox checked={selectedTasks.has(item.id)} onCheckedChange={() => handleTaskSelection(item.id)} />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.task.title}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(item.deletedAt)} • <span className={getPriorityColor(item.task.priority || 'medium')}>{getPriorityText(item.task.priority || 'medium')}</span></p>
-                      </div>
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => { e.stopPropagation(); setTaskToDelete(item); setIsDeleteDialogOpen(true); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <TaskHistoryDetailModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedTask(null); }} task={selectedTask} />
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar permanentemente?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeletePermanently} className="bg-destructive text-destructive-foreground">Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar {selectedTasks.size} tareas?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción eliminará permanentemente las tareas seleccionadas del historial.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground">Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={isAutoDeleteDialogOpen} onOpenChange={setIsAutoDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Configurar Auto-eliminación</DialogTitle>
-            <DialogDescription>Las tareas del historial se eliminarán automáticamente después del período seleccionado.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label>Eliminar después de</Label>
-            <Select value={autoDeleteDays} onValueChange={setAutoDeleteDays}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 días</SelectItem>
-                <SelectItem value="14">14 días</SelectItem>
-                <SelectItem value="30">30 días</SelectItem>
-                <SelectItem value="60">60 días</SelectItem>
-                <SelectItem value="90">90 días</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAutoDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSetAutoDelete} disabled={isSettingAutoDelete}>{isSettingAutoDelete ? 'Configurando...' : 'Guardar'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Limpiar todo el historial?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción eliminará permanentemente todo el historial de tareas. No se puede deshacer.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground">Limpiar todo</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
-// ─── Estadísticas Tab ──────────────────────────────
-
-function EstadisticasTab() {
-  const [allTasks, setAllTasks] = useState<any[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('30');
-  const [selectedUserId, setSelectedUserId] = useState<string>('all');
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [tasksRes, usersRes] = await Promise.all([
-          fetch('/api/tasks', { credentials: 'include', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('/api/admin/users-with-roles', { credentials: 'include', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
-        ]);
-        if (tasksRes.ok) {
-          const tasksData = await tasksRes.json();
-          setAllTasks(Array.isArray(tasksData) ? tasksData : (tasksData?.tasks || []));
-        }
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          const usersArray = Array.isArray(usersData) ? usersData : (usersData?.users || []);
-          setAllUsers(usersArray.filter((user: any) =>
-            user.permissions?.some((perm: any) => perm.name === 'ingresar_tareas') ||
-            user.roles?.some((role: any) => role.permissions?.some((perm: any) => perm.name === 'ingresar_tareas'))
-          ));
-        }
-      } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "No se pudieron cargar los datos." });
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [toast]);
-
-  const usersWithTasks = useMemo(() => {
-    const userIds = new Set<string>();
-    const tasksArray = Array.isArray(allTasks) ? allTasks : [];
-    tasksArray.forEach(task => {
-      if (task.assignedTo?.id) userIds.add(task.assignedTo.id);
-      if (task.createdBy?.id) userIds.add(task.createdBy.id);
-    });
-    return allUsers.filter(user => userIds.has(user.id));
-  }, [allTasks, allUsers]);
-
-  const analytics = useMemo(() => {
-    const tasksArray = Array.isArray(allTasks) ? allTasks : [];
-    const usersArray = Array.isArray(allUsers) ? allUsers : [];
-    const now = new Date();
-    const daysAgo = new Date(now.getTime() - parseInt(timeRange) * 24 * 60 * 60 * 1000);
-    let recentTasks = tasksArray.filter(task => new Date(task.createdAt) >= daysAgo);
-    if (selectedUserId !== 'all') {
-      recentTasks = recentTasks.filter(task => task.assignedTo?.id === selectedUserId || task.createdBy?.id === selectedUserId);
-    }
-    const total = recentTasks.length;
-    const completed = recentTasks.filter(t => t.status === 'DONE').length;
-    const inProgress = recentTasks.filter(t => t.status === 'IN_PROGRESS').length;
-    const pending = recentTasks.filter(t => t.status === 'TODO').length;
-    const overdue = recentTasks.filter(t => { if (!t.dueDate || t.status === 'DONE') return false; return new Date(t.dueDate) < now; }).length;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const productivity = Math.round(completed / (parseInt(timeRange) / 7));
-    const completedWithDates = recentTasks.filter(t => t.status === 'DONE' && t.createdAt && t.updatedAt);
-    const avgResolutionTime = completedWithDates.length > 0 ?
-      Math.round(completedWithDates.reduce((acc, task) => {
-        const created = new Date(task.createdAt);
-        const completedDate = new Date(task.updatedAt);
-        return acc + (completedDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-      }, 0) / completedWithDates.length) : 0;
-    const trendData = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(); date.setDate(date.getDate() - (6 - i));
-      const dayTasks = recentTasks.filter(t => new Date(t.createdAt).toDateString() === date.toDateString());
-      return { label: date.toLocaleDateString('es-ES', { weekday: 'short' }), value: dayTasks.length, completed: dayTasks.filter(t => t.status === 'DONE').length };
-    });
-    const userStats = usersArray.map(user => {
-      const userTasks = tasksArray.filter(t => t.createdBy?.id === user.id);
-      const userCompleted = userTasks.filter(t => t.status === 'DONE').length;
-      const userAssigned = tasksArray.filter(t => t.assignedTo?.id === user.id);
-      return { name: user.name, value: userTasks.length, completed: userCompleted, assigned: userAssigned.length, percentage: userTasks.length > 0 ? Math.round((userCompleted / userTasks.length) * 100) : 0 };
-    }).filter(u => u.value > 0 || u.assigned > 0).sort((a, b) => b.value - a.value);
-    const priorityStats = {
-      high: recentTasks.filter(t => t.priority === 'HIGH').length,
-      medium: recentTasks.filter(t => t.priority === 'MEDIUM').length,
-      low: recentTasks.filter(t => t.priority === 'LOW').length,
-      highCompleted: recentTasks.filter(t => t.priority === 'HIGH' && t.status === 'DONE').length,
-      mediumCompleted: recentTasks.filter(t => t.priority === 'MEDIUM' && t.status === 'DONE').length,
-      lowCompleted: recentTasks.filter(t => t.priority === 'LOW' && t.status === 'DONE').length,
-    };
-    const prevPeriodStart = new Date(daysAgo.getTime() - parseInt(timeRange) * 24 * 60 * 60 * 1000);
-    let prevPeriodTasks = tasksArray.filter(task => { const d = new Date(task.createdAt); return d >= prevPeriodStart && d < daysAgo; });
-    if (selectedUserId !== 'all') prevPeriodTasks = prevPeriodTasks.filter(task => task.assignedTo?.id === selectedUserId || task.createdBy?.id === selectedUserId);
-    const prevTotal = prevPeriodTasks.length;
-    const prevCompleted = prevPeriodTasks.filter(t => t.status === 'DONE').length;
-    const prevCompletionRate = prevTotal > 0 ? Math.round((prevCompleted / prevTotal) * 100) : 0;
-    const comparison = {
-      totalDiff: total - prevTotal,
-      totalPercent: prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : (total > 0 ? 100 : 0),
-      completedDiff: completed - prevCompleted,
-      completedPercent: prevCompleted > 0 ? Math.round(((completed - prevCompleted) / prevCompleted) * 100) : (completed > 0 ? 100 : 0),
-      rateDiff: completionRate - prevCompletionRate
-    };
-    return { total, completed, inProgress, pending, overdue, completionRate, productivity, avgResolutionTime, trendData, userStats, priorityStats, comparison };
-  }, [allTasks, allUsers, timeRange, selectedUserId]);
-
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-muted-foreground">Cargando métricas...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Métricas y Reportes</h2>
-          <p className="text-sm text-muted-foreground mt-1">Análisis de rendimiento y métricas de productividad</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">7 días</SelectItem>
-              <SelectItem value="30">30 días</SelectItem>
-              <SelectItem value="90">90 días</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="w-44 h-9"><SelectValue placeholder="Usuario" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los usuarios</SelectItem>
-              {usersWithTasks.map(user => (<SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-        <MetricCard title="Total Tareas" value={analytics.total} trendValue={`Período: ${timeRange} días`} icon={LayoutGrid} />
-        <MetricCard title="Completadas" value={analytics.completed} trendValue={`${analytics.completionRate}% del total`} icon={CheckCircle2} />
-        <MetricCard title="En Progreso" value={analytics.inProgress} icon={Clock} />
-        <MetricCard title="Pendientes" value={analytics.pending} trendValue={analytics.overdue > 0 ? `${analytics.overdue} vencidas` : undefined} icon={AlertTriangle} />
-        <MetricCard title="Tiempo Promedio" value={`${analytics.avgResolutionTime}d`} trendValue="Para completar" icon={BarChart3} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Progreso General</CardTitle></CardHeader>
-          <CardContent className="flex items-center justify-center pb-6"><CircularProgress percentage={analytics.completionRate} size={120} strokeWidth={8} color="hsl(var(--primary))" /></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Tendencia Semanal</CardTitle></CardHeader>
-          <CardContent><SimpleLineChart data={analytics.trendData} title="" color="hsl(var(--primary))" /></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Estados Actuales</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-primary rounded-full" /><span className="text-sm">Completadas</span></div><span className="font-semibold">{analytics.completed}</span></div>
-            <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-primary/60 rounded-full" /><span className="text-sm">En Progreso</span></div><span className="font-semibold">{analytics.inProgress}</span></div>
-            <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-muted-foreground rounded-full" /><span className="text-sm">Pendientes</span></div><span className="font-semibold">{analytics.pending}</span></div>
-            {analytics.overdue > 0 && (<div className="flex items-center justify-between p-2 bg-destructive/10 rounded-md"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-destructive rounded-full" /><span className="text-sm">Vencidas</span></div><span className="font-semibold text-destructive">{analytics.overdue}</span></div>)}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Distribución por Prioridad</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { label: 'Alta', color: 'bg-destructive', stats: analytics.priorityStats.high, completed: analytics.priorityStats.highCompleted },
-              { label: 'Media', color: 'bg-amber-500', stats: analytics.priorityStats.medium, completed: analytics.priorityStats.mediumCompleted },
-              { label: 'Baja', color: 'bg-muted-foreground', stats: analytics.priorityStats.low, completed: analytics.priorityStats.lowCompleted },
-            ].map(({ label, color, stats, completed: completedCount }) => (
-              <div key={label} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2"><div className={`w-2 h-2 ${color} rounded-full`} /><span className="text-sm font-medium">{label}</span></div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{completedCount}/{stats}</span>
-                    <span className="text-xs text-muted-foreground">({stats > 0 ? Math.round((completedCount / stats) * 100) : 0}%)</span>
-                  </div>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${stats > 0 ? (completedCount / stats) * 100 : 0}%` }} />
-                </div>
-              </div>
-            ))}
-            <div className="pt-3 border-t border-border">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">Total</span>
-                <span className="text-muted-foreground">{analytics.priorityStats.high + analytics.priorityStats.medium + analytics.priorityStats.low} tareas</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">vs Período Anterior ({timeRange} días)</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { label: 'Total Tareas', value: analytics.total, diff: analytics.comparison.totalDiff, percent: analytics.comparison.totalPercent, suffix: '%' },
-              { label: 'Completadas', value: analytics.completed, diff: analytics.comparison.completedDiff, percent: analytics.comparison.completedPercent, suffix: '%' },
-              { label: 'Tasa de Completitud', value: `${analytics.completionRate}%`, diff: analytics.comparison.rateDiff, percent: analytics.comparison.rateDiff, suffix: 'pp' },
-            ].map(({ label, value, diff, percent, suffix }) => (
-              <div key={label} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                <div><p className="text-sm text-muted-foreground">{label}</p><p className="text-xl font-bold">{value}</p></div>
-                <div className={cn("flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium", diff > 0 ? "bg-primary/10 text-primary" : diff < 0 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>
-                  {diff > 0 ? <TrendingUp className="h-3 w-3" /> : diff < 0 ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                  <span>{diff > 0 ? '+' : ''}{percent}{suffix}</span>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Actividad (últimos 3 meses)</CardTitle></CardHeader>
-          <CardContent><HeatmapCalendar tasks={allTasks} /></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Usuarios Más Activos</CardTitle></CardHeader>
-          <CardContent><UserRanking users={analytics.userStats} /></CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Resumen</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="text-2xl font-bold">{analytics.completionRate}%</div>
-              <div className="text-sm font-medium mt-1">Tasa de Éxito</div>
-              <div className="text-xs text-muted-foreground mt-1">{analytics.completionRate > 70 ? "Excelente rendimiento" : "Margen de mejora"}</div>
-            </div>
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="text-2xl font-bold">{analytics.productivity}</div>
-              <div className="text-sm font-medium mt-1">Tareas/Semana</div>
-              <div className="text-xs text-muted-foreground mt-1">Productividad promedio</div>
-            </div>
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="text-2xl font-bold">{analytics.userStats.length}</div>
-              <div className="text-sm font-medium mt-1">Usuarios Activos</div>
-              <div className="text-xs text-muted-foreground mt-1">Con tareas asignadas</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // ─── Main TareasContent Component ──────────────────
 
 export default function TareasContent({ activeTab }: TareasContentProps) {
+  const userColors = useUserColors();
+  const confirm = useConfirm();
+  const { currentCompany } = useCompany();
+
+  // ── States para el tab "tareas" (nuevo layout tipo Agenda) ──
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [showOnlyOverdue, setShowOnlyOverdue] = useState(false);
+  const [showOnlyToday, setShowOnlyToday] = useState(false);
+  const [quickTaskInput, setQuickTaskInput] = useState('');
+  const [isCreatingQuickTask, setIsCreatingQuickTask] = useState(false);
+
+  // ── States generales ──
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [editingRegularTask, setEditingRegularTask] = useState<any>(null);
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
@@ -958,10 +162,46 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
   const { hasPermission: canEditFixedTask } = usePermissionRobust('editar_tarea_fija');
   const { hasPermission: canDeleteFixedTask } = usePermissionRobust('eliminar_tarea_fija');
 
-  const { tasks, fetchTasks, createTask, setSelectedTask } = useTaskStore();
+  const { tasks, fetchTasks, createTask, updateTaskAPI, deleteTask, setSelectedTask, selectedTask } = useTaskStore();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+
+  // Usuarios con permiso de tareas — cacheados con TanStack Query
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users-with-roles'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/users-with-roles', {
+        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      const arr = Array.isArray(data) ? data : (data?.users || []);
+      return arr.filter((u: any) =>
+        u.permissions?.some((p: any) => p.name === 'ingresar_tareas') ||
+        u.roles?.some((r: any) => r.permissions?.some((p: any) => p.name === 'ingresar_tareas'))
+      );
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  // Grupos de tareas
+  const { data: taskGroupsData, refetch: refetchGroups } = useQuery({
+    queryKey: ['task-groups', currentCompany?.id],
+    queryFn: async () => {
+      if (!currentCompany?.id) return [];
+      const res = await fetch(`/api/task-groups?companyId=${currentCompany.id}`, {
+        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.data as TaskGroup[];
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 30 * 1000, // 30 segundos
+  });
+  const taskGroups = taskGroupsData || [];
 
   const {
     tasks: fixedTasks,
@@ -974,29 +214,63 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const response = await fetch('/api/admin/users-with-roles', {
-          credentials: 'include',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const usersData = await response.json();
-          const usersArray = Array.isArray(usersData) ? usersData : (usersData?.users || []);
-          setAllUsers(usersArray.filter((u: any) =>
-            u.permissions?.some((perm: any) => perm.name === 'ingresar_tareas') ||
-            u.roles?.some((role: any) => role.permissions?.some((perm: any) => perm.name === 'ingresar_tareas'))
-          ));
-        }
-      } catch (error) {
-        console.error('Error loading users:', error);
-      }
+  // ── Stats globales para KPI cards ──
+  const taskStats = useMemo(() => {
+    const now = new Date();
+    return {
+      pending: tasks.filter(t => t.status !== 'realizada' && t.status !== 'cancelada').length,
+      inProgress: tasks.filter(t => t.status === 'en-curso').length,
+      overdue: tasks.filter(t =>
+        t.dueDate && new Date(t.dueDate) < now &&
+        t.status !== 'realizada' && t.status !== 'cancelada'
+      ).length,
+      today: tasks.filter(t =>
+        t.dueDate && isToday(new Date(t.dueDate))
+      ).length,
+      urgent: tasks.filter(t =>
+        t.priority === 'urgente' && t.status !== 'realizada'
+      ).length,
+      completedToday: tasks.filter(t =>
+        t.status === 'realizada' && t.updatedAt && isToday(new Date(t.updatedAt))
+      ).length,
     };
-    loadUsers();
-  }, []);
+  }, [tasks]);
 
-  // User-specific stats
+  // ── Tareas filtradas (para el tab "tareas") ──
+  const filteredTasks = useMemo(() => {
+    const now = new Date();
+    return tasks.filter(task => {
+      // Filtro por grupo seleccionado
+      if (selectedGroupId !== null && (task as any).groupId !== selectedGroupId) return false;
+      // Filtro por usuario seleccionado
+      if (selectedUserId && task.assignedTo?.id?.toString() !== selectedUserId) return false;
+
+      // Filtro de solo vencidas
+      if (showOnlyOverdue) {
+        if (!task.dueDate || new Date(task.dueDate) >= now ||
+          task.status === 'realizada' || task.status === 'cancelada') return false;
+      }
+      // Filtro de solo hoy
+      if (showOnlyToday) {
+        if (!task.dueDate || !isToday(new Date(task.dueDate))) return false;
+      }
+      // Filtro por estado
+      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+      // Filtro por prioridad
+      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+      // Búsqueda por texto
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        const matchTitle = task.title?.toLowerCase().includes(q);
+        const matchDescription = task.description?.toLowerCase().includes(q);
+        const matchAssignee = task.assignedTo?.name?.toLowerCase().includes(q);
+        if (!matchTitle && !matchDescription && !matchAssignee) return false;
+      }
+      return true;
+    });
+  }, [tasks, selectedUserId, selectedGroupId, showOnlyOverdue, showOnlyToday, statusFilter, priorityFilter, searchTerm]);
+
+  // ── User stats ──
   const userStats = useMemo(() => ({
     userTasks: tasks.filter(task =>
       task.assignedTo?.id?.toString() === user?.id ||
@@ -1007,7 +281,72 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
     )
   }), [tasks, fixedTasks, user?.id]);
 
-  // Handlers
+  // ── Usuario seleccionado (para header) ──
+  const selectedUserData = useMemo(() => {
+    if (!selectedUserId) return null;
+    return allUsers.find(u => u.id?.toString() === selectedUserId) ||
+      tasks.find(t => t.assignedTo?.id?.toString() === selectedUserId)?.assignedTo;
+  }, [selectedUserId, allUsers, tasks]);
+
+  // ─── Handlers ──────────────────────────────────────
+
+  const handleRefresh = useCallback(async () => {
+    setIsLoadingTasks(true);
+    try {
+      await fetchTasks();
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  }, [fetchTasks]);
+
+  const handleQuickTask = async () => {
+    if (!quickTaskInput.trim()) return;
+    setIsCreatingQuickTask(true);
+    try {
+      const taskData: any = {
+        title: quickTaskInput.trim(),
+        priority: 'media',
+        status: 'pendiente',
+      };
+      if (selectedUserId) {
+        taskData.assignedToId = parseInt(selectedUserId);
+      }
+      const created = await createTask(taskData);
+      const createdTitle = (created as any)?.title || taskData.title;
+      setQuickTaskInput('');
+      toast.success(`Tarea creada: ${createdTitle}`);
+    } catch (error) {
+      toast.error('No se pudo crear la tarea');
+    } finally {
+      setIsCreatingQuickTask(false);
+    }
+  };
+
+  const handleDeleteTask = async (task: Task) => {
+    const ok = await confirm({
+      title: 'Eliminar tarea',
+      description: `¿Eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    try {
+      await deleteTask(task.id);
+      toast.success(`Tarea eliminada: ${task.title}`);
+    } catch {
+      toast.error('No se pudo eliminar la tarea');
+    }
+  };
+
+  const handleStatusChange = async (task: Task) => {
+    try {
+      const newStatus = task.status === 'realizada' ? 'pendiente' : 'realizada';
+      await updateTaskAPI(task.id, { status: newStatus });
+    } catch (error) {
+      toast.error('No se pudo actualizar el estado');
+    }
+  };
+
   const handleNewTask = async (taskData: any) => {
     try {
       await createTask(taskData);
@@ -1024,7 +363,7 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
 
   const handleEditFixedTask = (task: FixedTask) => {
     if (!canEditFixedTask) {
-      toast({ title: "Sin permisos", description: "No tienes permisos para editar tareas fijas", variant: "destructive" });
+      toast.error('No tienes permisos para editar tareas fijas');
       return;
     }
     setEditingTask(task);
@@ -1033,7 +372,7 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
 
   const handleDeleteFixedTask = (taskId: string) => {
     if (!canDeleteFixedTask) {
-      toast({ title: "Sin permisos", description: "No tienes permisos para eliminar tareas fijas", variant: "destructive" });
+      toast.error('No tienes permisos para eliminar tareas fijas');
       return;
     }
     const taskToDelete = fixedTasks.find(task => task.id === taskId);
@@ -1047,11 +386,11 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
     setIsDeletingFixedTask(true);
     try {
       await deleteFixedTask(fixedTaskToDelete.id);
-      toast({ title: "Tarea eliminada", description: `La tarea "${fixedTaskToDelete.title}" ha sido eliminada exitosamente` });
+      toast.success(`Tarea "${fixedTaskToDelete.title}" eliminada`);
       setIsDeleteFixedTaskDialogOpen(false);
       setFixedTaskToDelete(null);
     } catch (error: any) {
-      toast({ title: 'Error', description: error instanceof Error && error.message ? error.message : 'No se pudo eliminar la tarea', variant: 'destructive' });
+      toast.error(error instanceof Error && error.message ? error.message : 'No se pudo eliminar la tarea');
     } finally {
       setIsDeletingFixedTask(false);
     }
@@ -1059,7 +398,7 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
 
   const handleCreateFixedTask = (frequency: string) => {
     if (!canCreateFixedTask) {
-      toast({ title: "Sin permisos", description: "No tienes permisos para crear tareas fijas", variant: "destructive" });
+      toast.error('No tienes permisos para crear tareas fijas');
       return;
     }
     setPreselectedFrequency(frequency);
@@ -1077,16 +416,16 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
     try {
       if (editingTask) {
         await updateFixedTask(editingTask.id, taskData);
-        toast({ title: "Tarea editada", description: `${taskData.title} ha sido actualizada` });
+        toast.success(`${taskData.title} ha sido actualizada`);
       } else {
         await createFixedTask(taskData);
-        toast({ title: "Tarea fija creada", description: `${taskData.title} se ha programado como tarea ${taskData.frequency}` });
+        toast.success(`${taskData.title} programada como tarea ${taskData.frequency}`);
       }
       setIsCreateTaskModalOpen(false);
       setPreselectedFrequency(undefined);
       setEditingTask(null);
     } catch (error: any) {
-      toast({ title: 'Error', description: error instanceof Error && error.message ? error.message : 'No se pudo ' + (editingTask ? 'editar' : 'crear') + ' la tarea fija', variant: 'destructive' });
+      toast.error(error instanceof Error && error.message ? error.message : 'No se pudo ' + (editingTask ? 'editar' : 'crear') + ' la tarea fija');
     }
   };
 
@@ -1114,39 +453,347 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
       const result = await response.json();
       const completedTask = fixedTasks.find(task => task.id === taskId);
       if (result.resetResult?.taskReset) {
-        toast({ title: "Tarea completada y reiniciada", description: `${completedTask?.title} se reinició automáticamente` });
+        toast.success(`${completedTask?.title} completada y reiniciada automáticamente`);
       } else {
         const nextReset = getNextResetInfo(completedTask?.frequency || 'diaria', result.task.nextExecution);
-        toast({ title: "Tarea completada", description: `${completedTask?.title} - ${nextReset.text}` });
+        toast.success(`${completedTask?.title} completada — ${nextReset.text}`);
       }
       refetchFixedTasks();
       setIsExecutionModalOpen(false);
       setExecutingTask(null);
     } catch (error: any) {
-      toast({ title: 'Error', description: error instanceof Error && error.message ? error.message : 'No se pudo completar la tarea', variant: 'destructive' });
+      toast.error(error instanceof Error && error.message ? error.message : 'No se pudo completar la tarea');
       throw error;
     }
   };
 
-  // Render content based on active tab
+  // ─── Render por tab ────────────────────────────────
+
+  const renderTareasTab = () => (
+    <div className="flex flex-col h-full gap-4 px-6 py-4">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ClipboardList className="h-6 w-6" style={{ color: userColors.chart1 }} />
+            Tareas
+          </h1>
+          <p className="text-sm text-muted-foreground">Gestión de tareas del equipo</p>
+        </div>
+        <Button onClick={() => setIsNewTaskModalOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nueva Tarea
+        </Button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Pendientes</p>
+                <p className="text-2xl font-bold">{taskStats.pending}</p>
+                {taskStats.urgent > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-medium" style={{ color: userColors.chart4 }}>{taskStats.urgent}</span> urgentes
+                  </p>
+                )}
+              </div>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.chart1}15` }}>
+                <ClipboardList className="h-5 w-5" style={{ color: userColors.chart1 }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-md transition-all"
+          style={
+            showOnlyOverdue
+              ? { borderColor: `${userColors.kpiNegative}50`, backgroundColor: `${userColors.kpiNegative}08` }
+              : taskStats.overdue > 0
+              ? { borderColor: `${userColors.kpiNegative}30` }
+              : {}
+          }
+          onClick={() => { setShowOnlyOverdue(!showOnlyOverdue); setShowOnlyToday(false); }}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Vencidas</p>
+                <p className="text-2xl font-bold" style={taskStats.overdue > 0 ? { color: userColors.kpiNegative } : {}}>{taskStats.overdue}</p>
+                {taskStats.overdue > 0
+                  ? <p className="text-xs mt-1" style={{ color: userColors.kpiNegative }}>Requieren atención</p>
+                  : <p className="text-xs text-muted-foreground mt-1">Al día</p>
+                }
+              </div>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.kpiNegative}15` }}>
+                <AlertTriangle className="h-5 w-5" style={{ color: userColors.kpiNegative }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-md transition-all"
+          style={showOnlyToday ? { borderColor: `${userColors.chart4}50`, backgroundColor: `${userColors.chart4}08` } : {}}
+          onClick={() => { setShowOnlyToday(!showOnlyToday); setShowOnlyOverdue(false); }}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Para Hoy</p>
+                <p className="text-2xl font-bold">{taskStats.today}</p>
+                <p className="text-xs text-muted-foreground mt-1">{taskStats.today === 0 ? 'Sin vencimientos' : 'tareas'}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.chart4}15` }}>
+                <CalendarDays className="h-5 w-5" style={{ color: userColors.chart4 }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Completadas Hoy</p>
+                <p className="text-2xl font-bold" style={{ color: userColors.kpiPositive }}>{taskStats.completedToday}</p>
+                <p className="text-xs text-muted-foreground mt-1">Cerradas hoy</p>
+              </div>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.kpiPositive}15` }}>
+                <CheckCircle2 className="h-5 w-5" style={{ color: userColors.kpiPositive }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">En Curso</p>
+                <p className="text-2xl font-bold" style={{ color: userColors.chart2 }}>{taskStats.inProgress}</p>
+                <p className="text-xs text-muted-foreground mt-1">En progreso</p>
+              </div>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.chart2}15` }}>
+                <RefreshCw className="h-5 w-5" style={{ color: userColors.chart2 }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Layout: Sidebars + Content */}
+      <div className="flex flex-1 gap-3 min-h-0">
+        {/* Sidebar de grupos */}
+        {currentCompany?.id && (
+          <TaskGroupsSidebar
+            groups={taskGroups}
+            selectedGroupId={selectedGroupId}
+            onGroupSelect={setSelectedGroupId}
+            companyId={currentCompany.id}
+            onGroupsChange={refetchGroups}
+          />
+        )}
+
+        {/* Sidebar de usuarios */}
+        <TasksUserSidebar
+          tasks={tasks}
+          users={allUsers}
+          selectedUserId={selectedUserId}
+          onUserSelect={setSelectedUserId}
+        />
+
+        {/* Área de contenido */}
+        <div className="flex-1 flex flex-col min-w-0 gap-4">
+          {/* Toolbar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar tareas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  aria-label="Limpiar búsqueda"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pendiente">Pendientes</SelectItem>
+                <SelectItem value="en-curso">En curso</SelectItem>
+                <SelectItem value="realizada">Realizadas</SelectItem>
+                <SelectItem value="cancelada">Canceladas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="Prioridad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="urgente">Urgente</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="media">Media</SelectItem>
+                <SelectItem value="baja">Baja</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Actualizar tareas"
+                  onClick={handleRefresh}
+                  disabled={isLoadingTasks}
+                >
+                  <RefreshCw className={cn("h-4 w-4", isLoadingTasks && "animate-spin")} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Actualizar</TooltipContent>
+            </Tooltip>
+
+            {/* View Toggle */}
+            <div className="flex border rounded-lg p-1 gap-1 ml-auto">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    aria-label="Vista Kanban"
+                    onClick={() => setViewMode('kanban')}
+                  >
+                    <Columns3 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Vista Kanban</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'lista' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    aria-label="Vista Lista"
+                    onClick={() => setViewMode('lista')}
+                  >
+                    <LayoutList className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Vista Lista</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Quick Task Input */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Plus className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={
+                  selectedUserData
+                    ? `Agregar tarea rápida para ${selectedUserData.name}...`
+                    : "Agregar tarea rápida..."
+                }
+                value={quickTaskInput}
+                onChange={(e) => setQuickTaskInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleQuickTask()}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              onClick={handleQuickTask}
+              disabled={!quickTaskInput.trim() || isCreatingQuickTask}
+              variant="secondary"
+            >
+              {isCreatingQuickTask ? "Creando..." : "Agregar"}
+            </Button>
+          </div>
+
+          {/* Selected User Header */}
+          {selectedUserData && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback
+                  style={{ backgroundColor: getAvatarColor(selectedUserData.name || '') }}
+                  className="text-white font-medium"
+                >
+                  {getInitials(selectedUserData.name || '?')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h2 className="font-semibold">{selectedUserData.name}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredTasks.length} tarea{filteredTasks.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedUserId(null)}>
+                <X className="h-4 w-4 mr-1" />
+                Limpiar
+              </Button>
+            </div>
+          )}
+
+          {/* Vista principal */}
+          <div className="flex-1 overflow-hidden">
+            {viewMode === 'kanban' && (
+              <TasksKanbanView
+                tasks={filteredTasks}
+                onSelect={(task) => setSelectedTask(task)}
+                onStatusChange={handleStatusChange}
+                onEdit={(task) => { setEditingRegularTask(task); setIsEditTaskModalOpen(true); }}
+                onDelete={handleDeleteTask}
+              />
+            )}
+            {viewMode === 'lista' && (
+              <TasksList
+                tasks={filteredTasks}
+                activeTab="todas"
+                quickFilter=""
+                includeCompleted={statusFilter === 'all' || statusFilter === 'realizada'}
+                currentUserId={user?.id}
+                selectedTaskId={selectedTask?.id}
+                onTaskSelect={(task) => setSelectedTask(task)}
+                onTaskEdit={(task) => { setEditingRegularTask(task); setIsEditTaskModalOpen(true); }}
+                canEdit={(task) => task.assignedTo?.id?.toString() === user?.id || canViewTasks}
+                canDelete={(task) => task.createdBy?.id?.toString() === user?.id || canViewTasks}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
       case 'tareas':
-        return (
-          <TasksInbox
-            tasks={tasks}
-            onNewTask={() => setIsNewTaskModalOpen(true)}
-            onEditTask={(task) => { setEditingRegularTask(task); setIsEditTaskModalOpen(true); }}
-            canViewAll={canViewTasks}
-            users={allUsers}
-            canEdit={(task) => task.assignedTo?.id?.toString() === user?.id || canViewTasks}
-            canDelete={(task) => task.createdBy?.id?.toString() === user?.id || canViewTasks}
-          />
-        );
+        return renderTareasTab();
       case 'fijas':
         return (
           <TareasFijasTab
             tasks={fixedTasks}
+            loading={fixedTasksLoading}
             onTaskClick={handleFixedTaskClick}
             onEditTask={handleEditFixedTask}
             onDeleteTask={handleDeleteFixedTask}
@@ -1154,58 +801,238 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
             onExecuteTask={handleExecuteFixedTask}
             canCreateFixedTask={canCreateFixedTask}
             onCheckResets={() => {
-              toast({ title: "Sistema Reactivo Activado", description: "Los reinicios ahora son automáticos" });
+              toast.success('Sistema reactivo activado — los reinicios son automáticos');
             }}
           />
         );
-      case 'dashboard':
+      case 'dashboard': {
+        const now = new Date();
+        const myTasks = tasks.filter(t => t.assignedTo?.id?.toString() === user?.id?.toString());
+        const myPending = myTasks.filter(t => t.status !== 'realizada' && t.status !== 'cancelada');
+        const myOverdue = myPending.filter(t => t.dueDate && new Date(t.dueDate) < now);
+        const myCompletedToday = myTasks.filter(t => t.status === 'realizada' && t.updatedAt && isToday(new Date(t.updatedAt)));
+        const myUrgent = myPending.filter(t => t.priority === 'urgente' || t.priority === 'alta');
+        const mySent = tasks.filter(t => t.createdBy?.id?.toString() === user?.id?.toString() && t.assignedTo?.id?.toString() !== user?.id?.toString());
+
+        // Mis próximas tareas: ordenadas por vencimiento (primero las vencidas, luego por fecha)
+        const myUpcoming = [...myPending].sort((a, b) => {
+          const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+          const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+          return aDate - bDate;
+        }).slice(0, 5);
+
+        const teamProgress = allUsers.map((u: any) => {
+          const uTasks = tasks.filter(t => t.assignedTo?.id?.toString() === u.id?.toString());
+          const uCompleted = uTasks.filter(t => t.status === 'realizada').length;
+          const uOverdue = uTasks.filter(t =>
+            t.status !== 'realizada' && t.status !== 'cancelada' &&
+            t.dueDate && new Date(t.dueDate) < now
+          ).length;
+          return { id: u.id, name: u.name, total: uTasks.length, completed: uCompleted, overdue: uOverdue, rate: uTasks.length > 0 ? Math.round((uCompleted / uTasks.length) * 100) : 0 };
+        }).filter((u: any) => u.total > 0).sort((a: any, b: any) => b.total - a.total);
+
+        const getPriorityStyle = (priority: string) => {
+          switch (priority) {
+            case 'urgente': return { color: userColors.kpiNegative, label: 'Urgente' };
+            case 'alta': return { color: userColors.chart4, label: 'Alta' };
+            case 'media': return { color: userColors.chart2, label: 'Media' };
+            default: return { color: userColors.kpiNeutral, label: 'Baja' };
+          }
+        };
+
         return (
-          <>
-            <TasksDashboard onNewTask={() => setIsNewTaskModalOpen(true)} />
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Mis pendientes <span className="text-muted-foreground font-normal">({userStats.userTasks.filter(t => t.assignedTo?.id?.toString() === user?.id && (t.status === "pendiente" || t.status === "en-curso")).length})</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {userStats.userTasks.filter(t => t.assignedTo?.id?.toString() === user?.id && (t.status === "pendiente" || t.status === "en-curso")).length === 0 ? (
-                  <div className="py-10 text-center">
-                    <p className="text-sm font-medium">No tenés tareas pendientes</p>
-                    <p className="text-sm text-muted-foreground mt-1">Cuando tengas tareas asignadas, van a aparecer acá.</p>
+          <div className="space-y-6 p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <ClipboardList className="h-6 w-6" style={{ color: userColors.chart1 }} />
+                  Mi Resumen
+                </h1>
+                <p className="text-sm text-muted-foreground">Resumen personal y progreso del equipo</p>
+              </div>
+              <Button onClick={() => setIsNewTaskModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Nueva Tarea
+              </Button>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Mis Pendientes</p>
+                      <p className="text-2xl font-bold">{myPending.length}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {myUrgent.length > 0
+                          ? <><span className="font-medium" style={{ color: userColors.chart4 }}>{myUrgent.length}</span> urgentes/altas</>
+                          : 'Tareas activas'}
+                      </p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.chart1}15` }}>
+                      <Clock className="h-5 w-5" style={{ color: userColors.chart1 }} />
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {userStats.userTasks.filter(t => t.assignedTo?.id?.toString() === user?.id && (t.status === "pendiente" || t.status === "en-curso")).map(task => (
-                      <TaskCard key={task.id} task={task} />
-                    ))}
+                </CardContent>
+              </Card>
+              <Card style={myOverdue.length > 0 ? { borderColor: `${userColors.kpiNegative}50`, backgroundColor: `${userColors.kpiNegative}08` } : {}}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Vencidas</p>
+                      <p className="text-2xl font-bold" style={myOverdue.length > 0 ? { color: userColors.kpiNegative } : {}}>{myOverdue.length}</p>
+                      {myOverdue.length > 0
+                        ? <p className="text-xs mt-1" style={{ color: userColors.kpiNegative }}>Requieren atención</p>
+                        : <p className="text-xs text-muted-foreground mt-1">Al día</p>}
+                    </div>
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.kpiNegative}15` }}>
+                      <AlertTriangle className="h-5 w-5" style={{ color: userColors.kpiNegative }} />
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Mis Enviadas <span className="text-muted-foreground font-normal">({userStats.userTasks.filter(t => t.createdBy?.id?.toString() === user?.id).length})</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {userStats.userTasks.filter(t => t.createdBy?.id?.toString() === user?.id).length === 0 ? (
-                  <div className="py-10 text-center">
-                    <p className="text-sm font-medium">No tenés tareas enviadas</p>
-                    <p className="text-sm text-muted-foreground mt-1">Cuando crees tareas, van a aparecer acá.</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Completadas Hoy</p>
+                      <p className="text-2xl font-bold" style={{ color: userColors.kpiPositive }}>{myCompletedToday.length}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Cerradas hoy</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.kpiPositive}15` }}>
+                      <CheckCircle2 className="h-5 w-5" style={{ color: userColors.kpiPositive }} />
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {userStats.userTasks.filter(t => t.createdBy?.id?.toString() === user?.id).map(task => (
-                      <TaskCard key={task.id} task={task} />
-                    ))}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Enviadas por mí</p>
+                      <p className="text-2xl font-bold" style={{ color: userColors.chart2 }}>{mySent.length}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Creadas y asignadas a otros</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${userColors.chart2}15` }}>
+                      <Send className="h-5 w-5" style={{ color: userColors.chart2 }} />
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mis tareas + Team Progress */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Mis próximas tareas */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" style={{ color: userColors.chart1 }} />
+                    Mis próximas tareas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingTasks ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-12 bg-muted animate-pulse rounded-lg" />
+                      ))}
+                    </div>
+                  ) : myUpcoming.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2" style={{ color: userColors.kpiPositive }} />
+                      <p className="text-sm font-medium">Sin tareas pendientes</p>
+                      <p className="text-xs text-muted-foreground mt-1">¡Estás al día!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {myUpcoming.map(task => {
+                        const isOverdue = task.dueDate && new Date(task.dueDate) < now;
+                        const pStyle = getPriorityStyle(task.priority || 'baja');
+                        return (
+                          <div
+                            key={task.id}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                            onClick={() => setSelectedTask(task)}
+                          >
+                            <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: pStyle.color }} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{task.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {task.dueDate
+                                  ? <span style={isOverdue ? { color: userColors.kpiNegative } : {}}>
+                                      {isOverdue ? '⚠ ' : ''}{new Date(task.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                    </span>
+                                  : 'Sin fecha'}
+                                {' · '}
+                                <span style={{ color: pStyle.color }}>{pStyle.label}</span>
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Progreso del equipo */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4" style={{ color: userColors.chart2 }} />
+                    Progreso del equipo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {teamProgress.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">No hay tareas asignadas al equipo</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {teamProgress.map((u: any) => (
+                        <div key={u.id} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                <AvatarFallback style={{ backgroundColor: getAvatarColor(u.name || '') }} className="text-white text-xs font-medium">
+                                  {getInitials(u.name || '?')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium">{u.name}</span>
+                              {u.overdue > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${userColors.kpiNegative}15`, color: userColors.kpiNegative }}>
+                                  {u.overdue} venc.
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-muted-foreground">{u.completed}/{u.total}</span>
+                              <span className="text-sm font-semibold w-10 text-right" style={{ color: u.rate >= 70 ? userColors.kpiPositive : u.rate >= 40 ? userColors.chart4 : userColors.kpiNegative }}>
+                                {u.rate}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                backgroundColor: u.rate >= 70 ? userColors.kpiPositive : u.rate >= 40 ? userColors.chart4 : userColors.kpiNegative,
+                                width: `${u.rate}%`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         );
+      }
       case 'historial':
         return <HistorialTab />;
       case 'metricas':
@@ -1216,14 +1043,18 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
   };
 
   return (
-    <>
+    <TooltipProvider>
       {renderContent()}
+
+      {/* Task Detail Modal (Zustand selectedTask) */}
+      <TaskDetailModal />
 
       {/* Modals */}
       <NewTaskModal
         isOpen={isNewTaskModalOpen}
         onClose={() => setIsNewTaskModalOpen(false)}
         onTaskCreated={handleNewTask}
+        defaultGroupId={selectedGroupId}
       />
 
       {editingRegularTask && (
@@ -1277,6 +1108,6 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }

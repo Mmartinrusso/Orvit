@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
 
@@ -32,7 +33,7 @@ export function OrdenDetailTotales({ orden }: OrdenDetailTotalesProps) {
 
           {/* Descuento Global */}
           {Number(orden.descuentoGlobal || 0) > 0 && (
-            <div className="flex justify-between text-sm text-amber-600">
+            <div className="flex justify-between text-sm text-warning-muted-foreground">
               <span>Descuento Global ({orden.descuentoGlobal}%)</span>
               <span className="font-mono">- {formatMoney(orden.descuentoMonto || 0)}</span>
             </div>
@@ -72,7 +73,7 @@ export function OrdenDetailTotales({ orden }: OrdenDetailTotalesProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span>Estado</span>
-                <span className={`font-semibold ${orden.comisionPagada ? 'text-green-600' : 'text-amber-600'}`}>
+                <span className={cn('font-semibold', orden.comisionPagada ? 'text-success' : 'text-warning-muted-foreground')}>
                   {orden.comisionPagada ? '✓ Pagada' : 'Pendiente'}
                 </span>
               </div>
@@ -89,13 +90,13 @@ export function OrdenDetailTotales({ orden }: OrdenDetailTotalesProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span>Margen Bruto</span>
-                <span className="font-mono font-semibold text-green-600">
+                <span className="font-mono font-semibold text-success">
                   {formatMoney(orden.margenBruto || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Margen %</span>
-                <span className={`font-bold ${Number(orden.margenPorcentaje) < 15 ? 'text-red-600' : 'text-green-600'}`}>
+                <span className={cn('font-bold', Number(orden.margenPorcentaje) < 15 ? 'text-destructive' : 'text-success')}>
                   {Number(orden.margenPorcentaje).toFixed(2)}%
                 </span>
               </div>

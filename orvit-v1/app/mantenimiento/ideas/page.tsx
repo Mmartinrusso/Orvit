@@ -59,6 +59,7 @@ import {
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // Types
 interface Idea {
@@ -104,35 +105,36 @@ interface IdeaStats {
 
 // Category labels and icons
 const CATEGORY_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  SOLUCION_FALLA: { label: 'Solución a Falla', icon: Wrench, color: 'bg-red-500' },
-  MEJORA_PROCESO: { label: 'Mejora de Proceso', icon: TrendingUp, color: 'bg-blue-500' },
+  SOLUCION_FALLA: { label: 'Solución a Falla', icon: Wrench, color: 'bg-destructive' },
+  MEJORA_PROCESO: { label: 'Mejora de Proceso', icon: TrendingUp, color: 'bg-info' },
   MEJORA_EQUIPO: { label: 'Mejora de Equipo', icon: Sparkles, color: 'bg-purple-500' },
-  SEGURIDAD: { label: 'Seguridad', icon: Shield, color: 'bg-orange-500' },
-  AHORRO_COSTOS: { label: 'Ahorro de Costos', icon: DollarSign, color: 'bg-green-500' },
+  SEGURIDAD: { label: 'Seguridad', icon: Shield, color: 'bg-warning' },
+  AHORRO_COSTOS: { label: 'Ahorro de Costos', icon: DollarSign, color: 'bg-success' },
   CALIDAD: { label: 'Calidad', icon: CheckCircle, color: 'bg-cyan-500' },
-  OTRO: { label: 'Otro', icon: Lightbulb, color: 'bg-gray-500' },
+  OTRO: { label: 'Otro', icon: Lightbulb, color: 'bg-muted-foreground' },
 };
 
 // Status labels and colors
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  NEW: { label: 'Nueva', color: 'bg-blue-500' },
-  UNDER_REVIEW: { label: 'En Revisión', color: 'bg-yellow-500' },
-  APPROVED: { label: 'Aprobada', color: 'bg-green-500' },
+  NEW: { label: 'Nueva', color: 'bg-info' },
+  UNDER_REVIEW: { label: 'En Revisión', color: 'bg-warning' },
+  APPROVED: { label: 'Aprobada', color: 'bg-success' },
   IN_PROGRESS: { label: 'En Progreso', color: 'bg-purple-500' },
   IMPLEMENTED: { label: 'Implementada', color: 'bg-emerald-600' },
-  REJECTED: { label: 'Rechazada', color: 'bg-red-500' },
-  ARCHIVED: { label: 'Archivada', color: 'bg-gray-500' },
+  REJECTED: { label: 'Rechazada', color: 'bg-destructive' },
+  ARCHIVED: { label: 'Archivada', color: 'bg-muted-foreground' },
 };
 
 // Priority colors
 const PRIORITY_COLORS: Record<string, string> = {
-  LOW: 'text-gray-500',
-  MEDIUM: 'text-yellow-500',
-  HIGH: 'text-orange-500',
-  CRITICAL: 'text-red-500',
+  LOW: 'text-muted-foreground',
+  MEDIUM: 'text-warning-muted-foreground',
+  HIGH: 'text-warning-muted-foreground',
+  CRITICAL: 'text-destructive',
 };
 
 export default function IdeasPage() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
@@ -202,7 +204,7 @@ export default function IdeasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Lightbulb className="h-8 w-8 text-yellow-500" />
+            <Lightbulb className="h-8 w-8 text-warning-muted-foreground" />
             Libro de Ideas
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -317,8 +319,14 @@ export default function IdeasPage() {
                 setSelectedIdea(idea);
                 setIsDetailDialogOpen(true);
               }}
-              onDelete={() => {
-                if (confirm('¿Eliminar esta idea?')) {
+              onDelete={async () => {
+                const ok = await confirm({
+                  title: 'Eliminar idea',
+                  description: '¿Eliminar esta idea?',
+                  confirmText: 'Eliminar',
+                  variant: 'destructive',
+                });
+                if (ok) {
                   deleteMutation.mutate(idea.id);
                 }
               }}
@@ -403,7 +411,7 @@ function IdeaCard({
                 Ver Detalle
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-red-600"
+                className="text-destructive"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -428,7 +436,7 @@ function IdeaCard({
             <Button
               variant="ghost"
               size="sm"
-              className={idea.hasVoted ? 'text-blue-500' : ''}
+              className={idea.hasVoted ? 'text-info-muted-foreground' : ''}
               onClick={(e) => { e.stopPropagation(); onVote(); }}
             >
               <ThumbsUp className={`h-4 w-4 mr-1 ${idea.hasVoted ? 'fill-current' : ''}`} />
@@ -503,7 +511,7 @@ function CreateIdeaDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
+            <Lightbulb className="h-5 w-5 text-warning-muted-foreground" />
             Nueva Idea
           </DialogTitle>
           <DialogDescription>
@@ -705,7 +713,7 @@ function IdeaDetailDialog({
           )}
 
           {idea.implementationNotes && (
-            <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+            <div className="p-3 bg-success-muted rounded-lg">
               <h4 className="font-medium mb-1">Notas de Implementación</h4>
               <p className="text-sm text-muted-foreground">{idea.implementationNotes}</p>
               {idea.implementedBy && (

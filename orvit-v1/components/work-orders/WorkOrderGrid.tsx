@@ -45,6 +45,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -65,7 +66,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { Separator } from '@/components/ui/separator';
-import { formatHours } from '@/lib/utils';
+import { formatHours, cn } from '@/lib/utils';
 
 interface WorkOrderGridProps {
   workOrders: WorkOrder[];
@@ -107,15 +108,15 @@ export default function WorkOrderGrid({
   const getStatusBadge = (status: WorkOrderStatus) => {
     switch (status) {
       case WorkOrderStatus.PENDING:
-        return <Badge variant="outline" className="border-yellow-300 text-yellow-700 bg-yellow-50">Pendiente</Badge>;
+        return <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground bg-warning-muted">Pendiente</Badge>;
       case WorkOrderStatus.IN_PROGRESS:
-        return <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">En Proceso</Badge>;
+        return <Badge variant="outline" className="border-info-muted text-info-muted-foreground bg-info-muted">En Proceso</Badge>;
       case WorkOrderStatus.COMPLETED:
-        return <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Completada</Badge>;
+        return <Badge variant="outline" className="border-success-muted text-success bg-success-muted">Completada</Badge>;
       case WorkOrderStatus.CANCELLED:
-        return <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50">Cancelada</Badge>;
+        return <Badge variant="outline" className="border-destructive/20 text-destructive bg-destructive/10">Cancelada</Badge>;
       case WorkOrderStatus.ON_HOLD:
-        return <Badge variant="outline" className="border-gray-300 text-gray-700 bg-gray-50">En Espera</Badge>;
+        return <Badge variant="outline" className="border-border text-muted-foreground bg-muted">En Espera</Badge>;
       default:
         return null;
     }
@@ -124,13 +125,13 @@ export default function WorkOrderGrid({
   const getPriorityBadge = (priority: Priority) => {
     switch (priority) {
       case Priority.URGENT:
-        return <Badge className="bg-red-500 text-white border-0">Urgente</Badge>;
+        return <Badge className="bg-destructive text-destructive-foreground border-0">Urgente</Badge>;
       case Priority.HIGH:
-        return <Badge className="bg-orange-500 text-white border-0">Alta</Badge>;
+        return <Badge className="bg-warning text-warning-foreground border-0">Alta</Badge>;
       case Priority.MEDIUM:
-        return <Badge className="bg-yellow-500 text-white border-0">Media</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground border-0">Media</Badge>;
       case Priority.LOW:
-        return <Badge className="bg-green-500 text-white border-0">Baja</Badge>;
+        return <Badge className="bg-success-muted text-success border-0">Baja</Badge>;
       default:
         return null;
     }
@@ -139,15 +140,15 @@ export default function WorkOrderGrid({
   const getMaintenanceTypeIcon = (type: MaintenanceType) => {
     switch (type) {
       case MaintenanceType.PREVENTIVE:
-        return <Shield className="h-5 w-5 text-green-600" />;
+        return <Shield className="h-5 w-5 text-success" />;
       case MaintenanceType.CORRECTIVE:
-        return <Wrench className="h-5 w-5 text-orange-600" />;
+        return <Wrench className="h-5 w-5 text-warning-muted-foreground" />;
       case MaintenanceType.PREDICTIVE:
-        return <Activity className="h-5 w-5 text-blue-600" />;
+        return <Activity className="h-5 w-5 text-info-muted-foreground" />;
       case MaintenanceType.EMERGENCY:
-        return <Zap className="h-5 w-5 text-red-600" />;
+        return <Zap className="h-5 w-5 text-destructive" />;
       default:
-        return <Settings className="h-5 w-5 text-gray-600" />;
+        return <Settings className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -214,13 +215,13 @@ export default function WorkOrderGrid({
           label: 'Iniciar',
           icon: Play,
           status: WorkOrderStatus.IN_PROGRESS,
-          color: 'bg-blue-500 hover:bg-blue-600 text-white'
+          color: 'bg-info hover:bg-info/90 text-info-foreground'
         });
         actions.push({
           label: 'En Espera',
           icon: Pause,
           status: WorkOrderStatus.ON_HOLD,
-          color: 'bg-gray-500 hover:bg-gray-600 text-white'
+          color: 'bg-muted-foreground hover:bg-muted-foreground/90 text-background'
         });
         break;
 
@@ -229,13 +230,13 @@ export default function WorkOrderGrid({
           label: 'Completar',
           icon: CheckCircle,
           status: WorkOrderStatus.COMPLETED,
-          color: 'bg-green-500 hover:bg-green-600 text-white'
+          color: 'bg-success hover:bg-success/90 text-success-foreground'
         });
         actions.push({
           label: 'Pausar',
           icon: Pause,
           status: WorkOrderStatus.ON_HOLD,
-          color: 'bg-gray-500 hover:bg-gray-600 text-white'
+          color: 'bg-muted-foreground hover:bg-muted-foreground/90 text-background'
         });
         break;
 
@@ -244,13 +245,13 @@ export default function WorkOrderGrid({
           label: 'Reanudar',
           icon: Play,
           status: WorkOrderStatus.IN_PROGRESS,
-          color: 'bg-blue-500 hover:bg-blue-600 text-white'
+          color: 'bg-info hover:bg-info/90 text-info-foreground'
         });
         actions.push({
           label: 'Cancelar',
           icon: X,
           status: WorkOrderStatus.CANCELLED,
-          color: 'bg-red-500 hover:bg-red-600 text-white'
+          color: 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
         });
         break;
 
@@ -292,17 +293,17 @@ export default function WorkOrderGrid({
       return {
         name: workOrder.assignedTo.name,
         type: 'user',
-        color: 'text-blue-600',
+        color: 'text-info-muted-foreground',
         icon: User
       };
     }
-    
+
     // Verificar si está asignado a un operario
     if (workOrder.assignedWorker) {
       return {
         name: workOrder.assignedWorker.name,
         type: 'worker',
-        color: 'text-green-600',
+        color: 'text-success',
         icon: User
       };
     }
@@ -386,7 +387,7 @@ export default function WorkOrderGrid({
                       {assignedInfo ? (
                         <div className="flex items-center gap-2">
                           <assignedInfo.icon className="h-4 w-4 text-muted-foreground" />
-                          <span className={`font-medium ${assignedInfo.color}`}>
+                          <span className={cn('font-medium', assignedInfo.color)}>
                             {assignedInfo.name}
                           </span>
                           <Badge variant="outline" className="text-xs">
@@ -403,7 +404,7 @@ export default function WorkOrderGrid({
                     </TableCell>
                     
                     <TableCell>
-                      <span className={isOverdue(workOrder) ? "text-red-600 font-medium" : ""}>
+                      <span className={isOverdue(workOrder) ? "text-destructive font-medium" : ""}>
                         {formatDate(workOrder.scheduledDate)}
                       </span>
                     </TableCell>
@@ -463,7 +464,7 @@ export default function WorkOrderGrid({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 action-button"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 action-button"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -480,7 +481,7 @@ export default function WorkOrderGrid({
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction 
                                   onClick={() => handleDelete(workOrder)}
-                                  className="bg-red-600 hover:bg-red-700"
+                                  className="bg-destructive hover:bg-destructive/90"
                                 >
                                   Eliminar
                                 </AlertDialogAction>
@@ -501,7 +502,7 @@ export default function WorkOrderGrid({
 
         {/* Modal de detalles completos */}
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-          <DialogContent size="lg" className="max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[calc(100vh-4rem)]">
+          <DialogContent size="lg">
             {selectedWorkOrder && (
               <>
                 <DialogHeader>
@@ -530,6 +531,7 @@ export default function WorkOrderGrid({
                   </DialogDescription>
                 </DialogHeader>
 
+                <DialogBody>
                 <div className="space-y-6">
                   {/* Descripción */}
                   {selectedWorkOrder.description && (
@@ -551,7 +553,7 @@ export default function WorkOrderGrid({
                           <Calendar className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <div className="text-sm text-muted-foreground">Fecha programada</div>
-                            <div className={`font-medium ${isOverdue(selectedWorkOrder) ? 'text-red-600' : ''}`}>
+                            <div className={cn('font-medium', isOverdue(selectedWorkOrder) && 'text-destructive')}>
                               {formatDate(selectedWorkOrder.scheduledDate)}
                             </div>
                           </div>
@@ -586,7 +588,7 @@ export default function WorkOrderGrid({
                             <User className="h-5 w-5 text-muted-foreground" />
                             <div>
                               <div className="text-sm text-muted-foreground">Asignado a</div>
-                              <div className={`font-medium ${getAssignedInfo(selectedWorkOrder)?.color}`}>
+                              <div className={cn('font-medium', getAssignedInfo(selectedWorkOrder)?.color)}>
                                 {getAssignedInfo(selectedWorkOrder)?.name}
                               </div>
                               <Badge variant="outline" className="text-xs mt-1">
@@ -642,6 +644,7 @@ export default function WorkOrderGrid({
                     </div>
                   )}
                 </div>
+                </DialogBody>
               </>
             )}
           </DialogContent>
@@ -700,7 +703,7 @@ export default function WorkOrderGrid({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 action-button opacity-60 hover:opacity-100"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 action-button opacity-60 hover:opacity-100"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -717,7 +720,7 @@ export default function WorkOrderGrid({
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => handleDelete(workOrder)}
-                              className="bg-red-600 hover:bg-red-700"
+                              className="bg-destructive hover:bg-destructive/90"
                             >
                               Eliminar
                             </AlertDialogAction>
@@ -747,7 +750,7 @@ export default function WorkOrderGrid({
                   
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className={isOverdue(workOrder) ? "text-red-600 font-medium" : "text-foreground"}>
+                    <span className={isOverdue(workOrder) ? "text-destructive font-medium" : "text-foreground"}>
                       {formatDate(workOrder.scheduledDate)}
                     </span>
                   </div>
@@ -755,7 +758,7 @@ export default function WorkOrderGrid({
                   {assignedInfo && (
                     <div className="flex items-center gap-2 text-sm">
                       <assignedInfo.icon className="h-4 w-4 text-muted-foreground" />
-                      <span className={`font-medium ${assignedInfo.color}`}>
+                      <span className={cn('font-medium', assignedInfo.color)}>
                         {assignedInfo.name}
                       </span>
                       <Badge variant="outline" className="text-xs">
@@ -805,7 +808,7 @@ export default function WorkOrderGrid({
                           <Button
                             key={actionIndex}
                             size="sm"
-                            className={`action-button ${action.color}`}
+                            className={cn('action-button', action.color)}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStatusChange(workOrder, action.status);
@@ -827,7 +830,7 @@ export default function WorkOrderGrid({
 
       {/* Modal de detalles completos para grid view */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent size="lg" className="max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[calc(100vh-4rem)]">
+        <DialogContent size="lg">
           {selectedWorkOrder && (
             <>
               <DialogHeader>
@@ -856,6 +859,7 @@ export default function WorkOrderGrid({
                 </DialogDescription>
               </DialogHeader>
 
+              <DialogBody>
               <div className="space-y-6">
                 {/* Descripción */}
                 {selectedWorkOrder.description && (
@@ -929,7 +933,7 @@ export default function WorkOrderGrid({
                             <div className="flex items-center gap-2">
                               <assignedInfo.icon className="h-5 w-5 text-muted-foreground" />
                               <div>
-                                <div className={`font-medium ${assignedInfo.color}`}>
+                                <div className={cn('font-medium', assignedInfo.color)}>
                                   {assignedInfo.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
@@ -965,7 +969,7 @@ export default function WorkOrderGrid({
                          <Calendar className="h-4 w-4 text-muted-foreground" />
                          <span className="text-sm font-medium">Programada</span>
                        </div>
-                       <div className={isOverdue(selectedWorkOrder) ? "text-red-600 font-medium" : ""}>
+                       <div className={isOverdue(selectedWorkOrder) ? "text-destructive font-medium" : ""}>
                          {selectedWorkOrder.scheduledDate ? (
                            <>
                              {new Date(selectedWorkOrder.scheduledDate).toLocaleDateString('es-ES', {
@@ -1095,6 +1099,7 @@ export default function WorkOrderGrid({
                   </>
                 )}
               </div>
+              </DialogBody>
             </>
           )}
         </DialogContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
+import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -284,11 +285,11 @@ export default function PlantZoneDialog({
                         <button
                           key={color.value}
                           type="button"
-                          className={`w-8 h-8 rounded-full border-2 transition-transform ${
+                          className={cn('w-8 h-8 rounded-full border-2 transition-transform',
                             field.value === color.value
                               ? 'border-foreground scale-110'
                               : 'border-transparent hover:scale-105'
-                          }`}
+                          )}
                           style={{ backgroundColor: color.value }}
                           onClick={() => field.onChange(color.value)}
                           title={color.label}

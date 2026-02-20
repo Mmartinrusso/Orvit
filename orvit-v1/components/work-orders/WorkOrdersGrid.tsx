@@ -40,6 +40,7 @@ import {
   relativeTime,
   getInitials,
   getDueText,
+  daysUntilDue,
   stripHtml,
 } from './workOrders.helpers';
 
@@ -222,7 +223,7 @@ export function WorkOrdersGrid({
                 )}
                 <span className={cn(
                   'truncate',
-                  !order.assignedToId && 'text-amber-600 dark:text-amber-400 font-medium'
+                  !order.assignedToId && 'text-warning-muted-foreground font-medium'
                 )}>
                   {order.assignedTo?.name || 'Sin asignar'}
                 </span>
@@ -233,20 +234,33 @@ export function WorkOrdersGrid({
                 {stripHtml(order.description)}
               </p>
 
-              {/* Alerta de vencimiento */}
-              {dueText && orderIsOverdue && (
-                <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 mb-3 bg-rose-500/5 rounded-lg px-2 py-1.5">
-                  <Clock className="h-3 w-3" />
-                  <span className="font-medium">{dueText}</span>
-                </div>
-              )}
+              {/* Badge SLA — visible para vencidas y próximas 7 días */}
+              {(() => {
+                if (!dueText) return null;
+                const days = daysUntilDue(order.scheduledDate);
+                if (days === null || days > 7) return null;
+                const cls =
+                  days < 0
+                    ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                    : days === 0
+                    ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted'
+                    : days <= 2
+                    ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted'
+                    : 'bg-warning-muted text-warning-muted-foreground border border-warning-muted';
+                return (
+                  <div className={cn('flex items-center gap-1.5 text-xs mb-3 rounded-lg px-2 py-1.5', cls)}>
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span className="font-medium">{dueText}</span>
+                  </div>
+                );
+              })()}
 
               {/* Timing: Fechas y duración según el estado */}
               {order.status === WorkOrderStatus.COMPLETED ? (
                 <div className="flex flex-col gap-1.5 text-xs mb-3">
                   {/* Info de cierre: Diagnóstico y Solución */}
                   {((order as any).diagnosisNotes || (order as any).workPerformedNotes) && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-md p-2 space-y-1">
+                    <div className="bg-success-muted rounded-md p-2 space-y-1">
                       {(order as any).diagnosisNotes && (
                         <p className="text-muted-foreground">
                           <span className="font-medium text-foreground">Diagnóstico:</span>{' '}
@@ -284,10 +298,10 @@ export function WorkOrdersGrid({
                     )}
                     {order.completedDate && (
                       <div className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-600" />
+                        <CheckCircle2 className="h-3 w-3 shrink-0 text-success" />
                         <span>Realizada: {formatDateShortWithTime(order.completedDate)}</span>
                         {order.actualHours && (
-                          <span className="ml-1 text-emerald-600 font-medium">
+                          <span className="ml-1 text-success font-medium">
                             ({formatHours(order.actualHours)})
                           </span>
                         )}
@@ -305,7 +319,7 @@ export function WorkOrdersGrid({
               ) : order.scheduledDate && order.status === WorkOrderStatus.PENDING ? (
                 <div className={cn(
                   'flex items-center gap-1.5 text-xs mb-3 flex-wrap',
-                  orderIsOverdue ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-muted-foreground'
+                  orderIsOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'
                 )}>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 shrink-0" />

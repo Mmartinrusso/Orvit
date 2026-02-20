@@ -16,25 +16,15 @@ const BUCKET = process.env.AWS_S3_BUCKET!;
 // Función para subir archivo a S3
 async function uploadFileToS3(file: File, entityType: string, entityId: string, fileType: string): Promise<string> {
   try {
-    console.log('🔧 Iniciando upload a S3:', {
-      fileName: file.name,
-      fileSize: file.size,
-      entityType,
-      entityId,
-      fileType
-    });
     
     const timestamp = Date.now();
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const fileName = `${entityType}/${fileType}/${entityId}/${timestamp}-${uuidv4()}.${fileExt}`;
-    
-    console.log('📁 Nombre del archivo en S3:', fileName);
-    
+
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     const buffer = Buffer.from(uint8Array);
 
-    console.log('📤 Enviando a S3...');
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
       Key: fileName,
@@ -51,7 +41,6 @@ async function uploadFileToS3(file: File, entityType: string, entityId: string, 
     
     const region = process.env.AWS_REGION;
     const url = `https://${BUCKET}.s3.${region}.amazonaws.com/${fileName}`;
-    console.log('✅ Upload exitoso, URL:', url);
     return url;
   } catch (error) {
     console.error('❌ Error en uploadFileToS3:', error);
@@ -73,8 +62,6 @@ export async function GET(
         { status: 400 }
       );
     }
-
-    console.log(`🔍 Obteniendo mantenimiento con ID: ${maintenanceId}`);
 
     // Buscar en work orders (mantenimientos correctivos)
     const workOrder = await prisma.workOrder.findUnique({
@@ -150,8 +137,6 @@ export async function PUT(
       );
     }
 
-    console.log(`✏️ Actualizando mantenimiento con ID: ${maintenanceId}`);
-
     // Verificar si es FormData o JSON
     const contentType = request.headers.get('content-type') || '';
     let body: any;
@@ -160,7 +145,6 @@ export async function PUT(
     if (contentType.includes('multipart/form-data')) {
       // Manejar FormData
       const formData = await request.formData();
-      console.log('📋 FormData recibido para actualización');
       
       // Extraer datos del formulario
       body = {
@@ -179,14 +163,11 @@ export async function PUT(
       const files = formData.getAll('instructivesFiles') as File[];
       instructivesFiles = files.filter(file => file && file.size > 0);
       
-      console.log(`📎 Archivos de instructivos recibidos: ${instructivesFiles.length}`);
       instructivesFiles.forEach((file, index) => {
-        console.log(`📎 Archivo ${index + 1}: ${file.name} (${file.size} bytes)`);
       });
     } else {
       // Manejar JSON (fallback)
       body = await request.json();
-      console.log('📋 JSON recibido para actualización');
     }
 
     // Buscar el mantenimiento primero para determinar su tipo
@@ -227,7 +208,6 @@ export async function PUT(
 
       // Procesar archivos de instructivos si hay alguno
       if (instructivesFiles.length > 0) {
-        console.log(`📎 Procesando ${instructivesFiles.length} archivos de instructivos para WorkOrder ${maintenanceId}`);
         
         for (const file of instructivesFiles) {
           try {
@@ -248,7 +228,6 @@ export async function PUT(
               }
             });
             
-            console.log(`✅ Instructivo creado para WorkOrder ${maintenanceId}: ${file.name}`);
           } catch (error) {
             console.error(`❌ Error procesando instructivo ${file.name}:`, error);
           }
@@ -333,8 +312,6 @@ export async function DELETE(
       );
     }
 
-    console.log(`🗑️ Eliminando mantenimiento con ID: ${maintenanceId}`);
-
     // Buscar el mantenimiento primero para determinar su tipo
     const workOrder = await prisma.workOrder.findUnique({
       where: { id: maintenanceId }
@@ -345,8 +322,6 @@ export async function DELETE(
       const deletedWorkOrder = await prisma.workOrder.delete({
         where: { id: maintenanceId }
       });
-
-      console.log(`✅ Mantenimiento correctivo eliminado: ${deletedWorkOrder.title}`);
 
       return NextResponse.json({
         success: true,
@@ -377,8 +352,6 @@ export async function DELETE(
         }
       });
 
-      console.log(`🗑️ Eliminando ${instances.length} instancias del template ${templateId}`);
-
       for (const instance of instances) {
         await prisma.document.delete({
           where: { id: instance.id }
@@ -393,8 +366,6 @@ export async function DELETE(
         }
       });
 
-      console.log(`🗑️ Eliminando ${instructives.length} instructivos del template ${templateId}`);
-
       for (const instructive of instructives) {
         await prisma.document.delete({
           where: { id: instructive.id }
@@ -405,8 +376,6 @@ export async function DELETE(
       const deletedDocument = await prisma.document.delete({
         where: { id: maintenanceId }
       });
-
-      console.log(`✅ Mantenimiento preventivo eliminado: ${deletedDocument.originalName}`);
 
       return NextResponse.json({
         success: true,

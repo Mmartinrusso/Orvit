@@ -577,7 +577,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
             <CardTitle>Archivos del Producto</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-800 mb-4">
+            <div className="bg-success-muted border border-success-muted rounded-lg p-2 text-xs text-success mb-4">
               Debug: Sección de archivos renderizada - productId: {product?.id || 'temp'}, companyId: {product?.companyId || 1}
             </div>
             <ProductFileUpload

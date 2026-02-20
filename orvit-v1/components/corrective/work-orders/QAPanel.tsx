@@ -28,12 +28,12 @@ interface QAPanelProps {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  NOT_REQUIRED: { label: 'No requerido', color: 'bg-gray-100 text-gray-800', icon: <CheckCircle className="h-4 w-4" /> },
-  PENDING: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-4 w-4" /> },
-  IN_REVIEW: { label: 'En revisión', color: 'bg-blue-100 text-blue-800', icon: <FileCheck className="h-4 w-4" /> },
-  APPROVED: { label: 'Aprobado', color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-4 w-4" /> },
-  REJECTED: { label: 'Rechazado', color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" /> },
-  RETURNED_TO_PRODUCTION: { label: 'Retorno confirmado', color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-4 w-4" /> },
+  NOT_REQUIRED: { label: 'No requerido', color: 'bg-muted text-foreground', icon: <CheckCircle className="h-4 w-4" /> },
+  PENDING: { label: 'Pendiente', color: 'bg-warning-muted text-warning-muted-foreground', icon: <Clock className="h-4 w-4" /> },
+  IN_REVIEW: { label: 'En revisión', color: 'bg-info-muted text-info-muted-foreground', icon: <FileCheck className="h-4 w-4" /> },
+  APPROVED: { label: 'Aprobado', color: 'bg-success-muted text-success', icon: <CheckCircle className="h-4 w-4" /> },
+  REJECTED: { label: 'Rechazado', color: 'bg-destructive/10 text-destructive', icon: <XCircle className="h-4 w-4" /> },
+  RETURNED_TO_PRODUCTION: { label: 'Retorno confirmado', color: 'bg-success-muted text-success', icon: <CheckCircle className="h-4 w-4" /> },
 };
 
 const evidenceLevelLabels: Record<string, string> = {
@@ -173,7 +173,7 @@ export function QAPanel({ workOrderId, className }: QAPanelProps) {
   if (error) {
     return (
       <Card className={cn('p-4', className)}>
-        <div className="flex items-center gap-2 text-red-500">
+        <div className="flex items-center gap-2 text-destructive">
           <AlertCircle className="h-5 w-5" />
           <span>Error al cargar QA</span>
         </div>
@@ -202,23 +202,23 @@ export function QAPanel({ workOrderId, className }: QAPanelProps) {
             <div className="space-y-4">
               <div className={cn(
                 'p-3 rounded-lg',
-                qaRequirement.required ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
+                qaRequirement.required ? 'bg-warning-muted border border-warning-muted' : 'bg-muted'
               )}>
                 {qaRequirement.required ? (
                   <>
-                    <div className="flex items-center gap-2 font-medium text-yellow-800">
+                    <div className="flex items-center gap-2 font-medium text-warning-muted-foreground">
                       <AlertTriangle className="h-4 w-4" />
                       QA Requerido
                     </div>
-                    <p className="text-sm text-yellow-700 mt-1">
+                    <p className="text-sm text-warning-muted-foreground mt-1">
                       {reasonLabels[qaRequirement.reason] || qaRequirement.reason}
                     </p>
-                    <p className="text-xs text-yellow-600 mt-2">
+                    <p className="text-xs text-warning-muted-foreground mt-2">
                       Nivel de evidencia: {evidenceLevelLabels[qaRequirement.evidenceLevel]}
                     </p>
                   </>
                 ) : (
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <CheckCircle className="h-4 w-4" />
                     QA no requerido para esta orden
                   </div>
@@ -263,7 +263,7 @@ export function QAPanel({ workOrderId, className }: QAPanelProps) {
       <CardContent className="space-y-4">
         {/* Info de requerimiento */}
         {qualityAssurance.isRequired && qualityAssurance.requiredReason && (
-          <div className="p-2 bg-yellow-50 rounded text-sm">
+          <div className="p-2 bg-warning-muted rounded text-sm">
             <span className="font-medium">Motivo: </span>
             {reasonLabels[qualityAssurance.requiredReason] || qualityAssurance.requiredReason}
           </div>
@@ -309,7 +309,7 @@ export function QAPanel({ workOrderId, className }: QAPanelProps) {
 
         {/* Confirmar retorno a producción */}
         {isEditable && (
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
             <Checkbox
               id="confirmReturn"
               checked={confirmReturn}
@@ -323,7 +323,7 @@ export function QAPanel({ workOrderId, className }: QAPanelProps) {
 
         {/* Verificador (si ya fue aprobado) */}
         {qualityAssurance.verifiedBy && (
-          <div className="p-2 bg-green-50 rounded text-sm">
+          <div className="p-2 bg-success-muted rounded text-sm">
             <span className="font-medium">Verificado por: </span>
             {qualityAssurance.verifiedBy.name}
             {qualityAssurance.verifiedAt && (

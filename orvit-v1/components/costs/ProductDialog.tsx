@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CreateProductSchema, type CreateProductInput } from '@/lib/validations/costs';
@@ -353,12 +354,12 @@ export function ProductDialog({ children, onProductCreated }: ProductDialogProps
                   </div>
                   <div>
                     <span className="text-muted-foreground">Estado:</span>
-                    <div className={`font-medium ${form.watch('active') ? 'text-green-600' : 'text-orange-600'}`}>
+                    <div className={cn('font-medium', form.watch('active') ? 'text-success' : 'text-warning-muted-foreground')}>
                       {form.watch('active') ? 'Activo' : 'Inactivo'}
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs text-blue-700 dark:text-blue-300">
+                <div className="mt-3 p-2 bg-info-muted rounded text-xs text-info-muted-foreground">
                   <strong>Siguiente paso:</strong> Después de crear el producto, podrá configurar su
                   receta (BOM) y rendimientos de producción para calcular costos.
                 </div>

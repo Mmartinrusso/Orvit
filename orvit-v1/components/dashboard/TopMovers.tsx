@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,15 +56,15 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'producto':
-        return 'bg-blue-500/20 text-blue-400';
+        return 'bg-info/20 text-info-muted-foreground';
       case 'cliente':
-        return 'bg-green-500/20 text-green-400';
+        return 'bg-success/20 text-success';
       case 'proveedor':
-        return 'bg-purple-500/20 text-purple-400';
+        return 'bg-info/20 text-info-muted-foreground';
       case 'categoria':
-        return 'bg-orange-500/20 text-orange-400';
+        return 'bg-warning/20 text-warning-muted-foreground';
       default:
-        return 'bg-gray-500/20 text-gray-400';
+        return 'bg-muted-foreground/20 text-muted-foreground';
     }
   };
 
@@ -82,10 +83,10 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
   };
 
   return (
-    <Card className="bg-white border-gray-200 shadow-sm">
+    <Card className="bg-card border-border shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardTitle className="text-lg font-semibold text-foreground">
             {title}
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -93,7 +94,7 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
               variant="outline"
               size="sm"
               onClick={() => setSortBy(sortBy === 'delta' ? 'deltaPct' : 'delta')}
-              className="h-8 px-3 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="h-8 px-3 text-xs bg-card border-border text-foreground hover:bg-muted"
             >
               {sortBy === 'delta' ? 'Por $' : 'Por %'}
             </Button>
@@ -105,15 +106,15 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
         {/* Filtros */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1">
-            <Filter className="h-3 w-3 text-gray-600" />
-            <span className="text-xs text-gray-600">Filtros:</span>
+            <Filter className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Filtros:</span>
           </div>
           
           {/* Filtro por tipo */}
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="text-xs bg-white border border-gray-300 text-gray-900 rounded px-2 py-1"
+            className="text-xs bg-card border border-border text-foreground rounded px-2 py-1"
           >
             <option value="all">Todos</option>
             <option value="producto">Productos</option>
@@ -128,7 +129,7 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
             placeholder="Buscar..."
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
-            className="text-xs bg-white border border-gray-300 text-gray-900 rounded px-2 py-1 w-24"
+            className="text-xs bg-card border border-border text-foreground rounded px-2 py-1 w-24"
           />
 
           {(filterType !== 'all' || filterValue !== '') && (
@@ -136,7 +137,7 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
               variant="outline"
               size="sm"
               onClick={clearFilters}
-              className="h-6 px-2 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="h-6 px-2 text-xs bg-card border-border text-foreground hover:bg-muted"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -147,18 +148,18 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
         <div className="space-y-2">
           {currentMovers.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-sm text-gray-600">No se encontraron resultados</p>
+              <p className="text-sm text-muted-foreground">No se encontraron resultados</p>
             </div>
           ) : (
             currentMovers.map((mover, index) => (
               <div
                 key={`${mover.name}-${index}`}
-                className="group relative flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                className="group relative flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-accent transition-colors duration-200"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Ranking */}
-                  <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-gray-900">
+                  <div className="flex-shrink-0 w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-foreground">
                       {startIndex + index + 1}
                     </span>
                   </div>
@@ -166,12 +167,12 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
                   {/* Nombre */}
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {mover.name}
                       </p>
                       <Badge 
                         variant="secondary" 
-                        className={`text-xs ${getTypeColor(mover.type)}`}
+                        className={cn('text-xs', getTypeColor(mover.type))}
                       >
                         {mover.type}
                       </Badge>
@@ -184,25 +185,25 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
                   <div className="text-right">
                     <div className="flex items-center gap-1">
                       {mover.delta >= 0 ? (
-                        <TrendingUp className="h-3 w-3 text-green-600" />
+                        <TrendingUp className="h-3 w-3 text-success" />
                       ) : (
-                        <TrendingDown className="h-3 w-3 text-red-600" />
+                        <TrendingDown className="h-3 w-3 text-destructive" />
                       )}
-                      <span className={`text-sm font-bold ${
-                        mover.delta >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span className={cn('text-sm font-bold',
+                        mover.delta >= 0 ? 'text-success' : 'text-destructive'
+                      )}>
                         {mover.delta >= 0 ? '+' : ''}{formatCurrency(mover.delta)}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-muted-foreground">
                       {formatPercentage(mover.deltaPct)}
                     </div>
                   </div>
 
                   {/* Contribución */}
                   <div className="text-right">
-                    <div className="text-xs text-gray-600">Contribución</div>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-xs text-muted-foreground">Contribución</div>
+                    <div className="text-sm font-medium text-foreground">
                       {mover.contributionPct.toFixed(1)}%
                     </div>
                   </div>
@@ -214,8 +215,8 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
 
         {/* Paginación */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-            <div className="text-xs text-gray-600">
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="text-xs text-muted-foreground">
               Mostrando {startIndex + 1}-{Math.min(endIndex, filteredMovers.length)} de {filteredMovers.length}
             </div>
             
@@ -225,12 +226,12 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
                 size="sm"
                 onClick={handlePreviousPage}
                 disabled={currentPage === 0}
-                className="h-8 w-8 p-0 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="h-8 w-8 p-0 bg-card border-border text-foreground hover:bg-muted disabled:opacity-50"
               >
                 <ChevronLeft className="h-3 w-3" />
               </Button>
               
-              <span className="text-xs text-gray-900 px-2">
+              <span className="text-xs text-foreground px-2">
                 {currentPage + 1} / {totalPages}
               </span>
               
@@ -239,7 +240,7 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
                 size="sm"
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages - 1}
-                className="h-8 w-8 p-0 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="h-8 w-8 p-0 bg-card border-border text-foreground hover:bg-muted disabled:opacity-50"
               >
                 <ChevronRight className="h-3 w-3" />
               </Button>

@@ -34,11 +34,11 @@ export function MyTasksWidget({ companyId, userId, style = 'list' }: MyTasksWidg
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return { icon: <Clock className="h-3.5 w-3.5 text-yellow-500" />, color: 'bg-yellow-100 text-yellow-700' };
+        return { icon: <Clock className="h-3.5 w-3.5 text-warning-muted-foreground" />, color: 'bg-warning-muted text-warning-muted-foreground' };
       case 'IN_PROGRESS':
-        return { icon: <AlertCircle className="h-3.5 w-3.5 text-blue-500" />, color: 'bg-blue-100 text-blue-700' };
+        return { icon: <AlertCircle className="h-3.5 w-3.5 text-info-muted-foreground" />, color: 'bg-info-muted text-info-muted-foreground' };
       default:
-        return { icon: <Clock className="h-3.5 w-3.5 text-gray-500" />, color: 'bg-gray-100 text-gray-700' };
+        return { icon: <Clock className="h-3.5 w-3.5 text-muted-foreground" />, color: 'bg-muted text-muted-foreground' };
     }
   };
 
@@ -53,8 +53,8 @@ export function MyTasksWidget({ companyId, userId, style = 'list' }: MyTasksWidg
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-32 text-center">
-        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-2">
-          <CheckCircle className="h-5 w-5 text-green-500" />
+        <div className="w-10 h-10 rounded-full bg-success-muted flex items-center justify-center mb-2">
+          <CheckCircle className="h-5 w-5 text-success" />
         </div>
         <p className="text-xs text-muted-foreground">Sin tareas pendientes</p>
       </div>
@@ -67,7 +67,7 @@ export function MyTasksWidget({ companyId, userId, style = 'list' }: MyTasksWidg
         {tasks.slice(0, 4).map((task: any) => {
           const statusConfig = getStatusConfig(task.status);
           return (
-            <div key={task.id} className="p-2 rounded-lg bg-accent/30 border-l-2 border-l-blue-500">
+            <div key={task.id} className="p-2 rounded-lg bg-accent/30 border-l-2 border-l-info">
               <div className="font-medium text-xs truncate">{task.title || task.name}</div>
               {task.dueDate && (
                 <div className="text-xs text-muted-foreground mt-0.5">

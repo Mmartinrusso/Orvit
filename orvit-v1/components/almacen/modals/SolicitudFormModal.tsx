@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,7 +90,7 @@ export function SolicitudFormModal({ open, onClose, onSuccess }: SolicitudFormMo
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Nueva Solicitud de Material</DialogTitle>
           <DialogDescription>
@@ -97,7 +98,8 @@ export function SolicitudFormModal({ open, onClose, onSuccess }: SolicitudFormMo
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+        <DialogBody className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {/* Tipo */}
             <div className="space-y-2">
@@ -197,6 +199,8 @@ export function SolicitudFormModal({ open, onClose, onSuccess }: SolicitudFormMo
               rows={3}
             />
           </div>
+
+          </DialogBody>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

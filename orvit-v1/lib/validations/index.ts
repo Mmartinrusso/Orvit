@@ -4,6 +4,8 @@ export {
   trimmedString,
   optionalTrimmedString,
   boundedString,
+  sanitizedBoundedString,
+  sanitizedOptionalString,
   emailSchema,
   positiveInt,
   optionalPositiveInt,

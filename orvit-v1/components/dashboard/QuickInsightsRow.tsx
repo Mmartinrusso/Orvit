@@ -35,7 +35,7 @@ interface QuickInsightsRowProps {
   };
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--chart-1))', 'hsl(var(--info))'];
 
 export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
   // Preparar datos para el pie chart de costos
@@ -131,18 +131,18 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
               <p className="text-xs text-muted-foreground mb-0.5">Costo Prom.</p>
               <p className="text-sm font-semibold text-foreground">{formatCurrency(costPerUnit)}</p>
             </div>
-            <div className="text-center p-2 rounded-md bg-green-50 dark:bg-green-950/50">
+            <div className="text-center p-2 rounded-md bg-success-muted">
               <p className="text-xs text-muted-foreground mb-0.5">Ganancia</p>
-              <p className="text-sm font-semibold text-green-600 dark:text-green-400">{formatCurrency(profitPerUnit)}</p>
+              <p className="text-sm font-semibold text-success">{formatCurrency(profitPerUnit)}</p>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Margen promedio por unidad</span>
             <span className={cn(
               "font-semibold",
-              marginPerUnit >= 25 ? "text-green-600 dark:text-green-400" :
-              marginPerUnit >= 15 ? "text-amber-600 dark:text-amber-400" :
-              "text-red-600 dark:text-red-400"
+              marginPerUnit >= 25 ? "text-success" :
+              marginPerUnit >= 15 ? "text-warning-muted-foreground" :
+              "text-destructive"
             )}>
               {marginPerUnit.toFixed(1)}%
             </span>
@@ -164,9 +164,9 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                 <span className="text-muted-foreground">Costos / Ventas</span>
                 <span className={cn(
                   "font-semibold",
-                  costToSalesRatio <= 60 ? "text-green-600 dark:text-green-400" :
-                  costToSalesRatio <= 75 ? "text-amber-600 dark:text-amber-400" :
-                  "text-red-600 dark:text-red-400"
+                  costToSalesRatio <= 60 ? "text-success" :
+                  costToSalesRatio <= 75 ? "text-warning-muted-foreground" :
+                  "text-destructive"
                 )}>
                   {costToSalesRatio.toFixed(1)}%
                 </span>
@@ -175,9 +175,9 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    costToSalesRatio <= 60 ? "bg-green-500" :
-                    costToSalesRatio <= 75 ? "bg-amber-500" :
-                    "bg-red-500"
+                    costToSalesRatio <= 60 ? "bg-success" :
+                    costToSalesRatio <= 75 ? "bg-warning" :
+                    "bg-destructive"
                   )}
                   style={{ width: `${Math.min(costToSalesRatio, 100)}%` }}
                 />
@@ -190,9 +190,9 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                 <span className="text-muted-foreground">Margen de Ganancia</span>
                 <span className={cn(
                   "font-semibold",
-                  profitMargin >= 25 ? "text-green-600 dark:text-green-400" :
-                  profitMargin >= 15 ? "text-amber-600 dark:text-amber-400" :
-                  "text-red-600 dark:text-red-400"
+                  profitMargin >= 25 ? "text-success" :
+                  profitMargin >= 15 ? "text-warning-muted-foreground" :
+                  "text-destructive"
                 )}>
                   {profitMargin.toFixed(1)}%
                 </span>
@@ -201,9 +201,9 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    profitMargin >= 25 ? "bg-green-500" :
-                    profitMargin >= 15 ? "bg-amber-500" :
-                    "bg-red-500"
+                    profitMargin >= 25 ? "bg-success" :
+                    profitMargin >= 15 ? "bg-warning" :
+                    "bg-destructive"
                   )}
                   style={{ width: `${Math.min(Math.max(profitMargin, 0), 100)}%` }}
                 />
@@ -216,7 +216,7 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                 <span className="text-xs text-muted-foreground">Ganancia Neta Total</span>
                 <span className={cn(
                   "text-sm font-bold",
-                  data.netMargin >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                  data.netMargin >= 0 ? "text-success" : "text-destructive"
                 )}>
                   {formatCurrency(data.netMargin)}
                 </span>

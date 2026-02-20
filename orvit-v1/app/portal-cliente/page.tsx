@@ -192,14 +192,14 @@ export default function ClientPortalPage() {
   const totalPayments = payments.reduce((sum, pmt) => sum + Number(pmt.totalPago), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <User className="w-6 h-6 text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-info-muted flex items-center justify-center">
+                <User className="w-6 h-6 text-info-muted-foreground" />
               </div>
               <div>
                 <h1 className="text-lg font-semibold">{session.name || session.legalName}</h1>
@@ -217,7 +217,7 @@ export default function ClientPortalPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="dashboard">
               <DollarSign className="w-4 h-4 mr-2" />
               Dashboard
@@ -247,12 +247,12 @@ export default function ClientPortalPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-blue-600" />
+                    <DollarSign className="w-4 h-4 text-info-muted-foreground" />
                     Saldo Pendiente
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold text-destructive">
                     {formatCurrency(totalPending)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -281,12 +281,12 @@ export default function ClientPortalPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-green-600" />
+                    <Wallet className="w-4 h-4 text-success" />
                     Pagos del Mes
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-success">
                     {formatCurrency(totalPayments)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -357,7 +357,7 @@ export default function ClientPortalPage() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right">{formatCurrency(invoice.total)}</TableCell>
-                            <TableCell className="text-right font-medium text-red-600">
+                            <TableCell className="text-right font-medium text-destructive">
                               {formatCurrency(invoice.saldoPendiente)}
                             </TableCell>
                             <TableCell>
@@ -401,8 +401,8 @@ export default function ClientPortalPage() {
                     {payments.map((payment) => (
                       <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <Wallet className="w-5 h-5 text-green-600" />
+                          <div className="w-10 h-10 rounded-full bg-success-muted flex items-center justify-center">
+                            <Wallet className="w-5 h-5 text-success" />
                           </div>
                           <div>
                             <div className="font-medium">{payment.numero}</div>
@@ -412,7 +412,7 @@ export default function ClientPortalPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold text-green-600">
+                          <div className="font-bold text-success">
                             {formatCurrency(payment.totalPago)}
                           </div>
                           <Badge variant="outline" className="text-xs mt-1">

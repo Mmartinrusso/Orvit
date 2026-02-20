@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -529,7 +530,7 @@ export function Machine3DViewerTab({
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                   <span className="text-sm font-medium">Modelo cargado</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
@@ -545,7 +546,7 @@ export function Machine3DViewerTab({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+                <Sparkles className="h-4 w-4 text-warning" />
                 Modelos 3D de Componentes
                 <Badge variant="secondary" className="ml-auto text-[10px]">
                   {componentsWithModels.count}/{componentsWithModels.total} con modelo
@@ -586,8 +587,8 @@ export function Machine3DViewerTab({
                               ? "bg-primary/20"
                               : detection.available
                                 ? detection.confidence === 'high'
-                                  ? "bg-green-100 dark:bg-green-900/30"
-                                  : "bg-amber-100 dark:bg-amber-900/30"
+                                  ? "bg-success-muted"
+                                  : "bg-warning-muted"
                                 : "bg-muted"
                           )}>
                             {hasModel ? (
@@ -595,7 +596,7 @@ export function Machine3DViewerTab({
                             ) : detection.available ? (
                               <CheckCircle className={cn(
                                 "h-4 w-4",
-                                detection.confidence === 'high' ? "text-green-600" : "text-amber-600"
+                                detection.confidence === 'high' ? "text-success" : "text-warning"
                               )} />
                             ) : (
                               <Cog className="h-4 w-4 text-muted-foreground" />
@@ -707,7 +708,7 @@ export function Machine3DViewerTab({
                                   ) : toolSearch.detection.available ? (
                                     <CircleDot className={cn(
                                       "h-3 w-3 flex-shrink-0",
-                                      toolSearch.detection.confidence === 'high' ? "text-green-500" : "text-amber-500"
+                                      toolSearch.detection.confidence === 'high' ? "text-success" : "text-warning"
                                     )} />
                                   ) : (
                                     <Wrench className="h-3 w-3 text-muted-foreground flex-shrink-0" />
@@ -777,7 +778,7 @@ export function Machine3DViewerTab({
                   <span>Modelo cargado</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  <CheckCircle className="h-3 w-3 text-success" />
                   <span>Disponible online</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -795,7 +796,7 @@ export function Machine3DViewerTab({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Folder className="h-4 w-4 text-amber-500" />
+                <Folder className="h-4 w-4 text-warning" />
                 Modelos Guardados
               </CardTitle>
               <CardDescription className="text-xs">
@@ -848,7 +849,7 @@ export function Machine3DViewerTab({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Globe className="h-4 w-4 text-blue-500" />
+                <Globe className="h-4 w-4 text-info" />
                 Buscar en Catálogos
               </CardTitle>
               <CardDescription className="text-xs">
@@ -902,7 +903,8 @@ export function Machine3DViewerTab({
                 Ingresa la URL de un modelo 3D en formato GLB o GLTF
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <DialogBody>
+            <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">URL del modelo</label>
                 <Input
@@ -926,6 +928,7 @@ export function Machine3DViewerTab({
                 </p>
               </div>
             </div>
+            </DialogBody>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowLinkDialog(false)}>
                 Cancelar
@@ -956,7 +959,7 @@ export function Machine3DViewerTab({
                 Selecciona un archivo GLB o GLTF (máx. 50MB)
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+            <DialogBody>
               <label
                 htmlFor="model-upload"
                 className={cn(
@@ -984,13 +987,13 @@ export function Machine3DViewerTab({
                   <p className="text-sm">Subiendo modelo...</p>
                 </div>
               )}
-            </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
 
         {/* Dialog para fuentes externas */}
         <Dialog open={showSourcesDialog} onOpenChange={setShowSourcesDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent size="default">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Search className="h-5 w-5" />
@@ -1000,7 +1003,8 @@ export function Machine3DViewerTab({
                 Busca "{machine.brand || machine.name}" en estos catálogos de piezas industriales
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-2">
+            <DialogBody>
+            <div className="space-y-2">
               {MODEL_SOURCES.map((source) => (
                 <a
                   key={source.id}
@@ -1024,7 +1028,7 @@ export function Machine3DViewerTab({
                 </a>
               ))}
             </div>
-            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg mt-4">
               <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="text-xs text-muted-foreground">
                 <p className="font-medium mb-1">Cómo usar:</p>
@@ -1035,6 +1039,7 @@ export function Machine3DViewerTab({
                 </ol>
               </div>
             </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
 
@@ -1051,7 +1056,8 @@ export function Machine3DViewerTab({
                 {editingComponent?.currentUrl && ' - Actualmente tiene un modelo asignado'}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <DialogBody>
+            <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">URL del modelo 3D</label>
                 <Input
@@ -1073,9 +1079,9 @@ export function Machine3DViewerTab({
                 </div>
               )}
 
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
-                <Info className="h-4 w-4 text-blue-500 mt-0.5" />
-                <div className="text-xs text-blue-700 dark:text-blue-300">
+              <div className="flex items-start gap-2 p-3 bg-info-muted rounded-lg border border-info-muted">
+                <Info className="h-4 w-4 text-info mt-0.5" />
+                <div className="text-xs text-info-muted-foreground">
                   <p className="font-medium mb-1">Dónde obtener modelos 3D:</p>
                   <ul className="list-disc list-inside space-y-0.5">
                     <li>TraceParts, GrabCAD para piezas estándar</li>
@@ -1085,11 +1091,12 @@ export function Machine3DViewerTab({
                 </div>
               </div>
             </div>
+            </DialogBody>
             <DialogFooter className="gap-2">
               {editingComponent?.currentUrl && (
                 <Button
                   variant="outline"
-                  className="text-red-600 hover:bg-red-50"
+                  className="text-destructive hover:bg-destructive/10"
                   onClick={() => {
                     setComponentModelUrl('');
                     handleSaveComponentModel();

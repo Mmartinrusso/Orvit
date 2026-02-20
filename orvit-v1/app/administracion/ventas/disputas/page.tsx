@@ -30,10 +30,10 @@ interface Disputa {
 }
 
 const ESTADO_CONFIG = {
-  ABIERTA: { label: 'Abierta', color: 'bg-red-100 text-red-700', icon: AlertTriangle },
-  EN_REVISION: { label: 'En Revisión', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  RESUELTA: { label: 'Resuelta', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  RECHAZADA: { label: 'Rechazada', color: 'bg-gray-100 text-gray-700', icon: XCircle },
+  ABIERTA: { label: 'Abierta', color: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
+  EN_REVISION: { label: 'En Revisión', color: 'bg-warning-muted text-warning-muted-foreground', icon: Clock },
+  RESUELTA: { label: 'Resuelta', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  RECHAZADA: { label: 'Rechazada', color: 'bg-muted text-foreground', icon: XCircle },
 };
 
 export default function DisputasPage() {
@@ -77,7 +77,7 @@ export default function DisputasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
+                <AlertTriangle className="w-4 h-4 text-destructive" />
                 Abiertas
               </CardTitle>
             </CardHeader>
@@ -90,7 +90,7 @@ export default function DisputasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="w-4 h-4 text-yellow-600" />
+                <Clock className="w-4 h-4 text-warning-muted-foreground" />
                 En Revisión
               </CardTitle>
             </CardHeader>
@@ -103,7 +103,7 @@ export default function DisputasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-success" />
                 Resueltas
               </CardTitle>
             </CardHeader>
@@ -116,7 +116,7 @@ export default function DisputasPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
+                <FileText className="w-4 h-4 text-info-muted-foreground" />
                 Monto Disputado
               </CardTitle>
             </CardHeader>
@@ -146,8 +146,8 @@ export default function DisputasPage() {
                     <div className="flex items-start justify-between">
                       <div className="space-y-3 flex-1">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                            <AlertTriangle className="w-5 h-5 text-red-600" />
+                          <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                            <AlertTriangle className="w-5 h-5 text-destructive" />
                           </div>
                           <div>
                             <div className="font-semibold">{disputa.motivo}</div>

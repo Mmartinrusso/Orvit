@@ -19,21 +19,21 @@ const configItems = [
     description: 'Gestiona líneas, máquinas, estaciones y celdas de producción',
     href: '/produccion/configuracion/centros-trabajo',
     icon: Building2,
-    color: 'bg-blue-100 text-blue-600',
+    color: 'bg-info-muted text-info-muted-foreground',
   },
   {
     title: 'Turnos',
     description: 'Configura los turnos de trabajo y horarios',
     href: '/produccion/configuracion/turnos',
     icon: Clock,
-    color: 'bg-green-100 text-green-600',
+    color: 'bg-success-muted text-success',
   },
   {
     title: 'Códigos de Motivo',
     description: 'Define motivos de parada, scrap, retrabajo y calidad',
     href: '/produccion/configuracion/codigos-motivo',
     icon: Tags,
-    color: 'bg-yellow-100 text-yellow-600',
+    color: 'bg-warning-muted text-warning-muted-foreground',
   },
   {
     title: 'Plantillas de Rutinas',
@@ -47,7 +47,7 @@ const configItems = [
     description: 'Gestiona bancos, silos, estaciones y otros recursos',
     href: '/produccion/configuracion/recursos',
     icon: Boxes,
-    color: 'bg-orange-100 text-orange-600',
+    color: 'bg-warning-muted text-warning-muted-foreground',
   },
 ];
 
@@ -57,7 +57,7 @@ export default function ProductionConfigPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Settings className="h-6 w-6 text-gray-600" />
+          <Settings className="h-6 w-6 text-muted-foreground" />
           Configuración de Producción
         </h1>
         <p className="text-muted-foreground text-sm">

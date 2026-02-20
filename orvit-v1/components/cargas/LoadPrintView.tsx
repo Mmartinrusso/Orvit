@@ -2,6 +2,7 @@
 
 import { useRef, useMemo, useEffect, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Printer, X, Download } from 'lucide-react';
@@ -265,7 +266,7 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
             }
             
             return (
-              <div key={floor} className={`space-y-2 print-floor-container ${floor > 1 ? 'floor-divider' : ''}`}>
+              <div key={floor} className={cn('space-y-2 print-floor-container', floor > 1 && 'floor-divider')}>
                 <div className="flex items-center gap-2 print-floor-header">
                   <Badge variant={floor === 4 ? 'default' : floor === 3 ? 'secondary' : floor === 2 ? 'outline' : 'secondary'} className="print-floor-badge">
                     Piso {floor}
@@ -279,7 +280,7 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
                 </div>
                   <div className="space-y-2">
                     {rowsData.map(({ row, cols }, rowIndex) => (
-                      <div key={row} className={`flex gap-1.5 ${rowIndex < rowsData.length - 1 ? 'grid-row-divider' : ''}`}>
+                      <div key={row} className={cn('flex gap-1.5', rowIndex < rowsData.length - 1 && 'grid-row-divider')}>
                         <div className="flex items-center justify-center w-10 text-xs font-semibold text-muted-foreground" style={{ fontSize: '11px' }}>
                           F{row}
                         </div>
@@ -291,7 +292,7 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
                             return (
                               <div
                                 key={col}
-                                className={`border-2 rounded p-2 min-h-[70px] text-xs bg-primary/20 border-primary ${colIndex < cols.length - 1 ? 'grid-col-divider' : ''}`}
+                                className={cn('border-2 rounded p-2 min-h-[70px] text-xs bg-primary/20 border-primary', colIndex < cols.length - 1 && 'grid-col-divider')}
                                 data-col={col}
                               >
                                 <div className="font-semibold text-center mb-1 print-cell-label" style={{ fontSize: '11px', lineHeight: '1' }}>
@@ -1739,7 +1740,7 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
               <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 sm:mb-3">Materiales a Cargar</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm md:text-base p-2 sm:p-3 md:p-4">
                 {materialsByProduct.map((material, idx) => (
-                  <div key={idx} className="p-2 sm:p-3 bg-yellow-100 border border-yellow-400 rounded-md text-center">
+                  <div key={idx} className="p-2 sm:p-3 bg-warning-muted border border-warning-muted rounded-md text-center">
                     {material.length ? (
                       <span className="font-medium"><strong>{material.length}Mts</strong> - {material.totalPackages} pqt ({material.totalQuantity} uds)</span>
                     ) : (
@@ -1833,7 +1834,7 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
   // Crear el modal completo
   const modalContent = (
     <div className="fixed inset-0 z-[150] flex items-start justify-center bg-black/50 p-2 sm:p-4 overflow-y-auto" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <Card className="w-full max-w-6xl max-h-full flex flex-col mt-2 sm:mt-4 bg-white shadow-lg" onClick={(e) => e.stopPropagation()} style={{ boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', border: '1px solid #e5e7eb' }}>
+      <Card className="w-full max-w-6xl max-h-full flex flex-col mt-2 sm:mt-4 bg-card shadow-lg" onClick={(e) => e.stopPropagation()} style={{ boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', border: '1px solid #e5e7eb' }}>
         {!hideButtons && (
           <CardHeader className="flex flex-row items-center justify-between flex-shrink-0 border-b pb-3 mb-0 px-4 sm:px-6 pt-4 sm:pt-6">
             <CardTitle className="no-print text-base sm:text-lg font-semibold">Orden de Carga {load.id} - {load.truck.name}</CardTitle>

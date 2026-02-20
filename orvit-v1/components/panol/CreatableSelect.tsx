@@ -11,13 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
 
@@ -146,7 +148,7 @@ export default function CreatableSelect({
               type="button"
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              className="w-full justify-start text-info-muted-foreground hover:text-info-muted-foreground hover:bg-info-muted"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -171,7 +173,7 @@ export default function CreatableSelect({
           ))}
           
           {options.length === 0 && (
-            <div className="p-2 text-sm text-gray-500 text-center">
+            <div className="p-2 text-sm text-muted-foreground text-center">
               No hay opciones disponibles
             </div>
           )}
@@ -180,20 +182,20 @@ export default function CreatableSelect({
 
       {/* Diálogo para crear nuevo elemento */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent size="sm" className="max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[calc(100vh-4rem)]">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-blue-600" />
+              <Plus className="h-5 w-5 text-info-muted-foreground" />
               {createLabel}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             {createFields.map((field) => (
               <div key={field.name}>
                 <Label htmlFor={field.name}>
                   {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
                 </Label>
                 <Input
                   id={field.name}
@@ -204,21 +206,21 @@ export default function CreatableSelect({
                 />
               </div>
             ))}
-          </div>
+          </DialogBody>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogFooter>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={isCreating}
             >
-              <X className="h-4 w-4 mr-2" />
               Cancelar
             </Button>
-            <Button onClick={handleCreate} disabled={isCreating}>
+            <Button size="sm" onClick={handleCreate} disabled={isCreating}>
               {isCreating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Creando...
                 </>
               ) : (
@@ -228,7 +230,7 @@ export default function CreatableSelect({
                 </>
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

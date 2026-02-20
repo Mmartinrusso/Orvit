@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -78,18 +79,18 @@ export function ReminderCard({
   };
 
   const getDateColor = () => {
-    if (isOverdue) return 'text-red-600 dark:text-red-400';
-    if (isDue) return 'text-orange-600 dark:text-orange-400';
-    if (isDueTomorrow) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-gray-600 dark:text-gray-400';
+    if (isOverdue) return 'text-destructive';
+    if (isDue) return 'text-warning-muted-foreground';
+    if (isDueTomorrow) return 'text-warning-muted-foreground';
+    return 'text-muted-foreground';
   };
 
   return (
-    <Card className={`
-      transition-all duration-200 hover:shadow-md hover:-translate-y-0.5
-      border-l-4 ${PRIORITY_COLORS[reminder.priority]}
-      ${reminder.isCompleted ? 'opacity-60' : ''}
-    `}>
+    <Card className={cn(
+      'transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-l-4',
+      PRIORITY_COLORS[reminder.priority],
+      reminder.isCompleted && 'opacity-60'
+    )}>
       <CardContent className="p-3">
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
@@ -101,15 +102,15 @@ export function ReminderCard({
             disabled={isToggling}
           >
             {reminder.isCompleted ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <CheckCircle2 className="h-4 w-4 text-success" />
             ) : (
-              <Circle className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
+              <Circle className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
             )}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-50 hover:opacity-100">
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-50 hover:opacity-100" aria-label="Opciones">
                 <MoreVertical className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
@@ -138,7 +139,7 @@ export function ReminderCard({
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => onDelete(reminder.id)}
-                className="text-red-600 dark:text-red-400 cursor-pointer text-xs"
+                className="text-destructive cursor-pointer text-xs"
               >
                 <Trash2 className="h-3 w-3 mr-2" />
                 Eliminar
@@ -148,17 +149,13 @@ export function ReminderCard({
         </div>
 
         {/* Título */}
-        <h3 className={`font-medium text-sm leading-tight mb-2 line-clamp-2 ${
-          reminder.isCompleted ? 'line-through text-gray-500' : ''
-        }`}>
+        <h3 className={cn('font-medium text-sm leading-tight mb-2 line-clamp-2', reminder.isCompleted && 'line-through text-muted-foreground')}>
           {reminder.title}
         </h3>
 
         {/* Descripción */}
         {reminder.description && (
-          <p className={`text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 ${
-            reminder.isCompleted ? 'line-through opacity-70' : ''
-          }`}>
+          <p className={cn('text-xs text-muted-foreground mb-2 line-clamp-2', reminder.isCompleted && 'line-through opacity-70')}>
             {reminder.description}
           </p>
         )}
@@ -169,7 +166,7 @@ export function ReminderCard({
             {TYPE_LABELS[reminder.type] || reminder.type}
           </Badge>
           {reminder.contactName && (
-            <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 text-blue-600 dark:text-blue-400">
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 text-info-muted-foreground">
               <User className="h-2.5 w-2.5 mr-1" />
               {reminder.contactName.split(' ')[0]}
             </Badge>
@@ -178,10 +175,10 @@ export function ReminderCard({
 
         {/* Fecha y hora */}
         <div className="flex items-center justify-between text-xs">
-          <span className={`font-medium ${getDateColor()}`}>
+          <span className={cn('font-medium', getDateColor())}>
             {getDateText()}
           </span>
-          <span className="text-gray-500">
+          <span className="text-muted-foreground">
             <Clock className="h-3 w-3 inline mr-1" />
             {formatTime(dueDate)}
           </span>
@@ -189,7 +186,7 @@ export function ReminderCard({
 
         {/* Estado completado */}
         {reminder.isCompleted && reminder.completedAt && (
-          <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+          <div className="text-xs text-success mt-1 font-medium">
             ✓ {formatDate(reminder.completedAt)}
           </div>
         )}

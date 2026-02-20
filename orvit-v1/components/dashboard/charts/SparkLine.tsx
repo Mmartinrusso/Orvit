@@ -17,7 +17,7 @@ export function SparkLine({
   data,
   width = 100,
   height = 30,
-  color = '#3b82f6',
+  color = 'hsl(var(--primary))',
   showDot = true,
   showArea = false,
   className,

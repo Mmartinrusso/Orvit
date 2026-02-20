@@ -40,6 +40,7 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -161,13 +162,13 @@ function ChecklistItemRow({
   return (
     <div className={cn(
       'flex items-start gap-3 p-3 rounded-lg border transition-colors',
-      isCompleted ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200',
+      isCompleted ? 'bg-success-muted border-success-muted' : 'bg-background border-border',
       disabled && 'opacity-60'
     )}>
       {/* Icono tipo */}
       <div className={cn(
         'shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-        isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
+        isCompleted ? 'bg-success-muted text-success' : 'bg-muted text-muted-foreground'
       )}>
         {getIcon()}
       </div>
@@ -177,7 +178,7 @@ function ChecklistItemRow({
         <div className="flex items-center gap-2">
           <p className={cn(
             'text-sm font-medium',
-            isCompleted ? 'text-green-800' : 'text-gray-900'
+            isCompleted ? 'text-success' : 'text-foreground'
           )}>
             {item.description}
           </p>
@@ -196,7 +197,7 @@ function ChecklistItemRow({
               onCheckedChange={handleCheck}
               disabled={disabled}
             />
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               {completed?.checked ? 'Completado' : 'Marcar como completado'}
             </span>
           </div>
@@ -213,10 +214,10 @@ function ChecklistItemRow({
               disabled={disabled}
             />
             {item.unit && (
-              <span className="text-sm text-gray-500">{item.unit}</span>
+              <span className="text-sm text-muted-foreground">{item.unit}</span>
             )}
             {(item.minValue !== undefined || item.maxValue !== undefined) && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 ({item.minValue ?? '-'} - {item.maxValue ?? '-'})
               </span>
             )}
@@ -245,7 +246,7 @@ function ChecklistItemRow({
               Tomar foto
             </Button>
             {completed?.photo && (
-              <span className="text-xs text-green-600">Foto adjunta</span>
+              <span className="text-xs text-success">Foto adjunta</span>
             )}
           </div>
         )}
@@ -282,23 +283,23 @@ function PhaseSection({
           variant="ghost"
           className={cn(
             'w-full justify-between p-4 h-auto',
-            isComplete && 'bg-green-50 hover:bg-green-100'
+            isComplete && 'bg-success-muted hover:bg-success-muted/80'
           )}
         >
           <div className="flex items-center gap-3">
             {isComplete ? (
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <CheckCircle2 className="h-5 w-5 text-success" />
             ) : (
-              <Circle className="h-5 w-5 text-gray-400" />
+              <Circle className="h-5 w-5 text-muted-foreground" />
             )}
             <div className="text-left">
               <p className={cn(
                 'font-medium',
-                isComplete ? 'text-green-800' : 'text-gray-900'
+                isComplete ? 'text-success' : 'text-foreground'
               )}>
                 {phase.name}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {completedItems.length}/{phase.items.length} items
               </p>
             </div>
@@ -306,9 +307,9 @@ function PhaseSection({
           <div className="flex items-center gap-3">
             <Progress value={progress} className="w-24 h-2" />
             {isOpen ? (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
         </Button>
@@ -344,7 +345,7 @@ function TemplateSelector({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>Seleccionar Plantilla</DialogTitle>
           <DialogDescription>
@@ -352,11 +353,11 @@ function TemplateSelector({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 max-h-[400px] overflow-y-auto py-2">
+        <DialogBody className="space-y-2">
           {templates.length === 0 ? (
             <div className="text-center py-8">
-              <ClipboardList className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500">No hay plantillas disponibles</p>
+              <ClipboardList className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">No hay plantillas disponibles</p>
             </div>
           ) : (
             templates.map((template) => (
@@ -370,7 +371,7 @@ function TemplateSelector({
                 <div className="flex-1 text-left">
                   <p className="font-medium">{template.name}</p>
                   {template.description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{template.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
                   )}
                   <div className="flex items-center gap-3 mt-2">
                     <Badge variant="secondary" className="text-xs">
@@ -379,7 +380,7 @@ function TemplateSelector({
                     <Badge variant="secondary" className="text-xs">
                       {template.itemsCount} items
                     </Badge>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-muted-foreground">
                       Usado {template.usageCount}x
                     </span>
                   </div>
@@ -387,7 +388,7 @@ function TemplateSelector({
               </Button>
             ))
           )}
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -553,8 +554,8 @@ export function ChecklistPanel({
   if (error) {
     return (
       <div className={cn('flex flex-col items-center py-8', className)}>
-        <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-        <p className="text-gray-600 mb-4">Error al cargar checklists</p>
+        <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+        <p className="text-foreground mb-4">Error al cargar checklists</p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Reintentar
@@ -568,7 +569,7 @@ export function ChecklistPanel({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-blue-600" />
+          <ClipboardList className="h-5 w-5 text-info-muted-foreground" />
           <h3 className="font-medium">Checklists</h3>
           {checklists.length > 0 && (
             <Badge variant="secondary">{checklists.length}</Badge>
@@ -589,9 +590,9 @@ export function ChecklistPanel({
 
       {/* Lista de checklists */}
       {checklists.length === 0 ? (
-        <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
-          <ClipboardList className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">Sin checklists asignados</p>
+        <div className="text-center py-8 bg-muted rounded-lg border border-dashed">
+          <ClipboardList className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+          <p className="text-muted-foreground text-sm">Sin checklists asignados</p>
           {!readOnly && templates.length > 0 && (
             <Button
               variant="link"
@@ -613,12 +614,12 @@ export function ChecklistPanel({
                 className="border rounded-lg overflow-hidden"
               >
                 {/* Cabecera del checklist */}
-                <div className="p-4 bg-gray-50 border-b">
+                <div className="p-4 bg-muted border-b">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{checklist.name}</p>
                       {checklist.template && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           Plantilla: {checklist.template.name}
                         </p>
                       )}
@@ -633,7 +634,7 @@ export function ChecklistPanel({
                         {checklist.status === 'COMPLETED' ? 'Completado' :
                          checklist.status === 'IN_PROGRESS' ? 'En progreso' : 'Pendiente'}
                       </Badge>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-foreground">
                         {checklist.progress}%
                       </span>
                     </div>
@@ -662,7 +663,7 @@ export function ChecklistPanel({
 
                 {/* Footer con acciones */}
                 {!readOnly && checklist.status !== 'COMPLETED' && (
-                  <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                  <div className="p-4 bg-muted border-t flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"

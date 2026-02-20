@@ -132,32 +132,32 @@ export function MOCList({ companyId }: MOCListProps) {
         {/* Summary */}
         {summary && (
           <div className="grid grid-cols-4 md:grid-cols-7 gap-2 mt-4">
-            <div className="p-2 rounded-lg bg-gray-50 text-center">
+            <div className="p-2 rounded-lg bg-muted text-center">
               <p className="text-lg font-bold">{summary.total}</p>
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
-            <div className="p-2 rounded-lg bg-blue-50 text-center">
-              <p className="text-lg font-bold text-blue-600">{summary.pendingReview}</p>
+            <div className="p-2 rounded-lg bg-info-muted text-center">
+              <p className="text-lg font-bold text-info-muted-foreground">{summary.pendingReview}</p>
               <p className="text-xs text-muted-foreground">Pendientes</p>
             </div>
-            <div className="p-2 rounded-lg bg-purple-50 text-center">
-              <p className="text-lg font-bold text-purple-600">{summary.underReview}</p>
+            <div className="p-2 rounded-lg bg-muted text-center">
+              <p className="text-lg font-bold text-foreground">{summary.underReview}</p>
               <p className="text-xs text-muted-foreground">En Revisión</p>
             </div>
-            <div className="p-2 rounded-lg bg-green-50 text-center">
-              <p className="text-lg font-bold text-green-600">{summary.approved}</p>
+            <div className="p-2 rounded-lg bg-success-muted text-center">
+              <p className="text-lg font-bold text-success">{summary.approved}</p>
               <p className="text-xs text-muted-foreground">Aprobados</p>
             </div>
-            <div className="p-2 rounded-lg bg-amber-50 text-center">
-              <p className="text-lg font-bold text-amber-600">{summary.implementing}</p>
+            <div className="p-2 rounded-lg bg-warning-muted text-center">
+              <p className="text-lg font-bold text-warning-muted-foreground">{summary.implementing}</p>
               <p className="text-xs text-muted-foreground">Implementando</p>
             </div>
-            <div className="p-2 rounded-lg bg-emerald-50 text-center">
-              <p className="text-lg font-bold text-emerald-600">{summary.completed}</p>
+            <div className="p-2 rounded-lg bg-success-muted text-center">
+              <p className="text-lg font-bold text-success">{summary.completed}</p>
               <p className="text-xs text-muted-foreground">Completados</p>
             </div>
-            <div className="p-2 rounded-lg bg-red-50 text-center">
-              <p className="text-lg font-bold text-red-600">{summary.rejected}</p>
+            <div className="p-2 rounded-lg bg-destructive/10 text-center">
+              <p className="text-lg font-bold text-destructive">{summary.rejected}</p>
               <p className="text-xs text-muted-foreground">Rechazados</p>
             </div>
           </div>
@@ -238,7 +238,7 @@ export function MOCList({ companyId }: MOCListProps) {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" aria-label="Opciones">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

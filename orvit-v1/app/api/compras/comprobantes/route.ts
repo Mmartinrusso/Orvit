@@ -10,6 +10,7 @@ import { MODE } from '@/lib/view-mode/types';
 import { applyViewMode } from '@/lib/view-mode/prisma-helper';
 import { shouldQueryT2, enrichT2Receipts } from '@/lib/view-mode';
 import { inicializarProntoPago } from '@/lib/compras/pronto-pago-helper';
+import { syncAllSupplyPrices } from '@/lib/costs/sync-supply-prices';
 
 export const dynamic = 'force-dynamic';
 
@@ -570,6 +571,8 @@ export async function POST(request: NextRequest) {
       tipoCuentaId,
       observaciones,
       docType,  // T1 (documentado) o T2 (extendido)
+      esIndirecto,
+      indirectCategory,
     } = body;
 
     // Validar docType - T2 solo se puede crear en modo Extended
@@ -726,6 +729,8 @@ export async function POST(request: NextRequest) {
           estado: tipoPago === 'contado' ? 'pagada' : 'pendiente',
           observaciones: observaciones || null,
           docType: 'T1',  // Siempre T1 en BD principal
+          esIndirecto: Boolean(esIndirecto),
+          indirectCategory: esIndirecto ? (indirectCategory || null) : null,
           companyId,
           createdBy: user.id,
         },
@@ -735,6 +740,22 @@ export async function POST(request: NextRequest) {
       const resolvedItems: any[] = [];
 
       for (const item of items) {
+        // Concepto indirecto: guardar descripción libre sin crear supply ni SupplierItem
+        if (item.isIndirectConcept) {
+          resolvedItems.push({
+            comprobanteId: comprobante.id,
+            itemId: null,
+            descripcion: item.descripcion,
+            cantidad: parseFloat(item.cantidad) || 1,
+            unidad: item.unidad || 'UN',
+            precioUnitario: parseFloat(item.precioUnitario) || 0,
+            subtotal: parseFloat(item.subtotal) || parseFloat(item.precioUnitario) || 0,
+            proveedorId: parseInt(proveedorId),
+            companyId,
+          });
+          continue;
+        }
+
         let supplierItemId: number | null = null;
 
         if (item.itemId) {
@@ -828,6 +849,20 @@ export async function POST(request: NextRequest) {
         await tx.purchaseReceiptItem.createMany({
           data: resolvedItems,
         });
+
+        // Auto-sincronizar precios de insumos con supply_monthly_prices (best-effort)
+        const referencia = `${body.numeroSerie ?? ''}-${body.numeroFactura ?? ''}`.replace(/^-|-$/, '');
+        try {
+          await syncAllSupplyPrices(
+            tx,
+            resolvedItems,
+            body.fechaImputacion ?? body.fechaEmision,
+            companyId,
+            referencia
+          );
+        } catch (syncError) {
+          console.warn('[syncAllSupplyPrices] Error sincronizando precios (no bloquea creación):', syncError);
+        }
       }
 
       // NOTA: El comprobante NO actualiza stock automáticamente.

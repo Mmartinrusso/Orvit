@@ -1,10 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withGuards } from '@/lib/middleware/withGuards';
+import type { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Resuelve la tarifa horaria del técnico asignado.
+ * Prioridad: TechnicianCostRate → env MAINTENANCE_HOURLY_RATE_DEFAULT → 25
+ */
+async function resolveHourlyRate(
+  assignedToId: number | string | undefined,
+  companyId: number | string | undefined
+): Promise<number> {
+  const defaultRate = parseFloat(process.env.MAINTENANCE_HOURLY_RATE_DEFAULT || '25');
 
-export async function POST(request: NextRequest) {
+  if (!assignedToId || !companyId) return defaultRate;
+
+  try {
+    const now = new Date();
+    const rate = await prisma.technicianCostRate.findFirst({
+      where: {
+        userId: Number(assignedToId),
+        companyId: Number(companyId),
+        isActive: true,
+        effectiveFrom: { lte: now },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }]
+      },
+      orderBy: { effectiveFrom: 'desc' },
+      select: { hourlyRate: true }
+    });
+
+    return rate ? parseFloat(rate.hourlyRate.toString()) : defaultRate;
+  } catch {
+    return defaultRate;
+  }
+}
+
+
+export const POST = withGuards(async (request, ctx) => {
   try {
     const body = await request.json();
 
@@ -14,10 +48,10 @@ export async function POST(request: NextRequest) {
       isPreventive,
       actualDuration,
       originalDuration = null,
-      actualDurationUnit = 'HOURS', // Unidad por defecto
+      actualDurationUnit = 'HOURS',
       actualValue,
       actualUnit,
-      excludeQuantity = false, // Campo para excluir cantidad
+      excludeQuantity = false,
       notes,
       issues,
       qualityScore,
@@ -35,7 +69,8 @@ export async function POST(request: NextRequest) {
       subcomponentIds,
       estimatedDuration,
       estimatedValue,
-      reExecutionReason
+      reExecutionReason,
+      companyId
     } = body;
 
     // Validaciones básicas
@@ -53,7 +88,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Solo validar actualValue si no se está excluyendo
     if (!excludeQuantity && (!actualValue || actualValue <= 0)) {
       return NextResponse.json(
         { error: 'Valor real debe ser mayor a 0' },
@@ -61,158 +95,149 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar si ya fue completado hoy y requiere razón de re-ejecución
+    // Verificar re-ejecución para preventivos
     if (isPreventive) {
-      const existingTemplate = await prisma.document.findFirst({
-        where: {
-          id: Number(maintenanceId),
-          entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE'
-        }
+      const template = await prisma.preventiveTemplate.findUnique({
+        where: { id: Number(maintenanceId) },
+        select: { lastMaintenanceDate: true },
       });
 
-      if (existingTemplate) {
-        const templateData = JSON.parse(existingTemplate.url);
-        if (templateData.lastMaintenanceDate) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const lastMaintenance = new Date(templateData.lastMaintenanceDate);
-          lastMaintenance.setHours(0, 0, 0, 0);
-          
-          if (lastMaintenance.getTime() === today.getTime() && !reExecutionReason) {
-            return NextResponse.json(
-              { error: 'Este mantenimiento ya fue completado hoy. Debe proporcionar una razón para re-ejecutarlo.' },
-              { status: 400 }
-            );
-          }
+      if (template?.lastMaintenanceDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastMaintenance = new Date(template.lastMaintenanceDate);
+        lastMaintenance.setHours(0, 0, 0, 0);
+
+        if (lastMaintenance.getTime() === today.getTime() && !reExecutionReason) {
+          return NextResponse.json(
+            { error: 'Este mantenimiento ya fue completado hoy. Debe proporcionar una razón para re-ejecutarlo.' },
+            { status: 400 }
+          );
         }
       }
     }
 
     // Calcular métricas
-    // Eficiencia removida - no se calcula
-    
-    const variance = estimatedValue && actualValue && !excludeQuantity ? 
+    const variance = estimatedValue && actualValue && !excludeQuantity ?
       Math.round(((actualValue - estimatedValue) / estimatedValue) * 100) : null;
-
-    // Calcular MTTR (Mean Time To Repair) - en este caso será la duración real
     const mttr = actualDuration;
+    const hourlyRate = await resolveHourlyRate(assignedToId, companyId);
+    const estimatedCost = actualDuration * hourlyRate;
 
-    // Calcular costo estimado (basado en horas * tarifa promedio)
-    const averageHourlyRate = 25; // USD por hora (esto podría venir de configuración)
-    const estimatedCost = actualDuration * averageHourlyRate;
+    let updatedRecord: any = null;
 
-    let updatedRecord = null;
-
-    // Verificar si es un mantenimiento preventivo (Document) o un WorkOrder
     if (isPreventive) {
-      // Es un mantenimiento preventivo - actualizar el Document
-      const maintenanceTemplate = await prisma.document.findFirst({
-        where: {
-          id: Number(maintenanceId),
-          entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE'
-        }
+      // Mantenimiento preventivo - usar PreventiveTemplate
+      const template = await prisma.preventiveTemplate.findUnique({
+        where: { id: Number(maintenanceId) },
       });
 
-      if (!maintenanceTemplate) {
+      if (!template) {
         return NextResponse.json(
           { error: 'Mantenimiento preventivo no encontrado' },
           { status: 404 }
         );
       }
 
-      // Parsear datos existentes del template
-      const templateData = JSON.parse(maintenanceTemplate.url);
-      
-      // Calcular próxima fecha de mantenimiento
-      let nextDate = new Date();
-      if (templateData.frequencyDays) {
-        nextDate.setDate(nextDate.getDate() + templateData.frequencyDays);
-        
-        // Ajustar a día laboral (lunes a viernes)
+      // Calcular próxima fecha
+      const nextDate = new Date();
+      if (template.frequencyDays) {
+        nextDate.setDate(nextDate.getDate() + template.frequencyDays);
         const dayOfWeek = nextDate.getDay();
-        if (dayOfWeek === 0) nextDate.setDate(nextDate.getDate() + 1); // Domingo -> Lunes
-        else if (dayOfWeek === 6) nextDate.setDate(nextDate.getDate() + 2); // Sábado -> Lunes
+        if (dayOfWeek === 0) nextDate.setDate(nextDate.getDate() + 1);
+        else if (dayOfWeek === 6) nextDate.setDate(nextDate.getDate() + 2);
       }
 
-             // Actualizar template con nueva fecha y contador
-       const updatedTemplateData = {
-         ...templateData,
-         lastMaintenanceDate: executedAt,
-         nextMaintenanceDate: nextDate.toISOString(),
-         maintenanceCount: (templateData.maintenanceCount || 0) + 1,
-         lastExecutionDuration: actualDuration,
-         lastExecutionNotes: notes || '',
-         lastExecutionIssues: issues || '',
-         lastExecutionValue: excludeQuantity ? null : actualValue,
-         lastExecutionUnit: excludeQuantity ? null : actualUnit,
-         averageDuration: templateData.averageDuration ? 
-           ((templateData.averageDuration + actualDuration) / 2) : actualDuration,
-         // Agregar historial de ejecuciones
-         executionHistory: [
-           ...(templateData.executionHistory || []),
-           {
-             id: Date.now(),
-             executedAt: executedAt,
-             actualDuration: actualDurationUnit === 'MINUTES' ? originalDuration : actualDuration, // Guardar según la unidad
-             actualDurationUnit: actualDurationUnit, // Agregar la unidad de tiempo
-             actualValue: excludeQuantity ? null : actualValue,
-             actualUnit: excludeQuantity ? null : actualUnit,
-             notes: notes || '',
-             issues: issues || '',
-             // efficiency removido
-             variance: variance,
-             mttr: mttr,
-             cost: estimatedCost,
-             qualityScore: null, // Será asignado por supervisor posteriormente
-             completionStatus: completionStatus || 'COMPLETED',
-             reExecutionReason: reExecutionReason || null
-           }
-         ]
-       };
+      const newCount = (template.maintenanceCount || 0) + 1;
+      const prevAvg = template.averageDuration || 0;
+      const newAvgDuration = prevAvg === 0 ? actualDuration : ((prevAvg * (newCount - 1)) + actualDuration) / newCount;
 
-      // ✅ OPTIMIZADO: Usar transacción atómica para template + instancia + history
+      const existingHistory = Array.isArray(template.executionHistory)
+        ? (template.executionHistory as any[])
+        : [];
+
+      const newHistoryEntry = {
+        id: Date.now(),
+        executedAt,
+        actualDuration: actualDurationUnit === 'MINUTES' ? originalDuration : actualDuration,
+        actualDurationUnit,
+        actualValue: excludeQuantity ? null : actualValue,
+        actualUnit: excludeQuantity ? null : actualUnit,
+        notes: notes || '',
+        issues: issues || '',
+        variance,
+        mttr,
+        cost: estimatedCost,
+        qualityScore: null,
+        completionStatus: completionStatus || 'COMPLETED',
+        reExecutionReason: reExecutionReason || null,
+      };
+
+      // Transacción atómica
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Actualizar el template
-        const updated = await tx.document.update({
+        // 1. Actualizar template
+        const updated = await tx.preventiveTemplate.update({
           where: { id: Number(maintenanceId) },
           data: {
-            url: JSON.stringify(updatedTemplateData),
-            updatedAt: new Date()
-          }
+            lastMaintenanceDate: new Date(executedAt),
+            nextMaintenanceDate: nextDate,
+            maintenanceCount: newCount,
+            lastExecutionDuration: actualDuration,
+            averageDuration: newAvgDuration,
+            executionHistory: [...existingHistory, newHistoryEntry] as Prisma.InputJsonValue,
+          },
         });
 
-        // 2. Crear próxima instancia de mantenimiento (como hace complete/route.ts)
-        const nextInstance = await tx.document.create({
+        // 2. Crear próxima instancia
+        await tx.preventiveInstance.create({
           data: {
-            entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE',
-            entityId: `template-${maintenanceId}-${nextDate.toISOString().split('T')[0]}`,
-            originalName: `${templateData.title} - ${nextDate.toLocaleDateString('es-ES')}`,
-            url: JSON.stringify({
-              ...updatedTemplateData,
-              templateId: maintenanceId.toString(),
-              scheduledDate: nextDate.toISOString(),
-              status: 'PENDING',
-              actualStartDate: null,
-              actualEndDate: null,
-              actualHours: null,
-              completedById: null,
-              completionNotes: '',
-              toolsUsed: [],
-              photoUrls: [],
-              createdAt: new Date().toISOString()
-            })
-          }
+            templateId: Number(maintenanceId),
+            scheduledDate: nextDate,
+            status: 'PENDING',
+          },
         });
 
-        // 3. Crear registro en maintenance_history dentro de la transacción
-        let historyMachineId = machineId ? Number(machineId) : templateData.machineId;
-        let historyComponentId = componentIds && componentIds.length > 0
-          ? Number(componentIds[0])
-          : (templateData.componentIds?.length > 0 ? templateData.componentIds[0] : null);
+        // La historia de ejecución preventiva se persiste en
+        // executionHistory (JSON) del template (línea 187 arriba).
+        // maintenance_history requiere un workOrderId FK que no existe
+        // para preventiveTemplate — se omite para evitar FK violation.
+
+        return updated;
+      });
+
+      updatedRecord = result;
+    } else {
+      // WorkOrder - actualizar directamente
+      const existingWorkOrder = await prisma.workOrder.findUnique({
+        where: { id: Number(maintenanceId) }
+      });
+
+      if (!existingWorkOrder) {
+        return NextResponse.json(
+          { error: 'WorkOrder no encontrado' },
+          { status: 404 }
+        );
+      }
+
+      updatedRecord = await prisma.workOrder.update({
+        where: { id: Number(maintenanceId) },
+        data: {
+          status: completionStatus === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS',
+          completedDate: completionStatus === 'COMPLETED' ? new Date(executedAt) : null,
+          actualHours: actualDuration,
+          notes: `${notes || ''}\n\n${excludeQuantity ? 'Cantidad excluida de este mantenimiento' : `Cantidad ejecutada: ${actualValue} ${actualUnit}`}\nProblemas encontrados: ${issues || 'Ninguno'}`,
+          cost: estimatedCost,
+          updatedAt: new Date()
+        }
+      });
+
+      // maintenance_history para WorkOrders
+      try {
+        const historyMachineId = machineId ? Number(machineId) : null;
+        const historyComponentId = componentIds?.length > 0 ? Number(componentIds[0]) : null;
 
         if (historyMachineId) {
-          await tx.maintenance_history.create({
+          await prisma.maintenance_history.create({
             data: {
               workOrderId: Number(maintenanceId),
               machineId: historyMachineId,
@@ -226,103 +251,38 @@ export async function POST(request: NextRequest) {
               correctiveActions: null,
               preventiveActions: null,
               spareParts: null,
-              nextMaintenanceDate: nextDate,
-              mttr: mttr,
+              nextMaintenanceDate: null,
+              mttr,
               mtbf: null,
               completionRate: 100,
-              qualityScore: qualityScore || null
-            }
+              qualityScore: qualityScore || null,
+              updatedAt: new Date(),
+            },
           });
         }
+      } catch (historyError) {
+        console.error('Error guardando maintenance_history para WorkOrder:', historyError);
+      }
+    }
 
-        return { updated, nextInstance };
-      });
+    // Respuesta exitosa
+    const responseData: any = {
+      success: true,
+      message: 'Mantenimiento ejecutado y registrado exitosamente',
+      data: {
+        maintenanceId: updatedRecord.id,
+        executedAt,
+        duration: originalDuration || actualDuration,
+        durationUnit: actualDurationUnit,
+        mttr,
+        cost: estimatedCost,
+        type: isPreventive ? 'PREVENTIVE' : 'CORRECTIVE',
+      },
+    };
 
-      updatedRecord = result.updated;
-     } else {
-       // Es un WorkOrder - actualizar directamente
-       // Verificar si el WorkOrder existe antes de actualizar
-       const existingWorkOrder = await prisma.workOrder.findUnique({
-         where: { id: Number(maintenanceId) }
-       });
-       
-       if (!existingWorkOrder) {
-         return NextResponse.json(
-           { error: 'WorkOrder no encontrado' },
-           { status: 404 }
-         );
-       }
-
-       updatedRecord = await prisma.workOrder.update({
-         where: { id: Number(maintenanceId) },
-         data: {
-           status: completionStatus === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS',
-           completedDate: completionStatus === 'COMPLETED' ? new Date(executedAt) : null,
-           actualHours: actualDuration,
-           notes: `${notes || ''}\n\n${excludeQuantity ? 'Cantidad excluida de este mantenimiento' : `Cantidad ejecutada: ${actualValue} ${actualUnit}`}\nProblemas encontrados: ${issues || 'Ninguno'}`,
-           cost: estimatedCost,
-           updatedAt: new Date()
-         }
-       });
-     }
-
-     // ✅ Para WorkOrders no preventivos, crear maintenance_history
-     if (!isPreventive) {
-       try {
-         let historyMachineId = machineId ? Number(machineId) : null;
-         let historyComponentId = componentIds && componentIds.length > 0 ? Number(componentIds[0]) : null;
-
-         if (historyMachineId) {
-           await prisma.maintenance_history.create({
-             data: {
-               workOrderId: Number(maintenanceId),
-               machineId: historyMachineId,
-               componentId: historyComponentId,
-               executedAt: new Date(executedAt),
-               executedById: assignedToId ? Number(assignedToId) : null,
-               duration: actualDuration,
-               cost: estimatedCost,
-               notes: notes || '',
-               rootCause: issues || null,
-               correctiveActions: null,
-               preventiveActions: null,
-               spareParts: null,
-               nextMaintenanceDate: null,
-               mttr: mttr,
-               mtbf: null,
-               completionRate: 100,
-               qualityScore: qualityScore || null
-             }
-           });
-         }
-       } catch (historyError) {
-         console.error('Error guardando maintenance_history para WorkOrder:', historyError);
-       }
-     }
-
-
-
-         // Respuesta exitosa
-     const responseData = {
-       success: true,
-       message: 'Mantenimiento ejecutado y registrado exitosamente',
-       data: {
-         maintenanceId: updatedRecord.id,
-         executedAt: executedAt,
-         duration: originalDuration || actualDuration, // Usar el valor original
-         durationUnit: actualDurationUnit, // Agregar la unidad de tiempo
-         // efficiency: null, // Removido
-         mttr: mttr,
-         cost: estimatedCost,
-         type: isPreventive ? 'PREVENTIVE' : 'CORRECTIVE'
-       }
-     };
-
-    // Agregar datos específicos según el tipo
     if (isPreventive) {
-      const templateData = JSON.parse(updatedRecord.url);
-      responseData.data.nextMaintenanceDate = templateData.nextMaintenanceDate;
-      responseData.data.maintenanceCount = templateData.maintenanceCount;
+      responseData.data.nextMaintenanceDate = updatedRecord.nextMaintenanceDate?.toISOString();
+      responseData.data.maintenanceCount = updatedRecord.maintenanceCount;
     } else {
       responseData.data.status = updatedRecord.status;
     }
@@ -330,15 +290,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responseData);
 
   } catch (error) {
-    console.error('❌ Error ejecutando mantenimiento:', error);
-    
+    console.error('Error ejecutando mantenimiento:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Error interno del servidor',
         details: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     );
   }
-}
-
+});

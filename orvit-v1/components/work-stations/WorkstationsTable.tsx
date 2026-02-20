@@ -59,17 +59,7 @@ interface WorkstationsTableProps {
   className?: string;
 }
 
-const statusLabels: Record<string, string> = {
-  'ACTIVE': 'Activo',
-  'INACTIVE': 'Inactivo',
-  'MAINTENANCE': 'En mantenimiento',
-};
-
-const statusColors: Record<string, string> = {
-  'ACTIVE': 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-  'INACTIVE': 'bg-muted text-muted-foreground border-border',
-  'MAINTENANCE': 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-};
+import { statusLabels, statusColors } from './workstation.helpers';
 
 const formatDate = (date: string) => {
   try {
@@ -137,7 +127,7 @@ export function WorkstationsTable({
   };
 
   return (
-    <div className={cn('rounded-md border', className)}>
+    <div className={cn('rounded-md border overflow-x-auto', className)}>
       <Table>
         <TableHeader>
           <TableRow>

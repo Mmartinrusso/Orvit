@@ -103,10 +103,14 @@ export async function POST(req: NextRequest) {
         where: { key: idempotencyKey },
       });
       if (existing && existing.status === 'COMPLETED') {
-        return NextResponse.json(
-          { ...JSON.parse(existing.response as string), wasReplay: true },
-          { status: 200 }
-        );
+        try {
+          return NextResponse.json(
+            { ...JSON.parse(existing.response as string), wasReplay: true },
+            { status: 200 }
+          );
+        } catch {
+          // respuesta almacenada corrupta — continuar con nuevo procesamiento
+        }
       }
     }
 

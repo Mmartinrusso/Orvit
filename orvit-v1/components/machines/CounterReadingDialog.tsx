@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -89,7 +90,7 @@ export function CounterReadingDialog({ counter, open, onClose, onSuccess }: Coun
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Gauge className="h-5 w-5" />
@@ -98,8 +99,9 @@ export function CounterReadingDialog({ counter, open, onClose, onSuccess }: Coun
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="p-3 bg-gray-50 rounded-lg">
+          <DialogBody>
+          <div className="space-y-4">
+            <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">Contador</p>
               <p className="font-medium">{counter.name}</p>
               <p className="text-lg">
@@ -124,13 +126,13 @@ export function CounterReadingDialog({ counter, open, onClose, onSuccess }: Coun
                 <span className="text-sm text-muted-foreground">{counter.unit}</span>
               </div>
               {value && !isValidValue && (
-                <p className="text-sm text-red-500 flex items-center gap-1">
+                <p className="text-sm text-destructive flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   El valor no puede ser menor al actual
                 </p>
               )}
               {isValidValue && delta > 0 && (
-                <p className="text-sm text-green-600">
+                <p className="text-sm text-success">
                   Incremento: +{delta.toLocaleString()} {counter.unit}
                 </p>
               )}
@@ -161,6 +163,7 @@ export function CounterReadingDialog({ counter, open, onClose, onSuccess }: Coun
               />
             </div>
           </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>

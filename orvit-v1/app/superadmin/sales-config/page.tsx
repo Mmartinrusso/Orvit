@@ -35,6 +35,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Company {
   id: number;
@@ -60,6 +61,7 @@ const CONFIG_LABELS: Record<ConfigType, { singular: string; plural: string; icon
 };
 
 export default function SalesConfigPage() {
+  const confirm = useConfirm();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,9 +220,13 @@ export default function SalesConfigPage() {
   };
 
   const handleDelete = async (item: ConfigItem) => {
-    if (!confirm(`¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar elemento',
+      description: `¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`/api/superadmin/sales-config/${activeTab}?id=${item.id}`, {
@@ -294,7 +300,7 @@ export default function SalesConfigPage() {
         <Card>
           <CardContent className="pt-6">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ConfigType)}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="w-full justify-start overflow-x-auto">
                 {(Object.keys(CONFIG_LABELS) as ConfigType[]).map((key) => {
                   const config = CONFIG_LABELS[key];
                   const Icon = config.icon;

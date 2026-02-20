@@ -70,6 +70,7 @@ import { toast } from 'sonner';
 import { format, subDays, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import NewDowntimeForm from '@/components/production/NewDowntimeForm';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Downtime {
   id: number;
@@ -107,6 +108,7 @@ export default function DowntimesPage() {
   const router = useRouter();
   const { hasPermission } = useAuth();
   const { theme } = useTheme();
+  const confirm = useConfirm();
 
   const [downtimes, setDowntimes] = useState<Downtime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,7 +219,13 @@ export default function DowntimesPage() {
   };
 
   const handleDelete = async (downtimeId: number) => {
-    if (!confirm('¿Eliminar esta parada?')) return;
+    const ok = await confirm({
+      title: 'Eliminar parada',
+      description: '¿Eliminar esta parada?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`/api/production/downtimes/${downtimeId}`, {
@@ -372,7 +380,7 @@ export default function DowntimesPage() {
               ) : downtimes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    <CheckCircle2 className="h-8 w-8 mx-auto text-green-400" />
+                    <CheckCircle2 className="h-8 w-8 mx-auto text-success" />
                     <p className="mt-2 text-muted-foreground">No hay paradas registradas</p>
                   </TableCell>
                 </TableRow>
@@ -389,7 +397,7 @@ export default function DowntimesPage() {
                             → {format(new Date(downtime.endTime), 'HH:mm', { locale: es })}
                           </div>
                         ) : (
-                          <div className="text-xs text-red-500">En curso</div>
+                          <div className="text-xs text-destructive">En curso</div>
                         )}
                       </div>
                     </TableCell>
@@ -413,7 +421,7 @@ export default function DowntimesPage() {
                     </TableCell>
                     <TableCell>
                       <span className={`font-medium ${
-                        (downtime.durationMinutes || 0) > 60 ? 'text-red-500' : ''
+                        (downtime.durationMinutes || 0) > 60 ? 'text-destructive' : ''
                       }`}>
                         {formatDuration(downtime.durationMinutes)}
                       </span>
@@ -436,7 +444,7 @@ export default function DowntimesPage() {
                           {downtime.workOrder.status}
                         </Badge>
                       ) : downtime.reasonCode?.triggersMaintenance ? (
-                        <Badge variant="outline" className="text-yellow-600 border-yellow-400">
+                        <Badge variant="outline" className="text-warning-muted-foreground border-warning-muted">
                           Sugerida
                         </Badge>
                       ) : (
@@ -462,7 +470,7 @@ export default function DowntimesPage() {
                             <DropdownMenuItem
                               onClick={() => setCreateWODialog({ open: true, downtime })}
                             >
-                              <Wrench className="h-4 w-4 mr-2 text-blue-500" />
+                              <Wrench className="h-4 w-4 mr-2 text-info-muted-foreground" />
                               Crear OT
                             </DropdownMenuItem>
                           )}
@@ -480,7 +488,7 @@ export default function DowntimesPage() {
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="text-red-500"
+                                className="text-destructive"
                                 onClick={() => handleDelete(downtime.id)}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />

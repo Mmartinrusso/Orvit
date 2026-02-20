@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
 export const dynamic = 'force-dynamic';
 
 
-// GET - Obtener empleados usando SQL directo
+// GET - Obtener empleados usando SQL directo con paginación
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -17,39 +16,60 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // ✅ OPTIMIZADO: Usar LATERAL JOIN en lugar de subqueries correlacionadas
-    const employees = await prisma.$queryRaw`
-      SELECT 
-        e.id,
-        e.name,
-        e.role,
-        COALESCE(latest_salary.gross_salary, e.gross_salary) as "grossSalary",
-        COALESCE(latest_salary.payroll_taxes, e.payroll_taxes) as "payrollTaxes",
-        e.active,
-        e.category_id as "categoryId",
-        e.company_id as "companyId",
-        e.created_at as "createdAt",
-        e.updated_at as "updatedAt",
-        ec.name as "categoryName",
-        COALESCE(latest_salary.gross_salary + COALESCE(latest_salary.payroll_taxes, 0), 
-                 e.gross_salary + COALESCE(e.payroll_taxes, 0)) as "totalCost",
-        e.created_at::date as "startDate"
-      FROM employees e
-      LEFT JOIN employee_categories ec ON e.category_id = ec.id
-      LEFT JOIN LATERAL (
-        SELECT esh.gross_salary, esh.payroll_taxes
-        FROM employee_salary_history esh
-        WHERE esh.employee_id = e.id
-        ORDER BY esh.effective_from DESC
-        LIMIT 1
-      ) latest_salary ON true
-      WHERE e.company_id = ${parseInt(companyId)} 
-        AND e.active = true
-      ORDER BY e.name ASC
-    `;
-    return NextResponse.json(employees, {
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
+    const skip = (page - 1) * limit;
+
+    const companyIdNum = parseInt(companyId);
+
+    const [employees, countResult] = await Promise.all([
+      prisma.$queryRaw`
+        SELECT
+          e.id,
+          e.name,
+          e.role,
+          COALESCE(latest_salary.gross_salary, e.gross_salary) as "grossSalary",
+          COALESCE(latest_salary.payroll_taxes, e.payroll_taxes) as "payrollTaxes",
+          e.active,
+          e.category_id as "categoryId",
+          e.company_id as "companyId",
+          e.created_at as "createdAt",
+          e.updated_at as "updatedAt",
+          ec.name as "categoryName",
+          COALESCE(latest_salary.gross_salary + COALESCE(latest_salary.payroll_taxes, 0),
+                   e.gross_salary + COALESCE(e.payroll_taxes, 0)) as "totalCost",
+          e.created_at::date as "startDate"
+        FROM employees e
+        LEFT JOIN employee_categories ec ON e.category_id = ec.id
+        LEFT JOIN LATERAL (
+          SELECT esh.gross_salary, esh.payroll_taxes
+          FROM employee_salary_history esh
+          WHERE esh.employee_id = e.id
+          ORDER BY esh.effective_from DESC
+          LIMIT 1
+        ) latest_salary ON true
+        WHERE e.company_id = ${companyIdNum}
+          AND e.active = true
+        ORDER BY e.name ASC
+        LIMIT ${limit} OFFSET ${skip}
+      `,
+      prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*) as count FROM employees
+        WHERE company_id = ${companyIdNum} AND active = true
+      `,
+    ]);
+
+    const total = Number(countResult[0].count);
+
+    return NextResponse.json({
+      items: employees,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    }, {
       headers: {
-        'Cache-Control': 'private, max-age=60, s-maxage=60', // ✨ OPTIMIZADO: Cache de 60 segundos (empleados cambian menos frecuentemente)
+        'Cache-Control': 'private, max-age=60, s-maxage=60',
       }
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -214,14 +216,14 @@ export function StockConsumptionPanel({
                 </p>
               </div>
               <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  allLinked ? 'bg-green-100' : 'bg-orange-100'
-                }`}
+                className={cn('h-10 w-10 rounded-full flex items-center justify-center',
+                  allLinked ? 'bg-success-muted' : 'bg-warning-muted'
+                )}
               >
                 {allLinked ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-success" />
                 ) : (
-                  <Link2 className="h-5 w-5 text-orange-600" />
+                  <Link2 className="h-5 w-5 text-warning-muted-foreground" />
                 )}
               </div>
             </div>
@@ -229,7 +231,7 @@ export function StockConsumptionPanel({
               <Button
                 variant="link"
                 size="sm"
-                className="p-0 h-auto mt-2 text-orange-600"
+                className="p-0 h-auto mt-2 text-warning-muted-foreground"
                 onClick={() => setShowLinkerDialog(true)}
               >
                 Vincular insumos faltantes
@@ -252,8 +254,8 @@ export function StockConsumptionPanel({
                   items de {summary?.byReport.length || 0} reportes
                 </p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <ArrowDownCircle className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+                <ArrowDownCircle className="h-5 w-5 text-info-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -268,23 +270,23 @@ export function StockConsumptionPanel({
                 </p>
                 <p className="text-2xl font-bold">
                   {hasInsufficientStock ? (
-                    <span className="text-red-600">Insuficiente</span>
+                    <span className="text-destructive">Insuficiente</span>
                   ) : selectedWarehouse ? (
-                    <span className="text-green-600">OK</span>
+                    <span className="text-success">OK</span>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </p>
               </div>
               <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  hasInsufficientStock ? 'bg-red-100' : 'bg-green-100'
-                }`}
+                className={cn('h-10 w-10 rounded-full flex items-center justify-center',
+                  hasInsufficientStock ? 'bg-destructive/10' : 'bg-success-muted'
+                )}
               >
                 {hasInsufficientStock ? (
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
                 ) : (
-                  <Boxes className="h-5 w-5 text-green-600" />
+                  <Boxes className="h-5 w-5 text-success" />
                 )}
               </div>
             </div>
@@ -363,7 +365,7 @@ export function StockConsumptionPanel({
                       <TableCell>
                         {req.supplierItemId ? (
                           <div>
-                            <p className="font-medium text-green-700">
+                            <p className="font-medium text-success">
                               {req.supplierItemName}
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -373,7 +375,7 @@ export function StockConsumptionPanel({
                         ) : (
                           <Badge
                             variant="outline"
-                            className="bg-orange-50 text-orange-700 cursor-pointer"
+                            className="bg-warning-muted text-warning-muted-foreground cursor-pointer"
                             onClick={() => setShowLinkerDialog(true)}
                           >
                             <Unlink className="h-3 w-3 mr-1" />
@@ -389,7 +391,7 @@ export function StockConsumptionPanel({
                           {req.available !== undefined ? (
                             <span
                               className={
-                                insufficient ? 'text-red-600' : 'text-green-600'
+                                insufficient ? 'text-destructive' : 'text-success'
                               }
                             >
                               {req.available.toFixed(2)}
@@ -401,15 +403,15 @@ export function StockConsumptionPanel({
                       )}
                       <TableCell className="text-center">
                         {!req.supplierItemId ? (
-                          <Badge className="bg-orange-100 text-orange-800">
+                          <Badge className="bg-warning-muted text-warning-muted-foreground">
                             Sin Link
                           </Badge>
                         ) : insufficient ? (
-                          <Badge className="bg-red-100 text-red-800">
+                          <Badge className="bg-destructive/10 text-destructive">
                             Insuficiente
                           </Badge>
                         ) : (
-                          <Badge className="bg-green-100 text-green-800">OK</Badge>
+                          <Badge className="bg-success-muted text-success">OK</Badge>
                         )}
                       </TableCell>
                     </TableRow>
@@ -448,7 +450,7 @@ export function StockConsumptionPanel({
                     <TableCell className="font-medium">
                       {item.supplierItemName}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-red-600">
+                    <TableCell className="text-right font-mono text-destructive">
                       -{item.totalQuantity.toFixed(2)}
                     </TableCell>
                     <TableCell>{item.unit}</TableCell>
@@ -462,13 +464,13 @@ export function StockConsumptionPanel({
 
       {/* Not linked warning */}
       {!allLinked && (
-        <div className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
-          <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-warning-muted rounded-lg border border-warning-muted">
+          <AlertCircle className="h-5 w-5 text-warning-muted-foreground mt-0.5" />
           <div>
-            <p className="font-medium text-orange-800">
+            <p className="font-medium text-warning-muted-foreground">
               Insumos sin vincular
             </p>
-            <p className="text-sm text-orange-700 mt-1">
+            <p className="text-sm text-warning-muted-foreground mt-1">
               Hay {requirements.length - linkedCount} insumo(s) de la receta que no
               están vinculados a items del inventario. El consumo automático de stock
               no funcionará para estos items.
@@ -476,7 +478,7 @@ export function StockConsumptionPanel({
             <Button
               variant="outline"
               size="sm"
-              className="mt-3 border-orange-300 text-orange-700 hover:bg-orange-100"
+              className="mt-3 border-warning-muted text-warning-muted-foreground hover:bg-warning-muted"
               onClick={() => setShowLinkerDialog(true)}
             >
               <Link2 className="h-4 w-4 mr-2" />
@@ -488,7 +490,7 @@ export function StockConsumptionPanel({
 
       {/* Linker Dialog */}
       <Dialog open={showLinkerDialog} onOpenChange={setShowLinkerDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Vincular Insumos a Inventario</DialogTitle>
             <DialogDescription>
@@ -496,6 +498,7 @@ export function StockConsumptionPanel({
               habilitar el consumo automático de stock.
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
           {recipeId && (
             <RecipeInputLinker
               recipeId={recipeId}
@@ -507,6 +510,7 @@ export function StockConsumptionPanel({
               }}
             />
           )}
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLinkerDialog(false)}>
               Cerrar
@@ -606,7 +610,7 @@ export function ConsumeStockDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ArrowDownCircle className="h-5 w-5 text-blue-500" />
+            <ArrowDownCircle className="h-5 w-5 text-info" />
             Consumir Stock
           </DialogTitle>
           <DialogDescription>
@@ -614,7 +618,7 @@ export function ConsumeStockDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           <div className="p-3 bg-muted rounded-lg">
             <p className="text-sm">
               <strong>Orden:</strong> {productionOrderCode}
@@ -646,20 +650,20 @@ export function ConsumeStockDialog({
               id="allowNegative"
               checked={allowNegative}
               onChange={(e) => setAllowNegative(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-border"
             />
             <label htmlFor="allowNegative" className="text-sm">
               Permitir stock negativo
             </label>
           </div>
 
-          <div className="p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+          <div className="p-3 bg-info-muted text-info-muted-foreground rounded-lg text-sm">
             <p>
               El consumo se calculará automáticamente según la receta de la orden
               de producción y la cantidad reportada.
             </p>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -725,7 +729,7 @@ export function ReverseConsumptionDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
-            <RotateCcw className="h-5 w-5 text-orange-500" />
+            <RotateCcw className="h-5 w-5 text-warning" />
             Revertir Consumo de Stock
           </AlertDialogTitle>
           <AlertDialogDescription>

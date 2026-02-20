@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -275,7 +276,7 @@ export function LoadOrderFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
@@ -291,7 +292,7 @@ export function LoadOrderFormModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <DialogBody className="space-y-6">
           {/* Vehículo y Transportista */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -433,7 +434,7 @@ export function LoadOrderFormModal({
                           <TableCell className="text-right">
                             {item.cantidad} {item.unidadMedida}
                           </TableCell>
-                          <TableCell className="text-right text-green-600">
+                          <TableCell className="text-right text-success">
                             {item.cantidadCargada || 0}
                           </TableCell>
                           <TableCell className="text-right">
@@ -482,7 +483,7 @@ export function LoadOrderFormModal({
               rows={3}
             />
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>

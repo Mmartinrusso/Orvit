@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import {
   Sheet,
@@ -144,13 +145,13 @@ interface Quote {
 }
 
 const estadoConfig: Record<string, { label: string; color: string; icon: any }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700', icon: FileText },
-  ENVIADA: { label: 'Enviada', color: 'bg-blue-100 text-blue-700', icon: Send },
-  EN_NEGOCIACION: { label: 'En Negociación', color: 'bg-amber-100 text-amber-700', icon: Clock },
-  ACEPTADA: { label: 'Aceptada', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground', icon: FileText },
+  ENVIADA: { label: 'Enviada', color: 'bg-info-muted text-info-muted-foreground', icon: Send },
+  EN_NEGOCIACION: { label: 'En Negociación', color: 'bg-warning-muted text-warning-muted-foreground', icon: Clock },
+  ACEPTADA: { label: 'Aceptada', color: 'bg-success-muted text-success', icon: CheckCircle },
   CONVERTIDA: { label: 'Convertida', color: 'bg-indigo-100 text-indigo-700', icon: ArrowRightCircle },
-  PERDIDA: { label: 'Perdida', color: 'bg-red-100 text-red-700', icon: XCircle },
-  VENCIDA: { label: 'Vencida', color: 'bg-gray-100 text-gray-500', icon: AlertTriangle },
+  PERDIDA: { label: 'Perdida', color: 'bg-destructive/10 text-destructive', icon: XCircle },
+  VENCIDA: { label: 'Vencida', color: 'bg-muted text-muted-foreground', icon: AlertTriangle },
 };
 
 function formatCurrency(amount: number, currency: string = 'ARS'): string {
@@ -360,7 +361,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
   if (loading) {
     return (
       <Sheet open={open} onOpenChange={() => onClose()}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
+        <SheetContent side="right" size="xl" className="overflow-y-auto">
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
@@ -372,7 +373,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
   if (!quote) {
     return (
       <Sheet open={open} onOpenChange={() => onClose()}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl">
+        <SheetContent side="right" size="xl">
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">Cotización no encontrada</p>
           </div>
@@ -387,7 +388,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
   return (
     <>
       <Sheet open={open} onOpenChange={() => onClose()}>
-        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
+        <SheetContent side="right" size="xl" className="overflow-y-auto p-0">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-background border-b">
             <div className="p-4 flex items-center justify-between">
@@ -481,7 +482,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
             {/* Main Content */}
             <div className="flex-1 p-4">
               <Tabs defaultValue="items">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="w-full justify-start overflow-x-auto">
                   <TabsTrigger value="items">Items</TabsTrigger>
                   <TabsTrigger value="condiciones">Condiciones</TabsTrigger>
                   <TabsTrigger value="versiones">Versiones</TabsTrigger>
@@ -606,23 +607,23 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                   </div>
 
                   {quote.notas && (
-                    <Card className="bg-amber-50 border-amber-200">
+                    <Card className="bg-warning-muted border-warning-muted">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-amber-800">Notas Públicas</CardTitle>
+                        <CardTitle className="text-sm font-medium text-warning-muted-foreground">Notas Públicas</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-amber-900 whitespace-pre-wrap">{quote.notas}</p>
+                        <p className="text-warning-muted-foreground whitespace-pre-wrap">{quote.notas}</p>
                       </CardContent>
                     </Card>
                   )}
 
                   {quote.notasInternas && (
-                    <Card className="bg-blue-50 border-blue-200">
+                    <Card className="bg-info-muted border-info-muted">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-800">Notas Internas</CardTitle>
+                        <CardTitle className="text-sm font-medium text-info-muted-foreground">Notas Internas</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-blue-900 whitespace-pre-wrap">{quote.notasInternas}</p>
+                        <p className="text-info-muted-foreground whitespace-pre-wrap">{quote.notasInternas}</p>
                       </CardContent>
                     </Card>
                   )}
@@ -729,9 +730,9 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                   <div className="space-y-3">
                     {getTimeline().map((item, idx) => (
                       <div key={idx} className="flex gap-3">
-                        <div className={`w-2 h-2 mt-2 rounded-full ${item.completado ? 'bg-primary' : 'bg-muted'}`} />
+                        <div className={cn('w-2 h-2 mt-2 rounded-full', item.completado ? 'bg-primary' : 'bg-muted')} />
                         <div className="flex-1">
-                          <p className={`font-medium ${!item.completado ? 'text-muted-foreground' : ''}`}>
+                          <p className={cn('font-medium', !item.completado && 'text-muted-foreground')}>
                             {item.evento}
                           </p>
                           {item.fecha && (

@@ -5,8 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, BarChart3, TrendingUp, Clock, CalendarDays } from 'lucide-react';
+import { Calendar, BarChart3, TrendingUp, Loader2, CalendarDays } from 'lucide-react';
 import { MonthlyComparison } from './MonthlyComparison';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ComparisonPeriodModalProps {
   isOpen: boolean;
@@ -38,28 +40,28 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
       name: 'Último Año',
       description: '12 meses completos',
       icon: <Calendar className="h-5 w-5" />,
-      color: 'bg-blue-50 border-blue-200 text-blue-800'
+      color: 'bg-info-muted border-info-muted text-info-muted-foreground'
     },
     {
       id: '6months' as PeriodType,
       name: 'Últimos 6 Meses',
       description: '6 meses completos',
       icon: <BarChart3 className="h-5 w-5" />,
-      color: 'bg-green-50 border-green-200 text-green-800'
+      color: 'bg-success-muted border-success-muted text-success'
     },
     {
       id: '3months' as PeriodType,
       name: 'Últimos 3 Meses',
       description: '3 meses completos',
       icon: <TrendingUp className="h-5 w-5" />,
-      color: 'bg-orange-50 border-orange-200 text-orange-800'
+      color: 'bg-warning-muted border-warning-muted text-warning-muted-foreground'
     },
     {
       id: 'custom' as PeriodType,
       name: 'Período Personalizado',
       description: 'Selecciona fechas específicas',
       icon: <CalendarDays className="h-5 w-5" />,
-      color: 'bg-purple-50 border-purple-200 text-purple-800'
+      color: 'bg-info-muted border-info-muted text-info-muted-foreground'
     }
   ];
 
@@ -147,7 +149,7 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
 
   const handleGenerateComparison = () => {
     if (selectedPeriod === 'custom' && (!customStartMonth || !customEndMonth)) {
-      alert('Por favor selecciona las fechas de inicio y fin para el período personalizado');
+      toast.warning('Por favor selecciona las fechas de inicio y fin para el período personalizado');
       return;
     }
     fetchComparisonData();
@@ -164,7 +166,7 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
+            <BarChart3 className="h-6 w-6 text-info-muted-foreground" />
             Comparativa de Períodos
           </DialogTitle>
         </DialogHeader>
@@ -179,21 +181,22 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
                 {periodOptions.map((option) => (
                   <Card 
                     key={option.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedPeriod === option.id 
-                        ? 'ring-2 ring-blue-500 border-blue-500' 
-                        : 'hover:border-gray-300'
-                    }`}
+                    className={cn(
+                      'cursor-pointer transition-all hover:shadow-md',
+                      selectedPeriod === option.id
+                        ? 'ring-2 ring-info border-info'
+                        : 'hover:border-border'
+                    )}
                     onClick={() => setSelectedPeriod(option.id)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${option.color}`}>
+                        <div className={cn('p-2 rounded-lg', option.color)}>
                           {option.icon}
                         </div>
                         <div>
                           <h4 className="font-medium">{option.name}</h4>
-                          <p className="text-sm text-gray-600">{option.description}</p>
+                          <p className="text-sm text-muted-foreground">{option.description}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -216,7 +219,7 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
                         type="month"
                         value={customStartMonth}
                         onChange={(e) => setCustomStartMonth(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-info focus:border-info"
                       />
                     </div>
                     <div>
@@ -225,13 +228,13 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
                         type="month"
                         value={customEndMonth}
                         onChange={(e) => setCustomEndMonth(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-info focus:border-info"
                       />
                     </div>
                   </div>
                   {customStartMonth && customEndMonth && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800">
+                    <div className="mt-4 p-3 bg-info-muted rounded-lg">
+                      <p className="text-sm text-info-muted-foreground">
                         <strong>Período seleccionado:</strong> {formatMonth(customStartMonth)} - {formatMonth(customEndMonth)}
                       </p>
                     </div>
@@ -247,16 +250,14 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-lg ${
-                    periodOptions.find(p => p.id === selectedPeriod)?.color || 'bg-gray-50'
-                  }`}>
+                  <div className={cn('p-3 rounded-lg', periodOptions.find(p => p.id === selectedPeriod)?.color || 'bg-muted')}>
                     {periodOptions.find(p => p.id === selectedPeriod)?.icon}
                   </div>
                   <div>
                     <h4 className="font-medium text-lg">
                       {periodOptions.find(p => p.id === selectedPeriod)?.name}
                     </h4>
-                    <p className="text-gray-600">
+                    <p className="text-muted-foreground">
                       {selectedPeriod === 'custom' && customStartMonth && customEndMonth
                         ? `${formatMonth(customStartMonth)} - ${formatMonth(customEndMonth)}`
                         : periodOptions.find(p => p.id === selectedPeriod)?.description
@@ -279,7 +280,7 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
               >
                 {loading ? (
                   <>
-                    <Clock className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Cargando...
                   </>
                 ) : (
@@ -299,7 +300,7 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
                 <h3 className="text-lg font-semibold">
                   Comparativa: {periodOptions.find(p => p.id === selectedPeriod)?.name}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   {comparisonData.length} mes(es) con datos disponibles
                 </p>
               </div>
@@ -322,7 +323,7 @@ export function ComparisonPeriodModal({ isOpen, onClose, companyId }: Comparison
             ) : (
               <Card>
                 <CardContent className="text-center py-8">
-                  <p className="text-gray-500">No hay datos disponibles para el período seleccionado</p>
+                  <p className="text-muted-foreground">No hay datos disponibles para el período seleccionado</p>
                 </CardContent>
               </Card>
             )}

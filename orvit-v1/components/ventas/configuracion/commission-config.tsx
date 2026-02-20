@@ -26,6 +26,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -362,7 +363,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                         Define el rango de ventas y la comisión correspondiente
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
+                    <DialogBody className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Monto Mínimo ($)</Label>
@@ -397,7 +398,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                           onChange={(e) => setTierForm(prev => ({ ...prev, rate: e.target.value }))}
                         />
                       </div>
-                    </div>
+                    </DialogBody>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setTierDialogOpen(false)}>
                         Cancelar
@@ -432,7 +433,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                           {tier.maxAmount ? formatCurrency(tier.maxAmount) : 'Sin límite'}
                         </TableCell>
                         <TableCell>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-info-muted text-info-muted-foreground">
                             {tier.rate}%
                           </span>
                         </TableCell>
@@ -440,7 +441,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-red-600"
+                            className="text-destructive"
                             onClick={() => handleRemoveTier(tier.id)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -473,7 +474,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                         Define la comisión para una categoría específica
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
+                    <DialogBody className="space-y-4">
                       <div className="space-y-2">
                         <Label>Categoría</Label>
                         <Select
@@ -506,7 +507,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                           onChange={(e) => setCategoryForm(prev => ({ ...prev, rate: e.target.value }))}
                         />
                       </div>
-                    </div>
+                    </DialogBody>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>
                         Cancelar
@@ -545,7 +546,7 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-red-600"
+                            className="text-destructive"
                             onClick={() => handleRemoveCategory(cat.categoryId)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -592,12 +593,12 @@ export function CommissionConfig({ config, categories = [], onSave }: Commission
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-info-muted border border-info-muted rounded-lg p-4">
                 <div className="flex items-start gap-2">
-                  <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900">
+                  <Info className="w-5 h-5 text-info-muted-foreground flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-foreground">
                     <p className="font-medium">Ejemplo de cálculo</p>
-                    <ul className="mt-2 space-y-1 text-blue-800">
+                    <ul className="mt-2 space-y-1 text-foreground">
                       <li>• Venta: $100,000 | Costo: $70,000 | Margen: $30,000</li>
                       <li>
                         • Comisión ({commissionConfig.defaultRate}%) sobre{' '}

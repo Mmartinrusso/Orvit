@@ -10,7 +10,7 @@ export default function ParteDiarioPage() {
     <div className="p-6 flex items-center justify-center min-h-[60vh]">
       <Card className="max-w-md">
         <CardContent className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 mx-auto text-amber-500 mb-4" />
+          <AlertCircle className="h-12 w-12 mx-auto text-warning-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Página reemplazada</h2>
           <p className="text-muted-foreground text-sm mb-6">
             El Parte Diario fue reemplazado por <strong>Producción del Día</strong>,

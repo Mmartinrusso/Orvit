@@ -39,10 +39,10 @@ interface Machine {
 }
 
 const priorities = [
-  { value: 'P1', label: 'P1 - Crítico', description: 'Producción detenida', color: 'bg-red-500' },
+  { value: 'P1', label: 'P1 - Crítico', description: 'Producción detenida', color: 'bg-destructive' },
   { value: 'P2', label: 'P2 - Alto', description: 'Producción afectada', color: 'bg-orange-500' },
-  { value: 'P3', label: 'P3 - Medio', description: 'Sin impacto inmediato', color: 'bg-yellow-500' },
-  { value: 'P4', label: 'P4 - Bajo', description: 'Planificable', color: 'bg-blue-500' },
+  { value: 'P3', label: 'P3 - Medio', description: 'Sin impacto inmediato', color: 'bg-warning' },
+  { value: 'P4', label: 'P4 - Bajo', description: 'Planificable', color: 'bg-primary' },
 ];
 
 export default function ReporteRapidoPage() {
@@ -158,10 +158,10 @@ export default function ReporteRapidoPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
           <CardContent className="pt-8 pb-8">
-            <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
+            <CheckCircle2 className="h-16 w-16 mx-auto text-success mb-4" />
             <h2 className="text-xl font-bold mb-2">Reporte Enviado</h2>
             <p className="text-muted-foreground mb-4">
               Se ha creado una orden de trabajo automáticamente
@@ -176,12 +176,12 @@ export default function ReporteRapidoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen bg-muted pb-8">
       {/* Header */}
-      <div className="bg-red-600 text-white p-4 sticky top-0 z-10">
+      <div className="bg-destructive text-white p-4 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <Link href="/mobile/mi-dia">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-background/20">
               <ChevronLeft className="h-6 w-6" />
             </Button>
           </Link>
@@ -228,7 +228,7 @@ export default function ReporteRapidoPage() {
                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                       selectedMachine?.id === machine.id
                         ? 'border-primary bg-primary/10'
-                        : 'hover:bg-gray-50'
+                        : 'hover:bg-accent'
                     }`}
                   >
                     <p className="font-medium">{machine.name}</p>
@@ -294,7 +294,7 @@ export default function ReporteRapidoPage() {
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                     priority === p.value
                       ? 'border-primary bg-primary/10'
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-accent'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -311,7 +311,7 @@ export default function ReporteRapidoPage() {
         {/* Location Badge */}
         {location && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 text-green-500" />
+            <MapPin className="h-4 w-4 text-success" />
             <span>Ubicación capturada</span>
           </div>
         )}
@@ -320,7 +320,7 @@ export default function ReporteRapidoPage() {
         <Button
           type="submit"
           size="lg"
-          className="w-full bg-red-600 hover:bg-red-700"
+          className="w-full bg-destructive hover:bg-destructive/90"
           disabled={submitting || !selectedMachine || !description.trim()}
         >
           {submitting ? (

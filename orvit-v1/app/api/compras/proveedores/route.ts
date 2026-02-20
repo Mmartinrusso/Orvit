@@ -62,9 +62,10 @@ export const GET = withComprasGuards(async (request: NextRequest) => {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
+    const showInactive = searchParams.get('showInactive') === 'true';
 
     // Generar clave de caché
-    const cacheKey = `proveedores-${companyId}-${search || 'all'}`;
+    const cacheKey = `proveedores-${companyId}-${search || 'all'}-${showInactive}`;
     const cached = proveedoresCache.get(cacheKey);
     
     // Solo usar caché si no hay búsqueda (las búsquedas deben ser dinámicas)
@@ -79,6 +80,8 @@ export const GET = withComprasGuards(async (request: NextRequest) => {
 
     const where: any = {
       company_id: companyId,
+      // Por defecto solo mostrar activos; con showInactive=true mostrar todos
+      ...(!showInactive && { isBlocked: false }),
     };
 
     // Si hay búsqueda, buscar por nombre, razón social, CUIT o código
@@ -101,6 +104,7 @@ export const GET = withComprasGuards(async (request: NextRequest) => {
         razon_social: true,
         cuit: true,
         codigo: true,
+        isBlocked: true,
       },
       orderBy: {
         name: 'asc',

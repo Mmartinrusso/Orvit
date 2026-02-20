@@ -31,13 +31,13 @@ export function MaintenanceSummaryBar({
   const getPriorityColor = (pri?: Priority) => {
     switch (pri) {
       case Priority.LOW:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return 'bg-muted text-muted-foreground border-border';
       case Priority.MEDIUM:
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
       case Priority.HIGH:
-        return 'bg-orange-100 text-orange-700 border-orange-200';
+        return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
       case Priority.URGENT:
-        return 'bg-red-100 text-red-700 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -75,7 +75,7 @@ export function MaintenanceSummaryBar({
       <>
         {/* Máquina/Activo */}
         {machineName ? (
-          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+          <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
             <Wrench className="h-3 w-3 mr-1" />
             {machineName}
           </Badge>
@@ -93,7 +93,7 @@ export function MaintenanceSummaryBar({
 
         {/* Frecuencia - solo si existe */}
         {frequencyDays && frequencyDays > 0 && (
-          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+          <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
             <Calendar className="h-3 w-3 mr-1" />
             {frequencyDays}d
           </Badge>
@@ -120,7 +120,7 @@ export function MaintenanceSummaryBar({
     <div className={cn('flex flex-wrap items-center gap-2 py-2', className)}>
       {/* Máquina/Activo */}
       {machineName ? (
-        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+        <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
           <Wrench className="h-3 w-3 mr-1" />
           {machineName}
         </Badge>
@@ -144,7 +144,7 @@ export function MaintenanceSummaryBar({
 
       {/* Frecuencia */}
       {frequencyDays ? (
-        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+        <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
           <Calendar className="h-3 w-3 mr-1" />
           Cada {frequencyDays} día{frequencyDays !== 1 ? 's' : ''}
         </Badge>
@@ -157,7 +157,7 @@ export function MaintenanceSummaryBar({
 
       {/* Próxima ejecución */}
       {nextExecutionDate && formatDate(nextExecutionDate) ? (
-        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+        <Badge variant="outline" className="text-xs bg-success-muted text-success border-success-muted">
           <AlertCircle className="h-3 w-3 mr-1" />
           Próxima: {formatDate(nextExecutionDate)}
         </Badge>

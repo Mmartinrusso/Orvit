@@ -28,7 +28,8 @@ import {
   Cog,
   X,
   Network,
-  Tag
+  Tag,
+  Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -509,17 +510,6 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
           if (response.ok) {
             const components = await response.json();
             componentsMap[machine.id.toString()] = components;
-            // Debug: mostrar estructura de componentes
-            console.log(`[SectorSchema] Machine ${machine.name} (${machine.id}) loaded ${components.length} root components`);
-            const countWithChildren = components.filter((c: any) => c.children && c.children.length > 0).length;
-            console.log(`[SectorSchema] - ${countWithChildren} components have children`);
-            if (countWithChildren > 0) {
-              components.forEach((c: any) => {
-                if (c.children && c.children.length > 0) {
-                  console.log(`[SectorSchema]   - "${c.name}" has ${c.children.length} children`);
-                }
-              });
-            }
           } else {
             componentsMap[machine.id.toString()] = [];
           }
@@ -714,8 +704,6 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
   nodes.forEach(n => {
     nodesByDepth[n.depth] = (nodesByDepth[n.depth] || 0) + 1;
   });
-  console.log('[SectorSchema] Total nodes:', nodes.length, '| By depth:', nodesByDepth);
-
   // Generar conexiones: sector -> máquinas -> componentes (todos los niveles)
   const edges: Edge[] = [];
   const sectorNode = nodes.find(n => n.type === 'Máquina principal');
@@ -768,9 +756,6 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
       });
     });
   }
-
-  // Debug: Log total edges
-  console.log('[SectorSchema] Total edges:', edges.length);
 
   // Handlers para interacción
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -840,10 +825,6 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
   function addComponentsToNodes(components: any[], parentX: number, parentY: number, depth: number, machineId: string, parentComponentId?: string) {
     if (components.length === 0) return;
 
-    // Debug: Log component tree depth
-    console.log(`[SectorSchema] Adding ${components.length} components at depth ${depth}`,
-      parentComponentId ? `(parent: ${parentComponentId})` : '(root level)');
-    
     // Calcular anchos de componentes
     const componentWidths = components.map(comp => calculateNodeWidth(comp.name));
     // Usar un espaciado mucho mayor para componentes
@@ -896,7 +877,6 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
       
       // Agregar subcomponentes recursivamente si el componente está expandido
       if (component.children && component.children.length > 0) {
-        console.log(`[SectorSchema] Component "${component.name}" has ${component.children.length} children, expanded: ${expandedComponents[componentNodeId] || false}`);
         // Solo mostrar hijos si el componente está expandido
         if (expandedComponents[componentNodeId]) {
           addComponentsToNodes(component.children, adjustedNode.x, currentY, depth + 1, machineId, componentNodeId);
@@ -1101,7 +1081,7 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
         </div>
 
         {/* Instrucciones */}
-        <div className="text-center text-sm text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg p-2">
+        <div className="text-center text-sm text-muted-foreground bg-info-muted border border-info-muted rounded-lg p-2">
           💡 <strong>Instrucciones:</strong> Click = expandir/contraer • Doble click = ver detalles (máquinas y componentes)
         </div>
 
@@ -1133,7 +1113,7 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
         </div>
 
         {/* Información de estado */}
-        <div className="text-center text-xs text-muted-foreground bg-green-50 border border-green-200 rounded-lg p-2">
+        <div className="text-center text-xs text-muted-foreground bg-success-muted border border-success-muted rounded-lg p-2">
           📊 <strong>Estado:</strong> {Object.values(expandedMachines).filter(Boolean).length} de {machines.length} máquinas expandidas • {Object.values(expandedComponents).filter(Boolean).length} componentes expandidos
         </div>
 
@@ -1154,7 +1134,7 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
           {isLoadingComponents && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground">Cargando componentes...</span>
               </div>
             </div>
@@ -1221,23 +1201,23 @@ export default function SectorSchemaView({ sector, machines, onMachineClick, onC
                 <span>Máquina principal</span>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded"></div>
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-success rounded"></div>
                 <span>Operacional</span>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded"></div>
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-warning rounded"></div>
                 <span>Mantenimiento</span>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded"></div>
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-warning rounded"></div>
                 <span>Advertencia</span>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded"></div>
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-destructive rounded"></div>
                 <span>Error</span>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                <div className="w-3 sm:w-4 h-0.5 bg-gray-500 opacity-60"></div>
+                <div className="w-3 sm:w-4 h-0.5 bg-muted-foreground opacity-60"></div>
                 <span>Conexión</span>
               </div>
             </div>

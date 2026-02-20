@@ -16,8 +16,8 @@ export default function MachineHeader({ machine }: MachineHeaderProps) {
       )}
       <div>
         <h1 className="text-3xl font-bold mb-1">{machine.name}</h1>
-        <div className="text-gray-600">ID: {machine.id}</div>
-        <div className="text-gray-500 text-sm mt-1">Estado: <span className="font-semibold">{machine.status || 'Desconocido'}</span></div>
+        <div className="text-muted-foreground">ID: {machine.id}</div>
+        <div className="text-muted-foreground text-sm mt-1">Estado: <span className="font-semibold">{machine.status || 'Desconocido'}</span></div>
       </div>
     </div>
   );

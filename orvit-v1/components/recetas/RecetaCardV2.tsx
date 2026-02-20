@@ -52,10 +52,10 @@ export default function RecetaCardV2({
   // Get base type color
   const getBaseTypeColor = (baseType: string) => {
     switch (baseType) {
-      case 'PER_BATCH': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'PER_BANK': return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'PER_M3': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
+      case 'PER_BATCH': return 'bg-info-muted text-info-muted-foreground border-info-muted';
+      case 'PER_BANK': return 'bg-info-muted text-info-muted-foreground border-info-muted';
+      case 'PER_M3': return 'bg-info-muted text-info-muted-foreground border-info-muted';
+      default: return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -104,7 +104,7 @@ export default function RecetaCardV2({
                 variant={recipe.isActive ? "default" : "secondary"}
                 className={cn(
                   "shrink-0",
-                  recipe.isActive && "bg-green-500 hover:bg-green-600"
+                  recipe.isActive && "bg-success hover:bg-success/90"
                 )}
               >
                 {recipe.isActive ? 'Activa' : 'Inactiva'}
@@ -126,7 +126,7 @@ export default function RecetaCardV2({
               )}
 
               {recipe.baseType === 'PER_BANK' && recipe.metrosUtiles && (
-                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                <Badge variant="outline" className="bg-info-muted text-info-muted-foreground border-info-muted">
                   <Layers className="h-3 w-3 mr-1" />
                   {recipe.metrosUtiles}m
                   {recipe.cantidadPastones && ` / ${recipe.cantidadPastones} pastones`}
@@ -141,7 +141,7 @@ export default function RecetaCardV2({
               )}
 
               {recipe.notes && (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning-muted">
                   <FileText className="h-3 w-3 mr-1" />
                   Con notas
                 </Badge>
@@ -153,7 +153,7 @@ export default function RecetaCardV2({
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Costo por {getUnitLabel()}:</span>
-                <span className="font-semibold text-green-600">
+                <span className="font-semibold text-success">
                   ${costPerUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
@@ -193,8 +193,8 @@ export default function RecetaCardV2({
                 className={cn(
                   "h-8 px-2",
                   recipe.isActive
-                    ? "text-green-600 hover:text-green-700 hover:bg-green-50"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "text-success hover:text-success hover:bg-success-muted"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {recipe.isActive ? (
@@ -246,7 +246,7 @@ export default function RecetaCardV2({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={onDelete}
-                  className="text-red-600 focus:text-red-600"
+                  className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Eliminar

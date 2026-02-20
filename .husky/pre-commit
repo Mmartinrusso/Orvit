@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# =============================================================================
+# Pre-commit: Escaneo de secretos con Gitleaks
+# =============================================================================
+# Verifica que no se commiteen credenciales, API keys, o secretos.
+# Para instalar gitleaks: https://github.com/gitleaks/gitleaks#installing
+# =============================================================================
+
+# Verificar si gitleaks está instalado
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "🔍 Escaneando secretos con Gitleaks..."
+  gitleaks protect --staged --verbose --config .gitleaks.toml
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ COMMIT BLOQUEADO: Se detectaron secretos en los cambios."
+    echo "   Revisa los archivos marcados arriba y elimina los secretos."
+    echo "   Si es un falso positivo, agrega el path al allowlist en .gitleaks.toml"
+    echo ""
+    exit 1
+  fi
+  echo "✅ No se detectaron secretos."
+else
+  echo "⚠️  Gitleaks no está instalado. Saltando escaneo de secretos."
+  echo "   Instalar: https://github.com/gitleaks/gitleaks#installing"
+  echo "   Windows: winget install Gitleaks.Gitleaks"
+  echo "   Mac: brew install gitleaks"
+fi
+
+# Verificar que no haya NEXT_PUBLIC_AWS_* en el código
+echo "🔍 Verificando que no haya NEXT_PUBLIC_AWS_*..."
+FOUND=$(git diff --cached --name-only | xargs grep -l "NEXT_PUBLIC_AWS_" 2>/dev/null || true)
+if [ -n "$FOUND" ]; then
+  echo ""
+  echo "❌ COMMIT BLOQUEADO: Se encontró NEXT_PUBLIC_AWS_* en:"
+  echo "$FOUND"
+  echo "   Las credenciales AWS NUNCA deben exponerse al cliente."
+  echo ""
+  exit 1
+fi
+echo "✅ No hay credenciales AWS expuestas al cliente."

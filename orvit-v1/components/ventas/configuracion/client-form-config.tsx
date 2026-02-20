@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -181,7 +182,7 @@ export function ClientFormConfig() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="p-3">
             <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-blue-500" />
+              <Lock className="w-4 h-4 text-primary" />
               <div>
                 <p className="text-xs text-muted-foreground">Básicos</p>
                 <p className="text-lg font-bold">{stats.coreCount}</p>
@@ -190,7 +191,7 @@ export function ClientFormConfig() {
           </Card>
           <Card className="p-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-4 h-4 text-success" />
               <div>
                 <p className="text-xs text-muted-foreground">Activas</p>
                 <p className="text-lg font-bold">{stats.enabledOptional}/{stats.optionalCount}</p>
@@ -199,7 +200,7 @@ export function ClientFormConfig() {
           </Card>
           <Card className="p-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-500" />
+              <Sparkles className="w-4 h-4 text-warning-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Disponibles</p>
                 <p className="text-lg font-bold">{stats.remainingSlots !== null ? stats.remainingSlots : '∞'}</p>
@@ -211,7 +212,7 @@ export function ClientFormConfig() {
               {hasChanges ? (
                 <AlertCircle className="w-4 h-4 text-orange-500" />
               ) : (
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <CheckCircle2 className="w-4 h-4 text-success" />
               )}
               <div>
                 <p className="text-xs text-muted-foreground">Estado</p>
@@ -262,9 +263,7 @@ export function ClientFormConfig() {
                         return (
                           <div
                             key={feature.id}
-                            className={`p-3 border rounded-lg transition-colors ${
-                              isEnabled ? 'bg-primary/5 border-primary/20' : 'bg-background'
-                            }`}
+                            className={cn('p-3 border rounded-lg transition-colors', isEnabled ? 'bg-primary/5 border-primary/20' : 'bg-background')}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
@@ -310,10 +309,10 @@ export function ClientFormConfig() {
         </Tabs>
 
         {/* Campos básicos */}
-        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+        <Card className="border-primary/30 bg-info-muted/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Lock className="w-4 h-4 text-blue-500" />
+              <Lock className="w-4 h-4 text-primary" />
               Campos Básicos (Siempre Activos)
             </CardTitle>
           </CardHeader>

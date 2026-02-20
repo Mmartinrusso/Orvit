@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NotificationType } from "@prisma/client";
+import { sendTechnicianDM } from './discord/notifications';
 
 // Helper para mapear strings a valores válidos del enum NotificationType
 function mapToValidNotificationType(type: string): NotificationType {
@@ -45,6 +46,10 @@ function mapToValidNotificationType(type: string): NotificationType {
     'CHEQUE_OVERDUE': 'cheque_overdue',
     'QUOTE_EXPIRING': 'quote_expiring',
     'PAYMENT_RECEIVED': 'payment_received',
+
+    // Notificaciones de producción
+    'RUTINA_INCOMPLETA': 'system_alert',
+    'RUTINA_RECORDATORIO': 'system_alert',
 
     // Fallbacks para compatibilidad
     'USER_CREATED': 'system_alert',
@@ -173,9 +178,42 @@ export async function createAndSendInstantNotification(
 
     // 3. Enviar instantáneamente por SSE
     const sent = sendInstantNotification(userId, notification);
-    
+
+    // 4. Enviar DM de Discord para eventos de tareas (si el usuario tiene Discord vinculado)
+    const TASK_DISCORD_DM_TYPES = new Set([
+      'TASK_ASSIGNED', 'TASK_COMMENTED', 'TASK_UPDATED',
+      'TASK_COMPLETED', 'TASK_DELETED', 'TASK_OVERDUE',
+      'TASK_DUE_TODAY', 'TASK_DUE_SOON',
+      'RUTINA_INCOMPLETA',
+      'RUTINA_RECORDATORIO',
+    ]);
+    if (TASK_DISCORD_DM_TYPES.has(type.toUpperCase())) {
+      const PRIORITY_COLORS: Record<string, number> = {
+        urgente: 0xef4444, alta: 0xf59e0b, media: 0x6366f1, baja: 0x64748b,
+        urgent: 0xef4444, high: 0xf59e0b, medium: 0x6366f1, low: 0x64748b,
+      };
+      const priorityStr = (extraMetadata?.priority as string | undefined)?.toLowerCase() ?? '';
+      const dmColor = PRIORITY_COLORS[priorityStr] ?? 0x6366f1;
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const taskUrl = taskId ? `${appUrl}/tareas?id=${taskId}` : null;
+
+      sendTechnicianDM(userId, {
+        embed: {
+          title,
+          description: message,
+          color: dmColor,
+          fields: taskUrl ? [{ name: '🔗 Ver tarea', value: `[Abrir en ORVIT](${taskUrl})`, inline: false }] : [],
+          footer: taskId ? `Tarea #${taskId} | ORVIT` : 'ORVIT',
+          timestamp: true,
+        },
+      }).catch((dmErr: unknown) => {
+        console.warn('[Discord DM]', type, '→ userId', userId, ':', dmErr instanceof Error ? dmErr.message : String(dmErr));
+      });
+    }
+
     console.log(`🚀 Notificación ${type} procesada: BD=${!!dbNotificationId}, SSE=${sent}`);
-    
+
     return {
       success: true,
       dbSaved: !!dbNotificationId,

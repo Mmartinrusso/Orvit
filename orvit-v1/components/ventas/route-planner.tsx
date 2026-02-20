@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -42,11 +43,11 @@ interface RoutePlannerProps {
 }
 
 const ESTADO_COLORS: Record<string, string> = {
-  PENDIENTE: 'bg-gray-100 text-gray-700',
-  EN_PREPARACION: 'bg-yellow-100 text-yellow-700',
-  LISTA_PARA_DESPACHO: 'bg-blue-100 text-blue-700',
+  PENDIENTE: 'bg-muted text-foreground',
+  EN_PREPARACION: 'bg-warning-muted text-warning-muted-foreground',
+  LISTA_PARA_DESPACHO: 'bg-info-muted text-info-muted-foreground',
   EN_TRANSITO: 'bg-purple-100 text-purple-700',
-  ENTREGADA: 'bg-green-100 text-green-700',
+  ENTREGADA: 'bg-success-muted text-success-muted-foreground',
 };
 
 export function RoutePlanner({
@@ -73,11 +74,7 @@ export function RoutePlanner({
           return (
             <div
               key={delivery.id}
-              className={`relative border rounded-lg p-4 transition-all ${
-                isSelected
-                  ? 'border-primary bg-primary/5 shadow-sm'
-                  : 'border-border hover:border-primary/50'
-              }`}
+              className={cn('relative border rounded-lg p-4 transition-all', isSelected ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/50')}
             >
               {/* Sequence number badge for selected items */}
               {isSelected && sequenceNumber > 0 && (

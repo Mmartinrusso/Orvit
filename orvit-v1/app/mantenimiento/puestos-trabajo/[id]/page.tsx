@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import InstructiveDialog from '@/components/mantenimiento/InstructiveDialog';
 import WorkStationMachinesDialog from '@/components/mantenimiento/WorkStationMachinesDialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 
 interface WorkStation {
@@ -87,6 +88,7 @@ interface Instructive {
 }
 
 export default function WorkStationDetailPage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const { currentCompany } = useCompany();
@@ -148,7 +150,13 @@ export default function WorkStationDetailPage() {
   };
 
   const handleDeleteInstructive = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este instructivo?')) {
+    const ok = await confirm({
+      title: 'Eliminar instructivo',
+      description: '¿Estás seguro de que quieres eliminar este instructivo?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) {
       return;
     }
 
@@ -183,11 +191,11 @@ export default function WorkStationDetailPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge className="bg-green-100 text-green-800">Activo</Badge>;
+        return <Badge className="bg-success-muted text-success">Activo</Badge>;
       case 'INACTIVE':
         return <Badge variant="secondary">Inactivo</Badge>;
       case 'MAINTENANCE':
-        return <Badge className="bg-orange-100 text-orange-800">Mantenimiento</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground">Mantenimiento</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -203,13 +211,13 @@ export default function WorkStationDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-muted text-success';
       case 'MAINTENANCE':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'OUT_OF_SERVICE':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -220,15 +228,15 @@ export default function WorkStationDetailPage() {
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="animate-pulse bg-gray-200 h-8 w-64 rounded"></div>
+          <div className="animate-pulse bg-muted h-8 w-64 rounded"></div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="animate-pulse">
             <CardHeader>
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <div className="h-4 bg-muted rounded w-32"></div>
             </CardHeader>
             <CardContent>
-              <div className="h-20 bg-gray-200 rounded"></div>
+              <div className="h-20 bg-muted rounded"></div>
             </CardContent>
           </Card>
         </div>
@@ -381,7 +389,7 @@ export default function WorkStationDetailPage() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleDeleteInstructive(instructive.id)}
-                              className="text-red-600"
+                              className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Eliminar
@@ -431,7 +439,7 @@ export default function WorkStationDetailPage() {
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">{workStationMachine.machine.name}</h4>
                           {workStationMachine.machine.nickname && (
-                            <span className="text-sm text-gray-500">({workStationMachine.machine.nickname})</span>
+                            <span className="text-sm text-muted-foreground">({workStationMachine.machine.nickname})</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
@@ -448,7 +456,7 @@ export default function WorkStationDetailPage() {
                           )}
                         </div>
                         {workStationMachine.notes && (
-                          <p className="text-sm text-gray-600 mt-1">{workStationMachine.notes}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{workStationMachine.notes}</p>
                         )}
                       </div>
                     </div>

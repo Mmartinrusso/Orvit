@@ -378,9 +378,9 @@ export default function RepuestosPage() {
       return <Badge variant="destructive">Sin stock</Badge>;
     }
     if (part.stockQuantity <= part.minStockLevel) {
-      return <Badge variant="outline" className="border-amber-500 text-amber-600">Stock bajo</Badge>;
+      return <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground">Stock bajo</Badge>;
     }
-    return <Badge variant="outline" className="border-green-500 text-green-600">OK</Badge>;
+    return <Badge variant="outline" className="border-success-muted text-success">OK</Badge>;
   };
 
   if (loading) {
@@ -448,29 +448,29 @@ export default function RepuestosPage() {
               </CardContent>
             </Card>
 
-            <Card className={kpis.lowStock > 0 ? 'border-amber-500/50' : ''}>
+            <Card className={kpis.lowStock > 0 ? 'border-warning-muted/50' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Stock Bajo</p>
-                    <p className="text-2xl font-bold mt-1 text-amber-600">{kpis.lowStock}</p>
+                    <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{kpis.lowStock}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                    <TrendingDown className="h-4 w-4 text-amber-600" />
+                  <div className="p-2 rounded-lg bg-warning-muted">
+                    <TrendingDown className="h-4 w-4 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={kpis.outOfStock > 0 ? 'border-red-500/50' : ''}>
+            <Card className={kpis.outOfStock > 0 ? 'border-destructive/30/50' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Sin Stock</p>
-                    <p className="text-2xl font-bold mt-1 text-red-600">{kpis.outOfStock}</p>
+                    <p className="text-2xl font-bold mt-1 text-destructive">{kpis.outOfStock}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                   </div>
                 </div>
               </CardContent>
@@ -497,8 +497,8 @@ export default function RepuestosPage() {
                     <p className="text-xs font-medium text-muted-foreground">Valor Total</p>
                     <p className="text-2xl font-bold mt-1">${kpis.totalValue.toLocaleString('es-AR')}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                    <DollarSign className="h-4 w-4 text-green-600" />
+                  <div className="p-2 rounded-lg bg-success-muted">
+                    <DollarSign className="h-4 w-4 text-success" />
                   </div>
                 </div>
               </CardContent>
@@ -619,7 +619,7 @@ export default function RepuestosPage() {
                         <Badge variant="secondary">{part.category || 'Sin categoría'}</Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className={`font-semibold ${part.stockQuantity <= part.minStockLevel ? 'text-red-600' : ''}`}>
+                        <span className={`font-semibold ${part.stockQuantity <= part.minStockLevel ? 'text-destructive' : ''}`}>
                           {part.stockQuantity}
                         </span>
                         <span className="text-muted-foreground text-xs"> / {part.minStockLevel}</span>
@@ -650,7 +650,7 @@ export default function RepuestosPage() {
                             <DropdownMenuSeparator />
                             {canDeleteProduct && (
                               <DropdownMenuItem
-                                className="text-red-600"
+                                className="text-destructive"
                                 onClick={() => { setSelectedPart(part); setShowDeleteDialog(true); }}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -777,7 +777,7 @@ export default function RepuestosPage() {
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-red-600">
+              <DialogTitle className="flex items-center gap-2 text-destructive">
                 <Trash2 className="h-5 w-5" />
                 Eliminar Repuesto
               </DialogTitle>

@@ -73,10 +73,10 @@ interface ToolGridProps {
 }
 
 const ITEM_TYPE_CONFIG = {
-  TOOL: { label: 'Herramienta', icon: Wrench, color: 'bg-blue-500', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  SUPPLY: { label: 'Insumo', icon: Box, color: 'bg-green-500', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  TOOL: { label: 'Herramienta', icon: Wrench, color: 'bg-info', iconBg: 'bg-info-muted', iconColor: 'text-info-muted-foreground' },
+  SUPPLY: { label: 'Insumo', icon: Box, color: 'bg-success', iconBg: 'bg-success-muted', iconColor: 'text-success' },
   SPARE_PART: { label: 'Repuesto', icon: Cog, color: 'bg-purple-500', iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
-  HAND_TOOL: { label: 'Herramienta Manual', icon: Wrench, color: 'bg-amber-500', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  HAND_TOOL: { label: 'Herramienta Manual', icon: Wrench, color: 'bg-warning', iconBg: 'bg-warning-muted', iconColor: 'text-warning-muted-foreground' },
 };
 
 export function ToolGrid({
@@ -95,12 +95,12 @@ export function ToolGrid({
 
   const getStockStatus = (tool: Tool) => {
     if (tool.stockQuantity === 0) {
-      return { label: 'Sin Stock', color: 'bg-red-500', textColor: 'text-red-600', badgeVariant: 'destructive' as const };
+      return { label: 'Sin Stock', color: 'bg-destructive', textColor: 'text-destructive', badgeVariant: 'destructive' as const };
     }
     if (tool.stockQuantity <= tool.minStockLevel) {
-      return { label: 'Stock Bajo', color: 'bg-amber-500', textColor: 'text-amber-600', badgeVariant: 'secondary' as const };
+      return { label: 'Stock Bajo', color: 'bg-warning', textColor: 'text-warning-muted-foreground', badgeVariant: 'secondary' as const };
     }
-    return { label: 'OK', color: 'bg-green-500', textColor: 'text-green-600', badgeVariant: 'default' as const };
+    return { label: 'OK', color: 'bg-success', textColor: 'text-success', badgeVariant: 'default' as const };
   };
 
   // Loading skeleton
@@ -179,7 +179,7 @@ export function ToolGrid({
                       <div>
                         <div className="font-medium flex items-center gap-2">
                           {tool.name}
-                          {tool.isCritical && <AlertTriangle className="h-3 w-3 text-red-500" />}
+                          {tool.isCritical && <AlertTriangle className="h-3 w-3 text-destructive" />}
                         </div>
                         {tool.code && (
                           <div className="text-xs text-muted-foreground font-mono">{tool.code}</div>
@@ -209,7 +209,7 @@ export function ToolGrid({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        className="h-7 w-7 text-success hover:text-success hover:bg-success-muted"
                         onClick={(e) => { e.stopPropagation(); onStockIn?.(tool); }}
                         title="Entrada"
                       >
@@ -218,7 +218,7 @@ export function ToolGrid({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={(e) => { e.stopPropagation(); onStockOut?.(tool); }}
                         disabled={tool.stockQuantity === 0}
                         title="Salida"
@@ -248,7 +248,7 @@ export function ToolGrid({
                           {canDelete && onDelete && (
                             <>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600" onClick={() => onDelete(tool)}>
+                              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(tool)}>
                                 <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                               </DropdownMenuItem>
                             </>
@@ -324,7 +324,7 @@ export function ToolGrid({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                      className="h-8 text-success hover:text-success hover:bg-success-muted border-success-muted"
                       onClick={(e) => { e.stopPropagation(); onStockIn?.(tool); }}
                     >
                       <ArrowUp className="h-4 w-4 mr-1" />
@@ -333,7 +333,7 @@ export function ToolGrid({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
                       onClick={(e) => { e.stopPropagation(); onStockOut?.(tool); }}
                       disabled={tool.stockQuantity === 0}
                     >
@@ -363,7 +363,7 @@ export function ToolGrid({
                         {canDelete && onDelete && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={() => onDelete(tool)}>
+                            <DropdownMenuItem className="text-destructive" onClick={() => onDelete(tool)}>
                               <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                             </DropdownMenuItem>
                           </>
@@ -444,7 +444,7 @@ export function ToolGrid({
                     {canDelete && onDelete && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600" onClick={() => onDelete(tool)}>
+                        <DropdownMenuItem className="text-destructive" onClick={() => onDelete(tool)}>
                           <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                         </DropdownMenuItem>
                       </>
@@ -486,7 +486,7 @@ export function ToolGrid({
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
                   onClick={(e) => { e.stopPropagation(); onStockIn?.(tool); }}
                 >
                   <ArrowUp className="h-4 w-4 mr-1" />

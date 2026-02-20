@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useCalculadoraCostosFinal } from '@/hooks/use-dashboard-data';
 import { usePriceComparisons } from '@/hooks/use-price-comparisons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,16 +34,19 @@ import {
     BarChart2,
     Plus,
     X,
-    Trash2
+    Trash2,
+    Loader2
 } from 'lucide-react';
 import { NotesDialog } from '@/components/ui/NotesDialog';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 import { formatCurrency } from '@/components/dashboard';
 import * as XLSX from 'xlsx';
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 // Para debugging temporal, cambiar a true
 const DEBUG = false; // Desactivado para mejor rendimiento
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 const warn = DEBUG ? console.warn.bind(console) : () => {};
 
 interface ProductPrice {
@@ -121,6 +125,7 @@ interface PriceComparison {
 
 export function CalculadoraCostosEmbedded() {
     const { currentCompany } = useCompany();
+    const confirm = useConfirm();
     const [activeTab, setActiveTab] = useState('calculadora');
 
     // ✨ OPTIMIZADO: React Query maneja el fetch automáticamente cuando activeTab === 'produccion'
@@ -662,7 +667,7 @@ export function CalculadoraCostosEmbedded() {
             });
 
         if (productsToExport.length === 0) {
-            alert('No hay productos configurados en la simulación para exportar');
+            toast.warning('No hay productos configurados en la simulación para exportar');
             return;
         }
 
@@ -903,7 +908,7 @@ export function CalculadoraCostosEmbedded() {
             });
 
         if (productsToCompare.length === 0) {
-            alert('No hay productos en la simulación para comparar. Ejecuta una simulación primero.');
+            toast.warning('No hay productos en la simulación para comparar. Ejecuta una simulación primero.');
             return;
         }
 
@@ -915,7 +920,7 @@ export function CalculadoraCostosEmbedded() {
 
     const handleAddCompetitor = () => {
         if (!newCompetitorName.trim()) {
-            alert('Por favor, ingresa un nombre para el competidor.');
+            toast.warning('Por favor, ingresa un nombre para el competidor.');
             return;
         }
 
@@ -943,7 +948,7 @@ export function CalculadoraCostosEmbedded() {
 
     const handleAddMultipleCompetitors = () => {
         if (!newCompetitorName.trim()) {
-            alert('Por favor, ingresa al menos un nombre para el competidor.');
+            toast.warning('Por favor, ingresa al menos un nombre para el competidor.');
             return;
         }
 
@@ -954,7 +959,7 @@ export function CalculadoraCostosEmbedded() {
             .filter(name => name.length > 0);
 
         if (competitorNames.length === 0) {
-            alert('Por favor, ingresa al menos un nombre válido para el competidor.');
+            toast.warning('Por favor, ingresa al menos un nombre válido para el competidor.');
             return;
         }
 
@@ -981,7 +986,7 @@ export function CalculadoraCostosEmbedded() {
             }));
 
         if (newCompetitors.length === 0) {
-            alert('Todos los competidores ingresados ya existen.');
+            toast.info('Todos los competidores ingresados ya existen.');
             setNewCompetitorName('');
             return;
         }
@@ -1011,12 +1016,12 @@ export function CalculadoraCostosEmbedded() {
 
     const handleSaveNewComparison = async (): Promise<void> => {
         if (!newComparisonName.trim()) {
-            alert('Por favor, ingresa un nombre para la comparativa.');
+            toast.warning('Por favor, ingresa un nombre para la comparativa.');
             return;
         }
 
         if (competitors.length === 0) {
-            alert('Por favor, agrega al menos un competidor.');
+            toast.warning('Por favor, agrega al menos un competidor.');
             return;
         }
 
@@ -1098,27 +1103,32 @@ export function CalculadoraCostosEmbedded() {
             setCompetitors([]);
         } catch (error) {
             console.error('❌ Error guardando comparativa:', error);
-            alert('Error al guardar la comparativa. Por favor, intenta nuevamente.');
+            toast.error('Error al guardar la comparativa. Por favor, intenta nuevamente.');
         }
     };
 
     const handleDeleteComparison = async (comparisonId: string) => {
-        if (confirm('¿Estás seguro de que quieres eliminar esta comparativa?')) {
-            try {
-                const response = await fetch(`/api/price-comparisons?id=${comparisonId}`, {
-                    method: 'DELETE'
-                });
+        const ok = await confirm({
+            title: 'Eliminar comparativa',
+            description: '¿Estás seguro de que quieres eliminar esta comparativa?',
+            confirmText: 'Eliminar',
+            variant: 'destructive',
+        });
+        if (!ok) return;
+        try {
+            const response = await fetch(`/api/price-comparisons?id=${comparisonId}`, {
+                method: 'DELETE'
+            });
 
-                if (!response.ok) {
-                    throw new Error('Error al eliminar la comparativa');
-                }
-
-                const updatedComparisons = comparisons.filter(c => c.id !== comparisonId);
-                await saveComparisons(updatedComparisons);
-            } catch (error) {
-                console.error('Error eliminando comparativa:', error);
-                alert('Error al eliminar la comparativa. Por favor, intenta nuevamente.');
+            if (!response.ok) {
+                throw new Error('Error al eliminar la comparativa');
             }
+
+            const updatedComparisons = comparisons.filter(c => c.id !== comparisonId);
+            await saveComparisons(updatedComparisons);
+        } catch (error) {
+            console.error('Error eliminando comparativa:', error);
+            toast.error('Error al eliminar la comparativa. Por favor, intenta nuevamente.');
         }
     };
 
@@ -1204,7 +1214,7 @@ export function CalculadoraCostosEmbedded() {
         log('🔍 Total productos con cantidad > 0:', Object.keys(quantities).length);
 
         if (Object.keys(quantities).length === 0) {
-            alert('Por favor introduce al menos una cantidad para simular');
+            toast.warning('Por favor introduce al menos una cantidad para simular');
             return;
         }
 
@@ -1256,11 +1266,11 @@ export function CalculadoraCostosEmbedded() {
             } else {
                 const errorData = await response.json();
                 console.error('Error en simulación:', errorData);
-                alert('Error: ' + (errorData.details || errorData.error));
+                toast.error('Error: ' + (errorData.details || errorData.error));
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error ejecutando simulación');
+            toast.error('Error ejecutando simulación');
         } finally {
             setSimulationLoading(false);
         }
@@ -1350,7 +1360,7 @@ export function CalculadoraCostosEmbedded() {
                         onClick={() => setShowNotesDialog(true)} 
                         variant="outline" 
                         size="sm"
-                        className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                        className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
                     >
                         <BookOpen className="h-4 w-4 mr-2" />
                         Notas
@@ -1382,7 +1392,7 @@ export function CalculadoraCostosEmbedded() {
                 <div className="surface-card p-3 md:p-6 rounded-lg md:rounded-xl hover:shadow-lg transition-all duration-200 border border-border/30">
                     <div className="text-xs md:text-sm mb-1 md:mb-2 text-muted-foreground">Total Productos</div>
                     <div className="text-lg md:text-3xl font-bold mb-1 md:mb-2 text-foreground">{stats.totalProducts}</div>
-                    <div className="flex items-center text-blue-500 text-xs md:text-sm">
+                    <div className="flex items-center text-info-muted-foreground text-xs md:text-sm">
                         <Package className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         {stats.productsWithRecipe} con receta
                     </div>
@@ -1395,7 +1405,7 @@ export function CalculadoraCostosEmbedded() {
                     <div className="text-base md:text-2xl font-bold mb-1 md:mb-2 text-foreground">
                         {activeTab === 'produccion' ? stats.productsWithProduction : stats.productsWithoutRecipe}
                     </div>
-                    <div className="flex items-center text-green-500 text-xs md:text-sm">
+                    <div className="flex items-center text-success text-xs md:text-sm">
                         {activeTab === 'produccion' ? (
                             <CheckCircle className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         ) : (
@@ -1408,7 +1418,7 @@ export function CalculadoraCostosEmbedded() {
                 <div className="surface-card p-3 md:p-6 rounded-lg md:rounded-xl hover:shadow-lg transition-all duration-200 border border-border/30">
                     <div className="text-xs md:text-sm mb-1 md:mb-2 text-muted-foreground">Costo Promedio</div>
                     <div className="text-base md:text-2xl font-bold mb-1 md:mb-2 text-foreground">{formatCurrency(stats.averageCost)}</div>
-                    <div className="flex items-center text-blue-500 text-xs md:text-sm">
+                    <div className="flex items-center text-info-muted-foreground text-xs md:text-sm">
                         <TrendingUp className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         Por producto
                     </div>
@@ -1418,13 +1428,13 @@ export function CalculadoraCostosEmbedded() {
                     <div className="text-xs md:text-sm mb-1 md:mb-2 text-muted-foreground">
                         {activeTab === 'produccion' ? 'Total Producido' : 'Valor Total'}
                     </div>
-                    <div className="text-base md:text-2xl font-bold mb-1 md:mb-2 text-purple-500">
+                    <div className="text-base md:text-2xl font-bold mb-1 md:mb-2 text-info-muted-foreground">
                         {activeTab === 'produccion'
                             ? formatNumber(stats.totalProduction)
                             : formatCurrency(stats.totalValue)
                         }
                     </div>
-                    <div className="flex items-center text-purple-500 text-xs md:text-sm">
+                    <div className="flex items-center text-info-muted-foreground text-xs md:text-sm">
                         {activeTab === 'produccion' ? (
                             <Package className="h-2.5 w-2.5 md:h-4 md:w-4 mr-1" />
                         ) : (
@@ -1437,7 +1447,7 @@ export function CalculadoraCostosEmbedded() {
 
             {/* Tabs principales */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="w-full justify-start overflow-x-auto">
                     <TabsTrigger value="calculadora">Por Ventas</TabsTrigger>
                     <TabsTrigger value="produccion">Por Producción</TabsTrigger>
                     <TabsTrigger value="comparativo">Comparativa</TabsTrigger>
@@ -1504,23 +1514,23 @@ export function CalculadoraCostosEmbedded() {
                         <CardContent className="p-0">
                             {/* Cartel de resumen por categoría */}
                             {(summary?.viguetas || summary?.bloques || summary?.adoquines) && (
-                                <div className="p-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-800 mx-6 mt-6 mb-4">
-                                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">
+                                <div className="p-6 pb-4 bg-gradient-to-r from-info-muted to-info-muted rounded-lg border border-info-muted mx-6 mt-6 mb-4">
+                                    <h3 className="text-sm font-semibold text-info-muted-foreground mb-3">
                                         Resumen de Ventas por Categoría
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {/* Viguetas */}
                                         {summary?.viguetas && (summary.viguetas.total_units_sold > 0 || summary.viguetas.total_meters_sold > 0) && (
-                                            <div className="bg-white dark:bg-gray-800 p-3 rounded-md border border-blue-200 dark:border-blue-700">
+                                            <div className="bg-card p-3 rounded-md border border-info-muted">
                                                 <div className="mb-2">
-                                                    <span className="font-semibold text-blue-700 dark:text-blue-300">Viguetas</span>
+                                                    <span className="font-semibold text-info-muted-foreground">Viguetas</span>
                                                 </div>
                                                 <div className="text-sm space-y-1">
-                                                    <div className="text-gray-700 dark:text-gray-300">
+                                                    <div className="text-foreground">
                                                         <span className="font-medium">Unidades vendidas:</span> {summary.viguetas.total_units_sold.toLocaleString('es-AR')}
                                                     </div>
                                                     {summary.viguetas.total_meters_sold > 0 && (
-                                                        <div className="text-gray-700 dark:text-gray-300">
+                                                        <div className="text-foreground">
                                                             <span className="font-medium">Metros vendidos:</span> {summary.viguetas.total_meters_sold.toFixed(2)} m
                                                         </div>
                                                     )}
@@ -1530,12 +1540,12 @@ export function CalculadoraCostosEmbedded() {
                                         
                                         {/* Bloques */}
                                         {summary?.bloques && summary.bloques.total_units_sold > 0 && (
-                                            <div className="bg-white dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700">
+                                            <div className="bg-card p-3 rounded-md border border-border">
                                                 <div className="mb-2">
-                                                    <span className="font-semibold text-gray-700 dark:text-gray-300">Bloques</span>
+                                                    <span className="font-semibold text-foreground">Bloques</span>
                                                 </div>
                                                 <div className="text-sm">
-                                                    <div className="text-gray-700 dark:text-gray-300">
+                                                    <div className="text-foreground">
                                                         <span className="font-medium">Unidades vendidas:</span> {summary.bloques.total_units_sold.toLocaleString('es-AR')}
                                                     </div>
                                                 </div>
@@ -1544,16 +1554,16 @@ export function CalculadoraCostosEmbedded() {
                                         
                                         {/* Adoquines */}
                                         {summary?.adoquines && (summary.adoquines.total_units_sold > 0 || summary.adoquines.total_m2_sold > 0) && (
-                                            <div className="bg-white dark:bg-gray-800 p-3 rounded-md border border-orange-200 dark:border-orange-700">
+                                            <div className="bg-card p-3 rounded-md border border-warning-muted">
                                                 <div className="mb-2">
-                                                    <span className="font-semibold text-orange-700 dark:text-orange-300">Adoquines</span>
+                                                    <span className="font-semibold text-warning-muted-foreground">Adoquines</span>
                                                 </div>
                                                 <div className="text-sm space-y-1">
-                                                    <div className="text-gray-700 dark:text-gray-300">
+                                                    <div className="text-foreground">
                                                         <span className="font-medium">Unidades vendidas:</span> {summary.adoquines.total_units_sold.toLocaleString('es-AR')}
                                                     </div>
                                                     {summary.adoquines.total_m2_sold > 0 && (
-                                                        <div className="text-gray-700 dark:text-gray-300">
+                                                        <div className="text-foreground">
                                                             <span className="font-medium">Metros cuadrados vendidos:</span> {summary.adoquines.total_m2_sold.toFixed(2)} m²
                                                         </div>
                                                     )}
@@ -1565,7 +1575,7 @@ export function CalculadoraCostosEmbedded() {
                             )}
                             {loading ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 </div>
                             ) : filteredProducts.length === 0 ? (
                                 <div className="text-center py-8">
@@ -1604,7 +1614,7 @@ export function CalculadoraCostosEmbedded() {
                 {/* Tab Por Producción */}
                 <TabsContent value="produccion" className="space-y-4">
                     {/* Botón de Simulación */}
-                    <Card className={isSimulationMode ? "border-2 border-blue-500 bg-blue-50" : ""}>
+                    <Card className={isSimulationMode ? "border-2 border-info bg-info-muted" : ""}>
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -1618,7 +1628,7 @@ export function CalculadoraCostosEmbedded() {
                                             onClick={exportSimulationToExcel}
                                             variant="outline"
                                             size="sm"
-                                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                                            className="bg-success-muted hover:bg-success-muted text-success border-success-muted"
                                         >
                                             <Download className="h-4 w-4 mr-2" />
                                             Descargar Excel
@@ -1632,7 +1642,7 @@ export function CalculadoraCostosEmbedded() {
                                                 }}
                                                 variant="outline"
                                                 size="sm"
-                                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                                                className="bg-info-muted hover:bg-info-muted text-info-muted-foreground border-info-muted"
                                             >
                                                 <BarChart2 className="h-4 w-4 mr-2" />
                                                 Comparativas
@@ -1643,7 +1653,7 @@ export function CalculadoraCostosEmbedded() {
                                         onClick={toggleSimulationMode}
                                         variant={isSimulationMode ? "default" : "outline"}
                                         size="sm"
-                                        className={isSimulationMode ? "bg-blue-600 hover:bg-blue-700" : ""}
+                                        className={isSimulationMode ? "bg-info hover:bg-info/90" : ""}
                                     >
                                         {isSimulationMode ? 'Desactivar' : 'Activar Simulación'}
                                     </Button>
@@ -1896,7 +1906,7 @@ export function CalculadoraCostosEmbedded() {
                                                                                         placeholder="0"
                                                                                     />
                                                                                     <span className="text-xs text-muted-foreground">placas</span>
-                                                                                    <span className="text-xs text-gray-400">×</span>
+                                                                                    <span className="text-xs text-muted-foreground">×</span>
                                                                                     <Input
                                                                                         type="number"
                                                                                         min="0"
@@ -1920,10 +1930,10 @@ export function CalculadoraCostosEmbedded() {
                                                                                     />
                                                                                     <span className="text-xs text-muted-foreground">días</span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-500 text-right">
+                                                                                <div className="text-xs text-muted-foreground text-right">
                                                                                     = {(simulatedQuantities[product.id] || 0).toLocaleString()} unid.
                                                                                     {product.units_per_item > 1 && (
-                                                                                        <span className="text-gray-400 ml-1">
+                                                                                        <span className="text-muted-foreground ml-1">
                                                                                             ({product.units_per_item} unid/placa)
                                                                                         </span>
                                                                                     )}
@@ -1958,9 +1968,9 @@ export function CalculadoraCostosEmbedded() {
                                                                                     />
                                                                                     <span className="text-xs text-muted-foreground">m²</span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-500 text-right">
+                                                                                <div className="text-xs text-muted-foreground text-right">
                                                                                     = {(simulatedQuantities[product.id] || 0).toLocaleString()} unid.
-                                                                                    <span className="text-gray-400 ml-1">
+                                                                                    <span className="text-muted-foreground ml-1">
                                                                                         ({product.product_name.toLowerCase().includes('unistone') ? '41.35' : '39.5'} unid/m²)
                                                                                     </span>
                                                                                 </div>
@@ -1997,7 +2007,7 @@ export function CalculadoraCostosEmbedded() {
                                                                                         placeholder="0"
                                                                                     />
                                                                                     <span className="text-xs text-muted-foreground">bancos</span>
-                                                                                    <span className="text-xs text-gray-400">×</span>
+                                                                                    <span className="text-xs text-muted-foreground">×</span>
                                                                                     <Input
                                                                                         type="number"
                                                                                         min="0"
@@ -2023,7 +2033,7 @@ export function CalculadoraCostosEmbedded() {
                                                                                     />
                                                                                     <span className="text-xs text-muted-foreground">días</span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-500 text-right">
+                                                                                <div className="text-xs text-muted-foreground text-right">
                                                                                     = {(simulatedQuantities[`_metros_${product.id}`] || 0).toLocaleString()} m → {(simulatedQuantities[product.id] || 0).toLocaleString()} unid.
                                                                                 </div>
                                                                             </div>
@@ -2102,7 +2112,7 @@ export function CalculadoraCostosEmbedded() {
                                     <Button
                                         onClick={runSimulation}
                                         disabled={loading || Object.values(simulatedQuantities).reduce((sum, qty) => sum + qty, 0) === 0}
-                                        className="bg-green-600 hover:bg-green-700"
+                                        className="bg-success hover:bg-success/90"
                                         size="sm"
                                     >
                                         <Calculator className="h-4 w-4 mr-2" />
@@ -2178,9 +2188,9 @@ export function CalculadoraCostosEmbedded() {
 
                     {/* Información de producción */}
                     {stats.totalProduction > 0 && (
-                        <Card className="bg-blue-50 border-blue-200">
+                        <Card className="bg-info-muted border-info-muted">
                             <CardHeader>
-                                <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+                                <CardTitle className="text-lg text-info-muted-foreground flex items-center gap-2">
                                     <Info className="h-5 w-5" />
                                     Información de Producción - {new Date(selectedMonth + '-01').toLocaleDateString('es-AR', { year: 'numeric', month: 'long' })}
                                 </CardTitle>
@@ -2188,21 +2198,21 @@ export function CalculadoraCostosEmbedded() {
                             <CardContent>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-900">{formatNumber(stats.totalProduction)}</div>
-                                        <div className="text-sm text-blue-700">Total Unidades Producidas</div>
+                                        <div className="text-2xl font-bold text-info-muted-foreground">{formatNumber(stats.totalProduction)}</div>
+                                        <div className="text-sm text-info-muted-foreground">Total Unidades Producidas</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-900">{stats.productsWithProduction}</div>
-                                        <div className="text-sm text-blue-700">Productos con Producción</div>
+                                        <div className="text-2xl font-bold text-info-muted-foreground">{stats.productsWithProduction}</div>
+                                        <div className="text-sm text-info-muted-foreground">Productos con Producción</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-900">
+                                        <div className="text-2xl font-bold text-info-muted-foreground">
                                             {stats.productsWithProduction > 0
                                                 ? Math.round(stats.totalProduction / stats.productsWithProduction)
                                                 : 0
                                             }
                                         </div>
-                                        <div className="text-sm text-blue-700">Promedio por Producto</div>
+                                        <div className="text-sm text-info-muted-foreground">Promedio por Producto</div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -2315,8 +2325,8 @@ export function CalculadoraCostosEmbedded() {
                                 if (categoriesToShow.length === 0) return null;
                                 
                                 return (
-                                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">
+                                <div className="mb-6 p-4 bg-gradient-to-r from-info-muted to-info-muted rounded-lg border border-info-muted">
+                                    <h3 className="text-sm font-semibold text-info-muted-foreground mb-3">
                                             Distribución de Costos por Categoría
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2327,20 +2337,20 @@ export function CalculadoraCostosEmbedded() {
                                                 const total = totalIndirect + totalEmployee;
                                                 
                                                 const bgColors: { [key: string]: string } = {
-                                                    'Adoquines': 'bg-white dark:bg-gray-800 border-orange-200 dark:border-orange-700',
-                                                    'Bloques': 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
-                                                    'Viguetas': 'bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-700'
+                                                    'Adoquines': 'bg-card border-warning-muted',
+                                                    'Bloques': 'bg-card border-border',
+                                                    'Viguetas': 'bg-card border-info-muted'
                                                 };
                                                 const textColors: { [key: string]: string } = {
-                                                    'Adoquines': 'text-orange-700 dark:text-orange-300',
-                                                    'Bloques': 'text-gray-700 dark:text-gray-300',
-                                                    'Viguetas': 'text-blue-700 dark:text-blue-300'
+                                                    'Adoquines': 'text-warning-muted-foreground',
+                                                    'Bloques': 'text-foreground',
+                                                    'Viguetas': 'text-info-muted-foreground'
                                                 };
                                                 
                                                 return (
-                                                    <div key={categoryKey} className={`p-3 rounded-md border ${bgColors[categoryKey] || 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+                                                    <div key={categoryKey} className={cn('p-3 rounded-md border', bgColors[categoryKey] || 'bg-card border-border')}>
                                                         <div className="mb-3 flex items-center justify-between">
-                                                            <span className={`font-semibold ${textColors[categoryKey] || 'text-gray-700 dark:text-gray-300'}`}>
+                                                            <span className={cn('font-semibold', textColors[categoryKey] || 'text-foreground')}>
                                                                 {categoryKey}
                                                             </span>
                                                             <Badge variant="secondary" className="text-[9px] h-4 px-1 py-0">
@@ -2353,11 +2363,11 @@ export function CalculadoraCostosEmbedded() {
                                                             {products.map((product, idx) => (
                                                                 <div key={idx} className="text-xs">
                                                                     <div className="space-y-0.5">
-                                                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                                        <div className="flex justify-between text-muted-foreground">
                                                                             <span>Indirectos:</span>
                                                                             <span className="font-medium">{formatCurrency(product.indirect)}</span>
                                                 </div>
-                                                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                                        <div className="flex justify-between text-muted-foreground">
                                                                             <span>Empleados:</span>
                                                                             <span className="font-medium">{formatCurrency(product.employee)}</span>
                                                     </div>
@@ -2367,10 +2377,10 @@ export function CalculadoraCostosEmbedded() {
                                                         </div>
                                                         
                                                         {/* Total de la categoría */}
-                                                        <div className="pt-2 border-t-2 border-gray-300 dark:border-gray-600">
+                                                        <div className="pt-2 border-t-2 border-border">
                                                             <div className="flex justify-between text-sm">
-                                                                <span className="font-semibold text-gray-700 dark:text-gray-300">Total Categoría:</span>
-                                                                <span className="font-bold text-green-700 dark:text-green-400">
+                                                                <span className="font-semibold text-foreground">Total Categoría:</span>
+                                                                <span className="font-bold text-success">
                                                                     {formatCurrency(total)}
                                                                 </span>
                                                 </div>
@@ -2385,14 +2395,14 @@ export function CalculadoraCostosEmbedded() {
                             
                             {/* Estadísticas de variaciones de cuartos (oculto en modo simulador) */}
                             {false && isSimulationMode && simulationEscenarios.length > 0 && simulationEstadisticas && (
-                                <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                                    <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-3">
+                                <div className="mb-6 p-4 bg-gradient-to-r from-success-muted to-success-muted rounded-lg border border-success-muted">
+                                    <h3 className="text-sm font-semibold text-success mb-3">
                                         📊 Variaciones de Cuartos de Curado
                                     </h3>
-                                    <div className="mb-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <div className="mb-3 text-sm text-foreground">
                                         <span className="font-medium">Placas actuales:</span> {simulationEstadisticas.placasActuales.toLocaleString('es-AR')} 
                                         <span className="ml-2">({simulationEstadisticas.cuartosActuales.toFixed(2)} cuartos)</span>
-                                        <span className="ml-2 text-xs text-gray-500">1 cuarto = 240 placas</span>
+                                        <span className="ml-2 text-xs text-muted-foreground">1 cuarto = 240 placas</span>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                         {simulationEscenarios.map((escenario, index) => {
@@ -2407,35 +2417,35 @@ export function CalculadoraCostosEmbedded() {
                                             return (
                                                 <div 
                                                     key={index} 
-                                                    className={`bg-white dark:bg-gray-800 p-3 rounded-md border ${
-                                                        escenario.variacionCuartos < 0 
-                                                            ? 'border-blue-200 dark:border-blue-700' 
-                                                            : 'border-orange-200 dark:border-orange-700'
-                                                    }`}
+                                                    className={cn('bg-card p-3 rounded-md border',
+                                                        escenario.variacionCuartos < 0
+                                                            ? 'border-info-muted'
+                                                            : 'border-warning-muted'
+                                                    )}
                                                 >
                                                     <div className="mb-2">
-                                                        <span className={`font-semibold text-sm ${
-                                                            escenario.variacionCuartos < 0 
-                                                                ? 'text-blue-700 dark:text-blue-300' 
-                                                                : 'text-orange-700 dark:text-orange-300'
-                                                        }`}>
+                                                        <span className={cn('font-semibold text-sm',
+                                                            escenario.variacionCuartos < 0
+                                                                ? 'text-info-muted-foreground'
+                                                                : 'text-warning-muted-foreground'
+                                                        )}>
                                                             {escenario.nombre}
                                                         </span>
                                                     </div>
-                                                    <div className="text-xs space-y-1 text-gray-700 dark:text-gray-300">
+                                                    <div className="text-xs space-y-1 text-foreground">
                                                         <div>
                                                             <span className="font-medium">Placas:</span> {escenario.placas.toLocaleString('es-AR')}
                                                         </div>
                                                         <div>
                                                             <span className="font-medium">Cuartos:</span> {escenario.cuartos.toFixed(2)}
                                                         </div>
-                                                        <div className="pt-1 border-t border-gray-200 dark:border-gray-700">
+                                                        <div className="pt-1 border-t border-border">
                                                             <span className="font-medium">Costo Total:</span> ${totalCostos.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </div>
                                                         {costoActual > 0 && (
-                                                            <div className={`text-xs ${
-                                                                diferencia < 0 ? 'text-green-600 dark:text-green-400' : diferencia > 0 ? 'text-red-600 dark:text-red-400' : ''
-                                                            }`}>
+                                                            <div className={cn('text-xs',
+                                                                diferencia < 0 ? 'text-success' : diferencia > 0 ? 'text-destructive' : ''
+                                                            )}>
                                                                 {diferencia < 0 ? '↓' : diferencia > 0 ? '↑' : ''} 
                                                                 {Math.abs(porcentajeCambio).toFixed(1)}% 
                                                                 ({diferencia < 0 ? '-' : '+'}${Math.abs(diferencia).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
@@ -2451,7 +2461,7 @@ export function CalculadoraCostosEmbedded() {
                             
                             {loading ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 </div>
                             ) : isSimulationMode && simulationResults.length === 0 ? (
                                 // MODO SIMULACIÓN: Mensaje informativo
@@ -2516,18 +2526,18 @@ export function CalculadoraCostosEmbedded() {
                                         {availableMonths.map(month => (
                                             <div 
                                                 key={month} 
-                                                className={`relative flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                                                    selectedMonths.includes(month) 
-                                                        ? 'border-blue-500 bg-blue-50 shadow-md' 
-                                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                                }`}
+                                                className={cn('relative flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer',
+                                                    selectedMonths.includes(month)
+                                                        ? 'border-info bg-info-muted shadow-md'
+                                                        : 'border-border hover:border-border hover:bg-accent'
+                                                )}
                                                 onClick={() => toggleMonthSelection(month)}
                                             >
-                                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                                <div className={cn('w-5 h-5 rounded border-2 flex items-center justify-center',
                                                     selectedMonths.includes(month)
-                                                        ? 'border-blue-500 bg-blue-500'
-                                                        : 'border-gray-300'
-                                                }`}>
+                                                        ? 'border-info bg-info'
+                                                        : 'border-border'
+                                                )}>
                                                     {selectedMonths.includes(month) && (
                                                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -2536,12 +2546,12 @@ export function CalculadoraCostosEmbedded() {
                                             </div>
                                                 <div className="flex-1">
                                                     <div className="font-medium text-sm">{formatMonthShort(month)}</div>
-                                                    <div className="text-xs text-gray-500">{formatMonthLabel(month)}</div>
+                                                    <div className="text-xs text-muted-foreground">{formatMonthLabel(month)}</div>
                                         </div>
                                     </div>
                                         ))}
                                 </div>
-                                    <div className="mt-2 text-sm text-gray-600">
+                                    <div className="mt-2 text-sm text-muted-foreground">
                                         {selectedMonths.length} mes{selectedMonths.length !== 1 ? 'es' : ''} seleccionado{selectedMonths.length !== 1 ? 's' : ''}
                                             </div>
                                         </div>
@@ -2567,11 +2577,11 @@ export function CalculadoraCostosEmbedded() {
                                         <Button
                                             onClick={loadComparisonData}
                                             disabled={loading || selectedMonths.length === 0}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            className="bg-info hover:bg-info/90 text-white"
                                             size="sm"
                                         >
                                             {loading ? (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                             ) : (
                                                 <RefreshCw className="h-4 w-4 mr-2" />
                                             )}
@@ -2599,9 +2609,9 @@ export function CalculadoraCostosEmbedded() {
                                     const totalEmployee = Array.isArray(filteredMonthData) ? filteredMonthData.reduce((sum, p) => sum + (p.cost_breakdown?.employee_costs || 0), 0) : 0;
                                     
                                     return (
-                                        <Card key={month} className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                                        <Card key={month} className="bg-gradient-to-br from-info-muted to-info-muted border-info-muted">
                                             <CardHeader className="pb-3">
-                                                <CardTitle className="text-lg text-blue-900">
+                                                <CardTitle className="text-lg text-info-muted-foreground">
                                                     {formatMonthLabel(month)}
                                                 </CardTitle>
                                                 <CardDescription>
@@ -2611,19 +2621,19 @@ export function CalculadoraCostosEmbedded() {
                                             <CardContent className="space-y-3">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-sm font-medium">Total Costos:</span>
-                                                    <span className="font-bold text-blue-900">
+                                                    <span className="font-bold text-info-muted-foreground">
                                                         {formatCurrency(totalCosts)}
                                                 </span>
                                     </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-sm font-medium">Indirectos:</span>
-                                                    <span className="font-semibold text-orange-700">
+                                                    <span className="font-semibold text-warning-muted-foreground">
                                                         {formatCurrency(totalIndirect)}
                                                 </span>
                                         </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-sm font-medium">Empleados:</span>
-                                                    <span className="font-semibold text-purple-700">
+                                                    <span className="font-semibold text-info-muted-foreground">
                                                         {formatCurrency(totalEmployee)}
                                                     </span>
                                         </div>
@@ -2664,7 +2674,7 @@ export function CalculadoraCostosEmbedded() {
                                                     });
                                                     
                                                     return Array.from(allProducts).slice(0, 20).map(productName => (
-                                                        <tr key={productName} className="border-b hover:bg-gray-50">
+                                                        <tr key={productName} className="border-b hover:bg-accent">
                                                             <td className="p-2 font-medium">{productName}</td>
                                                             {selectedMonths.map(month => {
                                                                 const monthData = comparisonData[month] || [];
@@ -2673,18 +2683,18 @@ export function CalculadoraCostosEmbedded() {
                                                                     <td key={month} className="p-2 text-center">
                                                                         {product ? (
                                                                             <div className="space-y-1">
-                                                                                <div className="font-semibold text-blue-900">
+                                                                                <div className="font-semibold text-info-muted-foreground">
                                                                                     {formatCurrency(product.calculated_cost || 0)}
                                     </div>
-                                                                                <div className="text-xs text-gray-600">
+                                                                                <div className="text-xs text-muted-foreground">
                                                                                     Ind: {formatCurrency(product.cost_breakdown?.indirect_costs || 0)}
                                         </div>
-                                                                                <div className="text-xs text-gray-600">
+                                                                                <div className="text-xs text-muted-foreground">
                                                                                     Emp: {formatCurrency(product.cost_breakdown?.employee_costs || 0)}
                                     </div>
                                 </div>
                                                                         ) : (
-                                                                            <span className="text-gray-400">-</span>
+                                                                            <span className="text-muted-foreground">-</span>
                                                                         )}
                                                                     </td>
                                                                 );
@@ -2739,14 +2749,14 @@ export function CalculadoraCostosEmbedded() {
                     <DialogBody>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <Button onClick={handleCreateNewComparison} className="bg-blue-600 hover:bg-blue-700">
+                            <Button onClick={handleCreateNewComparison} className="bg-info hover:bg-info/90">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Agregar Nueva Comparativa
                             </Button>
         </div>
 
                         {comparisons.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
+                            <div className="text-center py-8 text-muted-foreground">
                                 No hay comparativas guardadas. Crea una nueva comparativa para comenzar.
                             </div>
                         ) : (
@@ -2756,10 +2766,10 @@ export function CalculadoraCostosEmbedded() {
                                         <div className="flex justify-between items-center">
                                             <div>
                                                 <h3 className="font-semibold">{comparison.name}</h3>
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-sm text-muted-foreground">
                                                     Competidores: {comparison.competitors.map(c => c.name).join(', ')}
                                                 </p>
-                                                <p className="text-xs text-gray-500">
+                                                <p className="text-xs text-muted-foreground">
                                                     Creada: {new Date(comparison.createdAt).toLocaleDateString('es-AR')}
                                                 </p>
                                             </div>
@@ -2775,7 +2785,7 @@ export function CalculadoraCostosEmbedded() {
                                                     onClick={() => handleDeleteComparison(comparison.id)}
                                                     variant="outline"
                                                     size="sm"
-                                                    className="text-red-600 hover:text-red-700"
+                                                    className="text-destructive hover:text-destructive"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -2817,7 +2827,7 @@ export function CalculadoraCostosEmbedded() {
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-semibold">Competidores</Label>
                                 {competitors.length > 0 && (
-                                    <span className="text-xs text-gray-500">{competitors.length} agregado{competitors.length > 1 ? 's' : ''}</span>
+                                    <span className="text-xs text-muted-foreground">{competitors.length} agregado{competitors.length > 1 ? 's' : ''}</span>
                                 )}
                             </div>
                             <div className="flex gap-2">
@@ -2836,7 +2846,7 @@ export function CalculadoraCostosEmbedded() {
                                 <Button 
                                     onClick={handleAddCompetitor} 
                                     size="sm" 
-                                    className="bg-blue-600 hover:bg-blue-700 flex-shrink-0"
+                                    className="bg-info hover:bg-info/90 flex-shrink-0"
                                     disabled={!newCompetitorName.trim()}
                                 >
                                     <Plus className="h-4 w-4 mr-1" />
@@ -2851,7 +2861,7 @@ export function CalculadoraCostosEmbedded() {
                                             <span className="text-xs">{competitor.name}</span>
                                             <button
                                                 onClick={() => handleRemoveCompetitor(competitor.id)}
-                                                className="ml-1 hover:bg-gray-300 rounded-full p-0.5 transition-colors"
+                                                className="ml-1 hover:bg-accent rounded-full p-0.5 transition-colors"
                                                 type="button"
                                                 title="Eliminar competidor"
                                             >
@@ -2912,22 +2922,22 @@ export function CalculadoraCostosEmbedded() {
                                         tabIndex={0}
                                     >
                                         <table className="w-full caption-bottom text-sm">
-                                            <thead className="sticky top-0 z-20 bg-white shadow-sm [&_tr]:border-b">
+                                            <thead className="sticky top-0 z-20 bg-background shadow-sm [&_tr]:border-b">
                                                 <tr className="border-b transition-colors">
-                                                    <th className="sticky left-0 bg-white z-30 h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px] border-r-2 border-gray-300 shadow-sm">Producto</th>
-                                                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground min-w-[120px] bg-gray-50 border-r-2 border-gray-300">{currentCompany?.name || 'Mi Precio'}</th>
+                                                    <th className="sticky left-0 bg-background z-30 h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px] border-r-2 border-border shadow-sm">Producto</th>
+                                                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground min-w-[120px] bg-muted border-r-2 border-border">{currentCompany?.name || 'Mi Precio'}</th>
                                                     {competitors.map((competitor, compIndex) => {
-                                                        const bgColors = ['bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-yellow-50', 'bg-pink-50'];
-                                                        const borderColors = ['border-blue-300', 'border-green-300', 'border-purple-300', 'border-yellow-300', 'border-pink-300'];
+                                                        const bgColors = ['bg-info-muted', 'bg-success-muted', 'bg-info-muted', 'bg-warning-muted', 'bg-muted'];
+                                                        const borderColors = ['border-info-muted', 'border-success-muted', 'border-info-muted', 'border-warning-muted', 'border-border'];
                                                         const bgColor = bgColors[compIndex % bgColors.length];
                                                         const borderColor = borderColors[compIndex % borderColors.length];
                                                         const isLast = compIndex === competitors.length - 1;
                                                         
                                                         return (
                                                             <React.Fragment key={competitor.id}>
-                                                                <th className={`h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[150px] ${bgColor} border-r-2 ${borderColor}`}>{competitor.name}</th>
-                                                                <th className={`h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px] ${bgColor} border-r-2 ${borderColor}`}>Diferencia</th>
-                                                                <th className={`h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] ${bgColor} ${isLast ? '' : `border-r-2 ${borderColor}`}`}>% Dif.</th>
+                                                                <th className={cn('h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[150px] border-r-2', bgColor, borderColor)}>{competitor.name}</th>
+                                                                <th className={cn('h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px] border-r-2', bgColor, borderColor)}>Diferencia</th>
+                                                                <th className={cn('h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px]', bgColor, !isLast && 'border-r-2', !isLast && borderColor)}>% Dif.</th>
                                                             </React.Fragment>
                                                         );
                                                     })}
@@ -2957,15 +2967,15 @@ export function CalculadoraCostosEmbedded() {
 
                                                 return (
                                                     <tr key={product.id} className="border-b transition-colors hover:bg-muted/50">
-                                                        <td className="p-4 align-middle font-medium sticky left-0 bg-white z-10 border-r-2 border-gray-300 shadow-sm">
+                                                        <td className="p-4 align-middle font-medium sticky left-0 bg-background z-10 border-r-2 border-border shadow-sm">
                                                             {product.product_name}
                                                         </td>
-                                                        <td className="p-4 align-middle text-right font-semibold bg-gray-50 border-r-2 border-gray-300">
+                                                        <td className="p-4 align-middle text-right font-semibold bg-muted border-r-2 border-border">
                                                             {formatCurrencyWithDecimals(myPrice)}
                                                         </td>
                                                         {competitors.map((competitor, competitorIndex) => {
-                                                            const bgColors = ['bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-yellow-50', 'bg-pink-50'];
-                                                            const borderColors = ['border-blue-300', 'border-green-300', 'border-purple-300', 'border-yellow-300', 'border-pink-300'];
+                                                            const bgColors = ['bg-info-muted', 'bg-success-muted', 'bg-info-muted', 'bg-warning-muted', 'bg-muted'];
+                                                            const borderColors = ['border-info-muted', 'border-success-muted', 'border-info-muted', 'border-warning-muted', 'border-border'];
                                                             const bgColor = bgColors[competitorIndex % bgColors.length];
                                                             const borderColor = borderColors[competitorIndex % borderColors.length];
                                                             const isLast = competitorIndex === competitors.length - 1;
@@ -2990,7 +3000,7 @@ export function CalculadoraCostosEmbedded() {
 
                                                             return (
                                                                 <React.Fragment key={competitor.id}>
-                                                                    <td className={`p-4 align-middle text-right ${bgColor} border-r-2 ${borderColor}`}>
+                                                                    <td className={cn('p-4 align-middle text-right border-r-2', bgColor, borderColor)}>
                                                                         <Input
                                                                             id={`price-${productIndex}-${competitorIndex}`}
                                                                             type="number"
@@ -3030,16 +3040,16 @@ export function CalculadoraCostosEmbedded() {
                                                                             className="w-32 ml-auto"
                                                                         />
                                                                     </td>
-                                                                    <td className={`p-4 align-middle text-right font-medium ${bgColor} border-r-2 ${borderColor} ${difference !== null ? (difference > 0 ? 'text-red-600' : difference < 0 ? 'text-green-600' : '') : ''}`}>
+                                                                    <td className={cn('p-4 align-middle text-right font-medium border-r-2', bgColor, borderColor, difference !== null && (difference > 0 ? 'text-destructive' : difference < 0 ? 'text-success' : ''))}>
                                                                         {difference !== null 
                                                                             ? `${difference > 0 ? '+' : ''}${formatCurrencyWithDecimals(Math.abs(difference))}`
-                                                                            : <span className="text-gray-400">-</span>
+                                                                            : <span className="text-muted-foreground">-</span>
                                                                         }
                                                                     </td>
-                                                                    <td className={`p-4 align-middle text-right font-medium ${bgColor} ${isLast ? '' : `border-r-2 ${borderColor}`} ${percentDifference !== null ? (percentDifference > 0 ? 'text-red-600' : percentDifference < 0 ? 'text-green-600' : '') : ''}`}>
+                                                                    <td className={cn('p-4 align-middle text-right font-medium', bgColor, !isLast && 'border-r-2', !isLast && borderColor, percentDifference !== null && (percentDifference > 0 ? 'text-destructive' : percentDifference < 0 ? 'text-success' : ''))}>
                                                                         {percentDifference !== null 
                                                                             ? `${percentDifference > 0 ? '+' : ''}${percentDifference.toFixed(2)}%`
-                                                                            : <span className="text-gray-400">-</span>
+                                                                            : <span className="text-muted-foreground">-</span>
                                                                         }
                                                                     </td>
                                                                 </React.Fragment>
@@ -3067,7 +3077,7 @@ export function CalculadoraCostosEmbedded() {
                             >
                                 Cancelar
                             </Button>
-                            <Button onClick={handleSaveNewComparison} className="bg-blue-600 hover:bg-blue-700">
+                            <Button onClick={handleSaveNewComparison} className="bg-info hover:bg-info/90">
                                 Guardar Comparativa
                             </Button>
                         </div>
@@ -3118,22 +3128,22 @@ export function CalculadoraCostosEmbedded() {
                                     tabIndex={0}
                                 >
                                     <table className="w-full caption-bottom text-sm">
-                                        <thead className="sticky top-0 z-20 bg-white shadow-sm [&_tr]:border-b">
+                                        <thead className="sticky top-0 z-20 bg-background shadow-sm [&_tr]:border-b">
                                             <tr className="border-b transition-colors">
-                                                <th className="sticky left-0 bg-white z-30 h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px] border-r-2 border-gray-300 shadow-sm">Producto</th>
-                                                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground min-w-[120px] bg-gray-50 border-r-2 border-gray-300">{currentCompany?.name || 'Mi Precio'}</th>
+                                                <th className="sticky left-0 bg-background z-30 h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px] border-r-2 border-border shadow-sm">Producto</th>
+                                                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground min-w-[120px] bg-muted border-r-2 border-border">{currentCompany?.name || 'Mi Precio'}</th>
                                                 {currentComparison.competitors.map((competitor, compIndex) => {
-                                                    const bgColors = ['bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-yellow-50', 'bg-pink-50'];
-                                                    const borderColors = ['border-blue-300', 'border-green-300', 'border-purple-300', 'border-yellow-300', 'border-pink-300'];
+                                                    const bgColors = ['bg-info-muted', 'bg-success-muted', 'bg-info-muted', 'bg-warning-muted', 'bg-muted'];
+                                                    const borderColors = ['border-info-muted', 'border-success-muted', 'border-info-muted', 'border-warning-muted', 'border-border'];
                                                     const bgColor = bgColors[compIndex % bgColors.length];
                                                     const borderColor = borderColors[compIndex % borderColors.length];
                                                     const isLast = compIndex === currentComparison.competitors.length - 1;
                                                     
                                                     return (
                                                         <React.Fragment key={competitor.id}>
-                                                            <th className={`h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px] ${bgColor} border-r-2 ${borderColor}`}>{competitor.name}</th>
-                                                            <th className={`h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px] ${bgColor} border-r-2 ${borderColor}`}>Dif. {competitor.name}</th>
-                                                            <th className={`h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px] ${bgColor} ${isLast ? '' : `border-r-2 ${borderColor}`}`}>% Dif.</th>
+                                                            <th className={cn('h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px] border-r-2', bgColor, borderColor)}>{competitor.name}</th>
+                                                            <th className={cn('h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px] border-r-2', bgColor, borderColor)}>Dif. {competitor.name}</th>
+                                                            <th className={cn('h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[100px]', bgColor, !isLast && 'border-r-2', !isLast && borderColor)}>% Dif.</th>
                                                         </React.Fragment>
                                                     );
                                                 })}
@@ -3143,15 +3153,15 @@ export function CalculadoraCostosEmbedded() {
                                         {currentComparison.products.map((product) => {
                                             return (
                                                 <tr key={product.productId} className="border-b transition-colors hover:bg-muted/50">
-                                                    <td className="p-4 align-middle font-medium sticky left-0 bg-white z-10 border-r-2 border-gray-300 shadow-sm">
+                                                    <td className="p-4 align-middle font-medium sticky left-0 bg-background z-10 border-r-2 border-border shadow-sm">
                                                         {product.productName}
                                                     </td>
-                                                    <td className="p-4 align-middle text-right font-semibold bg-gray-50 border-r-2 border-gray-300">
+                                                    <td className="p-4 align-middle text-right font-semibold bg-muted border-r-2 border-border">
                                                         {formatCurrencyWithDecimals(product.myPrice)}
                                                     </td>
                                                     {currentComparison.competitors.map((competitor, competitorIndex) => {
-                                                        const bgColors = ['bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-yellow-50', 'bg-pink-50'];
-                                                        const borderColors = ['border-blue-300', 'border-green-300', 'border-purple-300', 'border-yellow-300', 'border-pink-300'];
+                                                        const bgColors = ['bg-info-muted', 'bg-success-muted', 'bg-info-muted', 'bg-warning-muted', 'bg-muted'];
+                                                        const borderColors = ['border-info-muted', 'border-success-muted', 'border-info-muted', 'border-warning-muted', 'border-border'];
                                                         const bgColor = bgColors[competitorIndex % bgColors.length];
                                                         const borderColor = borderColors[competitorIndex % borderColors.length];
                                                         const isLast = competitorIndex === currentComparison.competitors.length - 1;
@@ -3167,22 +3177,22 @@ export function CalculadoraCostosEmbedded() {
 
                                                         return (
                                                             <React.Fragment key={competitor.id}>
-                                                                <td className={`p-4 align-middle text-right ${bgColor} border-r-2 ${borderColor}`}>
+                                                                <td className={cn('p-4 align-middle text-right border-r-2', bgColor, borderColor)}>
                                                                     {competitorPrice !== null 
                                                                         ? formatCurrencyWithDecimals(parseFloat(competitorPrice.toFixed(2)))
-                                                                        : <span className="text-gray-400">-</span>
+                                                                        : <span className="text-muted-foreground">-</span>
                                                                     }
                                                                 </td>
-                                                                <td className={`p-4 align-middle text-right font-medium ${bgColor} border-r-2 ${borderColor} ${difference !== null ? (difference > 0 ? 'text-red-600' : difference < 0 ? 'text-green-600' : '') : ''}`}>
+                                                                <td className={cn('p-4 align-middle text-right font-medium border-r-2', bgColor, borderColor, difference !== null && (difference > 0 ? 'text-destructive' : difference < 0 ? 'text-success' : ''))}>
                                                                     {difference !== null 
                                                                         ? `${difference > 0 ? '+' : ''}${formatCurrencyWithDecimals(Math.abs(difference))}`
-                                                                        : <span className="text-gray-400">-</span>
+                                                                        : <span className="text-muted-foreground">-</span>
                                                                     }
                                                                 </td>
-                                                                <td className={`p-4 align-middle text-right font-medium ${bgColor} ${isLast ? '' : `border-r-2 ${borderColor}`} ${percentDifference !== null ? (percentDifference > 0 ? 'text-red-600' : percentDifference < 0 ? 'text-green-600' : '') : ''}`}>
+                                                                <td className={cn('p-4 align-middle text-right font-medium', bgColor, !isLast && 'border-r-2', !isLast && borderColor, percentDifference !== null && (percentDifference > 0 ? 'text-destructive' : percentDifference < 0 ? 'text-success' : ''))}>
                                                                     {percentDifference !== null 
                                                                         ? `${percentDifference > 0 ? '+' : ''}${percentDifference.toFixed(2)}%`
-                                                                        : <span className="text-gray-400">-</span>
+                                                                        : <span className="text-muted-foreground">-</span>
                                                                     }
                                                                 </td>
                                                             </React.Fragment>

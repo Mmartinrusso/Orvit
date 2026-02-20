@@ -104,7 +104,7 @@ export function OrdenesAdvancedSearch({ onSearch, clientes = [], vendedores = []
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+        <SheetContent size="default" className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Búsqueda Avanzada de Órdenes</SheetTitle>
             <SheetDescription>

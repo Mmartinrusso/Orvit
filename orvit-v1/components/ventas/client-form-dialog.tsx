@@ -508,7 +508,7 @@ export function ClientFormDialog({ open, onOpenChange, onClientCreated }: Client
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent size="lg" className="max-h-[90vh]">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -517,7 +517,7 @@ export function ClientFormDialog({ open, onOpenChange, onClientCreated }: Client
               </span>
               <div className="flex items-center gap-2">
                 {isEditMode && (
-                  <span className="text-xs text-muted-foreground px-2 py-1 bg-amber-100 dark:bg-amber-900/20 rounded">
+                  <span className="text-xs text-muted-foreground px-2 py-1 bg-warning-muted rounded">
                     Modo edición: Click en <X className="inline h-3 w-3" /> para ocultar campos
                   </span>
                 )}
@@ -544,7 +544,7 @@ export function ClientFormDialog({ open, onOpenChange, onClientCreated }: Client
             </DialogTitle>
           </DialogHeader>
 
-          <DialogBody className="overflow-y-auto">
+          <DialogBody>
             <form id="client-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Tabs defaultValue="identificacion" className="w-full">
                 <TabsList>
@@ -659,7 +659,7 @@ export function ClientFormDialog({ open, onOpenChange, onClientCreated }: Client
                           maxLength={13}
                         />
                         {errors.cuit && (
-                          <p className="text-sm text-red-500 mt-1">{errors.cuit.message}</p>
+                          <p className="text-sm text-destructive mt-1">{errors.cuit.message}</p>
                         )}
                       </div>
                     )}
@@ -812,7 +812,7 @@ export function ClientFormDialog({ open, onOpenChange, onClientCreated }: Client
                       <div>
                         <Label htmlFor="whatsapp" className="flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5 text-green-600" />
+                            <Phone className="w-3.5 h-3.5 text-success" />
                             WhatsApp
                           </span>
                           {isEditMode && (
@@ -1944,14 +1944,14 @@ export function ClientFormDialog({ open, onOpenChange, onClientCreated }: Client
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
               ¿Ocultar campo importante?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
                 Estás a punto de ocultar el campo <strong>{confirmDisable?.featureName}</strong>.
               </p>
-              <p className="text-amber-600 dark:text-amber-500">
+              <p className="text-warning-muted-foreground">
                 Este campo es considerado importante para la gestión de clientes. ¿Estás seguro de que deseas ocultarlo?
               </p>
               <p className="text-xs text-muted-foreground">

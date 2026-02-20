@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Plus,
   Edit,
@@ -73,6 +74,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function TasasPage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -504,8 +506,14 @@ export default function TasasPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                          if (confirm('Eliminar esta tasa?')) {
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Eliminar tasa',
+                            description: '¿Eliminar esta tasa?',
+                            confirmText: 'Eliminar',
+                            variant: 'destructive',
+                          });
+                          if (ok) {
                             deleteMutation.mutate(rate.id);
                           }
                         }}

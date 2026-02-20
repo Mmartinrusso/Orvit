@@ -1,5 +1,7 @@
 'use client';
 
+import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
+import { cn } from '@/lib/utils';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useRecetas, Recipe, RecipeIngredient } from '@/hooks/use-recetas';
@@ -20,63 +22,22 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import { Pie, Bar } from 'react-chartjs-2';
 import { BarChart, Bar as RechartsBar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend as RechartsLegend } from 'recharts';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false; // Desactivado para mejor rendimiento
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 // 🎨 Interfaz de colores de usuario
-interface UserColorPreferences {
-  themeName: string;
-  chart1: string;
-  chart2: string;
-  chart3: string;
-  chart4: string;
-  chart5: string;
-  chart6: string;
-  progressPrimary: string;
-  progressSecondary: string;
-  progressWarning: string;
-  progressDanger: string;
-  kpiPositive: string;
-  kpiNegative: string;
-  kpiNeutral: string;
-  cardHighlight: string;
-  cardMuted: string;
-  donut1: string;
-  donut2: string;
-  donut3: string;
-  donut4: string;
-  donut5: string;
-}
 
-const DEFAULT_COLORS: UserColorPreferences = {
-  themeName: 'Predeterminado',
-  chart1: '#3b82f6',
-  chart2: '#10b981',
-  chart3: '#f59e0b',
-  chart4: '#8b5cf6',
-  chart5: '#06b6d4',
-  chart6: '#ef4444',
-  progressPrimary: '#3b82f6',
-  progressSecondary: '#10b981',
-  progressWarning: '#f59e0b',
-  progressDanger: '#ef4444',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-  cardHighlight: '#ede9fe',
-  cardMuted: '#f1f5f9',
-  donut1: '#3b82f6',
-  donut2: '#10b981',
-  donut3: '#f59e0b',
-  donut4: '#8b5cf6',
-  donut5: '#94a3b8',
-};
+
+
 
 export default function Recetas() {
+  const confirm = useConfirm();
+
   // Todos los hooks deben estar al inicio, antes de cualquier return condicional
   const pathname = usePathname();
   const { currentCompany } = useCompany();
@@ -1218,7 +1179,13 @@ export default function Recetas() {
 
     // Función para eliminar receta
     const handleDeleteRecipe = async (recipeId: number) => {
-      if (confirm('¿Estás seguro de que quieres eliminar esta receta? Esta acción no se puede deshacer.')) {
+      const ok = await confirm({
+        title: 'Eliminar receta',
+        description: '¿Estás seguro de que quieres eliminar esta receta? Esta acción no se puede deshacer.',
+        confirmText: 'Eliminar',
+        variant: 'destructive',
+      });
+      if (ok) {
         const success = await deleteRecipe(recipeId);
         if (success) {
           toast.success('Receta eliminada', {
@@ -1698,7 +1665,13 @@ export default function Recetas() {
 
     // Función para eliminar una prueba guardada
     const deleteSavedTest = async (testId: number, testName: string) => {
-      if (!confirm(`¿Estás seguro de que quieres eliminar la prueba "${testName}"? Esta acción no se puede deshacer.`)) {
+      const ok = await confirm({
+        title: 'Eliminar prueba',
+        description: `¿Estás seguro de que quieres eliminar la prueba "${testName}"? Esta acción no se puede deshacer.`,
+        confirmText: 'Eliminar',
+        variant: 'destructive',
+      });
+      if (!ok) {
         return;
       }
 
@@ -1738,7 +1711,7 @@ export default function Recetas() {
         // Cargar los detalles de la receta
         const recipeDetail = await fetchRecipeDetail(recipe.id);
         if (!recipeDetail || !recipeDetail.ingredients) {
-          alert('No se pudieron cargar los ingredientes de la receta');
+          toast.error('No se pudieron cargar los ingredientes de la receta');
           return;
         }
 
@@ -1814,7 +1787,7 @@ export default function Recetas() {
       try {
         const recipeDetail = await fetchRecipeDetail(selectedRecipeForComparison.id);
         if (!recipeDetail) {
-          alert('Error al cargar los detalles de la receta');
+          toast.error('Error al cargar los detalles de la receta');
           return;
         }
 
@@ -1826,8 +1799,13 @@ export default function Recetas() {
         );
 
         if (existingRecipe) {
-          const confirmMessage = `Ya existe una receta "${newRecipeName.trim()}" versión ${newRecipeVersion.trim()} para este producto. ¿Deseas crear otra versión?`;
-          if (!confirm(confirmMessage)) {
+          const ok = await confirm({
+            title: 'Receta duplicada',
+            description: `Ya existe una receta "${newRecipeName.trim()}" versión ${newRecipeVersion.trim()} para este producto. ¿Deseas crear otra versión?`,
+            confirmText: 'Confirmar',
+            variant: 'default',
+          });
+          if (!ok) {
             return;
           }
         }
@@ -1920,7 +1898,7 @@ export default function Recetas() {
       try {
         const recipeDetail = await fetchRecipeDetail(recipe.id);
         if (!recipeDetail) {
-          alert('Error al cargar los detalles de la receta');
+          toast.error('Error al cargar los detalles de la receta');
           return;
         }
 
@@ -1992,7 +1970,7 @@ export default function Recetas() {
         // Cargar los ingredientes de la receta
         const recipeDetail = await fetchRecipeDetail(recipe.id);
         if (!recipeDetail || !recipeDetail.ingredients) {
-          alert('No se pudieron cargar los ingredientes de la receta');
+          toast.error('No se pudieron cargar los ingredientes de la receta');
           return;
         }
 
@@ -2086,7 +2064,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
     if (error) {
       return (
         <div className="flex items-center justify-center h-64">
-          <div className="text-red-600">Error: {error}</div>
+          <div className="text-destructive">Error: {error}</div>
         </div>
       );
     }
@@ -2327,7 +2305,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                            'Por Banco'}
                         </Badge>
                         {recipe.baseType === 'PER_BANK' && recipe.metrosUtiles && recipe.cantidadPastones && (
-                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground border-info-muted">
                             {recipe.metrosUtiles}m / {recipe.cantidadPastones} pastones
                           </Badge>
                         )}
@@ -2336,14 +2314,14 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           {recipe.isActive ? 'Activa' : 'Inactiva'}
                         </Badge>
                         {recipe.notes && (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                          <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning-muted">
                             <BookOpen className="h-3 w-3 mr-1" />
                             Con notas
                           </Badge>
                         )}
                       </div>
                       <div className="mt-2">
-                        <p className="text-sm font-medium text-green-600">
+                        <p className="text-sm font-medium text-success">
                           {recipe.baseType === 'PER_BANK' ? 'Costo por metro' : 'Costo por unidad'}: {formatCurrency(calculateCostPerUnit(recipe))}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -2358,7 +2336,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         variant="outline" 
                         size="sm"
                         onClick={() => handleToggleRecipeActive(recipe)}
-                        className={recipe.isActive ? "text-green-600 hover:text-green-700 hover:bg-green-50" : "text-gray-600 hover:text-gray-700 hover:bg-gray-50"}
+                        className={recipe.isActive ? "text-success hover:text-success hover:bg-success-muted" : "text-foreground hover:text-foreground hover:bg-muted"}
                         title={recipe.isActive ? "Desactivar receta" : "Activar receta"}
                       >
                         {recipe.isActive ? (
@@ -2398,7 +2376,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           setIsEditingNotes(false);
                           setShowNotesDialog(true);
                         }}
-                        className={recipe.notes ? "text-amber-700 hover:text-amber-800 hover:bg-amber-50" : "text-muted-foreground hover:text-foreground"}
+                        className={recipe.notes ? "text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted" : "text-muted-foreground hover:text-foreground"}
                       >
                         <BookOpen className="h-4 w-4 mr-2" />
                         Notas
@@ -2407,7 +2385,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         variant="outline" 
                         size="sm"
                         onClick={() => handleSendRecipe(recipe)}
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        className="text-success hover:text-success hover:bg-success-muted"
                       >
                         <Send className="h-4 w-4 mr-2" />
                         Enviar
@@ -2416,7 +2394,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteRecipe(recipe.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Eliminar
@@ -2715,7 +2693,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                          ? 'Agregue los insumos necesarios con sus cantidades para producir 1 pastón'
                          : 'Agregue los insumos necesarios con sus cantidades para producir 1 batch'
                        }
-                       <span className="ml-2 text-blue-600 font-medium">
+                       <span className="ml-2 text-info-muted-foreground font-medium">
                          ({ingredients.length} ingrediente{ingredients.length !== 1 ? 's' : ''} agregado{ingredients.length !== 1 ? 's' : ''})
                        </span>
                      </p>
@@ -2816,22 +2794,14 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       <button
                         type="button"
                         onClick={() => setInputMode('pulsos')}
-                        className={`px-3 py-1 text-xs rounded-md ${
-                          inputMode === 'pulsos' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-700'
-                        }`}
+                        className={cn("px-3 py-1 text-xs rounded-md", inputMode === 'pulsos' ? "bg-info text-white" : "bg-muted text-foreground")}
                       >
                         Por Pulsos
                       </button>
                       <button
                         type="button"
                         onClick={() => setInputMode('direct')}
-                        className={`px-3 py-1 text-xs rounded-md ${
-                          inputMode === 'direct' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-700'
-                        }`}
+                        className={cn("px-3 py-1 text-xs rounded-md", inputMode === 'direct' ? "bg-info text-white" : "bg-muted text-foreground")}
                       >
                         Directo en TN
                       </button>
@@ -2890,7 +2860,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         onChange={(e) => setIngredientQuantity(e.target.value)}
                         placeholder="0"
                         readOnly
-                        className="bg-gray-50"
+                        className="bg-muted"
                       />
                     </div>
                   </div>
@@ -3015,7 +2985,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               )}
                             </div>
                           </div>
-                          <div className="text-sm font-medium text-green-600">
+                          <div className="text-sm font-medium text-success">
                             {formatCurrency(ingredient.quantity * getCurrentPrice(ingredient.supplyId))}
                           </div>
                           <Button
@@ -3023,7 +2993,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             variant="ghost"
                             size="sm"
                             onClick={() => removeBankIngredient(index)}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -3254,12 +3224,12 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       {selectedRecipe.baseType === 'PER_BANK' && (
                         <div className="mt-1 space-y-1">
                           {selectedRecipe.cantidadPastones && (
-                            <p className="text-sm text-blue-600 font-medium">
+                            <p className="text-sm text-info-muted-foreground font-medium">
                               🔢 Usando {selectedRecipe.cantidadPastones} pastones
                             </p>
                           )}
                           {selectedRecipe.metrosUtiles && (
-                            <p className="text-sm text-green-600 font-medium">
+                            <p className="text-sm text-success font-medium">
                               📏 {selectedRecipe.metrosUtiles}m útiles de banco
                             </p>
                           )}
@@ -3301,23 +3271,23 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   <h4 className="text-lg font-medium">Estadísticas Generales</h4>
                   <div className="grid grid-cols-4 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{selectedRecipe.ingredientCount}</div>
+                      <div className="text-2xl font-bold text-info-muted-foreground">{selectedRecipe.ingredientCount}</div>
                       <div className="text-sm text-muted-foreground">Total Insumos</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-success">
                         {Number(selectedRecipe.outputQuantity).toFixed(2)}
                       </div>
                       <div className="text-sm text-muted-foreground">Productos por Batch</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">
+                      <div className="text-2xl font-bold text-info-muted-foreground">
                         {selectedRecipe.isActive ? 'Sí' : 'No'}
                       </div>
                       <div className="text-sm text-muted-foreground">Disponible</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-600">
+                      <div className="text-2xl font-bold text-warning-muted-foreground">
                         {formatCurrency(calculateCostPerUnit(selectedRecipe))}
                       </div>
                       <div className="text-sm text-muted-foreground">Costo por Unidad</div>
@@ -3327,24 +3297,24 @@ Total de ingredientes: ${reportData.ingredientes.length}
 
                 {/* Información específica para recetas Por Banco */}
                 {selectedRecipe.baseType === 'PER_BANK' && (
-                  <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h4 className="text-lg font-medium text-blue-900 dark:text-blue-100">Configuración del Banco</h4>
+                  <div className="space-y-4 p-4 bg-info-muted rounded-lg border border-info-muted">
+                    <h4 className="text-lg font-medium text-foreground">Configuración del Banco</h4>
                     <div className="grid grid-cols-3 gap-4">
                       {selectedRecipe.cantidadPastones && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{Number(selectedRecipe.cantidadPastones).toFixed(2)}</div>
+                          <div className="text-2xl font-bold text-info-muted-foreground">{Number(selectedRecipe.cantidadPastones).toFixed(2)}</div>
                           <div className="text-sm text-muted-foreground">Pastones Utilizados</div>
                         </div>
                       )}
                       {selectedRecipe.metrosUtiles && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">{Number(selectedRecipe.metrosUtiles).toFixed(2)}m</div>
+                          <div className="text-2xl font-bold text-success">{Number(selectedRecipe.metrosUtiles).toFixed(2)}m</div>
                           <div className="text-sm text-muted-foreground">Metros Útiles</div>
                         </div>
                       )}
                       {selectedRecipe.cantidadPastones && selectedRecipe.metrosUtiles && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">
+                          <div className="text-2xl font-bold text-info-muted-foreground">
                             {(selectedRecipe.metrosUtiles / selectedRecipe.cantidadPastones).toFixed(2)}m
                           </div>
                           <div className="text-sm text-muted-foreground">Metros por Pastón</div>
@@ -3492,7 +3462,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     return (
                       <div className="space-y-4">
                         {/* Gráfico de pizza */}
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+                        <div className="bg-card p-4 rounded-lg border">
                           <div className="flex items-center justify-center mb-4">
                             <PieChart className="h-5 w-5 mr-2" />
                             <h5 className="font-semibold">
@@ -3505,7 +3475,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         </div>
                         
                         {/* Tabla de detalles */}
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+                        <div className="bg-card p-4 rounded-lg border">
                           <h5 className="font-semibold mb-3">Detalles por Ingrediente</h5>
                           <div className="space-y-2">
                             {chartData.map((item: any, index: number) => {
@@ -3523,7 +3493,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               }
                               
                               return (
-                                <div key={index} className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-gray-700">
+                                <div key={index} className="flex items-center justify-between p-2 rounded bg-muted">
                                   <div className="flex items-center gap-3">
                                     <div 
                                       className="w-4 h-4 rounded-full"
@@ -3533,7 +3503,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                       <div className="font-medium">{item.name}</div>
                                       <div className="text-sm text-muted-foreground">
                                         {item.quantity} {unitMeasure}
-                                        {item.isBank && <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-1 rounded">BANCO</span>}
+                                        {item.isBank && <span className="ml-1 text-xs bg-info-muted text-foreground px-1 rounded">BANCO</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3564,7 +3534,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               <h5 className="font-bold text-lg">Total de la Receta</h5>
                               <p className="text-sm text-muted-foreground">
                                 {Number(totalQuantity).toFixed(3)} unidades • {chartData.length} insumos
-                                {bankChartData.length > 0 && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">{bankChartData.length} del banco</span>}
+                                {bankChartData.length > 0 && <span className="ml-2 text-xs bg-info-muted text-foreground px-1 rounded">{bankChartData.length} del banco</span>}
                               </p>
                             </div>
                             <div className="text-right">
@@ -3584,8 +3554,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
 
                 {/* Sección de Productos de Subcategoría */}
                 {selectedRecipe?.subcategoryId && (
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h4 className="font-semibold text-lg mb-4 text-blue-900 dark:text-blue-100">
+                  <div className="mt-6 p-4 bg-info-muted rounded-lg border border-info-muted">
+                    <h4 className="font-semibold text-lg mb-4 text-foreground">
                       Costos por Producto de la Subcategoría
                     </h4>
                     
@@ -3596,21 +3566,21 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     ) : subcategoryCosts ? (
                       <div className="space-y-4">
                         {/* Resumen de costos */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 bg-white dark:bg-gray-800 rounded border">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 bg-card rounded border">
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">
+                            <div className="text-2xl font-bold text-info-muted-foreground">
                               {formatCurrency(subcategoryCosts.costPerMeter)}
                             </div>
                             <div className="text-sm text-muted-foreground">Costo por Metro</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">
+                            <div className="text-2xl font-bold text-success">
                               {subcategoryCosts.summary?.totalProducts || 0}
                             </div>
                             <div className="text-sm text-muted-foreground">Productos</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600">
+                            <div className="text-2xl font-bold text-info-muted-foreground">
                               {formatCurrency(subcategoryCosts.summary?.averageCost || 0)}
                             </div>
                             <div className="text-sm text-muted-foreground">Costo Promedio</div>
@@ -3619,9 +3589,9 @@ Total de ingredientes: ${reportData.ingredientes.length}
 
                         {/* Lista de productos */}
                         <div className="space-y-2">
-                          <h5 className="font-medium text-blue-900 dark:text-blue-100">Productos Individuales:</h5>
+                          <h5 className="font-medium text-foreground">Productos Individuales:</h5>
                           {subcategoryProducts.filter(p => p.hasMeters).map((product, index) => (
-                            <div key={product.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border">
+                            <div key={product.id} className="flex items-center justify-between p-3 bg-card rounded border">
                               <div className="flex-1">
                                 <div className="font-medium">{product.name}</div>
                                 <div className="text-sm text-muted-foreground">
@@ -3642,12 +3612,12 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           {/* Productos sin metros detectados */}
                           {subcategoryProducts.filter(p => !p.hasMeters).length > 0 && (
                             <div className="mt-4">
-                              <h6 className="font-medium text-orange-900 dark:text-orange-100 mb-2">
+                              <h6 className="font-medium text-foreground mb-2">
                                 Productos sin metros detectados:
                               </h6>
                               <div className="space-y-1">
                                 {subcategoryProducts.filter(p => !p.hasMeters).map((product) => (
-                                  <div key={product.id} className="text-sm text-muted-foreground p-2 bg-orange-50 dark:bg-orange-900/20 rounded">
+                                  <div key={product.id} className="text-sm text-muted-foreground p-2 bg-warning-muted rounded">
                                     {product.name} - No se pudieron extraer metros del nombre
                                   </div>
                                 ))}
@@ -3706,7 +3676,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         handleSendRecipe(selectedRecipe);
                       }
                     }}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    className="text-success hover:text-success hover:bg-success-muted"
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Enviar Receta
@@ -3951,7 +3921,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             variant="outline"
                             size="sm"
                             onClick={() => handleEditIngredient(index, ingredient)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-info-muted-foreground hover:text-info-muted-foreground hover:bg-info-muted"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -3962,7 +3932,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             onClick={() => {
                               setEditingIngredients(editingIngredients.filter((_, i) => i !== index));
                             }}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -4040,7 +4010,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           onChange={(e) => setIngredientQuantity(e.target.value)}
                           placeholder="0"
                           readOnly
-                          className="bg-gray-50"
+                          className="bg-muted"
                         />
                       </div>
                     </div>
@@ -4080,10 +4050,10 @@ Total de ingredientes: ${reportData.ingredientes.length}
 
                 {/* Ingredientes del Banco (solo para recetas "Por Banco") */}
                 {editingRecipe?.baseType === 'PER_BANK' && (
-                  <div className="space-y-4 p-4 bg-blue-50/50 rounded-lg border border-blue-200">
+                  <div className="space-y-4 p-4 bg-info-muted/50 rounded-lg border border-info-muted">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-lg font-medium text-blue-900">Ingredientes del Banco</h4>
-                      <div className="text-sm text-blue-700">
+                      <h4 className="text-lg font-medium text-foreground">Ingredientes del Banco</h4>
+                      <div className="text-sm text-info-muted-foreground">
                         {bankIngredients.length} ingrediente{bankIngredients.length !== 1 ? 's' : ''}
                       </div>
                     </div>
@@ -4091,10 +4061,10 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     {/* Lista de ingredientes del banco actuales */}
                     <div className="space-y-3">
                       {bankIngredients.map((ingredient, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border border-blue-200 rounded-lg bg-white">
+                        <div key={index} className="flex items-center justify-between p-3 border border-info-muted rounded-lg bg-card">
                           <div className="flex-1">
-                            <div className="font-medium text-blue-900">{ingredient.supplyName}</div>
-                            <div className="text-sm text-blue-700">
+                            <div className="font-medium text-foreground">{ingredient.supplyName}</div>
+                            <div className="text-sm text-info-muted-foreground">
                               {ingredient.quantity} {ingredient.unitMeasure}
                             </div>
                           </div>
@@ -4104,7 +4074,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditBankIngredient(index, ingredient)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="text-info-muted-foreground hover:text-info-muted-foreground hover:bg-info-muted"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -4115,7 +4085,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               onClick={() => {
                                 setBankIngredients(bankIngredients.filter((_, i) => i !== index));
                               }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -4125,10 +4095,10 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     </div>
 
                     {/* Agregar nuevo ingrediente del banco */}
-                    <div className="grid grid-cols-12 gap-3 items-end p-4 border border-blue-200 rounded-lg bg-white">
+                    <div className="grid grid-cols-12 gap-3 items-end p-4 border border-info-muted rounded-lg bg-card">
                       <div className="col-span-4">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium text-blue-900">Insumo del Banco</label>
+                          <label className="text-sm font-medium text-foreground">Insumo del Banco</label>
                           <Select value={selectedBankSupplyId} onValueChange={setSelectedBankSupplyId}>
                             <SelectTrigger>
                               <SelectValue placeholder="Seleccionar insumo" />
@@ -4146,7 +4116,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       
                       <div className="col-span-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium text-blue-900">Pulsos</label>
+                          <label className="text-sm font-medium text-foreground">Pulsos</label>
                           <Input
                             type="number"
                             min="0"
@@ -4164,7 +4134,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       
                       <div className="col-span-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium text-blue-900">kg/pulsos</label>
+                          <label className="text-sm font-medium text-foreground">kg/pulsos</label>
                           <Input
                             type="number"
                             min="0"
@@ -4182,7 +4152,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       
                       <div className="col-span-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium text-blue-900">Cantidad (TN)</label>
+                          <label className="text-sm font-medium text-foreground">Cantidad (TN)</label>
                           <Input
                             type="number"
                             min="0.00001"
@@ -4191,7 +4161,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             onChange={(e) => setBankIngredientQuantity(e.target.value)}
                             placeholder="0"
                             readOnly
-                            className="bg-gray-50"
+                            className="bg-muted"
                           />
                         </div>
                       </div>
@@ -4259,7 +4229,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 Modifica la cantidad del ingrediente usando pulsos y kg/pulsos
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <DialogBody className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Insumo</label>
                 <div className="mt-1 p-2 bg-muted rounded-md">
@@ -4322,7 +4292,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   })}
                   placeholder="0"
                   readOnly
-                  className="bg-gray-50"
+                  className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Calculado automáticamente: Pulsos × kg/pulsos ÷ 1000
@@ -4336,7 +4306,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+            </DialogBody>
+            <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
@@ -4347,8 +4318,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 <Button onClick={handleSaveIngredientEdit}>
                   Guardar Cambios
                 </Button>
-              </div>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -4356,22 +4326,22 @@ Total de ingredientes: ${reportData.ingredientes.length}
         <Dialog open={showEditBankIngredientDialog} onOpenChange={setShowEditBankIngredientDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-blue-900">Editar Ingrediente del Banco</DialogTitle>
+              <DialogTitle className="text-foreground">Editar Ingrediente del Banco</DialogTitle>
               <DialogDescription>
                 Modifica la cantidad del ingrediente del banco usando pulsos y kg/pulsos
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <DialogBody className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-blue-900">Insumo del Banco</label>
-                <div className="mt-1 p-2 bg-blue-50 rounded-md border border-blue-200">
-                  <span className="text-sm text-blue-900">{editingBankIngredientData.supplyName}</span>
+                <label className="text-sm font-medium text-foreground">Insumo del Banco</label>
+                <div className="mt-1 p-2 bg-info-muted rounded-md border border-info-muted">
+                  <span className="text-sm text-foreground">{editingBankIngredientData.supplyName}</span>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-blue-900">Pulsos</label>
+                  <label className="text-sm font-medium text-foreground">Pulsos</label>
                   <Input
                     type="number"
                     min="0"
@@ -4387,12 +4357,12 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       });
                     }}
                     placeholder="0"
-                    className="border-blue-200 focus:border-blue-400"
+                    className="border-info-muted focus:border-info"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-blue-900">kg/pulsos</label>
+                  <label className="text-sm font-medium text-foreground">kg/pulsos</label>
                   <Input
                     type="number"
                     min="0"
@@ -4408,13 +4378,13 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       });
                     }}
                     placeholder="0"
-                    className="border-blue-200 focus:border-blue-400"
+                    className="border-info-muted focus:border-info"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="text-sm font-medium text-blue-900">Cantidad (TN)</label>
+                <label className="text-sm font-medium text-foreground">Cantidad (TN)</label>
                 <Input
                   type="number"
                   min="0.00001"
@@ -4426,37 +4396,37 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   })}
                   placeholder="0"
                   readOnly
-                  className="bg-blue-50 border-blue-200"
+                  className="bg-info-muted border-info-muted"
                 />
-                <p className="text-xs text-blue-700 mt-1">
+                <p className="text-xs text-info-muted-foreground mt-1">
                   Calculado automáticamente: Pulsos × kg/pulsos ÷ 1000
                 </p>
               </div>
               
               <div>
-                <label className="text-sm font-medium text-blue-900">Unidad de Medida</label>
-                <div className="mt-1 p-2 bg-blue-50 rounded-md border border-blue-200">
-                  <span className="text-sm text-blue-900">{editingBankIngredientData.unitMeasure}</span>
+                <label className="text-sm font-medium text-foreground">Unidad de Medida</label>
+                <div className="mt-1 p-2 bg-info-muted rounded-md border border-info-muted">
+                  <span className="text-sm text-foreground">{editingBankIngredientData.unitMeasure}</span>
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+            </DialogBody>
+            <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowEditBankIngredientDialog(false)}
-                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="border-info-muted text-info-muted-foreground hover:bg-info-muted"
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSaveBankIngredientEdit}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-info hover:bg-info/90 text-info-foreground"
                 >
                   Guardar Cambios
                 </Button>
-              </div>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -4470,7 +4440,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
               </DialogDescription>
             </DialogHeader>
             {editingTestIngredient && (
-              <div className="space-y-4">
+              <DialogBody className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Insumo</label>
                   <div className="mt-1 p-2 bg-muted rounded-md">
@@ -4535,7 +4505,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     })}
                     placeholder="0"
                     readOnly
-                    className="bg-gray-50"
+                    className="bg-muted"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Calculado automáticamente: Pulsos × kg/pulsos ÷ 1000
@@ -4567,7 +4537,9 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   </div>
                 </div>
                 
-                <div className="flex justify-end space-x-2 pt-4">
+              </DialogBody>
+            )}
+            <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
@@ -4578,9 +4550,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   <Button onClick={handleSaveTestIngredientEdit}>
                     Guardar Cambios
                   </Button>
-                </div>
-              </div>
-            )}
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -4593,7 +4563,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 Agrega un nuevo insumo para probar diferentes escenarios de costos
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <DialogBody className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Insumo</label>
                 <Select 
@@ -4677,7 +4647,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   })}
                   placeholder="0"
                   readOnly
-                  className="bg-gray-50"
+                  className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Calculado automáticamente: Pulsos × kg/pulsos ÷ 1000
@@ -4699,7 +4669,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 />
               </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+            </DialogBody>
+            <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
@@ -4710,8 +4681,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 <Button onClick={addTestIngredient}>
                   Agregar Insumo
                 </Button>
-              </div>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -4805,12 +4775,12 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               <SelectItem 
                                 key={recipe.id} 
                                 value={recipe.id.toString()}
-                                className={recipe.isActive ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300" : ""}
+                                className={recipe.isActive ? "bg-success-muted text-success" : ""}
                               >
                                 <div className="flex items-center gap-2">
                                   <span>{recipe.name} (v{recipe.version})</span>
                                   {recipe.isActive && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                    <Badge variant="secondary" className="bg-success-muted text-success">
                                       Activa
                                     </Badge>
                                   )}
@@ -4866,12 +4836,12 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               <SelectItem 
                                 key={recipe.id} 
                                 value={recipe.id.toString()}
-                                className={recipe.isActive ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300" : ""}
+                                className={recipe.isActive ? "bg-success-muted text-success" : ""}
                               >
                                 <div className="flex items-center gap-2">
                                   <span>{recipe.name} - {recipe.productName} (v{recipe.version})</span>
                                   {recipe.isActive && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                    <Badge variant="secondary" className="bg-success-muted text-success">
                                       Activa
                                     </Badge>
                                   )}
@@ -4975,7 +4945,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             const percentageDiff = comparison?.percentageDifference || 0;
                             
                             return (
-                              <tr key={index} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                              <tr key={index} className="border-b hover:bg-muted">
                                 <td className="p-2">
                                   <div className="font-medium">{ingredient.supplyName}</div>
                                 </td>
@@ -5224,10 +5194,10 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                 </td>
                                 <td className="p-2">
                                   <div className="text-sm">
-                                    <div className={`font-medium ${costDiff >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    <div className={cn("font-medium", costDiff >= 0 ? "text-destructive" : "text-success")}>
                                       {costDiff >= 0 ? '+' : ''}{formatCurrency(costDiff)}
                                     </div>
-                                    <div className={`text-xs ${percentageDiff >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                    <div className={cn("text-xs", percentageDiff >= 0 ? "text-destructive" : "text-success")}>
                                       {percentageDiff >= 0 ? '+' : ''}{percentageDiff.toFixed(1)}%
                                     </div>
                                   </div>
@@ -5237,7 +5207,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeTestIngredient(index)}
-                                    className="text-red-600 hover:text-red-700"
+                                    className="text-destructive hover:text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -5438,8 +5408,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                             (isBloque && totalAridosKG > limiteBloque);
                         
                         return (
-                          <div className={`p-3 border rounded text-center ${excedeLimite ? 'border-red-300 dark:border-red-700' : ''}`}>
-                            <div className={`text-xs mb-1 ${excedeLimite ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}`}>
+                          <div className={cn("p-3 border rounded text-center", excedeLimite && "border-destructive/30")}>
+                            <div className={cn("text-xs mb-1", excedeLimite ? "text-destructive font-medium" : "text-muted-foreground")}>
                               Peso Total de Áridos
                               {excedeLimite && (
                                 <span className="ml-2 text-xs font-normal">
@@ -5447,10 +5417,10 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                 </span>
                               )}
                             </div>
-                            <div className={`text-base ${excedeLimite ? 'text-red-700 dark:text-red-300 font-bold' : 'font-medium'}`}>
+                            <div className={cn("text-base", excedeLimite ? "text-destructive font-bold" : "font-medium")}>
                               {(Number(totalAridosKG) || 0).toFixed(2)} kg
                             </div>
-                            <div className={`text-xs mt-1 ${excedeLimite ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                            <div className={cn("text-xs mt-1", excedeLimite ? "text-destructive" : "text-muted-foreground")}>
                               ({(Number(totalAridosTN) || 0).toFixed(3)} TN)
                             </div>
                           </div>
@@ -5476,28 +5446,28 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   <CardContent className="space-y-6">
                     {/* Resumen de Costos por Unidad */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400">Materiales</div>
-                        <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                      <div className="p-4 bg-info-muted rounded-lg border border-info-muted">
+                        <div className="text-sm font-medium text-info-muted-foreground">Materiales</div>
+                        <div className="text-xl font-bold text-info-muted-foreground">
                           {formatCurrency(totalCostResults.materialsCostPerUnit)}
                         </div>
-                        <div className="text-xs text-blue-500 dark:text-blue-400">Por unidad</div>
+                        <div className="text-xs text-info-muted-foreground">Por unidad</div>
                       </div>
                       
-                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                        <div className="text-sm font-medium text-green-600 dark:text-green-400">Empleados</div>
-                        <div className="text-xl font-bold text-green-700 dark:text-green-300">
+                      <div className="p-4 bg-success-muted rounded-lg border border-success-muted">
+                        <div className="text-sm font-medium text-success">Empleados</div>
+                        <div className="text-xl font-bold text-success">
                           {formatCurrency(totalCostResults.employeeCostPerUnit)}
                         </div>
-                        <div className="text-xs text-green-500 dark:text-green-400">Por unidad</div>
+                        <div className="text-xs text-success">Por unidad</div>
                       </div>
                       
-                      <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                        <div className="text-sm font-medium text-orange-600 dark:text-orange-400">Indirectos</div>
-                        <div className="text-xl font-bold text-orange-700 dark:text-orange-300">
+                      <div className="p-4 bg-warning-muted rounded-lg border border-warning-muted">
+                        <div className="text-sm font-medium text-warning-muted-foreground">Indirectos</div>
+                        <div className="text-xl font-bold text-warning-muted-foreground">
                           {formatCurrency(totalCostResults.indirectCostPerUnit)}
                         </div>
-                        <div className="text-xs text-orange-500 dark:text-orange-400">Por unidad</div>
+                        <div className="text-xs text-warning-muted-foreground">Por unidad</div>
                       </div>
                       
                       <div className="p-4 bg-muted/50 dark:bg-muted/30 rounded-lg border">
@@ -5693,7 +5663,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 };
 
                 return (
-                  <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+                  <Card className="border-info-muted bg-info-muted/50">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
                         <Package className="h-4 w-4" />
@@ -5708,30 +5678,24 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         {ingredientChanges.map((change, idx) => (
                           <div 
                             key={idx}
-                            className={`p-3 rounded-lg border ${
-                              change.isNew 
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                                : change.isRemoved
-                                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                            }`}
+                            className={cn("p-3 rounded-lg border", change.isNew ? "bg-success-muted border-success-muted" : change.isRemoved ? "bg-destructive/10 border-destructive/30" : "bg-card border-border")}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="font-medium text-sm truncate">{change.name}</span>
                                   {change.isNew && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs">
+                                    <Badge variant="secondary" className="bg-success-muted text-success text-xs">
                                       Nuevo
                                     </Badge>
                                   )}
                                   {change.isRemoved && (
-                                    <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-xs">
+                                    <Badge variant="secondary" className="bg-destructive/10 text-destructive text-xs">
                                       Eliminado
                                     </Badge>
                                   )}
                                   {change.priceChanged && (
-                                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs">
+                                    <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground text-xs">
                                       Precio modificado
                                     </Badge>
                                   )}
@@ -5752,26 +5716,14 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Variación del batch: </span>
-                                    <span className={`font-medium ${
-                                      change.percentage > 0 
-                                        ? 'text-orange-600 dark:text-orange-400'
-                                        : change.percentage < 0
-                                        ? 'text-green-600 dark:text-green-400'
-                                        : ''
-                                    }`}>
+                                    <span className={cn("font-medium", change.percentage > 0 ? "text-warning-muted-foreground" : change.percentage < 0 ? "text-success" : "")}>
                                       {change.percentage > 0 ? '+' : ''}
                                       {change.percentage.toFixed(1)}%
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Variación en el precio: </span>
-                                    <span className={`font-medium ${
-                                      change.costVariationPercentage > 0 
-                                        ? 'text-orange-600 dark:text-orange-400'
-                                        : change.costVariationPercentage < 0
-                                        ? 'text-green-600 dark:text-green-400'
-                                        : ''
-                                    }`}>
+                                    <span className={cn("font-medium", change.costVariationPercentage > 0 ? "text-warning-muted-foreground" : change.costVariationPercentage < 0 ? "text-success" : "")}>
                                       {change.costVariationPercentage > 0 ? '+' : ''}
                                       {change.costVariationPercentage.toFixed(1)}%
                                     </span>
@@ -5779,7 +5731,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                 </div>
 
                                 {change.priceChanged && change.originalPrice !== undefined && change.newPrice !== undefined && (
-                                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                  <div className="mt-2 pt-2 border-t border-border">
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                       <div>
                                         <span className="text-muted-foreground">Precio original: </span>
@@ -5873,13 +5825,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           <div className="text-xs text-muted-foreground mb-2 text-center font-medium">Diferencia</div>
                           <div className="space-y-1.5 text-center">
                             <div>
-                              <span className={`text-xs font-medium ${
-                                (totalCostResults.materialsCostPerUnit - originalTotalCostResults.materialsCostPerUnit) < 0 
-                                  ? 'text-green-600 dark:text-green-400' 
-                                  : (totalCostResults.materialsCostPerUnit - originalTotalCostResults.materialsCostPerUnit) > 0
-                                  ? 'text-orange-600 dark:text-orange-400'
-                                  : 'text-muted-foreground'
-                              }`}>
+                              <span className={cn("text-xs font-medium", (totalCostResults.materialsCostPerUnit - originalTotalCostResults.materialsCostPerUnit) < 0 ? "text-success" : (totalCostResults.materialsCostPerUnit - originalTotalCostResults.materialsCostPerUnit) > 0 ? "text-warning-muted-foreground" : "text-muted-foreground")}>
                                 {(totalCostResults.materialsCostPerUnit - originalTotalCostResults.materialsCostPerUnit) < 0 ? '-' : '+'}
                                 {formatCurrency(Math.abs(totalCostResults.materialsCostPerUnit - originalTotalCostResults.materialsCostPerUnit))}
                               </span>
@@ -5896,13 +5842,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             </div>
                             <div className="border-t pt-1.5 mt-1.5">
                               <div>
-                                <span className={`text-sm font-bold ${
-                                  isAhorro 
-                                    ? 'text-green-600 dark:text-green-400' 
-                                    : diferenciaPorUnidad > 0
-                                    ? 'text-orange-600 dark:text-orange-400'
-                                    : 'text-muted-foreground'
-                                }`}>
+                                <span className={cn("text-sm font-bold", isAhorro ? "text-success" : diferenciaPorUnidad > 0 ? "text-warning-muted-foreground" : "text-muted-foreground")}>
                                   {isAhorro ? '-' : '+'}{formatCurrency(Math.abs(diferenciaPorUnidad))}
                                 </span>
                               </div>
@@ -6027,11 +5967,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               <td className="p-2">Materiales</td>
                               <td className="p-2 text-right">{formatCurrency(originalTotalCostResults.materialsCost)}</td>
                               <td className="p-2 text-right">{formatCurrency(totalCostResults.materialsCost)}</td>
-                              <td className={`p-2 text-right ${
-                                (totalCostResults.materialsCost - originalTotalCostResults.materialsCost) < 0 
-                                  ? 'text-green-600 dark:text-green-400' 
-                                  : 'text-orange-600 dark:text-orange-400'
-                              }`}>
+                              <td className={cn("p-2 text-right", (totalCostResults.materialsCost - originalTotalCostResults.materialsCost) < 0 ? "text-success" : "text-warning-muted-foreground")}>
                                 {(totalCostResults.materialsCost - originalTotalCostResults.materialsCost) < 0 ? '-' : '+'}
                                 {formatCurrency(Math.abs(totalCostResults.materialsCost - originalTotalCostResults.materialsCost))}
                               </td>
@@ -6052,9 +5988,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               <td className="p-2">TOTAL</td>
                               <td className="p-2 text-right">{formatCurrency(originalTotalCostResults.totalCost)}</td>
                               <td className="p-2 text-right">{formatCurrency(totalCostResults.totalCost)}</td>
-                              <td className={`p-2 text-right ${
-                                isAhorro ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                              }`}>
+                              <td className={cn("p-2 text-right", isAhorro ? "text-success" : "text-warning-muted-foreground")}>
                                 {isAhorro ? '-' : '+'}{formatCurrency(Math.abs(diferenciaTotal))}
                               </td>
                             </tr>
@@ -6090,7 +6024,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           // Buscar la última versión de recetas con el mismo nombre EXACTO y producto
                           const recipeDetail = await fetchRecipeDetail(selectedRecipeForComparison.id);
                           if (!recipeDetail) {
-                            alert('Error al cargar los detalles de la receta');
+                            toast.error('Error al cargar los detalles de la receta');
                             return;
                           }
 
@@ -6198,7 +6132,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           const notes = test.notes;
                           
                           return (
-                            <div key={test.id} className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <div key={test.id} className="p-4 border rounded-lg hover:bg-muted">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <h4 className="font-semibold">{testName}</h4>
@@ -6224,7 +6158,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                     onClick={() => deleteSavedTest(test.id, testName)}
                                     variant="outline"
                                     size="sm"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -6281,8 +6215,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 {selectedRecipeForComparison && `Crear nueva versión de "${selectedRecipeForComparison.name}"`}
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-4">
+
+            <DialogBody className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Nombre de la Receta</label>
                 <Input
@@ -6307,11 +6241,11 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   Puedes incluir una descripción: "1 - descripción de cambios" o simplemente el número "1"
                 </p>
               </div>
-            </div>
-            
-            <div className="flex justify-end gap-2 mt-6">
-              <Button 
-                variant="outline" 
+            </DialogBody>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowNewRecipeDialog(false);
                   setNewRecipeName('');
@@ -6320,13 +6254,13 @@ Total de ingredientes: ${reportData.ingredientes.length}
               >
                 Cancelar
               </Button>
-              <Button 
+              <Button
                 onClick={handleSaveNewRecipe}
                 disabled={!newRecipeName.trim() || !newRecipeVersion.trim()}
               >
                 Guardar Versión
               </Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -6341,15 +6275,15 @@ Total de ingredientes: ${reportData.ingredientes.length}
           <DialogContent size="md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-amber-700" />
+                <BookOpen className="h-5 w-5 text-warning-muted-foreground" />
                 {isEditingNotes ? 'Editar Notas' : 'Notas de la Receta'}
               </DialogTitle>
               <DialogDescription>
                 {selectedRecipe?.name}
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-4">
+
+            <DialogBody className="space-y-4">
               {isEditingNotes ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Notas</label>
@@ -6367,8 +6301,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
               ) : (
                 <>
                   {notesContent ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
+                    <div className="p-4 bg-warning-muted border border-warning-muted rounded-lg">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                         {notesContent}
                       </p>
                     </div>
@@ -6385,12 +6319,13 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   )}
                 </>
               )}
-              
-              <div className="flex justify-end gap-2">
+            </DialogBody>
+
+            <DialogFooter>
                 {isEditingNotes ? (
                   <>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setIsEditingNotes(false);
                         setNotesContent(selectedRecipe?.notes || '');
@@ -6398,18 +6333,18 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     >
                       Cancelar
                     </Button>
-                    <Button 
+                    <Button
                       onClick={async () => {
                         if (!selectedRecipe) return;
-                        
+
                         try {
                           // Cargar los ingredientes de la receta
                           const recipeDetail = await fetchRecipeDetail(selectedRecipe.id);
                           if (!recipeDetail) {
-                            alert('Error al cargar los detalles de la receta');
+                            toast.error('Error al cargar los detalles de la receta');
                             return;
                           }
-                          
+
                           const success = await updateRecipe(selectedRecipe.id, {
                             ...selectedRecipe,
                             name: selectedRecipe.name,
@@ -6430,7 +6365,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             ingredients: recipeDetail.ingredients || [],
                             bankIngredients: recipeDetail.bankIngredients || []
                           });
-                          
+
                           if (success) {
                             setIsEditingNotes(false);
                             // Actualizar la receta en la lista
@@ -6452,7 +6387,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   </>
                 ) : (
                   <>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => {
                         setIsEditingNotes(true);
@@ -6461,16 +6396,15 @@ Total de ingredientes: ${reportData.ingredientes.length}
                       <Edit className="h-4 w-4 mr-2" />
                       {notesContent ? 'Editar' : 'Agregar Notas'}
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setShowNotesDialog(false)}
                     >
                       Cerrar
                     </Button>
                   </>
                 )}
-              </div>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -6479,15 +6413,15 @@ Total de ingredientes: ${reportData.ingredientes.length}
           <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-green-700" />
+                <BookOpen className="h-5 w-5 text-success" />
                 Guardar Prueba de Costos
               </DialogTitle>
               <DialogDescription>
                 Guarda esta simulación de costos para poder recuperarla más tarde
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-4">
+
+            <DialogBody className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Nombre de la Prueba *</label>
                 <Input
@@ -6516,7 +6450,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
 
               {/* Resumen de la prueba */}
               {testResults && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="p-4 bg-muted rounded-lg">
                   <h4 className="font-semibold mb-2">Resumen de la Prueba</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
@@ -6538,10 +6472,11 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   </div>
                 </div>
               )}
-              
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
+            </DialogBody>
+
+            <DialogFooter>
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowSaveTestDialog(false);
                     setTestName('');
@@ -6550,15 +6485,14 @@ Total de ingredientes: ${reportData.ingredientes.length}
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   onClick={saveCostTest}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-success hover:bg-success/90"
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
                   Guardar Prueba
                 </Button>
-              </div>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

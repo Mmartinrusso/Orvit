@@ -318,7 +318,7 @@ export default function AdelantosPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 text-green-600 border-green-200 hover:bg-green-50"
+                          className="h-8 text-success border-success-muted hover:bg-success-muted"
                           onClick={() => handleApprove(adv.id)}
                           disabled={updateAdvanceMutation.isPending}
                         >
@@ -328,7 +328,7 @@ export default function AdelantosPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 text-red-600 border-red-200 hover:bg-red-50"
+                          className="h-8 text-destructive border-destructive/30 hover:bg-destructive/10"
                           onClick={() => handleReject(adv.id)}
                           disabled={updateAdvanceMutation.isPending}
                         >

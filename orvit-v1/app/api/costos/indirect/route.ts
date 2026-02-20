@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/costos/indirect?month=2026-01
  *
  * Obtiene los costos indirectos para un mes específico.
- * Los datos vienen de MonthlyIndirect.
+ * V2: Los datos vienen de Compras (PurchaseReceipt con esIndirecto=true).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         month,
-        source: 'MonthlyIndirect',
+        source: 'COMPRAS',
         ...summaryData
       });
     }
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       month,
-      source: 'MonthlyIndirect',
+      source: 'COMPRAS',
       hasData: data.itemCount > 0,
       summary: {
         total: data.total,

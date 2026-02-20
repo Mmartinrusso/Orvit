@@ -1,13 +1,12 @@
 /**
  * Centro de Costos V2 - Integración con Costos Indirectos
  *
- * Lee datos de MonthlyIndirect y IndirectItem para alimentar
- * el sistema de costos automáticamente.
+ * V2: Lee las facturas de Compras marcadas como "esIndirecto = true".
+ * La clasificación (IndirectCategory) se elige por factura al momento de cargarla.
  */
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
-import { IndirectCategory } from '@prisma/client';
 
 export interface IndirectCostData {
   total: number;
@@ -22,15 +21,30 @@ export interface CategorySummary {
   items: IndirectDetail[];
 }
 
+export interface IndirectConcept {
+  id: number;
+  descripcion: string;
+  monto: number;
+}
+
 export interface IndirectDetail {
   id: string;
   category: string;
   label: string;
   amount: number;
+  // Campos legacy (compatibilidad con IndirectViewV2 existente)
   itemId: string | null;
   itemCode: string | null;
   quantity: number | null;
   servicePrice: number | null;
+  // Campos nuevos desde Compras
+  sourceType: 'COMPRAS';
+  receiptId: number;
+  facturaNumero: string;
+  fechaImputacion: string | null;
+  proveedorNombre: string;
+  // Conceptos del gasto (items con itemId=null)
+  conceptos: IndirectConcept[];
 }
 
 // Mapeo de categorías a nombres legibles
@@ -45,6 +59,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 /**
  * Obtiene los costos indirectos para un mes específico.
+ * Lee facturas de Compras marcadas como esIndirecto=true con fechaImputacion en el mes indicado.
  *
  * @param companyId - ID de la empresa
  * @param month - Mes en formato "YYYY-MM" (ej: "2026-01")
@@ -53,30 +68,35 @@ export async function getIndirectCostsForMonth(
   companyId: number,
   month: string
 ): Promise<IndirectCostData> {
-  // Buscar todos los registros de costos indirectos del mes
-  const monthlyIndirects = await prisma.monthlyIndirect.findMany({
+  const [year, monthNum] = month.split('-').map(Number);
+  const startOfMonth = new Date(year, monthNum - 1, 1);
+  const endOfMonth = new Date(year, monthNum, 0, 23, 59, 59, 999);
+
+  const receipts = await prisma.purchaseReceipt.findMany({
     where: {
       companyId,
-      month
-    },
-    include: {
-      item: {
-        select: {
-          id: true,
-          code: true,
-          label: true,
-          category: true
-        }
+      esIndirecto: true,
+      fechaImputacion: {
+        gte: startOfMonth,
+        lte: endOfMonth
       }
     },
+    include: {
+      proveedor: {
+        select: { id: true, name: true, razon_social: true }
+      },
+      items: {
+        select: { id: true, descripcion: true, precioUnitario: true, cantidad: true, itemId: true },
+        orderBy: { id: 'asc' as const },
+      },
+    },
     orderBy: [
-      { category: 'asc' },
-      { label: 'asc' }
+      { indirectCategory: 'asc' },
+      { fechaImputacion: 'asc' }
     ]
   });
 
-  // Si no hay datos, retornar valores en cero
-  if (monthlyIndirects.length === 0) {
+  if (receipts.length === 0) {
     return {
       total: 0,
       itemCount: 0,
@@ -85,38 +105,49 @@ export async function getIndirectCostsForMonth(
     };
   }
 
-  // Procesar y agrupar por categoría
   let total = 0;
   const byCategory: Record<string, CategorySummary> = {};
   const details: IndirectDetail[] = [];
 
-  for (const indirect of monthlyIndirects) {
-    const amount = toNumber(indirect.amount);
-    const category = indirect.category;
+  for (const receipt of receipts) {
+    const amount = toNumber(receipt.neto);
+    const category = receipt.indirectCategory ?? 'OTHER';
 
+    const proveedorNombre = receipt.proveedor.razon_social || receipt.proveedor.name;
     const detail: IndirectDetail = {
-      id: indirect.id,
+      id: String(receipt.id),
       category,
-      label: indirect.label,
+      label: proveedorNombre,
       amount,
-      itemId: indirect.itemId,
-      itemCode: indirect.item?.code || null,
-      quantity: indirect.quantity ? toNumber(indirect.quantity) : null,
-      servicePrice: indirect.servicePrice ? toNumber(indirect.servicePrice) : null
+      // Campos legacy en null (esta fuente no los usa)
+      itemId: null,
+      itemCode: null,
+      quantity: null,
+      servicePrice: null,
+      // Campos Compras
+      sourceType: 'COMPRAS',
+      receiptId: receipt.id,
+      facturaNumero: `${receipt.numeroSerie ?? ''}-${receipt.numeroFactura ?? ''}`.replace(/^-|-$/, ''),
+      fechaImputacion: receipt.fechaImputacion
+        ? receipt.fechaImputacion.toISOString().split('T')[0]
+        : null,
+      proveedorNombre,
+      // Conceptos: items con itemId=null (descriptivos, sin supply vinculado)
+      conceptos: receipt.items
+        .filter(it => it.itemId === null)
+        .map(it => ({
+          id: it.id,
+          descripcion: it.descripcion ?? '',
+          monto: toNumber(it.precioUnitario) * toNumber(it.cantidad),
+        })),
     };
 
     details.push(detail);
     total += amount;
 
-    // Agrupar por categoría
     if (!byCategory[category]) {
-      byCategory[category] = {
-        total: 0,
-        count: 0,
-        items: []
-      };
+      byCategory[category] = { total: 0, count: 0, items: [] };
     }
-
     byCategory[category].total += amount;
     byCategory[category].count += 1;
     byCategory[category].items.push(detail);
@@ -124,19 +155,19 @@ export async function getIndirectCostsForMonth(
 
   return {
     total,
-    itemCount: monthlyIndirects.length,
+    itemCount: receipts.length,
     byCategory,
     details
   };
 }
 
 /**
- * Obtiene el total de ítems de costos indirectos configurados
- * (independiente del mes, para verificación de prerrequisitos)
+ * Obtiene el total de facturas marcadas como indirecto para una empresa.
+ * Reemplaza getIndirectItemsCount (que contaba IndirectItem configurados).
  */
 export async function getIndirectItemsCount(companyId: number): Promise<number> {
-  return prisma.indirectItem.count({
-    where: { companyId }
+  return prisma.purchaseReceipt.count({
+    where: { companyId, esIndirecto: true }
   });
 }
 
@@ -164,7 +195,6 @@ export async function getIndirectSummaryWithLabels(
     count: value.count
   }));
 
-  // Ordenar por total descendente
   categories.sort((a, b) => b.total - a.total);
 
   return {

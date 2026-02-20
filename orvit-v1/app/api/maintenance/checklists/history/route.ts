@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function GET(request: NextRequest) {
   try {
     // Verificar que prisma esté disponible
@@ -14,9 +13,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    
-    console.log('✅ Prisma is available:', !!prisma);
-    
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const sectorId = searchParams.get('sectorId');
@@ -32,13 +29,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Fetching checklist history with params:', {
-      companyId,
-      sectorId,
-      sectorIdType: typeof sectorId,
-      sectorIdValue: sectorId
-    });
-
     // Buscar ejecuciones de checklists
     const whereClause: any = {
       companyId: parseInt(companyId)
@@ -48,9 +38,7 @@ export async function GET(request: NextRequest) {
     if (sectorId && sectorId !== 'null' && sectorId !== 'undefined') {
       whereClause.sectorId = parseInt(sectorId);
     }
-    
-    console.log('🔍 Final where clause:', whereClause);
-    
+
     // Primero, vamos a ver qué documentos existen en la tabla document
     const allDocuments = await prisma.document.findMany({
       where: {
@@ -64,14 +52,11 @@ export async function GET(request: NextRequest) {
       },
       take: 10
     });
-    
-    console.log('🔍 Sample documents in database:', allDocuments);
-    
+
     // Verificar si hay algún documento con ID 144
     const document144 = await prisma.document.findUnique({
       where: { id: 144 }
     });
-    console.log('🔍 Document with ID 144 exists:', !!document144, document144 ? document144.entityType : 'N/A');
     
     // Verificar si hay checklists en la tabla document
     try {
@@ -86,9 +71,7 @@ export async function GET(request: NextRequest) {
         },
         take: 5
       });
-      console.log('🔍 Sample maintenance checklists in document table:', maintenanceChecklists);
     } catch (error) {
-      console.log('⚠️ Error accessing document table for checklists:', error);
     }
     
     const checklistExecutions = await prisma.checklistExecution.findMany({
@@ -104,40 +87,17 @@ export async function GET(request: NextRequest) {
     const hasMore = checklistExecutions.length > pageSize;
     const executionsPage = hasMore ? checklistExecutions.slice(0, pageSize) : checklistExecutions;
 
-    console.log('🔍 Raw checklist executions from DB:', checklistExecutions);
-    console.log('🔍 Where clause used:', whereClause);
-
-    console.log('🔍 Found checklist executions:', checklistExecutions.length);
     if (checklistExecutions.length > 0) {
-      console.log('🔍 Sample execution:', checklistExecutions[0]);
-      console.log('🔍 Sample execution checklistId:', checklistExecutions[0].checklistId);
-      console.log('🔍 Sample execution companyId:', checklistExecutions[0].companyId);
-      console.log('🔍 Sample execution sectorId:', checklistExecutions[0].sectorId);
       
       // Verificar si las ejecuciones tienen el formato correcto
-      console.log('🔍 Sample execution structure:', {
-        id: checklistExecutions[0].id,
-        checklistId: checklistExecutions[0].checklistId,
-        executedBy: checklistExecutions[0].executedBy,
-        executionTime: checklistExecutions[0].executionTime,
-        completedItems: checklistExecutions[0].completedItems,
-        totalItems: checklistExecutions[0].totalItems,
-        companyId: checklistExecutions[0].companyId,
-        sectorId: checklistExecutions[0].sectorId,
-        executedAt: checklistExecutions[0].executedAt,
-        status: checklistExecutions[0].status,
-        justifications: checklistExecutions[0].justifications
-      });
     }
 
     // Procesar las ejecuciones para incluir información del checklist
     const history = await Promise.all(
       executionsPage.map(async (execution) => {
         try {
-          console.log('🔍 Looking for checklist with ID:', execution.checklistId);
           
           // Buscar el checklist en la tabla document (donde se guardan los checklists)
-          console.log('🔍 Looking for checklist in document table with ID:', execution.checklistId);
           
           // Buscar directamente por ID del documento (ya que checklistId apunta al ID del documento)
           let documentChecklist = await prisma.document.findUnique({
@@ -147,17 +107,9 @@ export async function GET(request: NextRequest) {
           });
           
           if (documentChecklist) {
-            console.log('✅ Found checklist document:', {
-              id: documentChecklist.id,
-              entityType: documentChecklist.entityType,
-              originalName: documentChecklist.originalName
-            });
           } else {
-            console.log('❌ Checklist document not found for ID:', execution.checklistId);
           }
-          
-          console.log('🔍 Checklist found in document:', !!documentChecklist, 'for ID:', execution.checklistId);
-          
+
           let checklistData;
           
           if (documentChecklist) {
@@ -166,13 +118,11 @@ export async function GET(request: NextRequest) {
               
                         // Verificar que el checklist esté activo
           if (parsedData.isActive === false) {
-            console.log('❌ Skipping inactive checklist:', parsedData.title);
             return null;
           }
           
           // Verificar que el checklist tenga un título válido
           if (!parsedData.title || parsedData.title.trim() === '') {
-            console.log('❌ Skipping checklist without valid title');
             return null;
           }
               
@@ -180,7 +130,6 @@ export async function GET(request: NextRequest) {
                 title: parsedData.title || 'Checklist sin título',
                 description: parsedData.description || ''
               };
-              console.log('✅ Checklist data parsed successfully:', checklistData.title);
             } catch (error) {
               console.error('Error parsing document checklist:', error);
               checklistData = {
@@ -189,10 +138,8 @@ export async function GET(request: NextRequest) {
               };
             }
           } else {
-            console.log('⚠️ Checklist not found in document table for execution:', execution.id, 'checklistId:', execution.checklistId);
             
             // NO crear checklists temporales - solo mostrar checklists válidos y activos
-            console.log('❌ Skipping orphaned execution - checklist not found');
             return null;
           }
           
@@ -221,7 +168,6 @@ export async function GET(request: NextRequest) {
                   skippedAt: execution.executedAt
                 }];
               }
-              console.log('✅ Justifications parsed successfully:', justifications.length);
             } catch (error) {
               console.error('Error parsing justifications:', error);
               // Crear justificación por defecto si falla el parsing
@@ -237,7 +183,6 @@ export async function GET(request: NextRequest) {
           if (execution.executionDetails) {
             try {
               executionDetails = JSON.parse(execution.executionDetails);
-              console.log('✅ Execution details parsed successfully:', executionDetails);
             } catch (error) {
               console.error('Error parsing execution details:', error);
             }
@@ -265,11 +210,6 @@ export async function GET(request: NextRequest) {
 
     // Filtrar ejecuciones nulas
     const validHistory = history.filter(item => item !== null);
-
-    console.log('🔍 Total executions fetched:', executionsPage.length);
-    console.log('🔍 Valid executions after filtering:', validHistory.length);
-    console.log('🔍 Has more pages:', hasMore);
-    console.log('✅ History processing completed successfully');
 
     return NextResponse.json({
       history: validHistory,

@@ -239,13 +239,13 @@ export function WorkOrdersCalendarView({
           <Badge variant="outline" className="gap-1">
             {stats.total} este mes
           </Badge>
-          <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+          <Badge variant="outline" className="gap-1 border-warning text-warning-muted-foreground">
             {stats.pending} pendientes
           </Badge>
-          <Badge variant="outline" className="gap-1 border-blue-500 text-blue-600">
+          <Badge variant="outline" className="gap-1 border-info text-info-muted-foreground">
             {stats.inProgress} en curso
           </Badge>
-          <Badge variant="outline" className="gap-1 border-green-500 text-green-600">
+          <Badge variant="outline" className="gap-1 border-success text-success">
             {stats.completed} completadas
           </Badge>
           <Button variant="ghost" size="sm" onClick={() => refetch()} className="h-8 w-8 p-0">

@@ -59,7 +59,6 @@ export const GET = withGuards(async (request: NextRequest, { user }) => {
             select: {
               id: true,
               name: true,
-              code: true,
               sectorId: true,
             },
           },

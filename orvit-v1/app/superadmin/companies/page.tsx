@@ -75,6 +75,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface PrimaryAdmin {
   id: number;
@@ -133,14 +134,15 @@ interface OwnerWithSubscription {
 }
 
 const statusStyles: Record<string, { bg: string; text: string; label: string }> = {
-  TRIALING: { bg: 'bg-blue-500/10', text: 'text-blue-500', label: 'Trial' },
-  ACTIVE: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'Activa' },
-  PAST_DUE: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Mora' },
-  CANCELED: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Cancelada' },
-  PAUSED: { bg: 'bg-gray-500/10', text: 'text-gray-500', label: 'Pausada' },
+  TRIALING: { bg: 'bg-info/10', text: 'text-info-muted-foreground', label: 'Trial' },
+  ACTIVE: { bg: 'bg-success/10', text: 'text-success', label: 'Activa' },
+  PAST_DUE: { bg: 'bg-warning/10', text: 'text-warning-muted-foreground', label: 'Mora' },
+  CANCELED: { bg: 'bg-destructive/10', text: 'text-destructive', label: 'Cancelada' },
+  PAUSED: { bg: 'bg-muted-foreground/10', text: 'text-muted-foreground', label: 'Pausada' },
 };
 
 export default function CompaniesPage() {
+  const confirm = useConfirm();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [owners, setOwners] = useState<OwnerWithSubscription[]>([]);
@@ -468,7 +470,13 @@ export default function CompaniesPage() {
   }
 
   async function handleDelete(company: Company) {
-    if (!confirm(`¿Eliminar la empresa "${company.name}"? Esta acción no se puede deshacer.`)) return;
+    const ok = await confirm({
+      title: 'Eliminar empresa',
+      description: `¿Eliminar la empresa "${company.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`/api/superadmin/companies/${company.id}`, {
@@ -549,8 +557,8 @@ export default function CompaniesPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-blue-500" />
+                <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-info-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.total}</p>
@@ -562,8 +570,8 @@ export default function CompaniesPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-green-500" />
+                <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                  <Check className="h-6 w-6 text-success" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.active}</p>
@@ -575,8 +583,8 @@ export default function CompaniesPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                  <Ban className="h-6 w-6 text-yellow-500" />
+                <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                  <Ban className="h-6 w-6 text-warning-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.blocked}</p>
@@ -648,7 +656,7 @@ export default function CompaniesPage() {
                             {company.blockedByPlan && (
                               <Tooltip>
                                 <TooltipTrigger>
-                                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                  <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p>Bloqueada por estado del plan</p>
@@ -749,7 +757,7 @@ export default function CompaniesPage() {
                     {/* Estado */}
                     <TableCell className="text-center">
                       {company.blockedByPlan ? (
-                        <Badge className="text-xs bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                        <Badge className="text-xs bg-warning/10 text-warning-muted-foreground border-warning-muted/20">
                           <Ban className="h-3 w-3 mr-1" />
                           Bloqueada
                         </Badge>
@@ -758,8 +766,8 @@ export default function CompaniesPage() {
                           className={cn(
                             'text-xs',
                             company.isActive
-                              ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                              : 'bg-red-500/10 text-red-500 border-red-500/20'
+                              ? 'bg-success/10 text-success border-success-muted/20'
+                              : 'bg-destructive/10 text-destructive border-destructive/30/20'
                           )}
                         >
                           {company.isActive ? 'Activa' : 'Inactiva'}
@@ -1301,10 +1309,10 @@ export default function CompaniesPage() {
             ) : (
               <div className="space-y-6 py-4">
                 {/* Habilitar Simulación Pretensados */}
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-50/50">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-warning-muted/50">
                   <div className="space-y-1">
                     <Label className="flex items-center gap-2">
-                      <Factory className="h-4 w-4 text-amber-600" />
+                      <Factory className="h-4 w-4 text-warning-muted-foreground" />
                       Simulación por Producción
                     </Label>
                     <p className="text-sm text-muted-foreground">
@@ -1325,8 +1333,8 @@ export default function CompaniesPage() {
                 </div>
 
                 {costConfig.enablePretensadosSim && (
-                  <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                    <p className="text-sm text-green-800 flex items-center gap-2">
+                  <div className="p-3 rounded-lg bg-success-muted border border-success-muted">
+                    <p className="text-sm text-success flex items-center gap-2">
                       <Check className="h-4 w-4" />
                       La empresa podrá usar la simulación por producción en el módulo de Costos V2
                     </p>

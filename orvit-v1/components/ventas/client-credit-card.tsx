@@ -104,9 +104,9 @@ export function ClientCreditCard({
   const { creditStatus, overdueStatus, blockStatus, canProceed, warnings, errors } = validationResult;
 
   const getStatusColor = () => {
-    if (blockStatus.isBlocked) return 'border-red-500 bg-red-50 dark:bg-red-900/10';
-    if (errors.length > 0) return 'border-red-500 bg-red-50 dark:bg-red-900/10';
-    if (warnings.length > 0) return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10';
+    if (blockStatus.isBlocked) return 'border-destructive bg-destructive/10';
+    if (errors.length > 0) return 'border-destructive bg-destructive/10';
+    if (warnings.length > 0) return 'border-warning-muted bg-warning-muted';
     return '';
   };
 
@@ -129,14 +129,14 @@ export function ClientCreditCard({
     }
     if (warnings.length > 0) {
       return (
-        <Badge variant="secondary" className="flex items-center gap-1 text-yellow-700 bg-yellow-100">
+        <Badge variant="secondary" className="flex items-center gap-1 text-warning-muted-foreground bg-warning-muted">
           <AlertTriangle className="w-3 h-3" />
           Alerta
         </Badge>
       );
     }
     return (
-      <Badge variant="default" className="flex items-center gap-1 bg-green-600">
+      <Badge variant="default" className="flex items-center gap-1 bg-success">
         <CheckCircle className="w-3 h-3" />
         OK
       </Badge>
@@ -144,7 +144,7 @@ export function ClientCreditCard({
   };
 
   const utilizationPercent = Math.min(creditStatus.utilizationPercent, 100);
-  const utilizationColor = utilizationPercent >= 100 ? 'bg-red-500' : utilizationPercent >= 80 ? 'bg-yellow-500' : 'bg-green-500';
+  const utilizationColor = utilizationPercent >= 100 ? 'bg-destructive' : utilizationPercent >= 80 ? 'bg-warning-muted-foreground' : 'bg-success';
 
   return (
     <Card className={cn(getStatusColor(), className)}>
@@ -183,7 +183,7 @@ export function ClientCreditCard({
             <p className="text-xs text-muted-foreground">Disponible</p>
             <p className={cn(
               "font-semibold",
-              creditStatus.available < orderAmount ? "text-red-600" : "text-green-600"
+              creditStatus.available < orderAmount ? "text-destructive" : "text-success"
             )}>
               {formatCurrency(creditStatus.available)}
             </p>
@@ -195,7 +195,7 @@ export function ClientCreditCard({
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Utilizacion</span>
             <span className={cn(
-              utilizationPercent >= 100 ? "text-red-600" : utilizationPercent >= 80 ? "text-yellow-600" : ""
+              utilizationPercent >= 100 ? "text-destructive" : utilizationPercent >= 80 ? "text-warning-muted-foreground" : ""
             )}>
               {creditStatus.utilizationPercent.toFixed(1)}%
             </span>
@@ -207,13 +207,13 @@ export function ClientCreditCard({
         {(warnings.length > 0 || errors.length > 0) && (
           <div className="space-y-1">
             {errors.map((error, i) => (
-              <div key={`error-${i}`} className="flex items-center gap-1 text-xs text-red-600">
+              <div key={`error-${i}`} className="flex items-center gap-1 text-xs text-destructive">
                 <AlertTriangle className="w-3 h-3" />
                 {error}
               </div>
             ))}
             {warnings.map((warning, i) => (
-              <div key={`warning-${i}`} className="flex items-center gap-1 text-xs text-yellow-600">
+              <div key={`warning-${i}`} className="flex items-center gap-1 text-xs text-warning-muted-foreground">
                 <AlertTriangle className="w-3 h-3" />
                 {warning}
               </div>
@@ -223,9 +223,9 @@ export function ClientCreditCard({
 
         {/* Overdue Summary */}
         {overdueStatus.hasOverdue && (
-          <div className="flex items-center gap-2 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded text-sm">
-            <Clock className="w-4 h-4 text-yellow-600" />
-            <span className="text-yellow-700 dark:text-yellow-300">
+          <div className="flex items-center gap-2 p-2 bg-warning-muted rounded text-sm">
+            <Clock className="w-4 h-4 text-warning-muted-foreground" />
+            <span className="text-warning-muted-foreground">
               {overdueStatus.overdueInvoices.length} factura(s) vencida(s): {formatCurrency(overdueStatus.overdueAmount)}
             </span>
           </div>
@@ -273,7 +273,7 @@ export function ClientCreditCard({
                 {/* Reconciliation Warning */}
                 {creditStatus.needsReconciliation && (
                   <div className="p-2 bg-muted rounded text-xs">
-                    <p className="font-medium text-yellow-600">Requiere reconciliacion</p>
+                    <p className="font-medium text-warning-muted-foreground">Requiere reconciliacion</p>
                     <p className="text-muted-foreground">
                       Diferencia: {formatCurrency(creditStatus.differenceAmount)}
                     </p>

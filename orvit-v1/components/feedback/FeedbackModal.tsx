@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -54,9 +55,9 @@ interface FeedbackModalProps {
 
 // Config
 const typeConfig: Record<FeedbackType, { label: string; icon: typeof Bug; color: string; bgColor: string; borderColor: string }> = {
-  'problema':   { label: 'Problema',   icon: Bug,       color: 'text-red-500',   bgColor: 'bg-red-500/10',   borderColor: 'border-red-500/30'  },
-  'mejora':     { label: 'Mejora',     icon: Lightbulb, color: 'text-amber-500', bgColor: 'bg-amber-500/10', borderColor: 'border-amber-500/30' },
-  'nueva-idea': { label: 'Nueva idea', icon: Sparkles,  color: 'text-blue-500',  bgColor: 'bg-blue-500/10',  borderColor: 'border-blue-500/30' },
+  'problema':   { label: 'Problema',   icon: Bug,       color: 'text-destructive',   bgColor: 'bg-destructive/10',   borderColor: 'border-destructive/30'  },
+  'mejora':     { label: 'Mejora',     icon: Lightbulb, color: 'text-warning', bgColor: 'bg-warning/10', borderColor: 'border-warning/30' },
+  'nueva-idea': { label: 'Nueva idea', icon: Sparkles,  color: 'text-info',  bgColor: 'bg-info/10',  borderColor: 'border-info/30' },
 };
 
 const typeDescriptions: Record<FeedbackType, string> = {
@@ -66,16 +67,16 @@ const typeDescriptions: Record<FeedbackType, string> = {
 };
 
 const statusConfig: Record<FeedbackStatus, { label: string; icon: typeof Clock; color: string; badgeVariant: 'pending' | 'in_progress' | 'completed' | 'cancelled' }> = {
-  'pendiente':   { label: 'Pendiente',   icon: Clock,        color: 'text-yellow-600 dark:text-yellow-400', badgeVariant: 'pending'     },
-  'en-progreso': { label: 'En progreso', icon: Loader2,      color: 'text-blue-600 dark:text-blue-400',     badgeVariant: 'in_progress' },
-  'completado':  { label: 'Completado',  icon: CheckCircle2, color: 'text-green-600 dark:text-green-400',   badgeVariant: 'completed'   },
-  'rechazado':   { label: 'Rechazado',   icon: XCircle,      color: 'text-red-600 dark:text-red-400',       badgeVariant: 'cancelled'   },
+  'pendiente':   { label: 'Pendiente',   icon: Clock,        color: 'text-warning-muted-foreground', badgeVariant: 'pending'     },
+  'en-progreso': { label: 'En progreso', icon: Loader2,      color: 'text-info-muted-foreground',     badgeVariant: 'in_progress' },
+  'completado':  { label: 'Completado',  icon: CheckCircle2, color: 'text-success',   badgeVariant: 'completed'   },
+  'rechazado':   { label: 'Rechazado',   icon: XCircle,      color: 'text-destructive',       badgeVariant: 'cancelled'   },
 };
 
 const priorityConfig: Record<FeedbackPriority, { label: string; icon: typeof ArrowUp; color: string }> = {
   'baja':  { label: 'Baja',  icon: ArrowDown, color: 'text-muted-foreground' },
-  'media': { label: 'Media', icon: Minus,     color: 'text-amber-500'       },
-  'alta':  { label: 'Alta',  icon: ArrowUp,   color: 'text-red-500'         },
+  'media': { label: 'Media', icon: Minus,     color: 'text-warning'       },
+  'alta':  { label: 'Alta',  icon: ArrowUp,   color: 'text-destructive'         },
 };
 
 // Helpers
@@ -156,6 +157,7 @@ function EmptyState({ message, onAction }: { message: string; onAction?: () => v
 }
 
 export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
+  const confirm = useConfirm();
   // State
   const [view, setView] = useState<View>('list');
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
@@ -308,7 +310,13 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este feedback? Esta acción no se puede deshacer.')) return;
+    const ok = await confirm({
+      title: 'Eliminar feedback',
+      description: '¿Eliminar este feedback? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/feedback/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
@@ -379,14 +387,14 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                     <Clock className="h-3.5 w-3.5" />
                     Pendientes
                     {counts.pendientes > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.pendientes}</span>
+                      <span className="ml-0.5 text-[10px] bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.pendientes}</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="en-progreso" className="flex-1 gap-1.5">
                     <Loader2 className="h-3.5 w-3.5" />
                     En progreso
                     {counts.enProgreso > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.enProgreso}</span>
+                      <span className="ml-0.5 text-[10px] bg-info text-info-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.enProgreso}</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="resueltos" className="flex-1 gap-1.5">
@@ -546,9 +554,9 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                     <Textarea id="fb-desc" placeholder="Contanos con detalle qué encontraste, qué mejorarías o qué idea tenés..." value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
                   </div>
 
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm">
-                    <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                    <p className="text-blue-700 dark:text-blue-300">Tu feedback será revisado por el equipo de desarrollo.</p>
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-info/10 border border-info/20 text-sm">
+                    <Info className="h-4 w-4 text-info mt-0.5 shrink-0" />
+                    <p className="text-info-muted-foreground">Tu feedback será revisado por el equipo de desarrollo.</p>
                   </div>
                 </div>
               </DialogBody>

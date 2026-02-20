@@ -144,7 +144,7 @@ export default function MiDiaPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-muted p-4">
         <Skeleton className="h-8 w-48 mb-4" />
         <Skeleton className="h-32 w-full mb-4" />
         <Skeleton className="h-24 w-full mb-2" />
@@ -156,7 +156,7 @@ export default function MiDiaPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-muted p-4 flex items-center justify-center">
         <Alert>
           <AlertDescription>
             Inicia sesión para ver tu día
@@ -167,13 +167,13 @@ export default function MiDiaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-muted pb-20">
       {/* Header */}
       <div className="bg-primary text-white p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Link href="/">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-background/20">
                 <Home className="h-5 w-5" />
               </Button>
             </Link>
@@ -190,7 +190,7 @@ export default function MiDiaPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
             onClick={() => refetch()}
             disabled={isFetching}
           >
@@ -199,11 +199,11 @@ export default function MiDiaPage() {
         </div>
 
         {/* Date navigation */}
-        <div className="flex items-center justify-between bg-white/10 rounded-lg p-2">
+        <div className="flex items-center justify-between bg-background/10 rounded-lg p-2">
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
             onClick={goToPrevDay}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -227,7 +227,7 @@ export default function MiDiaPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
             onClick={goToNextDay}
           >
             <ChevronRight className="h-5 w-5" />
@@ -305,7 +305,7 @@ export default function MiDiaPage() {
                   {data.upcomingTasks.map((task: { id: number; name: string; dueDate?: string; priority?: string }) => (
                     <div
                       key={task.id}
-                      className="flex items-center justify-between p-3 bg-white rounded-lg border"
+                      className="flex items-center justify-between p-3 bg-card rounded-lg border"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{task.name}</p>
@@ -367,7 +367,7 @@ export default function MiDiaPage() {
                   )}
                   {selectedTask.status === 'in_progress' && (
                     <Button
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-success hover:bg-success/90"
                       onClick={() => {
                         handleCompleteTask(selectedTask);
                         setIsDetailsOpen(false);

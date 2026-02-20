@@ -124,7 +124,6 @@ export default function InstructiveDialog({
     formData.append('fileType', 'instructive');
 
     // Usar directamente el endpoint de upload
-    console.log('🚀 Subiendo archivo...');
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData
@@ -137,7 +136,6 @@ export default function InstructiveDialog({
     }
 
     const data = await response.json();
-    console.log('✅ Upload exitoso:', data);
     return data.url;
   };
 

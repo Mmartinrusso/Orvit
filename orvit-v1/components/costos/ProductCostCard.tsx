@@ -17,6 +17,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { CostBreakdownChart } from './CostBreakdownChart';
+import { cn } from '@/lib/utils';
 
 interface ProductPrice {
   id: number;
@@ -109,7 +110,7 @@ export function ProductCostCard({
 
   const getStatusBadge = () => {
     if (product.calculated_cost === 0) {
-      return <Badge className="bg-red-100 text-red-800">Sin costo</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive">Sin costo</Badge>;
     }
     
     const margin = product.average_sale_price > 0 
@@ -117,18 +118,18 @@ export function ProductCostCard({
       : 0;
     
     if (margin < 0) {
-      return <Badge className="bg-red-100 text-red-800">Pérdida</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive">Pérdida</Badge>;
     }
     if (margin < 10) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Bajo margen</Badge>;
+      return <Badge className="bg-warning-muted text-warning-muted-foreground">Bajo margen</Badge>;
     }
-    return <Badge className="bg-green-100 text-green-800">OK</Badge>;
+    return <Badge className="bg-success-muted text-success">OK</Badge>;
   };
 
   const getMarginColor = (margin: number) => {
-    if (margin < 0) return 'text-red-600';
-    if (margin < 10) return 'text-yellow-600';
-    return 'text-green-600';
+    if (margin < 0) return 'text-destructive';
+    if (margin < 10) return 'text-warning-muted-foreground';
+    return 'text-success';
   };
 
   const margin = product.average_sale_price > 0 
@@ -144,7 +145,7 @@ export function ProductCostCard({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader 
-        className="cursor-pointer hover:bg-gray-50 transition-colors"
+        className="cursor-pointer hover:bg-accent transition-colors"
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
@@ -156,7 +157,7 @@ export function ProductCostCard({
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               )
             )}
-            <Package className="h-5 w-5 text-blue-600" />
+            <Package className="h-5 w-5 text-info-muted-foreground" />
             <div>
               <CardTitle className="text-lg">{product.product_name}</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -170,9 +171,9 @@ export function ProductCostCard({
               <div className="text-sm text-muted-foreground">
                 Costo calculado
                 {product.average_sale_price > 0 && (
-                  <span className={`ml-2 font-medium ${getMarginColor(
+                  <span className={cn('ml-2 font-medium', getMarginColor(
                     ((product.average_sale_price - product.calculated_cost) / product.average_sale_price) * 100
-                  )}`}>
+                  ))}>
                     ({(((product.average_sale_price - product.calculated_cost) / product.average_sale_price) * 100).toFixed(1)}% ganancia)
                   </span>
                 )}
@@ -188,7 +189,7 @@ export function ProductCostCard({
       </CardHeader>
 
       {expanded && (
-        <CardContent className="border-t bg-gray-50">
+        <CardContent className="border-t bg-muted">
           {(showCuartosTab || showBancosTab) ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="mb-4">
@@ -232,7 +233,7 @@ export function ProductCostCard({
                   {product.average_sale_price > 0 && (
                     <div className="flex justify-between">
                       <span>Margen de ganancia:</span>
-                      <span className={`font-medium ${getMarginColor(margin)}`}>
+                      <span className={cn('font-medium', getMarginColor(margin))}>
                         {margin.toFixed(1)}%
                       </span>
                     </div>
@@ -250,14 +251,14 @@ export function ProductCostCard({
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Unidades producidas:</span>
-                      <span className="font-medium text-blue-600">
+                      <span className="font-medium text-info-muted-foreground">
                         {formatNumber(product.production_info.quantity_produced)} unidades
                       </span>
                     </div>
                     {product.production_info.meters_produced !== undefined && (
                       <div className="flex justify-between">
                         <span>Metros producidos:</span>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-success">
                           {formatNumber(product.production_info.meters_produced)} metros
                         </span>
                       </div>
@@ -270,11 +271,11 @@ export function ProductCostCard({
                       <span>Distribución de costos:</span>
                       <span className="font-medium">
                         {product.production_info.distribution_method === 'by_meters_produced' ? (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground">
                             Por metros producidos
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                          <Badge variant="secondary" className="bg-muted text-foreground">
                             Método estándar
                           </Badge>
                         )}
@@ -284,11 +285,11 @@ export function ProductCostCard({
                       <span>Fuente de datos:</span>
                       <span className="font-medium">
                         {product.production_info.has_production_data ? (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge variant="secondary" className="bg-success-muted text-success">
                             Datos reales
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                          <Badge variant="secondary" className="bg-muted text-foreground">
                             Sin producción
                           </Badge>
                         )}
@@ -315,7 +316,7 @@ export function ProductCostCard({
                 <h4 className="font-semibold mb-3">Información de Receta</h4>
                 {product.recipe_details && product.recipe_details.length > 0 ? (
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center space-x-2 text-green-600">
+                    <div className="flex items-center space-x-2 text-success">
                       <CheckCircle className="h-4 w-4" />
                       <span>Receta configurada</span>
                     </div>
@@ -329,7 +330,7 @@ export function ProductCostCard({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2 text-yellow-600">
+                  <div className="flex items-center space-x-2 text-warning-muted-foreground">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="text-sm">Usando costo base del producto</span>
                   </div>
@@ -378,22 +379,22 @@ export function ProductCostCard({
                     {/* Información específica para viguetas */}
                     {product.distribution_info.product_meters_sold && (
                       <>
-                        <div className="bg-blue-50 p-3 rounded-lg space-y-2">
-                          <div className="flex justify-between font-semibold text-blue-900">
+                        <div className="bg-info-muted p-3 rounded-lg space-y-2">
+                          <div className="flex justify-between font-semibold text-info-muted-foreground">
                             <span>Metros vendidos - {product.product_name}:</span>
                             <span>{formatNumber(product.distribution_info.product_meters_sold)} metros</span>
                           </div>
-                          <div className="flex justify-between text-blue-800">
+                          <div className="flex justify-between text-info-muted-foreground">
                             <span>Total metros categoría ({product.category_name}):</span>
                             <span>{formatNumber(product.distribution_info.category_total_meters)} metros</span>
                           </div>
-                          <div className="flex justify-between text-blue-700 font-semibold border-t border-blue-200 pt-2">
+                          <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                             <span>Porcentaje del total:</span>
                             <span>{product.distribution_info.category_total_meters > 0 
                               ? ((product.distribution_info.product_meters_sold / product.distribution_info.category_total_meters) * 100).toFixed(2)
                               : '0.00'}%</span>
                           </div>
-                          <div className="flex justify-between text-sm text-gray-600 mt-1">
+                          <div className="flex justify-between text-sm text-muted-foreground mt-1">
                             <span>Largo unitario:</span>
                             <span>{product.distribution_info.product_length}m por unidad</span>
                           </div>
@@ -403,16 +404,16 @@ export function ProductCostCard({
                     
                     {/* Información normal para otros productos */}
                     {!product.distribution_info.product_meters_sold && (
-                      <div className="bg-blue-50 p-3 rounded-lg space-y-2">
-                        <div className="flex justify-between font-semibold text-blue-900">
+                      <div className="bg-info-muted p-3 rounded-lg space-y-2">
+                        <div className="flex justify-between font-semibold text-info-muted-foreground">
                           <span>Unidades {product.distribution_info.data_source === 'ventas' ? 'vendidas' : product.distribution_info.data_source === 'producción' ? 'producidas' : ''} - {product.product_name}:</span>
                           <span>{formatNumber(product.distribution_info.product_quantity)} unidades</span>
                         </div>
-                        <div className="flex justify-between text-blue-800">
+                        <div className="flex justify-between text-info-muted-foreground">
                           <span>Total categoría ({product.category_name}):</span>
                           <span>{formatNumber(product.distribution_info.category_total_quantity)} unidades</span>
                         </div>
-                        <div className="flex justify-between text-blue-700 font-semibold border-t border-blue-200 pt-2">
+                        <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                           <span>Porcentaje del total:</span>
                           <span>{product.distribution_info.percentage_of_category ? product.distribution_info.percentage_of_category.toFixed(2) : (product.distribution_info.distribution_ratio * 100).toFixed(2)}%</span>
                         </div>
@@ -421,7 +422,7 @@ export function ProductCostCard({
                     
                     <div className="flex justify-between pt-2 border-t">
                       <span>Datos:</span>
-                      <span className={`font-medium ${product.distribution_info.has_real_data ? 'text-green-600' : 'text-yellow-600'}`}>
+                      <span className={cn('font-medium', product.distribution_info.has_real_data ? 'text-success' : 'text-warning-muted-foreground')}>
                         {product.distribution_info.has_real_data ? 'Reales' : 'Estimados'}
                       </span>
                     </div>
@@ -446,7 +447,7 @@ export function ProductCostCard({
               <h4 className="font-semibold mb-3">Ingredientes de Receta</h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border rounded-lg">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-muted">
                     <tr>
                       <th className="text-left p-3 border-b">Insumo</th>
                       <th className="text-right p-3 border-b">Cantidad</th>
@@ -463,7 +464,7 @@ export function ProductCostCard({
                         : 0;
                       
                       return (
-                        <tr key={index} className="border-b hover:bg-gray-50">
+                        <tr key={index} className="border-b hover:bg-accent">
                           <td className="p-3 font-medium">{ingredient.supply_name}</td>
                           <td className="text-right p-3">{formatNumber(ingredient.quantity)}</td>
                           <td className="text-right p-3">{ingredient.unit_measure}</td>
@@ -489,24 +490,24 @@ export function ProductCostCard({
                     const baseCostPerUnit = baseProductInScenario?.calculated_cost || product.calculated_cost || 0;
                     
                     return (
-                      <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm">
+                      <div className="mb-5 p-4 bg-gradient-to-r from-info-muted to-info-muted rounded-xl border-2 border-info-muted shadow-sm">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-700 dark:text-gray-300">Placas actuales:</span>
-                              <span className="font-bold text-lg text-blue-700 dark:text-blue-300">
+                              <span className="font-semibold text-foreground">Placas actuales:</span>
+                              <span className="font-bold text-lg text-info-muted-foreground">
                                 {simulationEstadisticas.placasActuales?.toLocaleString('es-AR') || '0'}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">({simulationEstadisticas.cuartosActuales?.toFixed(2) || '0'} cuartos)</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-500 bg-white/60 dark:bg-gray-800/60 px-2 py-1 rounded">1 cuarto = 240 placas</span>
+                              <span className="text-sm text-muted-foreground">({simulationEstadisticas.cuartosActuales?.toFixed(2) || '0'} cuartos)</span>
+                              <span className="text-xs text-muted-foreground bg-card/60 px-2 py-1 rounded">1 cuarto = 240 placas</span>
                             </div>
                           </div>
                           {baseQty > 0 && baseCostPerUnit > 0 && (
-                            <div className="pt-2 md:pt-0 md:pl-4 md:border-l-2 border-blue-200 dark:border-blue-700">
-                              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Costo actual por placa</div>
-                              <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                            <div className="pt-2 md:pt-0 md:pl-4 md:border-l-2 border-info-muted">
+                              <div className="text-xs font-medium text-muted-foreground mb-1">Costo actual por placa</div>
+                              <div className="text-xl font-bold text-info-muted-foreground">
                                 {formatCurrency(baseCostPerUnit)}
                               </div>
                             </div>
@@ -554,75 +555,75 @@ export function ProductCostCard({
                         return (
                           <div
                             key={index}
-                            className={`p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md ${
-                              escenario.variacionCuartos < 0 
-                                ? 'bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 border-blue-300 dark:border-blue-700' 
-                                : 'bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-900/20 border-orange-300 dark:border-orange-700'
-                            }`}
+                            className={cn('p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md',
+                              escenario.variacionCuartos < 0
+                                ? 'bg-gradient-to-br from-info-muted to-info-muted border-info-muted'
+                                : 'bg-gradient-to-br from-warning-muted to-warning-muted border-warning-muted'
+                            )}
                           >
-                            <div className="mb-3 pb-2 border-b border-gray-300 dark:border-gray-600">
-                              <span className={`font-bold text-base ${
-                                escenario.variacionCuartos < 0 
-                                  ? 'text-blue-800 dark:text-blue-200' 
-                                  : 'text-orange-800 dark:text-orange-200'
-                              }`}>
+                            <div className="mb-3 pb-2 border-b border-border">
+                              <span className={cn('font-bold text-base',
+                                escenario.variacionCuartos < 0
+                                  ? 'text-info-muted-foreground'
+                                  : 'text-warning-muted-foreground'
+                              )}>
                                 {escenario.nombre}
                               </span>
                             </div>
                             
                             <div className="space-y-2.5 text-sm">
                               {/* Información de producción */}
-                              <div className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-gray-800/40 rounded-md">
-                                <span className="font-medium text-gray-600 dark:text-gray-400">Placas:</span>
-                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="flex items-center justify-between py-1.5 px-2 bg-card/60 rounded-md">
+                                <span className="font-medium text-muted-foreground">Placas:</span>
+                                <span className="font-semibold text-foreground">
                                   {escenario.placas?.toLocaleString('es-AR') || '0'}
                                 </span>
                               </div>
                               
-                              <div className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-gray-800/40 rounded-md">
-                                <span className="font-medium text-gray-600 dark:text-gray-400">Cuartos:</span>
-                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              <div className="flex items-center justify-between py-1.5 px-2 bg-card/60 rounded-md">
+                                <span className="font-medium text-muted-foreground">Cuartos:</span>
+                                <span className="font-semibold text-foreground">
                                   {escenario.cuartos?.toFixed(2) || '0'}
                                 </span>
                               </div>
                               
                               {/* Costo Total */}
-                              <div className="pt-2 mt-2 border-t-2 border-gray-300 dark:border-gray-600">
+                              <div className="pt-2 mt-2 border-t-2 border-border">
                                 <div className="mb-1">
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Costo Total</span>
+                                  <span className="text-xs font-medium text-muted-foreground">Costo Total</span>
                                 </div>
-                                <div className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                                <div className="text-base font-bold text-foreground mb-1">
                                   {formatCurrency(totalCostos)}
                                 </div>
                                 {costoActual > 0 && (
-                                  <div className={`text-xs font-semibold flex items-center gap-1 ${
-                                    diferencia < 0 ? 'text-green-700 dark:text-green-400' : diferencia > 0 ? 'text-red-700 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
-                                  }`}>
+                                  <div className={cn('text-xs font-semibold flex items-center gap-1',
+                                    diferencia < 0 ? 'text-success' : diferencia > 0 ? 'text-destructive' : 'text-muted-foreground'
+                                  )}>
                                     <span>{diferencia < 0 ? '↓' : diferencia > 0 ? '↑' : '→'}</span>
                                     <span>{Math.abs(porcentajeCambio).toFixed(1)}%</span>
-                                    <span className="text-gray-500 dark:text-gray-500">
+                                    <span className="text-muted-foreground">
                                       ({diferencia < 0 ? '-' : '+'}{formatCurrency(Math.abs(diferencia))})
                                     </span>
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Costo por placa */}
                               {qtyInScenario > 0 && baseCostPerUnit > 0 && (
-                                <div className="pt-2 mt-2 border-t-2 border-gray-300 dark:border-gray-600">
+                                <div className="pt-2 mt-2 border-t-2 border-border">
                                   <div className="mb-1">
-                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Costo por placa</span>
+                                    <span className="text-xs font-medium text-muted-foreground">Costo por placa</span>
                                   </div>
-                                  <div className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                                  <div className="text-base font-bold text-foreground mb-1">
                                     {formatCurrency(costPerUnitInScenario)}
                                   </div>
-                                  <div className={`text-xs font-semibold flex flex-col gap-0.5 ${
-                                    esMejor 
-                                      ? 'text-green-700 dark:text-green-400' 
+                                  <div className={cn('text-xs font-semibold flex flex-col gap-0.5',
+                                    esMejor
+                                      ? 'text-success'
                                       : diferenciaCostoPorPlaca > 0
-                                      ? 'text-red-700 dark:text-red-400' 
-                                      : 'text-gray-600 dark:text-gray-400'
-                                  }`}>
+                                      ? 'text-destructive'
+                                      : 'text-muted-foreground'
+                                  )}>
                                     <div className="flex items-center gap-1">
                                       <span>{esMejor ? '↓' : diferenciaCostoPorPlaca > 0 ? '↑' : '→'}</span>
                                       <span>
@@ -632,7 +633,7 @@ export function ProductCostCard({
                                         {Math.abs(porcentajeCambioPorPlaca).toFixed(2)}%
                                       </span>
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-500 pl-4">
+                                    <div className="text-muted-foreground pl-4">
                                       {formatCurrency(Math.abs(diferenciaCostoPorPlaca))} por placa
                                     </div>
                                   </div>
@@ -656,24 +657,24 @@ export function ProductCostCard({
                       const baseCostPerUnit = baseProductInScenario?.calculated_cost || product.calculated_cost || 0;
                       
                       return (
-                        <div className="mb-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 rounded-xl border-2 border-green-200 dark:border-green-800 shadow-sm">
+                        <div className="mb-5 p-4 bg-gradient-to-r from-success-muted to-success-muted rounded-xl border-2 border-success-muted shadow-sm">
                           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-700 dark:text-gray-300">Bancos actuales:</span>
-                                <span className="font-bold text-lg text-green-700 dark:text-green-300">
+                                <span className="font-semibold text-foreground">Bancos actuales:</span>
+                                <span className="font-bold text-lg text-success">
                                   {simulationEstadisticas.bancosActuales?.toLocaleString('es-AR') || '0'}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600 dark:text-gray-400">({simulationEstadisticas.metrosActuales?.toFixed(2) || '0'} metros)</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-500 bg-white/60 dark:bg-gray-800/60 px-2 py-1 rounded">1 banco = 1300 m útiles</span>
+                                <span className="text-sm text-muted-foreground">({simulationEstadisticas.metrosActuales?.toFixed(2) || '0'} metros)</span>
+                                <span className="text-xs text-muted-foreground bg-card/60 px-2 py-1 rounded">1 banco = 1300 m útiles</span>
                               </div>
                             </div>
                             {baseQty > 0 && baseCostPerUnit > 0 && (
-                              <div className="pt-2 md:pt-0 md:pl-4 md:border-l-2 border-green-200 dark:border-green-700">
-                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Costo actual por unidad</div>
-                                <div className="text-xl font-bold text-green-700 dark:text-green-300">
+                              <div className="pt-2 md:pt-0 md:pl-4 md:border-l-2 border-success-muted">
+                                <div className="text-xs font-medium text-muted-foreground mb-1">Costo actual por unidad</div>
+                                <div className="text-xl font-bold text-success">
                                   {formatCurrency(baseCostPerUnit)}
                                 </div>
                               </div>
@@ -721,53 +722,53 @@ export function ProductCostCard({
                           return (
                             <div
                               key={index}
-                              className={`p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md ${
-                                escenario.variacionBancos < 0 
-                                  ? 'bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/40 dark:to-green-900/20 border-green-300 dark:border-green-700' 
-                                  : 'bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/40 dark:to-purple-900/20 border-purple-300 dark:border-purple-700'
-                              }`}
+                              className={cn('p-4 rounded-xl border-2 shadow-sm transition-all hover:shadow-md',
+                                escenario.variacionBancos < 0
+                                  ? 'bg-gradient-to-br from-success-muted to-success-muted border-success-muted'
+                                  : 'bg-gradient-to-br from-info-muted to-info-muted border-info-muted'
+                              )}
                             >
-                              <div className="mb-3 pb-2 border-b border-gray-300 dark:border-gray-600">
-                                <span className={`font-bold text-base ${
-                                  escenario.variacionBancos < 0 
-                                    ? 'text-green-800 dark:text-green-200' 
-                                    : 'text-purple-800 dark:text-purple-200'
-                                }`}>
+                              <div className="mb-3 pb-2 border-b border-border">
+                                <span className={cn('font-bold text-base',
+                                  escenario.variacionBancos < 0
+                                    ? 'text-success'
+                                    : 'text-info-muted-foreground'
+                                )}>
                                   {escenario.nombre}
                                 </span>
                               </div>
                               
                               <div className="space-y-2.5 text-sm">
                                 {/* Información de producción */}
-                                <div className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-gray-800/40 rounded-md">
-                                  <span className="font-medium text-gray-600 dark:text-gray-400">Bancos:</span>
-                                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                <div className="flex items-center justify-between py-1.5 px-2 bg-card/60 rounded-md">
+                                  <span className="font-medium text-muted-foreground">Bancos:</span>
+                                  <span className="font-semibold text-foreground">
                                     {escenario.bancos?.toLocaleString('es-AR') || '0'}
                                   </span>
                                 </div>
                                 
-                                <div className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-gray-800/40 rounded-md">
-                                  <span className="font-medium text-gray-600 dark:text-gray-400">Metros:</span>
-                                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                <div className="flex items-center justify-between py-1.5 px-2 bg-card/60 rounded-md">
+                                  <span className="font-medium text-muted-foreground">Metros:</span>
+                                  <span className="font-semibold text-foreground">
                                     {escenario.metros?.toFixed(2) || '0'}
                                   </span>
                                 </div>
                                 
                                 {/* Costo Total */}
-                                <div className="pt-2 mt-2 border-t-2 border-gray-300 dark:border-gray-600">
+                                <div className="pt-2 mt-2 border-t-2 border-border">
                                   <div className="mb-1">
-                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Costo Total</span>
+                                    <span className="text-xs font-medium text-muted-foreground">Costo Total</span>
                                   </div>
-                                  <div className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                                  <div className="text-base font-bold text-foreground mb-1">
                                     {formatCurrency(totalCostos)}
                                   </div>
                                   {costoActual > 0 && (
-                                    <div className={`text-xs font-semibold flex items-center gap-1 ${
-                                      diferencia < 0 ? 'text-green-700 dark:text-green-400' : diferencia > 0 ? 'text-red-700 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
-                                    }`}>
+                                    <div className={cn('text-xs font-semibold flex items-center gap-1',
+                                      diferencia < 0 ? 'text-success' : diferencia > 0 ? 'text-destructive' : 'text-muted-foreground'
+                                    )}>
                                       <span>{diferencia < 0 ? '↓' : diferencia > 0 ? '↑' : '→'}</span>
                                       <span>{Math.abs(porcentajeCambio).toFixed(1)}%</span>
-                                      <span className="text-gray-500 dark:text-gray-500">
+                                      <span className="text-muted-foreground">
                                         ({diferencia < 0 ? '-' : '+'}{formatCurrency(Math.abs(diferencia))})
                                       </span>
                                     </div>
@@ -776,20 +777,20 @@ export function ProductCostCard({
                                 
                                 {/* Costo por unidad */}
                                 {qtyInScenario > 0 && baseCostPerUnit > 0 && (
-                                  <div className="pt-2 mt-2 border-t-2 border-gray-300 dark:border-gray-600">
+                                  <div className="pt-2 mt-2 border-t-2 border-border">
                                     <div className="mb-1">
-                                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Costo por unidad</span>
+                                      <span className="text-xs font-medium text-muted-foreground">Costo por unidad</span>
                                     </div>
-                                    <div className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+                                    <div className="text-base font-bold text-foreground mb-1">
                                       {formatCurrency(costPerUnitInScenario)}
                                     </div>
-                                    <div className={`text-xs font-semibold flex flex-col gap-0.5 ${
-                                      esMejor 
-                                        ? 'text-green-700 dark:text-green-400' 
+                                    <div className={cn('text-xs font-semibold flex flex-col gap-0.5',
+                                      esMejor
+                                        ? 'text-success'
                                         : diferenciaCostoPorUnidad > 0
-                                        ? 'text-red-700 dark:text-red-400' 
-                                        : 'text-gray-600 dark:text-gray-400'
-                                    }`}>
+                                        ? 'text-destructive'
+                                        : 'text-muted-foreground'
+                                    )}>
                                       <div className="flex items-center gap-1">
                                         <span>{esMejor ? '↓' : diferenciaCostoPorUnidad > 0 ? '↑' : '→'}</span>
                                         <span>
@@ -799,7 +800,7 @@ export function ProductCostCard({
                                           {Math.abs(porcentajeCambioPorUnidad).toFixed(2)}%
                                         </span>
                                       </div>
-                                      <div className="text-gray-600 dark:text-gray-500 pl-4">
+                                      <div className="text-muted-foreground pl-4">
                                         {formatCurrency(Math.abs(diferenciaCostoPorUnidad))} por unidad
                                       </div>
                                     </div>
@@ -840,7 +841,7 @@ export function ProductCostCard({
                       {product.average_sale_price > 0 && (
                         <div className="flex justify-between">
                           <span>Margen de ganancia:</span>
-                          <span className={`font-medium ${getMarginColor(margin)}`}>
+                          <span className={cn('font-medium', getMarginColor(margin))}>
                             {margin.toFixed(1)}%
                           </span>
                         </div>
@@ -858,14 +859,14 @@ export function ProductCostCard({
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>Unidades producidas:</span>
-                          <span className="font-medium text-blue-600">
+                          <span className="font-medium text-info-muted-foreground">
                             {formatNumber(product.production_info.quantity_produced)} unidades
                           </span>
                         </div>
                         {product.production_info.meters_produced !== undefined && (
                           <div className="flex justify-between">
                             <span>Metros producidos:</span>
-                            <span className="font-medium text-green-600">
+                            <span className="font-medium text-success">
                               {formatNumber(product.production_info.meters_produced)} metros
                             </span>
                           </div>
@@ -878,11 +879,11 @@ export function ProductCostCard({
                           <span>Distribución de costos:</span>
                           <span className="font-medium">
                             {product.production_info.distribution_method === 'by_meters_produced' ? (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground">
                                 Por metros producidos
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                              <Badge variant="secondary" className="bg-muted text-foreground">
                                 Método estándar
                               </Badge>
                             )}
@@ -892,11 +893,11 @@ export function ProductCostCard({
                           <span>Fuente de datos:</span>
                           <span className="font-medium">
                             {product.production_info.has_production_data ? (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              <Badge variant="secondary" className="bg-success-muted text-success">
                                 Datos reales
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                              <Badge variant="secondary" className="bg-muted text-foreground">
                                 Sin producción
                               </Badge>
                             )}
@@ -923,7 +924,7 @@ export function ProductCostCard({
                     <h4 className="font-semibold mb-3">Información de Receta</h4>
                     {product.recipe_details && product.recipe_details.length > 0 ? (
                       <div className="space-y-2 text-sm">
-                        <div className="flex items-center space-x-2 text-green-600">
+                        <div className="flex items-center space-x-2 text-success">
                           <CheckCircle className="h-4 w-4" />
                           <span>Receta configurada</span>
                         </div>
@@ -937,7 +938,7 @@ export function ProductCostCard({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2 text-yellow-600">
+                      <div className="flex items-center space-x-2 text-warning-muted-foreground">
                         <AlertTriangle className="h-4 w-4" />
                         <span className="text-sm">Usando costo base del producto</span>
                       </div>
@@ -986,22 +987,22 @@ export function ProductCostCard({
                         {/* Información específica para viguetas */}
                         {product.distribution_info.product_meters_sold && (
                           <>
-                            <div className="bg-blue-50 p-3 rounded-lg space-y-2">
-                              <div className="flex justify-between font-semibold text-blue-900">
+                            <div className="bg-info-muted p-3 rounded-lg space-y-2">
+                              <div className="flex justify-between font-semibold text-info-muted-foreground">
                                 <span>Metros vendidos - {product.product_name}:</span>
                                 <span>{formatNumber(product.distribution_info.product_meters_sold)} metros</span>
                               </div>
-                              <div className="flex justify-between text-blue-800">
+                              <div className="flex justify-between text-info-muted-foreground">
                                 <span>Total metros categoría ({product.category_name}):</span>
                                 <span>{formatNumber(product.distribution_info.category_total_meters)} metros</span>
                               </div>
-                              <div className="flex justify-between text-blue-700 font-semibold border-t border-blue-200 pt-2">
+                              <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                                 <span>Porcentaje del total:</span>
                                 <span>{product.distribution_info.category_total_meters > 0 
                                   ? ((product.distribution_info.product_meters_sold / product.distribution_info.category_total_meters) * 100).toFixed(2)
                                   : '0.00'}%</span>
                               </div>
-                              <div className="flex justify-between text-sm text-gray-600 mt-1">
+                              <div className="flex justify-between text-sm text-muted-foreground mt-1">
                                 <span>Largo unitario:</span>
                                 <span>{product.distribution_info.product_length}m por unidad</span>
                               </div>
@@ -1011,16 +1012,16 @@ export function ProductCostCard({
                         
                         {/* Información normal para otros productos */}
                         {!product.distribution_info.product_meters_sold && (
-                          <div className="bg-blue-50 p-3 rounded-lg space-y-2">
-                            <div className="flex justify-between font-semibold text-blue-900">
+                          <div className="bg-info-muted p-3 rounded-lg space-y-2">
+                            <div className="flex justify-between font-semibold text-info-muted-foreground">
                               <span>Unidades {product.distribution_info.data_source === 'ventas' ? 'vendidas' : product.distribution_info.data_source === 'producción' ? 'producidas' : ''} - {product.product_name}:</span>
                               <span>{formatNumber(product.distribution_info.product_quantity)} unidades</span>
                             </div>
-                            <div className="flex justify-between text-blue-800">
+                            <div className="flex justify-between text-info-muted-foreground">
                               <span>Total categoría ({product.category_name}):</span>
                               <span>{formatNumber(product.distribution_info.category_total_quantity)} unidades</span>
                             </div>
-                            <div className="flex justify-between text-blue-700 font-semibold border-t border-blue-200 pt-2">
+                            <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                               <span>Porcentaje del total:</span>
                               <span>{product.distribution_info.percentage_of_category ? product.distribution_info.percentage_of_category.toFixed(2) : (product.distribution_info.distribution_ratio * 100).toFixed(2)}%</span>
                             </div>
@@ -1029,7 +1030,7 @@ export function ProductCostCard({
                         
                         <div className="flex justify-between pt-2 border-t">
                           <span>Datos:</span>
-                          <span className={`font-medium ${product.distribution_info.has_real_data ? 'text-green-600' : 'text-yellow-600'}`}>
+                          <span className={cn('font-medium', product.distribution_info.has_real_data ? 'text-success' : 'text-warning-muted-foreground')}>
                             {product.distribution_info.has_real_data ? 'Reales' : 'Estimados'}
                           </span>
                         </div>
@@ -1054,7 +1055,7 @@ export function ProductCostCard({
                   <h4 className="font-semibold mb-3">Ingredientes de Receta</h4>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border rounded-lg">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-muted">
                         <tr>
                           <th className="text-left p-3 border-b">Insumo</th>
                           <th className="text-right p-3 border-b">Cantidad</th>
@@ -1071,7 +1072,7 @@ export function ProductCostCard({
                             : 0;
                           
                           return (
-                            <tr key={index} className="border-b hover:bg-gray-50">
+                            <tr key={index} className="border-b hover:bg-accent">
                               <td className="p-3 font-medium">{ingredient.supply_name}</td>
                               <td className="text-right p-3">{formatNumber(ingredient.quantity)}</td>
                               <td className="text-right p-3">{ingredient.unit_measure}</td>

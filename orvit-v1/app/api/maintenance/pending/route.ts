@@ -88,9 +88,30 @@ export async function GET(request: NextRequest) {
     }
 
     // DEBUG: Log de filtros
-    console.log('🔍 PENDING API - Filtros:', { companyId, sectorId, machineId, type, workOrderWhere });
 
-    // ✅ OPTIMIZACIÓN: Ejecutar queries en paralelo
+    // ✅ MIGRADO: Queries directas a preventiveTemplate en lugar de JSON-in-Document
+
+    // Construir filtros para preventiveTemplate
+    const templateWhere: any = {
+      companyId: companyIdNum,
+      isActive: true,
+    };
+
+    if (machineId) {
+      templateWhere.machineId = parseInt(machineId);
+    } else if (machineIds) {
+      const ids = machineIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      if (ids.length > 0) templateWhere.machineId = { in: ids };
+    }
+
+    if (unidadMovilIds) {
+      const ids = unidadMovilIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      if (ids.length > 0) templateWhere.unidadMovilId = { in: ids };
+    }
+
+    if (minFrequencyDays) templateWhere.frequencyDays = { ...(templateWhere.frequencyDays || {}), gte: parseInt(minFrequencyDays) };
+    if (maxFrequencyDays) templateWhere.frequencyDays = { ...(templateWhere.frequencyDays || {}), lte: parseInt(maxFrequencyDays) };
+
     const [pendingWorkOrders, preventiveTemplates] = await Promise.all([
       // Query 1: Work Orders pendientes
       prisma.workOrder.findMany({
@@ -104,7 +125,7 @@ export async function GET(request: NextRequest) {
           unidadMovil: { select: { id: true, nombre: true, tipo: true, estado: true } },
           attachments: { select: { id: true, url: true, fileName: true, fileType: true, fileSize: true, uploadedAt: true } }
         },
-        orderBy: sortOrder === 'oldest' 
+        orderBy: sortOrder === 'oldest'
           ? [{ scheduledDate: 'asc' }, { createdAt: 'asc' }]
           : sortOrder === 'newest'
           ? [{ scheduledDate: 'desc' }, { createdAt: 'desc' }]
@@ -112,145 +133,87 @@ export async function GET(request: NextRequest) {
         take: 100
       }),
 
-      // Query 2: Templates preventivos (solo si no se filtra por tipo específico no-preventivo)
-      (!type || type === 'PREVENTIVE') ? prisma.document.findMany({
-        where: {
-          entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE',
-          url: { contains: `"companyId":${companyId}` }
+      // Query 2: Templates preventivos directamente de la tabla preventiveTemplate
+      (!type || type === 'PREVENTIVE') ? prisma.preventiveTemplate.findMany({
+        where: templateWhere,
+        include: {
+          machine: { select: { id: true, name: true, type: true, status: true, sectorId: true } },
+          unidadMovil: { select: { id: true, nombre: true, tipo: true, estado: true } },
+          sector: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },
         take: 200
       }) : Promise.resolve([])
     ]);
 
-    // ✅ OPTIMIZACIÓN: Procesar templates preventivos sin queries adicionales en loop
-    const now = new Date();
-    const preventiveMaintenances: any[] = [];
-    const machineIdsToFetch = new Set<number>();
-    const unidadMovilIdsToFetch = new Set<number>();
-
-    // Primera pasada: filtrar y recolectar IDs
-    const validTemplates: any[] = [];
-    for (const template of preventiveTemplates) {
-      try {
-        const data = JSON.parse(template.url);
-        
-        // Filtros básicos
-        if (!data.isActive) continue;
-        
-        // Filtro de sector - se verificará después con la máquina real
-        // No filtrar aquí porque data.sectorId puede no existir
-        
-        // Filtro de máquina
-        if (machineId && data.machineId !== parseInt(machineId)) continue;
-        if (machineIds) {
-          const ids = machineIds.split(',').map(id => parseInt(id.trim()));
-          if (!ids.includes(data.machineId)) continue;
-        }
-        
-        // Filtro de unidad móvil
-        if (unidadMovilIds) {
-          const ids = unidadMovilIds.split(',').map(id => parseInt(id.trim()));
-          if (!ids.includes(data.unidadMovilId)) continue;
-        }
-
-        // Filtro de frecuencia
-        if (minFrequencyDays && (data.frequencyDays || 0) < parseInt(minFrequencyDays)) continue;
-        if (maxFrequencyDays && (data.frequencyDays || 0) > parseInt(maxFrequencyDays)) continue;
-
-        // Calcular próxima fecha
-        const nextDate = new Date(data.nextMaintenanceDate || data.scheduledDate || now);
-        const daysUntilDue = Math.ceil((nextDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // Solo filtrar por urgencia si se especifica urgentOnly
-        if (urgentOnly === 'true' && daysUntilDue > 1 && nextDate >= now) continue;
-
-        // Verificar si ya fue ejecutado hoy
-        if (data.lastMaintenanceDate) {
-          const lastDate = new Date(data.lastMaintenanceDate);
-          if (lastDate.toDateString() === now.toDateString()) continue;
-        }
-
-        // Recolectar IDs para batch query
-        if (data.machineId) machineIdsToFetch.add(data.machineId);
-        if (data.unidadMovilId) unidadMovilIdsToFetch.add(data.unidadMovilId);
-
-        validTemplates.push({ template, data, nextDate, daysUntilDue });
-      } catch (e) {
-        // Skip invalid templates
-      }
-    }
-
-    // ✅ OPTIMIZACIÓN: Batch queries para máquinas y unidades móviles
-    const [machines, unidadesMoviles] = await Promise.all([
-      machineIdsToFetch.size > 0 ? prisma.machine.findMany({
-        where: { id: { in: Array.from(machineIdsToFetch) } },
-        select: { id: true, name: true, type: true, status: true, sectorId: true }
-      }) : Promise.resolve([]),
-      unidadMovilIdsToFetch.size > 0 ? prisma.unidadMovil.findMany({
-        where: { id: { in: Array.from(unidadMovilIdsToFetch) } },
-        select: { id: true, nombre: true, tipo: true, estado: true }
-      }) : Promise.resolve([])
-    ]);
-
     endDb(perfCtx);
     startCompute(perfCtx);
 
-    const machinesMap = new Map(machines.map(m => [m.id, m]));
-    const unidadesMap = new Map(unidadesMoviles.map(u => [u.id, u]));
+    // Procesar templates preventivos con acceso directo a columnas
+    const now = new Date();
+    const preventiveMaintenances: any[] = [];
 
-    // Segunda pasada: construir respuesta
-    for (const { template, data, nextDate, daysUntilDue } of validTemplates) {
-      const machine = data.machineId ? machinesMap.get(data.machineId) : null;
-      const unidadMovil = data.unidadMovilId ? unidadesMap.get(data.unidadMovilId) : null;
+    for (const tpl of preventiveTemplates) {
+      // Calcular próxima fecha
+      const nextDate = tpl.nextMaintenanceDate ? new Date(tpl.nextMaintenanceDate) : now;
+      const daysUntilDue = Math.ceil((nextDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Solo filtrar por urgencia si se especifica urgentOnly
+      if (urgentOnly === 'true' && daysUntilDue > 1 && nextDate >= now) continue;
+
+      // Verificar si ya fue ejecutado hoy
+      if (tpl.lastMaintenanceDate) {
+        const lastDate = new Date(tpl.lastMaintenanceDate);
+        if (lastDate.toDateString() === now.toDateString()) continue;
+      }
 
       // Si hay filtro de sector, verificar que pertenezca al sector
       if (sectorId) {
         const sectorIdNum = parseInt(sectorId);
         // Si tiene máquina, verificar que pertenezca al sector
-        if (machine && machine.sectorId !== sectorIdNum) continue;
+        if (tpl.machine && (tpl.machine as any).sectorId !== sectorIdNum) continue;
         // Si tiene sectorId directo en el template, verificar
-        if (data.sectorId && data.sectorId !== sectorIdNum && !unidadMovil) continue;
+        if (tpl.sectorId && tpl.sectorId !== sectorIdNum && !tpl.unidadMovil) continue;
         // Las unidades móviles se incluyen siempre (no tienen sector fijo)
       }
 
       preventiveMaintenances.push({
-        id: template.id,
-        title: data.title,
-        description: data.description,
-        priority: data.priority || 'MEDIUM',
+        id: tpl.id,
+        title: tpl.title,
+        description: tpl.description,
+        priority: tpl.priority || 'MEDIUM',
         type: 'PREVENTIVE',
         status: 'PENDING',
         scheduledDate: nextDate,
-        estimatedHours: data.estimatedHours,
+        estimatedHours: tpl.estimatedHours,
         // Campos de tiempo estimado para el frontend
-        timeValue: data.timeValue,
-        timeUnit: data.timeUnit,
-        estimatedMinutes: data.estimatedMinutes,
-        estimatedTimeType: data.estimatedTimeType,
-        machineId: data.machineId,
-        machine,
-        unidadMovilId: data.unidadMovilId,
-        unidadMovil,
-        assignedTo: data.assignedToId ? { id: data.assignedToId, name: data.assignedToName || 'Sin asignar' } : null,
-        assignedToName: data.assignedToName || null,
+        timeValue: tpl.timeValue,
+        timeUnit: tpl.timeUnit,
+        estimatedMinutes: null,
+        estimatedTimeType: null,
+        machineId: tpl.machineId,
+        machine: tpl.machine,
+        unidadMovilId: tpl.unidadMovilId,
+        unidadMovil: tpl.unidadMovil,
+        assignedTo: tpl.assignedToId ? { id: tpl.assignedToId, name: tpl.assignedToName || 'Sin asignar' } : null,
+        assignedToName: tpl.assignedToName || null,
         // Componentes y subcomponentes
-        componentIds: data.componentIds || [],
-        componentNames: data.componentNames || [],
-        subcomponentIds: data.subcomponentIds || [],
-        subcomponentNames: data.subcomponentNames || [],
-        sector: data.sectorId ? { id: data.sectorId, name: 'Sector' } : null,
+        componentIds: tpl.componentIds || [],
+        componentNames: tpl.componentNames || [],
+        subcomponentIds: tpl.subcomponentIds || [],
+        subcomponentNames: tpl.subcomponentNames || [],
+        sector: tpl.sector || (tpl.sectorId ? { id: tpl.sectorId, name: 'Sector' } : null),
         isPreventive: true,
-        frequencyDays: data.frequencyDays,
-        frequency: data.frequency || data.frequencyDays,
-        frequencyUnit: data.frequencyUnit,
+        frequencyDays: tpl.frequencyDays,
+        frequency: tpl.frequencyDays,
+        frequencyUnit: 'DAYS',
         daysUntilDue,
-        lastMaintenanceDate: data.lastMaintenanceDate,
+        lastMaintenanceDate: tpl.lastMaintenanceDate?.toISOString() || null,
         nextMaintenanceDate: nextDate.toISOString(),
-        instructives: data.instructives || [],
-        toolsRequired: data.toolsRequired || [],
-        tags: data.tags || [],
-        executionWindow: data.executionWindow
+        instructives: tpl.instructives || [],
+        toolsRequired: tpl.toolsRequired || [],
+        tags: [],
+        executionWindow: tpl.executionWindow
       });
     }
 
@@ -280,13 +243,6 @@ export async function GET(request: NextRequest) {
     }
 
     // DEBUG: Log de resultados
-    console.log('🔍 PENDING API - Resultados:', {
-      workOrders: pendingWorkOrders.length,
-      templates: preventiveTemplates.length,
-      validTemplates: validTemplates.length,
-      preventiveMaintenances: preventiveMaintenances.length,
-      total: allMaintenances.length
-    });
 
     endCompute(perfCtx);
     startJson(perfCtx);

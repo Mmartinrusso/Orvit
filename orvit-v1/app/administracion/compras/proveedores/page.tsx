@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProveedorModal } from '@/components/compras/proveedor-modal';
+import { ImportarProveedoresDialog } from '@/components/compras/importar-proveedores-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +34,10 @@ import {
   Mail,
   MoreHorizontal,
   Loader2,
-  X
+  X,
+  Upload,
+  Ban,
+  CheckCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,6 +48,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Proveedor {
   id: string;
@@ -76,10 +81,12 @@ interface Proveedor {
 }
 
 export default function ProveedoresPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState<string>('all');
+  const [estadoFilter, setEstadoFilter] = useState<string>('activo');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingProveedor, setEditingProveedor] = useState<Proveedor | null>(null);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,7 +98,7 @@ export default function ProveedoresPage() {
   const loadProveedores = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/compras/proveedores');
+      const response = await fetch('/api/compras/proveedores?showInactive=true');
       if (!response.ok) {
         throw new Error('Error al obtener proveedores');
       }
@@ -120,7 +127,7 @@ export default function ProveedoresPage() {
         numeroCuenta: p.numero_cuenta || undefined,
         condicionIva: p.condicion_iva || undefined,
         ingresosBrutos: p.ingresos_brutos || undefined,
-        estado: 'activo',
+        estado: p.isBlocked ? 'inactivo' : 'activo',
         ordenesCompletadas: 0,
         montoTotal: 0,
       }));
@@ -178,9 +185,13 @@ export default function ProveedoresPage() {
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
 
-    if (!confirm(`¿Está seguro de eliminar ${selectedIds.size} proveedor(es)?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar proveedores',
+      description: `¿Está seguro de eliminar ${selectedIds.size} proveedor(es)?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     setIsDeleting(true);
     let successCount = 0;
@@ -214,7 +225,13 @@ export default function ProveedoresPage() {
   };
 
   const handleDeleteSingle = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar este proveedor?')) return;
+    const ok = await confirm({
+      title: 'Eliminar proveedor',
+      description: '¿Está seguro de eliminar este proveedor?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/proveedores/${id}`, {
@@ -232,6 +249,32 @@ export default function ProveedoresPage() {
     }
   };
 
+  const handleToggleActive = async (proveedor: Proveedor) => {
+    const desactivando = proveedor.estado === 'activo';
+    const ok = await confirm({
+      title: desactivando ? 'Desactivar proveedor' : 'Activar proveedor',
+      description: desactivando
+        ? `¿Desactivar a ${proveedor.nombre}? Desaparecerá de la lista pero sus datos quedarán intactos.`
+        : `¿Activar a ${proveedor.nombre}?`,
+      confirmText: desactivando ? 'Desactivar' : 'Activar',
+      variant: desactivando ? 'destructive' : 'default',
+    });
+    if (!ok) return;
+
+    try {
+      const response = await fetch(`/api/compras/proveedores/${proveedor.id}`, { method: 'PATCH' });
+      if (response.ok) {
+        toast.success(desactivando ? 'Proveedor desactivado' : 'Proveedor activado');
+        loadProveedores();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Error al actualizar el proveedor');
+      }
+    } catch {
+      toast.error('Error al actualizar el proveedor');
+    }
+  };
+
   return (
     <div className="w-full p-0">
       {/* Header */}
@@ -243,13 +286,19 @@ export default function ProveedoresPage() {
             {filteredProveedores.length} proveedor(es)
           </span>
         </div>
-        <Button size="sm" onClick={() => {
-          setEditingProveedor(null);
-          setIsModalOpen(true);
-        }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Proveedor
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importar
+          </Button>
+          <Button size="sm" onClick={() => {
+            setEditingProveedor(null);
+            setIsModalOpen(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Proveedor
+          </Button>
+        </div>
       </div>
 
       {/* Filtros inline */}
@@ -418,6 +467,21 @@ export default function ProveedoresPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
+                            onClick={() => handleToggleActive(proveedor)}
+                          >
+                            {proveedor.estado === 'activo' ? (
+                              <>
+                                <Ban className="w-3.5 h-3.5 mr-2" />
+                                Desactivar
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-3.5 h-3.5 mr-2" />
+                                Activar
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => handleDeleteSingle(proveedor.id)}
                           >
@@ -434,6 +498,13 @@ export default function ProveedoresPage() {
           </div>
         )}
       </div>
+
+      {/* Dialog de importación masiva */}
+      <ImportarProveedoresDialog
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImportado={loadProveedores}
+      />
 
       {/* Modal de Proveedor */}
       <ProveedorModal

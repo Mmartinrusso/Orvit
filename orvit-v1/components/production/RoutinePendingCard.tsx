@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,11 +50,11 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 const typeColors: Record<string, string> = {
-  SHIFT_START: '#f59e0b',
-  SHIFT_END: '#8b5cf6',
-  SAFETY: '#ef4444',
-  SETUP: '#3b82f6',
-  '5S': '#10b981',
+  SHIFT_START: DEFAULT_COLORS.chart4,   // Ámbar
+  SHIFT_END: DEFAULT_COLORS.chart2,    // Violeta
+  SAFETY: DEFAULT_COLORS.kpiNegative,  // Rojo
+  SETUP: DEFAULT_COLORS.chart1,        // Azul/Indigo
+  '5S': DEFAULT_COLORS.chart5,         // Verde
 };
 
 const typeLabels: Record<string, string> = {
@@ -70,9 +71,9 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
   const typeLabel = typeLabels[routine.type] || routine.type.replace('_', ' ');
 
   const statusColor =
-    routine.status === 'COMPLETED' ? '#10b981' :
-    routine.isOverdue ? '#ef4444' :
-    routine.status === 'IN_PROGRESS' ? '#f59e0b' :
+    routine.status === 'COMPLETED' ? DEFAULT_COLORS.kpiPositive :
+    routine.isOverdue ? DEFAULT_COLORS.kpiNegative :
+    routine.status === 'IN_PROGRESS' ? DEFAULT_COLORS.chart4 :
     'transparent';
 
   return (
@@ -80,7 +81,7 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
       className={cn(
         'group relative overflow-hidden transition-all duration-200 hover:shadow-md border',
         routine.status === 'COMPLETED' && 'opacity-60',
-        routine.isOverdue && routine.status === 'IN_PROGRESS' && 'border-red-300 dark:border-red-800'
+        routine.isOverdue && routine.status === 'IN_PROGRESS' && 'border-destructive/30'
       )}
     >
       {/* Left accent */}
@@ -120,8 +121,8 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
 
               {/* Status indicator for completed */}
               {routine.status === 'COMPLETED' && (
-                <div className="h-7 w-7 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <div className="h-7 w-7 rounded-full bg-success-muted flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 </div>
               )}
             </div>
@@ -133,7 +134,7 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
                   <span className="text-muted-foreground">
                     {routine.progress.completed} de {routine.progress.total} items
                   </span>
-                  <span className="font-bold" style={{ color: routine.isOverdue ? '#ef4444' : '#f59e0b' }}>
+                  <span className="font-bold" style={{ color: routine.isOverdue ? DEFAULT_COLORS.kpiNegative : DEFAULT_COLORS.chart4 }}>
                     {routine.progress.percentage}%
                   </span>
                 </div>
@@ -142,7 +143,7 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
                     className="h-full rounded-full transition-all"
                     style={{
                       width: `${routine.progress.percentage}%`,
-                      backgroundColor: routine.isOverdue ? '#ef4444' : '#f59e0b',
+                      backgroundColor: routine.isOverdue ? DEFAULT_COLORS.kpiNegative : DEFAULT_COLORS.chart4,
                     }}
                   />
                 </div>
@@ -151,7 +152,7 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
                     <Clock className="h-3 w-3 text-muted-foreground" />
                     <span className={cn(
                       'text-xs',
-                      routine.isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'
+                      routine.isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'
                     )}>
                       {routine.minutesSinceStarted} min
                       {routine.isOverdue && ' · Vencida'}
@@ -168,7 +169,7 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full gap-1.5 h-9 text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-900/20"
+                    className="w-full gap-1.5 h-9 text-warning-muted-foreground border-warning-muted hover:bg-warning-muted"
                     onClick={() => routine.draftId && onContinue(routine.draftId)}
                   >
                     <Play className="h-3.5 w-3.5" />
@@ -189,7 +190,7 @@ export default function RoutinePendingCard({ routine, onStart, onContinue }: Rou
 
             {/* Completed state */}
             {routine.status === 'COMPLETED' && (
-              <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium flex items-center gap-1">
+              <p className="text-xs text-success mt-2 font-medium flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3" />
                 Completada hoy
               </p>

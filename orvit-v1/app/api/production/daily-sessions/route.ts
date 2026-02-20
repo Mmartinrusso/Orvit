@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 async function getUserFromToken() {
-  const token = cookies().get('token')?.value;
+  const token = (await cookies()).get('token')?.value;
   if (!token) throw new Error('No token provided');
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     }
 
     const dateObj = new Date(productionDate + 'T00:00:00.000Z');
-    const parsedSectorId = sectorId;
+    const parsedSectorId = parseInt(sectorId);
     const parsedShiftId = shiftId ? parseInt(shiftId) : null;
 
     // Try to find existing session

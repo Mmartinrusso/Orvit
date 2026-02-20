@@ -180,7 +180,7 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
   if (isLoading && !checklistProp) {
     return (
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold text-gray-900">Detalles Técnicos</h3>
+        <h3 className="text-xs font-semibold text-foreground">Detalles Técnicos</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
@@ -226,7 +226,7 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
   if (!checklist) {
     return (
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold text-gray-900">Detalles Técnicos</h3>
+        <h3 className="text-xs font-semibold text-foreground">Detalles Técnicos</h3>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -239,7 +239,7 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xs font-semibold text-gray-900">Detalles Técnicos</h3>
+      <h3 className="text-xs font-semibold text-foreground">Detalles Técnicos</h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* A) Información del Checklist */}
@@ -253,23 +253,23 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">ID</label>
-                <p className="mt-1 text-xs text-gray-900 font-mono">{checklist.id}</p>
+                <label className="text-xs font-medium text-muted-foreground">ID</label>
+                <p className="mt-1 text-xs text-foreground font-mono">{checklist.id}</p>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Título</label>
-                <p className="mt-1 text-xs text-gray-900">{safeText(checklist.title)}</p>
+                <label className="text-xs font-medium text-muted-foreground">Título</label>
+                <p className="mt-1 text-xs text-foreground">{safeText(checklist.title)}</p>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Categoría</label>
-                <p className="mt-1 text-xs text-gray-900">{getCategoryLabel(checklist.category)}</p>
+                <label className="text-xs font-medium text-muted-foreground">Categoría</label>
+                <p className="mt-1 text-xs text-foreground">{getCategoryLabel(checklist.category)}</p>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Frecuencia</label>
-                <p className="mt-1 text-xs text-gray-900">{getFrequencyLabel(checklist.frequency)}</p>
+                <label className="text-xs font-medium text-muted-foreground">Frecuencia</label>
+                <p className="mt-1 text-xs text-foreground">{getFrequencyLabel(checklist.frequency)}</p>
               </div>
             </div>
           </CardContent>
@@ -286,13 +286,13 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Estado</label>
+                <label className="text-xs font-medium text-muted-foreground">Estado</label>
                 <div className="mt-1">
                   <Badge 
                     className={
                       checklist.isActive 
-                        ? 'bg-green-100 text-green-800 text-xs border-green-200' 
-                        : 'bg-gray-100 text-gray-800 text-xs border-gray-200'
+                        ? 'bg-success-muted text-success text-xs border-success/20'
+                        : 'bg-muted text-foreground text-xs border-border'
                     }
                     variant="outline"
                   >
@@ -302,22 +302,22 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Tiempo Total</label>
-                <p className="mt-1 text-xs text-gray-900 font-bold">
+                <label className="text-xs font-medium text-muted-foreground">Tiempo Total</label>
+                <p className="mt-1 text-xs text-foreground font-bold">
                   {formatDuration(stats.totalMinutes)}
                 </p>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Total Items</label>
-                <p className="mt-1 text-xs text-gray-900 font-bold">
+                <label className="text-xs font-medium text-muted-foreground">Total Items</label>
+                <p className="mt-1 text-xs text-foreground font-bold">
                   {stats.totalItems}
                 </p>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Fases</label>
-                <p className="mt-1 text-xs text-gray-900 font-bold">
+                <label className="text-xs font-medium text-muted-foreground">Fases</label>
+                <p className="mt-1 text-xs text-foreground font-bold">
                   {stats.phasesCount}
                 </p>
               </div>
@@ -335,8 +335,8 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
           </CardHeader>
           <CardContent>
             <div>
-              <label className="text-xs font-medium text-gray-600">Sector</label>
-              <p className="mt-1 text-xs text-gray-900">
+              <label className="text-xs font-medium text-muted-foreground">Sector</label>
+              <p className="mt-1 text-xs text-foreground">
                 {safeText(checklist.sector?.name)}
               </p>
             </div>
@@ -354,15 +354,15 @@ export function ChecklistDetailsTab({ checklist: checklistProp, checklistId }: C
           <CardContent>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Creado</label>
-                <p className="mt-1 text-xs text-gray-900">
+                <label className="text-xs font-medium text-muted-foreground">Creado</label>
+                <p className="mt-1 text-xs text-foreground">
                   {formatDateTime(checklist.createdAt)}
                 </p>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-gray-600">Última Actualización</label>
-                <p className="mt-1 text-xs text-gray-900">
+                <label className="text-xs font-medium text-muted-foreground">Última Actualización</label>
+                <p className="mt-1 text-xs text-foreground">
                   {formatDateTime(checklist.updatedAt)}
                 </p>
               </div>

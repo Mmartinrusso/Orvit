@@ -342,6 +342,28 @@ export async function getDiscordClient(): Promise<DiscordClient> {
             }
             return;
           }
+
+          // Audio suelto en DM sin prefijo "tarea" y sin sesión activa
+          // → mensajes de voz de Discord (ogg) o cualquier audio adjunto directo
+          if (!message.content.trim() && message.attachments?.size > 0) {
+            let rawAudio = null;
+            for (const [, attachment] of message.attachments) {
+              const ct = attachment.contentType || '';
+              if (
+                ct.startsWith('audio/') ||
+                ct === 'application/ogg' ||
+                attachment.name?.match(/\.(ogg|mp3|m4a|wav|webm|oga)$/)
+              ) {
+                rawAudio = attachment;
+                break;
+              }
+            }
+            if (rawAudio) {
+              console.log(`[Discord Bot] Audio suelto en DM de ${message.author.tag} → procesando como tarea`);
+              await handleTaskAudio(message, rawAudio);
+              return;
+            }
+          }
         }
 
         // Flujo existente: pedidos de compra por voz (requiere mención + audio)

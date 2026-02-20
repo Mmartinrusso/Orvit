@@ -14,6 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -77,11 +78,11 @@ const tipoIcons: Record<string, React.ReactNode> = {
 };
 
 const tipoColors: Record<string, string> = {
-  MANUAL: 'bg-slate-500/10 text-slate-700 dark:text-slate-400',
-  MANTENIMIENTO: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  COMBUSTIBLE: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  VIAJE: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  INSPECCION: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  MANUAL: 'bg-muted text-muted-foreground',
+  MANTENIMIENTO: 'bg-warning-muted text-warning-muted-foreground',
+  COMBUSTIBLE: 'bg-info-muted text-info-muted-foreground',
+  VIAJE: 'bg-success-muted text-success',
+  INSPECCION: 'bg-muted text-foreground',
 };
 
 export function KilometrajeHistory({
@@ -225,7 +226,7 @@ export function KilometrajeHistory({
         <div className="grid grid-cols-2 gap-2">
           <Card className="p-2">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+              <TrendingUp className="h-3.5 w-3.5 text-success" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Km recorridos</p>
                 <p className="text-xs font-semibold">{stats.kmRecorridos.toLocaleString()} km</p>
@@ -234,7 +235,7 @@ export function KilometrajeHistory({
           </Card>
           <Card className="p-2">
             <div className="flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5 text-blue-600" />
+              <Calendar className="h-3.5 w-3.5 text-info-muted-foreground" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Promedio entre lecturas</p>
                 <p className="text-xs font-semibold">{stats.promedioEntreLecturas.toLocaleString()} km</p>
@@ -275,7 +276,7 @@ export function KilometrajeHistory({
                       {log.kilometraje.toLocaleString()} km
                     </span>
                     {kmDiff > 0 && (
-                      <span className="text-[10px] text-emerald-600">
+                      <span className="text-[10px] text-success">
                         +{kmDiff.toLocaleString()}
                       </span>
                     )}
@@ -310,7 +311,7 @@ export function KilometrajeHistory({
 
       {/* Dialog para registrar nuevo kilometraje */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle className="text-base">Registrar Kilometraje</DialogTitle>
             <DialogDescription className="text-xs">
@@ -318,7 +319,7 @@ export function KilometrajeHistory({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <DialogBody className="space-y-4">
             <div>
               <Label htmlFor="kilometraje" className="text-xs">Lectura del odómetro *</Label>
               <Input
@@ -331,7 +332,7 @@ export function KilometrajeHistory({
                 placeholder={`Mínimo: ${kilometrajeActual.toLocaleString()}`}
               />
               {formData.kilometraje > kilometrajeActual && (
-                <p className="text-[10px] text-emerald-600 mt-1">
+                <p className="text-[10px] text-success mt-1">
                   +{(formData.kilometraje - kilometrajeActual).toLocaleString()} km desde última lectura
                 </p>
               )}
@@ -367,7 +368,7 @@ export function KilometrajeHistory({
                 className="text-xs mt-1"
               />
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button

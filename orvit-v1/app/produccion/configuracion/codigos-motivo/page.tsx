@@ -61,9 +61,9 @@ interface ReasonCode {
 }
 
 const REASON_TYPES = [
-  { value: 'DOWNTIME', label: 'Parada', color: 'bg-red-100 text-red-700' },
-  { value: 'SCRAP', label: 'Scrap', color: 'bg-orange-100 text-orange-700' },
-  { value: 'REWORK', label: 'Retrabajo', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'DOWNTIME', label: 'Parada', color: 'bg-destructive/10 text-destructive' },
+  { value: 'SCRAP', label: 'Scrap', color: 'bg-warning-muted text-warning-muted-foreground' },
+  { value: 'REWORK', label: 'Retrabajo', color: 'bg-warning-muted text-warning-muted-foreground' },
   { value: 'QUALITY_HOLD', label: 'Retención Calidad', color: 'bg-purple-100 text-purple-700' },
 ];
 
@@ -234,7 +234,7 @@ export default function ReasonCodesConfigPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Tags className="h-6 w-6 text-yellow-600" />
+              <Tags className="h-6 w-6 text-warning-muted-foreground" />
               Códigos de Motivo
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -251,7 +251,7 @@ export default function ReasonCodesConfigPage() {
 
       {/* Tabs by Type */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-lg grid-cols-4">
+        <TabsList className="w-full max-w-lg justify-start overflow-x-auto">
           {REASON_TYPES.map((type) => (
             <TabsTrigger key={type.value} value={type.value}>
               {type.label}
@@ -290,7 +290,7 @@ export default function ReasonCodesConfigPage() {
                         </TableRow>
                       ) : (
                         filteredCodes.map((rc) => (
-                          <TableRow key={rc.id} className={rc.parentId ? 'bg-gray-50' : ''}>
+                          <TableRow key={rc.id} className={rc.parentId ? 'bg-muted' : ''}>
                             <TableCell className="font-mono">
                               {rc.parentId && <span className="text-muted-foreground mr-2">└</span>}
                               {rc.code}
@@ -306,7 +306,7 @@ export default function ReasonCodesConfigPage() {
                             </TableCell>
                             <TableCell>
                               {rc.triggersMaintenance && (
-                                <Badge className="bg-blue-100 text-blue-700">
+                                <Badge className="bg-info-muted text-info-muted-foreground">
                                   <Wrench className="h-3 w-3 mr-1" />
                                   Crea OT
                                 </Badge>
@@ -314,7 +314,7 @@ export default function ReasonCodesConfigPage() {
                             </TableCell>
                             <TableCell>
                               {rc.affectsOEE ? (
-                                <Badge className="bg-red-100 text-red-700 text-xs">Afecta OEE</Badge>
+                                <Badge className="bg-destructive/10 text-destructive text-xs">Afecta OEE</Badge>
                               ) : (
                                 <span className="text-muted-foreground text-xs">No afecta</span>
                               )}
@@ -323,8 +323,8 @@ export default function ReasonCodesConfigPage() {
                               <Badge
                                 className={
                                   rc.isActive
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-gray-100 text-gray-600'
+                                    ? 'bg-success-muted text-success'
+                                    : 'bg-muted text-muted-foreground'
                                 }
                               >
                                 {rc.isActive ? 'Activo' : 'Inactivo'}
@@ -347,7 +347,7 @@ export default function ReasonCodesConfigPage() {
                                     setDeleteDialogOpen(true);
                                   }}
                                 >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
                             </TableCell>

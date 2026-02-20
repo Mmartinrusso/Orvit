@@ -41,10 +41,10 @@ interface QRCodeItem {
 }
 
 const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  MACHINE: { label: 'Máquina', icon: <Cog className="h-4 w-4" />, color: 'bg-blue-100 text-blue-800' },
+  MACHINE: { label: 'Máquina', icon: <Cog className="h-4 w-4" />, color: 'bg-info-muted text-info-muted-foreground' },
   COMPONENT: { label: 'Componente', icon: <Wrench className="h-4 w-4" />, color: 'bg-purple-100 text-purple-800' },
-  TOOL: { label: 'Herramienta', icon: <Wrench className="h-4 w-4" />, color: 'bg-amber-100 text-amber-800' },
-  SPARE_PART: { label: 'Repuesto', icon: <Package className="h-4 w-4" />, color: 'bg-green-100 text-green-800' },
+  TOOL: { label: 'Herramienta', icon: <Wrench className="h-4 w-4" />, color: 'bg-warning-muted text-warning-muted-foreground' },
+  SPARE_PART: { label: 'Repuesto', icon: <Package className="h-4 w-4" />, color: 'bg-success-muted text-success' },
 };
 
 export default function QRCodesPage() {
@@ -148,7 +148,7 @@ export default function QRCodesPage() {
                 <p className="text-sm text-muted-foreground">Total QR</p>
                 <p className="text-2xl font-bold">{summary.total || 0}</p>
               </div>
-              <QrCode className="h-8 w-8 text-blue-500" />
+              <QrCode className="h-8 w-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -170,7 +170,7 @@ export default function QRCodesPage() {
                 <p className="text-sm text-muted-foreground">Herramientas</p>
                 <p className="text-2xl font-bold">{summary.tools || 0}</p>
               </div>
-              <Wrench className="h-8 w-8 text-amber-500" />
+              <Wrench className="h-8 w-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -179,9 +179,9 @@ export default function QRCodesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Escaneos Hoy</p>
-                <p className="text-2xl font-bold text-green-600">{summary.scansToday || 0}</p>
+                <p className="text-2xl font-bold text-success">{summary.scansToday || 0}</p>
               </div>
-              <Eye className="h-8 w-8 text-green-500" />
+              <Eye className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -235,7 +235,7 @@ export default function QRCodesPage() {
           </div>
         ) : (
           filteredCodes.map((qr) => {
-            const typeConfig = ENTITY_TYPE_CONFIG[qr.entityType] || { label: qr.entityType, icon: <QrCode className="h-4 w-4" />, color: 'bg-gray-100' };
+            const typeConfig = ENTITY_TYPE_CONFIG[qr.entityType] || { label: qr.entityType, icon: <QrCode className="h-4 w-4" />, color: 'bg-muted' };
 
             return (
               <Card key={qr.id} className="hover:shadow-md transition-shadow">

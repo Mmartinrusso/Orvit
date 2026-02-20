@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,17 +16,19 @@ import {
   DialogBody,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { 
   Building2, 
   FileText, 
   Settings, 
   Users, 
   Clock, 
-  Download, 
-  Edit, 
+  Download,
+  Edit,
   Trash2,
   Plus,
-  MoreVertical
+  MoreVertical,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -106,6 +109,7 @@ export default function WorkStationDetailModal({
   const { currentCompany } = useCompany();
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [workStation, setWorkStation] = useState<WorkStation | null>(null);
   const [loading, setLoading] = useState(false);
   const [isInstructiveDialogOpen, setIsInstructiveDialogOpen] = useState(false);
@@ -155,9 +159,13 @@ export default function WorkStationDetailModal({
   };
 
   const handleDeleteInstructive = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este instructivo?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar instructivo',
+      description: '¿Estás seguro de que quieres eliminar este instructivo?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/work-stations/${workStationId}/instructives/${id}`, {
@@ -190,11 +198,11 @@ export default function WorkStationDetailModal({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge className="bg-green-100 text-green-800">Activo</Badge>;
+        return <Badge className="bg-success-muted text-success">Activo</Badge>;
       case 'INACTIVE':
         return <Badge variant="secondary">Inactivo</Badge>;
       case 'MAINTENANCE':
-        return <Badge className="bg-orange-100 text-orange-800">Mantenimiento</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground">Mantenimiento</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -210,13 +218,13 @@ export default function WorkStationDetailModal({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-muted text-success';
       case 'MAINTENANCE':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'OUT_OF_SERVICE':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -229,7 +237,7 @@ export default function WorkStationDetailModal({
           </DialogHeader>
           <DialogBody>
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <Loader2 className="h-8 w-8 animate-spin text-foreground" />
             </div>
           </DialogBody>
         </DialogContent>
@@ -371,7 +379,7 @@ export default function WorkStationDetailModal({
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteInstructive(instructive.id)}
-                                className="text-red-600"
+                                className="text-destructive"
                               >
                                 <Trash2 className="h-3 w-3 mr-2" />
                                 Eliminar
@@ -414,14 +422,14 @@ export default function WorkStationDetailModal({
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium text-sm">{workStationMachine.machine.name}</h4>
                             {workStationMachine.machine.nickname && (
-                              <span className="text-xs text-gray-500">({workStationMachine.machine.nickname})</span>
+                              <span className="text-xs text-muted-foreground">({workStationMachine.machine.nickname})</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">
                               {workStationMachine.machine.type}
                             </Badge>
-                            <Badge className={`text-xs ${getStatusColor(workStationMachine.machine.status)}`}>
+                            <Badge className={cn('text-xs', getStatusColor(workStationMachine.machine.status))}>
                               {workStationMachine.machine.status}
                             </Badge>
                             {workStationMachine.isRequired && (
@@ -431,7 +439,7 @@ export default function WorkStationDetailModal({
                             )}
                           </div>
                           {workStationMachine.notes && (
-                            <p className="text-xs text-gray-600 mt-1">{workStationMachine.notes}</p>
+                            <p className="text-xs text-foreground mt-1">{workStationMachine.notes}</p>
                           )}
                         </div>
                       </div>

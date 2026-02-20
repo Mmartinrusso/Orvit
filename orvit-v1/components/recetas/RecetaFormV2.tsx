@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody
 } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage
 } from '@/components/ui/form';
@@ -21,33 +23,15 @@ import { Recipe, RecipeIngredient } from '@/hooks/use-recetas';
 import { useSubcategories } from '@/hooks/use-subcategories';
 import { useCompany } from '@/contexts/CompanyContext';
 import {
-  Plus, Trash2, Package, Scale, BookOpen, Loader2, Factory, Layers
+  Plus, Trash2, Package, Scale, BookOpen, Loader2, Factory, Layers, Boxes, ShoppingCart,
+  ChevronDown, Search, Tag, X
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-interface UserColors {
-  chart1: string;
-  chart2: string;
-  chart3: string;
-  chart4: string;
-  chart5: string;
-  chart6: string;
-  kpiPositive: string;
-  kpiNegative: string;
-  kpiNeutral: string;
-}
 
-const DEFAULT_COLORS: UserColors = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
+
 
 // Zod schema for form validation
 const RecipeFormSchema = z.object({
@@ -108,6 +92,11 @@ export default function RecetaFormV2({
   // Bank ingredient input state
   const [selectedBankSupplyId, setSelectedBankSupplyId] = useState('');
   const [bankIngredientQuantity, setBankIngredientQuantity] = useState('');
+
+  // Combobox de insumos: búsqueda y filtro
+  const [supplyPopoverOpen, setSupplyPopoverOpen] = useState(false);
+  const [supplySearch, setSupplySearch] = useState('');
+  const [supplyCategoryFilter, setSupplyCategoryFilter] = useState<string>('all');
 
   // Subcategories
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
@@ -178,6 +167,30 @@ export default function RecetaFormV2({
       console.error('Error loading recipe ingredients:', error);
     }
   };
+
+  // Categorías únicas de los supplies disponibles
+  const supplyCategories = useMemo(() => {
+    const cats = new Map<number, string>();
+    supplies.forEach(s => {
+      if (s.categoryId && s.categoryName) cats.set(s.categoryId, s.categoryName);
+    });
+    return Array.from(cats.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [supplies]);
+
+  // Supplies filtrados para el picker (excluye ya agregados, aplica búsqueda y categoría)
+  const filteredSuppliesForPicker = useMemo(() => {
+    return supplies
+      .filter(s => !ingredients.some(i => i.supplyId === s.id))
+      .filter(s => {
+        if (supplyCategoryFilter !== 'all' && s.categoryId?.toString() !== supplyCategoryFilter) return false;
+        if (supplySearch && !s.name.toLowerCase().includes(supplySearch.toLowerCase())) return false;
+        return true;
+      });
+  }, [supplies, ingredients, supplyCategoryFilter, supplySearch]);
+
+  const selectedSupplyData = supplies.find(s => s.id.toString() === selectedSupplyId);
 
   // Calculate costs
   const totalCost = ingredients.reduce((sum, ing) => {
@@ -610,28 +623,150 @@ export default function RecetaFormV2({
                     <div className="grid grid-cols-12 gap-3 items-end">
                       <div className="col-span-5">
                         <label className="text-sm font-medium">Insumo</label>
-                        <Select value={selectedSupplyId} onValueChange={setSelectedSupplyId}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar insumo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {supplies
-                              .filter(s => !ingredients.some(i => i.supplyId === s.id))
-                              .map(s => (
-                                <SelectItem key={s.id} value={s.id.toString()}>
-                                  <div className="flex items-center gap-2">
-                                    <Package className="h-4 w-4" />
-                                    <div>
-                                      <div>{s.name}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {formatCurrency(getCurrentPrice(s.id))}/{s.unitMeasure}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover open={supplyPopoverOpen} onOpenChange={setSupplyPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className={cn(
+                                "flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+                                "hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                              )}
+                            >
+                              {selectedSupplyData ? (
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {(selectedSupplyData.stockCantidad ?? 0) > 0 ? (
+                                    <Boxes className="h-3.5 w-3.5 text-success shrink-0" />
+                                  ) : (selectedSupplyData.supplierItemCount ?? 0) > 0 ? (
+                                    <ShoppingCart className="h-3.5 w-3.5 text-warning shrink-0" />
+                                  ) : (
+                                    <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  )}
+                                  <span className="truncate">{selectedSupplyData.name}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">Seleccionar insumo</span>
+                              )}
+                              <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[380px] p-0" align="start">
+                            {/* Búsqueda */}
+                            <div className="p-2 space-y-2 border-b">
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                <Input
+                                  placeholder="Buscar insumo..."
+                                  value={supplySearch}
+                                  onChange={(e) => setSupplySearch(e.target.value)}
+                                  className="pl-8 h-8 text-sm"
+                                  autoFocus
+                                />
+                                {supplySearch && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSupplySearch('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                              {/* Filtro por categoría — siempre visible */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => setSupplyCategoryFilter('all')}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border transition-colors",
+                                    supplyCategoryFilter === 'all'
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background border-border hover:bg-muted"
+                                  )}
+                                >
+                                  Todos
+                                </button>
+                                {supplyCategories.map(cat => (
+                                  <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => setSupplyCategoryFilter(
+                                      supplyCategoryFilter === cat.id.toString() ? 'all' : cat.id.toString()
+                                    )}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border transition-colors",
+                                      supplyCategoryFilter === cat.id.toString()
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-background border-border hover:bg-muted"
+                                    )}
+                                  >
+                                    <Tag className="h-2.5 w-2.5" />
+                                    {cat.name}
+                                  </button>
+                                ))}
+                                {supplyCategories.length === 0 && (
+                                  <span className="text-xs text-muted-foreground italic">
+                                    Sin categorías configuradas
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {/* Lista con scroll nativo */}
+                            <div className="overflow-y-auto max-h-[280px]">
+                              {filteredSuppliesForPicker.length === 0 ? (
+                                <div className="py-8 text-center text-sm text-muted-foreground">
+                                  Sin resultados
+                                </div>
+                              ) : (
+                                <div className="p-1">
+                                  {filteredSuppliesForPicker.map(s => {
+                                    const precio = getCurrentPrice(s.id);
+                                    const tieneStock = (s.stockCantidad ?? 0) > 0;
+                                    const pasoPorCompras = (s.supplierItemCount ?? 0) > 0;
+                                    return (
+                                      <button
+                                        key={s.id}
+                                        type="button"
+                                        className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-accent text-left"
+                                        onClick={() => {
+                                          setSelectedSupplyId(s.id.toString());
+                                          setSupplyPopoverOpen(false);
+                                          setSupplySearch('');
+                                        }}
+                                      >
+                                        {tieneStock ? (
+                                          <Boxes className="h-4 w-4 text-success shrink-0" />
+                                        ) : pasoPorCompras ? (
+                                          <ShoppingCart className="h-4 w-4 text-warning shrink-0" />
+                                        ) : (
+                                          <Package className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-sm font-medium truncate">{s.name}</div>
+                                          <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                            {s.categoryName && (
+                                              <span className="text-muted-foreground/70">{s.categoryName}</span>
+                                            )}
+                                            {precio > 0 && (
+                                              <span>{formatCurrency(precio)}/{s.unitMeasure}</span>
+                                            )}
+                                            {tieneStock && (
+                                              <span className="text-success font-medium">
+                                                · Stock: {Number(s.stockCantidad).toFixed(2)} {s.unitMeasure}
+                                              </span>
+                                            )}
+                                            {!tieneStock && pasoPorCompras && (
+                                              <span className="text-warning">· Sin stock</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       {inputMode === 'direct' ? (
@@ -688,20 +823,44 @@ export default function RecetaFormV2({
                       {ingredients.map((ing, index) => {
                         const price = getCurrentPrice(ing.supplyId);
                         const cost = Number(ing.quantity || 0) * price;
+                        const supplyData = supplies.find(s => s.id === ing.supplyId);
+                        const tieneStock = (supplyData?.stockCantidad ?? 0) > 0;
+                        const stockCantidad = supplyData?.stockCantidad ?? 0;
+                        const cantidadUsada = Number(ing.quantity || 0);
+                        const stockInsuficiente = tieneStock && cantidadUsada > stockCantidad;
                         return (
                           <div
                             key={index}
-                            className="grid grid-cols-12 gap-3 items-center p-3 bg-muted/50 rounded-lg"
+                            className={cn(
+                              "grid grid-cols-12 gap-3 items-center p-3 rounded-lg",
+                              stockInsuficiente ? "bg-warning-muted/30 border border-warning-muted" : "bg-muted/50"
+                            )}
                           >
                             <div className="col-span-5">
-                              <p className="font-medium">{ing.supplyName}</p>
+                              <div className="flex items-center gap-1.5">
+                                {tieneStock ? (
+                                  <Boxes className="h-3.5 w-3.5 text-success shrink-0" />
+                                ) : (supplyData?.supplierItemCount ?? 0) > 0 ? (
+                                  <ShoppingCart className="h-3.5 w-3.5 text-warning shrink-0" />
+                                ) : null}
+                                <p className="font-medium">{ing.supplyName}</p>
+                              </div>
                               <p className="text-xs text-muted-foreground">
-                                {Number(ing.quantity || 0).toFixed(2)} {ing.unitMeasure}
+                                {cantidadUsada.toFixed(2)} {ing.unitMeasure}
                                 {ing.pulsos && ` (${ing.pulsos} pulsos × ${ing.kgPorPulso} kg)`}
                               </p>
+                              {tieneStock && (
+                                <p className={cn(
+                                  "text-xs mt-0.5",
+                                  stockInsuficiente ? "text-warning font-medium" : "text-success"
+                                )}>
+                                  Stock: {Number(stockCantidad).toFixed(2)} {ing.unitMeasure}
+                                  {stockInsuficiente && " · Insuficiente"}
+                                </p>
+                              )}
                             </div>
                             <div className="col-span-3 text-right text-sm text-muted-foreground">
-                              {formatCurrency(price)}/{ing.unitMeasure}
+                              {price > 0 ? `${formatCurrency(price)}/${ing.unitMeasure}` : '—'}
                             </div>
                             <div className="col-span-3 text-right font-medium" style={{ color: userColors.kpiPositive }}>
                               {formatCurrency(cost)}

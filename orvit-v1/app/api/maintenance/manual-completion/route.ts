@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withGuards } from '@/lib/middleware/withGuards';
 
 export const dynamic = 'force-dynamic';
 
-// POST /api/maintenance/manual-completion - Marcar mantenimiento como completado manualmente
-export async function POST(request: NextRequest) {
+// POST /api/maintenance/manual-completion - Marcar mantenimiento como completado (autenticado)
+export const POST = withGuards(async (request, ctx) => {
   try {
     const body = await request.json();
     const {
@@ -24,20 +25,6 @@ export async function POST(request: NextRequest) {
       isUnique,
       equipment
     } = body;
-
-    console.log('🔧 [MANUAL COMPLETION] Received request:', {
-      maintenanceId,
-      companyId,
-      sectorId,
-      task,
-      datePerformed,
-      rescheduleDate,
-      kilometers,
-      hours,
-      responsible,
-      isUnique,
-      equipment
-    });
 
     // Validar datos requeridos
     if (!maintenanceId || !companyId || !sectorId) {
@@ -130,13 +117,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('✅ [MANUAL COMPLETION] Maintenance updated successfully:', {
-      maintenanceId,
-      status: updatedData.status,
-      executedAt: executionRecord.executedAt,
-      nextMaintenanceDate: updatedData.nextMaintenanceDate
-    });
-
     return NextResponse.json({
       success: true,
       message: 'Mantenimiento marcado como completado exitosamente',
@@ -149,13 +129,13 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [MANUAL COMPLETION] Error:', error);
+    console.error('Error en manual-completion:', error);
     return NextResponse.json({
       success: false,
       error: 'Error interno del servidor'
     }, { status: 500 });
   }
-}
+});
 
 // Función para parsear fechas en formato DD/MM/YYYY
 function parseDateDDMMYYYY(dateString: string): Date {

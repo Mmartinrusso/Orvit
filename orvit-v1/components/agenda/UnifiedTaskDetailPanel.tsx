@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,17 +37,7 @@ import {
 } from '@/types/unified-task';
 import { SOURCE_CONFIG } from '@/lib/agenda/types';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 interface UnifiedTaskDetailPanelProps {
   task: UnifiedTask;
@@ -63,7 +54,7 @@ export function UnifiedTaskDetailPanel({
   onDelete,
   onStatusChange,
 }: UnifiedTaskDetailPanelProps) {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
   const statusConfig = UNIFIED_STATUS_CONFIG[task.status];
   const priorityConfig = UNIFIED_PRIORITY_CONFIG[task.priority];
   const originConfig = ORIGIN_CONFIG[task.origin];
@@ -173,7 +164,7 @@ export function UnifiedTaskDetailPanel({
                   <Calendar className="h-4 w-4" />
                   <span>Vence</span>
                 </div>
-                <span className={cn('text-sm font-medium', overdue && 'text-red-600')}>
+                <span className={cn('text-sm font-medium', overdue && 'text-destructive')}>
                   {format(new Date(task.dueDate), "EEEE d 'de' MMMM, HH:mm 'hs'", { locale: es })}
                 </span>
               </div>
@@ -326,9 +317,9 @@ export function UnifiedTaskDetailPanel({
                         <div key={sub.id} className="flex items-center gap-2 text-sm">
                           <div className={cn(
                             'h-4 w-4 rounded border flex items-center justify-center',
-                            sub.completed ? 'bg-green-100 border-green-300' : 'border-muted-foreground/30'
+                            sub.completed ? 'bg-success-muted border-success-muted' : 'border-muted-foreground/30'
                           )}>
-                            {sub.completed && <CheckCircle2 className="h-3 w-3 text-green-600" />}
+                            {sub.completed && <CheckCircle2 className="h-3 w-3 text-success" />}
                           </div>
                           <span className={cn(sub.completed && 'line-through text-muted-foreground')}>
                             {sub.title}
@@ -353,7 +344,7 @@ export function UnifiedTaskDetailPanel({
                           href={file.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                          className="flex items-center gap-2 text-sm text-info-muted-foreground hover:underline"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           {file.name}
@@ -403,7 +394,7 @@ export function UnifiedTaskDetailPanel({
           <Button
             variant="outline"
             size="sm"
-            className="text-red-600 hover:bg-red-50"
+            className="text-destructive hover:bg-destructive/10"
             aria-label="Eliminar tarea"
             onClick={onDelete}
           >

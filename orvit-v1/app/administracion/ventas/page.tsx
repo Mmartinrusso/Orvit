@@ -335,30 +335,30 @@ export default function VentasPage() {
           {/* KPI Cards - Grid 1: Main Metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Ventas del Mes */}
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-info-muted">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Ventas del Mes</p>
-                    <p className="text-2xl font-bold mt-1 text-blue-900 dark:text-blue-100">
+                    <p className="text-xs font-medium text-info-muted-foreground">Ventas del Mes</p>
+                    <p className="text-2xl font-bold mt-1 text-info-muted-foreground">
                       {formatCurrency(data?.kpis.ventasMes || 0)}
                     </p>
                     <div className="flex items-center gap-1 mt-1">
                       {data?.kpis.ventasCrecimiento >= 0 ? (
-                        <ArrowUpRight className="w-3 h-3 text-green-600" />
+                        <ArrowUpRight className="w-3 h-3 text-success" />
                       ) : (
-                        <ArrowDownRight className="w-3 h-3 text-red-600" />
+                        <ArrowDownRight className="w-3 h-3 text-destructive" />
                       )}
                       <span className={cn(
                         "text-xs font-medium",
-                        data?.kpis.ventasCrecimiento >= 0 ? "text-green-600" : "text-red-600"
+                        data?.kpis.ventasCrecimiento >= 0 ? "text-success" : "text-destructive"
                       )}>
                         {formatPercent(data?.kpis.ventasCrecimiento || 0)} vs mes anterior
                       </span>
                     </div>
                   </div>
-                  <div className="p-2 rounded-lg bg-blue-200 dark:bg-blue-800">
-                    <DollarSign className="h-4 w-4 text-blue-700 dark:text-blue-200" />
+                  <div className="p-2 rounded-lg bg-info-muted">
+                    <DollarSign className="h-4 w-4 text-info-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -375,8 +375,8 @@ export default function VentasPage() {
                       {data?.kpis.entregasEnTransito || 0} en tránsito
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
-                    <Truck className="h-4 w-4 text-orange-600" />
+                  <div className="p-2 rounded-lg bg-warning-muted">
+                    <Truck className="h-4 w-4 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -388,15 +388,15 @@ export default function VentasPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Cobrado este Mes</p>
-                    <p className="text-2xl font-bold mt-1 text-green-600">
+                    <p className="text-2xl font-bold mt-1 text-success">
                       {formatCurrency(data?.kpis.cobranzasMes || 0)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatCurrency(data?.kpis.cobranzasPendientes || 0)} pendiente
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                    <CreditCard className="h-4 w-4 text-green-600" />
+                  <div className="p-2 rounded-lg bg-success-muted">
+                    <CreditCard className="h-4 w-4 text-success" />
                   </div>
                 </div>
               </CardContent>
@@ -429,8 +429,8 @@ export default function VentasPage() {
                     <p className="text-xs font-medium text-muted-foreground">Cotizaciones Pendientes</p>
                     <p className="text-2xl font-bold mt-1">{data?.kpis.cotizacionesPendientes || 0}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-                    <Calculator className="h-4 w-4 text-yellow-600" />
+                  <div className="p-2 rounded-lg bg-warning-muted">
+                    <Calculator className="h-4 w-4 text-warning-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -458,31 +458,31 @@ export default function VentasPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Cumplimiento Entregas</p>
-                    <p className="text-2xl font-bold mt-1 text-green-600">
+                    <p className="text-2xl font-bold mt-1 text-success">
                       {data?.kpis.cumplimientoEntregas.toFixed(0)}%
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">On-time delivery</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div className="p-2 rounded-lg bg-success-muted">
+                    <CheckCircle className="h-4 w-4 text-success" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Alertas de Riesgo IA */}
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('#alerts')}>
+            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-destructive/30 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('#alerts')}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-medium text-red-700 dark:text-red-300">Alertas de Riesgo IA</p>
-                    <p className="text-2xl font-bold mt-1 text-red-900 dark:text-red-100">
+                    <p className="text-xs font-medium text-destructive">Alertas de Riesgo IA</p>
+                    <p className="text-2xl font-bold mt-1 text-destructive">
                       {data?.kpis.alertasRiesgo || 0}
                     </p>
-                    <p className="text-xs text-red-700 dark:text-red-300 mt-1">Requieren atención</p>
+                    <p className="text-xs text-destructive mt-1">Requieren atención</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-red-200 dark:bg-red-800">
-                    <Shield className="h-4 w-4 text-red-700 dark:text-red-200" />
+                  <div className="p-2 rounded-lg bg-destructive/20">
+                    <Shield className="h-4 w-4 text-destructive" />
                   </div>
                 </div>
               </CardContent>
@@ -544,25 +544,25 @@ export default function VentasPage() {
                   data.alerts.slice(0, 5).map((alert) => {
                     const typeConfig = {
                       urgent: {
-                        bg: 'bg-red-50 dark:bg-red-900/20',
-                        border: 'border-red-200 dark:border-red-800',
-                        hover: 'hover:bg-red-100 dark:hover:bg-red-900/30',
-                        icon: <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />,
-                        textColor: 'text-red-900 dark:text-red-100',
+                        bg: 'bg-destructive/10',
+                        border: 'border-destructive/30',
+                        hover: 'hover:bg-destructive/10',
+                        icon: <AlertCircle className="w-4 h-4 text-destructive" />,
+                        textColor: 'text-destructive',
                       },
                       important: {
-                        bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-                        border: 'border-yellow-200 dark:border-yellow-800',
-                        hover: 'hover:bg-yellow-100 dark:hover:bg-yellow-900/30',
-                        icon: <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />,
-                        textColor: 'text-yellow-900 dark:text-yellow-100',
+                        bg: 'bg-warning-muted',
+                        border: 'border-warning-muted',
+                        hover: 'hover:bg-warning-muted',
+                        icon: <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />,
+                        textColor: 'text-warning-muted-foreground',
                       },
                       info: {
-                        bg: 'bg-blue-50 dark:bg-blue-900/20',
-                        border: 'border-blue-200 dark:border-blue-800',
-                        hover: 'hover:bg-blue-100 dark:hover:bg-blue-900/30',
-                        icon: <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-                        textColor: 'text-blue-900 dark:text-blue-100',
+                        bg: 'bg-info-muted',
+                        border: 'border-info-muted',
+                        hover: 'hover:bg-info-muted',
+                        icon: <Info className="w-4 h-4 text-info-muted-foreground" />,
+                        textColor: 'text-info-muted-foreground',
                       },
                     };
 
@@ -596,7 +596,7 @@ export default function VentasPage() {
                   })
                 ) : (
                   <div className="flex items-center justify-center py-8 text-muted-foreground">
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                    <CheckCircle className="w-5 h-5 mr-2 text-success" />
                     <span className="text-sm">Todo en orden - Sin alertas pendientes</span>
                   </div>
                 )}
@@ -648,9 +648,9 @@ export default function VentasPage() {
 
         {/* ML INSIGHTS TAB */}
         <TabsContent value="ml-insights" className="space-y-4">
-          <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900 dark:text-blue-100">
+          <Alert className="bg-info-muted border-info-muted">
+            <Sparkles className="h-4 w-4 text-info-muted-foreground" />
+            <AlertDescription className="text-info-muted-foreground">
               <strong>Machine Learning Activado:</strong> Estos insights se generan con modelos de IA entrenados con datos históricos de su empresa.
             </AlertDescription>
           </Alert>
@@ -659,7 +659,7 @@ export default function VentasPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+                <TrendingUp className="w-5 h-5 text-info-muted-foreground" />
                 Pronóstico de Demanda (Próximo Mes)
               </CardTitle>
               <CardDescription>
@@ -676,9 +676,9 @@ export default function VentasPage() {
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {data?.mlInsights.demandForecast.trend === 'up' ? (
-                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        <TrendingUp className="w-4 h-4 text-success" />
                       ) : data?.mlInsights.demandForecast.trend === 'down' ? (
-                        <TrendingDown className="w-4 h-4 text-red-600" />
+                        <TrendingDown className="w-4 h-4 text-destructive" />
                       ) : null}
                       <span className="text-sm text-muted-foreground">
                         Tendencia: {data?.mlInsights.demandForecast.trend === 'up' ? 'Creciente' : data?.mlInsights.demandForecast.trend === 'down' ? 'Decreciente' : 'Estable'}
@@ -744,7 +744,7 @@ export default function VentasPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-5 h-5 text-red-600" />
+                <Shield className="w-5 h-5 text-destructive" />
                 Análisis de Riesgo Crediticio
               </CardTitle>
               <CardDescription>
@@ -753,19 +753,19 @@ export default function VentasPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
+                <div className="p-4 rounded-lg bg-destructive/10">
                   <p className="text-sm text-muted-foreground">Clientes en Riesgo</p>
-                  <p className="text-3xl font-bold text-red-600">{data?.mlInsights.creditRisk.clientsAtRisk || 0}</p>
+                  <p className="text-3xl font-bold text-destructive">{data?.mlInsights.creditRisk.clientsAtRisk || 0}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                <div className="p-4 rounded-lg bg-warning-muted">
                   <p className="text-sm text-muted-foreground">Exposición Total</p>
-                  <p className="text-2xl font-bold text-orange-600">
+                  <p className="text-2xl font-bold text-warning-muted-foreground">
                     {formatCurrency(data?.mlInsights.creditRisk.totalExposure || 0)}
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div className="p-4 rounded-lg bg-success-muted">
                   <p className="text-sm text-muted-foreground">Score Promedio</p>
-                  <p className="text-3xl font-bold text-green-600">
+                  <p className="text-3xl font-bold text-success">
                     {data?.mlInsights.creditRisk.averageScore.toFixed(0)}
                   </p>
                 </div>
@@ -778,7 +778,7 @@ export default function VentasPage() {
                     data.mlInsights.creditRisk.topRisks.map((risk) => (
                       <div
                         key={risk.clientId}
-                        className="flex items-center justify-between p-3 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 cursor-pointer transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg border border-destructive/30 bg-destructive/10 hover:bg-destructive/10 cursor-pointer transition-colors"
                         onClick={() => router.push(`/administracion/ventas/clientes/${risk.clientId}`)}
                       >
                         <div>
@@ -791,7 +791,7 @@ export default function VentasPage() {
                           <Badge variant={risk.rating === 'D' ? 'destructive' : 'secondary'}>
                             {risk.rating}
                           </Badge>
-                          <span className="text-sm font-bold text-red-600">{risk.score}</span>
+                          <span className="text-sm font-bold text-destructive">{risk.score}</span>
                         </div>
                       </div>
                     ))
@@ -807,7 +807,7 @@ export default function VentasPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-600" />
+                <AlertTriangle className="w-5 h-5 text-warning-muted-foreground" />
                 Predicción de Abandono de Clientes
               </CardTitle>
               <CardDescription>
@@ -816,13 +816,13 @@ export default function VentasPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                <div className="p-4 rounded-lg bg-warning-muted">
                   <p className="text-sm text-muted-foreground">Clientes en Riesgo de Pérdida</p>
-                  <p className="text-3xl font-bold text-orange-600">{data?.mlInsights.churnPrediction.clientsAtRisk || 0}</p>
+                  <p className="text-3xl font-bold text-warning-muted-foreground">{data?.mlInsights.churnPrediction.clientsAtRisk || 0}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
+                <div className="p-4 rounded-lg bg-destructive/10">
                   <p className="text-sm text-muted-foreground">Valor en Riesgo (LTV)</p>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-2xl font-bold text-destructive">
                     {formatCurrency(data?.mlInsights.churnPrediction.valueAtRisk || 0)}
                   </p>
                 </div>
@@ -835,7 +835,7 @@ export default function VentasPage() {
                     data.mlInsights.churnPrediction.topChurnRisks.map((churn) => (
                       <div
                         key={churn.clientId}
-                        className="flex items-center justify-between p-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 cursor-pointer transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg border border-warning-muted bg-warning-muted hover:bg-warning-muted cursor-pointer transition-colors"
                         onClick={() => router.push(`/administracion/ventas/clientes/${churn.clientId}`)}
                       >
                         <div>

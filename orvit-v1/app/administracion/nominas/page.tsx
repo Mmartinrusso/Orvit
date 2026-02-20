@@ -92,7 +92,7 @@ function KpiCard({
   return (
     <Card
       className={cn(
-        'min-h-[120px] rounded-lg border border-gray-300/90 shadow-sm bg-gradient-to-t from-black/5 via-gray-100/50 to-white dark:border-gray-600/90 dark:from-black/10 dark:via-gray-800/50 dark:to-gray-900',
+        'min-h-[120px] rounded-lg border border-border/90 shadow-sm bg-gradient-to-t from-black/5 via-gray-100/50 to-white dark:from-black/10 dark:via-gray-800/50 dark:to-gray-900',
         onClick && 'cursor-pointer hover:shadow-md transition-shadow',
         highlight && 'border-primary/50 bg-gradient-to-t from-primary/5 via-primary/5 to-white'
       )}
@@ -412,11 +412,11 @@ export default function NominasPage() {
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
                     <div className="text-[10px] text-muted-foreground mb-1">Descuentos</div>
-                    <div className="text-lg font-semibold text-red-600">-{formatCompact(nextPayment.breakdown.deductions)}</div>
+                    <div className="text-lg font-semibold text-destructive">-{formatCompact(nextPayment.breakdown.deductions)}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
                     <div className="text-[10px] text-muted-foreground mb-1">Adelantos</div>
-                    <div className="text-lg font-semibold text-orange-600">-{formatCompact(nextPayment.breakdown.advances)}</div>
+                    <div className="text-lg font-semibold text-warning-muted-foreground">-{formatCompact(nextPayment.breakdown.advances)}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-primary/10">
                     <div className="text-[10px] text-muted-foreground mb-1">Neto a Pagar</div>

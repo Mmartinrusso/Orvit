@@ -14,12 +14,15 @@ import { useEmployeeSalaries, EmployeeSalary, EmployeeSalaryForm } from '@/hooks
 import { useEmployeeCosts } from '@/hooks/use-employee-costs';
 import { Plus, Edit, Trash2, Eye, Users, DollarSign, Calendar, TrendingUp, Building2, Activity, BookOpen } from 'lucide-react';
 import { NotesDialog } from '@/components/ui/NotesDialog';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 interface EmployeeSalariesProps {
   selectedMonth: string;
 }
 
 export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProps) {
+  const confirm = useConfirm();
 
   const {
     salaries,
@@ -53,7 +56,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
   // Función para crear/actualizar sueldo
   const handleSubmitSalary = async () => {
     if (!salaryForm.employeeId || !salaryForm.grossSalary) {
-      alert('Empleado y salario bruto son requeridos');
+      toast.warning('Empleado y salario bruto son requeridos');
       return;
     }
 
@@ -79,7 +82,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
       setEditingSalary(null);
       setShowSalaryDialog(false);
     } catch (error) {
-      alert(`Error al ${editingSalary ? 'actualizar' : 'registrar'} sueldo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al ${editingSalary ? 'actualizar' : 'registrar'} sueldo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -98,12 +101,18 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
 
   // Función para eliminar sueldo
   const handleDeleteSalary = async (salaryId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este sueldo?')) return;
+    const ok = await confirm({
+      title: 'Eliminar sueldo',
+      description: '¿Estás seguro de que quieres eliminar este sueldo?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       await deleteSalary(salaryId);
     } catch (error) {
-      alert(`Error al eliminar sueldo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al eliminar sueldo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -173,7 +182,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-600">Error: {error}</div>
+        <div className="text-destructive">Error: {error}</div>
       </div>
     );
   }
@@ -199,7 +208,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-blue-600" />
+              <Users className="h-4 w-4 text-info-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Sueldos</p>
                 <p className="text-2xl font-bold">{totalSalaries}</p>
@@ -211,7 +220,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <DollarSign className="h-4 w-4 text-success" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Costo Total</p>
                 <p className="text-2xl font-bold">{formatCurrency(totalCost)}</p>
@@ -235,7 +244,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Building2 className="h-4 w-4 text-orange-600" />
+              <Building2 className="h-4 w-4 text-warning-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Empleados</p>
                 <p className="text-2xl font-bold">{uniqueEmployees}</p>
@@ -294,7 +303,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-right">
-                      <p className="text-lg font-bold text-green-600">
+                      <p className="text-lg font-bold text-success">
                         {formatCurrency(salary.totalCost)}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -313,7 +322,7 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteSalary(salary.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -352,8 +361,8 @@ export default function EmployeeSalaries({ selectedMonth }: EmployeeSalariesProp
                 </SelectContent>
               </Select>
             </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="bg-info-muted p-3 rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
                 <strong>Mes seleccionado:</strong> {selectedMonth}
               </p>
             </div>

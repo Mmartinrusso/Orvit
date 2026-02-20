@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -324,7 +325,7 @@ export function ProductImportDialog({
               categoryId = newCat.id;
             }
           } catch (e) {
-            console.log('Category creation failed, will use default');
+            // Category creation failed, will use default
           }
         }
 
@@ -403,7 +404,7 @@ export function ProductImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent size="xl" className="max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -414,7 +415,7 @@ export function ProductImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto">
+        <DialogBody>
           {/* Step: Upload */}
           {step === 'upload' && (
             <div className="space-y-6">
@@ -495,7 +496,7 @@ export function ProductImportDialog({
               {/* Summary */}
               <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <CheckCircle2 className="w-5 h-5 text-success" />
                   <span className="font-medium">{validCount} válidos</span>
                 </div>
                 {invalidCount > 0 && (
@@ -532,7 +533,7 @@ export function ProductImportDialog({
                         <TableCell className="font-mono text-sm">{row.rowIndex}</TableCell>
                         <TableCell>
                           {row.isValid ? (
-                            <Badge variant="default" className="bg-green-500">
+                            <Badge variant="default" className="bg-success">
                               <CheckCircle2 className="w-3 h-3 mr-1" />
                               OK
                             </Badge>
@@ -611,13 +612,11 @@ export function ProductImportDialog({
           {step === 'complete' && (
             <div className="space-y-6 py-8">
               <div className="text-center">
-                <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
-                  importResults.failed === 0 ? 'bg-green-500/10' : 'bg-orange-500/10'
-                }`}>
+                <div className={cn('w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center', importResults.failed === 0 ? 'bg-success/10' : 'bg-warning-muted')}>
                   {importResults.failed === 0 ? (
-                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                    <CheckCircle2 className="w-8 h-8 text-success" />
                   ) : (
-                    <AlertTriangle className="w-8 h-8 text-orange-500" />
+                    <AlertTriangle className="w-8 h-8 text-warning-muted-foreground" />
                   )}
                 </div>
                 <h4 className="text-lg font-medium mb-2">
@@ -632,7 +631,7 @@ export function ProductImportDialog({
               {/* Results Summary */}
               <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
                 <Card className="p-4 text-center">
-                  <CheckCircle2 className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                  <CheckCircle2 className="w-6 h-6 text-success mx-auto mb-2" />
                   <p className="text-2xl font-bold">{importResults.success}</p>
                   <p className="text-xs text-muted-foreground">Exitosos</p>
                 </Card>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,13 +127,14 @@ interface DiscordSector {
 }
 
 const CHANNEL_TYPES = [
-  { key: 'fallas', label: 'Fallas', icon: AlertCircle, color: 'text-red-500' },
-  { key: 'preventivos', label: 'Preventivos', icon: Wrench, color: 'text-blue-500' },
-  { key: 'ot', label: 'OT', icon: ClipboardList, color: 'text-amber-500' },
-  { key: 'general', label: 'General', icon: MessageSquare, color: 'text-green-500' },
+  { key: 'fallas', label: 'Fallas', icon: AlertCircle, color: 'text-destructive' },
+  { key: 'preventivos', label: 'Preventivos', icon: Wrench, color: 'text-info-muted-foreground' },
+  { key: 'ot', label: 'OT', icon: ClipboardList, color: 'text-warning-muted-foreground' },
+  { key: 'general', label: 'General', icon: MessageSquare, color: 'text-success' },
 ] as const;
 
 export default function ConfiguracionPage() {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const { currentCompany, updateCurrentCompany } = useCompany();
   const { toast } = useToast();
@@ -928,9 +930,13 @@ export default function ConfiguracionPage() {
 
   // Hacer todas las categorías de Discord privadas
   const makeAllCategoriesPrivate = async () => {
-    if (!confirm('¿Hacer privadas todas las categorías de sectores en Discord? Solo usuarios con acceso explícito podrán verlas.')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Hacer categorías privadas',
+      description: '¿Hacer privadas todas las categorías de sectores en Discord? Solo usuarios con acceso explícito podrán verlas.',
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
 
     setDiscordMakingPrivate(true);
     try {
@@ -962,9 +968,13 @@ export default function ConfiguracionPage() {
 
   // Re-sincronizar todos los accesos de Discord
   const resyncAllAccess = async () => {
-    if (!confirm('¿Re-sincronizar todos los accesos de Discord? Esto aplicará los permisos de ORVIT a Discord.')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Re-sincronizar accesos',
+      description: '¿Re-sincronizar todos los accesos de Discord? Esto aplicará los permisos de ORVIT a Discord.',
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
 
     setDiscordResyncing(true);
     try {
@@ -1176,11 +1186,11 @@ export default function ConfiguracionPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label className="flex items-center gap-2">
-                          <Sun className="h-4 w-4 text-yellow-500" />
+                          <Sun className="h-4 w-4 text-warning-muted-foreground" />
                           Logo Modo Claro
                         </Label>
                         <div className="flex items-center gap-4">
-                          <div className="h-16 w-16 bg-white border rounded-lg flex items-center justify-center overflow-hidden">
+                          <div className="h-16 w-16 bg-background border rounded-lg flex items-center justify-center overflow-hidden">
                             {companyData.logoLight || companyData.logo ? (
                               <img src={companyData.logoLight || companyData.logo} alt="Logo claro" className="h-full w-full object-contain p-2" />
                             ) : (
@@ -1208,15 +1218,15 @@ export default function ConfiguracionPage() {
 
                       <div className="space-y-3">
                         <Label className="flex items-center gap-2">
-                          <Moon className="h-4 w-4 text-blue-500" />
+                          <Moon className="h-4 w-4 text-info-muted-foreground" />
                           Logo Modo Oscuro
                         </Label>
                         <div className="flex items-center gap-4">
-                          <div className="h-16 w-16 bg-gray-900 border rounded-lg flex items-center justify-center overflow-hidden">
+                          <div className="h-16 w-16 bg-foreground border rounded-lg flex items-center justify-center overflow-hidden">
                             {companyData.logoDark || companyData.logo ? (
                               <img src={companyData.logoDark || companyData.logo} alt="Logo oscuro" className="h-full w-full object-contain p-2" />
                             ) : (
-                              <Building2 className="h-6 w-6 text-gray-500" />
+                              <Building2 className="h-6 w-6 text-muted-foreground" />
                             )}
                           </div>
                           <Button variant="outline" size="sm" disabled={isLogoDarkUploading} asChild>
@@ -1533,22 +1543,22 @@ export default function ConfiguracionPage() {
                                               {access.sector.name}
                                               {(!access.canViewFallas || !access.canViewPreventivos ||
                                                 !access.canViewOT || !access.canViewGeneral) && (
-                                                <span className="ml-1 text-amber-500">*</span>
+                                                <span className="ml-1 text-warning-muted-foreground">*</span>
                                               )}
                                             </Badge>
                                           </TooltipTrigger>
                                           <TooltipContent>
                                             <div className="text-xs space-y-1">
-                                              <div className={access.canViewFallas ? 'text-green-500' : 'text-red-500'}>
+                                              <div className={access.canViewFallas ? 'text-success' : 'text-destructive'}>
                                                 {access.canViewFallas ? '✓' : '✗'} Fallas
                                               </div>
-                                              <div className={access.canViewPreventivos ? 'text-green-500' : 'text-red-500'}>
+                                              <div className={access.canViewPreventivos ? 'text-success' : 'text-destructive'}>
                                                 {access.canViewPreventivos ? '✓' : '✗'} Preventivos
                                               </div>
-                                              <div className={access.canViewOT ? 'text-green-500' : 'text-red-500'}>
+                                              <div className={access.canViewOT ? 'text-success' : 'text-destructive'}>
                                                 {access.canViewOT ? '✓' : '✗'} OT
                                               </div>
-                                              <div className={access.canViewGeneral ? 'text-green-500' : 'text-red-500'}>
+                                              <div className={access.canViewGeneral ? 'text-success' : 'text-destructive'}>
                                                 {access.canViewGeneral ? '✓' : '✗'} General
                                               </div>
                                             </div>
@@ -1903,19 +1913,19 @@ export default function ConfiguracionPage() {
             <CardContent>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-success" />
                   Usa contraseñas únicas y seguras
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-success" />
                   No compartas tu información de acceso
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-success" />
                   Cierra sesión al terminar
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-success" />
                   Revisa regularmente tu actividad
                 </li>
               </ul>
@@ -1982,8 +1992,8 @@ export default function ConfiguracionPage() {
                     className={cn(
                       "rounded-lg border transition-colors",
                       hasAccess ? "bg-primary/5 border-primary/30" : "hover:bg-muted/50",
-                      isPendingAdd && "border-green-500/50 bg-green-500/5",
-                      isPendingRemove && "border-red-500/50 bg-red-500/5",
+                      isPendingAdd && "border-success-muted/50 bg-success/5",
+                      isPendingRemove && "border-destructive/30/50 bg-destructive/5",
                       !hasCategory && "opacity-50"
                     )}
                   >
@@ -2008,12 +2018,12 @@ export default function ConfiguracionPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {isPendingAdd && (
-                          <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                          <Badge variant="outline" className="text-success border-success text-xs">
                             Agregar
                           </Badge>
                         )}
                         {isPendingRemove && (
-                          <Badge variant="outline" className="text-red-600 border-red-600 text-xs">
+                          <Badge variant="outline" className="text-destructive border-destructive text-xs">
                             Quitar
                           </Badge>
                         )}

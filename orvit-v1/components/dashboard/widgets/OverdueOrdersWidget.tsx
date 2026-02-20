@@ -28,20 +28,20 @@ export function OverdueOrdersWidget({
   return (
     <WidgetWrapper
       title="Órdenes Vencidas"
-      icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
+      icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
       isLoading={isLoading}
       isError={isError}
       onRefresh={() => refetch()}
       onRemove={onRemove}
       isEditMode={isEditMode}
-      className={overdueOrders.length > 0 ? 'border-red-200' : ''}
+      className={overdueOrders.length > 0 ? 'border-destructive/30' : ''}
     >
       {overdueOrders.length > 0 ? (
         <div className="space-y-2">
           {overdueOrders.map((order: any) => (
             <div 
               key={order.id} 
-              className="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100"
+              className="flex items-center justify-between p-2 rounded-lg bg-destructive/10 border border-destructive/30"
             >
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-xs text-foreground truncate">
@@ -59,8 +59,8 @@ export function OverdueOrdersWidget({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-full py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
-            <AlertTriangle className="h-6 w-6 text-green-500" />
+          <div className="w-12 h-12 rounded-full bg-success-muted flex items-center justify-center mb-3">
+            <AlertTriangle className="h-6 w-6 text-success" />
           </div>
           <p className="text-xs text-muted-foreground">No hay órdenes vencidas</p>
         </div>

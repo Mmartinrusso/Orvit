@@ -258,10 +258,10 @@ export function InvoicesDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Total Cobrado</CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <CheckCircle2 className="w-4 h-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {formatCurrency(data.totalCobrado)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -274,10 +274,10 @@ export function InvoicesDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Saldo Pendiente</CardTitle>
-            <Clock className="w-4 h-4 text-yellow-600" />
+            <Clock className="w-4 h-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-warning-muted-foreground">
               {formatCurrency(data.saldoPendiente)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -290,10 +290,10 @@ export function InvoicesDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Facturas Vencidas</CardTitle>
-            <AlertCircle className="w-4 h-4 text-red-600" />
+            <AlertCircle className="w-4 h-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatCurrency(data.montoVencido)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">

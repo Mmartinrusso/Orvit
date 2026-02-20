@@ -443,10 +443,10 @@ function AddCompanyDialog({ onCompanyCreated }: { onCompanyCreated: () => void }
             </div>
           </div>
           {error && (
-            <div className="mb-2 p-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900 rounded-lg">{error}</div>
+            <div className="mb-2 p-2 text-sm text-destructive bg-destructive/10 rounded-lg">{error}</div>
           )}
           {success && (
-            <div className="mb-2 p-2 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900 rounded-lg">{success}</div>
+            <div className="mb-2 p-2 text-sm text-success bg-success-muted rounded-lg">{success}</div>
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={loading}>

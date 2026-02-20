@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { useWorkOrdersDashboard } from '@/hooks/use-work-orders-dashboard';
 import { Hash, AlertTriangle, CheckCircle, Wrench, Loader2 } from 'lucide-react';
 
@@ -26,29 +27,29 @@ export function KpiStatWidget({ widgetId, companyId, sectorId }: KpiStatWidgetPr
       value: stats?.total || 0,
       label: 'Total',
       icon: <Hash className="h-5 w-5" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-info-muted-foreground',
+      bgColor: 'bg-info-muted',
     },
     'kpi-overdue': {
       value: stats?.overdue || 0,
       label: 'Vencidas',
       icon: <AlertTriangle className="h-5 w-5" />,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
+      color: 'text-destructive',
+      bgColor: 'bg-destructive/10',
     },
     'kpi-completed': {
       value: stats?.completedThisMonth || 0,
       label: 'Completadas',
       icon: <CheckCircle className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-success',
+      bgColor: 'bg-success-muted',
     },
     'kpi-in-progress': {
       value: stats?.inProgress || 0,
       label: 'En Progreso',
       icon: <Wrench className="h-5 w-5" />,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
+      color: 'text-warning-muted-foreground',
+      bgColor: 'bg-warning-muted',
     },
   };
 
@@ -63,10 +64,10 @@ export function KpiStatWidget({ widgetId, companyId, sectorId }: KpiStatWidgetPr
   }
 
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg ${kpi.bgColor}`}>
+    <div className={cn('flex items-center gap-3 p-3 rounded-lg', kpi.bgColor)}>
       <div className={kpi.color}>{kpi.icon}</div>
       <div>
-        <div className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</div>
+        <div className={cn('text-2xl font-bold', kpi.color)}>{kpi.value}</div>
         <div className="text-xs text-muted-foreground">{kpi.label}</div>
       </div>
     </div>

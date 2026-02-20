@@ -173,7 +173,7 @@ export function SortableWidget({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50"
+                className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={onRemove}
               >
                 <X className="h-3 w-3" />

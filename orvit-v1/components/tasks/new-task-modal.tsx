@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CalendarIcon, Plus, X } from "lucide-react";
+import { CalendarIcon, Plus, X, Layers, Loader2 } from "lucide-react";
+import { useCompany } from "@/contexts/CompanyContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -42,13 +44,16 @@ interface NewTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTaskCreated?: (task: any) => void;
+  defaultGroupId?: number | null;
 }
 
-export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalProps) {
+export function NewTaskModal({ isOpen, onClose, onTaskCreated, defaultGroupId }: NewTaskModalProps) {
   const { createTask } = useTaskStore();
   const { toast } = useToast();
-  
+  const { currentCompany } = useCompany();
+
   const [title, setTitle] = useState("");
+  const [groupId, setGroupId] = useState<number | null>(defaultGroupId ?? null);
   const [description, setDescription] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [priority, setPriority] = useState("media");
@@ -67,16 +72,31 @@ export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalPro
     dueDate?: string;
   }>({});
   
+  const { data: groups = [] } = useQuery<any[]>({
+    queryKey: ['task-groups', currentCompany?.id],
+    queryFn: async () => {
+      if (!currentCompany?.id) return [];
+      const res = await fetch(`/api/task-groups?companyId=${currentCompany.id}`, {
+        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.data || [];
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 30 * 1000,
+  });
+
   useEffect(() => {
     if (isOpen) {
+      setGroupId(defaultGroupId ?? null);
       const loadUsers = async () => {
         try {
           setLoadingUsers(true);
           
           // Obtener token del localStorage
           const token = localStorage.getItem('token') || 'mock-token';
-          
-          // console.log('🔍 Cargando usuarios para el selector...') // Log reducido;
           
           const response = await fetch('/api/users', {
             headers: {
@@ -146,6 +166,7 @@ export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalPro
         assignedToId: assignedTo,
         priority,
         dueDate: dueDate.toISOString(),
+        groupId: groupId ?? undefined,
         tags,
         subtasks,
         attachments,
@@ -187,6 +208,7 @@ export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalPro
     setAssignedTo("");
     setPriority("media");
     setDueDate(undefined);
+    setGroupId(defaultGroupId ?? null);
     setTag("");
     setTags([]);
     setSubtask("");
@@ -232,7 +254,7 @@ export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalPro
         onClose();
       }
     }}>
-      <DialogContent size="md" className="flex flex-col">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Nueva Tarea</DialogTitle>
         </DialogHeader>
@@ -362,6 +384,37 @@ export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalPro
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {groups.length > 0 && (
+                    <div>
+                      <Label className="flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                        Grupo (opcional)
+                      </Label>
+                      <Select
+                        value={groupId?.toString() ?? 'none'}
+                        onValueChange={(v) => setGroupId(v === 'none' ? null : parseInt(v))}
+                      >
+                        <SelectTrigger className="hover:border-primary/50 transition-colors">
+                          <SelectValue placeholder="Sin grupo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin grupo</SelectItem>
+                          {groups.map((g: any) => (
+                            <SelectItem key={g.id} value={g.id.toString()}>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: g.color }}
+                                />
+                                {g.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -517,7 +570,7 @@ export function NewTaskModal({ isOpen, onClose, onTaskCreated }: NewTaskModalPro
           >
             {creating ? (
               <>
-                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Creando...
               </>
             ) : (

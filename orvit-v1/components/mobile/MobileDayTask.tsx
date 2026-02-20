@@ -49,24 +49,24 @@ interface MobileDayTaskProps {
 }
 
 const typeConfig = {
-  task: { label: 'Tarea', icon: ClipboardCheck, color: 'bg-blue-500' },
-  fixed_task: { label: 'Tarea Fija', icon: Clock, color: 'bg-purple-500' },
-  work_order: { label: 'OT', icon: Wrench, color: 'bg-green-500' },
-  checklist: { label: 'Checklist', icon: ClipboardCheck, color: 'bg-amber-500' },
+  task: { label: 'Tarea', icon: ClipboardCheck, color: 'bg-primary' },
+  fixed_task: { label: 'Tarea Fija', icon: Clock, color: 'bg-muted-foreground' },
+  work_order: { label: 'OT', icon: Wrench, color: 'bg-success' },
+  checklist: { label: 'Checklist', icon: ClipboardCheck, color: 'bg-warning-muted-foreground' },
 };
 
 const priorityConfig = {
-  low: { label: 'Baja', color: 'bg-gray-100 text-gray-700' },
-  medium: { label: 'Media', color: 'bg-blue-100 text-blue-700' },
-  high: { label: 'Alta', color: 'bg-orange-100 text-orange-700' },
-  urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700' },
+  low: { label: 'Baja', color: 'bg-muted text-foreground' },
+  medium: { label: 'Media', color: 'bg-info-muted text-info-muted-foreground' },
+  high: { label: 'Alta', color: 'bg-warning-muted text-warning-muted-foreground' },
+  urgent: { label: 'Urgente', color: 'bg-destructive/10 text-destructive' },
 };
 
 const statusConfig = {
-  pending: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700' },
-  approved: { label: 'Aprobada', color: 'bg-blue-100 text-blue-700' },
-  in_progress: { label: 'En Progreso', color: 'bg-amber-100 text-amber-700' },
-  completed: { label: 'Completada', color: 'bg-green-100 text-green-700' },
+  pending: { label: 'Pendiente', color: 'bg-muted text-foreground' },
+  approved: { label: 'Aprobada', color: 'bg-info-muted text-info-muted-foreground' },
+  in_progress: { label: 'En Progreso', color: 'bg-warning-muted text-warning-muted-foreground' },
+  completed: { label: 'Completada', color: 'bg-success-muted text-success-muted-foreground' },
 };
 
 export function MobileDayTask({
@@ -84,7 +84,7 @@ export function MobileDayTask({
     <Card
       className={cn(
         'transition-all active:scale-[0.98] cursor-pointer',
-        isInProgress && 'ring-2 ring-amber-500 bg-amber-50/50',
+        isInProgress && 'ring-2 ring-warning-muted-foreground bg-warning-muted/50',
         isCompleted && 'opacity-60'
       )}
       onClick={() => onViewDetails?.(task)}
@@ -93,7 +93,7 @@ export function MobileDayTask({
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className={cn('p-1.5 rounded', typeConfig[task.type]?.color || 'bg-gray-500')}>
+            <div className={cn('p-1.5 rounded', typeConfig[task.type]?.color || 'bg-muted-foreground')}>
               <TypeIcon className="h-4 w-4 text-white" />
             </div>
             <div className="min-w-0 flex-1">
@@ -118,13 +118,13 @@ export function MobileDayTask({
             {statusConfig[task.status as keyof typeof statusConfig]?.label}
           </Badge>
           {task.requiresLOTO && (
-            <Badge variant="outline" className="bg-red-100 text-red-700">
+            <Badge variant="outline" className="bg-destructive/10 text-destructive">
               <Lock className="h-3 w-3 mr-1" />
               LOTO
             </Badge>
           )}
           {task.requiresPTW && (
-            <Badge variant="outline" className="bg-orange-100 text-orange-700">
+            <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground">
               <FileWarning className="h-3 w-3 mr-1" />
               PTW
             </Badge>
@@ -155,10 +155,10 @@ export function MobileDayTask({
 
         {/* Skill warnings */}
         {task.skillWarnings && task.skillWarnings.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded p-2 mb-3">
+          <div className="bg-warning-muted border border-warning-muted-foreground/20 rounded p-2 mb-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-800">
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-warning-muted-foreground">
                 <p className="font-medium">Advertencias de calificación:</p>
                 <ul className="list-disc list-inside mt-1">
                   {task.skillWarnings.map((warning, i) => (
@@ -190,7 +190,7 @@ export function MobileDayTask({
               <Button
                 size="sm"
                 variant="default"
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
                 onClick={(e) => {
                   e.stopPropagation();
                   onComplete(task);

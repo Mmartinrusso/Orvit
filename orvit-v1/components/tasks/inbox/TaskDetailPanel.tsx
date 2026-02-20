@@ -14,6 +14,7 @@ import {
   RotateCcw,
   MessageCircle,
   Send,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,11 +87,11 @@ function PriorityBadge({ priority }: { priority: string }) {
     switch (priority.toLowerCase()) {
       case "alta":
       case "urgente":
-        return "text-red-500";
+        return "text-destructive";
       case "media":
-        return "text-yellow-500";
+        return "text-warning-muted-foreground";
       case "baja":
-        return "text-green-500";
+        return "text-success";
       default:
         return "text-muted-foreground";
     }
@@ -305,7 +306,7 @@ export function TaskDetailPanel({
                 <div className="flex-1 min-h-0 bg-muted/50 border-x-0 border-y border-border px-4 py-4 overflow-y-auto">
                   {loadingChat ? (
                     <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      <Loader2 className="h-6 w-6 animate-spin inline-block" />
                       <p className="text-sm text-muted-foreground mt-3">Cargando mensajes...</p>
                     </div>
                   ) : chatMessages.length === 0 ? (
@@ -323,22 +324,14 @@ export function TaskDetailPanel({
                         return (
                           <div 
                             key={message.id}
-                            className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                            className={cn('flex', isOwnMessage ? 'justify-end' : 'justify-start')}
                           >
-                            <div className={`max-w-[75%] px-3 py-2 rounded-lg ${
-                              isOwnMessage 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-card border border-border'
-                            }`}>
+                            <div className={cn('max-w-[75%] px-3 py-2 rounded-lg', isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-card border border-border')}>
                               <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`text-[11px] font-medium ${
-                                  isOwnMessage ? 'text-primary-foreground/80' : 'text-muted-foreground'
-                                }`}>
+                                <span className={cn('text-[11px] font-medium', isOwnMessage ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
                                   {message.userName}
                                 </span>
-                                <span className={`text-[11px] ${
-                                  isOwnMessage ? 'text-primary-foreground/60' : 'text-muted-foreground/60'
-                                }`}>
+                                <span className={cn('text-[11px]', isOwnMessage ? 'text-primary-foreground/60' : 'text-muted-foreground/60')}>
                                   {format(new Date(message.createdAt), "HH:mm", { locale: es })}
                                 </span>
                               </div>

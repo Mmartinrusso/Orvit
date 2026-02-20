@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,22 +30,22 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
   const getPerformanceIcon = (performance: string) => {
     switch (performance) {
       case 'positivo':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
+        return <TrendingUp className="h-4 w-4 text-success" />;
       case 'negativo':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
+        return <TrendingDown className="h-4 w-4 text-destructive" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-500" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getPerformanceColor = (performance: string) => {
     switch (performance) {
       case 'positivo':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return 'bg-success-muted text-success border-success-muted';
       case 'negativo':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/30';
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -54,11 +55,11 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
   };
 
   const handleExport = (category: CategoryCard) => {
-    console.log('Exportar datos de:', category.name);
+    // TODO: Implement export
   };
 
   const handleCreateTask = (category: CategoryCard) => {
-    console.log('Crear tarea para:', category.name);
+    // TODO: Implement create task
   };
 
   const gridCols = compact ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
@@ -66,25 +67,25 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
   return (
     <div className="space-y-6">
       {/* Grid de categorías */}
-      <div className={`grid gap-4 ${gridCols}`}>
+      <div className={cn('grid gap-4', gridCols)}>
         {categories.map((category, index) => (
           <Card
             key={index}
-            className="group relative overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+            className="group relative overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
             onClick={() => handleCategoryClick(category)}
           >
             {/* Fondo con gradiente sutil */}
-            <div className={`absolute inset-0 ${
-              category.performance === 'positivo' 
-                ? 'bg-green-50' 
-                : category.performance === 'negativo' 
-                ? 'bg-red-50' 
-                : 'bg-gray-50'
-            }`}></div>
+            <div className={cn('absolute inset-0',
+              category.performance === 'positivo'
+                ? 'bg-success-muted'
+                : category.performance === 'negativo'
+                ? 'bg-destructive/10'
+                : 'bg-muted'
+            )}></div>
             
-            <CardHeader className={`relative ${compact ? 'pb-2' : 'pb-3'}`}>
+            <CardHeader className={cn('relative', compact ? 'pb-2' : 'pb-3')}>
               <div className="flex items-center justify-between">
-                <CardTitle className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-base'}`}>
+                <CardTitle className={cn('font-semibold text-foreground', compact ? 'text-sm' : 'text-base')}>
                   {category.name}
                 </CardTitle>
                 
@@ -92,7 +93,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                   {getPerformanceIcon(category.performance)}
                   <Badge 
                     variant="secondary" 
-                    className={`text-xs ${getPerformanceColor(category.performance)}`}
+                    className={cn('text-xs', getPerformanceColor(category.performance))}
                   >
                     {category.performance === 'positivo' ? '↗' : category.performance === 'negativo' ? '↘' : '→'} {Math.abs(category.changePct).toFixed(1)}%
                   </Badge>
@@ -100,13 +101,13 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
               </div>
             </CardHeader>
 
-            <CardContent className={`relative space-y-3 ${compact ? 'pt-0' : 'pt-0'}`}>
+            <CardContent className={cn('relative space-y-3', compact ? 'pt-0' : 'pt-0')}>
               {/* Valor principal */}
               <div>
-                <p className={`font-bold text-gray-900 ${compact ? 'text-xl' : 'text-2xl'}`}>
+                <p className={cn('font-bold text-foreground', compact ? 'text-xl' : 'text-2xl')}>
                   {formatCurrency(category.total)}
                 </p>
-                <p className={`text-gray-600 ${compact ? 'text-xs' : 'text-sm'}`}>
+                <p className={cn('text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>
                   Promedio: {formatCurrency(category.avg)}
                 </p>
               </div>
@@ -114,14 +115,14 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
               {/* Cambio del período */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`text-gray-600 ${compact ? 'text-xs' : 'text-sm'}`}>
+                  <span className={cn('text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>
                     Cambio:
                   </span>
-                  <span className={`${getTrendColor(category.changePct)} ${compact ? 'text-sm' : 'text-sm'}`}>
+                  <span className={cn(getTrendColor(category.changePct), compact ? 'text-sm' : 'text-sm')}>
                     {category.change >= 0 ? '+' : ''}{formatCurrency(category.change)}
                   </span>
                 </div>
-                <span className={`${getTrendColor(category.changePct)} ${compact ? 'text-xs' : 'text-sm'}`}>
+                <span className={cn(getTrendColor(category.changePct), compact ? 'text-xs' : 'text-sm')}>
                   {formatPercentage(category.changePct)}
                 </span>
               </div>
@@ -129,15 +130,15 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
               {/* Share y contribución */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`text-gray-600 ${compact ? 'text-xs' : 'text-sm'}`}>
+                  <span className={cn('text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>
                     Share:
                   </span>
-                  <span className={`text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}>
+                  <span className={cn('text-foreground', compact ? 'text-xs' : 'text-sm')}>
                     {category.sharePct.toFixed(1)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className={`text-xs ${category.shareDeltaPct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={cn('text-xs', category.shareDeltaPct >= 0 ? 'text-success' : 'text-destructive')}>
                     {category.shareDeltaPct >= 0 ? '+' : ''}{category.shareDeltaPct.toFixed(1)}%
                   </span>
                 </div>
@@ -145,15 +146,15 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
 
               {/* Barra de progreso del cambio */}
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-gray-600">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Progreso del cambio</span>
                   <span>{Math.abs(category.changePct).toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full transition-all duration-500 ${
-                      category.changePct >= 0 ? 'bg-green-500' : 'bg-red-500'
-                    }`}
+                    className={cn('h-2 rounded-full transition-all duration-500',
+                      category.changePct >= 0 ? 'bg-success' : 'bg-destructive'
+                    )}
                     style={{ 
                       width: `${Math.min(Math.abs(category.changePct) * 10, 100)}%` 
                     }}
@@ -162,7 +163,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
               </div>
 
               {/* Sparkline */}
-              <div className={`${compact ? 'h-8' : 'h-12'} w-full`}>
+              <div className={cn(compact ? 'h-8' : 'h-12', 'w-full')}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={category.spark}>
                     <Line
@@ -181,7 +182,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-white border border-gray-300 rounded-lg p-2 text-xs text-gray-900 shadow-lg">
+                            <div className="bg-card border border-border rounded-lg p-2 text-xs text-foreground shadow-lg">
                               <p>Valor: {formatCurrency(data.value)}</p>
                             </div>
                           );
@@ -194,7 +195,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
               </div>
 
               {/* Acciones */}
-              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between pt-2 border-t border-border">
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
@@ -203,7 +204,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                       e.stopPropagation();
                       handleExport(category);
                     }}
-                    className="h-6 px-2 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                    className="h-6 px-2 text-xs bg-background border-border text-foreground hover:bg-accent"
                   >
                     <Download className="h-3 w-3 mr-1" />
                     Export
@@ -215,7 +216,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                       e.stopPropagation();
                       handleCreateTask(category);
                     }}
-                    className="h-6 px-2 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                    className="h-6 px-2 text-xs bg-background border-border text-foreground hover:bg-accent"
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     Tarea
@@ -229,7 +230,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                     e.stopPropagation();
                     handleCategoryClick(category);
                   }}
-                  className="h-6 px-2 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="h-6 px-2 text-xs bg-background border-border text-foreground hover:bg-accent"
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Ver
@@ -243,16 +244,16 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
       {/* Modal de detalle (placeholder) */}
       {selectedCategory && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-foreground">
                 Detalle de {selectedCategory.name}
               </h3>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedCategory(null)}
-                className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="bg-background border-border text-foreground hover:bg-accent"
               >
                 ✕
               </Button>
@@ -260,22 +261,22 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
             
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-lg font-bold text-gray-900">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <p className="text-lg font-bold text-foreground">
                     {formatCurrency(selectedCategory.total)}
                   </p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Promedio</p>
-                  <p className="text-lg font-bold text-gray-900">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Promedio</p>
+                  <p className="text-lg font-bold text-foreground">
                     {formatCurrency(selectedCategory.avg)}
                   </p>
                 </div>
               </div>
               
               <div className="h-64">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Tendencia 12 meses</h4>
+                <h4 className="text-sm font-medium text-foreground mb-2">Tendencia 12 meses</h4>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={selectedCategory.spark}>
                     <Line
@@ -290,7 +291,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-white border border-gray-300 rounded-lg p-2 text-xs text-gray-900 shadow-lg">
+                            <div className="bg-card border border-border rounded-lg p-2 text-xs text-foreground shadow-lg">
                               <p>Valor: {formatCurrency(data.value)}</p>
                             </div>
                           );

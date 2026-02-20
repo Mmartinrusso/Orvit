@@ -15,6 +15,7 @@ import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -237,7 +238,7 @@ export function DeliveryEvidenceViewer({ delivery, evidences = [] }: DeliveryEvi
 
       {/* Image Lightbox Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Vista Ampliada</DialogTitle>
           </DialogHeader>

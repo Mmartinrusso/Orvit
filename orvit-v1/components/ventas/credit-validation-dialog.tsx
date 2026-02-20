@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -147,13 +149,13 @@ export function CreditValidationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {canProceed ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <CheckCircle className="w-5 h-5 text-success" />
             ) : (
-              <XCircle className="w-5 h-5 text-red-600" />
+              <XCircle className="w-5 h-5 text-destructive" />
             )}
             Validacion de Credito
           </DialogTitle>
@@ -163,7 +165,7 @@ export function CreditValidationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {/* Errors */}
           {errors.length > 0 && (
             <Alert variant="destructive">
@@ -181,10 +183,10 @@ export function CreditValidationDialog({
 
           {/* Warnings */}
           {warnings.length > 0 && (
-            <Alert variant="default" className="border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertTitle className="text-yellow-800 dark:text-yellow-200">Advertencias</AlertTitle>
-              <AlertDescription className="text-yellow-700 dark:text-yellow-300">
+            <Alert variant="default" className="border-warning-muted bg-warning-muted">
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
+              <AlertTitle className="text-warning-muted-foreground">Advertencias</AlertTitle>
+              <AlertDescription className="text-warning-muted-foreground">
                 <ul className="list-disc list-inside mt-2">
                   {warnings.map((warning, i) => (
                     <li key={i}>{warning}</li>
@@ -196,9 +198,9 @@ export function CreditValidationDialog({
 
           {/* Block Status */}
           {blockStatus.isBlocked && (
-            <Card className="border-red-500">
+            <Card className="border-destructive">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 text-red-600">
+                <CardTitle className="text-sm flex items-center gap-2 text-destructive">
                   <Ban className="w-4 h-4" />
                   Cliente Bloqueado
                 </CardTitle>
@@ -241,13 +243,13 @@ export function CreditValidationDialog({
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Disponible</p>
-                  <p className={`font-semibold ${creditStatus.available < orderAmount ? 'text-red-600' : 'text-green-600'}`}>
+                  <p className={cn('font-semibold', creditStatus.available < orderAmount ? 'text-destructive' : 'text-success')}>
                     {formatCurrency(creditStatus.available)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Utilizacion</p>
-                  <p className={`font-semibold ${creditStatus.utilizationPercent >= 80 ? 'text-yellow-600' : ''} ${creditStatus.utilizationPercent >= 100 ? 'text-red-600' : ''}`}>
+                  <p className={cn('font-semibold', creditStatus.utilizationPercent >= 80 && 'text-warning-muted-foreground', creditStatus.utilizationPercent >= 100 && 'text-destructive')}>
                     {creditStatus.utilizationPercent.toFixed(1)}%
                   </p>
                 </div>
@@ -258,7 +260,7 @@ export function CreditValidationDialog({
                     <strong>Monto de la orden:</strong> {formatCurrency(orderAmount)}
                   </p>
                   {creditStatus.available < orderAmount && (
-                    <p className="text-sm text-red-600">
+                    <p className="text-sm text-destructive">
                       <strong>Excede en:</strong> {formatCurrency(orderAmount - creditStatus.available)}
                     </p>
                   )}
@@ -266,7 +268,7 @@ export function CreditValidationDialog({
               )}
               {creditStatus.needsReconciliation && (
                 <div className="mt-3 pt-3 border-t">
-                  <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                  <Badge variant="outline" className="text-warning-muted-foreground border-warning-muted">
                     Requiere reconciliacion
                   </Badge>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -279,9 +281,9 @@ export function CreditValidationDialog({
 
           {/* Overdue Invoices */}
           {overdueStatus.hasOverdue && (
-            <Card className="border-yellow-500">
+            <Card className="border-warning-muted">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 text-yellow-600">
+                <CardTitle className="text-sm flex items-center gap-2 text-warning-muted-foreground">
                   <Clock className="w-4 h-4" />
                   Facturas Vencidas ({overdueStatus.overdueInvoices.length})
                 </CardTitle>
@@ -290,7 +292,7 @@ export function CreditValidationDialog({
                 <div className="mb-3">
                   <p className="text-sm">
                     <strong>Total vencido:</strong>{' '}
-                    <span className="text-red-600">{formatCurrency(overdueStatus.overdueAmount)}</span>
+                    <span className="text-destructive">{formatCurrency(overdueStatus.overdueAmount)}</span>
                   </p>
                   <p className="text-sm">
                     <strong>Mas antigua:</strong> {overdueStatus.oldestOverdueDays} dias de mora
@@ -354,7 +356,7 @@ export function CreditValidationDialog({
 
           {/* Check Portfolio */}
           {checkStatus.cantidadCheques > 0 && (
-            <Card className={checkStatus.excedeLimite ? 'border-yellow-500' : ''}>
+            <Card className={checkStatus.excedeLimite ? 'border-warning-muted' : ''}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Cartera de Cheques</CardTitle>
               </CardHeader>
@@ -368,7 +370,7 @@ export function CreditValidationDialog({
                   {checkStatus.limiteCheques && (
                     <div>
                       <p className="text-xs text-muted-foreground">Limite</p>
-                      <p className={`font-semibold ${checkStatus.excedeLimite ? 'text-yellow-600' : ''}`}>
+                      <p className={cn('font-semibold', checkStatus.excedeLimite && 'text-warning-muted-foreground')}>
                         {formatCurrency(checkStatus.limiteCheques)}
                       </p>
                     </div>
@@ -384,7 +386,7 @@ export function CreditValidationDialog({
               </CardContent>
             </Card>
           )}
-        </div>
+        </DialogBody>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={onCancel}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,8 +12,8 @@ import { Input } from '@/components/ui/input';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { 
-  CheckCircle, 
+import {
+  CheckCircle,
   Play,
   Camera,
   Upload,
@@ -20,7 +21,8 @@ import {
   Cog,
   CheckCircle2,
   Search,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react';
 import { useMachinesInitial } from '@/hooks/use-machines-initial';
 
@@ -293,7 +295,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
-            <CheckCircle className="h-6 w-6 text-green-600" />
+            <CheckCircle className="h-6 w-6 text-success" />
             Reactivar Planta - {currentSector?.name}
           </DialogTitle>
           <p className="text-muted-foreground">
@@ -303,12 +305,12 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
 
         <DialogBody>
         <div className="space-y-6">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div className="bg-warning-muted border border-border rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-              <span className="font-semibold text-yellow-800 dark:text-yellow-200">Sector en Parada</span>
+              <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
+              <span className="font-semibold text-warning-muted-foreground">Sector en Parada</span>
             </div>
-            <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+            <p className="text-warning-muted-foreground text-sm">
               Documenta qué se reparó y cómo se solucionó el problema para el historial de mantenimiento.
             </p>
           </div>
@@ -339,22 +341,18 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
               {machines.map((machine) => (
                 <Card 
                   key={machine.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                    formData.machineId === machine.id.toString() 
-                      ? 'ring-2 ring-blue-500 shadow-lg' 
-                      : 'hover:shadow-md'
-                  }`}
+                  className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.machineId === machine.id.toString() ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                   onClick={() => handleMachineSelect(machine.id.toString())}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-3">
-                      <Cog className="h-6 w-6 text-blue-600" />
+                      <Cog className="h-6 w-6 text-primary" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold truncate">{machine.name}</h4>
-                        <p className="text-sm text-gray-500 truncate">{machine.nickname || 'Sin apodo'}</p>
+                        <p className="text-sm text-muted-foreground truncate">{machine.nickname || 'Sin apodo'}</p>
                       </div>
                       {formData.machineId === machine.id.toString() && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
                       )}
                     </div>
                   </CardContent>
@@ -373,11 +371,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                 {components.map((component) => (
                   <Card 
                     key={component.id}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                      formData.componentId === component.id.toString() 
-                        ? 'ring-2 ring-blue-500 shadow-lg' 
-                        : 'hover:shadow-md'
-                    }`}
+                    className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.componentId === component.id.toString() ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                     onClick={() => setFormData(prev => ({ 
                       ...prev, 
                       componentId: component.id.toString(),
@@ -388,12 +382,12 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-semibold">{component.name}</h4>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {component.subcomponents?.length || 0} subcomponentes
                           </p>
                         </div>
                         {formData.componentId === component.id.toString() && (
-                          <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
                         )}
                       </div>
                     </CardContent>
@@ -415,11 +409,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                   ?.subcomponents?.map((subcomponent: any) => (
                     <Card 
                       key={subcomponent.id}
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                        formData.subcomponentId === subcomponent.id.toString() 
-                          ? 'ring-2 ring-blue-500 shadow-lg' 
-                          : 'hover:shadow-md'
-                      }`}
+                      className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', formData.subcomponentId === subcomponent.id.toString() ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md')}
                       onClick={() => setFormData(prev => ({ 
                         ...prev, 
                         subcomponentId: subcomponent.id.toString() 
@@ -429,7 +419,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{subcomponent.name}</span>
                           {formData.subcomponentId === subcomponent.id.toString() && (
-                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
                           )}
                         </div>
                       </CardContent>
@@ -448,23 +438,19 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
               <p className="text-sm text-muted-foreground mb-2">
                 Estos productos fueron solicitados durante la parada y están pre-seleccionados. Desmarca los que NO utilizaste.
               </p>
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
-                <p className="text-green-700 dark:text-green-300 text-sm font-medium">
+              <div className="bg-success-muted border border-border rounded-lg p-3 mb-4">
+                <p className="text-success-muted-foreground text-sm font-medium">
                   Productos pre-seleccionados automáticamente. Puedes desmarcar los que no utilizaste.
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border dark:border-blue-800">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto bg-info-muted p-4 rounded-lg border">
                 {requestedTools.map((tool, index) => {
                   const isSelected = formData.requestedToolsUsed.includes(tool.toolName);
                   return (
                     <Card 
                       key={index}
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-l-4 ${
-                        isSelected 
-                          ? 'ring-2 ring-green-500 shadow-lg border-l-green-500 bg-green-50 dark:bg-green-900/30' 
-                          : 'hover:shadow-md border-l-blue-500 bg-white dark:bg-gray-800'
-                      }`}
+                      className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg border-l-4', isSelected ? 'ring-2 ring-success shadow-lg border-l-success bg-success-muted' : 'hover:shadow-md border-l-primary bg-card')}
                       onClick={() => {
                         setFormData(prev => ({
                           ...prev,
@@ -491,7 +477,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                             </p>
                           </div>
                           {isSelected && (
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <CheckCircle2 className="h-5 w-5 text-success" />
                           )}
                         </div>
                       </CardContent>
@@ -501,8 +487,8 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
               </div>
 
               {formData.requestedToolsUsed.length > 0 && (
-                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border dark:border-green-800 rounded-lg">
-                  <h4 className="font-semibold text-sm text-green-900 dark:text-green-100 mb-2">
+                <div className="mt-4 p-3 bg-success-muted border rounded-lg">
+                  <h4 className="font-semibold text-sm text-success-muted-foreground mb-2">
                     Productos Solicitados Utilizados ({formData.requestedToolsUsed.length}):
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -512,7 +498,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                         <Badge 
                           key={index} 
                           variant="secondary" 
-                          className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100"
+                          className="bg-success-muted text-success-muted-foreground"
                         >
                           {toolName} (x{tool?.quantity || 1})
                         </Badge>
@@ -534,18 +520,18 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
             </p>
 
             {availableTools.length === 0 ? (
-              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="mt-3 p-3 bg-info-muted border rounded-lg">
                 <div className="flex items-start gap-2">
-                  <div className="text-blue-600 dark:text-blue-400 mt-0.5">
+                  <div className="text-info-muted-foreground mt-0.5">
                     <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    <p className="text-sm font-medium text-info-muted-foreground">
                       No hay productos adicionales registrados
                     </p>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    <p className="text-sm text-info-muted-foreground mt-1">
                       Solo aparecerán aquí productos del pañol que no fueron solicitados durante la parada. 
                       Los productos ya solicitados se muestran en la sección superior.
                     </p>
@@ -556,11 +542,11 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
               <div className="space-y-6">
                 {/* Búsqueda Global */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <input
                     type="text"
                     placeholder="Buscar productos..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     onChange={(e) => fetchAvailableTools(e.target.value)}
                   />
                 </div>
@@ -569,11 +555,11 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                 {(() => {
                   const herramientas = availableTools.filter((tool: any) => tool.itemType === 'TOOL');
                   return herramientas.length > 0 && (
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                      <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+                    <div className="bg-info-muted border rounded-lg p-4">
+                      <h3 className="font-semibold text-info-muted-foreground mb-3 flex items-center gap-2">
                         Herramientas ({herramientas.length})
                       </h3>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                      <p className="text-xs text-info-muted-foreground mb-3">
                         Se prestan temporalmente y se devuelven al pañol
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -582,11 +568,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                           return (
                             <Card 
                               key={tool.id}
-                              className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                                isSelected 
-                                  ? 'ring-2 ring-blue-500 shadow-lg bg-blue-100 dark:bg-blue-800' 
-                                  : 'hover:shadow-md bg-white dark:bg-gray-800'
-                              }`}
+                              className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', isSelected ? 'ring-2 ring-primary shadow-lg bg-primary/10' : 'hover:shadow-md bg-card')}
                               onClick={() => {
                                 setFormData(prev => ({
                                   ...prev,
@@ -603,7 +585,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                                     <span className="font-medium text-sm">{tool.name}</span>
                                   </div>
                                   {isSelected && (
-                                    <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                                    <CheckCircle2 className="h-4 w-4 text-primary" />
                                   )}
                                 </div>
                               </CardContent>
@@ -621,14 +603,14 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                   const selectedMachine = machines.find(m => m.id.toString() === formData.machineId);
                   
                   return repuestos.length > 0 && (
-                    <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                      <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+                    <div className="bg-muted border rounded-lg p-4">
+                      <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         Repuestos y Materiales ({repuestos.length})
                       </h3>
-                      <div className="flex flex-col gap-2 text-xs text-purple-700 dark:text-purple-300 mb-3">
+                      <div className="flex flex-col gap-2 text-xs text-muted-foreground mb-3">
                         <div>Se consumen en las máquinas y agotan el stock</div>
                         {selectedMachine && (
-                          <div className="bg-purple-100 dark:bg-purple-800/30 p-2 rounded">
+                          <div className="bg-muted p-2 rounded">
                             <strong>Máquina seleccionada:</strong> {selectedMachine.name}
                             <br />
                                                           Se muestran todos los repuestos. En el futuro se filtrarán por compatibilidad.
@@ -641,11 +623,7 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                           return (
                             <Card 
                               key={tool.id}
-                              className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                                isSelected 
-                                  ? 'ring-2 ring-purple-500 shadow-lg bg-purple-100 dark:bg-purple-800' 
-                                  : 'hover:shadow-md bg-white dark:bg-gray-800'
-                              }`}
+                              className={cn('cursor-pointer transition-all duration-200 hover:shadow-lg', isSelected ? 'ring-2 ring-primary shadow-lg bg-primary/10' : 'hover:shadow-md bg-card')}
                               onClick={() => {
                                 setFormData(prev => ({
                                   ...prev,
@@ -662,14 +640,14 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                                     <div>
                                       <div className="font-medium text-sm">{tool.name}</div>
                                       {tool.category && (
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="text-xs text-muted-foreground">
                                           {tool.category}
                                         </div>
                                       )}
                                     </div>
                                   </div>
                                   {isSelected && (
-                                    <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                                    <CheckCircle2 className="h-4 w-4 text-primary" />
                                   )}
                                 </div>
                               </CardContent>
@@ -684,8 +662,8 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
             )}
             
             {formData.selectedTools.length > 0 && (
-              <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border dark:border-green-800 rounded-lg">
-                <h4 className="font-semibold text-sm text-green-900 dark:text-green-100 mb-2">
+              <div className="mt-4 p-3 bg-success-muted border rounded-lg">
+                <h4 className="font-semibold text-sm text-success-muted-foreground mb-2">
                   Productos Adicionales Seleccionados ({formData.selectedTools.length}):
                 </h4>
                 <div className="flex flex-wrap gap-2">
@@ -693,10 +671,10 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
                     const tool = availableTools.find((t: any) => t.name === toolName);
                     const emoji = '';
                     return (
-                      <Badge 
-                        key={index} 
-                        variant="secondary" 
-                        className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 cursor-pointer hover:bg-green-200 dark:hover:bg-green-700"
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="bg-success-muted text-success-muted-foreground cursor-pointer hover:bg-success-muted/80"
                         onClick={() => {
                           setFormData(prev => ({
                             ...prev,
@@ -797,15 +775,11 @@ export default function PlantResumeDialog({ isOpen, onClose, plantStopId }: Plan
             size="sm"
             onClick={handleSubmit}
             disabled={!canSubmit || isLoading || uploadingImages}
-            className={`${
-              !canSubmit
-                ? 'bg-gray-400 cursor-not-allowed text-white opacity-50'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
+            className={cn(!canSubmit ? 'bg-muted cursor-not-allowed text-muted-foreground opacity-50' : 'bg-success hover:bg-success/90 text-white')}
           >
             {isLoading || uploadingImages ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {uploadingImages ? 'Subiendo fotos...' : 'Reactivando...'}
               </>
             ) : !canSubmit && requestedTools.length > 0 &&

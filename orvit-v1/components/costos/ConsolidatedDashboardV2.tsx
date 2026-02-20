@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -127,7 +128,7 @@ export function ConsolidatedDashboardV2({
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center text-red-500">
+          <div className="text-center text-destructive">
             Error al cargar datos. <Button variant="link" onClick={() => refetch()}>Reintentar</Button>
           </div>
         </CardContent>
@@ -210,7 +211,7 @@ export function ConsolidatedDashboardV2({
               onClick={handleRecalculate}
               disabled={recalculate.isPending || consolidation?.isClosed}
             >
-              <RefreshCw className={`h-4 w-4 mr-1 ${recalculate.isPending ? 'animate-spin' : ''}`} />
+              <RefreshCw className={cn('h-4 w-4 mr-1', recalculate.isPending && 'animate-spin')} />
               Recalcular
             </Button>
 
@@ -241,7 +242,7 @@ export function ConsolidatedDashboardV2({
                   No hay datos consolidados para {currentMonth}
                 </p>
                 <Button onClick={handleRecalculate} disabled={recalculate.isPending}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${recalculate.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={cn('h-4 w-4 mr-2', recalculate.isPending && 'animate-spin')} />
                   Calcular ahora
                 </Button>
               </div>
@@ -258,7 +259,7 @@ export function ConsolidatedDashboardV2({
                   <SourceBadge source="Ventas" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-success">
                     ${formatCurrency(consolidation?.revenue?.sales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -274,7 +275,7 @@ export function ConsolidatedDashboardV2({
                   <SourceBadge source="Consolidado" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold text-destructive">
                     ${formatCurrency(totalCosts)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -304,17 +305,17 @@ export function ConsolidatedDashboardV2({
               </Card>
 
               {/* Resultado Neto */}
-              <Card className={isProfit ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}>
+              <Card className={isProfit ? 'border-success-muted bg-success-muted' : 'border-destructive/30 bg-destructive/10'}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Resultado Neto</CardTitle>
                   {isProfit ? (
-                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <TrendingUp className="h-4 w-4 text-success" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 text-red-600" />
+                    <TrendingDown className="h-4 w-4 text-destructive" />
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={cn('text-2xl font-bold', isProfit ? 'text-success' : 'text-destructive')}>
                     ${formatCurrency(Math.abs(netResult))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">

@@ -153,7 +153,7 @@ export function VerificationModal() {
   // PIN required - show PIN input
   return (
     <Dialog open={showVerification} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[320px]">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="text-center">
             Verificacion
@@ -177,7 +177,7 @@ export function VerificationModal() {
               placeholder=""
               className={cn(
                 'text-center text-lg tracking-widest',
-                error && 'border-red-500'
+                error && 'border-destructive'
               )}
               style={{ WebkitTextSecurity: 'disc', textSecurity: 'disc' } as React.CSSProperties}
               disabled={isLoading}
@@ -192,7 +192,7 @@ export function VerificationModal() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-500 text-center">
+            <p className="text-sm text-destructive text-center">
               Codigo incorrecto
             </p>
           )}

@@ -148,28 +148,28 @@ export default function SolucionesPage() {
       title: 'Total',
       value: stats.total,
       icon: Lightbulb,
-      iconColor: 'text-amber-500',
+      iconColor: 'text-warning-muted-foreground',
     },
     {
       key: 'rootCause',
       title: 'Con Causa Raíz',
       value: stats.withRootCause,
       icon: AlertTriangle,
-      iconColor: 'text-red-500',
+      iconColor: 'text-destructive',
     },
     {
       key: 'solution',
       title: 'Documentadas',
       value: stats.withSolution,
       icon: Wrench,
-      iconColor: 'text-green-500',
+      iconColor: 'text-success',
     },
     {
       key: 'preventive',
       title: 'Con Preventivas',
       value: stats.withPreventive,
       icon: Shield,
-      iconColor: 'text-blue-500',
+      iconColor: 'text-info-muted-foreground',
     },
   ];
 

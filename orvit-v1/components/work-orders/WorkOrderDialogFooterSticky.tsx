@@ -39,12 +39,12 @@ export function WorkOrderDialogFooterSticky({
       <div className="flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
           {hasChanges ? (
-            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="flex items-center gap-1.5 text-warning-muted-foreground">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
               Cambios sin guardar
             </span>
           ) : lastSaved ? (
-            <span className="text-emerald-600 dark:text-emerald-400">
+            <span className="text-success">
               {formatLastSaved(lastSaved)}
             </span>
           ) : null}

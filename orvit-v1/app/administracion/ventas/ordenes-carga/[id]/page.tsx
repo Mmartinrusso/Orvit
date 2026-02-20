@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   ArrowLeft,
   Package,
@@ -60,6 +61,7 @@ interface LoadOrder {
 }
 
 export default function LoadOrderDetailPage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const loadOrderId = params?.id as string;
@@ -116,7 +118,13 @@ export default function LoadOrderDetailPage() {
   };
 
   const handleDispatch = async () => {
-    if (!confirm('¿Confirmar despacho de esta orden de carga?')) return;
+    const ok = await confirm({
+      title: 'Confirmar despacho',
+      description: '¿Confirmar despacho de esta orden de carga?',
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/ventas/ordenes-carga/${loadOrderId}/despachar`, {

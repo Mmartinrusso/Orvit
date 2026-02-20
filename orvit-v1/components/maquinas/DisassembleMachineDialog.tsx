@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -303,8 +304,8 @@ export default function DisassembleMachineDialog({
       return (
         <div className="space-y-6">
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="h-16 w-16 rounded-full bg-success-muted flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Desarme completado</h3>
             <p className="text-sm text-muted-foreground text-center max-w-md">
@@ -393,20 +394,20 @@ export default function DisassembleMachineDialog({
               <span>•</span>
               <span>{previewData.totals.failures} fallas</span>
               <span>•</span>
-              <span className="font-medium text-amber-600">{previewData.totals.preventiveTemplates} preventivos</span>
+              <span className="font-medium text-warning">{previewData.totals.preventiveTemplates} preventivos</span>
             </div>
           </div>
         </div>
 
         {/* Warning de OTs activas */}
         {previewData.warnings.hasActiveWorkOrders && (
-          <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3 bg-warning-muted border border-warning-muted rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-medium text-warning-muted-foreground">
                 Hay {previewData.warnings.totalActiveWorkOrders} OT(s) activa(s)
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+              <p className="text-xs text-warning">
                 Las órdenes de trabajo serán migradas según la configuración
               </p>
             </div>
@@ -458,7 +459,7 @@ export default function DisassembleMachineDialog({
                             <span>{component.stats.failures} fallas</span>
                             <span>{component.stats.checklists} prev.</span>
                             {component.stats.activeWorkOrders > 0 && (
-                              <span className="text-amber-600">{component.stats.activeWorkOrders} activas</span>
+                              <span className="text-warning">{component.stats.activeWorkOrders} activas</span>
                             )}
                           </div>
                         </div>
@@ -476,19 +477,19 @@ export default function DisassembleMachineDialog({
                           <SelectContent>
                             <SelectItem value="promote">
                               <div className="flex items-center gap-2">
-                                <Wrench className="h-3 w-3 text-green-600" />
+                                <Wrench className="h-3 w-3 text-success" />
                                 Convertir en máquina
                               </div>
                             </SelectItem>
                             <SelectItem value="delete">
                               <div className="flex items-center gap-2">
-                                <Trash2 className="h-3 w-3 text-red-600" />
+                                <Trash2 className="h-3 w-3 text-destructive" />
                                 Eliminar
                               </div>
                             </SelectItem>
                             <SelectItem value="orphan">
                               <div className="flex items-center gap-2">
-                                <Archive className="h-3 w-3 text-gray-600" />
+                                <Archive className="h-3 w-3 text-muted-foreground" />
                                 Archivar (huérfano)
                               </div>
                             </SelectItem>
@@ -517,7 +518,7 @@ export default function DisassembleMachineDialog({
                                 <span className="text-[10px]">({child.childrenCount} sub)</span>
                               )}
                               <ArrowRight className="h-3 w-3 mx-1" />
-                              <span className="text-green-600">será componente</span>
+                              <span className="text-success">será componente</span>
                             </div>
                           ))}
                         </div>
@@ -533,15 +534,15 @@ export default function DisassembleMachineDialog({
         {/* Resumen de acciones */}
         <div className="flex gap-4 text-xs">
           <div className="flex items-center gap-1">
-            <Wrench className="h-3 w-3 text-green-600" />
+            <Wrench className="h-3 w-3 text-success" />
             <span>{actionCounts.promote} a máquina</span>
           </div>
           <div className="flex items-center gap-1">
-            <Trash2 className="h-3 w-3 text-red-600" />
+            <Trash2 className="h-3 w-3 text-destructive" />
             <span>{actionCounts.delete} a eliminar</span>
           </div>
           <div className="flex items-center gap-1">
-            <Archive className="h-3 w-3 text-gray-600" />
+            <Archive className="h-3 w-3 text-muted-foreground" />
             <span>{actionCounts.orphan} a archivar</span>
           </div>
         </div>
@@ -657,7 +658,7 @@ export default function DisassembleMachineDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -669,7 +670,9 @@ export default function DisassembleMachineDialog({
             </DialogDescription>
           )}
         </DialogHeader>
-        {renderContent()}
+        <DialogBody>
+          {renderContent()}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   ArrowLeft,
   Plus,
@@ -71,6 +72,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function TasasPage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -343,7 +345,7 @@ export default function TasasPage() {
                       </TableCell>
                       <TableCell>
                         {rate.isCurrent ? (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          <Badge className="bg-success-muted text-success">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Vigente
                           </Badge>
@@ -363,8 +365,14 @@ export default function TasasPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => {
-                              if (confirm('¿Eliminar esta tasa?')) {
+                            onClick={async () => {
+                              const ok = await confirm({
+                                title: 'Eliminar tasa',
+                                description: '¿Eliminar esta tasa?',
+                                confirmText: 'Eliminar',
+                                variant: 'destructive',
+                              });
+                              if (ok) {
                                 deleteMutation.mutate(rate.id);
                               }
                             }}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/contexts/CompanyContext';
-import { Upload, FileText, CheckCircle, AlertCircle, Download, Info } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Download, Info, Loader2 } from 'lucide-react';
 
 interface UploadResult {
   success: boolean;
@@ -50,10 +51,6 @@ export default function UploadPayroll() {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('Enviando archivo:', file.name, 'Tamaño:', file.size);
-      console.log('Company ID:', currentCompany.id);
-      console.log('Tipo de plantilla:', templateType);
-
       // Seleccionar endpoint según el tipo de plantilla
       const endpoint = templateType === 'employees' 
         ? `/api/employees/upload-payroll?companyId=${currentCompany.id}`
@@ -64,8 +61,6 @@ export default function UploadPayroll() {
         body: formData,
       });
 
-      console.log('Respuesta del servidor:', response.status, response.statusText);
-      
       if (response.ok) {
         const data = await response.json();
         setResult(data);
@@ -167,15 +162,15 @@ Carlos López;Mecánico;Técnicos`;
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div 
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  templateType === 'employees' 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={cn('p-4 border rounded-lg cursor-pointer transition-colors',
+                  templateType === 'employees'
+                    ? 'border-info bg-info-muted'
+                    : 'border-border hover:border-border'
+                )}
                 onClick={() => setTemplateType('employees')}
               >
                 <h4 className="font-semibold text-lg mb-2">👥 Crear Empleados</h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-foreground mb-3">
                   Para registrar nuevos empleados (sin sueldos)
                 </p>
                 <div className="flex flex-wrap gap-1">
@@ -186,15 +181,15 @@ Carlos López;Mecánico;Técnicos`;
               </div>
               
               <div 
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  templateType === 'salaries' 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={cn('p-4 border rounded-lg cursor-pointer transition-colors',
+                  templateType === 'salaries'
+                    ? 'border-success bg-success-muted'
+                    : 'border-border hover:border-border'
+                )}
                 onClick={() => setTemplateType('salaries')}
               >
                 <h4 className="font-semibold text-lg mb-2">💰 Registrar Sueldos</h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-foreground mb-3">
                   Descarga empleados existentes con sus últimos sueldos
                 </p>
                 <div className="flex flex-wrap gap-1">
@@ -227,9 +222,9 @@ Carlos López;Mecánico;Técnicos`;
           <div className="space-y-4">
             {templateType === 'employees' ? (
               <>
-                <div className="p-3 border rounded-lg bg-yellow-50">
-                  <h5 className="text-sm font-medium mb-2 text-yellow-800">⚠️ Para Crear Empleados:</h5>
-                  <ul className="text-xs text-yellow-700 space-y-1 list-disc list-inside">
+                <div className="p-3 border rounded-lg bg-warning-muted">
+                  <h5 className="text-sm font-medium mb-2 text-warning-muted-foreground">⚠️ Para Crear Empleados:</h5>
+                  <ul className="text-xs text-warning-muted-foreground space-y-1 list-disc list-inside">
                     <li><strong>categoria</strong> debe ser una categoría que ya existe en el sistema</li>
                     <li>Los sueldos se asignan después usando la plantilla de sueldos</li>
                     <li>Si el empleado ya existe, se actualizará con los nuevos datos</li>
@@ -239,9 +234,9 @@ Carlos López;Mecánico;Técnicos`;
               </>
             ) : (
               <>
-                <div className="p-3 border rounded-lg bg-green-50">
-                  <h5 className="text-sm font-medium mb-2 text-green-800">💰 Para Registrar Sueldos:</h5>
-                  <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
+                <div className="p-3 border rounded-lg bg-success-muted">
+                  <h5 className="text-sm font-medium mb-2 text-success-muted-foreground">💰 Para Registrar Sueldos:</h5>
+                  <ul className="text-xs text-success-muted-foreground space-y-1 list-disc list-inside">
                     <li>La plantilla incluye <strong>todos los empleados activos</strong> con sus últimos sueldos</li>
                     <li>Modifica solo la columna <strong>sueldo</strong> según necesites</li>
                     <li>El <strong>mes_imputacion</strong> viene prellenado con el mes actual</li>
@@ -253,9 +248,9 @@ Carlos López;Mecánico;Técnicos`;
               </>
             )}
             
-            <div className="p-3 border rounded-lg bg-blue-50">
-              <h5 className="text-sm font-medium mb-2 text-blue-800">💡 Consejo para abrir en Excel:</h5>
-              <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+            <div className="p-3 border rounded-lg bg-info-muted">
+              <h5 className="text-sm font-medium mb-2 text-info-muted-foreground">💡 Consejo para abrir en Excel:</h5>
+              <ul className="text-xs text-info-muted-foreground space-y-1 list-disc list-inside">
                 <li>Descarga la plantilla y ábrela con <strong>Bloc de notas</strong> o <strong>WordPad</strong></li>
                 <li>Guárdala con extensión <strong>.csv</strong></li>
                 <li>En Excel: <strong>Datos → Obtener datos → Desde archivo → Desde texto/CSV</strong></li>
@@ -290,9 +285,9 @@ Carlos López;Mecánico;Técnicos`;
             </div>
             
             {file && (
-              <div className="flex items-center space-x-2 p-3 border rounded-lg bg-green-50">
-                <FileText className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-700">
+              <div className="flex items-center space-x-2 p-3 border rounded-lg bg-success-muted">
+                <FileText className="h-4 w-4 text-success" />
+                <span className="text-sm text-success-muted-foreground">
                   Archivo seleccionado: {file.name} ({(file.size / 1024).toFixed(1)} KB)
                 </span>
               </div>
@@ -305,7 +300,7 @@ Carlos López;Mecánico;Técnicos`;
             >
               {uploading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Procesando...
                 </>
               ) : (
@@ -325,9 +320,9 @@ Carlos López;Mecánico;Técnicos`;
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               {result?.success ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-5 w-5 text-success" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-red-600" />
+                <AlertCircle className="h-5 w-5 text-destructive" />
               )}
               <span>Resultado de la Carga</span>
             </DialogTitle>
@@ -340,29 +335,29 @@ Carlos López;Mecánico;Técnicos`;
             <div className="space-y-4">
               {/* Resumen */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 border rounded-lg bg-green-50">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="text-center p-3 border rounded-lg bg-success-muted">
+                  <div className="text-2xl font-bold text-success">
                     {result.results.created}
                   </div>
-                  <div className="text-sm text-green-700">
+                  <div className="text-sm text-success-muted-foreground">
                     {templateType === 'employees' ? 'Empleados Creados' : 'Sueldos Registrados'}
                   </div>
                 </div>
                 
-                <div className="text-center p-3 border rounded-lg bg-blue-50">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="text-center p-3 border rounded-lg bg-info-muted">
+                  <div className="text-2xl font-bold text-info-muted-foreground">
                     {result.results.updated}
                   </div>
-                  <div className="text-sm text-blue-700">
+                  <div className="text-sm text-info-muted-foreground">
                     {templateType === 'employees' ? 'Empleados Actualizados' : 'Sueldos Actualizados'}
                   </div>
                 </div>
-                
-                <div className="text-center p-3 border rounded-lg bg-red-50">
-                  <div className="text-2xl font-bold text-red-600">
+
+                <div className="text-center p-3 border rounded-lg bg-destructive/10">
+                  <div className="text-2xl font-bold text-destructive">
                     {result.results.errors.length}
                   </div>
-                  <div className="text-sm text-red-700">Errores</div>
+                  <div className="text-sm text-destructive">Errores</div>
                 </div>
               </div>
 
@@ -403,10 +398,10 @@ Carlos López;Mecánico;Técnicos`;
               {/* Errores */}
               {result.results.errors.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-2 text-red-600">Errores encontrados:</h4>
+                  <h4 className="font-semibold mb-2 text-destructive">Errores encontrados:</h4>
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {result.results.errors.map((error, index) => (
-                      <div key={index} className="text-sm text-red-600 p-2 bg-red-50 border border-red-200 rounded">
+                      <div key={index} className="text-sm text-destructive p-2 bg-destructive/10 border border-destructive/30 rounded">
                         {error}
                       </div>
                     ))}

@@ -4,7 +4,6 @@ import { shouldResetChecklist } from '@/lib/checklist-utils';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -61,14 +60,11 @@ export async function POST(request: NextRequest) {
             resetAt: new Date().toISOString()
           });
 
-          console.log(`✅ Checklist "${checklistData.title}" reiniciado automáticamente`);
         }
       } catch (error) {
         console.error(`Error processing checklist document ${document.id}:`, error);
       }
     }
-
-    console.log(`🔄 Proceso de reinicio completado. ${resetResults.length} checklists reiniciados`);
 
     return NextResponse.json({
       success: true,

@@ -22,7 +22,7 @@ import {
   Link2,
   AlertCircle,
 } from 'lucide-react';
-import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { AttachmentsDropzone } from './AttachmentsDropzone';
 import { ComponentsTreeSelect } from './ComponentsTreeSelect';
 import {
@@ -191,18 +191,7 @@ export function InstructionUpsertSheet({
   const handleSave = async () => {
     setTouched(new Set(['title', 'content', 'scope']));
 
-    console.log('🔵 [INSTRUCTION SAVE] Estado del formulario:', {
-      title,
-      contentHtml,
-      scope,
-      machineIds,
-      componentIds,
-      attachments,
-      attachmentsCount: attachments.length,
-    });
-
     if (!validate()) {
-      console.log('❌ [INSTRUCTION SAVE] Validación fallida:', errors);
       // Go to first tab with error
       if (errors.title || errors.content) {
         setActiveTab('contenido');
@@ -223,19 +212,6 @@ export function InstructionUpsertSheet({
         componentIds: scope === 'EQUIPMENT' || scope === 'COMPONENTS' ? componentIds : [],
         attachments: attachments.filter(a => !a.isDeleted),
       };
-
-      console.log('📤 [INSTRUCTION SAVE] Payload a enviar:', payload);
-      console.log('📎 [INSTRUCTION SAVE] Archivos adjuntos filtrados:', {
-        totalAttachments: attachments.length,
-        filteredAttachments: payload.attachments.length,
-        attachmentsDetail: payload.attachments.map(a => ({
-          name: a.name,
-          isNew: a.isNew,
-          isDeleted: a.isDeleted,
-          url: a.url,
-          file: a.file ? `File: ${a.file.name}` : 'No file',
-        })),
-      });
 
       await onSave(payload);
       
@@ -290,7 +266,7 @@ export function InstructionUpsertSheet({
         {/* Content with tabs */}
         <DialogBody>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-10">
+          <TabsList className="w-full justify-start overflow-x-auto h-10">
                 <TabsTrigger value="contenido" className="text-xs gap-1.5">
                   <FileText className="h-3.5 w-3.5" />
                   Contenido
@@ -325,7 +301,6 @@ export function InstructionUpsertSheet({
                     id="title"
                     value={title}
                     onChange={(e) => {
-                      console.log('✏️ [INSTRUCTION] Título cambiado:', e.target.value);
                       setTitle(e.target.value);
                       setTouched(prev => new Set([...prev, 'title']));
                     }}
@@ -352,7 +327,6 @@ export function InstructionUpsertSheet({
                     <RichTextEditor
                       value={contentHtml}
                       onChange={(value) => {
-                        console.log('📝 [INSTRUCTION] Contenido cambiado:', value);
                         setContentHtml(value);
                         setTouched(prev => new Set([...prev, 'content']));
                       }}
@@ -374,7 +348,6 @@ export function InstructionUpsertSheet({
                 <AttachmentsDropzone
                   attachments={attachments}
                   onChange={(newAttachments) => {
-                    console.log('📎 [INSTRUCTION] Archivos cambiados:', newAttachments);
                     setAttachments(newAttachments);
                   }}
                   maxFiles={10}
@@ -398,12 +371,10 @@ export function InstructionUpsertSheet({
                     componentsByMachine={componentsByMachine}
                     selectedComponentIds={componentIds}
                     onChange={(ids) => {
-                      console.log('🔧 [INSTRUCTION] Componentes seleccionados:', ids);
                       setComponentIds(ids);
                       setTouched(prev => new Set([...prev, 'scope']));
                     }}
                     onMachinesChange={(ids) => {
-                      console.log('⚙️ [INSTRUCTION] Máquinas seleccionadas:', ids);
                       setMachineIds(ids);
                       // Remove component selections from removed machines
                       const validComponentIds = componentIds.filter(cId => {
@@ -422,7 +393,6 @@ export function InstructionUpsertSheet({
                         }
                         return false;
                       });
-                      console.log('🔧 [INSTRUCTION] Componentes válidos después de filtrar:', validComponentIds);
                       setComponentIds(validComponentIds);
                     }}
                     disabled={saving}
@@ -451,7 +421,7 @@ export function InstructionUpsertSheet({
                   Guardando...
                 </span>
               ) : hasChanges ? (
-                <span className="text-amber-600">Cambios sin guardar</span>
+                <span className="text-warning-muted-foreground">Cambios sin guardar</span>
               ) : null}
             </div>
             <div className="flex items-center gap-2">

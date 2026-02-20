@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -386,9 +387,9 @@ export default function WorkStationMachinesDialog({
             </CardHeader>
             <CardContent className="p-6">
               {/* Debug temporal */}
-              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h4 className="font-semibold text-yellow-800 mb-2">Debug Info:</h4>
-                <div className="text-sm text-yellow-700 space-y-1">
+              <div className="mb-4 p-4 bg-warning-muted border border-warning-muted rounded-lg">
+                <h4 className="font-semibold text-warning-muted-foreground mb-2">Debug Info:</h4>
+                <div className="text-sm text-warning-muted-foreground space-y-1">
                   <p>Total elementos disponibles: {availableItems.length}</p>
                   <p>Elementos filtrados: {filteredItems.length}</p>
                   <p>Componentes seleccionados: {selectedComponents.length}</p>
@@ -396,7 +397,7 @@ export default function WorkStationMachinesDialog({
                   <p>Elementos con hijos: {availableItems.filter(item => item.children && item.children.length > 0).length}</p>
                   <details className="mt-2">
                     <summary className="cursor-pointer font-medium">Ver estructura de datos</summary>
-                    <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto max-h-40">
+                    <pre className="mt-2 text-xs bg-background p-2 rounded border overflow-auto max-h-40">
                       {JSON.stringify(availableItems.map(item => ({
                         id: item.id,
                         name: item.name,
@@ -457,11 +458,11 @@ export default function WorkStationMachinesDialog({
                       .map((item) => (
                         <Card 
                           key={item.id}
-                          className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                            selectedComponents.includes(item.id) 
-                              ? 'ring-2 ring-primary bg-primary/5' 
+                          className={cn('cursor-pointer transition-all hover:shadow-lg hover:scale-105',
+                            selectedComponents.includes(item.id)
+                              ? 'ring-2 ring-primary bg-primary/5'
                               : 'hover:bg-muted/50'
-                          }`}
+                          )}
                           onClick={() => handleComponentToggle(item.id)}
                         >
                           <CardContent className="p-3">
@@ -496,11 +497,11 @@ export default function WorkStationMachinesDialog({
                       .map((child) => (
                         <Card 
                           key={`${child.parentName}-${child.id}-${child.level}`}
-                          className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                            selectedSubcomponents.includes(child.id) 
-                              ? 'ring-2 ring-primary bg-primary/5' 
+                          className={cn('cursor-pointer transition-all hover:shadow-lg hover:scale-105',
+                            selectedSubcomponents.includes(child.id)
+                              ? 'ring-2 ring-primary bg-primary/5'
                               : 'hover:bg-muted/50'
-                          }`}
+                          )}
                           onClick={() => handleSubcomponentToggle(child.id)}
                         >
                           <CardContent className="p-3">
@@ -540,11 +541,11 @@ export default function WorkStationMachinesDialog({
                       .map((child) => (
                         <Card 
                           key={`${child.grandParentName}-${child.parentName}-${child.id}-${child.level}`}
-                          className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                            selectedSubcomponents.includes(child.id) 
-                              ? 'ring-2 ring-primary bg-primary/5' 
+                          className={cn('cursor-pointer transition-all hover:shadow-lg hover:scale-105',
+                            selectedSubcomponents.includes(child.id)
+                              ? 'ring-2 ring-primary bg-primary/5'
                               : 'hover:bg-muted/50'
-                          }`}
+                          )}
                           onClick={() => handleSubcomponentToggle(child.id)}
                         >
                           <CardContent className="p-3">

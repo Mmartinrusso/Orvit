@@ -354,7 +354,7 @@ export function SaleModal({
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-green-600" />
+            <ShoppingCart className="h-6 w-6 text-success" />
             {getTitle()}
           </DialogTitle>
           <DialogDescription>
@@ -366,9 +366,9 @@ export function SaleModal({
           <form id="sale-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Información de origen (si viene de cotización) */}
           {fromQuote && mode === 'convert' && (
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-info-muted border-info">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-700">
+                <CardTitle className="flex items-center gap-2 text-info-muted-foreground">
                   <Calculator className="h-5 w-5" />
                   Cotización de Origen
                 </CardTitle>
@@ -435,7 +435,7 @@ export function SaleModal({
                     </SelectContent>
                   </Select>
                   {errors.clientId && (
-                    <p className="text-sm text-red-500 mt-1">{errors.clientId.message}</p>
+                    <p className="text-sm text-destructive mt-1">{errors.clientId.message}</p>
                   )}
                 </div>
 
@@ -458,7 +458,7 @@ export function SaleModal({
                     </SelectContent>
                   </Select>
                   {errors.paymentMethod && (
-                    <p className="text-sm text-red-500 mt-1">{errors.paymentMethod.message}</p>
+                    <p className="text-sm text-destructive mt-1">{errors.paymentMethod.message}</p>
                   )}
                 </div>
               </div>
@@ -471,7 +471,7 @@ export function SaleModal({
                   className="min-h-[80px]"
                 />
                 {errors.description && (
-                  <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
                 )}
               </div>
             </CardContent>
@@ -497,7 +497,7 @@ export function SaleModal({
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -535,7 +535,7 @@ export function SaleModal({
                           </SelectContent>
                         </Select>
                         {errors.items?.[index]?.productId && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].productId.message}
                           </p>
                         )}
@@ -550,7 +550,7 @@ export function SaleModal({
                           {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                         />
                         {errors.items?.[index]?.quantity && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].quantity.message}
                           </p>
                         )}
@@ -565,7 +565,7 @@ export function SaleModal({
                           {...register(`items.${index}.unitPrice`, { valueAsNumber: true })}
                         />
                         {errors.items?.[index]?.unitPrice && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].unitPrice.message}
                           </p>
                         )}
@@ -581,7 +581,7 @@ export function SaleModal({
                           {...register(`items.${index}.discount`, { valueAsNumber: true })}
                         />
                         {errors.items?.[index]?.discount && (
-                          <p className="text-sm text-red-500 mt-1">
+                          <p className="text-sm text-destructive mt-1">
                             {errors.items[index].discount.message}
                           </p>
                         )}
@@ -695,7 +695,7 @@ export function SaleModal({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="bg-muted p-4 rounded-lg space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
                   <span>${calculations.subtotal}</span>

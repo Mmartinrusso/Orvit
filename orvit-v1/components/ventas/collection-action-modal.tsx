@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -115,13 +116,13 @@ const ACTION_TYPES: { value: CollectionActionType; label: string; icon: React.El
 ];
 
 const RESULTS: { value: CollectionResult; label: string; color: string }[] = [
-  { value: 'CONTACTADO', label: 'Contactado', color: 'bg-blue-100 text-blue-700' },
-  { value: 'NO_CONTESTO', label: 'No contestó', color: 'bg-gray-100 text-gray-700' },
-  { value: 'NUMERO_ERRONEO', label: 'Número erróneo', color: 'bg-red-100 text-red-700' },
-  { value: 'PROMESA_PAGO', label: 'Promesa de pago', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'RECHAZO', label: 'Rechazó pagar', color: 'bg-red-100 text-red-700' },
-  { value: 'ACUERDO', label: 'Acuerdo alcanzado', color: 'bg-green-100 text-green-700' },
-  { value: 'PENDIENTE', label: 'Pendiente', color: 'bg-gray-100 text-gray-700' },
+  { value: 'CONTACTADO', label: 'Contactado', color: 'bg-info-muted text-info-muted-foreground' },
+  { value: 'NO_CONTESTO', label: 'No contestó', color: 'bg-muted text-foreground' },
+  { value: 'NUMERO_ERRONEO', label: 'Número erróneo', color: 'bg-destructive/10 text-destructive' },
+  { value: 'PROMESA_PAGO', label: 'Promesa de pago', color: 'bg-warning-muted text-warning-muted-foreground' },
+  { value: 'RECHAZO', label: 'Rechazó pagar', color: 'bg-destructive/10 text-destructive' },
+  { value: 'ACUERDO', label: 'Acuerdo alcanzado', color: 'bg-success-muted text-success-muted-foreground' },
+  { value: 'PENDIENTE', label: 'Pendiente', color: 'bg-muted text-foreground' },
 ];
 
 // =====================================================
@@ -260,7 +261,7 @@ export function CollectionActionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent size="default">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ActionIcon className="w-5 h-5" />
@@ -283,7 +284,7 @@ export function CollectionActionModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <DialogBody className="space-y-4">
           {/* Tipo de Acción */}
           <div className="space-y-2">
             <Label>Tipo de Acción</Label>
@@ -370,7 +371,7 @@ export function CollectionActionModal({
 
           {/* Promesa de Pago (condicional) */}
           {formData.resultado === 'PROMESA_PAGO' && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-warning-muted rounded-lg border border-warning">
               <div className="space-y-2">
                 <Label>Monto Prometido ($) *</Label>
                 <Input
@@ -447,7 +448,7 @@ export function CollectionActionModal({
               />
             </div>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>

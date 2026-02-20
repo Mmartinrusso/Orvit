@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -155,18 +156,12 @@ export function ConfigWizard({
 
     return (
       <div
-        className={`p-4 border rounded-lg transition-colors ${
-          isComplete
-            ? 'bg-green-50 border-green-200'
-            : 'bg-background hover:border-primary/50 cursor-pointer'
-        }`}
+        className={cn('p-4 border rounded-lg transition-colors', isComplete ? 'bg-success-muted border-success/30' : 'bg-background hover:border-primary/50 cursor-pointer')}
         onClick={() => !isComplete && handleGoToStep(step)}
       >
         <div className="flex items-start gap-4">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              isComplete ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
-            }`}
+            className={cn('w-10 h-10 rounded-full flex items-center justify-center', isComplete ? 'bg-success-muted text-success' : 'bg-muted text-muted-foreground')}
           >
             {isComplete ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
           </div>
@@ -174,7 +169,7 @@ export function ConfigWizard({
             <div className="flex items-center gap-2">
               <h4 className="font-medium">{step.title}</h4>
               {isComplete && (
-                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                <Badge variant="secondary" className="text-xs bg-success-muted text-success">
                   Completado
                 </Badge>
               )}
@@ -197,8 +192,8 @@ export function ConfigWizard({
     return (
       <Card>
         <CardContent className="pt-8 pb-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-            <PartyPopper className="w-8 h-8 text-green-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success-muted mb-4">
+            <PartyPopper className="w-8 h-8 text-success" />
           </div>
           <h2 className="text-2xl font-bold mb-2">¡Configuración Básica Completa!</h2>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
@@ -265,7 +260,7 @@ export function ConfigWizard({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <CheckCircle2 className="w-5 h-5 text-success" />
             Pasos Esenciales
           </CardTitle>
           <CardDescription>
@@ -286,7 +281,7 @@ export function ConfigWizard({
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-yellow-500" />
+              <Sparkles className="w-5 h-5 text-warning-muted-foreground" />
               Recomendados
             </CardTitle>
             <CardDescription>
@@ -387,7 +382,7 @@ export function QuickSetupChecklist({ config, onNavigate }: QuickSetupChecklistP
   }
 
   return (
-    <Card className="border-yellow-200 bg-yellow-50/50">
+    <Card className="border-warning-muted bg-warning-muted/50">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -407,14 +402,12 @@ export function QuickSetupChecklist({ config, onNavigate }: QuickSetupChecklistP
             return (
               <div
                 key={check.id}
-                className={`flex items-center justify-between p-2 rounded transition-colors ${
-                  isComplete ? 'text-muted-foreground' : 'hover:bg-background cursor-pointer'
-                }`}
+                className={cn('flex items-center justify-between p-2 rounded transition-colors', isComplete ? 'text-muted-foreground' : 'hover:bg-background cursor-pointer')}
                 onClick={() => !isComplete && onNavigate(check.section)}
               >
                 <div className="flex items-center gap-2">
                   {isComplete ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle2 className="w-4 h-4 text-success" />
                   ) : (
                     <Circle className="w-4 h-4" />
                   )}

@@ -76,12 +76,12 @@ export function OrdenDetailItems({ items, moneda }: OrdenDetailItemsProps) {
                         <div>
                           <p className="font-semibold">{Number(item.cantidad)} {item.unidad}</p>
                           {Number(item.cantidadEntregada || 0) > 0 && (
-                            <p className="text-xs text-green-600">
+                            <p className="text-xs text-success">
                               Entregado: {Number(item.cantidadEntregada)}
                             </p>
                           )}
                           {cantidadPendiente > 0 && Number(item.cantidadEntregada || 0) > 0 && (
-                            <p className="text-xs text-amber-600">
+                            <p className="text-xs text-warning-muted-foreground">
                               Pendiente: {cantidadPendiente}
                             </p>
                           )}
@@ -92,7 +92,7 @@ export function OrdenDetailItems({ items, moneda }: OrdenDetailItemsProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         {Number(item.descuento) > 0 ? (
-                          <span className="text-amber-600 font-semibold">
+                          <span className="text-warning-muted-foreground font-semibold">
                             {Number(item.descuento)}%
                           </span>
                         ) : (
@@ -107,12 +107,12 @@ export function OrdenDetailItems({ items, moneda }: OrdenDetailItemsProps) {
                           <Badge variant="secondary">Pendiente</Badge>
                         )}
                         {porcentajeEntregado > 0 && porcentajeEntregado < 100 && (
-                          <Badge variant="default" className="bg-amber-500">
+                          <Badge variant="default" className="bg-warning">
                             Parcial ({porcentajeEntregado.toFixed(0)}%)
                           </Badge>
                         )}
                         {porcentajeEntregado === 100 && (
-                          <Badge variant="default" className="bg-green-500">
+                          <Badge variant="default" className="bg-success">
                             Completo
                           </Badge>
                         )}

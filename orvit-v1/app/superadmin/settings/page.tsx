@@ -231,7 +231,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-500" />
+                <AlertCircle className="h-5 w-5 text-warning-muted-foreground" />
                 Modo Mantenimiento
               </CardTitle>
               <CardDescription>

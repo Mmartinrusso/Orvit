@@ -220,32 +220,32 @@ export default function AuditoriaPage() {
   const getAccionBadge = (accion: string) => {
     switch (accion) {
       case 'CREATE':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Crear</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">Crear</Badge>;
       case 'UPDATE':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Actualizar</Badge>;
+        return <Badge className="bg-info-muted text-info-muted-foreground hover:bg-info-muted">Actualizar</Badge>;
       case 'DELETE':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Eliminar</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Eliminar</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{accion}</Badge>;
+        return <Badge className="bg-muted text-foreground hover:bg-muted">{accion}</Badge>;
     }
   };
 
   const getEstadoBadge = (estado: 'activo' | 'inactivo') => {
     return estado === 'activo' 
-      ? <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Activo</Badge>
-      : <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactivo</Badge>;
+      ? <Badge className="bg-success-muted text-success hover:bg-success-muted">Activo</Badge>
+      : <Badge className="bg-muted text-foreground hover:bg-muted">Inactivo</Badge>;
   };
 
   const getEntidadBadge = (entidad: string) => {
     const entidades = {
-      'empleado': { label: 'Empleado', color: 'bg-blue-100 text-blue-800' },
-      'insumo': { label: 'Insumo', color: 'bg-orange-100 text-orange-800' },
+      'empleado': { label: 'Empleado', color: 'bg-info-muted text-info-muted-foreground' },
+      'insumo': { label: 'Insumo', color: 'bg-warning-muted text-warning-muted-foreground' },
       'categoria': { label: 'Categoría', color: 'bg-purple-100 text-purple-800' },
-      'receta': { label: 'Receta', color: 'bg-green-100 text-green-800' },
-      'servicio': { label: 'Servicio', color: 'bg-red-100 text-red-800' }
+      'receta': { label: 'Receta', color: 'bg-success-muted text-success' },
+      'servicio': { label: 'Servicio', color: 'bg-destructive/10 text-destructive' }
     };
     
-    const entidadInfo = entidades[entidad as keyof typeof entidades] || { label: entidad, color: 'bg-gray-100 text-gray-800' };
+    const entidadInfo = entidades[entidad as keyof typeof entidades] || { label: entidad, color: 'bg-muted text-foreground' };
     
     return <Badge className={entidadInfo.color}>{entidadInfo.label}</Badge>;
   };
@@ -521,7 +521,7 @@ export default function AuditoriaPage() {
                       <div className="text-sm font-medium mb-2">Cambios realizados:</div>
                       <div className="space-y-2">
                         {item.cambios.map((cambio, index) => (
-                          <div key={index} className="flex justify-between text-sm p-2 bg-gray-50 rounded">
+                          <div key={index} className="flex justify-between text-sm p-2 bg-muted rounded">
                             <span className="font-medium">{cambio.campo}:</span>
                             <span className="text-muted-foreground">
                               {cambio.valorAnterior !== null ? String(cambio.valorAnterior) : 'null'} → {cambio.valorNuevo !== null ? String(cambio.valorNuevo) : 'null'}

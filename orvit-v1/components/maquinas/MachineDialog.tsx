@@ -305,19 +305,6 @@ export default function MachineDialog({ isOpen, onClose, onSave, machine, presel
 
   const handleSubmit = form.handleSubmit(onSubmit);
   
-  // Log del estado del formulario - removido para evitar spam
-  // console.log('MachineDialog - estado del formulario:', {
-  //   isSubmitting: form.formState.isSubmitting,
-  //   isValid: form.formState.isValid,
-  //   errors: form.formState.errors,
-  //   values: form.getValues()
-  // });
-  
-  // Log detallado de errores - removido para evitar spam
-  // if (Object.keys(form.formState.errors).length > 0) {
-  //   console.log('MachineDialog - errores detallados:', JSON.stringify(form.formState.errors, null, 2));
-  // }
-  
   return (
     <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
       <DialogContent size="md">

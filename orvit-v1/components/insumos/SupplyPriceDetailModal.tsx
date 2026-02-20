@@ -100,7 +100,7 @@ export function SupplyPriceDetailModal({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-6 w-6 text-blue-600" />
+              <FileText className="h-6 w-6 text-info-muted-foreground" />
               Precios de: {supply.name}
             </DialogTitle>
             <Button
@@ -123,17 +123,17 @@ export function SupplyPriceDetailModal({
                 <h3 className="font-semibold text-lg mb-3">Información del Insumo</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Unidad:</span>
+                    <span className="text-sm text-muted-foreground">Unidad:</span>
                     <span className="text-sm">{supply.unitMeasure}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Proveedor:</span>
+                    <span className="text-sm text-muted-foreground">Proveedor:</span>
                     <span className="text-sm">{supply.supplierName}</span>
                   </div>
                   
                   {/* Información adicional para equilibrar altura */}
                   <div className="pt-4">
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       Última actualización: {formatDate(new Date().toISOString())}
                     </div>
                   </div>
@@ -145,67 +145,67 @@ export function SupplyPriceDetailModal({
               <h3 className="font-semibold text-lg mb-3">Estadísticas</h3>
               
               {/* Registros */}
-              <div className="text-center p-2 bg-blue-50 rounded-lg mb-3">
-                <p className="text-lg font-bold text-blue-600">{totalRecords}</p>
-                <p className="text-xs text-gray-600">Registros</p>
+              <div className="text-center p-2 bg-info-muted rounded-lg mb-3">
+                <p className="text-lg font-bold text-info-muted-foreground">{totalRecords}</p>
+                <p className="text-xs text-muted-foreground">Registros</p>
               </div>
 
               {/* Grid principal de estadísticas */}
               <div className="grid grid-cols-1 gap-3">
                 
                 {/* Precio Total */}
-                <div className="border rounded-lg p-3 bg-gray-50">
-                  <h4 className="font-medium text-sm mb-2 text-gray-800">Precio Total</h4>
+                <div className="border rounded-lg p-3 bg-muted">
+                  <h4 className="font-medium text-sm mb-2 text-foreground">Precio Total</h4>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center">
-                      <p className="text-base font-bold text-gray-900">{formatCurrency(averageTotal)}</p>
-                      <p className="text-xs text-gray-600">Promedio</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(averageTotal)}</p>
+                      <p className="text-xs text-muted-foreground">Promedio</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-gray-900">{formatCurrency(maxTotal)}</p>
-                      <p className="text-xs text-gray-600">Máximo</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(maxTotal)}</p>
+                      <p className="text-xs text-muted-foreground">Máximo</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-gray-900">{formatCurrency(minTotal)}</p>
-                      <p className="text-xs text-gray-600">Mínimo</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(minTotal)}</p>
+                      <p className="text-xs text-muted-foreground">Mínimo</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Precio Base */}
-                <div className="border rounded-lg p-3 bg-blue-50">
-                  <h4 className="font-medium text-sm mb-2 text-blue-800">Precio Base</h4>
+                <div className="border rounded-lg p-3 bg-info-muted">
+                  <h4 className="font-medium text-sm mb-2 text-info-muted-foreground">Precio Base</h4>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center">
-                      <p className="text-base font-bold text-blue-900">{formatCurrency(averageBase)}</p>
-                      <p className="text-xs text-blue-600">Promedio</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(averageBase)}</p>
+                      <p className="text-xs text-info-muted-foreground">Promedio</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-blue-900">{formatCurrency(maxBase)}</p>
-                      <p className="text-xs text-blue-600">Máximo</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(maxBase)}</p>
+                      <p className="text-xs text-info-muted-foreground">Máximo</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-blue-900">{formatCurrency(minBase)}</p>
-                      <p className="text-xs text-blue-600">Mínimo</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(minBase)}</p>
+                      <p className="text-xs text-info-muted-foreground">Mínimo</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Flete */}
-                <div className="border rounded-lg p-3 bg-orange-50">
-                  <h4 className="font-medium text-sm mb-2 text-orange-800">Flete</h4>
+                <div className="border rounded-lg p-3 bg-warning-muted">
+                  <h4 className="font-medium text-sm mb-2 text-warning-muted-foreground">Flete</h4>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center">
-                      <p className="text-base font-bold text-orange-900">{formatCurrency(averageFreight)}</p>
-                      <p className="text-xs text-orange-600">Promedio</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(averageFreight)}</p>
+                      <p className="text-xs text-warning-muted-foreground">Promedio</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-orange-900">{formatCurrency(maxFreight)}</p>
-                      <p className="text-xs text-orange-600">Máximo</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(maxFreight)}</p>
+                      <p className="text-xs text-warning-muted-foreground">Máximo</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-orange-900">{formatCurrency(minFreight)}</p>
-                      <p className="text-xs text-orange-600">Mínimo</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(minFreight)}</p>
+                      <p className="text-xs text-warning-muted-foreground">Mínimo</p>
                     </div>
                   </div>
                 </div>

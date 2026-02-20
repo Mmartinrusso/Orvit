@@ -154,13 +154,13 @@ type EstadoCotizacion =
   | 'VENCIDA';
 
 const ESTADOS_CONFIG: Record<EstadoCotizacion, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
-  BORRADOR: { label: 'Borrador', color: 'text-gray-700', bgColor: 'bg-gray-100', icon: FileText },
-  ENVIADA: { label: 'Enviada', color: 'text-blue-700', bgColor: 'bg-blue-100', icon: Send },
-  EN_NEGOCIACION: { label: 'Negociación', color: 'text-yellow-700', bgColor: 'bg-yellow-100', icon: Clock },
-  ACEPTADA: { label: 'Aceptada', color: 'text-green-700', bgColor: 'bg-green-100', icon: CheckCircle2 },
+  BORRADOR: { label: 'Borrador', color: 'text-foreground', bgColor: 'bg-muted', icon: FileText },
+  ENVIADA: { label: 'Enviada', color: 'text-info-muted-foreground', bgColor: 'bg-info-muted', icon: Send },
+  EN_NEGOCIACION: { label: 'Negociación', color: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted', icon: Clock },
+  ACEPTADA: { label: 'Aceptada', color: 'text-success', bgColor: 'bg-success-muted', icon: CheckCircle2 },
   CONVERTIDA: { label: 'Convertida', color: 'text-purple-700', bgColor: 'bg-purple-100', icon: ArrowRight },
-  PERDIDA: { label: 'Perdida', color: 'text-red-700', bgColor: 'bg-red-100', icon: XCircle },
-  VENCIDA: { label: 'Vencida', color: 'text-orange-700', bgColor: 'bg-orange-100', icon: Clock },
+  PERDIDA: { label: 'Perdida', color: 'text-destructive', bgColor: 'bg-destructive/10', icon: XCircle },
+  VENCIDA: { label: 'Vencida', color: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted', icon: Clock },
 };
 
 export default function CotizacionesPage() {
@@ -508,7 +508,7 @@ export default function CotizacionesPage() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsList className="w-full max-w-md justify-start overflow-x-auto">
                 <TabsTrigger value="cotizaciones" className="text-xs">
                   <FileText className="w-3.5 h-3.5 mr-1.5" />
                   Cotizaciones
@@ -562,8 +562,8 @@ export default function CotizacionesPage() {
                   <Card className="hover:shadow-md transition-all">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-100">
-                          <DollarSign className="w-4 h-4 text-green-600" />
+                        <div className="p-2 rounded-lg bg-success-muted">
+                          <DollarSign className="w-4 h-4 text-success" />
                         </div>
                         <div className="flex-1">
                           <p className="text-2xl font-bold">
@@ -578,7 +578,7 @@ export default function CotizacionesPage() {
                         </div>
                         <div className="w-full bg-muted rounded-full h-1.5">
                           <div
-                            className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                            className="bg-success h-1.5 rounded-full transition-all duration-300"
                             style={{ width: '75%' }}
                           />
                         </div>
@@ -590,8 +590,8 @@ export default function CotizacionesPage() {
                   <Card className="hover:shadow-md transition-all">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-100">
-                          <TrendingUp className="w-4 h-4 text-blue-600" />
+                        <div className="p-2 rounded-lg bg-info-muted">
+                          <TrendingUp className="w-4 h-4 text-info-muted-foreground" />
                         </div>
                         <div className="flex-1">
                           <p className="text-2xl font-bold">
@@ -606,7 +606,7 @@ export default function CotizacionesPage() {
                         </div>
                         <div className="w-full bg-muted rounded-full h-1.5">
                           <div
-                            className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                            className="bg-info h-1.5 rounded-full transition-all duration-300"
                             style={{ width: `${Math.min(kpis?.tasaAceptacion || 0, 100)}%` }}
                           />
                         </div>
@@ -618,17 +618,17 @@ export default function CotizacionesPage() {
                   <Card
                     className={cn(
                       'hover:shadow-md transition-all cursor-pointer',
-                      (kpis?.porVencer || 0) > 0 && 'border-orange-200 bg-orange-50/50'
+                      (kpis?.porVencer || 0) > 0 && 'border-warning-muted bg-warning-muted/50'
                     )}
                     onClick={() => setActiveTab('alertas')}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className={cn('p-2 rounded-lg', (kpis?.porVencer || 0) > 0 ? 'bg-orange-100' : 'bg-muted')}>
-                          <AlertTriangle className={cn('w-4 h-4', (kpis?.porVencer || 0) > 0 ? 'text-orange-600' : 'text-muted-foreground')} />
+                        <div className={cn('p-2 rounded-lg', (kpis?.porVencer || 0) > 0 ? 'bg-warning-muted' : 'bg-muted')}>
+                          <AlertTriangle className={cn('w-4 h-4', (kpis?.porVencer || 0) > 0 ? 'text-warning-muted-foreground' : 'text-muted-foreground')} />
                         </div>
                         <div className="flex-1">
-                          <p className={cn('text-2xl font-bold', (kpis?.porVencer || 0) > 0 && 'text-orange-600')}>
+                          <p className={cn('text-2xl font-bold', (kpis?.porVencer || 0) > 0 && 'text-warning-muted-foreground')}>
                             {statsLoading ? '-' : kpis?.porVencer || 0}
                           </p>
                           <p className="text-xs text-muted-foreground">Por vencer (7 días)</p>
@@ -640,7 +640,7 @@ export default function CotizacionesPage() {
                         </div>
                         <div className="w-full bg-muted rounded-full h-1.5">
                           <div
-                            className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
+                            className="bg-warning h-1.5 rounded-full transition-all duration-300"
                             style={{ width: `${Math.min((kpis?.porVencer || 0) * 10, 100)}%` }}
                           />
                         </div>
@@ -767,7 +767,7 @@ export default function CotizacionesPage() {
                         size="sm"
                         onClick={() => handleBulkAction('eliminar')}
                         disabled={bulkLoading}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                         Eliminar
@@ -861,8 +861,8 @@ export default function CotizacionesPage() {
                                 className={cn(
                                   'hover:bg-muted/30 cursor-pointer transition-colors',
                                   isSelected && 'bg-primary/5',
-                                  vencida && 'bg-red-50/50',
-                                  porVencer && !vencida && 'bg-orange-50/50'
+                                  vencida && 'bg-destructive/10/50',
+                                  porVencer && !vencida && 'bg-warning-muted/50'
                                 )}
                                 onClick={() => handleViewDetail(cot)}
                               >
@@ -901,8 +901,8 @@ export default function CotizacionesPage() {
                                 </TableCell>
                                 <TableCell className="text-xs hidden sm:table-cell">
                                   <div className={cn(
-                                    vencida && 'text-red-600 font-medium',
-                                    porVencer && !vencida && 'text-orange-600 font-medium'
+                                    vencida && 'text-destructive font-medium',
+                                    porVencer && !vencida && 'text-warning-muted-foreground font-medium'
                                   )}>
                                     {cot.fechaValidez ? format(new Date(cot.fechaValidez), 'dd/MM/yy', { locale: es }) : '-'}
                                     {(vencida || porVencer) && diasVenc !== null && (
@@ -963,7 +963,7 @@ export default function CotizacionesPage() {
                                         <>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
-                                            className="text-red-600"
+                                            className="text-destructive"
                                             onClick={() => {
                                               setCotizacionToDelete(cot);
                                               setDeleteDialogOpen(true);
@@ -1032,7 +1032,7 @@ export default function CotizacionesPage() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-4">
-                      <AlertTriangle className="w-4 h-4 text-orange-500" />
+                      <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />
                       <h3 className="font-medium">Cotizaciones por vencer (próximos 7 días)</h3>
                       <Badge variant="outline" className="ml-auto">
                         {stats?.porVencer?.cantidad || 0} cotizaciones
@@ -1045,7 +1045,7 @@ export default function CotizacionesPage() {
                       </div>
                     ) : stats?.porVencer?.items?.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                        <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-success" />
                         <p className="text-sm">No hay cotizaciones por vencer</p>
                       </div>
                     ) : (
@@ -1055,8 +1055,8 @@ export default function CotizacionesPage() {
                             key={item.id}
                             className={cn(
                               'flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors',
-                              item.diasRestantes <= 1 && 'border-red-200 bg-red-50/50',
-                              item.diasRestantes > 1 && item.diasRestantes <= 3 && 'border-orange-200 bg-orange-50/50'
+                              item.diasRestantes <= 1 && 'border-destructive/30 bg-destructive/10/50',
+                              item.diasRestantes > 1 && item.diasRestantes <= 3 && 'border-warning-muted bg-warning-muted/50'
                             )}
                             onClick={() => {
                               setSelectedQuoteId(item.id);
@@ -1066,11 +1066,11 @@ export default function CotizacionesPage() {
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 'p-2 rounded-lg',
-                                item.diasRestantes <= 1 ? 'bg-red-100' : 'bg-orange-100'
+                                item.diasRestantes <= 1 ? 'bg-destructive/10' : 'bg-warning-muted'
                               )}>
                                 <Clock className={cn(
                                   'w-4 h-4',
-                                  item.diasRestantes <= 1 ? 'text-red-600' : 'text-orange-600'
+                                  item.diasRestantes <= 1 ? 'text-destructive' : 'text-warning-muted-foreground'
                                 )} />
                               </div>
                               <div>
@@ -1114,7 +1114,7 @@ export default function CotizacionesPage() {
                 <AlertDialogAction
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-destructive hover:bg-destructive"
                 >
                   {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Eliminar'}
                 </AlertDialogAction>

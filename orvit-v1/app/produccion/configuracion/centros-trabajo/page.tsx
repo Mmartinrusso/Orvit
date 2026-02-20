@@ -65,9 +65,9 @@ const WORK_CENTER_TYPES = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Activo', color: 'bg-green-100 text-green-700' },
-  { value: 'MAINTENANCE', label: 'En Mantenimiento', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'INACTIVE', label: 'Inactivo', color: 'bg-gray-100 text-gray-700' },
+  { value: 'ACTIVE', label: 'Activo', color: 'bg-success-muted text-success' },
+  { value: 'MAINTENANCE', label: 'En Mantenimiento', color: 'bg-warning-muted text-warning-muted-foreground' },
+  { value: 'INACTIVE', label: 'Inactivo', color: 'bg-muted text-foreground' },
 ];
 
 export default function WorkCentersConfigPage() {
@@ -221,7 +221,7 @@ export default function WorkCentersConfigPage() {
   const getStatusBadge = (status: string) => {
     const option = STATUS_OPTIONS.find((s) => s.value === status);
     return (
-      <Badge className={option?.color || 'bg-gray-100 text-gray-700'}>
+      <Badge className={option?.color || 'bg-muted text-foreground'}>
         {option?.label || status}
       </Badge>
     );
@@ -239,7 +239,7 @@ export default function WorkCentersConfigPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Building2 className="h-6 w-6 text-blue-600" />
+              <Building2 className="h-6 w-6 text-info-muted-foreground" />
               Centros de Trabajo
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -326,7 +326,7 @@ export default function WorkCentersConfigPage() {
                               setDeleteDialogOpen(true);
                             }}
                           >
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       </TableCell>

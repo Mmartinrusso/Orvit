@@ -1,19 +1,14 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -28,6 +23,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Calendar,
   Clock,
   CheckCircle,
@@ -37,36 +38,35 @@ import {
   FileText,
   Loader2,
   CalendarDays,
-  ChevronDown,
   AlertCircle,
   Box,
   User,
-  TrendingUp,
   Timer,
-  BarChart3,
   PlayCircle,
-  PauseCircle,
   CheckCircle2,
   XCircle,
   ChevronRight,
-  ArrowRight,
   History,
-  Zap,
   Target,
   ClipboardList,
   LayoutGrid,
   List,
-  CalendarRange,
   Copy,
+  MoreVertical,
+  Eye,
+  RefreshCw,
+  AlertTriangle,
+  TrendingUp,
+  Zap,
+  Award,
 } from 'lucide-react';
-import { format, formatDistanceToNow, differenceInDays, isAfter, isBefore, addDays } from 'date-fns';
+import { format, formatDistanceToNow, differenceInDays, isBefore, addDays, formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useMachineMaintenanceHistory, useMachineWorkOrders, useMachineComponents } from '@/hooks/use-machine-detail';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import PreventiveMaintenanceDialog from '../work-orders/PreventiveMaintenanceDialog';
-import CorrectiveMaintenanceDialog from '../work-orders/CorrectiveMaintenanceDialog';
-import { WorkOrderDetailDialog } from '../work-orders/WorkOrderDetailDialog';
 import WorkOrderWizard from '../work-orders/WorkOrderWizard';
+import { WorkOrderDetailDialog } from '../work-orders/WorkOrderDetailDialog';
 import MaintenanceDetailDialog from './MaintenanceDetailDialog';
 
 interface MachineMaintenanceTabProps {
@@ -75,63 +75,78 @@ interface MachineMaintenanceTabProps {
   sectorId?: number;
   companyId: number;
   sectorName?: string;
+  componentId?: number | string;
+  componentName?: string;
+  parentComponentId?: string;
 }
 
-type FilterType = 'all' | 'pending' | 'preventive' | 'corrective' | 'history';
-type ViewMode = 'grid' | 'list' | 'timeline';
+type SubTab = 'preventive' | 'corrective';
+type SubFilter = 'all' | 'pending' | 'history';
+type ViewMode = 'grid' | 'list';
 
 export default function MachineMaintenanceTab({
   machineId,
   machineName,
   sectorId,
   companyId: propCompanyId,
-  sectorName
+  sectorName,
+  componentId,
+  componentName,
+  parentComponentId,
 }: MachineMaintenanceTabProps) {
-  // Fallback para companyId: usar localStorage si no viene en props
   const companyId = propCompanyId || (typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('currentCompany') || '{}').id
     : null);
 
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('preventive');
+  const [subFilter, setSubFilter] = useState<SubFilter>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [componentFilter, setComponentFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showPreventiveDialog, setShowPreventiveDialog] = useState(false);
   const [showCorrectiveDialog, setShowCorrectiveDialog] = useState(false);
-  const [showWorkOrderWizard, setShowWorkOrderWizard] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const [selectedPreventive, setSelectedPreventive] = useState<any>(null);
   const [hideDuplicates, setHideDuplicates] = useState(true);
 
   const { maintenanceHistory, isLoading: historyLoading, refetch } = useMachineMaintenanceHistory(
-    machineId,
-    true,
-    companyId,
-    sectorId
+    machineId, true, companyId, sectorId
   );
-  const { workOrders, isLoading: workOrdersLoading } = useMachineWorkOrders(
-    machineId,
-    true,
-    companyId,
-    sectorId
+  const { workOrders, isLoading: workOrdersLoading, isError: workOrdersError } = useMachineWorkOrders(
+    machineId, true, companyId, sectorId
   );
   const { components } = useMachineComponents(machineId, true);
-
   const { hasPermission: canCreateMaintenance } = usePermissionRobust('crear_mantenimiento');
 
-  // Filtrar por componente
   const filteredByComponent = useMemo(() => {
-    if (componentFilter === 'all') return workOrders;
-    return workOrders.filter((wo: any) =>
-      wo.component?.id?.toString() === componentFilter ||
-      wo.componentId?.toString() === componentFilter
-    );
-  }, [workOrders, componentFilter]);
+    let data = workOrders;
+    if (componentId) {
+      // En contexto de componente/subcomponente: filtrar planes que incluyen este componente
+      // o que no tienen componente asignado (nivel máquina).
+      // Los preventivos pueden tener múltiples componentes → buscar en componentIds[].
+      data = data.filter((wo: any) => {
+        // Sin componente asignado → mostrar siempre (nivel máquina)
+        const hasNoComponent = !wo.componentId && (!wo.componentIds || wo.componentIds.length === 0);
+        if (hasNoComponent) return true;
+        // Preventivos con múltiples componentes
+        if (wo.componentIds?.length > 0) {
+          return wo.componentIds.some((id: any) => id?.toString() === componentId.toString());
+        }
+        // Work orders con componente único
+        const single = wo.component?.id ?? wo.componentId;
+        return single?.toString() === componentId.toString();
+      });
+    } else if (componentFilter !== 'all') {
+      data = data.filter((wo: any) =>
+        wo.component?.id?.toString() === componentFilter ||
+        wo.componentId?.toString() === componentFilter
+      );
+    }
+    return data;
+  }, [workOrders, componentId, componentFilter]);
 
-  // Filtrar duplicados por nombre (mantener solo el primero de cada nombre)
   const filteredWithoutDuplicates = useMemo(() => {
     if (!hideDuplicates) return filteredByComponent;
-
     const seenNames = new Set<string>();
     return filteredByComponent.filter((wo: any) => {
       const name = (wo.title || '').trim().toLowerCase();
@@ -141,46 +156,6 @@ export default function MachineMaintenanceTab({
     });
   }, [filteredByComponent, hideDuplicates]);
 
-  // Estadísticas
-  const stats = useMemo(() => {
-    const all = filteredByComponent;
-    const preventive = all.filter((wo: any) => wo.type === 'PREVENTIVE');
-    const corrective = all.filter((wo: any) => wo.type === 'CORRECTIVE');
-    const pending = all.filter((wo: any) => wo.status === 'PENDING');
-    const inProgress = all.filter((wo: any) => wo.status === 'IN_PROGRESS');
-    const completed = all.filter((wo: any) => wo.status === 'COMPLETED');
-    const overdue = pending.filter((wo: any) =>
-      wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date())
-    );
-
-    // Próximo mantenimiento
-    const nextScheduled = all
-      .filter((wo: any) => wo.status === 'PENDING' && wo.scheduledDate)
-      .sort((a: any, b: any) => new Date(a.scheduledDate!).getTime() - new Date(b.scheduledDate!).getTime())[0];
-
-    // Calcular tasa de cumplimiento
-    const totalScheduled = all.filter((wo: any) => wo.scheduledDate).length;
-    const completedOnTime = completed.filter((wo: any) => {
-      if (!wo.scheduledDate || !wo.completedAt) return false;
-      return isBefore(new Date(wo.completedAt), addDays(new Date(wo.scheduledDate), 1));
-    }).length;
-    const complianceRate = totalScheduled > 0 ? Math.round((completedOnTime / totalScheduled) * 100) : 100;
-
-    return {
-      total: all.length,
-      preventive: preventive.length,
-      corrective: corrective.length,
-      pending: pending.length,
-      inProgress: inProgress.length,
-      completed: completed.length,
-      overdue: overdue.length,
-      nextScheduled,
-      complianceRate,
-      historyCount: maintenanceHistory.length,
-    };
-  }, [filteredByComponent, maintenanceHistory]);
-
-  // Filtros específicos (usando datos sin duplicados)
   const preventiveOrders = useMemo(() =>
     filteredWithoutDuplicates.filter((wo: any) => wo.type === 'PREVENTIVE'),
     [filteredWithoutDuplicates]
@@ -191,22 +166,45 @@ export default function MachineMaintenanceTab({
     [filteredWithoutDuplicates]
   );
 
-  const pendingOrders = useMemo(() =>
-    filteredWithoutDuplicates.filter((wo: any) => wo.status === 'PENDING' || wo.status === 'IN_PROGRESS'),
-    [filteredWithoutDuplicates]
+  const preventivePending = useMemo(() =>
+    preventiveOrders.filter((wo: any) => wo.status === 'PENDING' || wo.status === 'IN_PROGRESS'),
+    [preventiveOrders]
+  );
+  const preventiveCompleted = useMemo(() =>
+    preventiveOrders.filter((wo: any) => wo.status === 'COMPLETED'),
+    [preventiveOrders]
+  );
+  const correctivePending = useMemo(() =>
+    correctiveOrders.filter((wo: any) => wo.status === 'PENDING' || wo.status === 'IN_PROGRESS'),
+    [correctiveOrders]
+  );
+  const correctiveInProgress = useMemo(() =>
+    correctiveOrders.filter((wo: any) => wo.status === 'IN_PROGRESS'),
+    [correctiveOrders]
+  );
+  const correctiveCompleted = useMemo(() =>
+    correctiveOrders.filter((wo: any) => wo.status === 'COMPLETED'),
+    [correctiveOrders]
   );
 
-  // Filtrar historial
   const filteredHistory = useMemo(() => {
     let history = maintenanceHistory;
-
-    if (componentFilter !== 'all') {
+    if (componentId) {
+      history = history.filter((item: any) =>
+        item.Component?.id?.toString() === componentId.toString() ||
+        item.componentId?.toString() === componentId.toString()
+      );
+    } else if (componentFilter !== 'all') {
       history = history.filter((item: any) =>
         item.Component?.id?.toString() === componentFilter ||
         item.componentId?.toString() === componentFilter
       );
     }
-
+    if (activeSubTab === 'preventive') {
+      history = history.filter((item: any) => item.work_orders?.type === 'PREVENTIVE');
+    } else {
+      history = history.filter((item: any) => item.work_orders?.type !== 'PREVENTIVE');
+    }
     if (!searchTerm) return history;
     const term = searchTerm.toLowerCase();
     return history.filter((item: any) =>
@@ -214,96 +212,90 @@ export default function MachineMaintenanceTab({
       item.notes?.toLowerCase().includes(term) ||
       item.rootCause?.toLowerCase().includes(term)
     );
-  }, [maintenanceHistory, searchTerm, componentFilter]);
+  }, [maintenanceHistory, searchTerm, componentId, componentFilter, activeSubTab]);
 
-  // Datos filtrados
+  const preventiveStats = useMemo(() => {
+    const pending = preventiveOrders.filter((wo: any) => wo.status === 'PENDING').length;
+    const inProgress = preventiveOrders.filter((wo: any) => wo.status === 'IN_PROGRESS').length;
+    const completed = preventiveCompleted.length;
+    const overdue = preventiveOrders.filter((wo: any) =>
+      wo.status === 'PENDING' && wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date())
+    ).length;
+    const totalScheduled = preventiveOrders.filter((wo: any) => wo.scheduledDate).length;
+    const completedOnTime = preventiveCompleted.filter((wo: any) => {
+      if (!wo.scheduledDate || !wo.completedAt) return false;
+      return isBefore(new Date(wo.completedAt), addDays(new Date(wo.scheduledDate), 1));
+    }).length;
+    const complianceRate = totalScheduled > 0 ? Math.round((completedOnTime / totalScheduled) * 100) : 100;
+    return { total: preventiveOrders.length, pending, inProgress, completed, overdue, complianceRate };
+  }, [preventiveOrders, preventiveCompleted]);
+
+  const correctiveStats = useMemo(() => {
+    const pending = correctiveOrders.filter((wo: any) => wo.status === 'PENDING').length;
+    const inProgress = correctiveInProgress.length;
+    const completed = correctiveCompleted.length;
+    const overdue = correctiveOrders.filter((wo: any) =>
+      wo.status === 'PENDING' && wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date())
+    ).length;
+    return { total: correctiveOrders.length, pending, inProgress, completed, overdue };
+  }, [correctiveOrders, correctiveInProgress, correctiveCompleted]);
+
   const filteredData = useMemo(() => {
-    switch (activeFilter) {
-      case 'pending':
-        return pendingOrders;
-      case 'preventive':
-        return preventiveOrders;
-      case 'corrective':
-        return correctiveOrders;
-      case 'history':
-        return [];
-      default:
-        return filteredWithoutDuplicates;
+    const orders = activeSubTab === 'preventive' ? preventiveOrders : correctiveOrders;
+    switch (subFilter) {
+      case 'pending': return orders.filter((wo: any) => wo.status === 'PENDING' || wo.status === 'IN_PROGRESS');
+      case 'history': return [];
+      default: return orders;
     }
-  }, [activeFilter, filteredWithoutDuplicates, pendingOrders, preventiveOrders, correctiveOrders]);
+  }, [activeSubTab, subFilter, preventiveOrders, correctiveOrders]);
 
   const isLoading = historyLoading || workOrdersLoading;
 
+  // ─── Status helpers ───────────────────────────────────────────────────────
+
   const getStatusConfig = (status: string) => {
-    const config: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string; border: string }> = {
-      'PENDING': {
-        label: 'Pendiente',
-        icon: <Clock className="h-3 w-3" />,
-        color: 'text-amber-700',
-        bg: 'bg-amber-50',
-        border: 'border-amber-200'
-      },
-      'IN_PROGRESS': {
-        label: 'En Progreso',
-        icon: <PlayCircle className="h-3 w-3" />,
-        color: 'text-blue-700',
-        bg: 'bg-blue-50',
-        border: 'border-blue-200'
-      },
-      'COMPLETED': {
-        label: 'Completado',
-        icon: <CheckCircle2 className="h-3 w-3" />,
-        color: 'text-green-700',
-        bg: 'bg-green-50',
-        border: 'border-green-200'
-      },
-      'CANCELLED': {
-        label: 'Cancelado',
-        icon: <XCircle className="h-3 w-3" />,
-        color: 'text-gray-600',
-        bg: 'bg-gray-50',
-        border: 'border-gray-200'
-      }
+    const cfg: Record<string, { label: string; icon: React.ReactNode; className: string; dot: string }> = {
+      PENDING: { label: 'Pendiente', icon: <Clock className="h-3 w-3" />, className: 'bg-warning-muted text-warning-muted-foreground border-warning-muted/50', dot: 'bg-amber-400' },
+      IN_PROGRESS: { label: 'En progreso', icon: <PlayCircle className="h-3 w-3" />, className: 'bg-info-muted text-info-muted-foreground border-info-muted/50', dot: 'bg-blue-400' },
+      COMPLETED: { label: 'Completado', icon: <CheckCircle2 className="h-3 w-3" />, className: 'bg-success-muted text-success border-success-muted/50', dot: 'bg-emerald-400' },
+      CANCELLED: { label: 'Cancelado', icon: <XCircle className="h-3 w-3" />, className: 'bg-muted text-muted-foreground border-border', dot: 'bg-gray-400' },
     };
-    return config[status] || { label: status, icon: null, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' };
+    return cfg[status] || cfg.PENDING;
   };
 
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'CRITICAL': return 'bg-red-500';
-      case 'HIGH': return 'bg-orange-500';
-      case 'MEDIUM': return 'bg-yellow-500';
-      case 'LOW': return 'bg-green-500';
-      default: return 'bg-gray-400';
-    }
+  const getPriorityBadge = (priority?: string) => {
+    const cfg: Record<string, string> = {
+      CRITICAL: 'bg-destructive/10 text-destructive border-destructive/20',
+      HIGH: 'bg-warning-muted text-warning-muted-foreground border-warning-muted/50',
+      MEDIUM: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300',
+      LOW: 'bg-muted text-muted-foreground border-border',
+    };
+    const labels: Record<string, string> = { CRITICAL: 'Crítica', HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja' };
+    if (!priority) return null;
+    return (
+      <span className={cn('inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium', cfg[priority] || cfg.LOW)}>
+        {labels[priority] || priority}
+      </span>
+    );
   };
 
-  // Handler para abrir el detalle correcto según el tipo de ítem
   const handleItemClick = (item: any) => {
-    // Si es un template de preventivo, abrir el modal de preventivo
     if (item._isPreventiveTemplate && item._templateId) {
       setSelectedPreventive({
-        id: item._templateId,
-        title: item.title,
-        description: item.description,
-        priority: item.priority,
-        frequencyDays: item._frequencyDays,
-        estimatedHours: item.estimatedHours,
-        machineId: item.machineId,
-        scheduledDate: item.scheduledDate,
-        assignedTo: item.assignedTo,
-        component: item.component,
+        id: item._templateId, title: item.title, description: item.description,
+        priority: item.priority, frequencyDays: item._frequencyDays,
+        estimatedHours: item.estimatedHours, machineId: item.machineId,
+        scheduledDate: item.scheduledDate, assignedTo: item.assignedTo, component: item.component,
       });
     } else {
-      // Es una orden de trabajo real
       setSelectedWorkOrder(item);
     }
   };
 
-  // Card de OT - Diseño mejorado
-  const renderWorkOrderCard = (wo: any) => {
-    const statusConfig = getStatusConfig(wo.status);
-    const isPreventive = wo.type === 'PREVENTIVE';
+  // ─── Card preventivo ──────────────────────────────────────────────────────
+
+  const renderPreventiveCard = (wo: any) => {
+    const statusCfg = getStatusConfig(wo.status);
     const isOverdue = wo.status === 'PENDING' && wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date());
     const daysUntil = wo.scheduledDate ? differenceInDays(new Date(wo.scheduledDate), new Date()) : null;
 
@@ -312,34 +304,48 @@ export default function MachineMaintenanceTab({
         <div
           key={wo.id}
           onClick={() => handleItemClick(wo)}
-          className={`flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer ${
-            isOverdue ? 'border-red-300 bg-red-50/50' : ''
-          }`}
+          className={cn(
+            'group relative flex items-center gap-4 p-4 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-primary/30',
+            isOverdue && 'border-destructive/30 bg-destructive/5'
+          )}
         >
-          {/* Indicador tipo */}
-          <div className={`w-1 h-10 rounded-full ${isPreventive ? 'bg-blue-500' : 'bg-orange-500'}`} />
+          {/* Borde izquierdo de color */}
+          <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', isOverdue ? 'bg-destructive' : 'bg-primary/60')} />
 
-          {/* Contenido */}
+          <div className="ml-2 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <CalendarDays className="h-5 w-5 text-primary" />
+          </div>
+
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-medium text-sm truncate">{wo.title}</p>
-              {isOverdue && (
-                <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                  Vencida
-                </Badge>
-              )}
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-semibold text-sm truncate">{wo.title}</p>
+              {isOverdue && <Badge variant="destructive" className="text-[10px] h-4 px-1 shrink-0">Vencida</Badge>}
+              {getPriorityBadge(wo.priority)}
             </div>
-            <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-              {wo.scheduledDate && (
+            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+              {wo._frequencyDays && (
                 <span className="flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3" />
+                  Cada {wo._frequencyDays}d
+                </span>
+              )}
+              {wo.scheduledDate && (
+                <span className={cn('flex items-center gap-1 font-medium',
+                  isOverdue ? 'text-destructive' : daysUntil !== null && daysUntil <= 7 ? 'text-warning-muted-foreground' : ''
+                )}>
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(wo.scheduledDate), 'dd MMM', { locale: es })}
+                  {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
+                  {daysUntil !== null && wo.status === 'PENDING' && (
+                    <span className="ml-1">
+                      ({daysUntil < 0 ? `${Math.abs(daysUntil)}d vencido` : daysUntil === 0 ? 'hoy' : `en ${daysUntil}d`})
+                    </span>
+                  )}
                 </span>
               )}
               {wo.assignedTo && (
                 <span className="flex items-center gap-1">
                   <User className="h-3 w-3" />
-                  {wo.assignedTo.name?.split(' ')[0]}
+                  {wo.assignedTo.name}
                 </span>
               )}
               {wo.component && (
@@ -351,85 +357,78 @@ export default function MachineMaintenanceTab({
             </div>
           </div>
 
-          {/* Status */}
-          <Badge className={`${statusConfig.bg} ${statusConfig.color} border-0 text-[10px]`}>
-            {statusConfig.icon}
-            <span className="ml-1">{statusConfig.label}</span>
-          </Badge>
-
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge className={cn(statusCfg.className, 'text-[10px] border gap-1')}>
+              {statusCfg.icon}
+              {statusCfg.label}
+            </Badge>
+            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
         </div>
       );
     }
 
-    // Vista Grid (default)
     return (
       <Card
         key={wo.id}
         onClick={() => handleItemClick(wo)}
-        className={`group cursor-pointer transition-all hover:shadow-md ${
-          isOverdue ? 'border-red-300 bg-red-50/30' : 'hover:border-primary/30'
-        }`}
+        className={cn(
+          'group relative overflow-hidden cursor-pointer transition-all hover:shadow-md',
+          isOverdue ? 'border-destructive/30' : 'hover:border-primary/30'
+        )}
       >
-        <CardContent className="p-3">
+        {/* Barra superior de color */}
+        <div className={cn('h-1', isOverdue ? 'bg-destructive' : 'bg-primary/50')} />
+        <CardContent className="p-4">
           {/* Header */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${isPreventive ? 'bg-blue-500' : 'bg-orange-500'}`} />
-              <span className={`text-[10px] font-medium ${isPreventive ? 'text-blue-600' : 'text-orange-600'}`}>
-                {isPreventive ? 'Preventivo' : 'Correctivo'}
-              </span>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <CalendarDays className="h-4 w-4 text-primary" />
             </div>
-            <Badge className={`${statusConfig.bg} ${statusConfig.color} border-0 text-[10px] h-5`}>
-              {statusConfig.label}
+            <Badge className={cn(statusCfg.className, 'text-[10px] border')}>
+              {statusCfg.label}
             </Badge>
           </div>
 
           {/* Título */}
-          <p className="font-medium text-sm line-clamp-2 mb-2 min-h-[2.5rem]">{wo.title}</p>
+          <p className="font-semibold text-sm line-clamp-2 mb-2">{wo.title}</p>
+          {getPriorityBadge(wo.priority)}
 
-          {/* Indicador de prioridad */}
-          {wo.priority && (
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${getPriorityColor(wo.priority)}`} />
-              <span className="text-[10px] text-muted-foreground capitalize">
-                {wo.priority?.toLowerCase()}
-              </span>
-            </div>
-          )}
-
-          {/* Meta info */}
-          <div className="space-y-1.5 text-[11px] text-muted-foreground">
+          {/* Frecuencia + fecha */}
+          <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+            {wo._frequencyDays && (
+              <div className="flex items-center gap-1.5">
+                <RefreshCw className="h-3 w-3 shrink-0" />
+                <span>Cada {wo._frequencyDays} días</span>
+              </div>
+            )}
             {wo.scheduledDate && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+              <div className={cn('flex items-center justify-between',
+                isOverdue ? 'text-destructive' : daysUntil !== null && daysUntil <= 7 ? 'text-warning-muted-foreground' : ''
+              )}>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3 shrink-0" />
                   {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
                 </span>
                 {daysUntil !== null && wo.status === 'PENDING' && (
-                  <span className={`font-medium ${
-                    daysUntil < 0 ? 'text-red-600' : daysUntil <= 3 ? 'text-amber-600' : 'text-muted-foreground'
-                  }`}>
+                  <span className="font-semibold text-[10px]">
                     {daysUntil < 0 ? `${Math.abs(daysUntil)}d vencido` : daysUntil === 0 ? 'Hoy' : `${daysUntil}d`}
                   </span>
                 )}
               </div>
             )}
             {wo.assignedTo && (
-              <div className="flex items-center gap-1">
-                <User className="h-3 w-3" />
+              <div className="flex items-center gap-1.5">
+                <User className="h-3 w-3 shrink-0" />
                 <span className="truncate">{wo.assignedTo.name}</span>
               </div>
             )}
           </div>
 
-          {/* Footer con componente */}
           {wo.component && (
-            <div className="mt-2 pt-2 border-t">
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <Box className="h-3 w-3" />
-                {wo.component.name}
-              </span>
+            <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Box className="h-3 w-3" />
+              {wo.component.name}
             </div>
           )}
         </CardContent>
@@ -437,87 +436,273 @@ export default function MachineMaintenanceTab({
     );
   };
 
-  // Card de historial mejorada
-  const renderHistoryCard = (item: any) => {
-    const isPreventive = item.work_orders?.type === 'PREVENTIVE';
+  // ─── Card correctivo ──────────────────────────────────────────────────────
+
+  const renderCorrectiveCard = (wo: any) => {
+    const statusCfg = getStatusConfig(wo.status);
+    const isOverdue = wo.status === 'PENDING' && wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date());
+    const daysUntil = wo.scheduledDate ? differenceInDays(new Date(wo.scheduledDate), new Date()) : null;
+    const accentColor = wo.status === 'COMPLETED' ? 'bg-emerald-500' : isOverdue ? 'bg-destructive' : 'bg-amber-500';
 
     if (viewMode === 'list') {
       return (
         <div
-          key={item.id}
-          className="flex items-center gap-3 p-3 rounded-lg border bg-card/50"
+          key={wo.id}
+          onClick={() => handleItemClick(wo)}
+          className={cn(
+            'group relative flex items-center gap-4 p-4 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-warning-muted/50',
+            isOverdue && 'border-destructive/30 bg-destructive/5'
+          )}
         >
-          <div className={`w-1 h-10 rounded-full ${isPreventive ? 'bg-blue-300' : 'bg-orange-300'}`} />
+          <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', accentColor)} />
+
+          <div className="ml-2 h-10 w-10 rounded-full bg-warning-muted/50 flex items-center justify-center shrink-0">
+            <Wrench className="h-5 w-5 text-warning-muted-foreground" />
+          </div>
+
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">
-              {item.work_orders?.title || 'Mantenimiento'}
-            </p>
-            <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-              <span>{format(new Date(item.executedAt), 'dd MMM yyyy', { locale: es })}</span>
-              {item.duration && <span>{item.duration}h</span>}
-              {item.User && <span>{item.User.name?.split(' ')[0]}</span>}
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-semibold text-sm truncate">{wo.title}</p>
+              {isOverdue && <Badge variant="destructive" className="text-[10px] h-4 px-1 shrink-0">Vencida</Badge>}
+              {getPriorityBadge(wo.priority)}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+              {wo.scheduledDate && (
+                <span className={cn('flex items-center gap-1', isOverdue && 'text-destructive font-medium')}>
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
+                  {daysUntil !== null && wo.status === 'PENDING' && (
+                    <span className="ml-1">({daysUntil < 0 ? `${Math.abs(daysUntil)}d vencido` : `en ${daysUntil}d`})</span>
+                  )}
+                </span>
+              )}
+              {wo.assignedTo && (
+                <span className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  {wo.assignedTo.name}
+                </span>
+              )}
+              {wo.component && (
+                <span className="flex items-center gap-1">
+                  <Box className="h-3 w-3" />
+                  {wo.component.name}
+                </span>
+              )}
+              {wo.completedAt && (
+                <span className="flex items-center gap-1 text-success">
+                  <CheckCircle2 className="h-3 w-3" />
+                  {format(new Date(wo.completedAt), 'dd MMM yyyy', { locale: es })}
+                </span>
+              )}
             </div>
           </div>
-          <Badge variant="secondary" className="text-[10px]">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Ejecutado
-          </Badge>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge className={cn(statusCfg.className, 'text-[10px] border gap-1')}>
+              {statusCfg.icon}
+              {statusCfg.label}
+            </Badge>
+            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
         </div>
       );
     }
 
     return (
-      <Card key={item.id} className="bg-card/50">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${isPreventive ? 'bg-blue-300' : 'bg-orange-300'}`} />
-              <span className={`text-[10px] font-medium ${isPreventive ? 'text-blue-500' : 'text-orange-500'}`}>
-                {isPreventive ? 'Preventivo' : 'Correctivo'}
-              </span>
+      <Card
+        key={wo.id}
+        onClick={() => handleItemClick(wo)}
+        className={cn(
+          'group relative overflow-hidden cursor-pointer transition-all hover:shadow-md',
+          isOverdue ? 'border-destructive/30' : 'hover:border-warning-muted/50'
+        )}
+      >
+        <div className={cn('h-1', accentColor)} />
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="h-8 w-8 rounded-lg bg-warning-muted/50 flex items-center justify-center shrink-0">
+              <Wrench className="h-4 w-4 text-warning-muted-foreground" />
             </div>
-            <span className="text-[10px] text-muted-foreground">
-              {format(new Date(item.executedAt), 'dd/MM/yy', { locale: es })}
-            </span>
+            <Badge className={cn(statusCfg.className, 'text-[10px] border')}>
+              {statusCfg.label}
+            </Badge>
           </div>
-          <p className="font-medium text-sm line-clamp-2 mb-2">
-            {item.work_orders?.title || 'Mantenimiento'}
-          </p>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            {item.duration && (
-              <span className="flex items-center gap-1">
-                <Timer className="h-3 w-3" />
-                {item.duration}h
-              </span>
+
+          <p className="font-semibold text-sm line-clamp-2 mb-2">{wo.title}</p>
+          {getPriorityBadge(wo.priority)}
+
+          <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+            {wo.scheduledDate && (
+              <div className={cn('flex items-center justify-between', isOverdue && 'text-destructive')}>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
+                </span>
+                {daysUntil !== null && wo.status === 'PENDING' && (
+                  <span className="font-semibold text-[10px]">
+                    {daysUntil < 0 ? `${Math.abs(daysUntil)}d` : `${daysUntil}d`}
+                  </span>
+                )}
+              </div>
             )}
-            {item.User && (
-              <span className="flex items-center gap-1">
+            {wo.assignedTo && (
+              <div className="flex items-center gap-1.5">
                 <User className="h-3 w-3" />
-                {item.User.name?.split(' ')[0]}
-              </span>
+                <span className="truncate">{wo.assignedTo.name}</span>
+              </div>
+            )}
+            {wo.completedAt && (
+              <div className="flex items-center gap-1.5 text-success">
+                <CheckCircle2 className="h-3 w-3" />
+                <span>Completado {format(new Date(wo.completedAt), 'dd MMM', { locale: es })}</span>
+              </div>
             )}
           </div>
-          {item.notes && (
-            <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 italic">
-              "{item.notes}"
-            </p>
+
+          {wo.component && (
+            <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Box className="h-3 w-3" />
+              {wo.component.name}
+            </div>
           )}
         </CardContent>
       </Card>
     );
   };
 
-  const renderEmptyState = (message: string) => (
-    <div className="col-span-2 flex flex-col items-center justify-center py-12 text-muted-foreground">
-      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-        <FileText className="h-6 w-6 opacity-50" />
+  // ─── Timeline de historial ────────────────────────────────────────────────
+
+  const renderHistoryTimeline = () => {
+    if (filteredHistory.length === 0) {
+      return renderEmptyState('No hay ejecuciones registradas', 'Las ejecuciones aparecerán aquí cuando se completen mantenimientos');
+    }
+
+    return (
+      <div className="relative space-y-0">
+        {/* Línea vertical del timeline */}
+        <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-border" />
+
+        {filteredHistory.map((item: any, index: number) => {
+          const isPreventive = item.work_orders?.type === 'PREVENTIVE';
+          const hasIssues = item.rootCause || item.issues;
+          const qualityScore = item.qualityScore;
+
+          return (
+            <div key={item.id} className="relative flex gap-4 pb-4 last:pb-0">
+              {/* Dot del timeline */}
+              <div className={cn(
+                'relative z-10 h-7 w-7 rounded-full border-2 border-background flex items-center justify-center shrink-0 mt-1',
+                isPreventive ? 'bg-primary' : 'bg-amber-500'
+              )}>
+                {isPreventive
+                  ? <CalendarDays className="h-3.5 w-3.5 text-white" />
+                  : <Wrench className="h-3.5 w-3.5 text-white" />
+                }
+              </div>
+
+              {/* Contenido */}
+              <div className={cn(
+                'flex-1 rounded-xl border bg-card p-4 hover:shadow-sm transition-shadow',
+                hasIssues && 'border-warning-muted/50'
+              )}>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">
+                      {item.work_orders?.title || 'Mantenimiento ejecutado'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {format(new Date(item.executedAt), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {qualityScore !== null && qualityScore !== undefined && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <div className={cn(
+                            'flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full',
+                            qualityScore >= 80 ? 'bg-success-muted text-success' : qualityScore >= 50 ? 'bg-warning-muted text-warning-muted-foreground' : 'bg-destructive/10 text-destructive'
+                          )}>
+                            <Award className="h-3 w-3" />
+                            {qualityScore}%
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>Calidad de ejecución</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Badge variant="secondary" className="text-[10px] gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-success" />
+                      Ejecutado
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Métricas */}
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 flex-wrap">
+                  {item.duration && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Timer className="h-3.5 w-3.5 text-primary" />
+                      {item.duration < 1 ? `${Math.round(item.duration * 60)} min` : `${item.duration}h`}
+                    </span>
+                  )}
+                  {item.User && (
+                    <span className="flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" />
+                      {item.User.name}
+                    </span>
+                  )}
+                  {item.Component && (
+                    <span className="flex items-center gap-1.5">
+                      <Box className="h-3.5 w-3.5" />
+                      {item.Component.name}
+                    </span>
+                  )}
+                  {item.cost !== null && item.cost !== undefined && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Costo:</span>
+                      <span className="font-medium">${Number(item.cost).toFixed(0)}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Notas */}
+                {item.notes && (
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2.5 mb-2 italic border-l-2 border-border">
+                    &ldquo;{item.notes}&rdquo;
+                  </div>
+                )}
+
+                {/* Problemas */}
+                {hasIssues && (
+                  <div className="flex items-start gap-2 text-xs bg-warning-muted/30 rounded-lg p-2.5 border border-warning-muted/40">
+                    <AlertTriangle className="h-3.5 w-3.5 text-warning-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-warning-muted-foreground">Problemas encontrados: </span>
+                      <span className="text-muted-foreground">{item.rootCause || item.issues}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <p className="text-sm font-medium">{message}</p>
-      <p className="text-xs mt-1">Los registros aparecerán aquí</p>
+    );
+  };
+
+  // ─── Empty state ──────────────────────────────────────────────────────────
+
+  const renderEmptyState = (title: string, subtitle?: string) => (
+    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+      <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4">
+        <FileText className="h-7 w-7 opacity-40" />
+      </div>
+      <p className="text-sm font-medium mb-1">{title}</p>
+      <p className="text-xs">{subtitle || 'Los registros aparecerán aquí'}</p>
     </div>
   );
 
-  if (isLoading) {
+  if (isLoading && !workOrdersError) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -528,257 +713,374 @@ export default function MachineMaintenanceTab({
     );
   }
 
-  const filters: { key: FilterType; label: string; count?: number; icon: React.ReactNode }[] = [
-    { key: 'all', label: 'Todos', count: filteredWithoutDuplicates.length, icon: <ClipboardList className="h-3 w-3" /> },
-    { key: 'pending', label: 'Pendientes', count: pendingOrders.length, icon: <Clock className="h-3 w-3" /> },
-    { key: 'preventive', label: 'Preventivos', count: preventiveOrders.length, icon: <CalendarDays className="h-3 w-3" /> },
-    { key: 'corrective', label: 'Correctivos', count: correctiveOrders.length, icon: <Wrench className="h-3 w-3" /> },
-    { key: 'history', label: 'Historial', count: stats.historyCount, icon: <History className="h-3 w-3" /> },
-  ];
+  // ─── KPI Cards ────────────────────────────────────────────────────────────
 
-  return (
-    <TooltipProvider>
-      <div className="flex flex-col h-full overflow-x-hidden">
-        {/* KPI Cards - Estilo compacto horizontal */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 p-4 pb-2">
-          {/* Total */}
-          <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-[10px] text-muted-foreground">Total</p>
-                <p className="text-lg font-bold">{stats.total}</p>
+  const renderKPIs = () => {
+    if (activeSubTab === 'preventive') {
+      return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3">
+          <Card className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total planes</p>
+                  <p className="text-2xl font-bold text-primary">{preventiveStats.total}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
 
-          {/* Activas/Pendientes */}
-          <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+          <Card className={cn('overflow-hidden', preventiveStats.pending + preventiveStats.inProgress > 0 && 'border-warning-muted/60')}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Pendientes</p>
+                  <p className={cn('text-2xl font-bold', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
+                    {preventiveStats.pending + preventiveStats.inProgress}
+                  </p>
+                  {preventiveStats.overdue > 0 && (
+                    <p className="text-[10px] text-destructive font-medium mt-0.5">{preventiveStats.overdue} vencidas</p>
+                  )}
+                </div>
+                <div className={cn('h-10 w-10 rounded-full flex items-center justify-center', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'bg-warning-muted/50' : 'bg-muted')}>
+                  <Clock className={cn('h-5 w-5', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'text-warning-muted-foreground' : 'text-muted-foreground')} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completados</p>
+                  <p className="text-2xl font-bold text-success">{preventiveStats.completed}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={cn('overflow-hidden', preventiveStats.complianceRate < 70 && 'border-destructive/30')}>
+            <CardContent className="p-4">
               <div>
-                <p className="text-[10px] text-muted-foreground">Activas</p>
-                <p className={`text-lg font-bold ${stats.pending + stats.inProgress > 0 ? 'text-amber-600' : ''}`}>
-                  {stats.pending + stats.inProgress}
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Cumplimiento</p>
+                  <Target className={cn('h-4 w-4', preventiveStats.complianceRate >= 80 ? 'text-success' : 'text-warning-muted-foreground')} />
+                </div>
+                <p className={cn('text-2xl font-bold mb-2', preventiveStats.complianceRate >= 80 ? 'text-success' : preventiveStats.complianceRate >= 50 ? 'text-warning-muted-foreground' : 'text-destructive')}>
+                  {preventiveStats.complianceRate}%
                 </p>
+                <Progress value={preventiveStats.complianceRate} className="h-1.5" />
               </div>
-            </div>
-          </Card>
-
-          {/* Preventivos */}
-          <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-[10px] text-muted-foreground">Preventivos</p>
-                <p className="text-lg font-bold text-blue-600">{stats.preventive}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Correctivos */}
-          <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-[10px] text-muted-foreground">Correctivos</p>
-                <p className="text-lg font-bold text-orange-600">{stats.corrective}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Completados */}
-          <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-[10px] text-muted-foreground">Completados</p>
-                <p className="text-lg font-bold text-green-600">{stats.completed}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Vencidas */}
-          <Card className="p-2 border-border/50">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-[10px] text-muted-foreground">Vencidas</p>
-                <p className={`text-lg font-bold ${stats.overdue > 0 ? 'text-red-600' : ''}`}>{stats.overdue}</p>
-              </div>
-            </div>
+            </CardContent>
           </Card>
         </div>
+      );
+    }
 
-        {/* Próximo programado */}
-        {stats.nextScheduled && activeFilter !== 'history' && (
-          <div className="mx-4 mb-2">
-            <div
-              className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition"
-              onClick={() => setSelectedWorkOrder(stats.nextScheduled)}
-            >
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <CalendarDays className="h-4 w-4 text-primary" />
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3">
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total OTs</p>
+                <p className="text-2xl font-bold text-warning-muted-foreground">{correctiveStats.total}</p>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-primary">Próximo mantenimiento</p>
-                <p className="text-sm truncate">{stats.nextScheduled.title}</p>
+              <div className="h-10 w-10 rounded-full bg-warning-muted/50 flex items-center justify-center">
+                <Wrench className="h-5 w-5 text-warning-muted-foreground" />
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-semibold text-primary">
-                  {format(new Date(stats.nextScheduled.scheduledDate!), 'dd MMM', { locale: es })}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {formatDistanceToNow(new Date(stats.nextScheduled.scheduledDate!), { locale: es, addSuffix: true })}
-                </p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-primary" />
             </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+
+        <Card className={cn('overflow-hidden', correctiveStats.pending > 0 && 'border-warning-muted/60')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Pendientes</p>
+                <p className={cn('text-2xl font-bold', correctiveStats.pending > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
+                  {correctiveStats.pending}
+                </p>
+                {correctiveStats.overdue > 0 && (
+                  <p className="text-[10px] text-destructive font-medium mt-0.5">{correctiveStats.overdue} vencidas</p>
+                )}
+              </div>
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">En progreso</p>
+                <p className="text-2xl font-bold text-info-muted-foreground">{correctiveStats.inProgress}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+                <PlayCircle className="h-5 w-5 text-info-muted-foreground" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completados</p>
+                <p className="text-2xl font-bold text-success">{correctiveStats.completed}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
+  // ─── Sub-filtros ──────────────────────────────────────────────────────────
+
+  const getSubFilters = () => {
+    if (activeSubTab === 'preventive') {
+      return [
+        { key: 'all' as SubFilter, label: 'Todos', count: preventiveOrders.length },
+        { key: 'pending' as SubFilter, label: 'Pendientes', count: preventivePending.length },
+        { key: 'history' as SubFilter, label: 'Ejecuciones', count: filteredHistory.length },
+      ];
+    }
+    return [
+      { key: 'all' as SubFilter, label: 'Todos', count: correctiveOrders.length },
+      { key: 'pending' as SubFilter, label: 'Pendientes', count: correctivePending.length },
+      { key: 'history' as SubFilter, label: 'Ejecuciones', count: filteredHistory.length },
+    ];
+  };
+
+  // ─── Render principal ─────────────────────────────────────────────────────
+
+  function renderTabContent() {
+    const subFilters = getSubFilters();
+    const renderCard = activeSubTab === 'preventive' ? renderPreventiveCard : renderCorrectiveCard;
+
+    return (
+      <>
+        {renderKPIs()}
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-2 border-b overflow-hidden">
-          {/* Filtros - scrollable en móvil */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {filters.map(filter => (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-b bg-muted/20">
+          {/* Sub-filtros */}
+          <div className="flex items-center gap-1">
+            {subFilters.map(f => (
               <button
-                key={filter.key}
-                onClick={() => setActiveFilter(filter.key)}
-                className={`flex items-center gap-1 shrink-0 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  activeFilter === filter.key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                }`}
+                key={f.key}
+                onClick={() => { setSubFilter(f.key); setSearchTerm(''); }}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  subFilter === f.key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
               >
-                {filter.icon}
-                <span className="text-[11px]">{filter.label}</span>
-                {filter.count !== undefined && filter.count > 0 && (
-                  <Badge
-                    variant={activeFilter === filter.key ? 'secondary' : 'outline'}
-                    className="h-4 px-1 text-[10px] ml-0.5"
-                  >
-                    {filter.count}
-                  </Badge>
+                {f.label}
+                {f.count > 0 && (
+                  <span className={cn(
+                    'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold',
+                    subFilter === f.key ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  )}>
+                    {f.count}
+                  </span>
                 )}
               </button>
             ))}
           </div>
 
           {/* Controles derecha */}
-          <div className="flex items-center gap-1.5 justify-between sm:justify-end shrink-0">
-            {/* Filtro componente - oculto en móvil muy pequeño */}
-            {components.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            {/* Filtro componente */}
+            {!componentId && components.length > 0 && (
               <Select value={componentFilter} onValueChange={setComponentFilter}>
-                <SelectTrigger className="w-[90px] sm:w-[100px] h-8 text-xs shrink-0">
-                  <Box className="h-3 w-3 mr-1 shrink-0" />
-                  <SelectValue placeholder="Comp." />
+                <SelectTrigger className="w-[110px] h-8 text-xs">
+                  <SelectValue placeholder="Componente" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   {components.map((comp: any) => (
-                    <SelectItem key={comp.id} value={comp.id.toString()}>
-                      {comp.name}
-                    </SelectItem>
+                    <SelectItem key={comp.id} value={comp.id.toString()}>{comp.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
 
-            {/* View toggle */}
-            <div className="flex border rounded-lg p-0.5 gap-0.5 shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-muted' : 'hover:bg-muted/50'}`}
-                  >
-                    <LayoutGrid className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Vista grilla</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-muted' : 'hover:bg-muted/50'}`}
-                  >
-                    <List className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Vista lista</TooltipContent>
-              </Tooltip>
-            </div>
+            {/* View toggle - solo cuando no es historial */}
+            {subFilter !== 'history' && (
+              <div className="flex items-center border rounded-lg p-0.5 gap-0.5">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={() => setViewMode('list')} className={cn('p-1.5 rounded', viewMode === 'list' ? 'bg-muted' : 'hover:bg-muted/50')}>
+                      <List className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Vista lista</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={() => setViewMode('grid')} className={cn('p-1.5 rounded', viewMode === 'grid' ? 'bg-muted' : 'hover:bg-muted/50')}>
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Vista grilla</TooltipContent>
+                </Tooltip>
+              </div>
+            )}
 
-            {/* Filtro de duplicados */}
+            {/* Sin duplicados */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setHideDuplicates(!hideDuplicates)}
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors shrink-0 ${
-                    hideDuplicates
-                      ? 'bg-primary/10 text-primary border border-primary/30'
-                      : 'bg-muted/60 text-muted-foreground hover:bg-muted border border-transparent'
-                  }`}
+                  className={cn(
+                    'p-1.5 rounded-lg transition-colors',
+                    hideDuplicates ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'
+                  )}
                 >
                   <Copy className="h-3.5 w-3.5" />
-                  <span className="hidden md:inline">Sin dup.</span>
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
-                {hideDuplicates ? 'Mostrando únicos por nombre' : 'Mostrar todos (incluyendo duplicados)'}
-              </TooltipContent>
+              <TooltipContent>{hideDuplicates ? 'Sin duplicados activo' : 'Mostrar duplicados'}</TooltipContent>
             </Tooltip>
 
-            {/* Nueva OT */}
+            {/* Crear */}
             {canCreateMaintenance && (
-              <Button size="sm" className="h-8 text-xs gap-1 shrink-0 px-2 sm:px-3" onClick={() => setShowWorkOrderWizard(true)}>
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => activeSubTab === 'preventive' ? setShowPreventiveDialog(true) : setShowCorrectiveDialog(true)}
+              >
                 <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Nueva OT</span>
+                <span className="hidden sm:inline">
+                  {activeSubTab === 'preventive' ? 'Nuevo Preventivo' : 'Nuevo Correctivo'}
+                </span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* Search para historial */}
-        {activeFilter === 'history' && (
-          <div className="px-4 py-2">
+        {/* Búsqueda en historial */}
+        {subFilter === 'history' && (
+          <div className="px-4 pt-3">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar en historial..."
+                placeholder="Buscar en ejecuciones..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-9 text-sm"
+                className="pl-10 h-9"
               />
             </div>
           </div>
         )}
 
-        {/* Lista de OTs */}
-        <ScrollArea className="flex-1 px-4 py-2">
-          <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3' : 'space-y-2'}`}>
-            {activeFilter === 'history' ? (
-              filteredHistory.length === 0 ? (
-                renderEmptyState('No hay historial de mantenimientos')
-              ) : (
-                filteredHistory.map(renderHistoryCard)
+        {/* Contenido */}
+        <ScrollArea className="flex-1">
+          <div className="px-4 py-3">
+            {subFilter === 'history' ? (
+              renderHistoryTimeline()
+            ) : filteredData.length === 0 ? (
+              renderEmptyState(
+                subFilter === 'pending'
+                  ? 'No hay órdenes pendientes'
+                  : activeSubTab === 'preventive'
+                    ? 'No hay mantenimientos preventivos'
+                    : 'No hay mantenimientos correctivos',
+                canCreateMaintenance ? `Creá el primero con el botón "Nuevo ${activeSubTab === 'preventive' ? 'Preventivo' : 'Correctivo'}"` : undefined
               )
             ) : (
-              filteredData.length === 0 ? (
-                renderEmptyState(
-                  activeFilter === 'pending' ? 'No hay órdenes pendientes' :
-                  activeFilter === 'preventive' ? 'No hay mantenimientos preventivos' :
-                  activeFilter === 'corrective' ? 'No hay mantenimientos correctivos' :
-                  'No hay órdenes de trabajo'
-                )
-              ) : (
-                filteredData.map(renderWorkOrderCard)
-              )
+              <div className={cn(
+                viewMode === 'grid'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3'
+                  : 'space-y-2'
+              )}>
+                {filteredData.map(renderCard)}
+              </div>
             )}
           </div>
         </ScrollArea>
+      </>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <div className="flex flex-col h-full overflow-x-hidden">
+        <Tabs
+          value={activeSubTab}
+          onValueChange={(v) => { setActiveSubTab(v as SubTab); setSubFilter('all'); setSearchTerm(''); }}
+          className="flex flex-col h-full"
+        >
+          {/* Sub-tabs */}
+          <div className="px-4 pt-3 pb-2 flex-shrink-0">
+            <TabsList className="w-full h-8 bg-muted/50 border rounded-lg p-0.5">
+              <TabsTrigger
+                value="preventive"
+                className="flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              >
+                <div className="h-4 w-4 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                  <CalendarDays className="h-3 w-3 text-primary" />
+                </div>
+                <span>Preventivo</span>
+                {preventiveOrders.length > 0 && (
+                  <Badge className="ml-0.5 h-4 px-1 text-[10px] bg-primary text-primary-foreground border-0">
+                    {preventiveOrders.length}
+                  </Badge>
+                )}
+                {preventiveStats.overdue > 0 && (
+                  <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+                    {preventiveStats.overdue}v
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="corrective"
+                className="flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              >
+                <div className="h-4 w-4 rounded bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <Wrench className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span>Correctivo</span>
+                {correctiveOrders.length > 0 && (
+                  <Badge className="ml-0.5 h-4 px-1 text-[10px] bg-amber-500 text-white border-0">
+                    {correctiveOrders.length}
+                  </Badge>
+                )}
+                {correctiveStats.overdue > 0 && (
+                  <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+                    {correctiveStats.overdue}v
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="preventive" className="mt-0 flex-1 flex flex-col min-h-0">
+            {renderTabContent()}
+          </TabsContent>
+          <TabsContent value="corrective" className="mt-0 flex-1 flex flex-col min-h-0">
+            {renderTabContent()}
+          </TabsContent>
+        </Tabs>
 
         {/* Dialogs */}
         {showPreventiveDialog && (
@@ -786,19 +1088,19 @@ export default function MachineMaintenanceTab({
             isOpen={showPreventiveDialog}
             onClose={() => setShowPreventiveDialog(false)}
             preselectedMachineId={machineId}
-            onSave={() => {
-              setShowPreventiveDialog(false);
-              refetch();
-            }}
+            preselectedComponentId={componentId}
+            preselectedParentComponentId={parentComponentId}
+            onSave={() => { setShowPreventiveDialog(false); refetch(); }}
           />
         )}
 
         {showCorrectiveDialog && (
-          <CorrectiveMaintenanceDialog
+          <WorkOrderWizard
             isOpen={showCorrectiveDialog}
             onClose={() => setShowCorrectiveDialog(false)}
-            preselectedMachineId={machineId}
-            onSave={() => {
+            preselectedMachine={{ id: machineId, name: machineName }}
+            preselectedType="CORRECTIVE"
+            onSubmit={async () => {
               setShowCorrectiveDialog(false);
               refetch();
             }}
@@ -809,37 +1111,16 @@ export default function MachineMaintenanceTab({
           <WorkOrderDetailDialog
             workOrder={selectedWorkOrder}
             isOpen={!!selectedWorkOrder}
-            onOpenChange={(open) => {
-              if (!open) {
-                setSelectedWorkOrder(null);
-                refetch();
-              }
-            }}
+            onOpenChange={(open) => { if (!open) { setSelectedWorkOrder(null); refetch(); } }}
           />
         )}
 
-        {/* Work Order Wizard */}
-        {showWorkOrderWizard && (
-          <WorkOrderWizard
-            isOpen={showWorkOrderWizard}
-            onClose={() => setShowWorkOrderWizard(false)}
-            preselectedMachine={{ id: machineId, name: machineName }}
-            onSubmit={async (data) => {
-              setShowWorkOrderWizard(false);
-              refetch();
-            }}
-          />
-        )}
-
-        {/* Preventive Maintenance Detail Modal */}
         {selectedPreventive && (
           <MaintenanceDetailDialog
             maintenance={selectedPreventive}
             isOpen={!!selectedPreventive}
-            onClose={() => {
-              setSelectedPreventive(null);
-              refetch();
-            }}
+            onClose={() => { setSelectedPreventive(null); refetch(); }}
+            companyId={companyId}
           />
         )}
       </div>

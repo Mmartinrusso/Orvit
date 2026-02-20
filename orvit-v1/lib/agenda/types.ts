@@ -231,6 +231,7 @@ export interface CreateAgendaTaskInput {
   dueDate?: string;
   priority?: Priority;
   category?: string;
+  groupId?: number | null;
   assignedToUserId?: number;
   assignedToContactId?: number;
   assignedToName?: string;

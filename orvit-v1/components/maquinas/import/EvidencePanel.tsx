@@ -156,7 +156,7 @@ export function EvidencePanel({ evidences = [], componentName, onViewFile, jobId
                             onClick={() => handleCopySnippet(evidence.snippet!, index)}
                           >
                             {copiedIndex === index ? (
-                              <Check className="h-3 w-3 text-green-600" />
+                              <Check className="h-3 w-3 text-success" />
                             ) : (
                               <Copy className="h-3 w-3" />
                             )}

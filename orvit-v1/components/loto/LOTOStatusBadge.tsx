@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { LOTOStatus } from '@/lib/types';
 import { Lock, Unlock, AlertCircle } from 'lucide-react';
@@ -17,17 +18,17 @@ const statusConfig: Record<LOTOStatus, {
 }> = {
   [LOTOStatus.LOCKED]: {
     label: 'Bloqueado',
-    className: 'bg-red-100 text-red-700 border-red-300',
+    className: 'bg-destructive/10 text-destructive border-destructive/30',
     icon: Lock,
   },
   [LOTOStatus.UNLOCKED]: {
     label: 'Desbloqueado',
-    className: 'bg-green-100 text-green-700 border-green-300',
+    className: 'bg-success-muted text-success border-success/30',
     icon: Unlock,
   },
   [LOTOStatus.PARTIAL]: {
     label: 'Parcial',
-    className: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+    className: 'bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/30',
     icon: AlertCircle,
   },
 };
@@ -45,7 +46,7 @@ export default function LOTOStatusBadge({ status, showIcon = true, size = 'md' }
   return (
     <Badge
       variant="outline"
-      className={`${config.className} ${sizeClasses[size]} font-medium inline-flex items-center gap-1`}
+      className={cn(config.className, sizeClasses[size], 'font-medium inline-flex items-center gap-1')}
     >
       {showIcon && <Icon className={size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'} />}
       {config.label}

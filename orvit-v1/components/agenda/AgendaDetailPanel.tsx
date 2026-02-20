@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,17 +36,6 @@ import {
   getAssigneeType,
 } from '@/lib/agenda/types';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
 
 interface AgendaDetailPanelProps {
   task: AgendaTask;
@@ -62,7 +52,7 @@ export function AgendaDetailPanel({
   onDelete,
   onStatusChange,
 }: AgendaDetailPanelProps) {
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   const statusConfig = TASK_STATUS_CONFIG[task.status];
   const priorityConfig = PRIORITY_CONFIG[task.priority];
@@ -158,7 +148,7 @@ export function AgendaDetailPanel({
                   <span>Vence</span>
                 </div>
                 <span
-                  className={cn('text-sm font-medium', overdue && 'text-red-600')}
+                  className={cn('text-sm font-medium', overdue && 'text-destructive')}
                 >
                   {format(new Date(task.dueDate), "EEEE d 'de' MMMM, HH:mm 'hs'", { locale: es })}
                 </span>
@@ -292,7 +282,7 @@ export function AgendaDetailPanel({
           <Button
             variant="outline"
             size="sm"
-            className="text-red-600 hover:bg-red-50"
+            className="text-destructive hover:bg-destructive/10"
             onClick={onDelete}
           >
             <Trash2 className="h-4 w-4" />

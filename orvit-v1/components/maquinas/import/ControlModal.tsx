@@ -118,7 +118,7 @@ function ControlTreeNode({
             className="h-4 w-4 rounded object-cover flex-shrink-0"
           />
         ) : component.type === 'SYSTEM' ? (
-          <Box className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+          <Box className="h-3.5 w-3.5 text-info flex-shrink-0" />
         ) : (
           <Cog className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
         )}
@@ -140,7 +140,7 @@ function ControlTreeNode({
         )}
 
         {component.confidence < 0.7 && (
-          <AlertCircle className="h-3 w-3 text-amber-500 flex-shrink-0" />
+          <AlertCircle className="h-3 w-3 text-warning flex-shrink-0" />
         )}
       </div>
 
@@ -333,7 +333,7 @@ export function ControlModal({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
         className={cn(
-          'flex flex-col p-0 gap-0',
+          'p-0 gap-0',
           isFullscreen
             ? 'max-w-none w-screen h-screen rounded-none'
             : 'max-w-[100vw] w-[100vw] h-[100dvh] sm:max-w-[99vw] sm:w-[99vw] sm:h-[99vh] md:max-w-[99vw] md:w-[99vw] md:h-[98vh] rounded-none sm:rounded-lg'

@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -34,6 +35,7 @@ export function QuoteItemTable({ items, onUpdateItem, onRemoveItem }: QuoteItemT
   }
 
   return (
+    <div className="overflow-x-auto">
     <Table>
       <TableHeader>
         <TableRow>
@@ -58,13 +60,13 @@ export function QuoteItemTable({ items, onUpdateItem, onRemoveItem }: QuoteItemT
                     {item.product.category === 'bloques' && item.product.blocksPerM2 && (
                       <>
                         <span>•</span>
-                        <span className="text-blue-600">{item.product.blocksPerM2} /m²</span>
+                        <span className="text-info-muted-foreground">{item.product.blocksPerM2} /m²</span>
                       </>
                     )}
                     <span>•</span>
                     <span>Costo: {formatCurrency(item.product.costPrice)}</span>
                     <span>•</span>
-                    <span className="text-green-600">Margen: {(((item.unitPrice - item.product.costPrice) / item.product.costPrice) * 100).toFixed(1)}%</span>
+                    <span className="text-success">Margen: {(((item.unitPrice - item.product.costPrice) / item.product.costPrice) * 100).toFixed(1)}%</span>
                   </div>
                 </div>
                 {hasInsufficientStock(item) && (
@@ -88,7 +90,7 @@ export function QuoteItemTable({ items, onUpdateItem, onRemoveItem }: QuoteItemT
                     onUpdateItem(item.id, { quantity: Number(value) || 1 });
                   }
                 }}
-                className={`w-20 ${hasInsufficientStock(item) ? 'border-destructive' : ''}`}
+                className={cn('w-20', hasInsufficientStock(item) && 'border-destructive')}
                 min="1"
               />
             </TableCell>
@@ -141,5 +143,6 @@ export function QuoteItemTable({ items, onUpdateItem, onRemoveItem }: QuoteItemT
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 } 

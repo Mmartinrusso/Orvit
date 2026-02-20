@@ -209,45 +209,45 @@ export default function SimulacionesPage() {
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
     switch (estado) {
       case 'ok':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>;
       case 'warning':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>;
       case 'danger':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>;
     }
   };
 
   const getSimulacionEstadoBadge = (estado: 'borrador' | 'activa' | 'completada') => {
     switch (estado) {
       case 'borrador':
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Borrador</Badge>;
+        return <Badge className="bg-muted text-foreground hover:bg-muted">Borrador</Badge>;
       case 'activa':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Activa</Badge>;
+        return <Badge className="bg-info-muted text-info-muted-foreground hover:bg-info-muted">Activa</Badge>;
       case 'completada':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completada</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">Completada</Badge>;
     }
   };
 
   const getVariacionIcon = (variacion: number) => {
     if (variacion > 0) {
-      return <TrendingUp className="h-4 w-4 text-red-500" />;
+      return <TrendingUp className="h-4 w-4 text-destructive" />;
     } else if (variacion < 0) {
-      return <TrendingDown className="h-4 w-4 text-green-500" />;
+      return <TrendingDown className="h-4 w-4 text-success" />;
     } else {
-      return <Clock className="h-4 w-4 text-gray-500" />;
+      return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getTipoVariacionBadge = (tipo: string) => {
     const tipos = {
-      'aumento_salarial': { label: 'Salarios', color: 'bg-blue-100 text-blue-800' },
-      'precio_insumo': { label: 'Insumos', color: 'bg-orange-100 text-orange-800' },
+      'aumento_salarial': { label: 'Salarios', color: 'bg-info-muted text-info-muted-foreground' },
+      'precio_insumo': { label: 'Insumos', color: 'bg-warning-muted text-warning-muted-foreground' },
       'servicio': { label: 'Servicios', color: 'bg-purple-100 text-purple-800' },
-      'dolar': { label: 'Dólar', color: 'bg-green-100 text-green-800' },
-      'ipc': { label: 'IPC', color: 'bg-red-100 text-red-800' }
+      'dolar': { label: 'Dólar', color: 'bg-success-muted text-success' },
+      'ipc': { label: 'IPC', color: 'bg-destructive/10 text-destructive' }
     };
     
-    const tipoInfo = tipos[tipo as keyof typeof tipos] || { label: tipo, color: 'bg-gray-100 text-gray-800' };
+    const tipoInfo = tipos[tipo as keyof typeof tipos] || { label: tipo, color: 'bg-muted text-foreground' };
     
     return <Badge className={tipoInfo.color}>{tipoInfo.label}</Badge>;
   };
@@ -388,7 +388,7 @@ export default function SimulacionesPage() {
                       <div className="text-sm font-medium mb-2">Escenarios:</div>
                       <div className="space-y-2">
                         {simulacion.escenarios.map((escenario) => (
-                          <div key={escenario.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div key={escenario.id} className="flex items-center justify-between p-2 bg-muted rounded">
                             <div>
                               <div className="font-medium">{escenario.nombre}</div>
                               <div className="text-sm text-muted-foreground">{escenario.descripcion}</div>
@@ -398,7 +398,7 @@ export default function SimulacionesPage() {
                                 <div className="font-medium">{formatCurrency(escenario.costoProyectado)}</div>
                                 <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                                   {getVariacionIcon(escenario.variacion)}
-                                  <span className={escenario.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                                  <span className={escenario.variacion > 0 ? 'text-destructive' : 'text-success'}>
                                     {escenario.variacion > 0 ? '+' : ''}{escenario.variacion.toFixed(1)}%
                                   </span>
                                 </div>
@@ -505,24 +505,24 @@ export default function SimulacionesPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                     <span>3 escenarios críticos detectados</span>
                   </div>
-                  <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>
+                  <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                     <span>2 simulaciones activas</span>
                   </div>
-                  <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>
+                  <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                     <span>1 simulación completada</span>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>
+                  <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>
                 </div>
               </CardContent>
             </Card>

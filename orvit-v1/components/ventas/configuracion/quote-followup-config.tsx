@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,25 +114,25 @@ export function QuoteFollowupConfig({ config, onSave }: QuoteFollowupConfigProps
         day: 0,
         label: 'Cotización enviada',
         icon: CheckCircle,
-        color: 'text-green-500',
+        color: 'text-success',
       },
       {
         day: followupConfig.firstReminderDays,
         label: '1er recordatorio',
         icon: Bell,
-        color: 'text-blue-500',
+        color: 'text-primary',
       },
       {
         day: followupConfig.secondReminderDays,
         label: '2do recordatorio',
         icon: Bell,
-        color: 'text-yellow-500',
+        color: 'text-warning-muted-foreground',
       },
       {
         day: followupConfig.thirdReminderDays,
         label: '3er recordatorio',
         icon: AlertTriangle,
-        color: 'text-orange-500',
+        color: 'text-warning-muted-foreground',
       },
       {
         day: followupConfig.escalateToManagerAfterDays,
@@ -144,7 +145,7 @@ export function QuoteFollowupConfig({ config, onSave }: QuoteFollowupConfigProps
         day: followupConfig.autoCloseAfterDays,
         label: 'Cierre automático',
         icon: XCircle,
-        color: 'text-red-500',
+        color: 'text-destructive',
       },
     ]
       .filter((e) => e.show !== false)
@@ -163,7 +164,7 @@ export function QuoteFollowupConfig({ config, onSave }: QuoteFollowupConfigProps
               const Icon = event.icon;
               return (
                 <div key={index} className="flex items-center gap-4 relative">
-                  <div className={`w-8 h-8 rounded-full bg-background border-2 flex items-center justify-center z-10 ${event.color}`}>
+                  <div className={cn('w-8 h-8 rounded-full bg-background border-2 flex items-center justify-center z-10', event.color)}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1">

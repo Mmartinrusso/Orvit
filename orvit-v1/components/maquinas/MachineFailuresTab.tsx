@@ -38,6 +38,7 @@ import { FailureDetailSheet } from '@/components/corrective/failures/FailureDeta
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface MachineFailuresTabProps {
   machineId: number;
@@ -152,7 +153,7 @@ export default function MachineFailuresTab({
       case 'OPEN':
         return <Badge variant="destructive" className="text-[10px] px-1.5">Abierta</Badge>;
       case 'IN_PROGRESS':
-        return <Badge className="bg-amber-500 text-[10px] px-1.5">En Progreso</Badge>;
+        return <Badge className="bg-warning text-[10px] px-1.5">En Progreso</Badge>;
       case 'RESOLVED':
       case 'CLOSED':
         return <Badge variant="secondary" className="text-[10px] px-1.5">Resuelta</Badge>;
@@ -167,9 +168,9 @@ export default function MachineFailuresTab({
       case 'CRITICAL':
         return <Badge variant="destructive" className="text-[10px] px-1.5">Crítica</Badge>;
       case 'HIGH':
-        return <Badge className="bg-orange-500 text-white text-[10px] px-1.5">Alta</Badge>;
+        return <Badge className="bg-warning text-warning-foreground text-[10px] px-1.5">Alta</Badge>;
       case 'MEDIUM':
-        return <Badge className="bg-yellow-500 text-white text-[10px] px-1.5">Media</Badge>;
+        return <Badge className="bg-warning/80 text-warning-foreground text-[10px] px-1.5">Media</Badge>;
       case 'LOW':
         return <Badge variant="outline" className="text-[10px] px-1.5">Baja</Badge>;
       default:
@@ -207,31 +208,31 @@ export default function MachineFailuresTab({
         </Card>
         {/* Abiertas - rojo solo si > 0 */}
         <Card
-          className={`p-2 cursor-pointer hover:shadow-md transition-shadow ${
-            stats.open > 0 ? 'bg-red-50/50 border-red-200/50' : 'border-border/50'
-          }`}
+          className={cn('p-2 cursor-pointer hover:shadow-md transition-shadow',
+            stats.open > 0 ? 'bg-destructive/5 border-destructive/20' : 'border-border/50'
+          )}
           onClick={() => setStatusFilter('OPEN')}
         >
           <div className="flex items-center gap-2">
-            <AlertCircle className={`h-4 w-4 ${stats.open > 0 ? 'text-red-600' : 'text-muted-foreground'}`} />
+            <AlertCircle className={cn('h-4 w-4', stats.open > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
               <p className="text-[10px] text-muted-foreground">Abiertas</p>
-              <p className={`text-lg font-bold ${stats.open > 0 ? 'text-red-700' : ''}`}>{stats.open}</p>
+              <p className={cn('text-lg font-bold', stats.open > 0 && 'text-destructive')}>{stats.open}</p>
             </div>
           </div>
         </Card>
         {/* En Progreso - amber solo si > 0 */}
         <Card
-          className={`p-2 cursor-pointer hover:shadow-md transition-shadow ${
-            stats.inProgress > 0 ? 'bg-amber-50/50 border-amber-200/50' : 'border-border/50'
-          }`}
+          className={cn('p-2 cursor-pointer hover:shadow-md transition-shadow',
+            stats.inProgress > 0 ? 'bg-warning-muted border-warning/20' : 'border-border/50'
+          )}
           onClick={() => setStatusFilter('IN_PROGRESS')}
         >
           <div className="flex items-center gap-2">
-            <Clock className={`h-4 w-4 ${stats.inProgress > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+            <Clock className={cn('h-4 w-4', stats.inProgress > 0 ? 'text-warning' : 'text-muted-foreground')} />
             <div>
               <p className="text-[10px] text-muted-foreground">En Progreso</p>
-              <p className={`text-lg font-bold ${stats.inProgress > 0 ? 'text-amber-700' : ''}`}>{stats.inProgress}</p>
+              <p className={cn('text-lg font-bold', stats.inProgress > 0 && 'text-warning')}>{stats.inProgress}</p>
             </div>
           </div>
         </Card>
@@ -246,22 +247,22 @@ export default function MachineFailuresTab({
           </div>
         </Card>
         {/* Con Parada - destacar solo si > 0 (importante) */}
-        <Card className={`p-2 border-border/50 ${stats.withDowntime > 0 ? 'bg-purple-50/50 border-purple-200/50' : ''}`}>
+        <Card className={cn('p-2 border-border/50', stats.withDowntime > 0 && 'bg-primary/5 border-primary/20')}>
           <div className="flex items-center gap-2">
-            <Timer className={`h-4 w-4 ${stats.withDowntime > 0 ? 'text-purple-600' : 'text-muted-foreground'}`} />
+            <Timer className={cn('h-4 w-4', stats.withDowntime > 0 ? 'text-primary' : 'text-muted-foreground')} />
             <div>
               <p className="text-[10px] text-muted-foreground">Con Parada</p>
-              <p className={`text-lg font-bold ${stats.withDowntime > 0 ? 'text-purple-700' : ''}`}>{stats.withDowntime}</p>
+              <p className={cn('text-lg font-bold', stats.withDowntime > 0 && 'text-primary')}>{stats.withDowntime}</p>
             </div>
           </div>
         </Card>
         {/* Críticas - destacar solo si > 0 */}
-        <Card className={`p-2 border-border/50 ${stats.critical > 0 ? 'bg-rose-50/50 border-rose-200/50' : ''}`}>
+        <Card className={cn('p-2 border-border/50', stats.critical > 0 && 'bg-destructive/5 border-destructive/20')}>
           <div className="flex items-center gap-2">
-            <AlertTriangle className={`h-4 w-4 ${stats.critical > 0 ? 'text-rose-600' : 'text-muted-foreground'}`} />
+            <AlertTriangle className={cn('h-4 w-4', stats.critical > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
               <p className="text-[10px] text-muted-foreground">Críticas</p>
-              <p className={`text-lg font-bold ${stats.critical > 0 ? 'text-rose-700' : ''}`}>{stats.critical}</p>
+              <p className={cn('text-lg font-bold', stats.critical > 0 && 'text-destructive')}>{stats.critical}</p>
             </div>
           </div>
         </Card>

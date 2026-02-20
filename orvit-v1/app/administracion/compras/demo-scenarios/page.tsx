@@ -57,27 +57,27 @@ interface ScenarioResult {
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  'Flujo Normal': <CheckCircle2 className="h-4 w-4 text-green-500" />,
-  'Excepciones Match': <AlertTriangle className="h-4 w-4 text-amber-500" />,
-  'GRNI': <Package className="h-4 w-4 text-blue-500" />,
+  'Flujo Normal': <CheckCircle2 className="h-4 w-4 text-success" />,
+  'Excepciones Match': <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />,
+  'GRNI': <Package className="h-4 w-4 text-info-muted-foreground" />,
   'Órdenes de Compra': <ShoppingCart className="h-4 w-4 text-purple-500" />,
   'Facturas': <FileText className="h-4 w-4 text-indigo-500" />,
-  'Proveedores': <Users className="h-4 w-4 text-gray-500" />,
+  'Proveedores': <Users className="h-4 w-4 text-muted-foreground" />,
   'Recepciones': <Package className="h-4 w-4 text-teal-500" />,
-  'Pedidos': <Clock className="h-4 w-4 text-orange-500" />,
-  'NC/ND': <DollarSign className="h-4 w-4 text-red-500" />,
+  'Pedidos': <Clock className="h-4 w-4 text-warning-muted-foreground" />,
+  'NC/ND': <DollarSign className="h-4 w-4 text-destructive" />,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Flujo Normal': 'bg-green-100 text-green-700 border-green-200',
-  'Excepciones Match': 'bg-amber-100 text-amber-700 border-amber-200',
-  'GRNI': 'bg-blue-100 text-blue-700 border-blue-200',
+  'Flujo Normal': 'bg-success-muted text-success border-success-muted',
+  'Excepciones Match': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  'GRNI': 'bg-info-muted text-info-muted-foreground border-info-muted',
   'Órdenes de Compra': 'bg-purple-100 text-purple-700 border-purple-200',
   'Facturas': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  'Proveedores': 'bg-gray-100 text-gray-700 border-gray-200',
+  'Proveedores': 'bg-muted text-foreground border-border',
   'Recepciones': 'bg-teal-100 text-teal-700 border-teal-200',
-  'Pedidos': 'bg-orange-100 text-orange-700 border-orange-200',
-  'NC/ND': 'bg-red-100 text-red-700 border-red-200',
+  'Pedidos': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  'NC/ND': 'bg-destructive/10 text-destructive border-destructive/30',
 };
 
 export default function DemoScenariosPage() {
@@ -205,7 +205,7 @@ export default function DemoScenariosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-amber-500" />
+            <Zap className="h-6 w-6 text-warning-muted-foreground" />
             Escenarios de Prueba P2P
           </h1>
           <p className="text-muted-foreground">
@@ -243,7 +243,7 @@ export default function DemoScenariosPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={deleteAllData} className="bg-red-600 hover:bg-red-700">
+                <AlertDialogAction onClick={deleteAllData} className="bg-destructive hover:bg-destructive">
                   {deleting ? 'Eliminando...' : 'Eliminar Todo'}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -322,14 +322,14 @@ export default function DemoScenariosPage() {
             </Card>
           ) : (
             results.map((result, index) => (
-              <Card key={index} className={result.success ? 'border-green-200' : 'border-red-200'}>
+              <Card key={index} className={result.success ? 'border-success-muted' : 'border-destructive/30'}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       {result.success ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <CheckCircle2 className="h-5 w-5 text-success" />
                       ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
+                        <XCircle className="h-5 w-5 text-destructive" />
                       )}
                       {result.scenario.replace(/_/g, ' ').toUpperCase()}
                     </CardTitle>
@@ -358,7 +358,7 @@ export default function DemoScenariosPage() {
                 )}
                 {!result.success && result.error && (
                   <CardContent>
-                    <p className="text-sm text-red-600">{result.error}</p>
+                    <p className="text-sm text-destructive">{result.error}</p>
                   </CardContent>
                 )}
               </Card>
@@ -370,8 +370,8 @@ export default function DemoScenariosPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateTo('/administracion/compras/torre-control')}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Package className="h-6 w-6 text-blue-600" />
+                <div className="h-12 w-12 rounded-lg bg-info-muted flex items-center justify-center">
+                  <Package className="h-6 w-6 text-info-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium">Torre de Control</h3>
@@ -383,8 +383,8 @@ export default function DemoScenariosPage() {
 
             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateTo('/administracion/compras/match')}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-amber-600" />
+                <div className="h-12 w-12 rounded-lg bg-warning-muted flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-warning-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium">3-Way Match</h3>
@@ -396,8 +396,8 @@ export default function DemoScenariosPage() {
 
             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateTo('/administracion/compras/grni')}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-orange-600" />
+                <div className="h-12 w-12 rounded-lg bg-warning-muted flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-warning-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium">GRNI Dashboard</h3>
@@ -448,8 +448,8 @@ export default function DemoScenariosPage() {
 
             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateTo('/administracion/compras/pedidos-compra')}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-orange-600" />
+                <div className="h-12 w-12 rounded-lg bg-warning-muted flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-warning-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium">Pedidos de Compra</h3>
@@ -461,8 +461,8 @@ export default function DemoScenariosPage() {
 
             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateTo('/administracion/compras/ordenes-pago')}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-green-600" />
+                <div className="h-12 w-12 rounded-lg bg-success-muted flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-success" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium">Órdenes de Pago</h3>
@@ -474,8 +474,8 @@ export default function DemoScenariosPage() {
 
             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateTo('/administracion/compras/configuracion')}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-gray-600" />
+                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
+                  <Users className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium">Configuración</h3>

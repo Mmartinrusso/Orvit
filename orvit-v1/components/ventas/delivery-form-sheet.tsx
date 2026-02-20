@@ -284,7 +284,7 @@ export function DeliveryFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-2xl overflow-y-auto">
+      <SheetContent size="lg" className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Truck className="w-5 h-5" />
@@ -495,7 +495,7 @@ export function DeliveryFormSheet({
                           <TableCell className="text-right">
                             {item.cantidad} {item.unidadMedida}
                           </TableCell>
-                          <TableCell className="text-right text-green-600">
+                          <TableCell className="text-right text-success">
                             {item.cantidadEntregada || 0}
                           </TableCell>
                           <TableCell className="text-right">

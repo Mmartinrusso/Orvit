@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,11 +143,11 @@ export function ProductStockHistory({
   const getMovementIcon = (tipo: string) => {
     switch (tipo) {
       case 'ENTRADA':
-        return <ArrowUpCircle className="w-5 h-5 text-green-600" />;
+        return <ArrowUpCircle className="w-5 h-5 text-success" />;
       case 'SALIDA':
-        return <ArrowDownCircle className="w-5 h-5 text-red-600" />;
+        return <ArrowDownCircle className="w-5 h-5 text-destructive" />;
       case 'AJUSTE':
-        return <RotateCcw className="w-5 h-5 text-blue-600" />;
+        return <RotateCcw className="w-5 h-5 text-info-muted-foreground" />;
       default:
         return <Package className="w-5 h-5" />;
     }
@@ -155,13 +156,13 @@ export function ProductStockHistory({
   const getMovementColor = (tipo: string) => {
     switch (tipo) {
       case 'ENTRADA':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return 'bg-success-muted text-success border-success-muted';
       case 'SALIDA':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/30';
       case 'AJUSTE':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-info-muted text-info-muted-foreground border-info-muted';
       default:
-        return 'bg-gray-50 text-gray-700';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -184,7 +185,7 @@ export function ProductStockHistory({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="w-5 h-5" />
@@ -195,7 +196,7 @@ export function ProductStockHistory({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto space-y-4">
+        <DialogBody className="space-y-4">
           {/* Boton para agregar movimiento */}
           {!showAddForm && (
             <Button
@@ -226,19 +227,19 @@ export function ProductStockHistory({
                         <SelectContent>
                           <SelectItem value="ENTRADA">
                             <div className="flex items-center gap-2">
-                              <ArrowUpCircle className="w-4 h-4 text-green-600" />
+                              <ArrowUpCircle className="w-4 h-4 text-success" />
                               Entrada
                             </div>
                           </SelectItem>
                           <SelectItem value="SALIDA">
                             <div className="flex items-center gap-2">
-                              <ArrowDownCircle className="w-4 h-4 text-red-600" />
+                              <ArrowDownCircle className="w-4 h-4 text-destructive" />
                               Salida
                             </div>
                           </SelectItem>
                           <SelectItem value="AJUSTE">
                             <div className="flex items-center gap-2">
-                              <RotateCcw className="w-4 h-4 text-blue-600" />
+                              <RotateCcw className="w-4 h-4 text-info-muted-foreground" />
                               Ajuste (valor absoluto)
                             </div>
                           </SelectItem>
@@ -335,7 +336,7 @@ export function ProductStockHistory({
                 onClick={loadMovements}
                 disabled={loading}
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
               </Button>
             </div>
 
@@ -353,7 +354,7 @@ export function ProductStockHistory({
                 {movements.map((movement) => (
                   <div
                     key={movement.id}
-                    className={`p-3 rounded-lg border ${getMovementColor(movement.tipo)}`}
+                    className={cn('p-3 rounded-lg border', getMovementColor(movement.tipo))}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">

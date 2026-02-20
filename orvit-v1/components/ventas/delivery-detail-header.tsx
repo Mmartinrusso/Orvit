@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,15 +34,15 @@ type DeliveryStatus =
   | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<DeliveryStatus, { label: string; color: string; icon: React.ElementType }> = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Clock },
-  EN_PREPARACION: { label: 'Preparación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Package },
-  LISTA_PARA_DESPACHO: { label: 'Lista', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle2 },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-muted text-foreground border-border', icon: Clock },
+  EN_PREPARACION: { label: 'Preparación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
+  LISTA_PARA_DESPACHO: { label: 'Lista', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
   EN_TRANSITO: { label: 'En Tránsito', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Truck },
   RETIRADA: { label: 'Retirada', color: 'bg-cyan-100 text-cyan-700 border-cyan-200', icon: Package },
-  ENTREGADA: { label: 'Entregada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  ENTREGA_FALLIDA: { label: 'Fallida', color: 'bg-red-100 text-red-700 border-red-200', icon: X },
-  PARCIAL: { label: 'Parcial', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Package },
-  CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: X },
+  ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  ENTREGA_FALLIDA: { label: 'Fallida', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: X },
+  PARCIAL: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
+  CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground border-border', icon: X },
 };
 
 interface DeliveryDetailHeaderProps {
@@ -114,7 +115,7 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">Entrega {delivery.numero}</h1>
-            <Badge className={`${config.color} border`}>
+            <Badge className={cn(config.color, 'border')}>
               <Icon className="w-4 h-4 mr-1" />
               {config.label}
             </Badge>
@@ -214,8 +215,8 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
+              <div className="p-2 bg-info-muted rounded-lg">
+                <Calendar className="w-5 h-5 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Fecha Programada</p>
@@ -232,8 +233,8 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <div className="p-2 bg-success-muted rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Fecha Entrega</p>
@@ -267,8 +268,8 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Truck className="w-5 h-5 text-orange-600" />
+              <div className="p-2 bg-warning-muted rounded-lg">
+                <Truck className="w-5 h-5 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Vehículo</p>
@@ -317,13 +318,13 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
 
       {/* Recipient Info (if delivered) */}
       {(delivery.recibeNombre || delivery.recibeDNI) && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-success-muted border-success-muted">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-green-600" />
+              <User className="w-5 h-5 text-success" />
               <div>
-                <p className="text-sm font-medium text-green-900">Recibido por:</p>
-                <p className="text-sm text-green-700">
+                <p className="text-sm font-medium text-success">Recibido por:</p>
+                <p className="text-sm text-success">
                   {delivery.recibeNombre}
                   {delivery.recibeDNI && ` - DNI: ${delivery.recibeDNI}`}
                 </p>

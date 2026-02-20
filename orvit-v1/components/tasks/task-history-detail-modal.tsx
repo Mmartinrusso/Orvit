@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { X, Calendar, User, Clock, FileText, Users, Building, Tag, MessageCircle, Trash2, Archive, Download, Send } from "lucide-react";
 import {
   Dialog,
@@ -116,15 +117,15 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
     switch (status.toLowerCase()) {
       case 'completed':
       case 'realizada':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-success-muted text-success-muted-foreground';
       case 'in-progress':
       case 'en-curso':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'pending':
       case 'pendiente':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -132,15 +133,15 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
     switch (priority.toLowerCase()) {
       case 'high':
       case 'alta':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        return 'bg-destructive/10 text-destructive';
       case 'medium':
       case 'media':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 'bg-warning-muted text-warning-muted-foreground';
       case 'low':
       case 'baja':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-success-muted text-success-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -166,7 +167,7 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="lg" className="flex flex-col">
+      <DialogContent size="lg">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-2">
@@ -178,7 +179,7 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
                 <Badge className={getPriorityColor(task.task.priority)}>
                   {getPriorityText(task.task.priority)}
                 </Badge>
-                <Badge variant="destructive" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                <Badge variant="destructive" className="bg-destructive/10 text-destructive">
                   <Trash2 className="h-3 w-3 mr-1" />
                   Eliminada
                 </Badge>
@@ -243,8 +244,8 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
                       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <span className="text-muted-foreground">Asignada a:</span>
                         <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
-                            <span className="text-xs font-medium text-green-800">
+                          <div className="h-6 w-6 rounded-full bg-success-muted flex items-center justify-center">
+                            <span className="text-xs font-medium text-success-muted-foreground">
                               {task.task.assignedTo.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -312,7 +313,7 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
                       <Badge 
                         key={index} 
                         variant="secondary" 
-                        className={`text-xs px-3 py-1 font-semibold ${getTagColor(tag)}`}
+                        className={cn('text-xs px-3 py-1 font-semibold', getTagColor(tag))}
                       >
                         {translateTag(tag)}
                       </Badge>
@@ -325,36 +326,36 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
 
               {/* Información de Eliminación */}
               <div className="space-y-3">
-                <h3 className="font-medium flex items-center gap-2 text-red-600">
+                <h3 className="font-medium flex items-center gap-2 text-destructive">
                   <Archive className="h-4 w-4" />
                   Información de Eliminación
                 </h3>
-                
-                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4 space-y-3">
+
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 dark:text-red-300">Eliminada por:</span>
+                    <span className="text-sm text-destructive">Eliminada por:</span>
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                        <span className="text-xs font-medium text-red-800 dark:text-red-200">
+                      <div className="h-6 w-6 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <span className="text-xs font-medium text-destructive">
                           {task.task.deletedBy.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="font-medium text-red-800 dark:text-red-200">
+                      <span className="font-medium text-destructive">
                         {task.task.deletedBy.name}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 dark:text-red-300">Fecha de eliminación:</span>
-                    <span className="font-medium text-red-800 dark:text-red-200">
+                    <span className="text-sm text-destructive">Fecha de eliminación:</span>
+                    <span className="font-medium text-destructive">
                       {formatDate(task.deletedAt)}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 dark:text-red-300">ID original:</span>
-                    <span className="font-mono text-sm font-medium text-red-800 dark:text-red-200">
+                    <span className="text-sm text-destructive">ID original:</span>
+                    <span className="font-mono text-sm font-medium text-destructive">
                       #{task.task.id}
                     </span>
                   </div>

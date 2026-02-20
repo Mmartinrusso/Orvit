@@ -239,10 +239,10 @@ export default function ChequesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Cobrados</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {formatCurrency(resumen.filter(r => r.estado === 'COBRADO').reduce((s, r) => s + Number(r._sum.importe || 0), 0))}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -254,10 +254,10 @@ export default function ChequesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Rechazados</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatCurrency(resumen.filter(r => r.estado === 'RECHAZADO').reduce((s, r) => s + Number(r._sum.importe || 0), 0))}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -346,7 +346,7 @@ export default function ChequesPage() {
                           <Calendar className="h-3 w-3 text-muted-foreground" />
                           <span>{vencimiento.toLocaleDateString('es-AR')}</span>
                           {cheque.estado === 'CARTERA' && diasRestantes <= 7 && diasRestantes >= 0 && (
-                            <Badge variant="outline" className="text-yellow-600">
+                            <Badge variant="outline" className="text-warning-muted-foreground">
                               {diasRestantes === 0 ? 'Hoy' : `${diasRestantes}d`}
                             </Badge>
                           )}
@@ -379,7 +379,7 @@ export default function ChequesPage() {
                                 <ArrowRightLeft className="h-4 w-4 mr-2" />
                                 Endosar
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAction(cheque, 'anular')} className="text-red-600">
+                              <DropdownMenuItem onClick={() => handleAction(cheque, 'anular')} className="text-destructive">
                                 <XCircle className="h-4 w-4 mr-2" />
                                 Anular
                               </DropdownMenuItem>
@@ -398,7 +398,7 @@ export default function ChequesPage() {
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Marcar Cobrado
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAction(cheque, 'rechazar')} className="text-red-600">
+                              <DropdownMenuItem onClick={() => handleAction(cheque, 'rechazar')} className="text-destructive">
                                 <XCircle className="h-4 w-4 mr-2" />
                                 Marcar Rechazado
                               </DropdownMenuItem>

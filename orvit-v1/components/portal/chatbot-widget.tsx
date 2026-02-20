@@ -172,14 +172,14 @@ export function ChatbotWidget({
       {/* Chat Window */}
       {isOpen && (
         <div className={cn(
-          'bg-white rounded-lg shadow-2xl mb-4 transition-all duration-300',
+          'bg-card rounded-lg shadow-2xl mb-4 transition-all duration-300',
           isMinimized ? 'w-80 h-14' : 'w-96 h-[600px]',
-          'border border-gray-200'
+          'border border-border'
         )}>
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
               <h3 className="font-semibold">
                 {language === 'es' ? 'Asistente Virtual' : 'Virtual Assistant'}
               </h3>
@@ -188,7 +188,7 @@ export function ChatbotWidget({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white hover:bg-blue-800"
+                className="h-8 w-8 text-white hover:bg-primary/80"
                 onClick={() => setIsMinimized(!isMinimized)}
               >
                 {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
@@ -196,7 +196,7 @@ export function ChatbotWidget({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white hover:bg-blue-800"
+                className="h-8 w-8 text-white hover:bg-primary/80"
                 onClick={() => setIsOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -209,14 +209,14 @@ export function ChatbotWidget({
               {/* Messages */}
               <ScrollArea className="h-[460px] p-4">
                 {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 space-y-3">
-                    <MessageCircle className="h-12 w-12 text-gray-300" />
+                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground space-y-3">
+                    <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
                     <p className="text-sm">
                       {language === 'es'
                         ? '¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?'
                         : 'Hi! I\'m your virtual assistant. How can I help you today?'}
                     </p>
-                    <div className="text-xs text-gray-400 space-y-1">
+                    <div className="text-xs text-muted-foreground space-y-1">
                       <p>{language === 'es' ? 'Puedo ayudarte con:' : 'I can help you with:'}</p>
                       <ul className="text-left space-y-0.5 pl-4">
                         <li>• {language === 'es' ? 'Estado de órdenes' : 'Order status'}</li>
@@ -240,14 +240,14 @@ export function ChatbotWidget({
                           className={cn(
                             'max-w-[80%] rounded-lg px-4 py-2 text-sm',
                             msg.role === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-foreground'
                           )}
                         >
                           <p className="whitespace-pre-wrap">{msg.content}</p>
                           <p className={cn(
                             'text-xs mt-1',
-                            msg.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                            msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
                           )}>
                             {msg.timestamp.toLocaleTimeString(language === 'es' ? 'es-AR' : 'en-US', {
                               hour: '2-digit',
@@ -259,11 +259,11 @@ export function ChatbotWidget({
                     ))}
                     {isLoading && (
                       <div className="flex justify-start">
-                        <div className="bg-gray-100 rounded-lg px-4 py-2">
+                        <div className="bg-muted rounded-lg px-4 py-2">
                           <div className="flex space-x-2">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                           </div>
                         </div>
                       </div>
@@ -289,7 +289,7 @@ export function ChatbotWidget({
                     onClick={sendMessage}
                     disabled={!inputValue.trim() || isLoading}
                     size="icon"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-primary hover:bg-primary/90"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
@@ -297,7 +297,7 @@ export function ChatbotWidget({
                 {messages.length > 0 && (
                   <button
                     onClick={clearChat}
-                    className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                    className="text-xs text-muted-foreground hover:text-foreground mt-2"
                   >
                     {language === 'es' ? 'Limpiar conversación' : 'Clear conversation'}
                   </button>
@@ -312,7 +312,7 @@ export function ChatbotWidget({
       <Button
         onClick={() => setIsOpen(!isOpen)}
         size="icon"
-        className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
+        className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300"
       >
         {isOpen ? (
           <X className="h-6 w-6" />

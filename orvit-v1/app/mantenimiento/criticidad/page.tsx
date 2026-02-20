@@ -85,11 +85,11 @@ interface Summary {
 }
 
 const criticalityColors: Record<string, string> = {
-  CRITICAL: 'bg-red-500',
-  HIGH: 'bg-orange-500',
-  MEDIUM: 'bg-yellow-500',
-  LOW: 'bg-green-500',
-  NOT_ASSESSED: 'bg-gray-400',
+  CRITICAL: 'bg-destructive',
+  HIGH: 'bg-warning',
+  MEDIUM: 'bg-warning',
+  LOW: 'bg-success',
+  NOT_ASSESSED: 'bg-muted-foreground',
 };
 
 const criticalityLabels: Record<string, string> = {
@@ -247,8 +247,8 @@ export default function CriticalityMatrixPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-red-100">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div className="p-2 rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{summary.distribution.critical}</p>
@@ -261,8 +261,8 @@ export default function CriticalityMatrixPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-orange-100">
-                <Target className="h-5 w-5 text-orange-600" />
+              <div className="p-2 rounded-full bg-warning-muted">
+                <Target className="h-5 w-5 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{summary.distribution.high}</p>
@@ -275,8 +275,8 @@ export default function CriticalityMatrixPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-green-100">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-full bg-success-muted">
+                <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{summary.assessed}</p>
@@ -289,8 +289,8 @@ export default function CriticalityMatrixPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gray-100">
-                <Activity className="h-5 w-5 text-gray-600" />
+              <div className="p-2 rounded-full bg-muted">
+                <Activity className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{summary.needsAssessment}</p>
@@ -310,7 +310,7 @@ export default function CriticalityMatrixPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Factory className="h-4 w-4 text-blue-600" />
+                <Factory className="h-4 w-4 text-info-muted-foreground" />
                 <span className="text-sm font-medium">Producción</span>
               </div>
               <Progress value={summary.averageScores.production * 10} className="h-2" />
@@ -320,7 +320,7 @@ export default function CriticalityMatrixPage() {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-red-600" />
+                <Shield className="h-4 w-4 text-destructive" />
                 <span className="text-sm font-medium">Seguridad</span>
               </div>
               <Progress value={summary.averageScores.safety * 10} className="h-2" />
@@ -330,7 +330,7 @@ export default function CriticalityMatrixPage() {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
                 <span className="text-sm font-medium">Calidad</span>
               </div>
               <Progress value={summary.averageScores.quality * 10} className="h-2" />
@@ -340,7 +340,7 @@ export default function CriticalityMatrixPage() {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-yellow-600" />
+                <DollarSign className="h-4 w-4 text-warning-muted-foreground" />
                 <span className="text-sm font-medium">Costo</span>
               </div>
               <Progress value={summary.averageScores.cost * 10} className="h-2" />

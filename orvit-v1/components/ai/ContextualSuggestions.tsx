@@ -42,23 +42,23 @@ interface ContextualSuggestionsProps {
 const suggestionTypeConfig = {
   action: {
     icon: Wrench,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
   },
   insight: {
     icon: Lightbulb,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-500/10',
+    color: 'text-warning-muted-foreground',
+    bgColor: 'bg-warning-muted',
   },
   warning: {
     icon: AlertTriangle,
-    color: 'text-red-500',
-    bgColor: 'bg-red-500/10',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
   },
   opportunity: {
     icon: TrendingUp,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
   },
 };
 

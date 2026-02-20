@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { Machine, MachineComponent } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,8 +39,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import html2canvas from 'html2canvas';
-import { Dialog as MiniDialog, DialogContent as MiniDialogContent, DialogHeader as MiniDialogHeader, DialogTitle as MiniDialogTitle, DialogDescription as MiniDialogDescription } from '@/components/ui/dialog';
+import { Dialog as MiniDialog, DialogContent as MiniDialogContent, DialogHeader as MiniDialogHeader, DialogTitle as MiniDialogTitle, DialogDescription as MiniDialogDescription, DialogBody as MiniDialogBody } from '@/components/ui/dialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface MachineSchemaViewProps {
   machine: Machine;
@@ -957,6 +959,7 @@ function DragPreview({ dragPreview }: { dragPreview: { x: number, y: number, nod
 export default function MachineSchemaView({ machine, components, onComponentClick, componentOrder, subcomponentOrder }: MachineSchemaViewProps) {
   // 🔍 PERMISOS DE MÁQUINAS
   const { hasPermission: canEditMachine } = usePermissionRobust('editar_maquina');
+  const confirm = useConfirm();
   
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
   const [hoveredComponent, setHoveredComponent] = useState<string | null>(null);
@@ -1051,8 +1054,6 @@ export default function MachineSchemaView({ machine, components, onComponentClic
     const lastClick = lastClickTime[componentId] || 0;
     const timeDiff = now - lastClick;
 
-    console.log(`[MachineSchema] Component click: "${component.name}" (${componentId}), timeDiff: ${timeDiff}ms, hasChildren: ${component.children?.length || 0}`);
-
     // Limpiar timer anterior si existe
     if (clickTimers[componentId]) {
       clearTimeout(clickTimers[componentId]);
@@ -1060,14 +1061,12 @@ export default function MachineSchemaView({ machine, components, onComponentClic
 
     if (timeDiff < 300) {
       // Doble click - abrir modal de componente
-      console.log(`[MachineSchema] DOUBLE CLICK - Opening details for "${component.name}"`);
       if (onComponentClick) {
         onComponentClick(component);
       }
       setLastClickTime(prev => ({ ...prev, [componentId]: 0 }));
     } else {
       // Click simple - expandir/contraer
-      console.log(`[MachineSchema] SINGLE CLICK - Toggle expand for "${component.name}"`);
       setExpandedComponents(prev => ({
         ...prev,
         [componentId]: !prev[componentId]
@@ -1283,9 +1282,13 @@ export default function MachineSchemaView({ machine, components, onComponentClic
     }
 
     // Confirmar eliminación
-    if (!window.confirm(`¿Seguro que deseas eliminar el componente "${componentToDelete.name}" y todos sus subcomponentes?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar componente',
+      description: `¿Seguro que deseas eliminar el componente "${componentToDelete.name}" y todos sus subcomponentes?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/components/${componentId}`, {
@@ -2261,7 +2264,7 @@ export default function MachineSchemaView({ machine, components, onComponentClic
                      }
                    }}
                    disabled={historyIndex < 0 || actionHistory.length === 0}
-                   className={`h-7 sm:h-8 px-1.5 sm:px-2 ${historyIndex < 0 || actionHistory.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                   className={cn('h-7 sm:h-8 px-1.5 sm:px-2', (historyIndex < 0 || actionHistory.length === 0) && 'opacity-50 cursor-not-allowed')}
                  >
                    <Undo2 className="h-3.5 w-3.5 sm:mr-1" />
                    <span className="text-xs hidden sm:inline">Deshacer</span>
@@ -2311,7 +2314,7 @@ export default function MachineSchemaView({ machine, components, onComponentClic
           {/* Indicador de modo edición */}
           {isEditMode && (
             <div className="mt-2 text-center">
-              <div className="inline-flex flex-col sm:flex-row items-center gap-2 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-lg text-sm text-blue-800">
+              <div className="inline-flex flex-col sm:flex-row items-center gap-2 px-3 py-1.5 bg-info-muted border border-info-muted rounded-lg text-sm text-info-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Edit className="h-4 w-4" />
                   <span className="font-medium">Modo Edición:</span>
@@ -2324,7 +2327,7 @@ export default function MachineSchemaView({ machine, components, onComponentClic
               </div>
               {draggedComponent && (
                 <div className="mt-2 text-center">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 border border-orange-300 rounded-lg text-sm text-orange-800">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-warning-muted border border-warning-muted rounded-lg text-sm text-warning-muted-foreground">
                     <span>Arrastrando componente. Suelta sobre otro componente para cambiar su padre.</span>
                   </div>
                 </div>
@@ -2578,16 +2581,16 @@ export default function MachineSchemaView({ machine, components, onComponentClic
       )}
 
       <MiniDialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-        <MiniDialogContent className="sm:max-w-[700px] max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
+        <MiniDialogContent size="md">
           <MiniDialogHeader>
             <MiniDialogTitle>Configuración del Esquema</MiniDialogTitle>
             <MiniDialogDescription>
               Personaliza la visualización del esquema de componentes con filtros, vista y opciones de exportación.
             </MiniDialogDescription>
           </MiniDialogHeader>
-          <div className="p-2 max-h-[60vh] overflow-y-auto overflow-x-hidden">
+          <MiniDialogBody className="p-2">
             <Tabs defaultValue="filters" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="w-full justify-start overflow-x-auto">
                 <TabsTrigger value="filters">Filtros</TabsTrigger>
                 <TabsTrigger value="view">Vista</TabsTrigger>
                 <TabsTrigger value="display">Visualización</TabsTrigger>
@@ -2742,7 +2745,7 @@ export default function MachineSchemaView({ machine, components, onComponentClic
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
+          </MiniDialogBody>
         </MiniDialogContent>
       </MiniDialog>
 

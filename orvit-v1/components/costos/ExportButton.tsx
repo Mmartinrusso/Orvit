@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ProductPrice {
   id: number;
@@ -106,7 +107,7 @@ export function ExportButton({ data, filename = 'costos-productos' }: ExportButt
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error exportando CSV:', error);
-      alert('Error al exportar archivo CSV');
+      toast.error('Error al exportar archivo CSV');
     } finally {
       setIsExporting(false);
     }
@@ -141,7 +142,7 @@ export function ExportButton({ data, filename = 'costos-productos' }: ExportButt
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error exportando JSON:', error);
-      alert('Error al exportar archivo JSON');
+      toast.error('Error al exportar archivo JSON');
     } finally {
       setIsExporting(false);
     }
@@ -217,7 +218,7 @@ export function ExportButton({ data, filename = 'costos-productos' }: ExportButt
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error exportando reporte:', error);
-      alert('Error al exportar reporte');
+      toast.error('Error al exportar reporte');
     } finally {
       setIsExporting(false);
     }

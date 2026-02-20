@@ -112,7 +112,7 @@ export default function CorrectiveMaintenanceDialog({
   const { data: machinesData } = useMachinesInitial(
     companyIdNum,
     sectorIdNum,
-    { enabled: isOpen && !!companyIdNum && !!sectorIdNum }
+    { enabled: isOpen && !!companyIdNum }
   );
   const machines = (machinesData?.machines || []) as Machine[];
 
@@ -556,16 +556,13 @@ export default function CorrectiveMaintenanceDialog({
     onClose();
   };
 
-  // console.log('🔍 [CORRECTIVE] Render - machines:', machines);
-  // console.log('🔍 [CORRECTIVE] Render - currentSector:', currentSector);
-  
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent size="xl" className="p-0 flex flex-col overflow-hidden h-[85vh]">
-        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b">
+      <DialogContent size="xl" className="p-0">
+        <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2">
-            <div className="bg-orange-100 p-2 rounded-lg">
-              <Wrench className="h-6 w-6 text-orange-600" />
+            <div className="bg-warning-muted p-2 rounded-lg">
+              <Wrench className="h-6 w-6 text-warning-muted-foreground" />
             </div>
             {mode === 'edit' ? 'Editar Mantenimiento Correctivo' : 'Nuevo Mantenimiento Correctivo'}
           </DialogTitle>
@@ -574,10 +571,10 @@ export default function CorrectiveMaintenanceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto px-6 py-4">
+        <DialogBody className="px-6 py-4">
 
          <Tabs defaultValue="general" className="w-full">
-                       <TabsList className="grid w-full grid-cols-4">
+                       <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="general">Información General</TabsTrigger>
               <TabsTrigger value="failures">Fallas</TabsTrigger>
               <TabsTrigger value="tools">Herramientas y Repuestos</TabsTrigger>
@@ -662,7 +659,7 @@ export default function CorrectiveMaintenanceDialog({
                  {/* Máquina */}
                  <div>
                    <Label>Máquina</Label>
-                   <div className="p-3 bg-gray-50 rounded-md border">
+                   <div className="p-3 bg-muted rounded-md border">
                      <span className="text-sm font-medium">
                        {machines.find(m => m.id.toString() === machineId?.toString())?.name || 'No seleccionada'}
                      </span>
@@ -672,7 +669,7 @@ export default function CorrectiveMaintenanceDialog({
                  {/* Componentes */}
                  <div>
                    <Label>Componentes</Label>
-                   <div className="p-3 bg-gray-50 rounded-md border min-h-[60px]">
+                   <div className="p-3 bg-muted rounded-md border min-h-[60px]">
                      {componentIds.length === 0 ? (
                        <p className="text-sm text-muted-foreground">No hay componentes seleccionados</p>
                      ) : (
@@ -681,7 +678,7 @@ export default function CorrectiveMaintenanceDialog({
                            const component = components.find(c => c.id.toString() === componentId);
                            return component ? (
                              <div key={componentId} className="flex items-center space-x-2">
-                               <CheckCircle className="h-4 w-4 text-green-500" />
+                               <CheckCircle className="h-4 w-4 text-success" />
                                <span className="text-sm">{component.name}</span>
                              </div>
                            ) : null;
@@ -694,7 +691,7 @@ export default function CorrectiveMaintenanceDialog({
                  {/* Subcomponentes */}
                  <div>
                    <Label>Subcomponentes</Label>
-                   <div className="p-3 bg-gray-50 rounded-md border min-h-[60px]">
+                   <div className="p-3 bg-muted rounded-md border min-h-[60px]">
                      {subcomponentIds.length === 0 ? (
                        <p className="text-sm text-muted-foreground">No hay subcomponentes seleccionados</p>
                      ) : (
@@ -703,7 +700,7 @@ export default function CorrectiveMaintenanceDialog({
                            const subcomponent = subcomponents.find(s => s.id.toString() === subcomponentId);
                            return subcomponent ? (
                              <div key={subcomponentId} className="flex items-center space-x-2">
-                               <CheckCircle className="h-4 w-4 text-green-500" />
+                               <CheckCircle className="h-4 w-4 text-success" />
                                <span className="text-sm">{subcomponent.name}</span>
                              </div>
                            ) : null;
@@ -843,7 +840,7 @@ export default function CorrectiveMaintenanceDialog({
                        />
                        <label
                          htmlFor="failure-files-input"
-                         className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+                         className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
                          onClick={() => {
                            const input = document.getElementById('failure-files-input') as HTMLInputElement;
                            if (input) {
@@ -852,15 +849,15 @@ export default function CorrectiveMaintenanceDialog({
                          }}
                          onDragOver={(e) => {
                            e.preventDefault();
-                           e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                           e.currentTarget.classList.add('border-primary', 'bg-info-muted');
                          }}
                          onDragLeave={(e) => {
                            e.preventDefault();
-                           e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                           e.currentTarget.classList.remove('border-primary', 'bg-info-muted');
                          }}
                          onDrop={(e) => {
                            e.preventDefault();
-                           e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                           e.currentTarget.classList.remove('border-primary', 'bg-info-muted');
                            const files = Array.from(e.dataTransfer.files);
                            files.forEach(file => {
                              const event = {
@@ -871,9 +868,9 @@ export default function CorrectiveMaintenanceDialog({
                          }}
                        >
                          <div className="text-center">
-                           <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                           <p className="text-sm text-gray-600">Haz clic o arrastra archivos de falla aquí</p>
-                           <p className="text-xs text-gray-500">PDF, DOC, XLS, imágenes hasta 10MB cada uno</p>
+                           <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                           <p className="text-sm text-muted-foreground">Haz clic o arrastra archivos de falla aquí</p>
+                           <p className="text-xs text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB cada uno</p>
                          </div>
                        </label>
                      </div>
@@ -881,20 +878,20 @@ export default function CorrectiveMaintenanceDialog({
                      {/* Lista de archivos de falla */}
                      {failureFiles.length > 0 && (
                        <div className="mt-3 space-y-2">
-                         <h4 className="text-sm font-medium text-gray-700">Archivos de Falla ({failureFiles.length})</h4>
+                         <h4 className="text-sm font-medium text-foreground">Archivos de Falla ({failureFiles.length})</h4>
                          {failureFiles.map((file, index) => (
-                           <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded border border-red-200">
+                           <div key={index} className="flex items-center justify-between p-3 bg-destructive/10 rounded border border-destructive/20">
                              <div className="flex items-center gap-2">
-                               <FileText className="h-4 w-4 text-red-600" />
+                               <FileText className="h-4 w-4 text-destructive" />
                                <span className="text-sm truncate font-medium">{file.name}</span>
-                               <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
+                               <span className="text-xs text-muted-foreground">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
                              </div>
                              <Button
                                type="button"
                                variant="ghost"
                                size="sm"
                                onClick={() => removeFailureFile(index)}
-                               className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
                              >
                                <Trash2 className="h-4 w-4" />
                              </Button>
@@ -948,7 +945,7 @@ export default function CorrectiveMaintenanceDialog({
               {/* Productos Disponibles del Pañol */}
               <div className="text-center mb-6">
                 <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
-                  <Package className="h-5 w-5 text-blue-600" />
+                  <Package className="h-5 w-5 text-info-muted-foreground" />
                   Productos Disponibles del Pañol
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -962,7 +959,7 @@ export default function CorrectiveMaintenanceDialog({
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-sm">
-                      <Wrench className="h-4 w-4 text-gray-600" />
+                      <Wrench className="h-4 w-4 text-muted-foreground" />
                       Herramientas Generales
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -972,7 +969,7 @@ export default function CorrectiveMaintenanceDialog({
                   <CardContent className="space-y-4">
                     {/* Buscador */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Buscar herramientas..."
                         className="pl-10"
@@ -982,9 +979,9 @@ export default function CorrectiveMaintenanceDialog({
                     {/* Lista de herramientas */}
                     <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
                       <div className="text-center py-8">
-                        <Wrench className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                        <p className="text-sm text-gray-500">No hay herramientas disponibles</p>
-                        <p className="text-xs text-gray-400">Las herramientas se cargarán desde el pañol</p>
+                        <Wrench className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
+                        <p className="text-sm text-muted-foreground">No hay herramientas disponibles</p>
+                        <p className="text-xs text-muted-foreground">Las herramientas se cargarán desde el pañol</p>
                       </div>
                     </div>
                   </CardContent>
@@ -994,7 +991,7 @@ export default function CorrectiveMaintenanceDialog({
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-sm">
-                      <Cog className="h-4 w-4 text-gray-600" />
+                      <Cog className="h-4 w-4 text-muted-foreground" />
                       Repuestos Específicos
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -1004,7 +1001,7 @@ export default function CorrectiveMaintenanceDialog({
                   <CardContent className="space-y-4">
                     {/* Buscador */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Buscar repuestos..."
                         className="pl-10"
@@ -1014,8 +1011,8 @@ export default function CorrectiveMaintenanceDialog({
                     {/* Lista de repuestos */}
                     <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
                       <div className="text-center py-8">
-                        <Cog className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                        <p className="text-sm text-gray-500">Seleccione una máquina para ver sus repuestos específicos</p>
+                        <Cog className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
+                        <p className="text-sm text-muted-foreground">Seleccione una máquina para ver sus repuestos específicos</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1026,22 +1023,22 @@ export default function CorrectiveMaintenanceDialog({
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-sm">
-                    <Wrench className="h-4 w-4 text-gray-600" />
+                    <Wrench className="h-4 w-4 text-muted-foreground" />
                     Productos Seleccionados ({toolsRequired.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {toolsRequired.length === 0 ? (
                     <div className="text-center py-4">
-                      <p className="text-sm text-gray-500">No hay productos seleccionados</p>
+                      <p className="text-sm text-muted-foreground">No hay productos seleccionados</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {toolsRequired.map((tool) => (
-                        <div key={tool.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div key={tool.id} className="flex items-center justify-between p-2 bg-muted rounded">
                           <span className="text-sm">{tool.name}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Cantidad: {tool.quantity}</span>
+                            <span className="text-xs text-muted-foreground">Cantidad: {tool.quantity}</span>
                             <Button
                               type="button"
                               variant="ghost"
@@ -1110,12 +1107,12 @@ export default function CorrectiveMaintenanceDialog({
                  />
                  <label
                    htmlFor="instructive-files-input"
-                   className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+                   className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
                  >
                    <div className="text-center">
-                     <FileText className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                     <p className="text-sm text-gray-600">Haz clic o arrastra archivos instructivos aquí</p>
-                     <p className="text-xs text-gray-500">PDF, DOC, XLS, imágenes hasta 10MB cada uno</p>
+                     <FileText className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                     <p className="text-sm text-muted-foreground">Haz clic o arrastra archivos instructivos aquí</p>
+                     <p className="text-xs text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB cada uno</p>
                    </div>
                  </label>
                </div>
@@ -1124,7 +1121,7 @@ export default function CorrectiveMaintenanceDialog({
                {instructives.length > 0 && (
                  <div className="mt-3 space-y-2">
                    {instructives.map((file, index) => (
-                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                     <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
                        <span className="text-sm truncate">{file.name}</span>
                        <Button
                          type="button"

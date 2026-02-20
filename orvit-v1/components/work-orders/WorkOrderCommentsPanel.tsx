@@ -47,7 +47,7 @@ const commentTypeConfig = {
   update: {
     label: 'Actualización',
     icon: Info,
-    badgeClass: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
+    badgeClass: 'bg-success-muted text-success border-success-muted',
   },
   issue: {
     label: 'Problema',
@@ -57,7 +57,7 @@ const commentTypeConfig = {
   system: {
     label: 'Sistema',
     icon: Settings,
-    badgeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+    badgeClass: 'bg-info-muted text-info-muted-foreground border-info-muted',
   },
 };
 

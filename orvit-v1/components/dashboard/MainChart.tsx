@@ -19,9 +19,11 @@ import {
   ReferenceLine
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { useDashboardStore } from './useDashboardStore';
 import { ChartData } from './types';
 import { formatCurrency, formatPercentage, formatMonth } from './utils/metrics';
+import { DEFAULT_COLORS } from '@/lib/colors';
 
 interface MainChartProps {
   data: ChartData[];
@@ -30,11 +32,11 @@ interface MainChartProps {
 }
 
 const categoryColors = {
-  ventas: '#10B981',
-  costos: '#EF4444',
-  sueldos: '#F59E0B',
-  produccion: '#3B82F6',
-  insumos: '#8B5CF6',
+  ventas: DEFAULT_COLORS.chart5,      // verde
+  costos: DEFAULT_COLORS.kpiNegative, // rojo
+  sueldos: DEFAULT_COLORS.chart4,     // ámbar
+  produccion: DEFAULT_COLORS.chart1,  // azul/indigo
+  insumos: DEFAULT_COLORS.chart2,     // violeta
 };
 
 export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
@@ -46,38 +48,38 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
       const total = payload.reduce((sum: number, entry: any) => sum + entry.value, 0);
       
       return (
-        <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-lg min-w-[300px]">
-          <p className="font-semibold text-gray-900 mb-3 text-center text-lg">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-lg min-w-[300px]">
+          <p className="font-semibold text-foreground mb-3 text-center text-lg">
             {formatMonth(label)}
           </p>
           
-          <div className="mb-4 p-3 bg-gray-50 text-gray-900 rounded-lg text-center">
+          <div className="mb-4 p-3 bg-muted text-foreground rounded-lg text-center">
             <p className="text-sm font-medium">Total del Mes</p>
             <p className="text-xl font-bold">{formatCurrency(total)}</p>
           </div>
           
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
               Desglose por Categoría
             </p>
             {payload.map((entry: any, index: number) => {
               const percentage = ((entry.value / total) * 100).toFixed(1);
               return (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
                   <div className="flex items-center gap-3">
                     <div 
                       className="w-4 h-4 rounded-full" 
                       style={{ backgroundColor: entry.color }}
                     ></div>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       {entry.dataKey}
                     </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                       {formatCurrency(entry.value)}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       {percentage}%
                     </p>
                   </div>
@@ -130,7 +132,7 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
       <div className="space-y-6">
         {/* Slopegraph */}
         <div className="h-64">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Comparación por Categoría</h4>
+          <h4 className="text-sm font-medium text-foreground mb-2">Comparación por Categoría</h4>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={lastTwoMonths}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -172,7 +174,7 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
 
         {/* Barras apiladas del total */}
         <div className="h-64">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Total por Mes</h4>
+          <h4 className="text-sm font-medium text-foreground mb-2">Total por Mes</h4>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={lastTwoMonths}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -213,7 +215,7 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
       <div className="space-y-6">
         {/* Barras side-by-side */}
         <div className="h-64">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Comparación de Rangos</h4>
+          <h4 className="text-sm font-medium text-foreground mb-2">Comparación de Rangos</h4>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={[rangeAData, rangeBData]}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -229,7 +231,7 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
 
         {/* Waterfall de variación */}
         <div className="h-64">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Waterfall de Variación</h4>
+          <h4 className="text-sm font-medium text-foreground mb-2">Waterfall de Variación</h4>
           <div className="space-y-2">
             {Object.entries(rangeAData).map(([key, value], index) => {
               if (key === 'name') return null;
@@ -238,17 +240,15 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
               const deltaPct = value > 0 ? (delta / value) * 100 : 0;
               
               return (
-                <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-900 capitalize">{key}</span>
+                <div key={key} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="text-sm text-foreground capitalize">{key}</span>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600">{formatCurrency(value)}</span>
-                    <span className="text-sm text-gray-600">→</span>
-                    <span className="text-sm text-gray-900">{formatCurrency(rangeBValue)}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(value)}</span>
+                    <span className="text-sm text-muted-foreground">→</span>
+                    <span className="text-sm text-foreground">{formatCurrency(rangeBValue)}</span>
                     <Badge 
                       variant="secondary" 
-                      className={`text-xs ${
-                        delta >= 0 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
-                      }`}
+                      className={cn('text-xs', delta >= 0 ? 'bg-success-muted text-success border-success-muted' : 'bg-destructive/10 text-destructive border-destructive/30')}
                     >
                       {delta >= 0 ? '+' : ''}{formatCurrency(delta)} ({formatPercentage(deltaPct)})
                     </Badge>
@@ -308,13 +308,11 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {data.map((point, index) => (
             <div key={point.month} className="text-center">
-              <div className="text-xs text-gray-600 mb-1">{point.monthFormatted}</div>
+              <div className="text-xs text-muted-foreground mb-1">{point.monthFormatted}</div>
               {point.delta !== undefined && point.deltaPct !== undefined && (
                 <Badge 
                   variant="secondary" 
-                  className={`text-xs ${
-                    point.deltaPct >= 0 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
-                  }`}
+                  className={cn('text-xs', point.deltaPct >= 0 ? 'bg-success-muted text-success border-success-muted' : 'bg-destructive/10 text-destructive border-destructive/30')}
                 >
                   {point.delta >= 0 ? '+' : ''}{formatCurrency(point.delta)}
                   <br />
@@ -375,23 +373,19 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
             const deltaPct = previous > 0 ? (delta / previous) * 100 : 0;
             
             return (
-              <div key={category} className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 mb-2 capitalize">{category}</h4>
-                <div className="text-2xl font-bold text-gray-900 mb-1">
+              <div key={category} className="p-4 bg-muted rounded-lg">
+                <h4 className="text-sm font-medium text-foreground mb-2 capitalize">{category}</h4>
+                <div className="text-2xl font-bold text-foreground mb-1">
                   {formatCurrency(current)}
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge 
                     variant="secondary" 
-                    className={`text-xs ${
-                      deltaPct >= 0 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
-                    }`}
+                    className={cn('text-xs', deltaPct >= 0 ? 'bg-success-muted text-success border-success-muted' : 'bg-destructive/10 text-destructive border-destructive/30')}
                   >
                     {delta >= 0 ? '+' : ''}{formatCurrency(delta)}
                   </Badge>
-                  <span className={`text-sm ${
-                    deltaPct >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <span className={cn('text-sm', deltaPct >= 0 ? 'text-success' : 'text-destructive')}>
                     {formatPercentage(deltaPct)}
                   </span>
                 </div>
@@ -437,12 +431,12 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="bg-white border border-gray-300 rounded-lg p-3 shadow-lg">
-                        <p className="font-semibold text-gray-900 mb-2">{formatMonth(label)}</p>
+                      <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+                        <p className="font-semibold text-foreground mb-2">{formatMonth(label)}</p>
                         {payload.map((entry: any, index: number) => (
                           <div key={index} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-900">{entry.dataKey}</span>
-                            <span className="text-sm font-bold text-gray-900">
+                            <span className="text-sm text-foreground">{entry.dataKey}</span>
+                            <span className="text-sm font-bold text-foreground">
                               {entry.value.toFixed(1)} (base 100)
                             </span>
                           </div>
@@ -480,9 +474,9 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
         </div>
 
         {/* Información del índice */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Información del Índice</h4>
-          <p className="text-xs text-gray-600">
+        <div className="p-4 bg-muted rounded-lg">
+          <h4 className="text-sm font-medium text-foreground mb-2">Información del Índice</h4>
+          <p className="text-xs text-muted-foreground">
             Base 100 = {formatMonth(baseMonth.month)}. Valores superiores a 100 indican crecimiento, 
             valores inferiores a 100 indican decrecimiento.
           </p>
@@ -493,9 +487,9 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="h-80 flex items-center justify-center bg-gray-50 rounded-xl">
+      <div className="h-80 flex items-center justify-center bg-muted rounded-xl">
         <div className="text-center">
-          <p className="text-gray-600">No hay datos disponibles</p>
+          <p className="text-muted-foreground">No hay datos disponibles</p>
         </div>
       </div>
     );

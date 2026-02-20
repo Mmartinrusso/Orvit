@@ -34,7 +34,7 @@ export default function MantenimientosPage() {
         <div className="px-4 md:px-6 py-4">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
-              <Settings className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+              <Settings className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
               <h2 className="text-sm font-medium mb-2">No hay empresa seleccionada</h2>
               <p className="text-sm text-muted-foreground">Selecciona una empresa para ver los mantenimientos</p>
             </div>

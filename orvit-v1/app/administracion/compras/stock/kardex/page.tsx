@@ -92,13 +92,13 @@ interface SupplierItem {
 }
 
 const TIPO_MOVIMIENTO_CONFIG: Record<string, { label: string; color: string; icon: any; signo: string }> = {
-  ENTRADA_RECEPCION: { label: 'Recepción', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300', icon: ArrowDownCircle, signo: '+' },
-  SALIDA_DEVOLUCION: { label: 'Devolución', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300', icon: ArrowUpCircle, signo: '-' },
-  TRANSFERENCIA_ENTRADA: { label: 'Transfer IN', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300', icon: ArrowRightLeft, signo: '+' },
+  ENTRADA_RECEPCION: { label: 'Recepción', color: 'bg-success-muted text-success', icon: ArrowDownCircle, signo: '+' },
+  SALIDA_DEVOLUCION: { label: 'Devolución', color: 'bg-destructive/10 text-destructive', icon: ArrowUpCircle, signo: '-' },
+  TRANSFERENCIA_ENTRADA: { label: 'Transfer IN', color: 'bg-info-muted text-info-muted-foreground', icon: ArrowRightLeft, signo: '+' },
   TRANSFERENCIA_SALIDA: { label: 'Transfer OUT', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300', icon: ArrowRightLeft, signo: '-' },
-  AJUSTE_POSITIVO: { label: 'Ajuste +', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300', icon: ArrowDownCircle, signo: '+' },
-  AJUSTE_NEGATIVO: { label: 'Ajuste -', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300', icon: ArrowUpCircle, signo: '-' },
-  CONSUMO_PRODUCCION: { label: 'Consumo', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300', icon: Package, signo: '-' },
+  AJUSTE_POSITIVO: { label: 'Ajuste +', color: 'bg-success-muted text-success', icon: ArrowDownCircle, signo: '+' },
+  AJUSTE_NEGATIVO: { label: 'Ajuste -', color: 'bg-destructive/10 text-destructive', icon: ArrowUpCircle, signo: '-' },
+  CONSUMO_PRODUCCION: { label: 'Consumo', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package, signo: '-' },
   RESERVA: { label: 'Reservado', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300', icon: Package, signo: '-' },
   LIBERACION_RESERVA: { label: 'Liberado', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300', icon: Package, signo: '+' },
 };
@@ -412,7 +412,7 @@ export default function KardexPage() {
                     {movimientos.map((mov) => {
                       const config = TIPO_MOVIMIENTO_CONFIG[mov.tipo] || {
                         label: mov.tipo,
-                        color: 'bg-gray-100 text-gray-700',
+                        color: 'bg-muted text-foreground',
                         icon: Package,
                         signo: ''
                       };
@@ -458,7 +458,7 @@ export default function KardexPage() {
                             <div className="text-sm">{mov.warehouse?.codigo || '-'}</div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className={config.signo === '+' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                            <span className={config.signo === '+' ? 'text-success font-medium' : 'text-destructive font-medium'}>
                               {config.signo}{Number(mov.cantidad).toLocaleString('es-AR')}
                             </span>
                             <div className="text-xs text-muted-foreground">

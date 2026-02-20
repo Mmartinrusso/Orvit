@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -260,8 +262,8 @@ export default function FailureRegistrationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent size="md" className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4">
+      <DialogContent size="md">
+        <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
             Registrar Nueva Falla
           </DialogTitle>
@@ -270,6 +272,7 @@ export default function FailureRegistrationDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <form className="space-y-6">
           {/* Título y Fecha */}
           <div className="grid grid-cols-2 gap-4">
@@ -497,12 +500,12 @@ export default function FailureRegistrationDialog({
               />
               <label
                 htmlFor="failure-files-input"
-                className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+                className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground transition-colors"
               >
                 <div className="text-center">
-                  <CloudUpload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Haz clic o arrastra archivos aquí</p>
-                  <p className="text-xs text-gray-500">PDF, DOC, XLS, imágenes hasta 10MB</p>
+                  <CloudUpload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Haz clic o arrastra archivos aquí</p>
+                  <p className="text-xs text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB</p>
                 </div>
               </label>
             </div>
@@ -511,7 +514,7 @@ export default function FailureRegistrationDialog({
             {failureData.files.length > 0 && (
               <div className="mt-3 space-y-2">
                 {failureData.files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
                     <span className="text-sm truncate">{file.name}</span>
                     <Button
                       type="button"
@@ -527,20 +530,21 @@ export default function FailureRegistrationDialog({
             )}
           </div>
 
-          {/* Botones */}
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancelar
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleLoadSolution}
-              disabled={loading}
-            >
-              Cargar Solución de Falla
-            </Button>
-          </div>
         </form>
+        </DialogBody>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            onClick={handleLoadSolution}
+            disabled={loading}
+          >
+            Cargar Solución de Falla
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

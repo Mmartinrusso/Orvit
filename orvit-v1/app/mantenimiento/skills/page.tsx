@@ -41,8 +41,8 @@ export default function SkillsPage() {
   if (isLoading) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="h-8 w-48 bg-gray-200 animate-pulse rounded" />
-        <div className="h-64 bg-gray-200 animate-pulse rounded" />
+        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+        <div className="h-64 bg-muted animate-pulse rounded" />
       </div>
     );
   }
@@ -155,10 +155,10 @@ export default function SkillsPage() {
             <CardTitle className="text-sm font-medium">
               Por Vencer
             </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">-</div>
+            <div className="text-2xl font-bold text-warning-muted-foreground">-</div>
             <p className="text-xs text-muted-foreground">
               Próximos 30 días
             </p>

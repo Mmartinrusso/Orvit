@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -132,17 +133,7 @@ interface GraficoTemporalData {
 }
 
 // Colores dinámicos - DEFAULT_COLORS del sistema
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',  // Primario - Indigo
-  chart2: '#8b5cf6',  // Secundario - Violeta
-  chart3: '#ec4899',  // Terciario - Rosa
-  chart4: '#f59e0b',  // Advertencia - Ámbar
-  chart5: '#10b981',  // Éxito - Verde
-  chart6: '#06b6d4',  // Info - Cyan
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 const ESTADO_COLORS: Record<string, string> = {
   BORRADOR: '#9ca3af',

@@ -27,6 +27,7 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import { useCompany } from '@/contexts/CompanyContext';
 
 interface ToolWithLowStock {
@@ -58,10 +59,10 @@ interface StockAlertsPanelProps {
 }
 
 const defaultColors = {
-  chart1: '#6366f1',
-  chart4: '#f59e0b',
-  kpiNegative: '#ef4444',
-  kpiPositive: '#10b981',
+  chart1: DEFAULT_COLORS.chart1,
+  chart4: DEFAULT_COLORS.chart4,
+  kpiNegative: DEFAULT_COLORS.kpiNegative,
+  kpiPositive: DEFAULT_COLORS.kpiPositive,
 };
 
 export function StockAlertsPanel({
@@ -144,38 +145,38 @@ export function StockAlertsPanel({
     switch (level) {
       case 'critical':
         return {
-          bg: 'bg-red-50 dark:bg-red-950/30',
-          border: 'border-red-200 dark:border-red-800',
-          text: 'text-red-800 dark:text-red-200',
-          badge: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+          bg: 'bg-destructive/10',
+          border: 'border-destructive/30',
+          text: 'text-destructive',
+          badge: 'bg-destructive/10 text-destructive',
         };
       case 'urgent':
         return {
-          bg: 'bg-orange-50 dark:bg-orange-950/30',
-          border: 'border-orange-200 dark:border-orange-800',
-          text: 'text-orange-800 dark:text-orange-200',
-          badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+          bg: 'bg-warning-muted',
+          border: 'border-warning-muted',
+          text: 'text-warning-muted-foreground',
+          badge: 'bg-warning-muted text-warning-muted-foreground',
         };
       case 'danger':
         return {
-          bg: 'bg-amber-50 dark:bg-amber-950/30',
-          border: 'border-amber-200 dark:border-amber-800',
-          text: 'text-amber-800 dark:text-amber-200',
-          badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+          bg: 'bg-warning-muted',
+          border: 'border-warning-muted',
+          text: 'text-warning-muted-foreground',
+          badge: 'bg-warning-muted text-warning-muted-foreground',
         };
       case 'warning':
         return {
-          bg: 'bg-yellow-50 dark:bg-yellow-950/30',
-          border: 'border-yellow-200 dark:border-yellow-800',
-          text: 'text-yellow-800 dark:text-yellow-200',
-          badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+          bg: 'bg-warning-muted',
+          border: 'border-warning-muted',
+          text: 'text-warning-muted-foreground',
+          badge: 'bg-warning-muted text-warning-muted-foreground',
         };
       default:
         return {
-          bg: 'bg-blue-50 dark:bg-blue-950/30',
-          border: 'border-blue-200 dark:border-blue-800',
-          text: 'text-blue-800 dark:text-blue-200',
-          badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+          bg: 'bg-info-muted',
+          border: 'border-info-muted',
+          text: 'text-info-muted-foreground',
+          badge: 'bg-info-muted text-info-muted-foreground',
         };
     }
   };
@@ -284,7 +285,7 @@ export function StockAlertsPanel({
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 {item.isCritical && (
-                                  <AlertOctagon className="h-3 w-3 flex-shrink-0 text-red-500" />
+                                  <AlertOctagon className="h-3 w-3 flex-shrink-0 text-destructive" />
                                 )}
                                 <span className="font-medium truncate">{item.name}</span>
                               </div>
@@ -496,7 +497,7 @@ export function StockAlertsPanel({
 
                       {/* Barra de progreso */}
                       <div className="mt-3">
-                        <div className="h-1.5 w-full bg-white/50 dark:bg-black/20 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-background/50 rounded-full overflow-hidden">
                           <div
                             className="h-full transition-all rounded-full"
                             style={{

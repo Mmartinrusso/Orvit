@@ -54,9 +54,9 @@ export function CostBreakdownChart({ data }: CostBreakdownChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
+        <div className="bg-card p-3 border rounded-lg shadow-lg">
           <p className="font-semibold">{data.name}</p>
-          <p className="text-blue-600">{formatCurrency(data.value)}</p>
+          <p className="text-info-muted-foreground">{formatCurrency(data.value)}</p>
           <p className="text-sm text-muted-foreground">{data.percentage}% del total</p>
         </div>
       );

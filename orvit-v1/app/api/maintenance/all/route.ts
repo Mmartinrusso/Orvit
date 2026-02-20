@@ -52,7 +52,36 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // ✅ OPTIMIZACIÓN: Ejecutar queries en paralelo
+    // ✅ MIGRADO: Queries directas a preventiveTemplate en lugar de JSON-in-Document
+
+    // Construir filtros para preventiveTemplate
+    const templateWhere: any = {
+      companyId: companyIdNum,
+    };
+
+    if (cleanSectorId) templateWhere.sectorId = cleanSectorId;
+    if (cleanMachineId) {
+      templateWhere.machineId = cleanMachineId;
+    } else if (machineIds) {
+      const ids = machineIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      if (ids.length > 0) templateWhere.machineId = { in: ids };
+    }
+    if (unidadMovilIds) {
+      const ids = unidadMovilIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      if (ids.length > 0) templateWhere.unidadMovilId = { in: ids };
+    }
+    if (minFrequencyDays) templateWhere.frequencyDays = { ...(templateWhere.frequencyDays || {}), gte: parseInt(minFrequencyDays) };
+    if (maxFrequencyDays) templateWhere.frequencyDays = { ...(templateWhere.frequencyDays || {}), lte: parseInt(maxFrequencyDays) };
+
+    // Filtro de status para templates: COMPLETED = tiene lastMaintenanceDate, PENDING = no tiene
+    if (status && status !== 'all') {
+      if (status === 'COMPLETED') {
+        templateWhere.lastMaintenanceDate = { not: null };
+      } else if (status === 'PENDING') {
+        templateWhere.lastMaintenanceDate = null;
+      }
+    }
+
     const [allWorkOrders, preventiveTemplates] = await Promise.all([
       prisma.workOrder.findMany({
         where: workOrderWhere,
@@ -69,87 +98,37 @@ export async function GET(request: NextRequest) {
         take: 200
       }),
 
-      (!type || type === 'PREVENTIVE') ? prisma.document.findMany({
-        where: {
-          entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE',
-          url: { contains: `"companyId":${companyId}` }
+      (!type || type === 'PREVENTIVE') ? prisma.preventiveTemplate.findMany({
+        where: templateWhere,
+        include: {
+          machine: { select: { id: true, name: true, type: true, status: true, sectorId: true } },
+          unidadMovil: { select: { id: true, nombre: true, tipo: true, estado: true } },
+          sector: { select: { id: true, name: true } },
         },
         orderBy: { updatedAt: 'desc' },
         take: 300
       }) : Promise.resolve([])
     ]);
 
-    // ✅ OPTIMIZACIÓN: Procesar templates sin queries en loop
-    const machineIdsToFetch = new Set<number>();
-    const unidadMovilIdsToFetch = new Set<number>();
-    const validTemplates: any[] = [];
+    // Construir preventivos con acceso directo a columnas
+    const preventiveMaintenances = preventiveTemplates.map((tpl) => {
+      const isCompleted = !!tpl.lastMaintenanceDate;
+      const maintenanceStatus = isCompleted ? 'COMPLETED' : 'PENDING';
 
-    for (const template of preventiveTemplates) {
-      try {
-        const data = JSON.parse(template.url);
-
-        // Filtros
-        if (cleanSectorId && data.sectorId !== cleanSectorId) continue;
-        if (cleanMachineId && data.machineId !== cleanMachineId) continue;
-        if (machineIds) {
-          const ids = machineIds.split(',').map(id => parseInt(id.trim()));
-          if (!ids.includes(data.machineId)) continue;
-        }
-        if (unidadMovilIds) {
-          const ids = unidadMovilIds.split(',').map(id => parseInt(id.trim()));
-          if (!ids.includes(data.unidadMovilId)) continue;
-        }
-        if (minFrequencyDays && (data.frequencyDays || 0) < parseInt(minFrequencyDays)) continue;
-        if (maxFrequencyDays && (data.frequencyDays || 0) > parseInt(maxFrequencyDays)) continue;
-
-        // Determinar status
-        const isCompleted = !!data.lastMaintenanceDate;
-        const maintenanceStatus = isCompleted ? 'COMPLETED' : 'PENDING';
-        if (status && status !== 'all' && status !== maintenanceStatus) continue;
-
-        if (data.machineId) machineIdsToFetch.add(data.machineId);
-        if (data.unidadMovilId) unidadMovilIdsToFetch.add(data.unidadMovilId);
-
-        validTemplates.push({ template, data, isCompleted, maintenanceStatus });
-      } catch (e) {
-        // Skip invalid
-      }
-    }
-
-    // ✅ OPTIMIZACIÓN: Batch queries
-    const [machines, unidadesMoviles] = await Promise.all([
-      machineIdsToFetch.size > 0 ? prisma.machine.findMany({
-        where: { id: { in: Array.from(machineIdsToFetch) } },
-        select: { id: true, name: true, type: true, status: true, sectorId: true }
-      }) : Promise.resolve([]),
-      unidadMovilIdsToFetch.size > 0 ? prisma.unidadMovil.findMany({
-        where: { id: { in: Array.from(unidadMovilIdsToFetch) } },
-        select: { id: true, nombre: true, tipo: true, estado: true }
-      }) : Promise.resolve([])
-    ]);
-
-    const machinesMap = new Map(machines.map(m => [m.id, m]));
-    const unidadesMap = new Map(unidadesMoviles.map(u => [u.id, u]));
-
-    // Construir preventivos
-    const preventiveMaintenances = validTemplates.map(({ template, data, isCompleted, maintenanceStatus }) => {
-      const machine = data.machineId ? machinesMap.get(data.machineId) : null;
-      const unidadMovil = data.unidadMovilId ? unidadesMap.get(data.unidadMovilId) : null;
-
-      let nextMaintenanceDate = null;
-      if (data.lastMaintenanceDate && data.frequencyDays) {
-        const lastDate = new Date(data.lastMaintenanceDate);
+      let nextMaintenanceDate: Date | null = null;
+      if (tpl.lastMaintenanceDate && tpl.frequencyDays) {
+        const lastDate = new Date(tpl.lastMaintenanceDate);
         nextMaintenanceDate = new Date(lastDate);
-        nextMaintenanceDate.setDate(nextMaintenanceDate.getDate() + data.frequencyDays);
-      } else if (data.nextMaintenanceDate) {
-        nextMaintenanceDate = new Date(data.nextMaintenanceDate);
+        nextMaintenanceDate.setDate(nextMaintenanceDate.getDate() + tpl.frequencyDays);
+      } else if (tpl.nextMaintenanceDate) {
+        nextMaintenanceDate = new Date(tpl.nextMaintenanceDate);
       }
 
       // Construir arrays de componentes y subcomponentes
-      const componentIds = Array.isArray(data.componentIds) ? data.componentIds : [];
-      const subcomponentIds = Array.isArray(data.subcomponentIds) ? data.subcomponentIds : [];
-      const componentNames = Array.isArray(data.componentNames) ? data.componentNames : [];
-      const subcomponentNames = Array.isArray(data.subcomponentNames) ? data.subcomponentNames : [];
+      const componentIds = Array.isArray(tpl.componentIds) ? tpl.componentIds : [];
+      const subcomponentIds = Array.isArray(tpl.subcomponentIds) ? tpl.subcomponentIds : [];
+      const componentNames = Array.isArray(tpl.componentNames) ? tpl.componentNames : [];
+      const subcomponentNames = Array.isArray(tpl.subcomponentNames) ? tpl.subcomponentNames : [];
 
       const components = componentIds.map((id: number, index: number) => ({
         id,
@@ -162,45 +141,45 @@ export async function GET(request: NextRequest) {
       }));
 
       return {
-        id: template.id,
-        title: data.title,
-        description: data.description,
-        priority: data.priority || 'MEDIUM',
+        id: tpl.id,
+        title: tpl.title,
+        description: tpl.description,
+        priority: tpl.priority || 'MEDIUM',
         type: 'PREVENTIVE',
         status: maintenanceStatus,
-        scheduledDate: isCompleted ? new Date(data.lastMaintenanceDate) : nextMaintenanceDate,
-        completedDate: isCompleted ? new Date(data.lastMaintenanceDate) : null,
-        estimatedHours: data.estimatedHours,
+        scheduledDate: isCompleted ? tpl.lastMaintenanceDate : nextMaintenanceDate,
+        completedDate: isCompleted ? tpl.lastMaintenanceDate : null,
+        estimatedHours: tpl.estimatedHours,
         // Campos de tiempo estimado para el frontend
-        timeValue: data.timeValue,
-        timeUnit: data.timeUnit,
-        estimatedMinutes: data.estimatedMinutes,
-        estimatedTimeType: data.estimatedTimeType,
-        machineId: data.machineId,
-        machine,
-        unidadMovilId: data.unidadMovilId,
-        unidadMovil,
-        assignedTo: data.assignedToId ? { id: data.assignedToId, name: data.assignedToName || 'Sin asignar' } : null,
-        assignedToName: data.assignedToName || null,
-        sector: data.sectorId ? { id: data.sectorId, name: 'Sector' } : null,
+        timeValue: tpl.timeValue,
+        timeUnit: tpl.timeUnit,
+        estimatedMinutes: null,
+        estimatedTimeType: null,
+        machineId: tpl.machineId,
+        machine: tpl.machine,
+        unidadMovilId: tpl.unidadMovilId,
+        unidadMovil: tpl.unidadMovil,
+        assignedTo: tpl.assignedToId ? { id: tpl.assignedToId, name: tpl.assignedToName || 'Sin asignar' } : null,
+        assignedToName: tpl.assignedToName || null,
+        sector: tpl.sector || (tpl.sectorId ? { id: tpl.sectorId, name: 'Sector' } : null),
         isPreventive: true,
-        frequencyDays: data.frequencyDays,
-        frequency: data.frequency || data.frequencyDays,
-        frequencyUnit: data.frequencyUnit,
-        lastMaintenanceDate: data.lastMaintenanceDate,
-        nextMaintenanceDate: nextMaintenanceDate?.toISOString(),
-        instructives: data.instructives || [],
-        toolsRequired: data.toolsRequired || [],
-        tags: data.tags || [],
+        frequencyDays: tpl.frequencyDays,
+        frequency: tpl.frequencyDays,
+        frequencyUnit: 'DAYS',
+        lastMaintenanceDate: tpl.lastMaintenanceDate?.toISOString() || null,
+        nextMaintenanceDate: nextMaintenanceDate?.toISOString() || null,
+        instructives: tpl.instructives || [],
+        toolsRequired: tpl.toolsRequired || [],
+        tags: [],
         componentIds,
         componentNames,
         subcomponentIds,
         subcomponentNames,
         components,
         subcomponents,
-        executionWindow: data.executionWindow,
-        createdAt: template.createdAt,
-        updatedAt: template.updatedAt
+        executionWindow: tpl.executionWindow,
+        createdAt: tpl.createdAt,
+        updatedAt: tpl.updatedAt
       };
     });
 

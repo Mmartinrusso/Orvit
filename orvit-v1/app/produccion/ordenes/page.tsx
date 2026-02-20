@@ -61,6 +61,7 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface ProductionOrder {
   id: number;
@@ -106,25 +107,26 @@ interface ProductionOrder {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { label: 'Borrador', color: 'bg-gray-500', icon: <FileText className="h-3 w-3" /> },
-  RELEASED: { label: 'Liberada', color: 'bg-blue-500', icon: <CheckCircle2 className="h-3 w-3" /> },
-  IN_PROGRESS: { label: 'En Progreso', color: 'bg-green-500', icon: <Play className="h-3 w-3" /> },
-  PAUSED: { label: 'Pausada', color: 'bg-yellow-500', icon: <Pause className="h-3 w-3" /> },
+  DRAFT: { label: 'Borrador', color: 'bg-muted-foreground', icon: <FileText className="h-3 w-3" /> },
+  RELEASED: { label: 'Liberada', color: 'bg-info', icon: <CheckCircle2 className="h-3 w-3" /> },
+  IN_PROGRESS: { label: 'En Progreso', color: 'bg-success', icon: <Play className="h-3 w-3" /> },
+  PAUSED: { label: 'Pausada', color: 'bg-warning', icon: <Pause className="h-3 w-3" /> },
   COMPLETED: { label: 'Completada', color: 'bg-purple-500', icon: <CheckCircle2 className="h-3 w-3" /> },
-  CANCELLED: { label: 'Cancelada', color: 'bg-red-500', icon: <X className="h-3 w-3" /> },
+  CANCELLED: { label: 'Cancelada', color: 'bg-destructive', icon: <X className="h-3 w-3" /> },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-  LOW: { label: 'Baja', color: 'bg-gray-400' },
-  NORMAL: { label: 'Normal', color: 'bg-blue-400' },
-  HIGH: { label: 'Alta', color: 'bg-orange-400' },
-  URGENT: { label: 'Urgente', color: 'bg-red-500' },
+  LOW: { label: 'Baja', color: 'bg-muted-foreground' },
+  NORMAL: { label: 'Normal', color: 'bg-info' },
+  HIGH: { label: 'Alta', color: 'bg-warning' },
+  URGENT: { label: 'Urgente', color: 'bg-destructive' },
 };
 
 export default function ProductionOrdersPage() {
   const router = useRouter();
   const { hasPermission } = useAuth();
   const { theme } = useTheme();
+  const confirm = useConfirm();
 
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -506,7 +508,7 @@ export default function ProductionOrdersPage() {
                                     handleStatusChange(order.id, 'RELEASED');
                                   }}
                                 >
-                                  <CheckCircle2 className="h-4 w-4 mr-2 text-blue-500" />
+                                  <CheckCircle2 className="h-4 w-4 mr-2 text-info-muted-foreground" />
                                   Liberar
                                 </DropdownMenuItem>
                               )}
@@ -518,7 +520,7 @@ export default function ProductionOrdersPage() {
                                     handleStatusChange(order.id, 'IN_PROGRESS');
                                   }}
                                 >
-                                  <Play className="h-4 w-4 mr-2 text-green-500" />
+                                  <Play className="h-4 w-4 mr-2 text-success" />
                                   Iniciar
                                 </DropdownMenuItem>
                               )}
@@ -531,7 +533,7 @@ export default function ProductionOrdersPage() {
                                       handleStatusChange(order.id, 'PAUSED');
                                     }}
                                   >
-                                    <Pause className="h-4 w-4 mr-2 text-yellow-500" />
+                                    <Pause className="h-4 w-4 mr-2 text-warning-muted-foreground" />
                                     Pausar
                                   </DropdownMenuItem>
                                   {canComplete && (
@@ -555,7 +557,7 @@ export default function ProductionOrdersPage() {
                                     handleStatusChange(order.id, 'IN_PROGRESS');
                                   }}
                                 >
-                                  <Play className="h-4 w-4 mr-2 text-green-500" />
+                                  <Play className="h-4 w-4 mr-2 text-success" />
                                   Reanudar
                                 </DropdownMenuItem>
                               )}
@@ -564,7 +566,7 @@ export default function ProductionOrdersPage() {
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    className="text-red-500"
+                                    className="text-destructive"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleStatusChange(order.id, 'CANCELLED');
@@ -578,10 +580,16 @@ export default function ProductionOrdersPage() {
 
                               {canDelete && order.status === 'DRAFT' && (
                                 <DropdownMenuItem
-                                  className="text-red-500"
+                                  className="text-destructive"
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    if (confirm('¿Eliminar esta orden?')) {
+                                    const ok = await confirm({
+                                      title: 'Eliminar orden',
+                                      description: '¿Eliminar esta orden?',
+                                      confirmText: 'Eliminar',
+                                      variant: 'destructive',
+                                    });
+                                    if (ok) {
                                       const res = await fetch(`/api/production/orders/${order.id}`, {
                                         method: 'DELETE',
                                       });

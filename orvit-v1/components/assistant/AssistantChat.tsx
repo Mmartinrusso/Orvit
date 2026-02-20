@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { sanitizeHtml } from '@/lib/sanitize'
+import { useConfirm } from '@/components/ui/confirm-dialog-provider'
+import { toast } from 'sonner'
 
 // Categorías de acciones rápidas
 const QUICK_ACTION_CATEGORIES = [
@@ -136,6 +139,7 @@ interface AssistantChatProps {
 }
 
 export function AssistantChat({ className }: AssistantChatProps) {
+  const confirm = useConfirm()
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
@@ -182,13 +186,13 @@ export function AssistantChat({ className }: AssistantChatProps) {
 
     // Validar que sea una imagen
     if (!file.type.startsWith('image/')) {
-      alert('Solo se permiten archivos de imagen')
+      toast.warning('Solo se permiten archivos de imagen')
       return
     }
 
     // Validar tamaño (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen no puede superar los 5MB')
+      toast.warning('La imagen no puede superar los 5MB')
       return
     }
 
@@ -271,7 +275,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
         setIsRecording(true)
       } catch (error) {
         console.error('Error accediendo al micrófono:', error)
-        alert('No se pudo acceder al micrófono. Verifica los permisos.')
+        toast.error('No se pudo acceder al micrófono. Verifica los permisos.')
       }
     }
   }
@@ -528,7 +532,13 @@ export function AssistantChat({ className }: AssistantChatProps) {
   // Eliminar conversación
   const deleteConversation = useCallback(async (convId: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('¿Eliminar esta conversación?')) return
+    const ok = await confirm({
+      title: 'Eliminar conversación',
+      description: '¿Eliminar esta conversación?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       const response = await fetch(`/api/assistant/chat?conversationId=${convId}`, {
@@ -846,7 +856,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
       .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
       .replace(/\n/g, '<br />')
 
-    return <div dangerouslySetInnerHTML={{ __html: formatted }} />
+    return <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatted) }} />
   }
 
   return (
@@ -871,13 +881,13 @@ export function AssistantChat({ className }: AssistantChatProps) {
       >
         {/* Indicador swipe-to-close (móvil) */}
         <div className="md:hidden flex justify-center pt-2 pb-0 bg-primary">
-          <div className="w-10 h-1 rounded-full bg-white/30" />
+          <div className="w-10 h-1 rounded-full bg-background/30" />
         </div>
 
         {/* Header limpio */}
         <div className="flex items-center justify-between p-3 md:pt-3 pt-1 border-b bg-primary text-primary-foreground">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-lg bg-background/15 flex items-center justify-center">
               <Bot className="h-5 w-5" />
             </div>
             <div>
@@ -891,8 +901,8 @@ export function AssistantChat({ className }: AssistantChatProps) {
               size="icon"
               onClick={() => setShowHistory(!showHistory)}
               className={cn(
-                "h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/15",
-                showHistory && "bg-white/15"
+                "h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-background/15",
+                showHistory && "bg-background/15"
               )}
               title="Historial"
             >
@@ -902,7 +912,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
               variant="ghost"
               size="icon"
               onClick={startNewConversation}
-              className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/15"
+              className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-background/15"
               title="Nueva conversación"
             >
               <MessageCircle className="h-4 w-4" />
@@ -911,7 +921,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
               variant="ghost"
               size="icon"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/15"
+              className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-background/15"
               title={isExpanded ? "Minimizar" : "Expandir"}
             >
               {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -920,7 +930,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/15"
+              className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-background/15"
               title="Cerrar (Esc)"
             >
               <X className="h-4 w-4" />
@@ -1106,7 +1116,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
                         title="Copiar"
                       >
                         {copiedMessageId === message.id ? (
-                          <Check className="h-3 w-3 text-green-500" />
+                          <Check className="h-3 w-3 text-success" />
                         ) : (
                           <Copy className="h-3 w-3 text-muted-foreground" />
                         )}
@@ -1185,10 +1195,10 @@ export function AssistantChat({ className }: AssistantChatProps) {
                         <div className="space-y-2">
                           {message.interactiveSelection.failures.map((failure) => {
                             const priorityColor = {
-                              'CRITICAL': 'border-red-500 bg-red-500/10',
-                              'HIGH': 'border-orange-500 bg-orange-500/10',
-                              'MEDIUM': 'border-yellow-500 bg-yellow-500/10',
-                              'LOW': 'border-green-500 bg-green-500/10',
+                              'CRITICAL': 'border-destructive bg-destructive/10',
+                              'HIGH': 'border-warning bg-warning/10',
+                              'MEDIUM': 'border-warning bg-warning/10',
+                              'LOW': 'border-success bg-success/10',
                             }[failure.priority] || 'border-border'
 
                             const priorityEmoji = {
@@ -1407,8 +1417,8 @@ export function AssistantChat({ className }: AssistantChatProps) {
                 onClick={toggleRecording}
                 className={cn(
                   "h-9 w-9",
-                  isRecording && 'bg-red-100 text-red-600',
-                  isTranscribing && 'bg-amber-100 text-amber-600'
+                  isRecording && 'bg-destructive/10 text-destructive',
+                  isTranscribing && 'bg-warning-muted text-warning-muted-foreground'
                 )}
                 title={isTranscribing ? 'Transcribiendo...' : isRecording ? 'Detener' : 'Grabar'}
               >

@@ -207,10 +207,10 @@ export function SolutionDetailDialog({
   const relatedFailureId = workOrder?.relatedFailureId || relatedFailure?.id;
 
   const priorityColors: Record<string, string> = {
-    CRITICAL: 'bg-red-500',
-    HIGH: 'bg-orange-500',
-    MEDIUM: 'bg-amber-500',
-    LOW: 'bg-green-500',
+    CRITICAL: 'bg-destructive',
+    HIGH: 'bg-warning-muted-foreground',
+    MEDIUM: 'bg-warning-muted-foreground',
+    LOW: 'bg-success',
   };
 
   const priorityLabels: Record<string, string> = {
@@ -304,8 +304,8 @@ export function SolutionDetailDialog({
             <div className="px-6 py-3 border-b">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 shrink-0">
-                    <Lightbulb className="h-5 w-5 text-amber-600" />
+                  <div className="p-2 rounded-lg bg-warning-muted shrink-0">
+                    <Lightbulb className="h-5 w-5 text-warning-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -348,7 +348,7 @@ export function SolutionDetailDialog({
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="px-6 py-2">
-              <TabsList className="w-full h-9 grid grid-cols-4 bg-muted/50">
+              <TabsList className="w-full h-9 justify-start overflow-x-auto bg-muted/50">
                 <TabsTrigger value="info">Info</TabsTrigger>
                 <TabsTrigger value="media">
                   Media {(images.length + videos.length) > 0 && `(${images.length + videos.length})`}
@@ -392,7 +392,7 @@ export function SolutionDetailDialog({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600">
+                        <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
                           <Zap className="h-4 w-4" />
                         </div>
                         <div>
@@ -407,9 +407,9 @@ export function SolutionDetailDialog({
 
                 {/* Causa Raíz */}
                 {solution.rootCause && (
-                  <Card className="p-3 border-l-4 border-l-red-500">
+                  <Card className="p-3 border-l-4 border-l-destructive">
                     <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2 text-red-600">
+                      <div className="flex items-center gap-2 text-destructive">
                         <AlertTriangle className="h-4 w-4" />
                         <span className="text-xs font-semibold uppercase tracking-wide">Causa Raíz</span>
                       </div>
@@ -423,9 +423,9 @@ export function SolutionDetailDialog({
 
                 {/* Solución Aplicada */}
                 {(solution.solution || solution.correctiveActions) && (
-                  <Card className="p-3 border-l-4 border-l-green-500">
+                  <Card className="p-3 border-l-4 border-l-success">
                     <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2 text-green-600">
+                      <div className="flex items-center gap-2 text-success">
                         <Wrench className="h-4 w-4" />
                         <span className="text-xs font-semibold uppercase tracking-wide">Solución Aplicada</span>
                       </div>
@@ -439,8 +439,8 @@ export function SolutionDetailDialog({
 
                 {/* Acciones Preventivas */}
                 {solution.preventiveActions && (
-                  <Card className="p-3 border-l-4 border-l-blue-500">
-                    <div className="flex items-center gap-2 text-blue-600 mb-1.5">
+                  <Card className="p-3 border-l-4 border-l-primary">
+                    <div className="flex items-center gap-2 text-primary mb-1.5">
                       <Shield className="h-4 w-4" />
                       <span className="text-xs font-semibold uppercase tracking-wide">Acciones Preventivas</span>
                     </div>
@@ -593,7 +593,7 @@ export function SolutionDetailDialog({
                       {instructives.map((inst: any, idx: number) => (
                         <Card key={idx} className="p-2 flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 shrink-0">
+                            <div className="p-1.5 rounded-lg bg-info-muted text-info-muted-foreground shrink-0">
                               <FileText className="h-3 w-3" />
                             </div>
                             <div className="min-w-0">
@@ -681,8 +681,8 @@ export function SolutionDetailDialog({
                         <div className="flex items-center gap-2.5">
                           <div className={cn(
                             "p-1.5 rounded-lg",
-                            exec.outcome === 'success' ? "bg-green-100 dark:bg-green-900/30 text-green-600" :
-                            "bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+                            exec.outcome === 'success' ? "bg-success-muted text-success" :
+                            "bg-warning-muted text-warning-muted-foreground"
                           )}>
                             {exec.outcome === 'success' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
                           </div>
@@ -713,7 +713,8 @@ export function SolutionDetailDialog({
       {selectedImage && (
         <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
           <DialogContent
-            className="max-w-4xl p-2"
+            size="lg"
+            className="p-2"
             onEscapeKeyDown={() => setSelectedImage(null)}
             onPointerDownOutside={() => setSelectedImage(null)}
           >
@@ -725,14 +726,15 @@ export function SolutionDetailDialog({
       {/* Edit Dialog - Rediseñado completamente */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent
-          className="max-w-2xl max-h-[90vh] p-0 overflow-hidden"
+          size="md"
+          className="p-0 gap-0"
           onEscapeKeyDown={() => setShowEditDialog(false)}
           onPointerDownOutside={() => setShowEditDialog(false)}
         >
           <DialogHeader className="px-6 py-4 border-b bg-muted/30">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                <Pencil className="h-5 w-5 text-amber-600" />
+              <div className="p-2 rounded-lg bg-warning-muted">
+                <Pencil className="h-5 w-5 text-warning-muted-foreground" />
               </div>
               <div>
                 <DialogTitle>Editar Solución</DialogTitle>
@@ -771,8 +773,8 @@ export function SolutionDetailDialog({
             <div className="p-6 overflow-y-auto max-h-[50vh]">
               {editTab === 'diagnostico' && (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-red-50 dark:bg-red-950/20 p-4 border border-red-200 dark:border-red-900/50">
-                    <div className="flex items-center gap-2 text-red-600 mb-3">
+                  <div className="rounded-lg bg-destructive/10 p-4 border border-destructive/20">
+                    <div className="flex items-center gap-2 text-destructive mb-3">
                       <AlertTriangle className="h-5 w-5" />
                       <span className="font-semibold">Causa Raíz del Problema</span>
                     </div>
@@ -781,7 +783,7 @@ export function SolutionDetailDialog({
                       onChange={(e) => setEditForm({ ...editForm, rootCause: e.target.value })}
                       placeholder="Describe la causa principal que originó la falla..."
                       rows={5}
-                      className="bg-white dark:bg-background resize-none"
+                      className="bg-card resize-none"
                     />
                     <p className="text-xs text-muted-foreground mt-2">
                       Identifica el origen del problema para evitar recurrencias.
@@ -792,8 +794,8 @@ export function SolutionDetailDialog({
 
               {editTab === 'solucion' && (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 p-4 border border-green-200 dark:border-green-900/50">
-                    <div className="flex items-center gap-2 text-green-600 mb-3">
+                  <div className="rounded-lg bg-success-muted p-4 border border-success/20">
+                    <div className="flex items-center gap-2 text-success mb-3">
                       <Wrench className="h-5 w-5" />
                       <span className="font-semibold">Solución Aplicada</span>
                     </div>
@@ -802,7 +804,7 @@ export function SolutionDetailDialog({
                       onChange={(e) => setEditForm({ ...editForm, solution: e.target.value })}
                       placeholder="Describe paso a paso las acciones realizadas para solucionar el problema..."
                       rows={6}
-                      className="bg-white dark:bg-background resize-none"
+                      className="bg-card resize-none"
                     />
                     <p className="text-xs text-muted-foreground mt-2">
                       Documenta claramente los pasos para que otros técnicos puedan replicar la solución.
@@ -824,8 +826,8 @@ export function SolutionDetailDialog({
 
               {editTab === 'preventivo' && (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-4 border border-blue-200 dark:border-blue-900/50">
-                    <div className="flex items-center gap-2 text-blue-600 mb-3">
+                  <div className="rounded-lg bg-info-muted p-4 border border-primary/20">
+                    <div className="flex items-center gap-2 text-primary mb-3">
                       <Shield className="h-5 w-5" />
                       <span className="font-semibold">Acciones Preventivas</span>
                     </div>
@@ -834,19 +836,19 @@ export function SolutionDetailDialog({
                       onChange={(e) => setEditForm({ ...editForm, preventiveActions: e.target.value })}
                       placeholder="¿Qué medidas se pueden tomar para evitar que este problema vuelva a ocurrir?"
                       rows={5}
-                      className="bg-white dark:bg-background resize-none"
+                      className="bg-card resize-none"
                     />
                     <p className="text-xs text-muted-foreground mt-2">
                       Define acciones de mantenimiento preventivo o mejoras a implementar.
                     </p>
                   </div>
 
-                  <Card className="p-4 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50">
+                  <Card className="p-4 bg-warning-muted border-warning-muted-foreground/20">
                     <div className="flex items-start gap-3">
-                      <Target className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                      <Target className="h-5 w-5 text-warning-muted-foreground shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-amber-900 dark:text-amber-100">Sugerencia</p>
-                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        <p className="font-medium text-foreground">Sugerencia</p>
+                        <p className="text-sm text-warning-muted-foreground mt-1">
                           Considera agregar esta solución al plan de mantenimiento preventivo si el problema es recurrente.
                         </p>
                       </div>
@@ -859,7 +861,7 @@ export function SolutionDetailDialog({
             {/* Footer */}
             <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Guardado automáticamente
               </div>
               <div className="flex gap-2">

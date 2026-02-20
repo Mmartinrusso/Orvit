@@ -125,8 +125,8 @@ export function UnitsCalendar({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-            <CalendarIcon className="h-5 w-5 text-blue-600" />
+          <div className="p-2 rounded-lg bg-info-muted">
+            <CalendarIcon className="h-5 w-5 text-info-muted-foreground" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Calendario de Mantenimiento</h3>
@@ -197,8 +197,8 @@ export function UnitsCalendar({
                   'min-h-[60px] p-1 rounded-md border transition-colors',
                   !isCurrentMonth && 'opacity-40',
                   isTodayDate && 'bg-primary/10 border-primary',
-                  hasOverdue && 'border-red-300 bg-red-50 dark:bg-red-950/30',
-                  events.length > 0 && !hasOverdue && 'bg-blue-50 dark:bg-blue-950/30'
+                  hasOverdue && 'border-destructive/30 bg-destructive/10',
+                  events.length > 0 && !hasOverdue && 'bg-info-muted'
                 )}
               >
                 <div className={cn(
@@ -219,8 +219,8 @@ export function UnitsCalendar({
                           className={cn(
                             'w-full text-left px-1 py-0.5 rounded text-[9px] truncate transition-colors',
                             event.isOverdue
-                              ? 'bg-red-200 text-red-800 hover:bg-red-300 dark:bg-red-900 dark:text-red-200'
-                              : 'bg-blue-200 text-blue-800 hover:bg-blue-300 dark:bg-blue-900 dark:text-blue-200'
+                              ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                              : 'bg-primary/20 text-primary hover:bg-primary/30'
                           )}
                         >
                           {event.unidad.nombre}
@@ -255,15 +255,15 @@ export function UnitsCalendar({
 
       {/* Units without schedule */}
       {unitsWithoutSchedule.length > 0 && (
-        <Card className="p-3 border-amber-200 bg-amber-50/50 dark:bg-amber-950/30">
+        <Card className="p-3 border-warning-muted-foreground/20 bg-warning-muted/50">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
+              <span className="text-xs font-medium text-warning-muted-foreground">
                 Sin mantenimiento programado
               </span>
             </div>
-            <Badge variant="outline" className="text-[10px] h-5 border-amber-300">
+            <Badge variant="outline" className="text-[10px] h-5 border-warning-muted-foreground/30">
               {unitsWithoutSchedule.length} unidades
             </Badge>
           </div>
@@ -275,7 +275,7 @@ export function UnitsCalendar({
                     variant="outline"
                     size="sm"
                     onClick={() => onScheduleService?.(unidad)}
-                    className="h-7 text-[10px] gap-1 border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                    className="h-7 text-[10px] gap-1 border-warning-muted-foreground/30 hover:bg-warning-muted"
                   >
                     <Truck className="h-3 w-3" />
                     {unidad.nombre}
@@ -298,11 +298,11 @@ export function UnitsCalendar({
       {/* Legend */}
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-blue-200 dark:bg-blue-900" />
+          <div className="w-3 h-3 rounded bg-primary/20" />
           <span>Programado</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-red-200 dark:bg-red-900" />
+          <div className="w-3 h-3 rounded bg-destructive/20" />
           <span>Vencido</span>
         </div>
         <div className="flex items-center gap-1.5">

@@ -56,7 +56,7 @@ export default function EditarMOCPage({ params }: Props) {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="py-12 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto text-amber-500 mb-2" />
+            <AlertTriangle className="h-12 w-12 mx-auto text-warning-muted-foreground mb-2" />
             <p className="text-muted-foreground">Error al cargar el MOC</p>
             <Button variant="outline" className="mt-4" onClick={() => router.back()}>
               Volver
@@ -72,7 +72,7 @@ export default function EditarMOCPage({ params }: Props) {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="py-12 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto text-amber-500 mb-2" />
+            <AlertTriangle className="h-12 w-12 mx-auto text-warning-muted-foreground mb-2" />
             <p className="text-muted-foreground">
               Solo se pueden editar MOCs en estado Borrador
             </p>

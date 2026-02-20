@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, AlertCircle } from 'lucide-react';
 
@@ -79,7 +80,7 @@ export function DeliveryMap({
         </div>
 
         {/* Quick markers list */}
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 max-w-xs max-h-[360px] overflow-y-auto">
+        <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg shadow-lg p-3 max-w-xs max-h-[360px] overflow-y-auto">
           <div className="text-xs font-semibold mb-2 text-muted-foreground">
             ENTREGAS ({deliveriesWithLocation.length})
           </div>
@@ -92,11 +93,7 @@ export function DeliveryMap({
                 <div
                   key={delivery.id}
                   onClick={() => onSelectDelivery(delivery.id)}
-                  className={`text-xs p-2 rounded border cursor-pointer transition-all ${
-                    isSelected
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-white hover:bg-gray-50 border-gray-200'
-                  }`}
+                  className={cn('text-xs p-2 rounded border cursor-pointer transition-all', isSelected ? 'bg-primary text-primary-foreground border-primary' : 'bg-card hover:bg-accent border-border')}
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">

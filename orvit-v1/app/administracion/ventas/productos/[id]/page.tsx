@@ -192,7 +192,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Precio de Costo</label>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(product.costPrice)}</p>
+              <p className="text-2xl font-bold text-success">{formatCurrency(product.costPrice)}</p>
             </div>
 
             <div>

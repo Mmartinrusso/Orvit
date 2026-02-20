@@ -91,7 +91,7 @@ export function WorkOrdersTable({
   }
 
   return (
-    <div className={cn('rounded-xl border border-border bg-card overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-border bg-card overflow-x-auto', className)}>
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -115,7 +115,7 @@ export function WorkOrdersTable({
                 key={order.id}
                 className={cn(
                   'group cursor-pointer',
-                  orderIsOverdue && 'bg-rose-500/5'
+                  orderIsOverdue && 'bg-destructive/5'
                 )}
                 onClick={() => onViewDetails?.(order)}
               >
@@ -174,7 +174,7 @@ export function WorkOrdersTable({
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-amber-600 dark:text-amber-400">
+                    <span className="text-sm text-warning-muted-foreground">
                       Sin asignar
                     </span>
                   )}
@@ -185,7 +185,7 @@ export function WorkOrdersTable({
                   {order.scheduledDate ? (
                     <span className={cn(
                       'text-sm',
-                      orderIsOverdue ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-muted-foreground'
+                      orderIsOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'
                     )}>
                       {formatDateShort(order.scheduledDate)}
                     </span>
@@ -227,7 +227,7 @@ export function WorkOrdersTable({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-amber-600 hover:text-amber-700"
+                        className="h-7 w-7 text-warning-muted-foreground hover:text-warning-muted-foreground"
                         onClick={(e) => {
                           e.stopPropagation();
                           onAssign(order);

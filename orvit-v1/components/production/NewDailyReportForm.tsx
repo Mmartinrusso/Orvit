@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useShifts, useWorkCenters } from '@/hooks/production/use-production-reference';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,12 +86,34 @@ export default function NewDailyReportForm({
 }: NewDailyReportFormProps) {
   const { user } = useAuth();
 
+  // Reference data via TanStack Query
+  const { data: shifts = [] } = useShifts();
+  const { data: workCenters = [] } = useWorkCenters();
+  const { data: ordersData } = useQuery({
+    queryKey: ['production-orders-active'],
+    queryFn: async () => {
+      const res = await fetch('/api/production/orders?status=IN_PROGRESS,PAUSED&limit=100');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.success ? data.orders : [];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+  const orders: ProductionOrder[] = ordersData ?? [];
+  const { data: usersData } = useQuery({
+    queryKey: ['production-users'],
+    queryFn: async () => {
+      const res = await fetch('/api/users?limit=200');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.users ?? [];
+    },
+    staleTime: 3 * 60 * 1000,
+  });
+  const users: { id: number; name: string }[] = usersData ?? [];
+  const loadingData = !shifts.length && !workCenters.length;
+
   const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
-  const [shifts, setShifts] = useState<{ id: number; code: string; name: string; breakMinutes: number }[]>([]);
-  const [workCenters, setWorkCenters] = useState<{ id: number; name: string }[]>([]);
-  const [orders, setOrders] = useState<ProductionOrder[]>([]);
-  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -114,50 +138,15 @@ export default function NewDailyReportForm({
     },
   });
 
-  const fetchMasterData = useCallback(async () => {
-    setLoadingData(true);
-    try {
-      const [shiftsRes, workCentersRes, ordersRes, usersRes] = await Promise.all([
-        fetch('/api/production/shifts?activeOnly=true'),
-        fetch('/api/production/work-centers?status=ACTIVE'),
-        fetch('/api/production/orders?status=IN_PROGRESS,PAUSED&limit=100'),
-        fetch('/api/users?limit=200'),
-      ]);
-
-      const [shiftsData, workCentersData, ordersData, usersData] = await Promise.all([
-        shiftsRes.json(),
-        workCentersRes.json(),
-        ordersRes.json(),
-        usersRes.json(),
-      ]);
-
-      if (shiftsData.success) {
-        setShifts(shiftsData.shifts);
-        // Auto-select first shift if only one
-        if (shiftsData.shifts.length === 1) {
-          form.setValue('shiftId', shiftsData.shifts[0].id);
-        }
-      }
-
-      if (workCentersData.success) setWorkCenters(workCentersData.workCenters);
-      if (ordersData.success) setOrders(ordersData.orders);
-      if (usersData.users) setUsers(usersData.users);
-
-      // Set operator to current user
-      if (user?.id) {
-        form.setValue('operatorId', user.id);
-      }
-    } catch (error) {
-      console.error('Error fetching master data:', error);
-      toast.error('Error al cargar datos');
-    } finally {
-      setLoadingData(false);
-    }
-  }, [form, user?.id]);
-
+  // Auto-select shift and operator when data loads
+  const initializedRef = useRef(false);
+  const userId = user?.id;
   useEffect(() => {
-    fetchMasterData();
-  }, [fetchMasterData]);
+    if (loadingData || initializedRef.current) return;
+    initializedRef.current = true;
+    if (shifts.length === 1) form.setValue('shiftId', shifts[0].id);
+    if (userId) form.setValue('operatorId', userId);
+  }, [loadingData, shifts, form, userId]);
 
   // Auto-set UOM and workCenter when order is selected
   const selectedOrderId = form.watch('productionOrderId');
@@ -213,7 +202,7 @@ export default function NewDailyReportForm({
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -530,7 +519,7 @@ export default function NewDailyReportForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  <AlertTriangle className="h-4 w-4 text-warning" />
                   Problemas / Incidentes
                 </FormLabel>
                 <FormControl>

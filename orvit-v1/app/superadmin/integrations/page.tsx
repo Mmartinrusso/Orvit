@@ -76,9 +76,9 @@ const iconMap: Record<string, any> = {
 };
 
 const statusConfig = {
-  connected: { label: 'Conectado', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: CheckCircle },
+  connected: { label: 'Conectado', color: 'bg-success/10 text-success border-success-muted/20', icon: CheckCircle },
   disconnected: { label: 'Desconectado', color: 'bg-muted text-muted-foreground border-border', icon: XCircle },
-  error: { label: 'Error', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: AlertCircle },
+  error: { label: 'Error', color: 'bg-destructive/10 text-destructive border-destructive/30/20', icon: AlertCircle },
 };
 
 // Datos de ejemplo
@@ -264,8 +264,8 @@ export default function IntegrationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Globe className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                <Globe className="h-6 w-6 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -277,8 +277,8 @@ export default function IntegrationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.connected}</p>
@@ -303,8 +303,8 @@ export default function IntegrationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Webhook className="h-6 w-6 text-orange-500" />
+              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Webhook className="h-6 w-6 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.webhooksActive}</p>
@@ -426,7 +426,7 @@ export default function IntegrationsPage() {
                           className={cn(
                             "text-xs",
                             webhook.status === 'active'
-                              ? "bg-green-500/10 text-green-500 border-green-500/20"
+                              ? "bg-success/10 text-success border-success-muted/20"
                               : "bg-muted text-muted-foreground border-border"
                           )}
                         >
@@ -497,7 +497,7 @@ export default function IntegrationsPage() {
                     <h4 className="font-medium text-sm">API Key Principal</h4>
                     <p className="text-xs text-muted-foreground">Creada el 01/01/2025</p>
                   </div>
-                  <Badge className="text-xs bg-green-500/10 text-green-500 border-green-500/20">
+                  <Badge className="text-xs bg-success/10 text-success border-success-muted/20">
                     Activa
                   </Badge>
                 </div>
@@ -519,7 +519,7 @@ export default function IntegrationsPage() {
                     <h4 className="font-medium text-sm">API Key de Prueba</h4>
                     <p className="text-xs text-muted-foreground">Solo para desarrollo</p>
                   </div>
-                  <Badge className="text-xs bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                  <Badge className="text-xs bg-warning/10 text-warning-muted-foreground border-warning-muted/20">
                     Test
                   </Badge>
                 </div>

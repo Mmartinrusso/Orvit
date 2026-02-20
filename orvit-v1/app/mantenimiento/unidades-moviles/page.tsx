@@ -900,7 +900,7 @@ export default function UnidadesMovilesPage() {
           </DialogHeader>
 
           <Tabs defaultValue="basica" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mx-6" style={{ width: 'calc(100% - 48px)' }}>
+            <TabsList className="w-full justify-start overflow-x-auto mx-6" style={{ width: 'calc(100% - 48px)' }}>
               <TabsTrigger value="basica">Información Básica</TabsTrigger>
               <TabsTrigger value="tecnica">Datos Técnicos</TabsTrigger>
               <TabsTrigger value="adicional">Información Adicional</TabsTrigger>
@@ -1206,7 +1206,7 @@ export default function UnidadesMovilesPage() {
               Esta acción no se puede deshacer. Se eliminará permanentemente la unidad móvil
               {unidadToDelete && ` "${unidadToDelete.nombre}"`}.
               {unidadToDelete && unidadToDelete.workOrdersCount && unidadToDelete.workOrdersCount > 0 && (
-                <span className="block mt-2 text-amber-600">
+                <span className="block mt-2 text-warning-muted-foreground">
                   ⚠️ Esta unidad tiene {unidadToDelete.workOrdersCount} {unidadToDelete.workOrdersCount === 1 ? 'OT abierta' : 'OTs abiertas'}.
                 </span>
               )}

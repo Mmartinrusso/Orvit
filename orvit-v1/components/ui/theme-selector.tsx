@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -37,9 +38,7 @@ export function ThemeSelector() {
             <DropdownMenuItem
               key={themeOption.key}
               onClick={() => setTheme(themeOption.key)}
-              className={`flex items-center gap-2 ${
-                theme === themeOption.key ? 'bg-accent' : ''
-              }`}
+              className={cn('flex items-center gap-2', theme === themeOption.key && 'bg-accent')}
             >
               <Icon className="h-4 w-4" />
               {themeOption.label}

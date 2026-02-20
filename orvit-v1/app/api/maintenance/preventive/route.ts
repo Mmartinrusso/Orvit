@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserName } from '@/lib/maintenance-helpers';
+import {
+  createTemplate,
+  listTemplates,
+  type PreventiveTemplateData,
+} from '@/lib/maintenance/preventive-template.repository';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,13 +63,7 @@ export async function POST(request: NextRequest) {
       equipment = await prisma.machine.findUnique({
         where: { id: Number(machineId) },
         include: {
-          sector: {
-            select: {
-              id: true,
-              name: true,
-              area: true
-            }
-          }
+          sector: { select: { id: true, name: true, area: true } }
         }
       });
       equipmentName = equipment?.name || '';
@@ -72,13 +71,7 @@ export async function POST(request: NextRequest) {
       equipment = await prisma.unidadMovil.findUnique({
         where: { id: Number(unidadMovilId) },
         include: {
-          sector: {
-            select: {
-              id: true,
-              name: true,
-              area: true
-            }
-          }
+          sector: { select: { id: true, name: true, area: true } }
         }
       });
       equipmentName = equipment?.nombre || '';
@@ -95,8 +88,7 @@ export async function POST(request: NextRequest) {
     // Verificar componentes si se especifican (solo para máquinas regulares)
     let components: any[] = [];
     if (componentIds && componentIds.length > 0 && machineId) {
-      // Convertir todos los IDs a números para la consulta
-      const numericComponentIds = componentIds.map(id => Number(id));
+      const numericComponentIds = componentIds.map((id: any) => Number(id));
       components = await prisma.component.findMany({
         where: {
           id: { in: numericComponentIds },
@@ -115,8 +107,7 @@ export async function POST(request: NextRequest) {
     let subcomponents: any[] = [];
     if (subcomponentIds && subcomponentIds.length > 0 && componentIds && componentIds.length > 0) {
       const firstComponentId = Number(componentIds[0]);
-      // Convertir todos los IDs a números para la consulta
-      const numericSubcomponentIds = subcomponentIds.map(id => Number(id));
+      const numericSubcomponentIds = subcomponentIds.map((id: any) => Number(id));
       subcomponents = await prisma.component.findMany({
         where: {
           id: { in: numericSubcomponentIds },
@@ -131,127 +122,72 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Establecer fecha de inicio por defecto si no se proporciona
+    // Calcular la primera fecha ajustada a día laboral
     let effectiveStartDate = startDate;
     if (!effectiveStartDate) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       effectiveStartDate = tomorrow.toISOString().split('T')[0];
     }
-
-    // Calcular la primera fecha ajustada a día laboral
     const firstDate = adjustToWeekday(new Date(effectiveStartDate));
-    
-    // Crear el template de mantenimiento preventivo
-    const templateData = {
-      templateType: 'PREVENTIVE_MAINTENANCE',
+
+    // Generar instancias programadas
+    const instanceDates = [firstDate];
+    for (let i = 1; i < 4; i++) {
+      const nextDate = new Date(effectiveStartDate);
+      nextDate.setDate(nextDate.getDate() + (i * Number(frequencyDays)));
+      instanceDates.push(adjustToWeekday(nextDate));
+    }
+
+    // Crear template con instancias usando el repositorio
+    const templateData: PreventiveTemplateData = {
       title,
       description,
       priority,
-      frequencyDays: Number(frequencyDays),
-      estimatedHours: estimatedHours ? Number(estimatedHours) : null,
-      alertDaysBefore: Array.isArray(alertDaysBefore) ? alertDaysBefore : [alertDaysBefore],
+      notes,
       machineId: machineId ? Number(machineId) : null,
-      unidadMovilId: unidadMovilId ? Number(unidadMovilId) : null,
       machineName: equipmentName,
-      componentIds: componentIds && componentIds.length > 0 ? componentIds.map((id: any) => Number(id)) : [],
-      componentNames: components.length > 0 ? components.map(c => c.name) : [],
-      subcomponentIds: subcomponentIds && subcomponentIds.length > 0 ? subcomponentIds.map((id: any) => Number(id)) : [],
-      subcomponentNames: subcomponents.length > 0 ? subcomponents.map(s => s.name) : [],
-      executionWindow: executionWindow || 'ANY_TIME',
+      unidadMovilId: unidadMovilId ? Number(unidadMovilId) : null,
+      isMobileUnit,
+      componentIds: componentIds?.length > 0 ? componentIds.map((id: any) => Number(id)) : [],
+      componentNames: components.map(c => c.name),
+      subcomponentIds: subcomponentIds?.length > 0 ? subcomponentIds.map((id: any) => Number(id)) : [],
+      subcomponentNames: subcomponents.map(s => s.name),
+      frequencyDays: Number(frequencyDays),
+      nextMaintenanceDate: firstDate,
+      estimatedHours: estimatedHours ? Number(estimatedHours) : null,
       timeUnit: timeUnit || 'HOURS',
       timeValue: timeValue || 1,
+      executionWindow: executionWindow || 'ANY_TIME',
+      toolsRequired: toolsRequired || [],
       assignedToId: assignedToId ? Number(assignedToId) : null,
       assignedToName: assignedToId ? await getUserName(assignedToId) : null,
       companyId: Number(companyId),
-      sectorId: Number(sectorId),
-      createdById: Number(createdById),
-      notes,
-      isActive,
-      toolsRequired: toolsRequired || [],
+      sectorId: sectorId ? Number(sectorId) : null,
+      createdById: createdById ? Number(createdById) : null,
+      isActive: isActive ?? true,
+      alertDaysBefore: Array.isArray(alertDaysBefore) ? alertDaysBefore : [alertDaysBefore ?? 3],
       instructives: instructives || [],
-      nextMaintenanceDate: firstDate.toISOString(),
-      lastMaintenanceDate: null,
-      weekdaysOnly: true, // Indicar que solo se programa en días laborables
-      maintenanceCount: 0,
-      createdAt: new Date().toISOString(),
-      isMobileUnit: isMobileUnit
     };
 
-    // ✅ OPTIMIZADO: Usar transacción atómica para crear template + instructivos + instancias
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Crear template
-      const preventiveTemplate = await tx.document.create({
-        data: {
-          entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE',
-          entityId: isMobileUnit ?
-            `mobile-${unidadMovilId}` :
-            `machine-${machineId}${componentIds && componentIds.length > 0 ? `-components-${componentIds.join('-')}` : ''}${subcomponentIds && subcomponentIds.length > 0 ? `-subcomponents-${subcomponentIds.join('-')}` : ''}`,
-          originalName: `Mantenimiento Preventivo: ${title}`,
-          url: JSON.stringify(templateData)
-        }
-      });
+    const instances = instanceDates.map(date => ({
+      templateId: 0, // Se asigna en createTemplate
+      scheduledDate: date,
+      status: 'PENDING',
+    }));
 
-      // 2. Guardar instructivos (batch insert)
-      if (instructives && instructives.length > 0) {
-        await tx.document.createMany({
-          data: instructives.map((instructive: any) => ({
-            entityType: 'PREVENTIVE_MAINTENANCE_INSTRUCTIVE',
-            entityId: preventiveTemplate.id.toString(),
-            originalName: instructive.originalName || instructive.fileName,
-            url: instructive.url,
-          }))
-        });
-      }
+    const template = await createTemplate(templateData, instances);
 
-      // 3. Crear instancias programadas (batch insert)
-      const instanceDates = [firstDate];
-      for (let i = 1; i < 4; i++) {
-        const nextDate = new Date(effectiveStartDate);
-        nextDate.setDate(nextDate.getDate() + (i * Number(frequencyDays)));
-        instanceDates.push(adjustToWeekday(nextDate));
-      }
-
-      const instancesData = instanceDates.map(scheduledDate => ({
-        entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE',
-        entityId: `template-${preventiveTemplate.id}-${scheduledDate.toISOString().split('T')[0]}`,
-        originalName: `${templateData.title} - ${scheduledDate.toLocaleDateString('es-ES')}`,
-        url: JSON.stringify({
-          ...templateData,
-          templateId: preventiveTemplate.id.toString(),
-          scheduledDate: scheduledDate.toISOString(),
-          status: 'PENDING',
-          actualStartDate: null,
-          actualEndDate: null,
-          actualHours: null,
-          completedById: null,
-          completionNotes: '',
-          toolsUsed: [],
-          photoUrls: [],
-          createdAt: new Date().toISOString()
-        })
-      }));
-
-      await tx.document.createMany({ data: instancesData });
-
-      // 4. Obtener las instancias creadas para la respuesta
-      const instances = await tx.document.findMany({
-        where: {
-          entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE',
-          entityId: { startsWith: `template-${preventiveTemplate.id}-` }
-        },
-        orderBy: { createdAt: 'asc' }
-      });
-
-      return { preventiveTemplate, instances };
+    // Obtener las instancias creadas
+    const createdInstances = await prisma.preventiveInstance.findMany({
+      where: { templateId: template.id },
+      orderBy: { scheduledDate: 'asc' },
     });
-
-    const { preventiveTemplate, instances } = result;
 
     return NextResponse.json({
       success: true,
       template: {
-        id: preventiveTemplate.id,
+        id: template.id,
         title,
         machine: equipmentName,
         frequency: `${frequencyDays} días`,
@@ -259,10 +195,10 @@ export async function POST(request: NextRequest) {
         weekdaysOnly: true,
         isMobileUnit
       },
-      instances: instances.map(i => ({
+      instances: createdInstances.map(i => ({
         id: i.id,
-        scheduledDate: JSON.parse(i.url).scheduledDate,
-        status: JSON.parse(i.url).status
+        scheduledDate: i.scheduledDate.toISOString(),
+        status: i.status
       })),
       message: `Mantenimiento preventivo creado para ${isMobileUnit ? 'unidad móvil' : 'máquina'}. Las fechas se ajustaron automáticamente a días laborables (lunes a viernes).`
     });
@@ -277,8 +213,6 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/maintenance/preventive - Obtener mantenimientos preventivos
-// ✅ OPTIMIZADO: Batch queries en lugar de N+1
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -292,95 +226,103 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // ✅ OPTIMIZADO: Filtrar por companyId en la query usando contains en el JSON
-    const templates = await prisma.document.findMany({
-      where: {
-        entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE',
-        url: { contains: `"companyId":${companyId}` }
-      },
-      orderBy: { createdAt: 'desc' }
+    const templates = await listTemplates({
+      companyId: Number(companyId),
+      machineId: machineId ? Number(machineId) : undefined,
+      includeInstances: true,
     });
 
-    // Filtrar por machineId si se especifica (en memoria, ya que el set es pequeño)
-    const filteredTemplates = machineId
-      ? templates.filter(t => {
-          try {
-            return JSON.parse(t.url).machineId === Number(machineId);
-          } catch { return false; }
-        })
-      : templates;
-
-    if (filteredTemplates.length === 0) {
+    if (templates.length === 0) {
       return NextResponse.json([]);
     }
 
-    // ✅ OPTIMIZADO: Batch query para instancias e instructivos
-    const templateIds = filteredTemplates.map(t => t.id);
+    // Batch query para instructivos legacy (archivos S3 en Document)
+    const templateIdsWithLegacy = templates
+      .filter(t => t.legacyDocumentId != null)
+      .map(t => t.legacyDocumentId!);
 
-    const [allInstances, allInstructives] = await Promise.all([
-      // Todas las instancias de los templates filtrados
-      prisma.document.findMany({
-        where: {
-          entityType: 'PREVENTIVE_MAINTENANCE_INSTANCE',
-          OR: templateIds.map(id => ({
-            entityId: { startsWith: `template-${id}` }
-          }))
-        },
-        orderBy: { createdAt: 'asc' }
-      }),
-      // Todos los instructivos de los templates filtrados
-      prisma.document.findMany({
+    let instructivesByTemplate = new Map<number, any[]>();
+    if (templateIdsWithLegacy.length > 0) {
+      const legacyInstructives = await prisma.document.findMany({
         where: {
           entityType: 'PREVENTIVE_MAINTENANCE_INSTRUCTIVE',
-          entityId: { in: templateIds.map(id => id.toString()) }
+          entityId: { in: templateIdsWithLegacy.map(id => id.toString()) }
         },
         orderBy: { createdAt: 'asc' }
-      })
-    ]);
-
-    // Indexar instancias e instructivos por templateId
-    const instancesByTemplate = new Map<number, any[]>();
-    const instructivesByTemplate = new Map<number, any[]>();
-
-    for (const instance of allInstances) {
-      // Extraer templateId del entityId (formato: template-{id}-{date})
-      const match = instance.entityId.match(/^template-(\d+)/);
-      if (match) {
-        const templateId = Number(match[1]);
-        if (!instancesByTemplate.has(templateId)) {
-          instancesByTemplate.set(templateId, []);
-        }
-        try {
-          instancesByTemplate.get(templateId)!.push(JSON.parse(instance.url));
-        } catch {}
-      }
-    }
-
-    for (const instructive of allInstructives) {
-      const templateId = Number(instructive.entityId);
-      if (!instructivesByTemplate.has(templateId)) {
-        instructivesByTemplate.set(templateId, []);
-      }
-      instructivesByTemplate.get(templateId)!.push({
-        id: instructive.id,
-        fileName: instructive.originalName,
-        url: instructive.url,
-        uploadedAt: instructive.createdAt
       });
+
+      for (const inst of legacyInstructives) {
+        const legacyId = Number(inst.entityId);
+        if (!instructivesByTemplate.has(legacyId)) {
+          instructivesByTemplate.set(legacyId, []);
+        }
+        instructivesByTemplate.get(legacyId)!.push({
+          id: inst.id,
+          fileName: inst.originalName,
+          url: inst.url,
+          uploadedAt: inst.createdAt,
+        });
+      }
     }
 
-    // Construir respuesta
-    const result = filteredTemplates.map(template => {
-      const templateData = JSON.parse(template.url);
-      return {
-        id: template.id,
-        ...templateData,
-        instances: instancesByTemplate.get(template.id) || [],
-        instructivesFiles: instructivesByTemplate.get(template.id) || []
-      };
-    });
+    // Construir respuesta compatible con el formato legacy
+    const result = templates.map(template => ({
+      id: template.id,
+      templateType: 'PREVENTIVE_MAINTENANCE',
+      title: template.title,
+      description: template.description,
+      priority: template.priority,
+      notes: template.notes,
+      machineId: template.machineId,
+      machineName: template.machineName ?? template.machine?.name ?? null,
+      machine: template.machine ?? null,
+      unidadMovilId: template.unidadMovilId,
+      isMobileUnit: template.isMobileUnit,
+      componentIds: template.componentIds,
+      componentNames: template.componentNames,
+      subcomponentIds: template.subcomponentIds,
+      subcomponentNames: template.subcomponentNames,
+      frequencyDays: template.frequencyDays,
+      nextMaintenanceDate: template.nextMaintenanceDate?.toISOString() ?? null,
+      lastMaintenanceDate: template.lastMaintenanceDate?.toISOString() ?? null,
+      weekdaysOnly: template.weekdaysOnly,
+      estimatedHours: template.estimatedHours,
+      timeUnit: template.timeUnit,
+      timeValue: template.timeValue,
+      executionWindow: template.executionWindow,
+      toolsRequired: template.toolsRequired,
+      assignedToId: template.assignedToId,
+      assignedToName: template.assignedToName ?? template.assignedTo?.name ?? null,
+      companyId: template.companyId,
+      sectorId: template.sectorId,
+      createdById: template.createdById,
+      isActive: template.isActive,
+      maintenanceCount: template.maintenanceCount,
+      alertDaysBefore: template.alertDaysBefore,
+      averageDuration: template.averageDuration,
+      lastExecutionDuration: template.lastExecutionDuration,
+      executionHistory: template.executionHistory,
+      instructives: template.instructives,
+      createdAt: template.createdAt.toISOString(),
+      // Instancias y archivos
+      instances: (template.instances ?? []).map(inst => ({
+        id: inst.id,
+        templateId: inst.templateId,
+        scheduledDate: inst.scheduledDate.toISOString(),
+        status: inst.status,
+        actualStartDate: inst.actualStartDate?.toISOString() ?? null,
+        actualEndDate: inst.actualEndDate?.toISOString() ?? null,
+        actualHours: inst.actualHours,
+        completedById: inst.completedById,
+        completionNotes: inst.completionNotes,
+        toolsUsed: inst.toolsUsed,
+        photoUrls: inst.photoUrls,
+      })),
+      instructivesFiles: template.legacyDocumentId
+        ? (instructivesByTemplate.get(template.legacyDocumentId) || [])
+        : [],
+    }));
 
-    // ✅ OPTIMIZADO: Cache headers para reducir requests
     const response = NextResponse.json(result);
     response.headers.set('Cache-Control', 'private, max-age=30, s-maxage=30');
     return response;
@@ -397,12 +339,10 @@ export async function GET(request: NextRequest) {
 // Función helper para ajustar fecha a día laboral (lunes a viernes)
 function adjustToWeekday(date: Date): Date {
   const dayOfWeek = date.getDay(); // 0 = domingo, 6 = sábado
-  if (dayOfWeek === 0) { // Si es domingo, mover a lunes
+  if (dayOfWeek === 0) {
     date.setDate(date.getDate() + 1);
-  } else if (dayOfWeek === 6) { // Si es sábado, mover a lunes
+  } else if (dayOfWeek === 6) {
     date.setDate(date.getDate() + 2);
   }
   return date;
 }
-
- 

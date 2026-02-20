@@ -63,6 +63,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface PayrollEmployee {
   id: string;
@@ -125,6 +126,7 @@ interface WorkStationOption {
 }
 
 export default function EmpleadosPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -439,13 +441,19 @@ export default function EmpleadosPage() {
     setBulkEditMode(true);
   }, [filteredEmployees]);
 
-  const exitBulkEdit = useCallback(() => {
-    if (changedCount > 0 && !confirm(`Tenés ${changedCount} cambio${changedCount !== 1 ? 's' : ''} sin guardar. Salir?`)) {
-      return;
+  const exitBulkEdit = useCallback(async () => {
+    if (changedCount > 0) {
+      const ok = await confirm({
+        title: 'Cambios sin guardar',
+        description: `Tenés ${changedCount} cambio${changedCount !== 1 ? 's' : ''} sin guardar. ¿Salir?`,
+        confirmText: 'Confirmar',
+        variant: 'default',
+      });
+      if (!ok) return;
     }
     setBulkEditMode(false);
     setBulkEdits({});
-  }, [changedCount]);
+  }, [changedCount, confirm]);
 
   const updateBulkField = useCallback((id: string, field: keyof BulkEditRow, value: string) => {
     setBulkEdits(prev => {
@@ -1212,8 +1220,14 @@ export default function EmpleadosPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => {
-                              if (confirm(`Desactivar a ${emp.name}?`)) {
+                            onClick={async () => {
+                              const ok = await confirm({
+                                title: 'Desactivar empleado',
+                                description: `¿Desactivar a ${emp.name}?`,
+                                confirmText: 'Eliminar',
+                                variant: 'destructive',
+                              });
+                              if (ok) {
                                 deleteMutation.mutate(emp.id);
                               }
                             }}

@@ -50,19 +50,19 @@ interface DeliveryTracking {
 const ESTADO_INFO: Record<string, { label: string; color: string; icon: React.ElementType; description: string }> = {
   PENDIENTE: {
     label: 'Pendiente',
-    color: 'bg-gray-100 text-gray-700',
+    color: 'bg-muted text-foreground',
     icon: Clock,
     description: 'Tu pedido está siendo procesado',
   },
   EN_PREPARACION: {
     label: 'En Preparación',
-    color: 'bg-yellow-100 text-yellow-700',
+    color: 'bg-warning-muted text-warning-muted-foreground',
     icon: Package,
     description: 'Estamos preparando tu pedido',
   },
   LISTA_PARA_DESPACHO: {
     label: 'Lista para Despacho',
-    color: 'bg-blue-100 text-blue-700',
+    color: 'bg-info-muted text-info-muted-foreground',
     icon: CheckCircle2,
     description: 'Tu pedido está listo para ser despachado',
   },
@@ -80,19 +80,19 @@ const ESTADO_INFO: Record<string, { label: string; color: string; icon: React.El
   },
   ENTREGADA: {
     label: 'Entregada',
-    color: 'bg-green-100 text-green-700',
+    color: 'bg-success-muted text-success',
     icon: CheckCircle2,
     description: 'Tu pedido ha sido entregado',
   },
   ENTREGA_FALLIDA: {
     label: 'Entrega Fallida',
-    color: 'bg-red-100 text-red-700',
+    color: 'bg-destructive/10 text-destructive',
     icon: AlertCircle,
     description: 'No pudimos completar la entrega. Nos contactaremos contigo',
   },
   CANCELADA: {
     label: 'Cancelada',
-    color: 'bg-gray-100 text-gray-500',
+    color: 'bg-muted text-muted-foreground',
     icon: AlertCircle,
     description: 'Esta entrega ha sido cancelada',
   },
@@ -153,7 +153,7 @@ export default function TrackingPage() {
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
+              <AlertCircle className="h-16 w-16 text-destructive mx-auto" />
               <div>
                 <h2 className="text-xl font-bold">Entrega no encontrada</h2>
                 <p className="text-muted-foreground mt-2">
@@ -309,7 +309,7 @@ export default function TrackingPage() {
                   return (
                     <div key={index} className="flex gap-4">
                       <div className="flex flex-col items-center">
-                        <div className={`p-2 rounded-full ${eventInfo?.color || 'bg-gray-100'}`}>
+                        <div className={`p-2 rounded-full ${eventInfo?.color || 'bg-muted'}`}>
                           <EventIcon className="h-4 w-4" />
                         </div>
                         {index < delivery.timeline.length - 1 && (

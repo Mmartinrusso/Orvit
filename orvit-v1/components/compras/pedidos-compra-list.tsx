@@ -1,75 +1,78 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { SkeletonTable } from '@/components/ui/skeleton-table';
+import { usePedidosCompra } from '@/hooks/compras/use-pedidos-compra';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+ Table,
+ TableBody,
+ TableCell,
+ TableHead,
+ TableHeader,
+ TableRow
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+ Select,
+ SelectContent,
+ SelectItem,
+ SelectTrigger,
+ SelectValue,
 } from '@/components/ui/select';
 import {
-  ClipboardList,
-  Plus,
-  Search,
-  Eye,
-  Edit,
-  Trash2,
-  FileEdit,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Send,
-  MoreHorizontal,
-  FileText,
-  RefreshCcw,
-  X,
-  Package,
-  ShoppingCart,
-  LayoutGrid,
-  LayoutList,
-  Calendar,
-  User,
-  Mic,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Download,
-  Copy,
-  Zap,
-  CalendarClock,
-  UserCircle,
-  Filter,
-  Repeat,
+ ClipboardList,
+ Plus,
+ Search,
+ Eye,
+ Edit,
+ Trash2,
+ FileEdit,
+ Clock,
+ CheckCircle2,
+ XCircle,
+ AlertTriangle,
+ ChevronLeft,
+ ChevronRight,
+ Loader2,
+ Send,
+ MoreHorizontal,
+ FileText,
+ RefreshCcw,
+ X,
+ Package,
+ ShoppingCart,
+ LayoutGrid,
+ LayoutList,
+ Calendar,
+ User,
+ Mic,
+ ArrowUpDown,
+ ArrowUp,
+ ArrowDown,
+ Download,
+ Copy,
+ Zap,
+ CalendarClock,
+ UserCircle,
+ Filter,
+ Repeat,
 } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+ DropdownMenu,
+ DropdownMenuContent,
+ DropdownMenuItem,
+ DropdownMenuSeparator,
+ DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { PedidoCompraFormModal } from './pedido-compra-form-modal';
 import { PedidoCompraDetailModal } from './pedido-compra-detail-modal';
 import { CrearOCModal } from './crear-oc-modal';
@@ -77,1086 +80,1042 @@ import { VoicePurchaseModal } from './voice-purchase-modal';
 import { RecurringOrdersModal } from './recurring-orders-modal';
 
 interface PedidoCompra {
-  id: number;
-  numero: string;
-  titulo: string;
-  descripcion?: string;
-  estado: string;
-  prioridad: string;
-  solicitante: {
-    id: number;
-    name: string;
-  };
-  departamento?: string;
-  fechaNecesidad?: string;
-  fechaLimite?: string;
-  presupuestoEstimado?: number;
-  moneda: string;
-  createdAt: string;
-  items: any[];
-  quotations: any[];
-  purchaseOrders: any[];
-  _count?: {
-    quotations: number;
-  };
+ id: number;
+ numero: string;
+ titulo: string;
+ descripcion?: string;
+ estado: string;
+ prioridad: string;
+ solicitante: {
+ id: number;
+ name: string;
+ };
+ departamento?: string;
+ fechaNecesidad?: string;
+ fechaLimite?: string;
+ presupuestoEstimado?: number;
+ moneda: string;
+ createdAt: string;
+ items: any[];
+ quotations: any[];
+ purchaseOrders: any[];
+ _count?: {
+ quotations: number;
+ };
 }
 
 interface KPIs {
-  borradores: number;
-  enviadas: number;
-  enCotizacion: number;
-  cotizadas: number;
-  enAprobacion: number;
-  aprobadas: number;
-  enProceso: number;
-  completadas: number;
-  rechazadas: number;
-  canceladas: number;
+ borradores: number;
+ enviadas: number;
+ enCotizacion: number;
+ cotizadas: number;
+ enAprobacion: number;
+ aprobadas: number;
+ enProceso: number;
+ completadas: number;
+ rechazadas: number;
+ canceladas: number;
 }
 
 type EstadoPedido =
-  | 'BORRADOR'
-  | 'ENVIADA'
-  | 'EN_COTIZACION'
-  | 'COTIZADA'
-  | 'EN_APROBACION'
-  | 'APROBADA'
-  | 'EN_PROCESO'
-  | 'COMPLETADA'
-  | 'RECHAZADA'
-  | 'CANCELADA';
+ | 'BORRADOR'
+ | 'ENVIADA'
+ | 'EN_COTIZACION'
+ | 'COTIZADA'
+ | 'EN_APROBACION'
+ | 'APROBADA'
+ | 'EN_PROCESO'
+ | 'COMPLETADA'
+ | 'RECHAZADA'
+ | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<EstadoPedido, { label: string; color: string; icon: React.ElementType }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', icon: FileEdit },
-  ENVIADA: { label: 'Enviada', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: Send },
-  EN_COTIZACION: { label: 'En Cotización', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
-  COTIZADA: { label: 'Cotizada', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: FileText },
-  EN_APROBACION: { label: 'Pend. Aprob.', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: AlertTriangle },
-  APROBADA: { label: 'Aprobada', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2 },
-  EN_PROCESO: { label: 'En Proceso', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400', icon: Clock },
-  COMPLETADA: { label: 'Completada', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2 },
-  RECHAZADA: { label: 'Rechazada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
-  CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500', icon: XCircle },
+ BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground ', icon: FileEdit },
+ ENVIADA: { label: 'Enviada', color: 'bg-info-muted text-info-muted-foreground ', icon: Send },
+ EN_COTIZACION: { label: 'En Cotización', color: 'bg-warning-muted text-warning-muted-foreground ', icon: Clock },
+ COTIZADA: { label: 'Cotizada', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: FileText },
+ EN_APROBACION: { label: 'Pend. Aprob.', color: 'bg-warning-muted text-warning-muted-foreground ', icon: AlertTriangle },
+ APROBADA: { label: 'Aprobada', color: 'bg-success-muted text-success ', icon: CheckCircle2 },
+ EN_PROCESO: { label: 'En Proceso', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400', icon: Clock },
+ COMPLETADA: { label: 'Completada', color: 'bg-success-muted text-success ', icon: CheckCircle2 },
+ RECHAZADA: { label: 'Rechazada', color: 'bg-destructive/10 text-destructive ', icon: XCircle },
+ CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground dark:text-muted-foreground', icon: XCircle },
 };
 
 const PRIORIDAD_CONFIG: Record<string, { label: string; color: string }> = {
-  BAJA: { label: 'Baja', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  NORMAL: { label: 'Normal', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-  ALTA: { label: 'Alta', color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
-  URGENTE: { label: 'Urgente', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+ BAJA: { label: 'Baja', color: 'bg-muted text-foreground dark:text-muted-foreground' },
+ NORMAL: { label: 'Normal', color: 'bg-info-muted text-info-muted-foreground ' },
+ ALTA: { label: 'Alta', color: 'bg-warning-muted text-warning-muted-foreground ' },
+ URGENTE: { label: 'Urgente', color: 'bg-destructive/10 text-destructive ' },
 };
 
 export function PedidosCompraList() {
-  const [pedidos, setPedidos] = useState<PedidoCompra[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [kpis, setKpis] = useState<KPIs>({
-    borradores: 0, enviadas: 0, enCotizacion: 0, cotizadas: 0,
-    enAprobacion: 0, aprobadas: 0, enProceso: 0, completadas: 0,
-    rechazadas: 0, canceladas: 0
-  });
+ const confirm = useConfirm();
+ const [searchTerm, setSearchTerm] = useState('');
+ const [statusFilter, setStatusFilter] = useState<string>('all');
+ const [prioridadFilter, setPrioridadFilter] = useState<string>('all');
+ const [quickFilter, setQuickFilter] = useState<string>('');
+ const [sortBy, setSortBy] = useState<string>('createdAt');
+ const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+ const [page, setPage] = useState(1);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [prioridadFilter, setPrioridadFilter] = useState<string>('all');
-  const [quickFilter, setQuickFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState<string>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+ // ─── TanStack Query hook ────────────────────────────────
+ const {
+ pedidos, total, totalPages, kpis, isLoading: loading, isFetching: refreshing, invalidate: invalidatePedidos,
+ } = usePedidosCompra({ page, statusFilter, prioridadFilter, searchTerm, quickFilter, sortBy, sortOrder });
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingPedidoId, setEditingPedidoId] = useState<number | undefined>(undefined);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedPedidoId, setSelectedPedidoId] = useState<number | null>(null);
+ const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+ const [editingPedidoId, setEditingPedidoId] = useState<number | undefined>(undefined);
+ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+ const [selectedPedidoId, setSelectedPedidoId] = useState<number | null>(null);
 
-  // View mode
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+ // View mode
+ const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
-  // Bulk selection state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [isDeleting, setIsDeleting] = useState(false);
+ // Bulk selection state
+ const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+ const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    loadPedidos();
-  }, [page, statusFilter, prioridadFilter, searchTerm, sortBy, sortOrder, quickFilter]);
+ const handleRefresh = () => invalidatePedidos();
 
-  // Clear selection when data changes
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [page, statusFilter, prioridadFilter, searchTerm, sortBy, sortOrder, quickFilter]);
+ const handleEnviar = async (pedido: PedidoCompra) => {
+ try {
+ const response = await fetch(`/api/compras/pedidos/${pedido.id}/enviar`, {
+ method: 'POST'
+ });
+ if (response.ok) {
+ toast.success('Pedido enviado para cotización');
+ invalidatePedidos();
+ } else {
+ const data = await response.json();
+ toast.error(data.error || 'Error al enviar el pedido');
+ }
+ } catch (error) {
+ toast.error('Error al enviar el pedido');
+ }
+ };
 
-  const loadPedidos = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '20',
-        sortBy,
-        sortOrder,
-      });
+ const handleDelete = async (pedido: PedidoCompra) => {
+ const ok = await confirm({
+ title: 'Eliminar pedido',
+ description: '¿Está seguro de eliminar este pedido?',
+ confirmText: 'Eliminar',
+ variant: 'destructive',
+ });
+ if (!ok) return;
 
-      if (statusFilter !== 'all') params.append('estado', statusFilter);
-      if (prioridadFilter !== 'all') params.append('prioridad', prioridadFilter);
-      if (searchTerm) params.append('search', searchTerm);
-      if (quickFilter) params.append('quickFilter', quickFilter);
+ try {
+ const response = await fetch(`/api/compras/pedidos/${pedido.id}`, {
+ method: 'DELETE'
+ });
+ if (response.ok) {
+ toast.success('Pedido eliminado');
+ invalidatePedidos();
+ } else {
+ const data = await response.json();
+ toast.error(data.error || 'Error al eliminar el pedido');
+ }
+ } catch (error) {
+ toast.error('Error al eliminar el pedido');
+ }
+ };
 
-      const response = await fetch(`/api/compras/pedidos?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPedidos(data.data || []);
-        setTotal(data.pagination?.total || 0);
-        setTotalPages(data.pagination?.totalPages || 1);
-        if (data.kpis) {
-          setKpis(data.kpis);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading pedidos:', error);
-      toast.error('Error al cargar los pedidos');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+ // Bulk selection functions
+ const toggleSelectAll = () => {
+ if (selectedIds.size === pedidos.length) {
+ setSelectedIds(new Set());
+ } else {
+ setSelectedIds(new Set(pedidos.map(p => p.id)));
+ }
+ };
 
-  const handleRefresh = () => {
-    loadPedidos(true);
-  };
+ const toggleSelect = (id: number) => {
+ const newSelected = new Set(selectedIds);
+ if (newSelected.has(id)) {
+ newSelected.delete(id);
+ } else {
+ newSelected.add(id);
+ }
+ setSelectedIds(newSelected);
+ };
 
-  const handleEnviar = async (pedido: PedidoCompra) => {
-    try {
-      const response = await fetch(`/api/compras/pedidos/${pedido.id}/enviar`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        toast.success('Pedido enviado para cotización');
-        loadPedidos();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Error al enviar el pedido');
-      }
-    } catch (error) {
-      toast.error('Error al enviar el pedido');
-    }
-  };
+ const handleBulkDelete = async () => {
+ if (selectedIds.size === 0) return;
 
-  const handleDelete = async (pedido: PedidoCompra) => {
-    if (!confirm('¿Está seguro de eliminar este pedido?')) return;
+ const deletableIds = pedidos
+ .filter(p => selectedIds.has(p.id) && p.estado === 'BORRADOR')
+ .map(p => p.id);
 
-    try {
-      const response = await fetch(`/api/compras/pedidos/${pedido.id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        toast.success('Pedido eliminado');
-        loadPedidos();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Error al eliminar el pedido');
-      }
-    } catch (error) {
-      toast.error('Error al eliminar el pedido');
-    }
-  };
+ if (deletableIds.length === 0) {
+ toast.error('Solo se pueden eliminar pedidos en estado Borrador');
+ return;
+ }
 
-  // Bulk selection functions
-  const toggleSelectAll = () => {
-    if (selectedIds.size === pedidos.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(pedidos.map(p => p.id)));
-    }
-  };
+ if (deletableIds.length !== selectedIds.size) {
+ const nonDeletable = selectedIds.size - deletableIds.length;
+ const ok = await confirm({
+ title: 'Eliminar pedidos',
+ description: `${nonDeletable} pedido(s) no están en estado Borrador y no se eliminarán. ¿Desea continuar con los ${deletableIds.length} restantes?`,
+ confirmText: 'Eliminar',
+ variant: 'destructive',
+ });
+ if (!ok) return;
+ } else {
+ const ok = await confirm({
+ title: 'Eliminar pedidos',
+ description: `¿Está seguro de eliminar ${deletableIds.length} pedido(s)?`,
+ confirmText: 'Eliminar',
+ variant: 'destructive',
+ });
+ if (!ok) return;
+ }
 
-  const toggleSelect = (id: number) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
+ setIsDeleting(true);
+ let successCount = 0;
+ let errorCount = 0;
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+ for (const id of deletableIds) {
+ try {
+ const response = await fetch(`/api/compras/pedidos/${id}`, {
+ method: 'DELETE'
+ });
+ if (response.ok) {
+ successCount++;
+ } else {
+ errorCount++;
+ }
+ } catch (error) {
+ errorCount++;
+ }
+ }
 
-    const deletableIds = pedidos
-      .filter(p => selectedIds.has(p.id) && p.estado === 'BORRADOR')
-      .map(p => p.id);
+ setIsDeleting(false);
+ setSelectedIds(new Set());
 
-    if (deletableIds.length === 0) {
-      toast.error('Solo se pueden eliminar pedidos en estado Borrador');
-      return;
-    }
+ if (successCount > 0) {
+ toast.success(`${successCount} pedido(s) eliminado(s)`);
+ }
+ if (errorCount > 0) {
+ toast.error(`${errorCount} pedido(s) no se pudieron eliminar`);
+ }
+ invalidatePedidos();
+ };
 
-    if (deletableIds.length !== selectedIds.size) {
-      const nonDeletable = selectedIds.size - deletableIds.length;
-      if (!confirm(`${nonDeletable} pedido(s) no están en estado Borrador y no se eliminarán. ¿Desea continuar con los ${deletableIds.length} restantes?`)) {
-        return;
-      }
-    } else {
-      if (!confirm(`¿Está seguro de eliminar ${deletableIds.length} pedido(s)?`)) {
-        return;
-      }
-    }
+ const handleViewDetail = (pedidoId: number) => {
+ setSelectedPedidoId(pedidoId);
+ setIsDetailModalOpen(true);
+ };
 
-    setIsDeleting(true);
-    let successCount = 0;
-    let errorCount = 0;
+ const handleEdit = (pedidoId: number) => {
+ setEditingPedidoId(pedidoId);
+ setIsFormModalOpen(true);
+ };
 
-    for (const id of deletableIds) {
-      try {
-        const response = await fetch(`/api/compras/pedidos/${id}`, {
-          method: 'DELETE'
-        });
-        if (response.ok) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
-      } catch (error) {
-        errorCount++;
-      }
-    }
+ const handleCreate = () => {
+ setEditingPedidoId(undefined);
+ setIsFormModalOpen(true);
+ };
 
-    setIsDeleting(false);
-    setSelectedIds(new Set());
+ // Modal Crear OC
+ const [crearOCModalOpen, setCrearOCModalOpen] = useState(false);
+ const [crearOCPedidoId, setCrearOCPedidoId] = useState<number | null>(null);
 
-    if (successCount > 0) {
-      toast.success(`${successCount} pedido(s) eliminado(s)`);
-    }
-    if (errorCount > 0) {
-      toast.error(`${errorCount} pedido(s) no se pudieron eliminar`);
-    }
-    loadPedidos();
-  };
+ // Modal Voice Purchase
+ const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
-  const handleViewDetail = (pedidoId: number) => {
-    setSelectedPedidoId(pedidoId);
-    setIsDetailModalOpen(true);
-  };
+ // Modal Recurring Orders
+ const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
 
-  const handleEdit = (pedidoId: number) => {
-    setEditingPedidoId(pedidoId);
-    setIsFormModalOpen(true);
-  };
+ const handleCrearOC = (pedido: PedidoCompra) => {
+ // Verificar que hay cotización seleccionada
+ const cotizacionSeleccionada = pedido.quotations?.find(q => q.esSeleccionada);
+ if (!cotizacionSeleccionada) {
+ toast.error('No hay cotización seleccionada para este pedido');
+ return;
+ }
+ // Abrir modal de crear OC
+ setCrearOCPedidoId(pedido.id);
+ setCrearOCModalOpen(true);
+ };
 
-  const handleCreate = () => {
-    setEditingPedidoId(undefined);
-    setIsFormModalOpen(true);
-  };
+ // Export to CSV
+ const handleExportCSV = () => {
+ if (pedidos.length === 0) {
+ toast.error('No hay pedidos para exportar');
+ return;
+ }
 
-  // Modal Crear OC
-  const [crearOCModalOpen, setCrearOCModalOpen] = useState(false);
-  const [crearOCPedidoId, setCrearOCPedidoId] = useState<number | null>(null);
+ const headers = ['Número', 'Título', 'Estado', 'Prioridad', 'Solicitante', 'Fecha Creación', 'Fecha Necesidad', 'Items'];
+ const rows = pedidos.map(p => [
+ p.numero,
+ p.titulo,
+ ESTADOS_CONFIG[p.estado as EstadoPedido]?.label || p.estado,
+ PRIORIDAD_CONFIG[p.prioridad]?.label || p.prioridad,
+ p.solicitante?.name || '',
+ format(new Date(p.createdAt), 'dd/MM/yyyy', { locale: es }),
+ p.fechaNecesidad ? format(new Date(p.fechaNecesidad), 'dd/MM/yyyy', { locale: es }) : '',
+ p.items?.length || 0
+ ]);
 
-  // Modal Voice Purchase
-  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+ const csvContent = [
+ headers.join(','),
+ ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+ ].join('\n');
 
-  // Modal Recurring Orders
-  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+ const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+ const link = document.createElement('a');
+ link.href = URL.createObjectURL(blob);
+ link.download = `pedidos_compra_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+ link.click();
+ toast.success('Archivo CSV descargado');
+ };
 
-  const handleCrearOC = (pedido: PedidoCompra) => {
-    // Verificar que hay cotización seleccionada
-    const cotizacionSeleccionada = pedido.quotations?.find(q => q.esSeleccionada);
-    if (!cotizacionSeleccionada) {
-      toast.error('No hay cotización seleccionada para este pedido');
-      return;
-    }
-    // Abrir modal de crear OC
-    setCrearOCPedidoId(pedido.id);
-    setCrearOCModalOpen(true);
-  };
+ // Duplicate order
+ const handleDuplicate = async (pedido: PedidoCompra) => {
+ try {
+ toast.loading('Duplicando pedido...', { id: 'duplicate' });
+ const response = await fetch(`/api/compras/pedidos/${pedido.id}/duplicate`, {
+ method: 'POST'
+ });
+ if (response.ok) {
+ const newPedido = await response.json();
+ toast.success(`Pedido duplicado: ${newPedido.numero}`, { id: 'duplicate' });
+ invalidatePedidos();
+ } else {
+ const data = await response.json();
+ toast.error(data.error || 'Error al duplicar', { id: 'duplicate' });
+ }
+ } catch {
+ toast.error('Error al duplicar el pedido', { id: 'duplicate' });
+ }
+ };
 
-  // Export to CSV
-  const handleExportCSV = () => {
-    if (pedidos.length === 0) {
-      toast.error('No hay pedidos para exportar');
-      return;
-    }
+ const renderEstadoBadge = (estado: string) => {
+ const config = ESTADOS_CONFIG[estado as EstadoPedido] || ESTADOS_CONFIG.BORRADOR;
+ const Icon = config.icon;
+ return (
+ <Badge className={cn(config.color, 'gap-1')}>
+ <Icon className="h-3 w-3" />
+ {config.label}
+ </Badge>
+ );
+ };
 
-    const headers = ['Número', 'Título', 'Estado', 'Prioridad', 'Solicitante', 'Fecha Creación', 'Fecha Necesidad', 'Items'];
-    const rows = pedidos.map(p => [
-      p.numero,
-      p.titulo,
-      ESTADOS_CONFIG[p.estado as EstadoPedido]?.label || p.estado,
-      PRIORIDAD_CONFIG[p.prioridad]?.label || p.prioridad,
-      p.solicitante?.name || '',
-      format(new Date(p.createdAt), 'dd/MM/yyyy', { locale: es }),
-      p.fechaNecesidad ? format(new Date(p.fechaNecesidad), 'dd/MM/yyyy', { locale: es }) : '',
-      p.items?.length || 0
-    ]);
+ const renderPrioridadBadge = (prioridad: string) => {
+ const config = PRIORIDAD_CONFIG[prioridad] || PRIORIDAD_CONFIG.NORMAL;
+ return <Badge className={config.color}>{config.label}</Badge>;
+ };
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+ const totalActivos = kpis.borradores + kpis.enviadas + kpis.enCotizacion + kpis.cotizadas + kpis.enAprobacion + kpis.aprobadas + kpis.enProceso;
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `pedidos_compra_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    toast.success('Archivo CSV descargado');
-  };
+ return (
+ <div className="w-full p-0">
+ {/* Header */}
+ <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+ <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+ <div>
+ <h1 className="text-xl font-semibold text-foreground">Pedidos de Compra</h1>
+ <p className="text-sm text-muted-foreground mt-1">
+ Gestiona solicitudes de compra y cotizaciones
+ </p>
+ </div>
+ <div className="flex items-center gap-2">
+ <button
+ type="button"
+ onClick={handleRefresh}
+ disabled={refreshing}
+ className={cn(
+ "inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7",
+ "px-2 text-[11px] font-normal gap-1.5",
+ "hover:bg-muted disabled:opacity-50",
+ refreshing && "bg-background shadow-sm"
+ )}
+ >
+ <RefreshCcw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+ Actualizar
+ </button>
+ <Button
+ size="sm"
+ variant="outline"
+ className="h-7 text-xs"
+ onClick={handleExportCSV}
+ >
+ <Download className="h-3.5 w-3.5 mr-1" />
+ Exportar
+ </Button>
+ <Button
+ size="sm"
+ variant="outline"
+ className="h-7 text-xs"
+ onClick={() => setIsRecurringModalOpen(true)}
+ >
+ <Repeat className="h-3.5 w-3.5 mr-1" />
+ Recurrentes
+ </Button>
+ <Button
+ size="sm"
+ variant="outline"
+ className="h-7 text-xs"
+ onClick={() => setIsVoiceModalOpen(true)}
+ >
+ <Mic className="h-3.5 w-3.5 mr-1" />
+ Crear con Voz
+ </Button>
+ <Button size="sm" className="h-7 text-xs" onClick={handleCreate}>
+ <Plus className="h-3.5 w-3.5 mr-1" />
+ Nuevo Pedido
+ </Button>
+ </div>
+ </div>
+ </div>
 
-  // Duplicate order
-  const handleDuplicate = async (pedido: PedidoCompra) => {
-    try {
-      toast.loading('Duplicando pedido...', { id: 'duplicate' });
-      const response = await fetch(`/api/compras/pedidos/${pedido.id}/duplicate`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const newPedido = await response.json();
-        toast.success(`Pedido duplicado: ${newPedido.numero}`, { id: 'duplicate' });
-        loadPedidos();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Error al duplicar', { id: 'duplicate' });
-      }
-    } catch {
-      toast.error('Error al duplicar el pedido', { id: 'duplicate' });
-    }
-  };
+ {/* KPIs */}
+ <div className="px-4 md:px-6 pt-4">
+ <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+ <Card
+ className="cursor-pointer hover:shadow-md transition-shadow"
+ onClick={() => setStatusFilter('BORRADOR')}
+ >
+ <CardContent className="p-4">
+ <div className="flex items-start justify-between">
+ <div>
+ <p className="text-xs font-medium text-muted-foreground">Borradores</p>
+ <p className="text-2xl font-bold mt-1">{kpis.borradores}</p>
+ </div>
+ <div className="p-2 rounded-lg bg-muted">
+ <FileEdit className="h-4 w-4 text-muted-foreground" />
+ </div>
+ </div>
+ </CardContent>
+ </Card>
 
-  const renderEstadoBadge = (estado: string) => {
-    const config = ESTADOS_CONFIG[estado as EstadoPedido] || ESTADOS_CONFIG.BORRADOR;
-    const Icon = config.icon;
-    return (
-      <Badge className={`${config.color} gap-1`}>
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
+ <Card
+ className="cursor-pointer hover:shadow-md transition-shadow"
+ onClick={() => setStatusFilter('EN_COTIZACION')}
+ >
+ <CardContent className="p-4">
+ <div className="flex items-start justify-between">
+ <div>
+ <p className="text-xs font-medium text-muted-foreground">En Cotización</p>
+ <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{kpis.enCotizacion + kpis.cotizadas}</p>
+ </div>
+ <div className="p-2 rounded-lg bg-warning-muted ">
+ <Clock className="h-4 w-4 text-warning-muted-foreground" />
+ </div>
+ </div>
+ </CardContent>
+ </Card>
 
-  const renderPrioridadBadge = (prioridad: string) => {
-    const config = PRIORIDAD_CONFIG[prioridad] || PRIORIDAD_CONFIG.NORMAL;
-    return <Badge className={config.color}>{config.label}</Badge>;
-  };
+ <Card
+ className="cursor-pointer hover:shadow-md transition-shadow"
+ onClick={() => setStatusFilter('EN_APROBACION')}
+ >
+ <CardContent className="p-4">
+ <div className="flex items-start justify-between">
+ <div>
+ <p className="text-xs font-medium text-muted-foreground">Pend. Aprobación</p>
+ <p className="text-2xl font-bold mt-1 text-warning-muted-foreground">{kpis.enAprobacion}</p>
+ </div>
+ <div className="p-2 rounded-lg bg-warning-muted ">
+ <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
+ </div>
+ </div>
+ </CardContent>
+ </Card>
 
-  const totalActivos = kpis.borradores + kpis.enviadas + kpis.enCotizacion + kpis.cotizadas + kpis.enAprobacion + kpis.aprobadas + kpis.enProceso;
+ <Card
+ className="cursor-pointer hover:shadow-md transition-shadow"
+ onClick={() => setStatusFilter('EN_PROCESO')}
+ >
+ <CardContent className="p-4">
+ <div className="flex items-start justify-between">
+ <div>
+ <p className="text-xs font-medium text-muted-foreground">En Proceso</p>
+ <p className="text-2xl font-bold mt-1 text-cyan-600">{kpis.enProceso}</p>
+ </div>
+ <div className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/20">
+ <ShoppingCart className="h-4 w-4 text-cyan-600" />
+ </div>
+ </div>
+ </CardContent>
+ </Card>
 
-  return (
-    <div className="w-full p-0">
-      {/* Header */}
-      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Pedidos de Compra</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestiona solicitudes de compra y cotizaciones
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className={cn(
-                "inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7",
-                "px-2 text-[11px] font-normal gap-1.5",
-                "hover:bg-muted disabled:opacity-50",
-                refreshing && "bg-background shadow-sm"
-              )}
-            >
-              <RefreshCcw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-              Actualizar
-            </button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={handleExportCSV}
-            >
-              <Download className="h-3.5 w-3.5 mr-1" />
-              Exportar
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => setIsRecurringModalOpen(true)}
-            >
-              <Repeat className="h-3.5 w-3.5 mr-1" />
-              Recurrentes
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => setIsVoiceModalOpen(true)}
-            >
-              <Mic className="h-3.5 w-3.5 mr-1" />
-              Crear con Voz
-            </Button>
-            <Button size="sm" className="h-7 text-xs" onClick={handleCreate}>
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Nuevo Pedido
-            </Button>
-          </div>
-        </div>
-      </div>
+ <Card
+ className="cursor-pointer hover:shadow-md transition-shadow bg-primary/5"
+ onClick={() => setStatusFilter('COMPLETADA')}
+ >
+ <CardContent className="p-4">
+ <div className="flex items-start justify-between">
+ <div>
+ <p className="text-xs font-medium text-muted-foreground">Completadas</p>
+ <p className="text-2xl font-bold mt-1 text-primary">{kpis.completadas}</p>
+ </div>
+ <div className="p-2 rounded-lg bg-primary/10">
+ <CheckCircle2 className="h-4 w-4 text-primary" />
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ </div>
 
-      {/* KPIs */}
-      <div className="px-4 md:px-6 pt-4">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setStatusFilter('BORRADOR')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Borradores</p>
-                  <p className="text-2xl font-bold mt-1">{kpis.borradores}</p>
-                </div>
-                <div className="p-2 rounded-lg bg-muted">
-                  <FileEdit className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+ {/* Quick Filters */}
+ <div className="flex items-center gap-2 mt-4 flex-wrap">
+ <span className="text-xs text-muted-foreground mr-1">
+ <Filter className="h-3 w-3 inline mr-1" />
+ Filtros rápidos:
+ </span>
+ <button
+ onClick={() => setQuickFilter(quickFilter === 'misPedidos' ? '' : 'misPedidos')}
+ className={cn(
+ "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
+ quickFilter === 'misPedidos'
+ ? "bg-primary text-primary-foreground"
+ : "bg-muted hover:bg-muted/80 text-muted-foreground"
+ )}
+ >
+ <UserCircle className="h-3 w-3" />
+ Mis pedidos
+ </button>
+ <button
+ onClick={() => setQuickFilter(quickFilter === 'pendientesAccion' ? '' : 'pendientesAccion')}
+ className={cn(
+ "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
+ quickFilter === 'pendientesAccion'
+ ? "bg-primary text-primary-foreground"
+ : "bg-muted hover:bg-muted/80 text-muted-foreground"
+ )}
+ >
+ <Clock className="h-3 w-3" />
+ Pendientes
+ </button>
+ <button
+ onClick={() => setQuickFilter(quickFilter === 'venceEstaSemana' ? '' : 'venceEstaSemana')}
+ className={cn(
+ "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
+ quickFilter === 'venceEstaSemana'
+ ? "bg-warning-muted0 text-white"
+ : "bg-muted hover:bg-muted/80 text-muted-foreground"
+ )}
+ >
+ <CalendarClock className="h-3 w-3" />
+ Vence esta semana
+ </button>
+ <button
+ onClick={() => setQuickFilter(quickFilter === 'urgentes' ? '' : 'urgentes')}
+ className={cn(
+ "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
+ quickFilter === 'urgentes'
+ ? "bg-destructive/100 text-white"
+ : "bg-muted hover:bg-muted/80 text-muted-foreground"
+ )}
+ >
+ <Zap className="h-3 w-3" />
+ Urgentes
+ </button>
+ {quickFilter && (
+ <button
+ onClick={() => setQuickFilter('')}
+ className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+ >
+ <X className="h-3 w-3" />
+ </button>
+ )}
+ </div>
+ </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setStatusFilter('EN_COTIZACION')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">En Cotización</p>
-                  <p className="text-2xl font-bold mt-1 text-yellow-600">{kpis.enCotizacion + kpis.cotizadas}</p>
-                </div>
-                <div className="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+ {/* Filtros y Tabla */}
+ <div className="px-4 md:px-6 pt-4 pb-6">
+ <Card>
+ <CardHeader className="pb-3">
+ <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+ <div>
+ <CardTitle className="text-sm font-medium">Listado de Pedidos</CardTitle>
+ <CardDescription className="text-xs">
+ {total} pedidos encontrados {quickFilter && `(filtro: ${quickFilter === 'misPedidos' ? 'Mis pedidos' : quickFilter === 'pendientesAccion' ? 'Pendientes' : quickFilter === 'venceEstaSemana' ? 'Vence esta semana' : 'Urgentes'})`}
+ </CardDescription>
+ </div>
+ <div className="flex items-center border rounded-md p-0.5 bg-muted/40">
+ <button
+ onClick={() => setViewMode('table')}
+ className={cn(
+ "p-1.5 rounded transition-colors",
+ viewMode === 'table' ? "bg-background shadow-sm" : "hover:bg-muted"
+ )}
+ title="Vista tabla"
+ >
+ <LayoutList className="h-4 w-4" />
+ </button>
+ <button
+ onClick={() => setViewMode('card')}
+ className={cn(
+ "p-1.5 rounded transition-colors",
+ viewMode === 'card' ? "bg-background shadow-sm" : "hover:bg-muted"
+ )}
+ title="Vista tarjetas"
+ >
+ <LayoutGrid className="h-4 w-4" />
+ </button>
+ </div>
+ </div>
+ </CardHeader>
+ <CardContent>
+ {/* Filtros */}
+ <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 mb-4">
+ <div className="relative flex-1">
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+ <Input
+ placeholder="Buscar por número o título..."
+ value={searchTerm}
+ onChange={(e) => setSearchTerm(e.target.value)}
+ className="pl-9 h-9 bg-background"
+ />
+ {searchTerm && (
+ <button
+ onClick={() => setSearchTerm('')}
+ className="absolute right-3 top-1/2 -translate-y-1/2"
+ >
+ <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+ </button>
+ )}
+ </div>
+ <Select value={statusFilter} onValueChange={setStatusFilter}>
+ <SelectTrigger className="w-full sm:w-[180px] h-9 bg-background">
+ <SelectValue placeholder="Estado" />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="all">Todos los estados</SelectItem>
+ {Object.entries(ESTADOS_CONFIG).map(([key, config]) => (
+ <SelectItem key={key} value={key}>{config.label}</SelectItem>
+ ))}
+ </SelectContent>
+ </Select>
+ <Select value={prioridadFilter} onValueChange={setPrioridadFilter}>
+ <SelectTrigger className="w-full sm:w-[150px] h-9 bg-background">
+ <SelectValue placeholder="Prioridad" />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="all">Todas</SelectItem>
+ {Object.entries(PRIORIDAD_CONFIG).map(([key, config]) => (
+ <SelectItem key={key} value={key}>{config.label}</SelectItem>
+ ))}
+ </SelectContent>
+ </Select>
 
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setStatusFilter('EN_APROBACION')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Pend. Aprobación</p>
-                  <p className="text-2xl font-bold mt-1 text-orange-600">{kpis.enAprobacion}</p>
-                </div>
-                <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+ {/* Ordenar */}
+ <DropdownMenu>
+ <DropdownMenuTrigger asChild>
+ <Button variant="outline" size="sm" className="h-9 gap-1.5 bg-background">
+ <ArrowUpDown className="h-3.5 w-3.5" />
+ <span className="hidden sm:inline">Ordenar</span>
+ {sortOrder === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="end">
+ <DropdownMenuItem onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>
+ Más recientes {sortBy === 'createdAt' && sortOrder === 'desc' && '✓'}
+ </DropdownMenuItem>
+ <DropdownMenuItem onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>
+ Más antiguos {sortBy === 'createdAt' && sortOrder === 'asc' && '✓'}
+ </DropdownMenuItem>
+ <DropdownMenuSeparator />
+ <DropdownMenuItem onClick={() => { setSortBy('prioridad'); setSortOrder('desc'); }}>
+ Mayor prioridad {sortBy === 'prioridad' && sortOrder === 'desc' && '✓'}
+ </DropdownMenuItem>
+ <DropdownMenuItem onClick={() => { setSortBy('prioridad'); setSortOrder('asc'); }}>
+ Menor prioridad {sortBy === 'prioridad' && sortOrder === 'asc' && '✓'}
+ </DropdownMenuItem>
+ <DropdownMenuSeparator />
+ <DropdownMenuItem onClick={() => { setSortBy('numero'); setSortOrder('desc'); }}>
+ Número (desc) {sortBy === 'numero' && sortOrder === 'desc' && '✓'}
+ </DropdownMenuItem>
+ <DropdownMenuItem onClick={() => { setSortBy('numero'); setSortOrder('asc'); }}>
+ Número (asc) {sortBy === 'numero' && sortOrder === 'asc' && '✓'}
+ </DropdownMenuItem>
+ </DropdownMenuContent>
+ </DropdownMenu>
+ </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setStatusFilter('EN_PROCESO')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">En Proceso</p>
-                  <p className="text-2xl font-bold mt-1 text-cyan-600">{kpis.enProceso}</p>
-                </div>
-                <div className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/20">
-                  <ShoppingCart className="h-4 w-4 text-cyan-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+ {/* Bulk Actions Bar */}
+ {selectedIds.size > 0 && (
+ <div className="flex items-center justify-between p-3 mb-4 bg-primary/10 rounded-lg border border-primary/20">
+ <div className="flex items-center gap-3">
+ <span className="text-sm font-medium">
+ {selectedIds.size} seleccionado(s)
+ </span>
+ <Button
+ variant="ghost"
+ size="sm"
+ className="h-7 text-xs"
+ onClick={() => setSelectedIds(new Set())}
+ >
+ <X className="h-3.5 w-3.5 mr-1" />
+ Deseleccionar
+ </Button>
+ </div>
+ <Button
+ variant="destructive"
+ size="sm"
+ className="h-7 text-xs"
+ onClick={handleBulkDelete}
+ disabled={isDeleting}
+ >
+ {isDeleting ? (
+ <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+ ) : (
+ <Trash2 className="h-3.5 w-3.5 mr-1" />
+ )}
+ Eliminar seleccionados
+ </Button>
+ </div>
+ )}
 
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow bg-primary/5"
-            onClick={() => setStatusFilter('COMPLETADA')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Completadas</p>
-                  <p className="text-2xl font-bold mt-1 text-primary">{kpis.completadas}</p>
-                </div>
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+ {/* Vista Tabla */}
+ {viewMode === 'table' && (
+ loading ? (
+ <SkeletonTable rows={5} cols={9} />
+ ) : pedidos.length === 0 ? (
+ <div className="text-center py-12">
+ <ClipboardList className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+ <p className="text-sm font-medium">No hay pedidos de compra</p>
+ <p className="text-xs text-muted-foreground mt-1">Crea un nuevo pedido para iniciar el proceso de compra</p>
+ </div>
+ ) : (
+ <div className="rounded-lg border overflow-x-auto">
+ <Table>
+ <TableHeader>
+ <TableRow className="bg-muted/30">
+ <TableHead className="w-[40px]">
+ <Checkbox
+ checked={pedidos.length > 0 && selectedIds.size === pedidos.length}
+ onCheckedChange={toggleSelectAll}
+ aria-label="Seleccionar todos"
+ />
+ </TableHead>
+ <TableHead className="text-xs">Número</TableHead>
+ <TableHead className="text-xs">Título</TableHead>
+ <TableHead className="text-xs">Solicitante</TableHead>
+ <TableHead className="text-xs">Estado</TableHead>
+ <TableHead className="text-xs">Prioridad</TableHead>
+ <TableHead className="text-xs">Cotizaciones</TableHead>
+ <TableHead className="text-xs">Fecha</TableHead>
+ <TableHead className="text-xs text-right">Acciones</TableHead>
+ </TableRow>
+ </TableHeader>
+ <TableBody>
+ {pedidos.map((pedido) => {
+ const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado);
+ const canDelete = pedido.estado === 'BORRADOR';
+ const canSend = pedido.estado === 'BORRADOR';
 
-        {/* Quick Filters */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <span className="text-xs text-muted-foreground mr-1">
-            <Filter className="h-3 w-3 inline mr-1" />
-            Filtros rápidos:
-          </span>
-          <button
-            onClick={() => setQuickFilter(quickFilter === 'misPedidos' ? '' : 'misPedidos')}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
-              quickFilter === 'misPedidos'
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted hover:bg-muted/80 text-muted-foreground"
-            )}
-          >
-            <UserCircle className="h-3 w-3" />
-            Mis pedidos
-          </button>
-          <button
-            onClick={() => setQuickFilter(quickFilter === 'pendientesAccion' ? '' : 'pendientesAccion')}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
-              quickFilter === 'pendientesAccion'
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted hover:bg-muted/80 text-muted-foreground"
-            )}
-          >
-            <Clock className="h-3 w-3" />
-            Pendientes
-          </button>
-          <button
-            onClick={() => setQuickFilter(quickFilter === 'venceEstaSemana' ? '' : 'venceEstaSemana')}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
-              quickFilter === 'venceEstaSemana'
-                ? "bg-orange-500 text-white"
-                : "bg-muted hover:bg-muted/80 text-muted-foreground"
-            )}
-          >
-            <CalendarClock className="h-3 w-3" />
-            Vence esta semana
-          </button>
-          <button
-            onClick={() => setQuickFilter(quickFilter === 'urgentes' ? '' : 'urgentes')}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5",
-              quickFilter === 'urgentes'
-                ? "bg-red-500 text-white"
-                : "bg-muted hover:bg-muted/80 text-muted-foreground"
-            )}
-          >
-            <Zap className="h-3 w-3" />
-            Urgentes
-          </button>
-          {quickFilter && (
-            <button
-              onClick={() => setQuickFilter('')}
-              className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-      </div>
+ return (
+ <TableRow
+ key={pedido.id}
+ className={cn(
+ "cursor-pointer hover:bg-muted/30",
+ selectedIds.has(pedido.id) && "bg-primary/5"
+ )}
+ onClick={() => handleViewDetail(pedido.id)}
+ >
+ <TableCell onClick={(e) => e.stopPropagation()}>
+ <Checkbox
+ checked={selectedIds.has(pedido.id)}
+ onCheckedChange={() => toggleSelect(pedido.id)}
+ aria-label={`Seleccionar ${pedido.numero}`}
+ />
+ </TableCell>
+ <TableCell className="font-mono font-medium text-sm">{pedido.numero}</TableCell>
+ <TableCell className="text-sm">
+ <div className="max-w-[200px] truncate" title={pedido.titulo}>
+ {pedido.titulo}
+ </div>
+ </TableCell>
+ <TableCell className="text-sm">{pedido.solicitante?.name || '-'}</TableCell>
+ <TableCell>{renderEstadoBadge(pedido.estado)}</TableCell>
+ <TableCell>{renderPrioridadBadge(pedido.prioridad)}</TableCell>
+ <TableCell>
+ <div className="flex items-center gap-1 text-sm">
+ <FileText className="h-4 w-4 text-muted-foreground" />
+ {pedido._count?.quotations || pedido.quotations?.length || 0}
+ </div>
+ </TableCell>
+ <TableCell className="text-sm">
+ {format(new Date(pedido.createdAt), 'dd/MM/yy', { locale: es })}
+ </TableCell>
+ <TableCell className="text-right">
+ <div className="flex items-center justify-end gap-1">
+ {pedido.estado === 'APROBADA' && (
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-7 text-xs px-2"
+ onClick={(e) => { e.stopPropagation(); handleCrearOC(pedido); }}
+ >
+ <FileText className="h-3.5 w-3.5 mr-1" />
+ Crear OC
+ </Button>
+ )}
+ <DropdownMenu>
+ <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+ <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+ <MoreHorizontal className="h-4 w-4" />
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="end">
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetail(pedido.id); }}>
+ <Eye className="h-4 w-4 mr-2" />
+ Ver Detalle
+ </DropdownMenuItem>
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(pedido); }}>
+ <Copy className="h-4 w-4 mr-2" />
+ Duplicar
+ </DropdownMenuItem>
+ {canEdit && (
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(pedido.id); }}>
+ <Edit className="h-4 w-4 mr-2" />
+ Editar
+ </DropdownMenuItem>
+ )}
+ {canSend && (
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEnviar(pedido); }}>
+ <Send className="h-4 w-4 mr-2" />
+ Enviar
+ </DropdownMenuItem>
+ )}
+ {canDelete && (
+ <>
+ <DropdownMenuSeparator />
+ <DropdownMenuItem
+ onClick={(e) => { e.stopPropagation(); handleDelete(pedido); }}
+ className="text-destructive"
+ >
+ <Trash2 className="h-4 w-4 mr-2" />
+ Eliminar
+ </DropdownMenuItem>
+ </>
+ )}
+ </DropdownMenuContent>
+ </DropdownMenu>
+ </div>
+ </TableCell>
+ </TableRow>
+ );
+ })}
+ </TableBody>
+ </Table>
+ </div>
+ )
+ )}
 
-      {/* Filtros y Tabla */}
-      <div className="px-4 md:px-6 pt-4 pb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <div>
-                <CardTitle className="text-sm font-medium">Listado de Pedidos</CardTitle>
-                <CardDescription className="text-xs">
-                  {total} pedidos encontrados {quickFilter && `(filtro: ${quickFilter === 'misPedidos' ? 'Mis pedidos' : quickFilter === 'pendientesAccion' ? 'Pendientes' : quickFilter === 'venceEstaSemana' ? 'Vence esta semana' : 'Urgentes'})`}
-                </CardDescription>
-              </div>
-              <div className="flex items-center border rounded-md p-0.5 bg-muted/40">
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={cn(
-                    "p-1.5 rounded transition-colors",
-                    viewMode === 'table' ? "bg-background shadow-sm" : "hover:bg-muted"
-                  )}
-                  title="Vista tabla"
-                >
-                  <LayoutList className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={cn(
-                    "p-1.5 rounded transition-colors",
-                    viewMode === 'card' ? "bg-background shadow-sm" : "hover:bg-muted"
-                  )}
-                  title="Vista tarjetas"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Filtros */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por número o título..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9 bg-background"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                  </button>
-                )}
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] h-9 bg-background">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  {Object.entries(ESTADOS_CONFIG).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={prioridadFilter} onValueChange={setPrioridadFilter}>
-                <SelectTrigger className="w-full sm:w-[150px] h-9 bg-background">
-                  <SelectValue placeholder="Prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {Object.entries(PRIORIDAD_CONFIG).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+ {/* Vista Cards */}
+ {viewMode === 'card' && (
+ <div>
+ {loading ? (
+ <SkeletonTable rows={5} cols={4} />
+ ) : pedidos.length === 0 ? (
+ <div className="text-center py-12">
+ <ClipboardList className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+ <p className="text-sm font-medium">No hay pedidos de compra</p>
+ <p className="text-xs text-muted-foreground mt-1">Crea un nuevo pedido para iniciar el proceso de compra</p>
+ </div>
+ ) : (
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+ {pedidos.map((pedido) => {
+ const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado);
+ const canDelete = pedido.estado === 'BORRADOR';
+ const canSend = pedido.estado === 'BORRADOR';
+ const quotationsCount = pedido._count?.quotations || pedido.quotations?.length || 0;
 
-              {/* Ordenar */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 gap-1.5 bg-background">
-                    <ArrowUpDown className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Ordenar</span>
-                    {sortOrder === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>
-                    Más recientes {sortBy === 'createdAt' && sortOrder === 'desc' && '✓'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>
-                    Más antiguos {sortBy === 'createdAt' && sortOrder === 'asc' && '✓'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => { setSortBy('prioridad'); setSortOrder('desc'); }}>
-                    Mayor prioridad {sortBy === 'prioridad' && sortOrder === 'desc' && '✓'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSortBy('prioridad'); setSortOrder('asc'); }}>
-                    Menor prioridad {sortBy === 'prioridad' && sortOrder === 'asc' && '✓'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => { setSortBy('numero'); setSortOrder('desc'); }}>
-                    Número (desc) {sortBy === 'numero' && sortOrder === 'desc' && '✓'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setSortBy('numero'); setSortOrder('asc'); }}>
-                    Número (asc) {sortBy === 'numero' && sortOrder === 'asc' && '✓'}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+ return (
+ <Card
+ key={pedido.id}
+ className={cn(
+ "cursor-pointer hover:shadow-md transition-all",
+ selectedIds.has(pedido.id) && "ring-2 ring-primary"
+ )}
+ >
+ <CardContent className="p-4">
+ {/* Header */}
+ <div className="flex items-start justify-between gap-2 mb-3">
+ <div className="flex items-center gap-2 min-w-0 flex-1">
+ <Checkbox
+ checked={selectedIds.has(pedido.id)}
+ onCheckedChange={() => toggleSelect(pedido.id)}
+ onClick={(e) => e.stopPropagation()}
+ />
+ <div className="min-w-0 flex-1" onClick={() => handleViewDetail(pedido.id)}>
+ <p className="font-mono font-medium text-sm">{pedido.numero}</p>
+ <p className="text-sm truncate mt-0.5" title={pedido.titulo}>
+ {pedido.titulo}
+ </p>
+ </div>
+ </div>
+ <div className="flex items-center gap-1 shrink-0">
+ {pedido.estado === 'APROBADA' && (
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-7 text-xs px-2"
+ onClick={(e) => { e.stopPropagation(); handleCrearOC(pedido); }}
+ >
+ <FileText className="h-3.5 w-3.5 mr-1" />
+ OC
+ </Button>
+ )}
+ <DropdownMenu>
+ <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+ <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+ <MoreHorizontal className="h-4 w-4" />
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="end">
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetail(pedido.id); }}>
+ <Eye className="h-4 w-4 mr-2" />
+ Ver Detalle
+ </DropdownMenuItem>
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(pedido); }}>
+ <Copy className="h-4 w-4 mr-2" />
+ Duplicar
+ </DropdownMenuItem>
+ {canEdit && (
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(pedido.id); }}>
+ <Edit className="h-4 w-4 mr-2" />
+ Editar
+ </DropdownMenuItem>
+ )}
+ {canSend && (
+ <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEnviar(pedido); }}>
+ <Send className="h-4 w-4 mr-2" />
+ Enviar
+ </DropdownMenuItem>
+ )}
+ {canDelete && (
+ <>
+ <DropdownMenuSeparator />
+ <DropdownMenuItem
+ onClick={(e) => { e.stopPropagation(); handleDelete(pedido); }}
+ className="text-destructive"
+ >
+ <Trash2 className="h-4 w-4 mr-2" />
+ Eliminar
+ </DropdownMenuItem>
+ </>
+ )}
+ </DropdownMenuContent>
+ </DropdownMenu>
+ </div>
+ </div>
 
-            {/* Bulk Actions Bar */}
-            {selectedIds.size > 0 && (
-              <div className="flex items-center justify-between p-3 mb-4 bg-primary/10 rounded-lg border border-primary/20">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">
-                    {selectedIds.size} seleccionado(s)
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setSelectedIds(new Set())}
-                  >
-                    <X className="h-3.5 w-3.5 mr-1" />
-                    Deseleccionar
-                  </Button>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={handleBulkDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Eliminar seleccionados
-                </Button>
-              </div>
-            )}
+ {/* Badges */}
+ <div className="flex flex-wrap gap-1.5 mb-3" onClick={() => handleViewDetail(pedido.id)}>
+ {renderEstadoBadge(pedido.estado)}
+ {renderPrioridadBadge(pedido.prioridad)}
+ </div>
 
-            {/* Vista Tabla */}
-            {viewMode === 'table' && (
-              <div className="rounded-lg border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="w-[40px]">
-                        <Checkbox
-                          checked={pedidos.length > 0 && selectedIds.size === pedidos.length}
-                          onCheckedChange={toggleSelectAll}
-                          aria-label="Seleccionar todos"
-                        />
-                      </TableHead>
-                      <TableHead className="text-xs">Número</TableHead>
-                      <TableHead className="text-xs">Título</TableHead>
-                      <TableHead className="text-xs">Solicitante</TableHead>
-                      <TableHead className="text-xs">Estado</TableHead>
-                      <TableHead className="text-xs">Prioridad</TableHead>
-                      <TableHead className="text-xs">Cotizaciones</TableHead>
-                      <TableHead className="text-xs">Fecha</TableHead>
-                      <TableHead className="text-xs text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ) : pedidos.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-sm">
-                          No hay pedidos de compra
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      pedidos.map((pedido) => {
-                        const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado);
-                        const canDelete = pedido.estado === 'BORRADOR';
-                        const canSend = pedido.estado === 'BORRADOR';
+ {/* Info */}
+ <div className="space-y-1.5 text-xs text-muted-foreground" onClick={() => handleViewDetail(pedido.id)}>
+ <div className="flex items-center gap-1.5">
+ <User className="h-3.5 w-3.5" />
+ <span className="truncate">{pedido.solicitante?.name || '-'}</span>
+ </div>
+ <div className="flex items-center gap-1.5">
+ <Calendar className="h-3.5 w-3.5" />
+ <span>{format(new Date(pedido.createdAt), 'dd/MM/yy', { locale: es })}</span>
+ </div>
+ <div className="flex items-center gap-1.5">
+ <FileText className="h-3.5 w-3.5" />
+ <span>{quotationsCount} cotización{quotationsCount !== 1 ? 'es' : ''}</span>
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ );
+ })}
+ </div>
+ )}
+ </div>
+ )}
 
-                        return (
-                          <TableRow
-                            key={pedido.id}
-                            className={cn(
-                              "cursor-pointer hover:bg-muted/30",
-                              selectedIds.has(pedido.id) && "bg-primary/5"
-                            )}
-                            onClick={() => handleViewDetail(pedido.id)}
-                          >
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedIds.has(pedido.id)}
-                                onCheckedChange={() => toggleSelect(pedido.id)}
-                                aria-label={`Seleccionar ${pedido.numero}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono font-medium text-sm">{pedido.numero}</TableCell>
-                            <TableCell className="text-sm">
-                              <div className="max-w-[200px] truncate" title={pedido.titulo}>
-                                {pedido.titulo}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm">{pedido.solicitante?.name || '-'}</TableCell>
-                            <TableCell>{renderEstadoBadge(pedido.estado)}</TableCell>
-                            <TableCell>{renderPrioridadBadge(pedido.prioridad)}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                {pedido._count?.quotations || pedido.quotations?.length || 0}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {format(new Date(pedido.createdAt), 'dd/MM/yy', { locale: es })}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                {pedido.estado === 'APROBADA' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 text-xs px-2"
-                                    onClick={(e) => { e.stopPropagation(); handleCrearOC(pedido); }}
-                                  >
-                                    <FileText className="h-3.5 w-3.5 mr-1" />
-                                    Crear OC
-                                  </Button>
-                                )}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetail(pedido.id); }}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      Ver Detalle
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(pedido); }}>
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Duplicar
-                                    </DropdownMenuItem>
-                                    {canEdit && (
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(pedido.id); }}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Editar
-                                      </DropdownMenuItem>
-                                    )}
-                                    {canSend && (
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEnviar(pedido); }}>
-                                        <Send className="h-4 w-4 mr-2" />
-                                        Enviar
-                                      </DropdownMenuItem>
-                                    )}
-                                    {canDelete && (
-                                      <>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                          onClick={(e) => { e.stopPropagation(); handleDelete(pedido); }}
-                                          className="text-red-600"
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Eliminar
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+ {/* Paginación */}
+ {totalPages > 1 && (
+ <div className="flex items-center justify-between mt-4">
+ <p className="text-xs text-muted-foreground">
+ Mostrando {pedidos.length} de {total} pedidos
+ </p>
+ <div className="flex gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-7"
+ onClick={() => setPage(Math.max(1, page - 1))}
+ disabled={page === 1}
+ >
+ <ChevronLeft className="h-4 w-4" />
+ </Button>
+ <span className="px-3 py-1 text-xs">
+ {page} / {totalPages}
+ </span>
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-7"
+ onClick={() => setPage(Math.min(totalPages, page + 1))}
+ disabled={page === totalPages}
+ >
+ <ChevronRight className="h-4 w-4" />
+ </Button>
+ </div>
+ </div>
+ )}
 
-            {/* Vista Cards */}
-            {viewMode === 'card' && (
-              <div>
-                {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : pedidos.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground text-sm">
-                    No hay pedidos de compra
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {pedidos.map((pedido) => {
-                      const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado);
-                      const canDelete = pedido.estado === 'BORRADOR';
-                      const canSend = pedido.estado === 'BORRADOR';
-                      const quotationsCount = pedido._count?.quotations || pedido.quotations?.length || 0;
+ {pedidos.length > 0 && totalPages <= 1 && (
+ <p className="text-xs text-muted-foreground mt-3">
+ Mostrando {pedidos.length} de {total} pedidos
+ </p>
+ )}
+ </CardContent>
+ </Card>
+ </div>
 
-                      return (
-                        <Card
-                          key={pedido.id}
-                          className={cn(
-                            "cursor-pointer hover:shadow-md transition-all",
-                            selectedIds.has(pedido.id) && "ring-2 ring-primary"
-                          )}
-                        >
-                          <CardContent className="p-4">
-                            {/* Header */}
-                            <div className="flex items-start justify-between gap-2 mb-3">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <Checkbox
-                                  checked={selectedIds.has(pedido.id)}
-                                  onCheckedChange={() => toggleSelect(pedido.id)}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <div className="min-w-0 flex-1" onClick={() => handleViewDetail(pedido.id)}>
-                                  <p className="font-mono font-medium text-sm">{pedido.numero}</p>
-                                  <p className="text-sm truncate mt-0.5" title={pedido.titulo}>
-                                    {pedido.titulo}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {pedido.estado === 'APROBADA' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 text-xs px-2"
-                                    onClick={(e) => { e.stopPropagation(); handleCrearOC(pedido); }}
-                                  >
-                                    <FileText className="h-3.5 w-3.5 mr-1" />
-                                    OC
-                                  </Button>
-                                )}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetail(pedido.id); }}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      Ver Detalle
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(pedido); }}>
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Duplicar
-                                    </DropdownMenuItem>
-                                    {canEdit && (
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(pedido.id); }}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Editar
-                                      </DropdownMenuItem>
-                                    )}
-                                    {canSend && (
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEnviar(pedido); }}>
-                                        <Send className="h-4 w-4 mr-2" />
-                                        Enviar
-                                      </DropdownMenuItem>
-                                    )}
-                                    {canDelete && (
-                                      <>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                          onClick={(e) => { e.stopPropagation(); handleDelete(pedido); }}
-                                          className="text-red-600"
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Eliminar
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
+ {/* Modales */}
+ <PedidoCompraFormModal
+ open={isFormModalOpen}
+ onClose={() => { setIsFormModalOpen(false); setEditingPedidoId(undefined); }}
+ pedidoId={editingPedidoId}
+ onSuccess={() => invalidatePedidos()}
+ />
 
-                            {/* Badges */}
-                            <div className="flex flex-wrap gap-1.5 mb-3" onClick={() => handleViewDetail(pedido.id)}>
-                              {renderEstadoBadge(pedido.estado)}
-                              {renderPrioridadBadge(pedido.prioridad)}
-                            </div>
+ {selectedPedidoId && (
+ <PedidoCompraDetailModal
+ open={isDetailModalOpen}
+ onClose={() => { setIsDetailModalOpen(false); setSelectedPedidoId(null); }}
+ pedidoId={selectedPedidoId}
+ onUpdate={() => invalidatePedidos()}
+ />
+ )}
 
-                            {/* Info */}
-                            <div className="space-y-1.5 text-xs text-muted-foreground" onClick={() => handleViewDetail(pedido.id)}>
-                              <div className="flex items-center gap-1.5">
-                                <User className="h-3.5 w-3.5" />
-                                <span className="truncate">{pedido.solicitante?.name || '-'}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                <span>{format(new Date(pedido.createdAt), 'dd/MM/yy', { locale: es })}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <FileText className="h-3.5 w-3.5" />
-                                <span>{quotationsCount} cotización{quotationsCount !== 1 ? 'es' : ''}</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+ {/* Modal Crear OC */}
+ {crearOCPedidoId && (
+ <CrearOCModal
+ open={crearOCModalOpen}
+ onClose={() => { setCrearOCModalOpen(false); setCrearOCPedidoId(null); }}
+ pedidoId={crearOCPedidoId}
+ onSuccess={() => invalidatePedidos()}
+ />
+ )}
 
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-xs text-muted-foreground">
-                  Mostrando {pedidos.length} de {total} pedidos
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="px-3 py-1 text-xs">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
+ {/* Modal Voice Purchase */}
+ <VoicePurchaseModal
+ open={isVoiceModalOpen}
+ onClose={() => setIsVoiceModalOpen(false)}
+ onSuccess={() => invalidatePedidos()}
+ />
 
-            {pedidos.length > 0 && totalPages <= 1 && (
-              <p className="text-xs text-muted-foreground mt-3">
-                Mostrando {pedidos.length} de {total} pedidos
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modales */}
-      <PedidoCompraFormModal
-        open={isFormModalOpen}
-        onClose={() => { setIsFormModalOpen(false); setEditingPedidoId(undefined); }}
-        pedidoId={editingPedidoId}
-        onSuccess={() => loadPedidos()}
-      />
-
-      {selectedPedidoId && (
-        <PedidoCompraDetailModal
-          open={isDetailModalOpen}
-          onClose={() => { setIsDetailModalOpen(false); setSelectedPedidoId(null); }}
-          pedidoId={selectedPedidoId}
-          onUpdate={() => loadPedidos()}
-        />
-      )}
-
-      {/* Modal Crear OC */}
-      {crearOCPedidoId && (
-        <CrearOCModal
-          open={crearOCModalOpen}
-          onClose={() => { setCrearOCModalOpen(false); setCrearOCPedidoId(null); }}
-          pedidoId={crearOCPedidoId}
-          onSuccess={() => loadPedidos()}
-        />
-      )}
-
-      {/* Modal Voice Purchase */}
-      <VoicePurchaseModal
-        open={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        onSuccess={() => loadPedidos()}
-      />
-
-      {/* Modal Recurring Orders */}
-      <RecurringOrdersModal
-        open={isRecurringModalOpen}
-        onClose={() => setIsRecurringModalOpen(false)}
-        onSuccess={() => loadPedidos()}
-      />
-    </div>
-  );
+ {/* Modal Recurring Orders */}
+ <RecurringOrdersModal
+ open={isRecurringModalOpen}
+ onClose={() => setIsRecurringModalOpen(false)}
+ onSuccess={() => invalidatePedidos()}
+ />
+ </div>
+ );
 }

@@ -63,7 +63,7 @@ export default function CorrectiveMetricsPage() {
     return (
       <div className="container mx-auto py-6">
         <Card className="p-6">
-          <div className="flex items-center gap-2 text-red-500">
+          <div className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
             <span>Error al cargar métricas</span>
           </div>
@@ -118,10 +118,10 @@ export default function CorrectiveMetricsPage() {
           <CardContent>
             <div className="text-3xl font-bold">{metrics?.summary?.totalFailures || 0}</div>
             <div className="flex gap-2 mt-2 text-sm">
-              <Badge variant="outline" className="bg-yellow-50">
+              <Badge variant="outline" className="bg-warning-muted">
                 {metrics?.summary?.openFailures || 0} abiertas
               </Badge>
-              <Badge variant="outline" className="bg-green-50">
+              <Badge variant="outline" className="bg-success-muted">
                 {metrics?.summary?.resolvedFailures || 0} resueltas
               </Badge>
             </div>
@@ -155,8 +155,8 @@ export default function CorrectiveMetricsPage() {
           <CardContent>
             <div className={cn(
               'text-3xl font-bold',
-              (metrics?.sla?.overall || 0) >= 90 ? 'text-green-600' :
-              (metrics?.sla?.overall || 0) >= 70 ? 'text-yellow-600' : 'text-red-600'
+              (metrics?.sla?.overall || 0) >= 90 ? 'text-success' :
+              (metrics?.sla?.overall || 0) >= 70 ? 'text-warning-muted-foreground' : 'text-destructive'
             )}>
               {metrics?.sla?.overall || 0}%
             </div>
@@ -192,7 +192,7 @@ export default function CorrectiveMetricsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />
               Recurrencia
             </CardTitle>
           </CardHeader>
@@ -214,7 +214,7 @@ export default function CorrectiveMetricsPage() {
                 <span>Tasa de recurrencia</span>
                 <span className={cn(
                   'font-medium',
-                  (metrics?.recurrence?.rate || 0) > 20 ? 'text-red-600' : 'text-green-600'
+                  (metrics?.recurrence?.rate || 0) > 20 ? 'text-destructive' : 'text-success'
                 )}>
                   {metrics?.recurrence?.rate || 0}%
                 </span>
@@ -265,9 +265,9 @@ export default function CorrectiveMetricsPage() {
             {Object.entries(metrics?.sla?.thresholds || {}).map(([priority, hours]) => (
               <div key={priority} className="text-center p-4 bg-muted rounded-lg">
                 <Badge className={cn(
-                  priority === 'P1' ? 'bg-red-500' :
-                  priority === 'P2' ? 'bg-orange-500' :
-                  priority === 'P3' ? 'bg-yellow-500' : 'bg-green-500'
+                  priority === 'P1' ? 'bg-destructive' :
+                  priority === 'P2' ? 'bg-warning' :
+                  priority === 'P3' ? 'bg-warning' : 'bg-success'
                 )}>
                   {priority}
                 </Badge>

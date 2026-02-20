@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -86,11 +87,11 @@ export default function PrintWorkOrders({
 
   const getStatusBadge = (status: WorkOrderStatus) => {
     const statusConfig = {
-      [WorkOrderStatus.PENDING]: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-      [WorkOrderStatus.IN_PROGRESS]: { label: 'En Proceso', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-      [WorkOrderStatus.COMPLETED]: { label: 'Completada', color: 'bg-green-100 text-green-800 border-green-300' },
-      [WorkOrderStatus.CANCELLED]: { label: 'Cancelada', color: 'bg-red-100 text-red-800 border-red-300' },
-      [WorkOrderStatus.ON_HOLD]: { label: 'En Espera', color: 'bg-gray-100 text-gray-800 border-gray-300' },
+      [WorkOrderStatus.PENDING]: { label: 'Pendiente', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted' },
+      [WorkOrderStatus.IN_PROGRESS]: { label: 'En Proceso', color: 'bg-info-muted text-info-muted-foreground border-info-muted' },
+      [WorkOrderStatus.COMPLETED]: { label: 'Completada', color: 'bg-success-muted text-success border-success-muted' },
+      [WorkOrderStatus.CANCELLED]: { label: 'Cancelada', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+      [WorkOrderStatus.ON_HOLD]: { label: 'En Espera', color: 'bg-muted text-muted-foreground border-border' },
     };
     
     return statusConfig[status] || statusConfig[WorkOrderStatus.PENDING];
@@ -98,60 +99,69 @@ export default function PrintWorkOrders({
 
   const getPriorityBadge = (priority: Priority) => {
     const priorityConfig = {
-      [Priority.LOW]: { label: 'Baja', color: 'bg-green-100 text-green-800 border-green-300' },
-      [Priority.MEDIUM]: { label: 'Media', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-      [Priority.HIGH]: { label: 'Alta', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-      [Priority.URGENT]: { label: 'Urgente', color: 'bg-red-100 text-red-800 border-red-300' },
+      [Priority.LOW]: { label: 'Baja', color: 'bg-success-muted text-success border-success-muted' },
+      [Priority.MEDIUM]: { label: 'Media', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted' },
+      [Priority.HIGH]: { label: 'Alta', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted' },
+      [Priority.URGENT]: { label: 'Urgente', color: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
     
     return priorityConfig[priority] || priorityConfig[Priority.MEDIUM];
   };
 
   const handlePrint = () => {
-    if (printRef.current) {
-      const printContent = printRef.current.innerHTML;
-      const originalContent = document.body.innerHTML;
-      
-      document.body.innerHTML = `
-        <html>
-          <head>
-            <title>Órdenes de Trabajo - ${getSelectedUserName()}</title>
-            <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #333; }
-              .print-container { padding: 20px; max-width: 800px; margin: 0 auto; }
-              .header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 15px; }
-              .header h1 { font-size: 24px; margin-bottom: 5px; }
-              .header .subtitle { font-size: 14px; color: #666; margin-bottom: 10px; }
-              .summary { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px; }
-              .work-order { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 4px; page-break-inside: avoid; }
-              .work-order-header { display: flex; justify-content: between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-              .work-order-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px; }
-              .work-order-id { font-size: 12px; color: #666; }
-              .badges { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-              .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: bold; border: 1px solid; }
-              .work-order-details { margin-bottom: 10px; }
-              .detail-row { display: flex; margin-bottom: 5px; }
-              .detail-label { width: 120px; font-weight: bold; color: #555; }
-              .detail-value { flex: 1; }
-              .description { margin-top: 10px; padding: 8px; background: #f9f9f9; border-radius: 3px; }
-              .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 10px; color: #666; }
-              @media print {
-                body { print-color-adjust: exact; }
-                .work-order { page-break-inside: avoid; }
-              }
-            </style>
-          </head>
-          <body>
-            ${printContent}
-          </body>
-        </html>
-      `;
-      
-      window.print();
-      document.body.innerHTML = originalContent;
-      window.location.reload(); // Para restaurar los event listeners
+    if (!printRef.current) return;
+    const printContent = printRef.current.innerHTML;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      document.body.removeChild(iframe);
+      return;
     }
+
+    doc.open();
+    doc.write(`<html>
+      <head>
+        <title>Órdenes de Trabajo</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #333; }
+          .print-container { padding: 20px; max-width: 800px; margin: 0 auto; }
+          .header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 15px; }
+          .header h1 { font-size: 24px; margin-bottom: 5px; }
+          .header .subtitle { font-size: 14px; color: #666; margin-bottom: 10px; }
+          .summary { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+          .work-order { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 4px; page-break-inside: avoid; }
+          .work-order-header { display: flex; justify-content: between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+          .work-order-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px; }
+          .work-order-id { font-size: 12px; color: #666; }
+          .badges { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+          .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: bold; border: 1px solid; }
+          .work-order-details { margin-bottom: 10px; }
+          .detail-row { display: flex; margin-bottom: 5px; }
+          .detail-label { width: 120px; font-weight: bold; color: #555; }
+          .detail-value { flex: 1; }
+          .description { margin-top: 10px; padding: 8px; background: #f9f9f9; border-radius: 3px; }
+          .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 10px; color: #666; }
+          @media print {
+            body { print-color-adjust: exact; margin: 0; padding: 20px; }
+            .work-order { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>${printContent}</body>
+    </html>`);
+    doc.close();
+
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+    setTimeout(() => document.body.removeChild(iframe), 1000);
   };
 
   const handleDownloadPDF = () => {
@@ -162,7 +172,7 @@ export default function PrintWorkOrders({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent size="xl" className="max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[calc(100vh-4rem)]">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Printer className="h-5 w-5" />
@@ -170,8 +180,9 @@ export default function PrintWorkOrders({
           </DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         {/* Controles de filtrado */}
-        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+        <div className="space-y-4 p-4 bg-muted rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Usuario Asignado</label>
@@ -271,14 +282,14 @@ export default function PrintWorkOrders({
                   </div>
 
                   <div className="badges">
-                    <span className={`badge ${getStatusBadge(order.status).color}`}>
+                    <span className={cn('badge', getStatusBadge(order.status).color)}>
                       {getStatusBadge(order.status).label}
                     </span>
-                    <span className={`badge ${getPriorityBadge(order.priority).color}`}>
+                    <span className={cn('badge', getPriorityBadge(order.priority).color)}>
                       {getPriorityBadge(order.priority).label}
                     </span>
                     {order.scheduledDate && new Date(order.scheduledDate) < new Date() && order.status !== WorkOrderStatus.COMPLETED && (
-                      <span className="badge bg-red-100 text-red-800 border-red-300">
+                      <span className="badge bg-destructive/10 text-destructive border-destructive/20">
                         VENCIDA
                       </span>
                     )}
@@ -351,6 +362,7 @@ export default function PrintWorkOrders({
             <p>Página impresa el {new Date().toLocaleString('es-ES')}</p>
           </div>
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

@@ -14,17 +14,17 @@ interface OrdersChartWidgetProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendiente', color: '#eab308' },
-  IN_PROGRESS: { label: 'En Progreso', color: '#3b82f6' },
-  COMPLETED: { label: 'Completada', color: '#22c55e' },
-  CANCELLED: { label: 'Cancelada', color: '#ef4444' },
+  PENDING: { label: 'Pendiente', color: 'hsl(var(--warning))' },
+  IN_PROGRESS: { label: 'En Progreso', color: 'hsl(var(--primary))' },
+  COMPLETED: { label: 'Completada', color: 'hsl(var(--success))' },
+  CANCELLED: { label: 'Cancelada', color: 'hsl(var(--destructive))' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-  CRITICAL: { label: 'Crítica', color: '#ef4444' },
-  HIGH: { label: 'Alta', color: '#f97316' },
-  MEDIUM: { label: 'Media', color: '#eab308' },
-  LOW: { label: 'Baja', color: '#22c55e' },
+  CRITICAL: { label: 'Crítica', color: 'hsl(var(--destructive))' },
+  HIGH: { label: 'Alta', color: 'hsl(var(--chart-5))' },
+  MEDIUM: { label: 'Media', color: 'hsl(var(--warning))' },
+  LOW: { label: 'Baja', color: 'hsl(var(--success))' },
 };
 
 export function OrdersChartWidget({ widgetId, companyId, sectorId, style = 'bar-chart' }: OrdersChartWidgetProps) {
@@ -40,7 +40,7 @@ export function OrdersChartWidget({ widgetId, companyId, sectorId, style = 'bar-
     .map(([key, count]) => ({
       label: config[key]?.label || key,
       value: count as number,
-      color: config[key]?.color || '#6b7280',
+      color: config[key]?.color || 'hsl(var(--muted-foreground))',
     }));
 
   if (isLoading) {

@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -107,7 +108,7 @@ export function OrdenConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Confirmar Orden de Venta</DialogTitle>
           <DialogDescription>
@@ -115,6 +116,7 @@ export function OrdenConfirmDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         {checking ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -163,7 +165,7 @@ export function OrdenConfirmDialog({
                   </p>
                   <div className="space-y-2">
                     {checks.stockAlerts.map((alert, idx) => (
-                      <div key={idx} className="bg-red-50 p-3 rounded border border-red-200">
+                      <div key={idx} className="bg-destructive/10 p-3 rounded border border-destructive/20">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <p className="font-semibold text-sm">{alert.descripcion}</p>
@@ -181,14 +183,14 @@ export function OrdenConfirmDialog({
                             <p className="font-semibold">{alert.stockActual}</p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground text-red-600">Faltante:</span>
-                            <p className="font-semibold text-red-600">{alert.faltante}</p>
+                            <span className="text-destructive">Faltante:</span>
+                            <p className="font-semibold text-destructive">{alert.faltante}</p>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center space-x-2 mt-4 p-3 bg-white rounded border">
+                  <div className="flex items-center space-x-2 mt-4 p-3 bg-background rounded border">
                     <Checkbox
                       id="confirm-stock"
                       checked={confirmStockIssues}
@@ -212,7 +214,7 @@ export function OrdenConfirmDialog({
                 <AlertTitle>Límite de Crédito Excedido</AlertTitle>
                 <AlertDescription>
                   <p className="mb-3">El cliente excederá su límite de crédito con esta orden:</p>
-                  <div className="bg-red-50 p-4 rounded border border-red-200 space-y-2">
+                  <div className="bg-destructive/10 p-4 rounded border border-destructive/20 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Límite de Crédito:</span>
                       <span className="font-semibold">{formatCurrency(checks.creditAlert.limiteCredito)}</span>
@@ -225,16 +227,16 @@ export function OrdenConfirmDialog({
                       <span className="text-muted-foreground">Esta Orden:</span>
                       <span className="font-semibold">{formatCurrency(checks.creditAlert.montoOrden)}</span>
                     </div>
-                    <div className="border-t pt-2 flex justify-between font-bold text-red-600">
+                    <div className="border-t pt-2 flex justify-between font-bold text-destructive">
                       <span>Total Proyectado:</span>
                       <span>{formatCurrency(checks.creditAlert.totalProyectado)}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-bold text-red-600">
+                    <div className="flex justify-between text-sm font-bold text-destructive">
                       <span>Excedente:</span>
                       <span>{formatCurrency(checks.creditAlert.excedente)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 mt-4 p-3 bg-white rounded border">
+                  <div className="flex items-center space-x-2 mt-4 p-3 bg-background rounded border">
                     <Checkbox
                       id="confirm-credit"
                       checked={confirmCreditIssue}
@@ -253,10 +255,10 @@ export function OrdenConfirmDialog({
 
             {/* Todo OK */}
             {!checks.hasStockIssues && !checks.hasCreditIssue && (
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-900">Validaciones Correctas</AlertTitle>
-                <AlertDescription className="text-green-800">
+              <Alert className="border-success bg-success-muted">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <AlertTitle className="text-foreground">Validaciones Correctas</AlertTitle>
+                <AlertDescription className="text-foreground">
                   ✓ Stock disponible para todos los productos
                   <br />
                   ✓ Cliente dentro del límite de crédito
@@ -268,6 +270,7 @@ export function OrdenConfirmDialog({
             )}
           </div>
         )}
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading || checking}>

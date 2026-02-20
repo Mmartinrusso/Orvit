@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,6 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { 
   Edit, 
   Tag, 
@@ -75,19 +77,20 @@ const categoryLabels: Record<string, string> = {
 };
 
 const categoryColors: Record<string, string> = {
-  IMP_SERV: 'bg-blue-100 text-blue-800 border-blue-200',
-  SOCIAL: 'bg-green-100 text-green-800 border-green-200',
-  VEHICLES: 'bg-orange-100 text-orange-800 border-orange-200',
-  MKT: 'bg-purple-100 text-purple-800 border-purple-200',
-  UTILITIES: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  OTHER: 'bg-gray-100 text-gray-800 border-gray-200',
+  IMP_SERV: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  SOCIAL: 'bg-success-muted text-success border-success-muted',
+  VEHICLES: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  MKT: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  UTILITIES: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  OTHER: 'bg-muted text-foreground border-border',
 };
 
-export function IndirectItemEditDialog({ 
-  children, 
-  indirectItem, 
-  onItemUpdated 
+export function IndirectItemEditDialog({
+  children,
+  indirectItem,
+  onItemUpdated
 }: IndirectItemEditDialogProps) {
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -148,9 +151,13 @@ export function IndirectItemEditDialog({
   };
 
   const handleDelete = async () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este ítem indirecto? Esta acción no se puede deshacer.')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar ítem indirecto',
+      description: '¿Estás seguro de que quieres eliminar este ítem indirecto? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       setIsLoading(true);
@@ -237,7 +244,7 @@ export function IndirectItemEditDialog({
                             <div className="flex items-center gap-2">
                               <Badge 
                                 variant="outline" 
-                                className={`text-xs ${categoryColors[value]}`}
+                                className={cn('text-xs', categoryColors[value])}
                               >
                                 {label}
                               </Badge>
@@ -311,7 +318,7 @@ export function IndirectItemEditDialog({
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className={`${categoryColors[form.watch('category') as keyof typeof categoryColors]}`}
+                    className={cn(categoryColors[form.watch('category') as keyof typeof categoryColors])}
                   >
                     {categoryLabels[form.watch('category') as keyof typeof categoryLabels]}
                   </Badge>
@@ -323,7 +330,7 @@ export function IndirectItemEditDialog({
                   {form.watch('currentPrice') && (
                     <>
                       <span className="text-sm text-muted-foreground">•</span>
-                      <span className="text-sm font-medium text-green-600">
+                      <span className="text-sm font-medium text-success">
                         ${new Intl.NumberFormat('es-AR').format(form.watch('currentPrice')!)}
                       </span>
                     </>

@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Clock, TrendingUp, TrendingDown, Filter, Plus, Calendar, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { Clock, TrendingUp, TrendingDown, Filter, Plus, Calendar, DollarSign, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useGlobalHistorial } from '@/hooks/use-global-historial';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,29 +28,21 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
     refreshHistorial,
   } = useGlobalHistorial({ companyId });
 
-  // Obtener empleados reales para el modal
-  const [employees, setEmployees] = useState<Array<{id: string, name: string, role: string}>>([]);
-  
-  useEffect(() => {
-    // Obtener empleados reales de la API de empleados
-    const fetchEmployees = async () => {
-      try {
-        const response = await fetch(`/api/costos/empleados?companyId=${companyId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setEmployees(data.map((emp: any) => ({
-            id: emp.id,
-            name: emp.name || 'Sin nombre',
-            role: emp.role || 'Sin rol'
-          })));
-        }
-      } catch (error) {
-        console.error('Error obteniendo empleados:', error);
-      }
-    };
-    
-    fetchEmployees();
-  }, [companyId]);
+  // Empleados reales para el modal
+  const { data: employees = [] } = useQuery({
+    queryKey: ['costos-empleados', companyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/costos/empleados?companyId=${companyId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.map((emp: any) => ({
+        id: emp.id,
+        name: emp.name || 'Sin nombre',
+        role: emp.role || 'Sin rol',
+      }));
+    },
+    staleTime: 3 * 60 * 1000,
+  });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEntry, setNewEntry] = useState({
@@ -83,7 +78,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
 
   const handleAddEntry = async () => {
     if (!newEntry.employeeId || newEntry.newSalary === newEntry.oldSalary) {
-      alert('Selecciona un empleado y asegúrate de que el nuevo salario sea diferente al anterior');
+      toast.warning('Selecciona un empleado y asegúrate de que el nuevo salario sea diferente al anterior');
       return;
     }
 
@@ -109,14 +104,14 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8 text-red-600">
+      <div className="text-center p-8 text-destructive">
         <p>Error: {error}</p>
       </div>
     );
@@ -127,11 +122,11 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Clock className="h-6 w-6" />
             Historial de Sueldos
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             {selectedEmployee === 'all' 
               ? 'Registro de todos los cambios salariales de la empresa'
               : `Registro de cambios salariales para ${uniqueEmployees.find(emp => emp.id === selectedEmployee)?.name || 'empleado seleccionado'}`
@@ -143,7 +138,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
             <Clock className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
-          <Button onClick={() => setShowAddModal(true)} className="bg-black hover:bg-gray-800">
+          <Button onClick={() => setShowAddModal(true)} className="bg-black hover:bg-foreground/90">
             <Plus className="h-4 w-4 mr-2" />
             Agregar Cambio
           </Button>
@@ -155,7 +150,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
         {/* Filtro por empleado */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Filtrar por Empleado
             </CardTitle>
@@ -192,16 +187,16 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
           <>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-success" />
                   Aumentos
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-success">
                   {formatCurrency(stats.totalIncrease)}
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Promedio: {formatCurrency(stats.averageIncrease)}
                 </p>
               </CardContent>
@@ -209,16 +204,16 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-destructive" />
                   Disminuciones
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-destructive">
                   {formatCurrency(stats.totalDecrease)}
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Promedio: {formatCurrency(stats.averageDecrease)}
                 </p>
               </CardContent>
@@ -236,8 +231,8 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
         </CardHeader>
         <CardContent>
           {historial.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-muted-foreground">
+              <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p>No hay cambios salariales registrados</p>
               {selectedEmployee !== 'all' && (
                 <p className="text-sm">Intenta cambiar el filtro o agregar un cambio</p>
@@ -252,12 +247,12 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
                 return (
                   <div
                     key={entry.id}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-4 p-4 bg-muted rounded-lg hover:bg-accent transition-colors"
                   >
                     {/* Icono */}
-                    <div className={`p-3 rounded-full ${
-                      isIncrease ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                    }`}>
+                    <div className={cn('p-3 rounded-full',
+                      isIncrease ? 'bg-success-muted text-success' : 'bg-destructive/10 text-destructive'
+                    )}>
                       {isIncrease ? (
                         <TrendingUp className="h-5 w-5" />
                       ) : (
@@ -276,10 +271,10 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
                         </Badge>
                       </div>
                       
-                      <div className="text-sm text-gray-600 space-y-1">
+                      <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{entry.employeeName}</span>
-                          <span className="text-gray-500">•</span>
+                          <span className="text-muted-foreground">•</span>
                           <span>{entry.employeeRole}</span>
                         </div>
                         <div className="flex items-center gap-4 text-xs">
@@ -307,11 +302,11 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
       {/* Modal para agregar cambio */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-card rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Agregar Cambio Salarial</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Empleado *
                 </label>
                                  <Select value={newEntry.employeeId} onValueChange={(value) => setNewEntry({...newEntry, employeeId: value})}>
@@ -332,7 +327,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
                  </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Salario Anterior *
                 </label>
                 <Input
@@ -344,7 +339,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Nuevo Salario *
                 </label>
                 <Input
@@ -356,7 +351,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Motivo del Cambio
                 </label>
                 <Input

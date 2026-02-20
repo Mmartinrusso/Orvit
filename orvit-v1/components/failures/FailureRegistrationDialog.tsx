@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
+import {
   AlertTriangle,
   Network,
   CloudUpload,
@@ -31,7 +31,8 @@ import {
   Upload,
   FileText,
   Cog,
-  Wrench
+  Wrench,
+  Loader2
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -84,16 +85,7 @@ export default function FailureRegistrationDialog({
 }: FailureRegistrationDialogProps) {
   const { currentCompany, currentSector } = useCompany();
   const { user } = useAuth();
-  
-  // console.log('FailureRegistrationDialog rendered with:', {
-  //   isOpen,
-  //   machineId,
-  //   machineName,
-  //   components: components.length,
-  //   currentSector,
-  //   currentCompany
-  // });
-  
+
   // Estados del formulario
   const [failureData, setFailureData] = useState<FailureData>({
     title: '',
@@ -203,11 +195,9 @@ export default function FailureRegistrationDialog({
   const loadComponents = async (machineIdToLoad: number) => {
     setLoadingComponents(true);
     try {
-      console.log('Loading components for machine:', machineIdToLoad);
       const response = await fetch(`/api/maquinas/${machineIdToLoad}/components`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Components loaded:', data);
         setAllComponents(data);
       } else {
         console.error('Failed to load components:', response.status, response.statusText);
@@ -272,7 +262,6 @@ export default function FailureRegistrationDialog({
     const files = event.target.files;
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
-      console.log('📁 Archivos seleccionados:', fileArray.map(f => f.name));
       setFailureData(prev => ({
         ...prev,
         files: [...prev.files, ...fileArray]
@@ -310,9 +299,6 @@ export default function FailureRegistrationDialog({
   };
 
   const handleLoadSolution = () => {
-    console.log('🔧 [FailureRegistrationDialog] handleLoadSolution llamado');
-    console.log('🔧 [FailureRegistrationDialog] failureData:', failureData);
-    
     if (!failureData.title.trim()) {
       toast({
         title: "Error",
@@ -331,8 +317,6 @@ export default function FailureRegistrationDialog({
       failureTypeId: selectedFailureType?.id || null,
       addToCatalog: !selectedFailureType // Agregar al catálogo si es nueva
     };
-
-    console.log('🔧 [FailureRegistrationDialog] Enviando datos al padre:', finalFailureData);
 
     // Pasar los datos de la falla al componente padre para abrir el modal de solución
     onLoadSolution(finalFailureData);
@@ -375,11 +359,11 @@ export default function FailureRegistrationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent size="md" className="flex flex-col overflow-hidden max-h-[85vh]">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent size="md">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="bg-orange-100 p-1.5 rounded-lg">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <div className="bg-warning-muted p-1.5 rounded-lg">
+              <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
             </div>
             Registrar Nueva Falla
           </DialogTitle>
@@ -388,7 +372,7 @@ export default function FailureRegistrationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto min-h-0">
+        <DialogBody>
         <form className="space-y-4">
           {/* Selector de tipo de falla conocida */}
           <div className="space-y-1.5">
@@ -465,7 +449,7 @@ export default function FailureRegistrationDialog({
             </Label>
             {loadingEmployees ? (
               <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-primary"></div>
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                 <span className="text-xs text-muted-foreground">Cargando empleados...</span>
               </div>
             ) : (
@@ -506,7 +490,7 @@ export default function FailureRegistrationDialog({
               <Label className="text-xs font-medium">Máquina</Label>
               {loadingMachines ? (
                 <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-primary"></div>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                   <span className="text-xs text-muted-foreground">Cargando máquinas...</span>
                 </div>
               ) : machines.length > 0 ? (
@@ -558,15 +542,15 @@ export default function FailureRegistrationDialog({
                   {selectedComponentIds.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-info rounded-full"></div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Componentes Principales ({selectedComponentIds.length})</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedComponentIds.map((componentId) => {
                       const component = allComponents.find(c => c.id.toString() === componentId);
                       return component ? (
-                        <div key={componentId} className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded-md text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200">
-                          <Cog className="h-3 w-3 text-blue-600" />
+                        <div key={componentId} className="group flex items-center gap-1.5 bg-info-muted border border-info-muted text-info-muted-foreground px-2 py-1 rounded-md text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200">
+                          <Cog className="h-3 w-3 text-info-muted-foreground" />
                           <span>{component.name}</span>
                           <button
                             type="button"
@@ -578,7 +562,7 @@ export default function FailureRegistrationDialog({
                                 setSelectedSubcomponentIds(prev => prev.filter(id => !subcomponentIdsToRemove.includes(id)));
                               }
                             }}
-                            className="opacity-0 group-hover:opacity-100 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center transition-all duration-200 text-blue-600 hover:text-blue-800 text-xs"
+                            className="opacity-0 group-hover:opacity-100 hover:bg-info-muted/80 rounded-full w-4 h-4 flex items-center justify-center transition-all duration-200 text-info-muted-foreground hover:text-info-muted-foreground text-xs"
                           >
                             ×
                           </button>
@@ -593,7 +577,7 @@ export default function FailureRegistrationDialog({
               {selectedSubcomponentIds.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-success rounded-full"></div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Subcomponentes ({selectedSubcomponentIds.length})</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -603,13 +587,13 @@ export default function FailureRegistrationDialog({
                         .find(child => child.id.toString() === subcomponentId);
                       
                       return subcomponent ? (
-                        <div key={subcomponentId} className="group flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-2 py-1 rounded-md text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200">
-                          <Wrench className="h-3 w-3 text-green-600" />
+                        <div key={subcomponentId} className="group flex items-center gap-1.5 bg-success-muted border border-success-muted text-success px-2 py-1 rounded-md text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200">
+                          <Wrench className="h-3 w-3 text-success" />
                           <span>{subcomponent.name}</span>
                           <button
                             type="button"
                             onClick={() => setSelectedSubcomponentIds(prev => prev.filter(id => id !== subcomponentId))}
-                            className="opacity-0 group-hover:opacity-100 hover:bg-green-200 rounded-full w-4 h-4 flex items-center justify-center transition-all duration-200 text-green-600 hover:text-green-800 text-xs"
+                            className="opacity-0 group-hover:opacity-100 hover:bg-success-muted/80 rounded-full w-4 h-4 flex items-center justify-center transition-all duration-200 text-success hover:text-success text-xs"
                           >
                             ×
                           </button>
@@ -725,14 +709,14 @@ export default function FailureRegistrationDialog({
               />
               <label
                 htmlFor="failure-files-input"
-                className="flex items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors bg-gray-50 hover:bg-gray-100"
+                className="flex items-center justify-center w-full h-28 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-muted-foreground/50 transition-colors bg-muted hover:bg-accent"
               >
                 <div className="text-center">
-                  <CloudUpload className="w-6 h-6 mx-auto text-gray-400 mb-1.5" />
-                  <p className="text-xs text-gray-600">Haz clic o arrastra archivos aquí</p>
-                  <p className="text-[10px] text-gray-500">PDF, DOC, XLS, imágenes hasta 10MB</p>
+                  <CloudUpload className="w-6 h-6 mx-auto text-muted-foreground mb-1.5" />
+                  <p className="text-xs text-foreground">Haz clic o arrastra archivos aquí</p>
+                  <p className="text-[10px] text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB</p>
                   {failureData.files.length > 0 && (
-                    <p className="text-xs text-green-600 mt-1 font-medium">
+                    <p className="text-xs text-success mt-1 font-medium">
                       {failureData.files.length} archivo(s) seleccionado(s)
                     </p>
                   )}
@@ -743,20 +727,20 @@ export default function FailureRegistrationDialog({
             {/* Lista de archivos */}
             {failureData.files.length > 0 && (
               <div className="mt-2 space-y-1.5">
-                <p className="text-xs font-medium text-gray-700">Archivos seleccionados:</p>
+                <p className="text-xs font-medium text-foreground">Archivos seleccionados:</p>
                 {failureData.files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-md">
+                  <div key={index} className="flex items-center justify-between p-2 bg-info-muted border border-info-muted-foreground/20 rounded-md">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FileText className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                      <span className="text-xs font-medium text-blue-800 truncate">{file.name}</span>
-                      <span className="text-[10px] text-blue-600 shrink-0">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      <FileText className="h-3.5 w-3.5 text-info-muted-foreground shrink-0" />
+                      <span className="text-xs font-medium text-info-muted-foreground truncate">{file.name}</span>
+                      <span className="text-[10px] text-info-muted-foreground shrink-0">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => removeFile(index)}
-                      className="text-red-600 hover:text-red-800 hover:bg-red-50 h-7 w-7 p-0 shrink-0"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 p-0 shrink-0"
                     >
                       <X className="h-3.5 w-3.5" />
                     </Button>
@@ -769,7 +753,7 @@ export default function FailureRegistrationDialog({
         </form>
         </DialogBody>
 
-        <DialogFooter className="flex-shrink-0">
+        <DialogFooter>
           <Button type="button" variant="outline" size="sm" onClick={handleClose}>
             Cancelar
           </Button>

@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -145,6 +146,7 @@ export function OrdenesBulkActions({ selectedIds, onActionComplete }: BulkAction
             </DialogDescription>
           </DialogHeader>
 
+          <DialogBody>
           {!result ? (
             <div className="space-y-4">
               {action === 'CONFIRM' && (
@@ -212,7 +214,7 @@ export function OrdenesBulkActions({ selectedIds, onActionComplete }: BulkAction
             </div>
           ) : (
             <div className="space-y-3">
-              <Alert className={result.failedCount > 0 ? 'border-amber-500' : 'border-green-500'}>
+              <Alert className={result.failedCount > 0 ? 'border-warning' : 'border-success'}>
                 <AlertDescription>
                   <p className="font-semibold mb-2">Resultado de la operación:</p>
                   <p>✓ Exitosas: {result.successCount}</p>
@@ -226,7 +228,7 @@ export function OrdenesBulkActions({ selectedIds, onActionComplete }: BulkAction
                   <p className="text-sm font-semibold mb-2">Errores:</p>
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {result.failed.map((f: any, idx: number) => (
-                      <p key={idx} className="text-xs text-red-600">
+                      <p key={idx} className="text-xs text-destructive">
                         Orden {f.id}: {f.error}
                       </p>
                     ))}
@@ -235,6 +237,7 @@ export function OrdenesBulkActions({ selectedIds, onActionComplete }: BulkAction
               )}
             </div>
           )}
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={resetDialog} disabled={loading}>

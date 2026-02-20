@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { toast } from 'sonner';
 import { Eye, Pencil, Trash, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -49,8 +50,7 @@ export function TaskList({ viewMode, tasks, user }: TaskListProps) {
     try {
       await deleteTask(id);
     } catch (error) {
-      console.error("Error al eliminar la tarea:", error);
-      alert("Error al eliminar la tarea");
+      toast.error("Error al eliminar la tarea");
     }
   };
 
@@ -140,7 +140,7 @@ export function TaskList({ viewMode, tasks, user }: TaskListProps) {
                         <TableCell className="font-bold max-w-[180px] truncate pl-6">{task.title}</TableCell>
                         <TableCell className="max-w-[250px] truncate pl-6">{task.description || "-"}</TableCell>
                         <TableCell className="pl-6">
-                          <Badge variant={task.status === 'realizada' ? 'default' : task.status === 'en-curso' ? 'secondary' : 'destructive'} className={task.status === 'realizada' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : ''}>
+                          <Badge variant={task.status === 'realizada' ? 'default' : task.status === 'en-curso' ? 'secondary' : 'destructive'} className={task.status === 'realizada' ? 'bg-success-muted text-success' : ''}>
                             {task.status === 'realizada' ? 'Realizada' : task.status === 'en-curso' ? 'En Curso' : 'Pendiente'}
                           </Badge>
                         </TableCell>
@@ -153,27 +153,28 @@ export function TaskList({ viewMode, tasks, user }: TaskListProps) {
                         <TableCell className="pl-6">{task.assignedTo?.name || "-"}</TableCell>
                         <TableCell className="pl-6">
                           <div className="flex gap-2 items-center">
-                            <Button size="icon" variant="ghost" onClick={() => handleViewDetails(task)} title="Ver Detalle">
+                            <Button size="icon" variant="ghost" onClick={() => handleViewDetails(task)} title="Ver Detalle" aria-label="Ver detalle">
                               <Eye className="h-4 w-4" />
                             </Button>
                             {user && task.createdBy?.id?.toString() === user.id && (
                               <>
-                                <Button size="icon" variant="ghost" onClick={() => setEditingTask(task)} title="Editar">
+                                <Button size="icon" variant="ghost" onClick={() => setEditingTask(task)} title="Editar" aria-label="Editar">
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  size="icon" 
-                                  variant="ghost" 
-                                  onClick={() => handleDelete(task.id)} 
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(task.id)}
                                   title="Eliminar"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  aria-label="Eliminar"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
                               </>
                             )}
                             {user && task.assignedTo?.id?.toString() === user.id && task.status !== 'realizada' && (
-                              <Button size="icon" variant="ghost" title="Completar">
+                              <Button size="icon" variant="ghost" title="Completar" aria-label="Completar">
                                 <Check className="h-4 w-4" />
                               </Button>
                             )}

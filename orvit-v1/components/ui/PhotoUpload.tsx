@@ -335,9 +335,9 @@ export function PhotoUpload({
         )}
 
         {success && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <p className="text-sm text-green-600">{success}</p>
+          <div className="flex items-center gap-2 p-3 bg-success-muted border border-success-muted rounded-lg">
+            <CheckCircle className="h-4 w-4 text-success" />
+            <p className="text-sm text-success">{success}</p>
           </div>
         )}
 

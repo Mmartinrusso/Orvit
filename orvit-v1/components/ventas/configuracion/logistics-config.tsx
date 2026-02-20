@@ -228,14 +228,14 @@ export function LogisticsConfig({ companyId }: LogisticsConfigProps) {
             </div>
           </div>
 
-          <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="p-3 bg-info-muted border border-info-muted rounded-lg">
             <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+              <MapPin className="h-4 w-4 text-info-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                <p className="text-sm font-medium text-foreground">
                   Configuración de Optimización
                 </p>
-                <div className="mt-2 space-y-1 text-xs text-blue-700 dark:text-blue-300">
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                   <p>• Máximo {config?.rutaMaxParadas || 15} paradas por ruta</p>
                   <p>• Radio de {config?.rutaMaxDistanciaKm || 5} km desde depósito</p>
                   <p>

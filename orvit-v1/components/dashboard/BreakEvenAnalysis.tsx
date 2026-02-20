@@ -77,21 +77,21 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
           <div className={cn(
             "p-3 rounded-lg border",
             hasReachedBreakEven
-              ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50"
-              : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50"
+              ? "bg-success-muted border-success-muted"
+              : "bg-warning-muted border-warning-muted"
           )}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {hasReachedBreakEven ? (
-                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                 ) : (
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                 )}
                 <span className={cn(
                   "text-sm font-semibold",
                   hasReachedBreakEven
-                    ? "text-green-700 dark:text-green-400"
-                    : "text-amber-700 dark:text-amber-400"
+                    ? "text-success"
+                    : "text-warning-muted-foreground"
                 )}>
                   {hasReachedBreakEven ? 'Equilibrio Alcanzado' : 'Por Alcanzar'}
                 </span>
@@ -99,8 +99,8 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
               <span className={cn(
                 "text-lg font-bold",
                 hasReachedBreakEven
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-amber-600 dark:text-amber-400"
+                  ? "text-success"
+                  : "text-warning-muted-foreground"
               )}>
                 {progressPercentage.toFixed(0)}%
               </span>
@@ -111,7 +111,7 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
-                  hasReachedBreakEven ? "bg-green-500" : "bg-amber-500"
+                  hasReachedBreakEven ? "bg-success" : "bg-warning"
                 )}
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               />
@@ -137,8 +137,8 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
               <span className={cn(
                 "font-semibold",
                 unitsDifference >= 0
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
+                  ? "text-success"
+                  : "text-destructive"
               )}>
                 {unitsDifference >= 0 ? '+' : ''}{formatNumber(unitsDifference)} unidades
               </span>
@@ -149,10 +149,10 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
               <span className="text-muted-foreground">Margen de Seguridad</span>
               <span className={cn(
                 "font-semibold",
-                safetyMargin >= 20 ? "text-green-600 dark:text-green-400" :
-                safetyMargin >= 10 ? "text-gray-600 dark:text-gray-400" :
-                safetyMargin >= 0 ? "text-amber-600 dark:text-amber-400" :
-                "text-red-600 dark:text-red-400"
+                safetyMargin >= 20 ? "text-success" :
+                safetyMargin >= 10 ? "text-muted-foreground" :
+                safetyMargin >= 0 ? "text-warning-muted-foreground" :
+                "text-destructive"
               )}>
                 {safetyMargin.toFixed(1)}%
               </span>

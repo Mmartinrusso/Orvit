@@ -16,18 +16,18 @@ interface OrdenDetailDocumentosProps {
 }
 
 const estadoColors: Record<string, string> = {
-  PENDIENTE: 'bg-gray-100 text-gray-800',
-  PREPARADO: 'bg-yellow-100 text-yellow-800',
-  CARGADO: 'bg-blue-100 text-blue-800',
+  PENDIENTE: 'bg-muted text-foreground',
+  PREPARADO: 'bg-warning-muted text-warning-muted-foreground',
+  CARGADO: 'bg-info-muted text-info-muted-foreground',
   EN_TRANSITO: 'bg-purple-100 text-purple-800',
-  ENTREGADA: 'bg-green-100 text-green-800',
-  EMITIDO: 'bg-green-100 text-green-800',
-  BORRADOR: 'bg-gray-100 text-gray-800',
-  EMITIDA: 'bg-blue-100 text-blue-800',
-  COBRADA: 'bg-green-100 text-green-800',
+  ENTREGADA: 'bg-success-muted text-success-muted-foreground',
+  EMITIDO: 'bg-success-muted text-success-muted-foreground',
+  BORRADOR: 'bg-muted text-foreground',
+  EMITIDA: 'bg-info-muted text-info-muted-foreground',
+  COBRADA: 'bg-success-muted text-success-muted-foreground',
   COMPLETADA: 'bg-teal-100 text-teal-800',
-  CANCELADA: 'bg-red-100 text-red-800',
-  ANULADA: 'bg-red-100 text-red-800',
+  CANCELADA: 'bg-destructive/10 text-destructive',
+  ANULADA: 'bg-destructive/10 text-destructive',
 };
 
 export function OrdenDetailDocumentos({
@@ -217,7 +217,7 @@ export function OrdenDetailDocumentos({
                           Total: ${Number(invoice.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                         </p>
                         {invoice.saldoPendiente && Number(invoice.saldoPendiente) > 0 && (
-                          <p className="text-xs text-amber-600">
+                          <p className="text-xs text-warning-muted-foreground">
                             Saldo pendiente: ${Number(invoice.saldoPendiente).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                           </p>
                         )}

@@ -151,7 +151,7 @@ export default function NewDowntimeForm({
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -210,7 +210,7 @@ export default function NewDowntimeForm({
                   </SelectContent>
                 </Select>
                 {selectedReasonCode?.triggersMaintenance && (
-                  <FormDescription className="text-yellow-600 flex items-center gap-1">
+                  <FormDescription className="text-warning flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Se sugerirá crear OT
                   </FormDescription>

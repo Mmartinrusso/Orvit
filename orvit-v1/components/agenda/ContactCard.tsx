@@ -42,12 +42,12 @@ export function ContactCard({
 
   const getCategoryColor = (category?: string) => {
     const colors = {
-      'Cliente': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400',
-      'Proveedor': 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400',
+      'Cliente': 'bg-info-muted text-info-muted-foreground border-info-muted',
+      'Proveedor': 'bg-success-muted text-success border-success-muted',
       'Interno': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400',
-      'Personal': 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400',
+      'Personal': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950/20 dark:text-gray-400';
+    return colors[category as keyof typeof colors] || 'bg-muted text-foreground border-border';
   };
 
   return (
@@ -70,7 +70,7 @@ export function ContactCard({
           
           <div className="flex items-center gap-2">
             {contact.pendingReminders > 0 && (
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+              <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground border-warning-muted">
                 <Bell className="h-3 w-3 mr-1" />
                 {contact.pendingReminders}
               </Badge>
@@ -78,7 +78,7 @@ export function ContactCard({
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="Opciones">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

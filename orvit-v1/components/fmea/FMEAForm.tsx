@@ -160,7 +160,7 @@ export function FMEAForm({
       </div>
 
       {/* RPN Factors */}
-      <Card className="bg-gray-50">
+      <Card className="bg-muted">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium">Análisis de Riesgo (RPN)</h3>
@@ -224,7 +224,7 @@ export function FMEAForm({
           </div>
 
           {rpn >= 200 && (
-            <div className="mt-4 p-2 bg-red-100 border border-red-200 rounded flex items-center gap-2 text-sm text-red-800">
+            <div className="mt-4 p-2 bg-destructive/10 border border-destructive/20 rounded flex items-center gap-2 text-sm text-destructive">
               <AlertTriangle className="h-4 w-4" />
               RPN alto - Se requieren acciones correctivas inmediatas
             </div>

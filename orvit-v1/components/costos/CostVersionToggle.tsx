@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -159,11 +160,11 @@ export function CostVersionToggle({ companyId, onVersionChange }: CostVersionTog
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1">
               {allReady ? (
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
               ) : readyCount > 0 ? (
-                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertCircle className="h-4 w-4 text-warning-muted-foreground" />
               ) : (
-                <XCircle className="h-4 w-4 text-red-400" />
+                <XCircle className="h-4 w-4 text-destructive" />
               )}
               <span className="text-xs text-muted-foreground">
                 {readyCount}/{totalModules}
@@ -197,7 +198,7 @@ export function CostVersionToggle({ companyId, onVersionChange }: CostVersionTog
                   onClick={refreshPrerequisites}
                   disabled={loading}
                 >
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
                 </Button>
               </div>
 
@@ -235,7 +236,7 @@ export function CostVersionToggle({ companyId, onVersionChange }: CostVersionTog
                   />
                   <Label
                     htmlFor="v2"
-                    className={`flex-1 cursor-pointer ${!v2Ready ? 'opacity-50' : ''}`}
+                    className={cn('flex-1 cursor-pointer', !v2Ready && 'opacity-50')}
                   >
                     <span className="font-medium">Automatico (V2)</span>
                     <p className="text-xs text-muted-foreground">
@@ -264,11 +265,11 @@ export function CostVersionToggle({ companyId, onVersionChange }: CostVersionTog
                         {MODULE_LABELS[key] || key}
                       </span>
                       {module.ready ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                       ) : (
                         <Tooltip>
                           <TooltipTrigger>
-                            <XCircle className="h-3.5 w-3.5 text-red-400" />
+                            <XCircle className="h-3.5 w-3.5 text-destructive" />
                           </TooltipTrigger>
                           <TooltipContent side="left" className="max-w-[200px]">
                             {module.reason || 'No hay datos'}

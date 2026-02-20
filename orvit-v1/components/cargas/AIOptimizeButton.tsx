@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -154,15 +156,15 @@ export default function AIOptimizeButton({
         disabled={disabled || items.length === 0}
         className="gap-2"
       >
-        <Sparkles className="h-4 w-4 text-purple-500" />
+        <Sparkles className="h-4 w-4 text-info-muted-foreground" />
         Optimizar con IA
       </Button>
 
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
+              <Sparkles className="h-5 w-5 text-info-muted-foreground" />
               Optimización con IA
             </DialogTitle>
             <DialogDescription>
@@ -170,7 +172,7 @@ export default function AIOptimizeButton({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <DialogBody className="space-y-4">
             {/* Selector de prioridad */}
             <div className="space-y-2">
               <Label>Prioridad de optimización</Label>
@@ -196,7 +198,7 @@ export default function AIOptimizeButton({
 
             {/* Info del costo */}
             <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
-              <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+              <Info className="h-4 w-4 text-info-muted-foreground mt-0.5" />
               <div className="text-xs text-muted-foreground">
                 <p>Costo estimado: ~$0.002 USD por optimización</p>
                 <p className="mt-1">La IA analizará peso, largo y reglas de negocio para sugerir la mejor distribución.</p>
@@ -207,7 +209,7 @@ export default function AIOptimizeButton({
             {isOptimizing && (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center space-y-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-purple-500 mx-auto" />
+                  <Loader2 className="h-8 w-8 animate-spin text-info-muted-foreground mx-auto" />
                   <p className="text-sm text-muted-foreground">Analizando distribución óptima...</p>
                 </div>
               </div>
@@ -215,16 +217,16 @@ export default function AIOptimizeButton({
 
             {/* Error */}
             {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
 
             {/* Resultado */}
             {result && (
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-green-600">
+                <div className="flex items-center gap-2 text-success">
                   <CheckCircle2 className="h-5 w-5" />
                   <span className="font-medium">Optimización completada</span>
                 </div>
@@ -242,7 +244,7 @@ export default function AIOptimizeButton({
                 {result.warnings && result.warnings.length > 0 && (
                   <div className="space-y-1">
                     {result.warnings.map((warning, i) => (
-                      <div key={i} className="flex items-start gap-2 text-amber-600">
+                      <div key={i} className="flex items-start gap-2 text-warning-muted-foreground">
                         <AlertTriangle className="h-4 w-4 mt-0.5" />
                         <p className="text-xs">{warning}</p>
                       </div>
@@ -251,7 +253,7 @@ export default function AIOptimizeButton({
                 )}
               </div>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>
@@ -289,15 +291,15 @@ export default function AIOptimizeButton({
  */
 function OptimizationStats({ stats }: { stats: AIOptimizationStats }) {
   const getBalanceColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-amber-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-warning-muted-foreground';
+    return 'text-destructive';
   };
 
   const getUtilizationColor = (percent: number) => {
-    if (percent >= 75) return 'bg-green-500';
-    if (percent >= 50) return 'bg-amber-500';
-    return 'bg-red-500';
+    if (percent >= 75) return 'bg-success';
+    if (percent >= 50) return 'bg-warning';
+    return 'bg-destructive/100';
   };
 
   return (
@@ -323,7 +325,7 @@ function OptimizationStats({ stats }: { stats: AIOptimizationStats }) {
         </div>
         <Progress
           value={stats.utilizationPercent}
-          className={`h-1.5 [&>div]:${getUtilizationColor(stats.utilizationPercent)}`}
+          className={cn('h-1.5', `[&>div]:${getUtilizationColor(stats.utilizationPercent)}`)}
         />
       </div>
 

@@ -4,7 +4,6 @@ import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJso
 
 export const dynamic = 'force-dynamic';
 
-
 // ✅ OPTIMIZADO: Función para obtener nombres de usuarios en batch
 async function getUserNamesInBatch(userIds: number[]): Promise<Map<number, string>> {
   const userMap = new Map<number, string>();
@@ -59,18 +58,6 @@ export async function GET(request: NextRequest) {
     endParse(perfCtx);
     startDb(perfCtx);
 
-    console.log('🔍 Fetching completed maintenances with params:', {
-      companyId,
-      sectorId,
-      machineId,
-      priority,
-      type,
-      todayOnly,
-      timeFilter,
-      machineIds,
-      unidadMovilIds
-    });
-
     // Buscar work orders completados
     const workOrderWhere: any = {
       companyId: parseInt(companyId),
@@ -94,12 +81,6 @@ export async function GET(request: NextRequest) {
         lte: new Date(tomorrow.getTime() - 1) // Incluir todo el día de hoy
       };
       
-      console.log('🔍 Filtro today activado (zona Argentina):', {
-        today: today.toISOString(),
-        tomorrow: tomorrow.toISOString(),
-        argTime: argTime.toISOString(),
-        workOrderWhere
-      });
     } else if (timeFilter === 'week') {
       // Esta semana (lunes a domingo)
       const now = new Date();
@@ -123,11 +104,6 @@ export async function GET(request: NextRequest) {
         lte: endOfWeek
       };
       
-      console.log('🔍 Filtro week activado:', {
-        startOfWeek: startOfWeek.toISOString(),
-        endOfWeek: endOfWeek.toISOString(),
-        workOrderWhere
-      });
     } else if (timeFilter === 'month') {
       // Este mes
       const now = new Date();
@@ -142,11 +118,6 @@ export async function GET(request: NextRequest) {
         lte: endOfMonth
       };
       
-      console.log('🔍 Filtro month activado:', {
-        startOfMonth: startOfMonth.toISOString(),
-        endOfMonth: endOfMonth.toISOString(),
-        workOrderWhere
-      });
     }
     // Si timeFilter es 'all' o no se especifica, no aplicar filtro de fecha
 
@@ -203,7 +174,6 @@ export async function GET(request: NextRequest) {
       delete workOrderWhere.priority;
       delete workOrderWhere.type;
       
-      console.log('🔍 Filtro de sector aplicado en completados (sectorId directo O máquina del sector):', sectorIdNum);
     }
 
     if (machineId) {
@@ -217,10 +187,8 @@ export async function GET(request: NextRequest) {
     } else if (unidadMovilIds) {
       // Filtrar por múltiples unidades móviles
       const unidadMovilIdArray = unidadMovilIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      console.log('🔍 Filtering completed work orders by multiple unidades móviles:', unidadMovilIdArray);
       if (unidadMovilIdArray.length > 0) {
         workOrderWhere.unidadMovilId = { in: unidadMovilIdArray };
-        console.log('🔍 Work order filter applied for unidades móviles:', workOrderWhere.unidadMovilId);
       }
     }
 
@@ -231,8 +199,6 @@ export async function GET(request: NextRequest) {
     if (type && type !== 'PREVENTIVE') {
       workOrderWhere.type = type;
     }
-
-    console.log('🔍 Work order where conditions:', workOrderWhere);
 
     const completedWorkOrders = await prisma.workOrder.findMany({
       where: workOrderWhere,
@@ -296,27 +262,12 @@ export async function GET(request: NextRequest) {
       ]
     });
 
-    console.log('🔍 Found completed work orders:', completedWorkOrders.length);
-    
     // Log detallado de work orders encontrados para debug
     if (todayOnly === 'true') {
       completedWorkOrders.forEach((wo, index) => {
-        console.log(`📋 Work Order ${index + 1}:`, {
-          id: wo.id,
-          title: wo.title,
-          type: wo.type,
-          completedDate: wo.completedDate?.toISOString(),
-          status: wo.status
-        });
         
         // Verificar específicamente mantenimientos correctivos
         if (wo.type === 'CORRECTIVE') {
-          console.log(`🔧 CORRECTIVO EN COMPLETADOS (✅ CORRECTO):`, {
-            id: wo.id,
-            title: wo.title,
-            status: wo.status,
-            completedToday: wo.completedDate ? new Date(wo.completedDate).toDateString() === new Date().toDateString() : false
-          });
         }
       });
     }
@@ -343,14 +294,11 @@ export async function GET(request: NextRequest) {
         } else if (machineIds) {
           // Filtrar por múltiples máquinas en mantenimientos preventivos
           const machineIdArray = machineIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-          console.log('🔍 Filtering completed preventive maintenances by multiple machines:', machineIdArray);
           if (machineIdArray.length > 0) {
             // Para múltiples máquinas, vamos a filtrar después de cargar los datos
-            console.log('🔍 Will filter completed preventive maintenances after loading');
           }
         } else if (unidadMovilIds) {
           // Para unidades móviles, vamos a filtrar después de cargar los datos
-          console.log('🔍 Will filter completed preventive maintenances by unidad movil after loading');
         }
 
         // Aplicar filtros de prioridad si están especificados
@@ -361,8 +309,6 @@ export async function GET(request: NextRequest) {
         preventiveMaintenanceWhere.url = {
           contains: urlFilters.join(',')
         };
-        
-        console.log('🔍 Preventive maintenance where conditions:', preventiveMaintenanceWhere);
 
         completedPreventiveTemplates = await prisma.document.findMany({
           where: preventiveMaintenanceWhere,
@@ -371,29 +317,12 @@ export async function GET(request: NextRequest) {
           }
         });
       }
-      
-                   console.log('🔍 Completed preventive templates found:', {
-        count: completedPreventiveTemplates.length,
-        templates: completedPreventiveTemplates.map(t => ({ 
-          id: t.id, 
-          originalName: t.originalName,
-          url: t.url.substring(0, 200) + '...' // Mostrar parte de la URL para debug
-        }))
-      });
 
       // Debug: Log raw templates data
       completedPreventiveTemplates.forEach(template => {
         try {
           const templateData = JSON.parse(template.url);
-          console.log('🔍 Raw template data:', {
-            id: template.id,
-            title: templateData.title,
-            lastMaintenanceDate: templateData.lastMaintenanceDate,
-            companyId: templateData.companyId,
-            sectorId: templateData.sectorId
-          });
         } catch (error) {
-          console.log('❌ Error parsing template', template.id, ':', error);
         }
       });
     } catch (error) {
@@ -416,11 +345,9 @@ export async function GET(request: NextRequest) {
       
       if (unidadMovilIds) {
         unidadMovilIdArray = unidadMovilIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-        console.log('🔍 Parsed unidadMovilIdArray for completed:', unidadMovilIdArray);
       }
       
       if (machineIdArray.length > 0 || unidadMovilIdArray.length > 0) {
-        console.log('🔍 Filtering completed templates by machine IDs:', machineIdArray, 'unidad movil IDs:', unidadMovilIdArray);
         filteredCompletedTemplates = completedPreventiveTemplates.filter(template => {
           try {
             const templateData = JSON.parse(template.url);
@@ -432,14 +359,12 @@ export async function GET(request: NextRequest) {
             const unidadMovilMatches = unidadMovilIdArray.length > 0 && unidadMovilIdArray.includes(templateUnidadMovilId);
             const matches = machineMatches || unidadMovilMatches;
             
-            console.log(`🔍 Completed template ${template.id} machineId ${templateMachineId} unidadMovilId ${templateUnidadMovilId} matches: ${matches}`);
             return matches;
           } catch (error) {
             console.error('Error parsing completed template for machine/unidad movil filter:', error);
             return false;
           }
         });
-        console.log('🔍 Filtered completed templates count:', filteredCompletedTemplates.length);
       }
     }
     
@@ -635,18 +560,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log('🔍 Converted completed preventive maintenances:', completedPreventiveMaintenances.length);
-    
     // Log detallado de mantenimientos preventivos encontrados para debug
     if (todayOnly === 'true') {
       completedPreventiveMaintenances.forEach((pm, index) => {
-        console.log(`📋 Preventive Maintenance ${index + 1}:`, {
-          id: pm.id,
-          title: pm.title,
-          lastMaintenanceDate: pm.lastMaintenanceDate,
-          type: pm.type,
-          isPreventive: pm.isPreventive
-        });
       });
     }
 
@@ -703,22 +619,6 @@ export async function GET(request: NextRequest) {
 
     // Combinar work orders y mantenimientos preventivos completados
     const completedMaintenances = [...mappedCompletedWorkOrders, ...completedPreventiveMaintenances];
-    
-    console.log('🔍 Completed maintenances found:', {
-      workOrders: mappedCompletedWorkOrders.length,
-      preventive: completedPreventiveMaintenances.length,
-      total: completedMaintenances.length
-    });
-
-    console.log('🔍 Completed maintenances response:', {
-      maintenances: completedMaintenances.map(m => ({
-        id: m.id,
-        title: m.title,
-        type: m.type,
-        completedDate: m.completedDate,
-        lastMaintenanceDate: m.lastMaintenanceDate
-      }))
-    });
 
     endDb(perfCtx);
     startCompute(perfCtx);

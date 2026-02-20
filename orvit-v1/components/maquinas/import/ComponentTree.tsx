@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   ChevronRight,
   ChevronDown,
@@ -89,6 +90,7 @@ function TreeNode({
   selectedId,
   showUncertainOnly,
 }: TreeNodeProps) {
+  const confirm = useConfirm();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(component.name);
@@ -121,15 +123,15 @@ function TreeNode({
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'text-green-600';
-    if (confidence >= 0.7) return 'text-yellow-600';
-    return 'text-red-600';
+    if (confidence >= 0.9) return 'text-success';
+    if (confidence >= 0.7) return 'text-warning';
+    return 'text-destructive';
   };
 
   const getConfidenceBg = (confidence: number) => {
-    if (confidence >= 0.9) return 'bg-green-100';
-    if (confidence >= 0.7) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (confidence >= 0.9) return 'bg-success-muted';
+    if (confidence >= 0.7) return 'bg-warning-muted';
+    return 'bg-destructive/10';
   };
 
   return (
@@ -173,7 +175,7 @@ function TreeNode({
             className="h-5 w-5 rounded object-cover flex-shrink-0"
           />
         ) : component.type === 'SYSTEM' ? (
-          <Box className="h-4 w-4 text-blue-600" />
+          <Box className="h-4 w-4 text-info" />
         ) : (
           <Cog className="h-4 w-4 text-muted-foreground" />
         )}
@@ -199,7 +201,7 @@ function TreeNode({
           <span
             className={cn(
               "text-sm font-medium truncate max-w-[200px]",
-              isUncertain && "text-amber-700"
+              isUncertain && "text-warning"
             )}
             title={component.name}
           >
@@ -290,11 +292,16 @@ function TreeNode({
             variant="ghost"
             size="icon"
             className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              if (confirm(`¿Eliminar "${component.name}" y sus subcomponentes?`)) {
-                onDelete(component.tempId);
-              }
+              const ok = await confirm({
+                title: 'Eliminar componente',
+                description: `¿Eliminar "${component.name}" y sus subcomponentes?`,
+                confirmText: 'Eliminar',
+                variant: 'destructive',
+              });
+              if (!ok) return;
+              onDelete(component.tempId);
             }}
           >
             <Trash2 className="h-3 w-3" />

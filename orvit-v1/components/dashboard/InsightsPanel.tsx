@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -51,8 +52,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Crecimiento Sostenido',
         description: `↑ ${formatCurrency(ventasChange)} vs mes anterior por Ventas (+${formatPercentage(ventasChangePct)}). Top contribuyente: ${movers[0]?.name || 'N/A'} (+${formatCurrency(movers[0]?.delta || 0)}).`,
         actions: [
-          { label: 'Crear tarea', onClick: () => console.log('Crear tarea de crecimiento') },
-          { label: 'Ver facturas', onClick: () => console.log('Ver facturas') },
+          { label: 'Crear tarea', onClick: () => {} },
+          { label: 'Ver facturas', onClick: () => {} },
         ],
       });
     } else if (ventasChangePct < -5) {
@@ -61,8 +62,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Descenso en Ventas',
         description: `↓ ${formatCurrency(Math.abs(ventasChange))} vs mes anterior en Ventas (${formatPercentage(ventasChangePct)}). Revisar estrategias de venta y clientes principales.`,
         actions: [
-          { label: 'Analizar causas', onClick: () => console.log('Analizar causas') },
-          { label: 'Plan de acción', onClick: () => console.log('Plan de acción') },
+          { label: 'Analizar causas', onClick: () => {} },
+          { label: 'Plan de acción', onClick: () => {} },
         ],
       });
     }
@@ -74,8 +75,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Atención: Aumento de Costos',
         description: `Costos aumentaron ${formatPercentage(costosChangePct)} vs mes anterior (+${formatCurrency(costosChange)}). Revisar proveedores y negociaciones.`,
         actions: [
-          { label: 'Revisar proveedores', onClick: () => console.log('Revisar proveedores') },
-          { label: 'Optimizar costos', onClick: () => console.log('Optimizar costos') },
+          { label: 'Revisar proveedores', onClick: () => {} },
+          { label: 'Optimizar costos', onClick: () => {} },
         ],
       });
     } else if (costosChangePct < -5) {
@@ -84,8 +85,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Optimización de Costos',
         description: `Costos reducidos ${formatPercentage(Math.abs(costosChangePct))} vs mes anterior (-${formatCurrency(Math.abs(costosChange))}). Excelente gestión de eficiencia.`,
         actions: [
-          { label: 'Documentar prácticas', onClick: () => console.log('Documentar prácticas') },
-          { label: 'Replicar estrategia', onClick: () => console.log('Replicar estrategia') },
+          { label: 'Documentar prácticas', onClick: () => {} },
+          { label: 'Replicar estrategia', onClick: () => {} },
         ],
       });
     }
@@ -97,8 +98,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Aumento Significativo en Sueldos',
         description: `Sueldos aumentaron ${formatPercentage(sueldosChangePct)} vs mes anterior (+${formatCurrency(sueldosChange)}). Verificar si es por nuevos empleados o aumentos.`,
         actions: [
-          { label: 'Revisar nómina', onClick: () => console.log('Revisar nómina') },
-          { label: 'Planificar presupuesto', onClick: () => console.log('Planificar presupuesto') },
+          { label: 'Revisar nómina', onClick: () => {} },
+          { label: 'Planificar presupuesto', onClick: () => {} },
         ],
       });
     }
@@ -113,8 +114,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Top Contribuyente Positivo',
         description: `${topPositiveMover.name} contribuyó +${formatCurrency(topPositiveMover.delta)} (${formatPercentage(topPositiveMover.deltaPct)}) al crecimiento total. Representa ${topPositiveMover.contributionPct.toFixed(1)}% del cambio.`,
         actions: [
-          { label: 'Analizar estrategia', onClick: () => console.log('Analizar estrategia') },
-          { label: 'Replicar modelo', onClick: () => console.log('Replicar modelo') },
+          { label: 'Analizar estrategia', onClick: () => {} },
+          { label: 'Replicar modelo', onClick: () => {} },
         ],
       });
     }
@@ -125,8 +126,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         title: 'Atención: Mayor Impacto Negativo',
         description: `${topNegativeMover.name} impactó negativamente con ${formatCurrency(topNegativeMover.delta)} (${formatPercentage(topNegativeMover.deltaPct)}). Revisar causas y tomar acciones correctivas.`,
         actions: [
-          { label: 'Investigar causas', onClick: () => console.log('Investigar causas') },
-          { label: 'Plan de recuperación', onClick: () => console.log('Plan de recuperación') },
+          { label: 'Investigar causas', onClick: () => {} },
+          { label: 'Plan de recuperación', onClick: () => {} },
         ],
       });
     }
@@ -153,8 +154,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
           title: 'Tendencia Creciente',
           description: 'Las ventas han mostrado crecimiento consistente en los últimos 3 meses. Mantener estrategias actuales.',
           actions: [
-            { label: 'Sostener estrategia', onClick: () => console.log('Sostener estrategia') },
-            { label: 'Escalar operaciones', onClick: () => console.log('Escalar operaciones') },
+            { label: 'Sostener estrategia', onClick: () => {} },
+            { label: 'Escalar operaciones', onClick: () => {} },
           ],
         });
       } else if (isDeclining) {
@@ -163,8 +164,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
           title: 'Tendencia Declinante',
           description: 'Las ventas han mostrado declive en los últimos 3 meses. Revisar estrategias y tomar acciones inmediatas.',
           actions: [
-            { label: 'Revisar estrategia', onClick: () => console.log('Revisar estrategia') },
-            { label: 'Acción inmediata', onClick: () => console.log('Acción inmediata') },
+            { label: 'Revisar estrategia', onClick: () => {} },
+            { label: 'Acción inmediata', onClick: () => {} },
           ],
         });
       }
@@ -178,53 +179,53 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'positive':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-success" />;
       case 'negative':
-        return <XCircle className="h-5 w-5 text-red-600" />;
+        return <XCircle className="h-5 w-5 text-destructive" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-5 w-5 text-warning-muted-foreground" />;
       default:
-        return <BarChart3 className="h-5 w-5 text-blue-600" />;
+        return <BarChart3 className="h-5 w-5 text-info-muted-foreground" />;
     }
   };
 
   const getInsightColor = (type: string) => {
     switch (type) {
       case 'positive':
-        return 'bg-green-50 border-green-200';
+        return 'bg-success-muted border-success-muted';
       case 'negative':
-        return 'bg-red-50 border-red-200';
+        return 'bg-destructive/10 border-destructive/30';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
+        return 'bg-warning-muted border-warning-muted';
       default:
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-info-muted border-info-muted';
     }
   };
 
   const getInsightTextColor = (type: string) => {
     switch (type) {
       case 'positive':
-        return 'text-green-700';
+        return 'text-success';
       case 'negative':
-        return 'text-red-700';
+        return 'text-destructive';
       case 'warning':
-        return 'text-yellow-700';
+        return 'text-warning-muted-foreground';
       default:
-        return 'text-blue-700';
+        return 'text-info-muted-foreground';
     }
   };
 
   if (allInsights.length === 0) {
     return (
-      <Card className="bg-white border-gray-200 shadow-sm">
+      <Card className="bg-card border-border shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardTitle className="text-lg font-semibold text-foreground">
             Insights Automáticos
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-gray-600">No hay suficientes datos para generar insights</p>
+            <p className="text-muted-foreground">No hay suficientes datos para generar insights</p>
           </div>
         </CardContent>
       </Card>
@@ -232,13 +233,13 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
   }
 
   return (
-    <Card className="bg-white border-gray-200 shadow-sm">
+    <Card className="bg-card border-border shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardTitle className="text-lg font-semibold text-foreground">
             Insights Automáticos
           </CardTitle>
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground border-info-muted">
             {allInsights.length} insights
           </Badge>
         </div>
@@ -248,7 +249,7 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         {allInsights.map((insight, index) => (
           <div
             key={index}
-            className={`p-4 rounded-xl border ${getInsightColor(insight.type)}`}
+            className={cn('p-4 rounded-xl border', getInsightColor(insight.type))}
           >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
@@ -257,25 +258,19 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <h4 className={`font-medium ${getInsightTextColor(insight.type)}`}>
+                  <h4 className={cn('font-medium', getInsightTextColor(insight.type))}>
                     {insight.title}
                   </h4>
                   <Badge 
                     variant="secondary" 
-                    className={`text-xs ${
-                      insight.type === 'positive' 
-                        ? 'bg-green-50 text-green-700 border-green-200' 
-                        : insight.type === 'negative' 
-                        ? 'bg-red-50 text-red-700 border-red-200' 
-                        : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                    }`}
+                    className={cn('text-xs', insight.type === 'positive' ? 'bg-success-muted text-success border-success-muted' : insight.type === 'negative' ? 'bg-destructive/10 text-destructive border-destructive/30' : 'bg-warning-muted text-warning-muted-foreground border-warning-muted')}
                   >
                     {insight.type === 'positive' ? 'Positivo' : 
                      insight.type === 'negative' ? 'Negativo' : 'Advertencia'}
                   </Badge>
                 </div>
                 
-                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
                   {insight.description}
                 </p>
                 
@@ -286,7 +281,7 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
                       variant="outline"
                       size="sm"
                       onClick={action.onClick}
-                      className="h-7 px-3 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                      className="h-7 px-3 text-xs bg-card border-border text-foreground hover:bg-accent"
                     >
                       {action.label}
                     </Button>
@@ -298,11 +293,11 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
         ))}
 
         {/* Acciones globales */}
-        <div className="pt-4 border-t border-gray-200">
+        <div className="pt-4 border-t border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-gray-600" />
-              <span className="text-sm text-gray-600">
+              <Zap className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
                 Insights generados automáticamente basados en los datos
               </span>
             </div>
@@ -311,8 +306,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => console.log('Generar reporte')}
-                className="h-7 px-3 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => {}}
+                className="h-7 px-3 text-xs bg-card border-border text-foreground hover:bg-accent"
               >
                 <FileText className="h-3 w-3 mr-1" />
                 Reporte
@@ -320,8 +315,8 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => console.log('Configurar alertas')}
-                className="h-7 px-3 text-xs bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => {}}
+                className="h-7 px-3 text-xs bg-card border-border text-foreground hover:bg-accent"
               >
                 <Target className="h-3 w-3 mr-1" />
                 Alertas

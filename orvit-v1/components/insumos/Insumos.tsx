@@ -1,19 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInsumos, Supplier, Supply, SupplyPrice, SupplyHistory } from '@/hooks/use-insumos';
 import { SupplyPriceDetailModal } from './SupplyPriceDetailModal';
-import { Plus, Edit, Trash2, Eye, Package, Tag, DollarSign, TrendingUp, TrendingDown, AlertTriangle, Power, PowerOff, Calendar, Building2, Upload, Download, BarChart3, Activity, Minus, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Package, Tag, DollarSign, TrendingUp, TrendingDown, AlertTriangle, Power, PowerOff, Calendar, Building2, Upload, Download, BarChart3, Activity, Minus, BookOpen, Loader2 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -28,6 +31,7 @@ ChartJS.register(
 );
 
 export default function Insumos() {
+  const confirm = useConfirm();
   const {
     suppliers,
     supplies,
@@ -122,14 +126,14 @@ export default function Insumos() {
       setShowSupplierDialog(false);
       // Los datos se refrescan automáticamente en el hook
     } catch (error) {
-      alert(`Error al crear proveedor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al crear proveedor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
       // Función para crear insumo
   const handleCreateSupply = async () => {
     if (!supplyForm.name || !supplyForm.unitMeasure) {
-      alert('Nombre y unidad de medida son requeridos');
+      toast.warning('Nombre y unidad de medida son requeridos');
       return;
     }
 
@@ -160,7 +164,7 @@ export default function Insumos() {
       setShowSupplyDialog(false);
       // Los datos se refrescan automáticamente en el hook
     } catch (error) {
-      alert(`Error al ${editingSupply ? 'actualizar' : 'crear'} insumo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al ${editingSupply ? 'actualizar' : 'crear'} insumo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -177,16 +181,22 @@ export default function Insumos() {
 
   // Función para eliminar insumo
   const handleDeleteSupply = async (supplyId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este insumo?\n\n⚠️ ADVERTENCIA: Se eliminarán TODOS los precios registrados y el historial asociado.')) return;
+    const ok = await confirm({
+      title: 'Eliminar insumo',
+      description: '¿Estás seguro de que quieres eliminar este insumo? ADVERTENCIA: Se eliminarán TODOS los precios registrados y el historial asociado.',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       await deleteSupply(supplyId);
       // Si llega aquí, la eliminación fue exitosa
-      alert('Insumo eliminado exitosamente con todos sus precios e historial');
+      toast.success('Insumo eliminado exitosamente con todos sus precios e historial');
       // Los datos se refrescan automáticamente en el hook
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      alert(`Error al eliminar insumo: ${errorMessage}`);
+      toast.error(`Error al eliminar insumo: ${errorMessage}`);
     }
   };
 
@@ -431,7 +441,7 @@ export default function Insumos() {
   // Función para registrar precio
   const handleRegisterPrice = async () => {
     if (!priceForm.supplyId || !priceForm.fecha_imputacion || !priceForm.pricePerUnit) {
-      alert('Insumo, mes de imputación y precio son requeridos');
+      toast.warning('Insumo, mes de imputación y precio son requeridos');
       return;
     }
 
@@ -465,7 +475,7 @@ export default function Insumos() {
       setShowPriceDialog(false);
       // Los datos se refrescan automáticamente en el hook
     } catch (error) {
-      alert(`Error al ${editingPrice ? 'actualizar' : 'registrar'} precio: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al ${editingPrice ? 'actualizar' : 'registrar'} precio: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -588,7 +598,7 @@ export default function Insumos() {
   // Función para manejar carga masiva
   const handleBulkUpload = async () => {
     if (!uploadFile) {
-      alert('Por favor selecciona un archivo');
+      toast.warning('Por favor selecciona un archivo');
       return;
     }
 
@@ -596,9 +606,9 @@ export default function Insumos() {
     try {
       const result = await bulkUploadPrices(uploadFile);
       setUploadResults(result);
-      alert(`Carga masiva completada: ${result.summary.success} exitosos, ${result.summary.errors} errores`);
+      toast.success(`Carga masiva completada: ${result.summary.success} exitosos, ${result.summary.errors} errores`);
     } catch (error) {
-      alert(`Error en la carga masiva: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error en la carga masiva: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setUploading(false);
     }
@@ -675,7 +685,7 @@ export default function Insumos() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-600">Error: {error}</div>
+        <div className="text-destructive">Error: {error}</div>
       </div>
     );
   }
@@ -706,7 +716,7 @@ export default function Insumos() {
             setNotesContent(savedNotes);
             setIsEditingNotes(false);
             setShowNotesDialog(true);
-          }} variant="outline" size="sm" className="text-amber-700 hover:text-amber-800 hover:bg-amber-50">
+          }} variant="outline" size="sm" className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted">
             <BookOpen className="h-4 w-4 mr-2" />
             Notas
           </Button>
@@ -722,7 +732,7 @@ export default function Insumos() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Package className="h-4 w-4 text-blue-600" />
+              <Package className="h-4 w-4 text-info-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Insumos</p>
                 <p className="text-2xl font-bold">{totalSupplies}</p>
@@ -734,7 +744,7 @@ export default function Insumos() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-success" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Insumos Activos</p>
                 <p className="text-2xl font-bold">{activeSupplies}</p>
@@ -758,7 +768,7 @@ export default function Insumos() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-orange-600" />
+              <Calendar className="h-4 w-4 text-warning-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Precios Registrados</p>
                 <p className="text-2xl font-bold">{prices.length}</p>
@@ -772,7 +782,7 @@ export default function Insumos() {
 
       {/* Tabs principales */}
       <Tabs defaultValue="insumos" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="insumos">Insumos</TabsTrigger>
           <TabsTrigger value="precios">Precios</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
@@ -852,7 +862,7 @@ export default function Insumos() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => handleDeleteSupply(supply.id)}
                                 title="Eliminar insumo"
                               >
@@ -895,7 +905,7 @@ export default function Insumos() {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-right">
-                          <p className="text-lg font-bold text-green-600">
+                          <p className="text-lg font-bold text-success">
                             {formatCurrency((price as any).totalPrice || getTotalPrice(price))}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -967,11 +977,11 @@ export default function Insumos() {
                       </div>
                       <div className="text-right">
                         {entry.oldPrice && (
-                          <p className="text-sm text-red-600 line-through">
+                          <p className="text-sm text-destructive line-through">
                             {formatCurrency(entry.oldPrice)}
                           </p>
                         )}
-                        <p className="text-lg font-bold text-green-600">
+                        <p className="text-lg font-bold text-success">
                           {formatCurrency(entry.newPrice || 0)}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -993,7 +1003,7 @@ export default function Insumos() {
           <DialogHeader>
             <DialogTitle>Crear Nuevo Proveedor</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Nombre *</label>
               <Input
@@ -1037,11 +1047,11 @@ export default function Insumos() {
                 placeholder="Dirección del proveedor"
               />
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleCreateSupplier} className="flex-1">Crear</Button>
+          </DialogBody>
+          <DialogFooter>
               <Button variant="outline" onClick={closeDialogs}>Cancelar</Button>
-            </div>
-          </div>
+              <Button onClick={handleCreateSupplier}>Crear</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1053,7 +1063,7 @@ export default function Insumos() {
              {editingSupply ? 'Editar Insumo' : 'Crear Nuevo Insumo'}
            </DialogTitle>
          </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Nombre *</label>
               <Input
@@ -1096,11 +1106,11 @@ export default function Insumos() {
                 </Select>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleCreateSupply} className="flex-1">Crear</Button>
+          </DialogBody>
+          <DialogFooter>
               <Button variant="outline" onClick={closeDialogs}>Cancelar</Button>
-            </div>
-          </div>
+              <Button onClick={handleCreateSupply}>Crear</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1112,7 +1122,7 @@ export default function Insumos() {
               {editingPrice ? 'Editar Precio' : 'Registrar Precio Mensual'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Insumo *</label>
               <Select value={priceForm.supplyId} onValueChange={(value) => setPriceForm({ ...priceForm, supplyId: value })}>
@@ -1189,13 +1199,13 @@ export default function Insumos() {
                 placeholder="Notas adicionales sobre el precio"
               />
             </div>
-                                                   <div className="flex gap-2">
-                <Button onClick={handleRegisterPrice} className="flex-1">
+          </DialogBody>
+          <DialogFooter>
+                <Button variant="outline" onClick={closeDialogs}>Cancelar</Button>
+                <Button onClick={handleRegisterPrice}>
                   {editingPrice ? 'Actualizar Precio' : 'Registrar Precio'}
                 </Button>
-                <Button variant="outline" onClick={closeDialogs}>Cancelar</Button>
-              </div>
-           </div>
+          </DialogFooter>
          </DialogContent>
        </Dialog>
 
@@ -1222,8 +1232,8 @@ export default function Insumos() {
                     
                     if (!trendData.hasTrend) {
                       return (
-                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                          <div className="flex items-center gap-2 text-yellow-800">
+                        <div className="bg-warning-muted p-4 rounded-lg border border-warning-muted">
+                          <div className="flex items-center gap-2 text-warning-muted-foreground">
                             <AlertTriangle className="h-4 w-4" />
                             <span className="text-sm font-medium">{trendData.message}</span>
                           </div>
@@ -1235,41 +1245,38 @@ export default function Insumos() {
                       <div className="space-y-4">
                         {/* Resumen de Tendencias */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                          <Card className="bg-gradient-to-r from-info-muted to-info-muted/80 border-info-muted">
                             <CardContent className="p-4">
                               <div className="flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-800">Tendencia General</span>
+                                <Activity className="h-4 w-4 text-info-muted-foreground" />
+                                <span className="text-sm font-medium text-info-muted-foreground">Tendencia General</span>
                               </div>
                               <div className="mt-2 flex items-center gap-2">
-                                {trendData.generalTrend === 'increasing' && <TrendingUp className="h-5 w-5 text-green-600" />}
-                                {trendData.generalTrend === 'decreasing' && <TrendingDown className="h-5 w-5 text-red-600" />}
-                                {trendData.generalTrend === 'stable' && <Minus className="h-5 w-5 text-gray-600" />}
-                                <span className={`font-bold ${
-                                  trendData.generalTrend === 'increasing' ? 'text-green-600' :
-                                  trendData.generalTrend === 'decreasing' ? 'text-red-600' : 'text-gray-600'
-                                }`}>
+                                {trendData.generalTrend === 'increasing' && <TrendingUp className="h-5 w-5 text-success" />}
+                                {trendData.generalTrend === 'decreasing' && <TrendingDown className="h-5 w-5 text-destructive" />}
+                                {trendData.generalTrend === 'stable' && <Minus className="h-5 w-5 text-muted-foreground" />}
+                                <span className={cn('font-bold', trendData.generalTrend === 'increasing' ? 'text-success' : trendData.generalTrend === 'decreasing' ? 'text-destructive' : 'text-muted-foreground')}>
                                   {trendData.generalTrend === 'increasing' ? 'Subiendo' :
                                    trendData.generalTrend === 'decreasing' ? 'Bajando' : 'Estable'}
                                 </span>
                               </div>
-                              <div className="text-xs text-blue-600 mt-1">
+                              <div className="text-xs text-info-muted-foreground mt-1">
                                 {trendData.totalPercentageChange > 0 ? '+' : ''}{trendData.totalPercentageChange.toFixed(1)}% total
                               </div>
                             </CardContent>
                           </Card>
 
-                          <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                          <Card className="bg-gradient-to-r from-success-muted to-success-muted/80 border-success-muted">
                             <CardContent className="p-4">
                               <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-medium text-green-800">Cambio Total</span>
+                                <TrendingUp className="h-4 w-4 text-success" />
+                                <span className="text-sm font-medium text-success-muted-foreground">Cambio Total</span>
                               </div>
                               <div className="mt-2">
-                                <div className={`font-bold ${trendData.totalChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <div className={cn('font-bold', trendData.totalChange >= 0 ? 'text-success' : 'text-destructive')}>
                                   {trendData.totalChange >= 0 ? '+' : ''}{formatCurrency(trendData.totalChange)}
                                 </div>
-                                <div className="text-xs text-green-600">
+                                <div className="text-xs text-success">
                                   {formatCurrency(trendData.firstPrice)} → {formatCurrency(trendData.lastPrice)}
                                 </div>
                               </div>
@@ -1297,8 +1304,8 @@ export default function Insumos() {
                           
                           if (!chartData) {
                             return (
-                              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                                <div className="flex items-center gap-2 text-yellow-800">
+                              <div className="bg-warning-muted p-4 rounded-lg border border-warning-muted">
+                                <div className="flex items-center gap-2 text-warning-muted-foreground">
                                   <AlertTriangle className="h-4 w-4" />
                                   <span className="text-sm font-medium">Se necesitan al menos 2 precios para mostrar el gráfico</span>
                                 </div>
@@ -1315,19 +1322,19 @@ export default function Insumos() {
                                 </CardTitle>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                    <div className="w-3 h-3 rounded-full bg-info-muted0"></div>
                                     <span>Inicio</span>
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                    <div className="w-3 h-3 rounded-full bg-success-muted0"></div>
                                     <span>Aumento</span>
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <div className="w-3 h-3 rounded-full bg-destructive/100"></div>
                                     <span>Disminución</span>
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                                    <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
                                     <span>Sin cambio</span>
                                   </div>
                                 </div>
@@ -1352,9 +1359,9 @@ export default function Insumos() {
                                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      {trend.type === 'increase' && <TrendingUp className="h-4 w-4 text-green-600" />}
-                                      {trend.type === 'decrease' && <TrendingDown className="h-4 w-4 text-red-600" />}
-                                      {trend.type === 'stable' && <Minus className="h-4 w-4 text-gray-600" />}
+                                      {trend.type === 'increase' && <TrendingUp className="h-4 w-4 text-success" />}
+                                      {trend.type === 'decrease' && <TrendingDown className="h-4 w-4 text-destructive" />}
+                                      {trend.type === 'stable' && <Minus className="h-4 w-4 text-muted-foreground" />}
                                       <span className="font-medium">{formatDate(trend.month)}</span>
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1">
@@ -1362,16 +1369,10 @@ export default function Insumos() {
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <div className={`font-bold ${
-                                      trend.type === 'increase' ? 'text-green-600' :
-                                      trend.type === 'decrease' ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
+                                    <div className={cn('font-bold', trend.type === 'increase' ? 'text-success' : trend.type === 'decrease' ? 'text-destructive' : 'text-muted-foreground')}>
                                       {trend.difference >= 0 ? '+' : ''}{formatCurrency(trend.difference)}
                                     </div>
-                                    <div className={`text-xs ${
-                                      trend.type === 'increase' ? 'text-green-600' :
-                                      trend.type === 'decrease' ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
+                                    <div className={cn('text-xs', trend.type === 'increase' ? 'text-success' : trend.type === 'decrease' ? 'text-destructive' : 'text-muted-foreground')}>
                                       {trend.percentageChange >= 0 ? '+' : ''}{trend.percentageChange.toFixed(1)}%
                                     </div>
                                   </div>
@@ -1403,7 +1404,7 @@ export default function Insumos() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-green-600">
+                              <p className="font-bold text-success">
                                 {formatCurrency((price as any).totalPrice || getTotalPrice(price))}
                               </p>
                               <p className="text-xs text-muted-foreground">
@@ -1442,9 +1443,9 @@ export default function Insumos() {
             </DialogHeader>
             <div className="space-y-6">
                              {/* Instrucciones */}
-               <div className="bg-blue-50 p-4 rounded-lg">
-                 <h4 className="font-semibold text-blue-900 mb-2">📋 Instrucciones:</h4>
-                                   <ul className="text-sm text-blue-800 space-y-1">
+               <div className="bg-info-muted p-4 rounded-lg">
+                 <h4 className="font-semibold text-foreground mb-2">📋 Instrucciones:</h4>
+                                   <ul className="text-sm text-info-muted-foreground space-y-1">
                     <li>• Descarga la plantilla CSV para ver el formato correcto</li>
                     <li>• El archivo tiene 4 columnas separadas por punto y coma (;): Nombre del Insumo; Mes-Año; Precio por Unidad; Notas</li>
                     <li>• <strong>INSUMOS EXISTENTES:</strong> La plantilla incluye todos los insumos ya creados en el sistema</li>
@@ -1478,7 +1479,7 @@ export default function Insumos() {
                 </div>
 
                 {uploadFile && (
-                  <div className="text-sm text-green-600">
+                  <div className="text-sm text-success">
                     ✅ Archivo seleccionado: {uploadFile.name}
                   </div>
                 )}
@@ -1493,7 +1494,7 @@ export default function Insumos() {
                 >
                   {uploading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Procesando...
                     </>
                   ) : (
@@ -1515,15 +1516,15 @@ export default function Insumos() {
                   
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{uploadResults.summary.total}</div>
+                      <div className="text-2xl font-bold text-info-muted-foreground">{uploadResults.summary.total}</div>
                       <div className="text-sm text-muted-foreground">Total</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{uploadResults.summary.success}</div>
+                      <div className="text-2xl font-bold text-success">{uploadResults.summary.success}</div>
                       <div className="text-sm text-muted-foreground">Exitosos</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">{uploadResults.summary.errors}</div>
+                      <div className="text-2xl font-bold text-destructive">{uploadResults.summary.errors}</div>
                       <div className="text-sm text-muted-foreground">Errores</div>
                     </div>
                   </div>
@@ -1533,7 +1534,7 @@ export default function Insumos() {
                     <div className="max-h-40 overflow-y-auto space-y-2">
                       <h5 className="font-medium text-sm">✅ Precios procesados:</h5>
                       {uploadResults.results.map((result: any, index: number) => (
-                        <div key={index} className="text-xs bg-green-50 p-2 rounded">
+                        <div key={index} className="text-xs bg-success-muted p-2 rounded">
                           <strong>{result.supplyName}</strong> - {result.monthYear}: {formatCurrency(result.price)} ({result.message})
                         </div>
                       ))}
@@ -1543,9 +1544,9 @@ export default function Insumos() {
                   {/* Lista de errores */}
                   {uploadResults.errors.length > 0 && (
                     <div className="max-h-40 overflow-y-auto space-y-2 mt-3">
-                      <h5 className="font-medium text-sm text-red-600">❌ Errores encontrados:</h5>
+                      <h5 className="font-medium text-sm text-destructive">❌ Errores encontrados:</h5>
                       {uploadResults.errors.map((error: string, index: number) => (
-                        <div key={index} className="text-xs bg-red-50 p-2 rounded text-red-700">
+                        <div key={index} className="text-xs bg-destructive/10 p-2 rounded text-destructive">
                           {error}
                         </div>
                       ))}
@@ -1578,7 +1579,7 @@ export default function Insumos() {
           <DialogContent size="md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-amber-700" />
+                <BookOpen className="h-5 w-5 text-warning-muted-foreground" />
                 Notas de Insumos
               </DialogTitle>
             </DialogHeader>
@@ -1601,8 +1602,8 @@ export default function Insumos() {
               ) : (
                 <>
                   {notesContent ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
+                    <div className="p-4 bg-warning-muted border border-warning-muted rounded-lg">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                         {notesContent}
                       </p>
                     </div>
@@ -1637,7 +1638,7 @@ export default function Insumos() {
                         // Guardar en localStorage por ahora
                         localStorage.setItem('insumos_notes', notesContent);
                         setIsEditingNotes(false);
-                        alert('Notas guardadas exitosamente');
+                        toast.success('Notas guardadas exitosamente');
                       }}
                     >
                       Guardar

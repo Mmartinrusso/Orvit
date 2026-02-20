@@ -44,8 +44,8 @@ export function MaintenanceByTypeWidget({
   const total = preventive + corrective;
 
   const chartData = [
-    { label: 'Preventivo', value: preventive, color: '#22c55e' },
-    { label: 'Correctivo', value: corrective, color: '#f97316' },
+    { label: 'Preventivo', value: preventive, color: 'hsl(var(--success))' },
+    { label: 'Correctivo', value: corrective, color: 'hsl(var(--chart-5))' },
   ].filter(d => d.value > 0);
 
   const renderContent = () => {
@@ -86,13 +86,13 @@ export function MaintenanceByTypeWidget({
                 <span className="text-xs text-muted-foreground">Preventivo</span>
                 <span className="text-sm font-medium text-foreground">{preventive}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-green-500 h-2.5 rounded-full transition-all duration-500" 
+              <div className="w-full bg-muted rounded-full h-2.5">
+                <div
+                  className="bg-success h-2.5 rounded-full transition-all duration-500"
                   style={{ width: `${(preventive / total) * 100}%` }}
                 />
               </div>
-              <div className="text-xs text-green-600 mt-1">
+              <div className="text-xs text-success mt-1">
                 {((preventive / total) * 100).toFixed(1)}%
               </div>
             </div>
@@ -101,13 +101,13 @@ export function MaintenanceByTypeWidget({
                 <span className="text-xs text-muted-foreground">Correctivo</span>
                 <span className="text-sm font-medium text-foreground">{corrective}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-orange-500 h-2.5 rounded-full transition-all duration-500" 
+              <div className="w-full bg-muted rounded-full h-2.5">
+                <div
+                  className="bg-warning h-2.5 rounded-full transition-all duration-500"
                   style={{ width: `${(corrective / total) * 100}%` }}
                 />
               </div>
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-warning-muted-foreground mt-1">
                 {((corrective / total) * 100).toFixed(1)}%
               </div>
             </div>

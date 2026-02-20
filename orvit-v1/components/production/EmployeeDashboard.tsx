@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import {
   Package,
   ClipboardCheck,
@@ -23,16 +26,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import RoutinePendingCard from '@/components/production/RoutinePendingCard';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 interface DashboardData {
   routines: {
@@ -73,28 +67,17 @@ export default function EmployeeDashboard() {
   const { currentSector } = useCompany();
   const { user } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<DashboardData | null>(null);
-
-  const fetchData = useCallback(async () => {
-    if (!currentSector) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/production/dashboard/employee?sectorId=${currentSector.id}`);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['employee-dashboard', currentSector?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/production/dashboard/employee?sectorId=${currentSector!.id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      if (json.success) {
-        setData(json);
-      }
-    } catch (error) {
-      console.error('Error fetching employee dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentSector]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+      return json.success ? (json as DashboardData) : null;
+    },
+    enabled: !!currentSector,
+    staleTime: 60 * 1000,
+  });
 
   const handleStartRoutine = (templateId: number) => {
     router.push(`/produccion/rutinas?action=execute&templateId=${templateId}`);
@@ -357,7 +340,7 @@ export default function EmployeeDashboard() {
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${activity.status === 'COMPLETED' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                    <div className={cn('h-2 w-2 rounded-full', activity.status === 'COMPLETED' ? 'bg-success' : 'bg-warning')} />
                     <div>
                       <p className="text-sm font-medium">{activity.template.name}</p>
                       <p className="text-xs text-muted-foreground">

@@ -7,6 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -89,7 +90,7 @@ export function SolicitudDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         {isLoading ? (
           <DetailSkeleton />
         ) : solicitud ? (
@@ -114,6 +115,7 @@ export function SolicitudDetailModal({
               </div>
             </DialogHeader>
 
+            <DialogBody className="space-y-4">
             <Separator />
 
             {/* Información general */}
@@ -207,6 +209,8 @@ export function SolicitudDetailModal({
                 </div>
               </>
             )}
+
+            </DialogBody>
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={onClose}>

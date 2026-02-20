@@ -23,7 +23,7 @@ export function HealthScoreBadge({
     if (s === null || s === undefined) {
       return {
         label: 'Sin datos',
-        color: 'bg-gray-100 text-gray-500 border-gray-200',
+        color: 'bg-muted text-muted-foreground border-border',
         icon: HelpCircle,
         description: 'No hay suficientes datos para calcular el health score'
       }
@@ -31,7 +31,7 @@ export function HealthScoreBadge({
     if (s >= 80) {
       return {
         label: 'Bueno',
-        color: 'bg-green-100 text-green-700 border-green-200',
+        color: 'bg-success-muted text-success border-success-muted',
         icon: CheckCircle,
         description: 'El activo está en buenas condiciones operativas'
       }
@@ -39,14 +39,14 @@ export function HealthScoreBadge({
     if (s >= 50) {
       return {
         label: 'Regular',
-        color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+        color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
         icon: Activity,
         description: 'El activo requiere atención preventiva'
       }
     }
     return {
       label: 'Crítico',
-      color: 'bg-red-100 text-red-700 border-red-200',
+      color: 'bg-destructive/10 text-destructive border-destructive/20',
       icon: AlertTriangle,
       description: 'El activo necesita intervención urgente'
     }
@@ -119,15 +119,15 @@ export function CriticalityBadge({
 }: CriticalityBadgeProps) {
   const getConfig = (s: number | null | undefined) => {
     if (s === null || s === undefined) {
-      return { label: 'N/A', color: 'bg-gray-100 text-gray-500' }
+      return { label: 'N/A', color: 'bg-muted text-muted-foreground' }
     }
     if (s >= 8) {
-      return { label: 'Alta', color: 'bg-red-100 text-red-700' }
+      return { label: 'Alta', color: 'bg-destructive/10 text-destructive' }
     }
     if (s >= 5) {
-      return { label: 'Media', color: 'bg-yellow-100 text-yellow-700' }
+      return { label: 'Media', color: 'bg-warning-muted text-warning-muted-foreground' }
     }
-    return { label: 'Baja', color: 'bg-green-100 text-green-700' }
+    return { label: 'Baja', color: 'bg-success-muted text-success' }
   }
 
   const config = getConfig(score)

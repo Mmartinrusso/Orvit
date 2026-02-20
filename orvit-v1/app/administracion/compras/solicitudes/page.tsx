@@ -53,6 +53,7 @@ import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface SolicitudPago {
   id: string;
@@ -79,6 +80,7 @@ interface SolicitudPago {
 }
 
 export default function SolicitudesPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const { currentCompany } = useCompany();
   const { mode: viewMode } = useViewMode();
@@ -155,24 +157,24 @@ export default function SolicitudesPage() {
 
   const getEstadoBadge = (estado: string) => {
     const estados: Record<string, { color: string; label: string }> = {
-      borrador: { color: 'bg-slate-100 text-slate-600 border-slate-200', label: 'Borrador' },
-      pendiente: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Pendiente' },
-      en_revision: { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'En Revisión' },
-      aprobada: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Pend. de Pago' },
-      rechazada: { color: 'bg-red-100 text-red-700 border-red-200', label: 'Rechazada' },
-      convertida: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Convertida' },
+      borrador: { color: 'bg-muted text-muted-foreground border-border', label: 'Borrador' },
+      pendiente: { color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', label: 'Pendiente' },
+      en_revision: { color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', label: 'En Revisión' },
+      aprobada: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Pend. de Pago' },
+      rechazada: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Rechazada' },
+      convertida: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Convertida' },
       pagada: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Pagada' },
-      cancelada: { color: 'bg-gray-100 text-gray-500 border-gray-200', label: 'Cancelada' }
+      cancelada: { color: 'bg-muted text-muted-foreground border-border', label: 'Cancelada' }
     };
     return estados[estado] || estados.pendiente;
   };
 
   const getPrioridadBadge = (prioridad: string) => {
     const prioridades: Record<string, { color: string; label: string }> = {
-      baja: { color: 'bg-gray-100 text-gray-600 border-gray-200', label: 'Baja' },
-      media: { color: 'bg-blue-100 text-blue-600 border-blue-200', label: 'Media' },
-      alta: { color: 'bg-orange-100 text-orange-600 border-orange-200', label: 'Alta' },
-      urgente: { color: 'bg-red-100 text-red-600 border-red-200', label: 'Urgente' }
+      baja: { color: 'bg-muted text-muted-foreground border-border', label: 'Baja' },
+      media: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Media' },
+      alta: { color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', label: 'Alta' },
+      urgente: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Urgente' }
     };
     return prioridades[prioridad] || prioridades.media;
   };
@@ -223,9 +225,13 @@ export default function SolicitudesPage() {
   };
 
   const handleDelete = async (solicitud: SolicitudPago) => {
-    if (!confirm(`¿Está seguro que desea eliminar la solicitud ${solicitud.numero}? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Eliminar solicitud',
+      description: `¿Está seguro que desea eliminar la solicitud ${solicitud.numero}? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/solicitudes/${solicitud.id}`, {
@@ -287,12 +293,18 @@ export default function SolicitudesPage() {
       return;
     }
 
-    let confirmMessage = `¿Eliminar ${deletableSolicitudes.length} solicitud(es)?`;
+    let deleteMessage = `¿Eliminar ${deletableSolicitudes.length} solicitud(es)?`;
     if (nonDeletableCount > 0) {
-      confirmMessage = `Se eliminarán ${deletableSolicitudes.length} solicitud(es). ${nonDeletableCount} solicitud(es) no se pueden eliminar por su estado.`;
+      deleteMessage = `Se eliminarán ${deletableSolicitudes.length} solicitud(es). ${nonDeletableCount} solicitud(es) no se pueden eliminar por su estado.`;
     }
 
-    if (!confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: 'Eliminar solicitudes',
+      description: deleteMessage,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     setIsBulkDeleting(true);
     let deletedCount = 0;
@@ -404,31 +416,31 @@ export default function SolicitudesPage() {
           <div className="flex items-center gap-4 text-xs">
             {borradores > 0 && (
               <div className="flex items-center gap-1.5">
-                <FileCheck className="w-3.5 h-3.5 text-slate-400" />
+                <FileCheck className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">Borr:</span>
                 <span className="font-medium">{borradores}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <Clock className="w-3.5 h-3.5 text-warning-muted-foreground" />
               <span className="text-muted-foreground">Pend:</span>
               <span className="font-medium">{pendientes}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
+              <AlertTriangle className="w-3.5 h-3.5 text-warning-muted-foreground" />
               <span className="text-muted-foreground">Rev:</span>
               <span className="font-medium">{enRevision}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+              <CheckCircle className="w-3.5 h-3.5 text-success" />
               <span className="text-muted-foreground">Aprob:</span>
               <span className="font-medium">{aprobadas}</span>
             </div>
             {urgentes > 0 && (
               <div className="flex items-center gap-1.5">
-                <XCircle className="w-3.5 h-3.5 text-red-500" />
+                <XCircle className="w-3.5 h-3.5 text-destructive" />
                 <span className="text-muted-foreground">Urg:</span>
-                <span className="font-medium text-red-600">{urgentes}</span>
+                <span className="font-medium text-destructive">{urgentes}</span>
               </div>
             )}
           </div>
@@ -527,7 +539,7 @@ export default function SolicitudesPage() {
                       </TableCell>
                       <TableCell className="text-xs font-medium">
                         <div className="flex items-center gap-1.5">
-                          <span className={cn(isT2orMixed && viewMode === 'E' && "text-amber-600 dark:text-amber-400")}>
+                          <span className={cn(isT2orMixed && viewMode === 'E' && "text-warning-muted-foreground")}>
                             {solicitud.numero}
                           </span>
                           {isT2orMixed && viewMode === 'E' && (
@@ -536,7 +548,7 @@ export default function SolicitudesPage() {
                               className={cn(
                                 "text-[9px] px-1 py-0 h-3.5",
                                 solicitud.docType === 'T2'
-                                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300"
+                                  ? "bg-warning-muted text-warning-muted-foreground border-warning-muted"
                                   : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300"
                               )}
                             >

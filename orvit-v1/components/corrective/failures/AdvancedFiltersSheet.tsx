@@ -140,7 +140,7 @@ export function AdvancedFiltersSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md overflow-y-auto">
+      <SheetContent size="default" className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Filtros Avanzados</SheetTitle>
           <SheetDescription>

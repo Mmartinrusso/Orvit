@@ -117,12 +117,12 @@ const STATUS_CONFIG: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-700', icon: FileText },
-  PENDING_AFIP: { label: 'Pendiente AFIP', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  PROCESSING: { label: 'Procesando', color: 'bg-blue-100 text-blue-700', icon: Clock },
-  AUTHORIZED: { label: 'Autorizada', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  REJECTED: { label: 'Rechazada', color: 'bg-red-100 text-red-700', icon: XCircle },
-  CANCELLED: { label: 'Anulada', color: 'bg-gray-100 text-gray-500', icon: Ban },
+  DRAFT: { label: 'Borrador', color: 'bg-muted text-foreground', icon: FileText },
+  PENDING_AFIP: { label: 'Pendiente AFIP', color: 'bg-warning-muted text-warning-muted-foreground', icon: Clock },
+  PROCESSING: { label: 'Procesando', color: 'bg-info-muted text-info-muted-foreground', icon: Clock },
+  AUTHORIZED: { label: 'Autorizada', color: 'bg-success-muted text-success', icon: CheckCircle2 },
+  REJECTED: { label: 'Rechazada', color: 'bg-destructive/10 text-destructive', icon: XCircle },
+  CANCELLED: { label: 'Anulada', color: 'bg-muted text-muted-foreground', icon: Ban },
 };
 
 const MOTIVO_LABELS: Record<string, string> = {
@@ -376,7 +376,7 @@ export default function CreditNoteDetailPage() {
               {note.afectaStock && (
                 <>
                   <Separator />
-                  <div className="flex items-center gap-2 text-sm text-orange-600">
+                  <div className="flex items-center gap-2 text-sm text-warning-muted-foreground">
                     <Package className="w-4 h-4" />
                     <span>Esta nota afecta el stock (devolución de productos)</span>
                   </div>
@@ -469,7 +469,7 @@ export default function CreditNoteDetailPage() {
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total:</span>
-                  <span className={note.tipo === 'NOTA_CREDITO' ? 'text-green-600' : 'text-red-600'}>
+                  <span className={note.tipo === 'NOTA_CREDITO' ? 'text-success' : 'text-destructive'}>
                     {formatCurrency(Number(note.total))}
                   </span>
                 </div>
@@ -523,14 +523,14 @@ export default function CreditNoteDetailPage() {
                 {/* Created */}
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="rounded-full bg-blue-100 p-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
+                    <div className="rounded-full bg-info-muted p-2">
+                      <FileText className="w-4 h-4 text-info-muted-foreground" />
                     </div>
-                    <div className="w-px h-full bg-gray-200 mt-2" />
+                    <div className="w-px h-full bg-muted mt-2" />
                   </div>
                   <div className="flex-1 pb-4">
                     <div className="text-sm font-medium">Creada</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       {format(new Date(note.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
                     </div>
                   </div>
@@ -540,18 +540,18 @@ export default function CreditNoteDetailPage() {
                 {note.emitidoAt && (
                   <div className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="rounded-full bg-green-100 p-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <div className="rounded-full bg-success-muted p-2">
+                        <CheckCircle2 className="w-4 h-4 text-success" />
                       </div>
-                      <div className="w-px h-full bg-gray-200 mt-2" />
+                      <div className="w-px h-full bg-muted mt-2" />
                     </div>
                     <div className="flex-1 pb-4">
                       <div className="text-sm font-medium">Emitida y Autorizada</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {format(new Date(note.emitidoAt), 'dd/MM/yyyy HH:mm', { locale: es })}
                       </div>
                       {note.cae && (
-                        <div className="text-xs text-gray-500 mt-1">CAE: {note.cae}</div>
+                        <div className="text-xs text-muted-foreground mt-1">CAE: {note.cae}</div>
                       )}
                     </div>
                   </div>
@@ -568,7 +568,7 @@ export default function CreditNoteDetailPage() {
                     <div className="text-sm font-medium">
                       {STATUS_CONFIG[note.fiscalStatus]?.label}
                     </div>
-                    <div className="text-xs text-gray-500">Estado actual</div>
+                    <div className="text-xs text-muted-foreground">Estado actual</div>
                   </div>
                 </div>
               </div>
@@ -627,7 +627,7 @@ export default function CreditNoteDetailPage() {
             <AlertDialogAction
               onClick={handleEmit}
               disabled={emitting}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-success hover:bg-success"
             >
               {emitting ? 'Emitiendo...' : 'Sí, Emitir'}
             </AlertDialogAction>

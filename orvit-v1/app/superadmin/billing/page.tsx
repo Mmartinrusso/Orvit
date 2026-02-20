@@ -77,6 +77,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // ============================================
 // TYPES
@@ -226,17 +227,17 @@ interface BillingMetrics {
 const subscriptionStatusConfig: Record<string, { label: string; color: string; icon: any }> = {
   TRIALING: {
     label: 'En prueba',
-    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    color: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
     icon: Clock,
   },
   ACTIVE: {
     label: 'Activa',
-    color: 'bg-green-500/10 text-green-500 border-green-500/20',
+    color: 'bg-success/10 text-success border-success-muted/20',
     icon: CheckCircle,
   },
   PAST_DUE: {
     label: 'Pago vencido',
-    color: 'bg-red-500/10 text-red-500 border-red-500/20',
+    color: 'bg-destructive/10 text-destructive border-destructive/30/20',
     icon: AlertCircle,
   },
   CANCELED: {
@@ -246,7 +247,7 @@ const subscriptionStatusConfig: Record<string, { label: string; color: string; i
   },
   PAUSED: {
     label: 'Pausada',
-    color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    color: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
     icon: Pause,
   },
 };
@@ -259,22 +260,22 @@ const invoiceStatusConfig: Record<string, { label: string; color: string; icon: 
   },
   OPEN: {
     label: 'Abierta',
-    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    color: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
     icon: Clock,
   },
   PAID: {
     label: 'Pagada',
-    color: 'bg-green-500/10 text-green-500 border-green-500/20',
+    color: 'bg-success/10 text-success border-success-muted/20',
     icon: CheckCircle,
   },
   VOID: {
     label: 'Anulada',
-    color: 'bg-red-500/10 text-red-500 border-red-500/20',
+    color: 'bg-destructive/10 text-destructive border-destructive/30/20',
     icon: XCircle,
   },
   UNCOLLECTIBLE: {
     label: 'Incobrable',
-    color: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    color: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
     icon: AlertCircle,
   },
 };
@@ -323,9 +324,9 @@ async function fetchModules(): Promise<Module[]> {
 
 // Category colors for modules
 const categoryColors: Record<string, string> = {
-  VENTAS: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  COMPRAS: 'bg-green-500/10 text-green-500 border-green-500/20',
-  MANTENIMIENTO: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+  VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
+  COMPRAS: 'bg-success/10 text-success border-success-muted/20',
+  MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
   COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
@@ -347,6 +348,7 @@ function formatCurrency(amount: number, currency = 'ARS'): string {
 // MAIN COMPONENT
 // ============================================
 export default function BillingPage() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('metrics');
   const [search, setSearch] = useState('');
@@ -608,8 +610,8 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
@@ -621,8 +623,8 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-500" />
+              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{formatCurrency(stats.pendingRevenue)}</p>
@@ -634,8 +636,8 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
@@ -757,14 +759,14 @@ export default function BillingPage() {
               {(metrics.subscriptions.pastDue > 0 || metrics.pendingRevenue > 0) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {metrics.subscriptions.pastDue > 0 && (
-                    <Card className="border-red-500/50 bg-red-500/5">
+                    <Card className="border-destructive/30/50 bg-destructive/5">
                       <CardContent className="pt-4 pb-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                            <AlertCircle className="h-5 w-5 text-red-500" />
+                          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <AlertCircle className="h-5 w-5 text-destructive" />
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-red-600">
+                            <p className="font-medium text-destructive">
                               {metrics.subscriptions.pastDue} suscripciones con pago vencido
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -774,7 +776,7 @@ export default function BillingPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-red-500/50 text-red-600 hover:bg-red-500/10"
+                            className="border-destructive/30/50 text-destructive hover:bg-destructive/10"
                             onClick={() => {
                               setStatusFilter('PAST_DUE');
                               setActiveTab('subscriptions');
@@ -787,14 +789,14 @@ export default function BillingPage() {
                     </Card>
                   )}
                   {metrics.pendingRevenue > 0 && (
-                    <Card className="border-yellow-500/50 bg-yellow-500/5">
+                    <Card className="border-warning-muted/50 bg-warning/5">
                       <CardContent className="pt-4 pb-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                            <Clock className="h-5 w-5 text-yellow-600" />
+                          <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
+                            <Clock className="h-5 w-5 text-warning-muted-foreground" />
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-yellow-700">
+                            <p className="font-medium text-warning-muted-foreground">
                               {formatCurrency(metrics.pendingRevenue)} pendiente de cobro
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -804,7 +806,7 @@ export default function BillingPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-yellow-500/50 text-yellow-700 hover:bg-yellow-500/10"
+                            className="border-warning-muted/50 text-warning-muted-foreground hover:bg-warning/10"
                             onClick={() => {
                               setStatusFilter('OPEN');
                               setActiveTab('invoices');
@@ -831,8 +833,8 @@ export default function BillingPage() {
                           ARR: {formatCurrency(metrics.arr)}
                         </p>
                       </div>
-                      <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <DollarSign className="h-6 w-6 text-green-500" />
+                      <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                        <DollarSign className="h-6 w-6 text-success" />
                       </div>
                     </div>
                   </CardContent>
@@ -848,8 +850,8 @@ export default function BillingPage() {
                           Pendiente: {formatCurrency(metrics.pendingRevenue)}
                         </p>
                       </div>
-                      <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 text-blue-500" />
+                      <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                        <TrendingUp className="h-6 w-6 text-info-muted-foreground" />
                       </div>
                     </div>
                   </CardContent>
@@ -886,9 +888,9 @@ export default function BillingPage() {
                         <div className="flex items-center gap-2">
                           <p className="text-2xl font-bold">{metrics.growthRate}%</p>
                           {metrics.growthRate >= 0 ? (
-                            <ArrowUpRight className="h-5 w-5 text-green-500" />
+                            <ArrowUpRight className="h-5 w-5 text-success" />
                           ) : (
-                            <ArrowDownRight className="h-5 w-5 text-red-500" />
+                            <ArrowDownRight className="h-5 w-5 text-destructive" />
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -914,11 +916,11 @@ export default function BillingPage() {
                       </div>
                       <div className={cn(
                         "w-12 h-12 rounded-lg flex items-center justify-center",
-                        metrics.churnRate > 5 ? "bg-red-500/10" : "bg-green-500/10"
+                        metrics.churnRate > 5 ? "bg-destructive/10" : "bg-success/10"
                       )}>
                         <TrendingDown className={cn(
                           "h-6 w-6",
-                          metrics.churnRate > 5 ? "text-red-500" : "text-green-500"
+                          metrics.churnRate > 5 ? "text-destructive" : "text-success"
                         )} />
                       </div>
                     </div>
@@ -991,7 +993,7 @@ export default function BillingPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-green-500" />
+                            <div className="w-3 h-3 rounded-full bg-success" />
                             Activas
                           </span>
                           <span className="font-medium">{metrics.subscriptions.active}</span>
@@ -1004,7 +1006,7 @@ export default function BillingPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-blue-500" />
+                            <div className="w-3 h-3 rounded-full bg-info" />
                             En Prueba
                           </span>
                           <span className="font-medium">{metrics.subscriptions.trialing}</span>
@@ -1017,7 +1019,7 @@ export default function BillingPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-500" />
+                            <div className="w-3 h-3 rounded-full bg-destructive" />
                             Pago Vencido
                           </span>
                           <span className="font-medium">{metrics.subscriptions.pastDue}</span>
@@ -1030,7 +1032,7 @@ export default function BillingPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                            <div className="w-3 h-3 rounded-full bg-warning" />
                             Pausadas
                           </span>
                           <span className="font-medium">{metrics.subscriptions.paused}</span>
@@ -1094,7 +1096,7 @@ export default function BillingPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
-                      <Zap className="h-5 w-5 text-yellow-500" />
+                      <Zap className="h-5 w-5 text-warning-muted-foreground" />
                       Consumo de Tokens
                     </CardTitle>
                     <CardDescription>
@@ -1175,12 +1177,12 @@ export default function BillingPage() {
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-10 h-10 rounded-full flex items-center justify-center",
-                            activity.type === 'payment' ? "bg-green-500/10" : "bg-blue-500/10"
+                            activity.type === 'payment' ? "bg-success/10" : "bg-info/10"
                           )}>
                             {activity.type === 'payment' ? (
-                              <DollarSign className="h-5 w-5 text-green-500" />
+                              <DollarSign className="h-5 w-5 text-success" />
                             ) : (
-                              <Users className="h-5 w-5 text-blue-500" />
+                              <Users className="h-5 w-5 text-info-muted-foreground" />
                             )}
                           </div>
                           <div>
@@ -1195,7 +1197,7 @@ export default function BillingPage() {
                         </div>
                         <div className="text-right">
                           {activity.type === 'payment' && activity.amount && (
-                            <p className="font-medium text-green-600">
+                            <p className="font-medium text-success">
                               +{formatCurrency(activity.amount)}
                             </p>
                           )}
@@ -1333,8 +1335,14 @@ export default function BillingPage() {
                             {sub.status !== 'CANCELED' && (
                               <DropdownMenuItem
                                 className="text-destructive"
-                                onClick={() => {
-                                  if (confirm('¿Cancelar esta suscripción?')) {
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: 'Cancelar suscripción',
+                                    description: '¿Cancelar esta suscripción?',
+                                    confirmText: 'Eliminar',
+                                    variant: 'destructive',
+                                  });
+                                  if (ok) {
                                     updateSubscriptionMutation.mutate({
                                       id: sub.id,
                                       status: 'CANCELED',
@@ -1553,7 +1561,7 @@ export default function BillingPage() {
                       <ul className="text-xs space-y-1 text-muted-foreground">
                         {plan.features.slice(0, 4).map((feature, i) => (
                           <li key={i} className="flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            <CheckCircle className="h-3 w-3 text-success" />
                             {feature}
                           </li>
                         ))}

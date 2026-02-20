@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   RefreshCw,
@@ -21,7 +21,6 @@ import {
   MapPin,
   Image,
   FileText,
-  X,
   Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,7 +56,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
   Tabs,
@@ -66,6 +64,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 
@@ -76,29 +75,13 @@ import NewRoutineExecutionForm from '@/components/production/NewRoutineExecution
 import NewRoutineTemplateForm from '@/components/production/NewRoutineTemplateForm';
 import RoutinePendingCard from '@/components/production/RoutinePendingCard';
 
-interface RoutineSection {
-  id: string;
-  name: string;
-  description?: string;
-}
+import { useRoutineExecutions } from '@/hooks/production/use-routine-executions';
+import { useRoutineTemplates, type RoutineTemplate } from '@/hooks/production/use-routine-templates';
+import { useRoutineDrafts } from '@/hooks/production/use-routine-drafts';
+import { useMyRoutines } from '@/hooks/production/use-my-routines';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
-interface RoutineTemplate {
-  id: number;
-  code: string;
-  name: string;
-  type: string;
-  frequency: string;
-  isActive: boolean;
-  items: any[];
-  groups?: any[];
-  sections?: RoutineSection[];
-  itemsStructure?: 'flat' | 'hierarchical';
-  preExecutionInputs?: any[];
-  workCenter: { id: number; name: string; code: string } | null;
-  _count: { executions: number };
-}
-
-interface RoutineExecution {
+interface RoutineExecutionDetail {
   id: number;
   date: string;
   hasIssues: boolean;
@@ -110,76 +93,42 @@ interface RoutineExecution {
     code: string;
     name: string;
     type: string;
+    items: any;
+    groups?: any[];
+    itemsStructure?: 'flat' | 'hierarchical';
   };
   workCenter: { id: number; name: string; code: string } | null;
   shift: { id: number; name: string } | null;
   executedBy: { id: number; name: string };
 }
 
-interface RoutineExecutionDetail extends RoutineExecution {
-  template: {
-    id: number;
-    code: string;
-    name: string;
-    type: string;
-    items: any;
-    groups?: any[];
-    itemsStructure?: 'flat' | 'hierarchical';
-  };
-}
-
 const ROUTINE_TYPES = [
-  { value: 'SHIFT_START', label: 'Inicio de Turno', color: 'bg-blue-500' },
+  { value: 'SHIFT_START', label: 'Inicio de Turno', color: 'bg-info' },
   { value: 'SHIFT_END', label: 'Fin de Turno', color: 'bg-indigo-500' },
   { value: 'SETUP', label: 'Setup/Cambio', color: 'bg-purple-500' },
-  { value: 'SAFETY', label: 'Seguridad', color: 'bg-red-500' },
-  { value: '5S', label: '5S', color: 'bg-green-500' },
+  { value: 'SAFETY', label: 'Seguridad', color: 'bg-destructive' },
+  { value: '5S', label: '5S', color: 'bg-success' },
 ];
 
 export default function RoutinesPage() {
-  const { hasPermission, user } = useAuth();
+  const { hasPermission } = useAuth();
   const { currentSector } = useCompany();
-
-  // DEBUG: Ver permisos del usuario
-  useEffect(() => {
-    if (user) {
-      console.log('🔍 User role:', user.role);
-      console.log('🔍 User permissions:', user.permissions);
-      console.log('🔍 Has produccion.rutinas.execute:', user.permissions?.includes('produccion.rutinas.execute'));
-      console.log('🔍 Has produccion.rutinas.manage:', user.permissions?.includes('produccion.rutinas.manage'));
-    }
-  }, [user]);
+  const confirm = useConfirm();
 
   const canExecute = hasPermission('produccion.rutinas.execute');
   const canManage = hasPermission('produccion.rutinas.manage');
 
   const defaultTab = (canExecute && !canManage) ? 'my-routines' : 'executions';
   const [activeTab, setActiveTab] = useState<'my-routines' | 'executions' | 'templates'>(defaultTab);
-  const [loading, setLoading] = useState(true);
-
-  // My Routines state (employee view)
-  const [myRoutines, setMyRoutines] = useState<any[]>([]);
-  const [myRoutinesSummary, setMyRoutinesSummary] = useState({ total: 0, completed: 0, inProgress: 0, pending: 0 });
-  const [loadingMyRoutines, setLoadingMyRoutines] = useState(false);
-
-  // Executions state
-  const [executions, setExecutions] = useState<RoutineExecution[]>([]);
-  const [executionStats, setExecutionStats] = useState({ totalExecutions: 0, withIssues: 0, withoutIssues: 0 });
-  const [executionPagination, setExecutionPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
-
-  // Templates state
-  const [templates, setTemplates] = useState<RoutineTemplate[]>([]);
-  const [templatePagination, setTemplatePagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
-
-  // Drafts (in-progress routines) for manager view
-  const [drafts, setDrafts] = useState<any[]>([]);
-  const [loadingDrafts, setLoadingDrafts] = useState(false);
 
   // Filters
   const [dateFrom, setDateFrom] = useState(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [hasIssuesFilter, setHasIssuesFilter] = useState<string>('all');
+
+  // Pagination (local page state — hooks receive it as param)
+  const [execPage, setExecPage] = useState(1);
+  const [tmplPage, setTmplPage] = useState(1);
 
   // Dialogs
   const [showExecuteDialog, setShowExecuteDialog] = useState(false);
@@ -188,69 +137,33 @@ export default function RoutinesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
   const [selectedExecutionDetail, setSelectedExecutionDetail] = useState<RoutineExecutionDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  // Draft resume and detail
   const [draftToResume, setDraftToResume] = useState<any>(null);
   const [showDraftDetailDialog, setShowDraftDetailDialog] = useState(false);
   const [selectedDraftDetail, setSelectedDraftDetail] = useState<any>(null);
 
-  const fetchExecutions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.append('dateFrom', dateFrom);
-      params.append('dateTo', dateTo);
-      params.append('page', executionPagination.page.toString());
-      params.append('limit', executionPagination.limit.toString());
+  // ─── TanStack Query hooks ────────────────────────────────
+  const {
+    executions, stats: executionStats, pagination: executionPagination, isLoading: loadingExecutions, invalidate: invalidateExecutions,
+  } = useRoutineExecutions(
+    { dateFrom, dateTo, hasIssuesFilter, page: execPage, limit: 20 },
+    activeTab === 'executions',
+  );
 
-      if (typeFilter !== 'all') {
-        // Filter by template type would require additional logic
-      }
-      if (hasIssuesFilter !== 'all') {
-        params.append('hasIssues', hasIssuesFilter);
-      }
+  const {
+    templates, pagination: templatePagination, isLoading: loadingTemplates, invalidate: invalidateTemplates,
+  } = useRoutineTemplates(tmplPage, 20, activeTab === 'templates');
 
-      const res = await fetch(`/api/production/routines?${params.toString()}`);
-      const data = await res.json();
+  const {
+    drafts, isLoading: loadingDrafts, invalidate: invalidateDrafts,
+  } = useRoutineDrafts(canManage && activeTab === 'executions');
 
-      if (data.success) {
-        setExecutions(data.routines);
-        setExecutionStats(data.stats);
-        setExecutionPagination(prev => ({ ...prev, ...data.pagination }));
-      } else {
-        toast.error(data.error || 'Error al cargar ejecuciones');
-      }
-    } catch (error) {
-      console.error('Error fetching executions:', error);
-      toast.error('Error al cargar ejecuciones');
-    } finally {
-      setLoading(false);
-    }
-  }, [dateFrom, dateTo, typeFilter, hasIssuesFilter, executionPagination.page, executionPagination.limit]);
+  const {
+    routines: myRoutines, summary: myRoutinesSummary, isLoading: loadingMyRoutines, invalidate: invalidateMyRoutines,
+  } = useMyRoutines(activeTab === 'my-routines' ? currentSector?.id : undefined);
 
-  const fetchTemplates = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.append('page', templatePagination.page.toString());
-      params.append('limit', templatePagination.limit.toString());
+  const isLoading = activeTab === 'executions' ? loadingExecutions : activeTab === 'templates' ? loadingTemplates : loadingMyRoutines;
 
-      const res = await fetch(`/api/production/routines/templates?${params.toString()}`);
-      const data = await res.json();
-
-      if (data.success) {
-        setTemplates(data.templates);
-        setTemplatePagination(prev => ({ ...prev, ...data.pagination }));
-      } else {
-        toast.error(data.error || 'Error al cargar plantillas');
-      }
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-      toast.error('Error al cargar plantillas');
-    } finally {
-      setLoading(false);
-    }
-  }, [templatePagination.page, templatePagination.limit]);
-
+  // ─── Mutation handlers ───────────────────────────────────
   const fetchExecutionDetail = async (id: number) => {
     setLoadingDetail(true);
     try {
@@ -258,7 +171,6 @@ export default function RoutinesPage() {
       const data = await res.json();
 
       if (data.success) {
-        // Transform template items to handle both old and new format
         const routine = data.routine;
         const templateItems = routine.template.items;
         const isNewFormat = templateItems && typeof templateItems === 'object' && !Array.isArray(templateItems) && 'itemsStructure' in templateItems;
@@ -278,89 +190,40 @@ export default function RoutinesPage() {
       } else {
         toast.error(data.error || 'Error al cargar detalle');
       }
-    } catch (error) {
-      console.error('Error fetching execution detail:', error);
+    } catch {
       toast.error('Error al cargar detalle');
     } finally {
       setLoadingDetail(false);
     }
   };
 
-  // Fetch drafts (in-progress routines) for managers
-  const fetchDrafts = useCallback(async () => {
-    if (!canManage) return;
-    setLoadingDrafts(true);
-    try {
-      const res = await fetch('/api/production/routines/draft');
-      const data = await res.json();
-      if (data.success) {
-        setDrafts(data.drafts);
-      }
-    } catch (error) {
-      console.error('Error fetching drafts:', error);
-    } finally {
-      setLoadingDrafts(false);
-    }
-  }, [canManage]);
-
-  // Fetch my pending routines (employee view)
-  const fetchMyRoutines = useCallback(async () => {
-    if (!currentSector?.id) return;
-    setLoadingMyRoutines(true);
-    try {
-      const res = await fetch(`/api/production/routines/my-pending?sectorId=${currentSector.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setMyRoutines(data.routines);
-        setMyRoutinesSummary(data.summary);
-      }
-    } catch (error) {
-      console.error('Error fetching my routines:', error);
-    } finally {
-      setLoadingMyRoutines(false);
-    }
-  }, [currentSector?.id]);
-
-  useEffect(() => {
-    if (activeTab === 'my-routines') {
-      fetchMyRoutines();
-    } else if (activeTab === 'executions') {
-      fetchExecutions();
-      fetchDrafts();
-    } else {
-      fetchTemplates();
-    }
-  }, [activeTab, fetchMyRoutines, fetchExecutions, fetchTemplates, fetchDrafts]);
-
   const handleDeleteExecution = async (id: number) => {
-    if (!confirm('¿Eliminar esta ejecución de rutina?')) return;
-
+    const ok = await confirm({
+      title: 'Eliminar ejecución',
+      description: '¿Eliminar esta ejecución de rutina?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
-      const res = await fetch(`/api/production/routines/${id}`, {
-        method: 'DELETE',
-      });
-
+      const res = await fetch(`/api/production/routines/${id}`, { method: 'DELETE' });
       const data = await res.json();
-
       if (data.success) {
         toast.success('Ejecución eliminada');
-        fetchExecutions();
+        invalidateExecutions();
       } else {
         toast.error(data.error || 'Error al eliminar');
       }
-    } catch (error) {
-      console.error('Error deleting execution:', error);
+    } catch {
       toast.error('Error al eliminar');
     }
   };
 
-  // Resume a draft (continue execution)
   const handleResumeDraft = async (draft: any) => {
     try {
       const res = await fetch(`/api/production/routines/${draft.id}`);
       const data = await res.json();
       if (data.success) {
-        // Build draft data for form resumption
         setDraftToResume({
           id: draft.id,
           responses: data.routine.responses || [],
@@ -377,7 +240,6 @@ export default function RoutinesPage() {
     }
   };
 
-  // Send Discord reminder for incomplete draft
   const handleSendReminder = async (draft: any) => {
     try {
       toast.loading('Enviando recordatorio...', { id: 'reminder' });
@@ -389,7 +251,7 @@ export default function RoutinesPage() {
       const data = await res.json();
       if (data.success) {
         toast.success('Recordatorio enviado por Discord', { id: 'reminder' });
-        fetchDrafts();
+        invalidateDrafts();
       } else {
         toast.error(data.error || 'Error al enviar', { id: 'reminder' });
       }
@@ -398,9 +260,7 @@ export default function RoutinesPage() {
     }
   };
 
-  // View draft detail (partial responses)
   const handleViewDraftDetail = (draft: any) => {
-    // Parse template items
     const templateItems = draft.template.items;
     let items: any[] = [];
     let groups: any[] | null = null;
@@ -425,15 +285,20 @@ export default function RoutinesPage() {
     setShowDraftDetailDialog(true);
   };
 
-  // Delete a draft
   const handleDeleteDraft = async (draftId: number) => {
-    if (!confirm('¿Eliminar este borrador en progreso?')) return;
+    const ok = await confirm({
+      title: 'Eliminar borrador',
+      description: '¿Eliminar este borrador en progreso?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/production/routines/draft?id=${draftId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         toast.success('Borrador eliminado');
-        fetchDrafts();
+        invalidateDrafts();
       } else {
         toast.error(data.error || 'Error al eliminar');
       }
@@ -443,30 +308,28 @@ export default function RoutinesPage() {
   };
 
   const handleDeleteTemplate = async (id: number) => {
-    if (!confirm('¿Eliminar esta plantilla? Si tiene ejecuciones, solo se desactivará.')) return;
-
+    const ok = await confirm({
+      title: 'Eliminar plantilla',
+      description: '¿Eliminar esta plantilla? Si tiene ejecuciones, solo se desactivará.',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
-      const res = await fetch(`/api/production/routines/templates/${id}`, {
-        method: 'DELETE',
-      });
-
+      const res = await fetch(`/api/production/routines/templates/${id}`, { method: 'DELETE' });
       const data = await res.json();
-
       if (data.success) {
         toast.success(data.message);
-        fetchTemplates();
+        invalidateTemplates();
       } else {
         toast.error(data.error || 'Error al eliminar');
       }
-    } catch (error) {
-      console.error('Error deleting template:', error);
+    } catch {
       toast.error('Error al eliminar');
     }
   };
 
-  // Handle start routine from RoutinePendingCard
   const handleStartFromCard = async (templateId: number) => {
-    // Find the template in loaded list first
     const found = templates.find(t => t.id === templateId);
     if (found) {
       setSelectedTemplate(found);
@@ -474,7 +337,6 @@ export default function RoutinesPage() {
       setShowExecuteDialog(true);
       return;
     }
-    // Otherwise fetch template data
     try {
       const res = await fetch(`/api/production/routines/templates/${templateId}`);
       const data = await res.json();
@@ -490,7 +352,6 @@ export default function RoutinesPage() {
     }
   };
 
-  // Handle continue from RoutinePendingCard
   const handleContinueFromCard = async (draftId: number) => {
     try {
       const res = await fetch(`/api/production/routines/${draftId}`);
@@ -512,8 +373,23 @@ export default function RoutinesPage() {
     }
   };
 
+  const handleRefresh = () => {
+    if (activeTab === 'my-routines') invalidateMyRoutines();
+    else if (activeTab === 'executions') { invalidateExecutions(); invalidateDrafts(); }
+    else invalidateTemplates();
+  };
+
+  const handleExecutionSuccess = () => {
+    setShowExecuteDialog(false);
+    setSelectedTemplate(null);
+    setDraftToResume(null);
+    invalidateExecutions();
+    invalidateDrafts();
+    invalidateMyRoutines();
+  };
+
   const getTypeInfo = (type: string) => {
-    return ROUTINE_TYPES.find(t => t.value === type) || { value: type, label: type, color: 'bg-gray-500' };
+    return ROUTINE_TYPES.find(t => t.value === type) || { value: type, label: type, color: 'bg-muted-foreground' };
   };
 
   return (
@@ -531,14 +407,10 @@ export default function RoutinesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              if (activeTab === 'my-routines') fetchMyRoutines();
-              else if (activeTab === 'executions') { fetchExecutions(); fetchDrafts(); }
-              else fetchTemplates();
-            }}
-            disabled={loading || loadingMyRoutines}
+            onClick={handleRefresh}
+            disabled={isLoading}
           >
-            <RefreshCw className={cn('h-4 w-4 mr-2', (loading || loadingMyRoutines) && 'animate-spin')} />
+            <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
             Actualizar
           </Button>
           {canExecute && (
@@ -559,10 +431,10 @@ export default function RoutinesPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: CheckSquare, label: 'Ejecuciones', value: executionStats.totalExecutions, color: '#6366f1' },
-          { icon: CheckCircle2, label: 'Sin Problemas', value: executionStats.withoutIssues, color: '#10b981' },
-          { icon: AlertTriangle, label: 'Con Problemas', value: executionStats.withIssues, color: '#ef4444' },
-          { icon: ClipboardList, label: 'Plantillas', value: templates.length, color: '#8b5cf6' },
+          { icon: CheckSquare, label: 'Ejecuciones', value: executionStats.totalExecutions, color: DEFAULT_COLORS.chart1 },
+          { icon: CheckCircle2, label: 'Sin Problemas', value: executionStats.withoutIssues, color: DEFAULT_COLORS.kpiPositive },
+          { icon: AlertTriangle, label: 'Con Problemas', value: executionStats.withIssues, color: DEFAULT_COLORS.kpiNegative },
+          { icon: ClipboardList, label: 'Plantillas', value: templates.length, color: DEFAULT_COLORS.chart2 },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
@@ -610,8 +482,8 @@ export default function RoutinesPage() {
             {!currentSector ? (
               <Card>
                 <CardContent className="p-10 text-center">
-                  <div className="h-14 w-14 mx-auto mb-4 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <AlertTriangle className="h-7 w-7 text-amber-500" />
+                  <div className="h-14 w-14 mx-auto mb-4 rounded-full bg-warning-muted flex items-center justify-center">
+                    <AlertTriangle className="h-7 w-7 text-warning-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-medium mb-1">Sin sector seleccionado</h3>
                   <p className="text-sm text-muted-foreground">Selecciona un sector en el panel lateral para ver tus rutinas del día</p>
@@ -630,8 +502,8 @@ export default function RoutinesPage() {
             ) : myRoutines.length === 0 ? (
               <Card>
                 <CardContent className="p-10 text-center">
-                  <div className="h-14 w-14 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <CheckCircle2 className="h-7 w-7 text-green-500" />
+                  <div className="h-14 w-14 mx-auto mb-4 rounded-full bg-success-muted flex items-center justify-center">
+                    <CheckCircle2 className="h-7 w-7 text-success" />
                   </div>
                   <h3 className="text-lg font-medium mb-1">No hay rutinas asignadas</h3>
                   <p className="text-sm text-muted-foreground">No hay plantillas activas para este sector</p>
@@ -646,7 +518,7 @@ export default function RoutinesPage() {
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium">Mi progreso hoy</span>
                         {myRoutinesSummary.completed === myRoutinesSummary.total && myRoutinesSummary.total > 0 && (
-                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0 text-xs">
+                          <Badge className="bg-success-muted text-success border-0 text-xs">
                             Todo completado
                           </Badge>
                         )}
@@ -655,7 +527,7 @@ export default function RoutinesPage() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
-                        onClick={fetchMyRoutines}
+                        onClick={invalidateMyRoutines}
                         disabled={loadingMyRoutines}
                       >
                         <RefreshCw className={cn('h-4 w-4', loadingMyRoutines && 'animate-spin')} />
@@ -667,13 +539,13 @@ export default function RoutinesPage() {
                       <div className="h-3 w-full rounded-full overflow-hidden flex bg-muted">
                         {myRoutinesSummary.completed > 0 && (
                           <div
-                            className="h-full bg-green-500 transition-all"
+                            className="h-full bg-success transition-all"
                             style={{ width: `${(myRoutinesSummary.completed / myRoutinesSummary.total) * 100}%` }}
                           />
                         )}
                         {myRoutinesSummary.inProgress > 0 && (
                           <div
-                            className="h-full bg-amber-400 transition-all"
+                            className="h-full bg-warning transition-all"
                             style={{ width: `${(myRoutinesSummary.inProgress / myRoutinesSummary.total) * 100}%` }}
                           />
                         )}
@@ -681,12 +553,12 @@ export default function RoutinesPage() {
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-4">
                           <span className="flex items-center gap-1.5">
-                            <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                            <div className="h-2.5 w-2.5 rounded-full bg-success" />
                             {myRoutinesSummary.completed} completadas
                           </span>
                           {myRoutinesSummary.inProgress > 0 && (
                             <span className="flex items-center gap-1.5">
-                              <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                              <div className="h-2.5 w-2.5 rounded-full bg-warning" />
                               {myRoutinesSummary.inProgress} en progreso
                             </span>
                           )}
@@ -725,16 +597,16 @@ export default function RoutinesPage() {
         <TabsContent value="executions" className="space-y-4">
           {/* In-Progress Routines (Drafts) - Only for managers */}
           {canManage && drafts.length > 0 && (
-            <Card className="border-amber-300/50 dark:border-amber-700/50" style={{ backgroundColor: 'rgba(245, 158, 11, 0.04)' }}>
+            <Card className="border-warning-muted/50" style={{ backgroundColor: `${DEFAULT_COLORS.chart4}08` }}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                      <Clock className="h-4 w-4 text-amber-600" />
+                    <div className="h-8 w-8 rounded-full bg-warning-muted flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-warning-muted-foreground" />
                     </div>
                     Rutinas en Progreso
                   </CardTitle>
-                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0">
+                  <Badge className="bg-warning-muted text-warning-muted-foreground border-0">
                     {drafts.length} activa{drafts.length !== 1 ? 's' : ''}
                   </Badge>
                 </div>
@@ -746,14 +618,14 @@ export default function RoutinesPage() {
                     const minutesSinceStarted = draft.minutesSinceStarted || 0;
                     const minutesSinceLastActivity = draft.minutesSinceLastActivity || 0;
                     const maxMinutes = draft.template?.maxCompletionTimeMinutes || 60;
-                    const progressColor = isOverdue ? '#ef4444' : '#f59e0b';
+                    const progressColor = isOverdue ? DEFAULT_COLORS.kpiNegative : DEFAULT_COLORS.chart4;
 
                     return (
                       <div
                         key={draft.id}
                         className={cn(
                           'flex items-center justify-between p-3 rounded-xl border bg-background transition-colors',
-                          isOverdue && 'border-red-300 dark:border-red-800'
+                          isOverdue && 'border-destructive/30'
                         )}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -783,12 +655,12 @@ export default function RoutinesPage() {
                               {draft.executedBy.name} · {draft.progress.completed}/{draft.progress.total} items
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className={cn('text-xs', isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground')}>
+                              <span className={cn('text-xs', isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground')}>
                                 {minutesSinceStarted} min
                                 {isOverdue && ` (excede ${maxMinutes})`}
                               </span>
                               {minutesSinceLastActivity > 5 && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-600 border-amber-300">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-warning-muted-foreground border-warning-muted">
                                   Inactivo {minutesSinceLastActivity}m
                                 </Badge>
                               )}
@@ -808,7 +680,7 @@ export default function RoutinesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                            className="h-8 w-8 p-0 text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
                             onClick={() => handleSendReminder(draft)}
                             title="Enviar recordatorio Discord"
                           >
@@ -817,7 +689,7 @@ export default function RoutinesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            className="h-8 w-8 p-0 text-info-muted-foreground hover:text-info-muted-foreground hover:bg-info-muted"
                             onClick={() => handleResumeDraft(draft)}
                             title="Continuar esta rutina"
                           >
@@ -826,7 +698,7 @@ export default function RoutinesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteDraft(draft.id)}
                             title="Eliminar borrador"
                           >
@@ -852,7 +724,7 @@ export default function RoutinesPage() {
                     onChange={(e) => setDateFrom(e.target.value)}
                     className="w-[140px]"
                   />
-                  <span className="self-center text-gray-400">a</span>
+                  <span className="self-center text-muted-foreground">a</span>
                   <Input
                     type="date"
                     value={dateTo}
@@ -891,18 +763,18 @@ export default function RoutinesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading ? (
+                  {loadingExecutions ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-                        <p className="mt-2 text-gray-500">Cargando ejecuciones...</p>
+                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                        <p className="mt-2 text-muted-foreground">Cargando ejecuciones...</p>
                       </TableCell>
                     </TableRow>
                   ) : executions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
-                        <CheckSquare className="h-8 w-8 mx-auto text-gray-400" />
-                        <p className="mt-2 text-gray-500">No hay ejecuciones registradas</p>
+                        <CheckSquare className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="mt-2 text-muted-foreground">No hay ejecuciones registradas</p>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -912,11 +784,11 @@ export default function RoutinesPage() {
                         <TableRow key={execution.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">
-                                {format(new Date(execution.executedAt), 'dd/MM HH:mm', { locale: es })}
+                              <div className="font-medium capitalize">
+                                {format(new Date(execution.executedAt), "EEEE d 'de' MMMM", { locale: es })}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {format(new Date(execution.date), 'dd MMM yyyy', { locale: es })}
+                              <div className="text-xs text-muted-foreground">
+                                {format(new Date(execution.executedAt), 'HH:mm', { locale: es })} hs · {format(new Date(execution.executedAt), 'yyyy')}
                               </div>
                             </div>
                           </TableCell>
@@ -945,7 +817,7 @@ export default function RoutinesPage() {
                                 Con problemas
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="flex items-center gap-1 w-fit text-green-600">
+                              <Badge variant="secondary" className="flex items-center gap-1 w-fit text-success">
                                 <CheckCircle2 className="h-3 w-3" />
                                 OK
                               </Badge>
@@ -974,7 +846,7 @@ export default function RoutinesPage() {
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-red-500"
+                                      className="text-destructive"
                                       onClick={() => handleDeleteExecution(execution.id)}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
@@ -995,23 +867,23 @@ export default function RoutinesPage() {
               {/* Pagination */}
               {executionPagination.totalPages > 1 && (
                 <div className="flex items-center justify-between p-4 border-t">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Página {executionPagination.page} de {executionPagination.totalPages}
                   </p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={executionPagination.page === 1}
-                      onClick={() => setExecutionPagination(p => ({ ...p, page: p.page - 1 }))}
+                      disabled={execPage === 1}
+                      onClick={() => setExecPage(p => p - 1)}
                     >
                       Anterior
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={executionPagination.page === executionPagination.totalPages}
-                      onClick={() => setExecutionPagination(p => ({ ...p, page: p.page + 1 }))}
+                      disabled={execPage === executionPagination.totalPages}
+                      onClick={() => setExecPage(p => p + 1)}
                     >
                       Siguiente
                     </Button>
@@ -1040,18 +912,18 @@ export default function RoutinesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading ? (
+                  {loadingTemplates ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-                        <p className="mt-2 text-gray-500">Cargando plantillas...</p>
+                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                        <p className="mt-2 text-muted-foreground">Cargando plantillas...</p>
                       </TableCell>
                     </TableRow>
                   ) : templates.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8">
-                        <ClipboardList className="h-8 w-8 mx-auto text-gray-400" />
-                        <p className="mt-2 text-gray-500">No hay plantillas configuradas</p>
+                        <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="mt-2 text-muted-foreground">No hay plantillas configuradas</p>
                         {canManage && (
                           <Button
                             variant="outline"
@@ -1096,21 +968,21 @@ export default function RoutinesPage() {
                           </TableCell>
                           <TableCell>
                             {template.isActive ? (
-                              <Badge variant="secondary" className="text-green-600">Activa</Badge>
+                              <Badge variant="secondary" className="text-success">Activa</Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-gray-400">Inactiva</Badge>
+                              <Badge variant="secondary" className="text-muted-foreground">Inactiva</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              {/* Direct execute button - visible */}
                               {canExecute && template.isActive && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  className="text-success hover:text-success hover:bg-success-muted"
                                   onClick={() => {
                                     setSelectedTemplate(template);
+                                    setDraftToResume(null);
                                     setShowExecuteDialog(true);
                                   }}
                                   title="Ejecutar rutina"
@@ -1129,10 +1001,11 @@ export default function RoutinesPage() {
                                   <DropdownMenuItem
                                     onClick={() => {
                                       setSelectedTemplate(template);
+                                      setDraftToResume(null);
                                       setShowExecuteDialog(true);
                                     }}
                                   >
-                                    <Play className="h-4 w-4 mr-2 text-green-500" />
+                                    <Play className="h-4 w-4 mr-2 text-success" />
                                     Ejecutar
                                   </DropdownMenuItem>
                                 )}
@@ -1150,7 +1023,7 @@ export default function RoutinesPage() {
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-red-500"
+                                      className="text-destructive"
                                       onClick={() => handleDeleteTemplate(template.id)}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
@@ -1172,23 +1045,23 @@ export default function RoutinesPage() {
               {/* Pagination */}
               {templatePagination.totalPages > 1 && (
                 <div className="flex items-center justify-between p-4 border-t">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Página {templatePagination.page} de {templatePagination.totalPages}
                   </p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={templatePagination.page === 1}
-                      onClick={() => setTemplatePagination(p => ({ ...p, page: p.page - 1 }))}
+                      disabled={tmplPage === 1}
+                      onClick={() => setTmplPage(p => p - 1)}
                     >
                       Anterior
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={templatePagination.page === templatePagination.totalPages}
-                      onClick={() => setTemplatePagination(p => ({ ...p, page: p.page + 1 }))}
+                      disabled={tmplPage === templatePagination.totalPages}
+                      onClick={() => setTmplPage(p => p + 1)}
                     >
                       Siguiente
                     </Button>
@@ -1208,7 +1081,7 @@ export default function RoutinesPage() {
           setDraftToResume(null);
         }
       }}>
-        <DialogContent className="!max-w-5xl w-[98vw] h-[95vh] flex flex-col p-0">
+        <DialogContent className="!max-w-5xl w-[98vw] h-[95dvh] !max-h-[95dvh] flex flex-col p-0">
           <DialogHeader className="px-6 py-3 border-b flex-shrink-0">
             <DialogTitle>
               {draftToResume ? 'Continuar Rutina' : 'Ejecutar Rutina'}
@@ -1221,18 +1094,11 @@ export default function RoutinesPage() {
                   : 'Seleccione una rutina para ejecutar'}
             </DialogDescription>
           </DialogHeader>
-          <div className="px-4 py-3 flex-1 overflow-hidden flex flex-col min-h-0">
+          <div className="px-2 py-2 flex-1 overflow-hidden flex flex-col min-h-0">
             <NewRoutineExecutionForm
               preselectedTemplate={selectedTemplate}
               draftToResume={draftToResume}
-              onSuccess={() => {
-                setShowExecuteDialog(false);
-                setSelectedTemplate(null);
-                setDraftToResume(null);
-                fetchExecutions();
-                fetchDrafts();
-                fetchMyRoutines();
-              }}
+              onSuccess={handleExecutionSuccess}
               onCancel={() => {
                 setShowExecuteDialog(false);
                 setSelectedTemplate(null);
@@ -1266,7 +1132,7 @@ export default function RoutinesPage() {
               onSuccess={() => {
                 setShowNewTemplateDialog(false);
                 setSelectedTemplate(null);
-                fetchTemplates();
+                invalidateTemplates();
               }}
               onCancel={() => {
                 setShowNewTemplateDialog(false);
@@ -1285,8 +1151,8 @@ export default function RoutinesPage() {
         <DialogContent className="!max-w-3xl w-[95vw] h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Clock className="h-4 w-4 text-amber-600" />
+              <div className="h-8 w-8 rounded-full bg-warning-muted flex items-center justify-center">
+                <Clock className="h-4 w-4 text-warning-muted-foreground" />
               </div>
               <span>Respuestas Parciales</span>
             </DialogTitle>
@@ -1311,7 +1177,7 @@ export default function RoutinesPage() {
                       <span className="text-sm font-medium">Progreso general</span>
                       <span className={cn(
                         'text-sm font-bold',
-                        selectedDraftDetail.isOverdue ? 'text-red-600' : 'text-amber-600'
+                        selectedDraftDetail.isOverdue ? 'text-destructive' : 'text-warning-muted-foreground'
                       )}>
                         {selectedDraftDetail.progress.percentage}%
                       </span>
@@ -1320,7 +1186,7 @@ export default function RoutinesPage() {
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
-                          backgroundColor: selectedDraftDetail.isOverdue ? '#ef4444' : '#f59e0b',
+                          backgroundColor: selectedDraftDetail.isOverdue ? DEFAULT_COLORS.kpiNegative : DEFAULT_COLORS.chart4,
                           width: `${selectedDraftDetail.progress.percentage}%`,
                         }}
                       />
@@ -1329,8 +1195,8 @@ export default function RoutinesPage() {
 
                   {/* Status summary cards */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-center">
-                      <p className="text-2xl font-bold text-green-600">{selectedDraftDetail.progress.completed}</p>
+                    <div className="p-4 rounded-xl bg-success-muted border border-success-muted text-center">
+                      <p className="text-2xl font-bold text-success">{selectedDraftDetail.progress.completed}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Completados</p>
                     </div>
                     <div className="p-4 rounded-xl bg-muted/50 border text-center">
@@ -1342,12 +1208,12 @@ export default function RoutinesPage() {
                     <div className={cn(
                       'p-4 rounded-xl border text-center',
                       selectedDraftDetail.isOverdue
-                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                        : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                        ? 'bg-destructive/10 border-destructive/30'
+                        : 'bg-warning-muted border-warning-muted'
                     )}>
                       <p className={cn(
                         'text-2xl font-bold',
-                        selectedDraftDetail.isOverdue ? 'text-red-600' : 'text-amber-600'
+                        selectedDraftDetail.isOverdue ? 'text-destructive' : 'text-warning-muted-foreground'
                       )}>
                         {selectedDraftDetail.minutesSinceStarted}
                       </p>
@@ -1431,23 +1297,23 @@ export default function RoutinesPage() {
                   <div className={cn(
                     'p-4 rounded-xl border flex items-start gap-3',
                     selectedExecutionDetail.hasIssues
-                      ? 'border-red-200 bg-red-50/80 dark:bg-red-950/30 dark:border-red-800'
-                      : 'border-green-200 bg-green-50/80 dark:bg-green-950/30 dark:border-green-800'
+                      ? 'border-destructive/30 bg-destructive/10/80'
+                      : 'border-success-muted bg-success-muted/80'
                   )}>
                     <div className={cn(
                       'h-9 w-9 rounded-full flex items-center justify-center shrink-0',
-                      selectedExecutionDetail.hasIssues ? 'bg-red-100 dark:bg-red-900/40' : 'bg-green-100 dark:bg-green-900/40'
+                      selectedExecutionDetail.hasIssues ? 'bg-destructive/10' : 'bg-success-muted'
                     )}>
                       {selectedExecutionDetail.hasIssues ? (
-                        <AlertTriangle className="h-4.5 w-4.5 text-red-600" />
+                        <AlertTriangle className="h-4.5 w-4.5 text-destructive" />
                       ) : (
-                        <CheckCircle2 className="h-4.5 w-4.5 text-green-600" />
+                        <CheckCircle2 className="h-4.5 w-4.5 text-success" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={cn(
                         'font-semibold text-sm',
-                        selectedExecutionDetail.hasIssues ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'
+                        selectedExecutionDetail.hasIssues ? 'text-destructive' : 'text-success'
                       )}>
                         {selectedExecutionDetail.hasIssues ? 'Se reportaron problemas' : 'Completada sin problemas'}
                       </p>
@@ -1533,7 +1399,6 @@ export default function RoutinesPage() {
   );
 }
 
-// Helper component for rendering execution item responses
 function ExecutionItemRow({ item, response }: { item: any; response: any }) {
   const hasValue = response?.inputs?.some(
     (inp: any) => inp.value !== null && inp.value !== '' && inp.value !== undefined
@@ -1553,10 +1418,10 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className={cn(
             'h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5',
-            hasValue ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'
+            hasValue ? 'bg-success-muted' : 'bg-muted'
           )}>
             {hasValue ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             ) : (
               <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
             )}
@@ -1564,7 +1429,6 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm">{item.description || item.label}</p>
 
-            {/* Multiple inputs */}
             {item.inputs && Array.isArray(item.inputs) && item.inputs.length > 0 && (
               <div className="mt-2 space-y-1.5">
                 {item.inputs.map((input: any) => {
@@ -1579,7 +1443,7 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
                             ? (inputResponse.value === true || inputResponse.value === 'true' ? '✓ Sí' : '✗ No')
                             : input.type === 'PHOTO'
                               ? (
-                                  <a href={inputResponse.value} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline inline-flex items-center gap-1">
+                                  <a href={inputResponse.value} target="_blank" rel="noopener noreferrer" className="text-info-muted-foreground underline inline-flex items-center gap-1">
                                     <Image className="h-3 w-3" />
                                     Ver foto
                                   </a>
@@ -1597,19 +1461,18 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
           </div>
         </div>
 
-        {/* Single value for old format */}
         {!item.inputs && (
           <div className="text-right shrink-0">
             {item.type === 'CHECK' ? (
               value === true || value === 'true' ? (
-                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-0">✓ Sí</Badge>
+                <Badge className="bg-success-muted text-success border-0">✓ Sí</Badge>
               ) : value === false || value === 'false' ? (
-                <Badge className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border-0">✗ No</Badge>
+                <Badge className="bg-destructive/10 text-destructive border-0">✗ No</Badge>
               ) : (
                 <span className="text-xs text-muted-foreground">–</span>
               )
             ) : item.type === 'PHOTO' && value ? (
-              <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline inline-flex items-center gap-1 text-xs">
+              <a href={value} target="_blank" rel="noopener noreferrer" className="text-info-muted-foreground underline inline-flex items-center gap-1 text-xs">
                 <Image className="h-3.5 w-3.5" />
                 Ver foto
               </a>
@@ -1626,7 +1489,7 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
       </div>
 
       {response?.notes && (
-        <div className="mt-2 ml-9 text-xs text-muted-foreground bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-lg">
+        <div className="mt-2 ml-9 text-xs text-muted-foreground bg-warning-muted border border-warning-muted px-3 py-1.5 rounded-lg">
           <span className="font-medium">Nota:</span> {response.notes}
         </div>
       )}
@@ -1634,21 +1497,20 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
   );
 }
 
-// Helper component for rendering draft items with completed/pending status
 function DraftItemRow({ item, response }: { item: any; response: any }) {
   const hasResponse = response?.inputs?.some(
     (inp: any) => inp.value !== null && inp.value !== '' && inp.value !== undefined
   );
 
   return (
-    <div className={cn('px-4 py-3 transition-colors', hasResponse ? 'bg-green-50/30 dark:bg-green-900/10' : 'bg-background')}>
+    <div className={cn('px-4 py-3 transition-colors', hasResponse ? 'bg-success-muted/30' : 'bg-background')}>
       <div className="flex items-start gap-3">
         <div className={cn(
           'h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5',
-          hasResponse ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'
+          hasResponse ? 'bg-success-muted' : 'bg-muted'
         )}>
           {hasResponse ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
           ) : (
             <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
           )}
@@ -1662,7 +1524,7 @@ function DraftItemRow({ item, response }: { item: any; response: any }) {
             <span className={cn(
               'text-[10px] font-medium uppercase tracking-wider shrink-0 px-2 py-0.5 rounded-full',
               hasResponse
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                ? 'bg-success-muted text-success'
                 : 'bg-muted text-muted-foreground'
             )}>
               {hasResponse ? 'Listo' : 'Pendiente'}
@@ -1678,7 +1540,7 @@ function DraftItemRow({ item, response }: { item: any; response: any }) {
                   <div key={input.id} className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">{input.label}:</span>
                     {hasValue ? (
-                      <span className="font-medium text-green-700 dark:text-green-400">
+                      <span className="font-medium text-success">
                         {input.type === 'CHECK'
                           ? (inputResponse.value === true || inputResponse.value === 'true' ? 'Sí' : 'No')
                           : `${inputResponse.value}${input.unit ? ` ${input.unit}` : ''}`}
@@ -1693,7 +1555,7 @@ function DraftItemRow({ item, response }: { item: any; response: any }) {
           )}
 
           {response?.notes && (
-            <p className="text-xs text-muted-foreground mt-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-lg">
+            <p className="text-xs text-muted-foreground mt-1.5 bg-warning-muted border border-warning-muted px-2.5 py-1 rounded-lg">
               <span className="font-medium">Nota:</span> {response.notes}
             </p>
           )}

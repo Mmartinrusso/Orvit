@@ -101,7 +101,7 @@ export default function CondicionesPagoPage() {
             <Card key={condicion.id}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                  <Calendar className="w-5 h-5 text-info-muted-foreground" />
                   {condicion.nombre}
                 </CardTitle>
               </CardHeader>

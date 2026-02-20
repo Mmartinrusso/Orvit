@@ -211,6 +211,7 @@ async function getComponents(machineId: number) {
   allComponents.forEach(c => {
     componentsMap.set(c.id, {
       id: c.id,
+      machineId: machineId, // necesario para contexto en ComponentDetailsModal
       name: c.name,
       code: c.code,
       itemNumber: c.itemNumber, // Posición en el plano de despiece

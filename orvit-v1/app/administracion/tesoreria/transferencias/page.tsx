@@ -490,7 +490,7 @@ export default function TransferenciasPage() {
                     {isExtendedMode && (
                       <TableCell>
                         {transfer.docType === 'T2' ? (
-                          <Badge variant="outline" className="text-orange-600 border-orange-600">T2</Badge>
+                          <Badge variant="outline" className="text-warning-muted-foreground border-warning-muted">T2</Badge>
                         ) : (
                           <Badge variant="outline">T1</Badge>
                         )}

@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -206,20 +207,20 @@ export function FMEAList({ companyId, machines }: FMEAListProps) {
           {/* Summary */}
           {summary && (
             <div className="grid grid-cols-4 gap-2 mt-4">
-              <div className="p-3 rounded-lg bg-gray-50 text-center">
+              <div className="p-3 rounded-lg bg-muted text-center">
                 <p className="text-2xl font-bold">{summary.total}</p>
                 <p className="text-xs text-muted-foreground">Total</p>
               </div>
-              <div className="p-3 rounded-lg bg-red-50 text-center">
-                <p className="text-2xl font-bold text-red-600">{summary.highRisk}</p>
+              <div className="p-3 rounded-lg bg-destructive/10 text-center">
+                <p className="text-2xl font-bold text-destructive">{summary.highRisk}</p>
                 <p className="text-xs text-muted-foreground">Alto Riesgo</p>
               </div>
-              <div className="p-3 rounded-lg bg-amber-50 text-center">
-                <p className="text-2xl font-bold text-amber-600">{summary.mediumRisk}</p>
+              <div className="p-3 rounded-lg bg-warning-muted text-center">
+                <p className="text-2xl font-bold text-warning-muted-foreground">{summary.mediumRisk}</p>
                 <p className="text-xs text-muted-foreground">Riesgo Medio</p>
               </div>
-              <div className="p-3 rounded-lg bg-green-50 text-center">
-                <p className="text-2xl font-bold text-green-600">{summary.lowRisk}</p>
+              <div className="p-3 rounded-lg bg-success-muted text-center">
+                <p className="text-2xl font-bold text-success">{summary.lowRisk}</p>
                 <p className="text-xs text-muted-foreground">Bajo Riesgo</p>
               </div>
             </div>
@@ -323,7 +324,7 @@ export function FMEAList({ companyId, machines }: FMEAListProps) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setDeletingItem(fm)}
-                            className="text-red-600"
+                            className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Eliminar
@@ -349,12 +350,13 @@ export function FMEAList({ companyId, machines }: FMEAListProps) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Editar Análisis FMEA' : 'Nuevo Análisis FMEA'}
             </DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <FMEAForm
             machines={machines}
             initialData={editingItem || undefined}
@@ -371,6 +373,7 @@ export function FMEAList({ companyId, machines }: FMEAListProps) {
             }}
             isLoading={createMutation.isPending || updateMutation.isPending}
           />
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -390,7 +393,7 @@ export function FMEAList({ companyId, machines }: FMEAListProps) {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingItem && deleteMutation.mutate(deletingItem.id)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Eliminar
             </AlertDialogAction>

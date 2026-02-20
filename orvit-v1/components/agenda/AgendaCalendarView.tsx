@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
 import { useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -10,17 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { UnifiedTask } from '@/types/unified-task';
 import { isUnifiedTaskOverdue } from '@/types/unified-task';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
 
 interface AgendaCalendarViewProps {
   tasks: UnifiedTask[];
@@ -29,7 +20,7 @@ interface AgendaCalendarViewProps {
 
 export function AgendaCalendarView({ tasks, onSelect }: AgendaCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   // Convertir tareas unificadas a eventos de FullCalendar
   const calendarEvents = useMemo(() => {

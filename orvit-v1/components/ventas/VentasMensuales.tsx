@@ -2,22 +2,24 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 const logError = DEBUG ? console.error.bind(console) : () => {};
 
 import React, { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogBody, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/contexts/CompanyContext';
 import { DollarSign, Plus, Edit, TrendingUp, AlertTriangle, CheckCircle, Upload, Download, FileSpreadsheet, Trash2, BookOpen } from 'lucide-react';
 import { NotesDialog } from '@/components/ui/NotesDialog';
 import { useAdminCatalogs } from '@/hooks/use-admin-catalogs'; // ✨ OPTIMIZACIÓN
+import { toast } from 'sonner';
 
 interface SaleRecord {
   id: number;
@@ -382,13 +384,13 @@ export default function VentasMensuales() {
     if (file && file.type === 'text/csv') {
       setUploadFile(file);
     } else {
-      alert('Por favor seleccione un archivo CSV válido');
+      toast.warning('Por favor seleccione un archivo CSV válido');
     }
   };
 
   const handleBulkUpload = async () => {
     if (!uploadFile || !currentCompany) {
-      alert('Seleccione un archivo primero.');
+      toast.warning('Seleccione un archivo primero.');
       return;
     }
 
@@ -429,19 +431,19 @@ export default function VentasMensuales() {
       setUploadResults(result);
 
       if (result.success && result.summary.success > 0) {
-        alert(`✅ Éxito: ${result.summary.success} registros procesados`);
+        toast.success(`${result.summary.success} registros procesados`);
         await loadSaleRecords();
         setShowBulkUploadDialog(false);
         setUploadFile(null);
         setUploadResults(null);
       } else if (result.errors && result.errors.length > 0) {
-        alert(`⚠️ Errores encontrados: ${result.errors.length}. Revise la consola para detalles.`);
+        toast.warning(`Errores encontrados: ${result.errors.length}. Revise la consola para detalles.`);
         console.warn('Errores:', result.errors.slice(0, 5));
       }
       
     } catch (error: any) {
       console.error('❌ Error:', error);
-      alert(`❌ Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
       setUploadResults({
         success: false,
         error: error.message
@@ -453,7 +455,7 @@ export default function VentasMensuales() {
 
   const downloadTemplate = () => {
     if (products.length === 0) {
-      alert('No hay productos disponibles. Cargue productos primero.');
+      toast.warning('No hay productos disponibles. Cargue productos primero.');
       return;
     }
     
@@ -498,17 +500,17 @@ export default function VentasMensuales() {
       );
 
       if (response.ok) {
-        alert('Venta eliminada exitosamente');
+        toast.success('Venta eliminada exitosamente');
         await loadSaleRecords(); // Recargar la lista
         setShowDeleteDialog(false);
         setRecordToDelete(null);
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
     } catch (error) {
       console.error('Error eliminando venta:', error);
-      alert('Error al eliminar la venta');
+      toast.error('Error al eliminar la venta');
     } finally {
       setDeleting(false);
     }
@@ -536,7 +538,7 @@ export default function VentasMensuales() {
             onClick={() => setShowNotesDialog(true)}
             variant="outline"
             size="sm"
-            className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+            className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
           >
             <BookOpen className="h-4 w-4 mr-2" />
             Notas
@@ -678,10 +680,10 @@ export default function VentasMensuales() {
       <div className="space-y-4">
         {saleRecords.map((record) => (
           <Card key={record.id} className="overflow-hidden">
-            <CardHeader className="bg-gray-50">
+            <CardHeader className="bg-muted">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                  <DollarSign className="h-5 w-5 text-success" />
                   <div>
                     <CardTitle className="text-lg">{record.product_name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -707,27 +709,27 @@ export default function VentasMensuales() {
                   <h4 className="font-semibold">Estadísticas de Ventas</h4>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 border rounded-lg bg-blue-50">
-                      <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-center p-3 border rounded-lg bg-info-muted">
+                      <div className="text-2xl font-bold text-info-muted-foreground">
                         {formatNumber(record.units_sold)}
                       </div>
-                      <div className="text-sm text-blue-700">Unidades Vendidas</div>
+                      <div className="text-sm text-info-muted-foreground">Unidades Vendidas</div>
                     </div>
-                    
-                    <div className="text-center p-3 border rounded-lg bg-green-50">
-                      <div className="text-2xl font-bold text-green-600">
+
+                    <div className="text-center p-3 border rounded-lg bg-success-muted">
+                      <div className="text-2xl font-bold text-success">
                         {formatCurrency(record.unit_price)}
                       </div>
-                      <div className="text-sm text-green-700">Precio Unitario</div>
+                      <div className="text-sm text-success">Precio Unitario</div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 border rounded-lg bg-yellow-50">
-                      <div className="text-2xl font-bold text-yellow-600">
+                    <div className="text-center p-3 border rounded-lg bg-warning-muted">
+                      <div className="text-2xl font-bold text-warning-muted-foreground">
                         {formatCurrency(record.total_revenue)}
                       </div>
-                      <div className="text-sm text-yellow-700">Ingresos Totales</div>
+                      <div className="text-sm text-warning-muted-foreground">Ingresos Totales</div>
                     </div>
                     
                     <div className="text-center p-3 border rounded-lg bg-purple-50">
@@ -740,11 +742,11 @@ export default function VentasMensuales() {
 
                   {/* Descuento */}
                   {record.discount_percentage > 0 && (
-                    <div className="text-center p-3 border rounded-lg bg-red-50">
-                      <div className="text-lg font-bold text-red-600">
+                    <div className="text-center p-3 border rounded-lg bg-destructive/10">
+                      <div className="text-lg font-bold text-destructive">
                         {record.discount_percentage}%
                       </div>
-                      <div className="text-sm text-red-700">Descuento ({formatCurrency(record.discount_amount)})</div>
+                      <div className="text-sm text-destructive">Descuento ({formatCurrency(record.discount_amount)})</div>
                     </div>
                   )}
                 </div>
@@ -753,11 +755,11 @@ export default function VentasMensuales() {
                 <div className="space-y-4">
                   <h4 className="font-semibold">Observaciones</h4>
                   {record.observations ? (
-                    <div className="p-3 border rounded-lg bg-gray-50">
+                    <div className="p-3 border rounded-lg bg-muted">
                       <p className="text-sm">{record.observations}</p>
                     </div>
                   ) : (
-                    <div className="p-3 border rounded-lg bg-gray-50">
+                    <div className="p-3 border rounded-lg bg-muted">
                       <p className="text-sm text-muted-foreground">Sin observaciones</p>
                     </div>
                   )}
@@ -933,7 +935,7 @@ export default function VentasMensuales() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             {!uploadResults && (
               <>
                 <div>
@@ -946,18 +948,18 @@ export default function VentasMensuales() {
                     className="mt-1"
                   />
                   {uploadFile && (
-                    <p className="text-sm text-green-600 mt-1">
+                    <p className="text-sm text-success mt-1">
                       ✓ Archivo seleccionado: {uploadFile.name}
                     </p>
                   )}
                 </div>
 
-                <div className="bg-blue-50 p-3 rounded-md">
+                <div className="bg-info-muted p-3 rounded-md">
                   <div className="flex items-start space-x-2">
-                    <FileSpreadsheet className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <FileSpreadsheet className="h-4 w-4 text-info-muted-foreground mt-0.5" />
                     <div className="text-sm">
-                      <p className="font-medium text-blue-900">Formato del archivo CSV:</p>
-                      <ul className="text-blue-700 mt-1 space-y-1">
+                      <p className="font-medium text-foreground">Formato del archivo CSV:</p>
+                      <ul className="text-info-muted-foreground mt-1 space-y-1">
                         <li>• <strong>nombre_producto</strong>: Nombre exacto del producto</li>
                         <li>• <strong>mes</strong>: Formato YYYY-MM (ej: 2024-01)</li>
                         <li>• <strong>unidades_vendidas</strong>: Número entero (ej: 100)</li>
@@ -965,7 +967,7 @@ export default function VentasMensuales() {
                         <li>• <strong>descuento_porcentaje</strong>: Porcentaje (ej: 5.0)</li>
                         <li>• <strong>observaciones</strong>: Texto opcional</li>
                       </ul>
-                      <p className="text-blue-600 text-xs mt-2">
+                      <p className="text-info-muted-foreground text-xs mt-2">
                         💡 <strong>Tip:</strong> Descarga la plantilla para ver TODOS tus productos con el formato correcto
                       </p>
                     </div>
@@ -976,18 +978,18 @@ export default function VentasMensuales() {
 
             {uploadResults && (
               <div className="space-y-4">
-                <div className={`p-4 rounded-md ${uploadResults.success ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className={cn('p-4 rounded-md', uploadResults.success ? 'bg-success-muted' : 'bg-destructive/10')}>
                   <div className="flex items-center space-x-2">
                     {uploadResults.success ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-success" />
                     ) : (
-                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
                     )}
                     <div>
-                      <p className={`font-medium ${uploadResults.success ? 'text-green-900' : 'text-red-900'}`}>
+                      <p className={cn('font-medium', uploadResults.success ? 'text-success' : 'text-destructive')}>
                         {uploadResults.message}
                       </p>
-                      <p className={`text-sm ${uploadResults.success ? 'text-green-700' : 'text-red-700'}`}>
+                      <p className={cn('text-sm', uploadResults.success ? 'text-success' : 'text-destructive')}>
                         Procesados: {uploadResults.summary?.processed || 0} | 
                         Errores: {uploadResults.summary?.errors || 0}
                       </p>
@@ -996,26 +998,26 @@ export default function VentasMensuales() {
                 </div>
 
                 {uploadResults.errors && uploadResults.errors.length > 0 && (
-                  <div className="bg-red-50 p-3 rounded-md max-h-32 overflow-y-auto">
-                    <p className="text-sm font-medium text-red-900 mb-2">Errores encontrados:</p>
-                    <ul className="text-xs text-red-700 space-y-1">
+                  <div className="bg-destructive/10 p-3 rounded-md max-h-32 overflow-y-auto">
+                    <p className="text-sm font-medium text-destructive mb-2">Errores encontrados:</p>
+                    <ul className="text-xs text-destructive space-y-1">
                       {uploadResults.errors.slice(0, 10).map((error: string, index: number) => (
                         <li key={index}>• {error}</li>
                       ))}
                       {uploadResults.errors.length > 10 && (
-                        <li className="text-red-600">... y {uploadResults.errors.length - 10} errores más</li>
+                        <li className="text-destructive">... y {uploadResults.errors.length - 10} errores más</li>
                       )}
                     </ul>
                   </div>
                 )}
               </div>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
                 setShowBulkUploadDialog(false);
                 setUploadFile(null);
@@ -1050,9 +1052,9 @@ export default function VentasMensuales() {
           </DialogHeader>
           
           {recordToDelete && (
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-muted p-4 rounded-lg">
               <h4 className="font-semibold">{recordToDelete.product_name}</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Mes: {recordToDelete.month} | 
                 Unidades: {formatNumber(recordToDelete.units_sold)} | 
                 Total: {formatCurrency(recordToDelete.total_revenue)}

@@ -407,14 +407,39 @@ export async function DELETE(
       return NextResponse.json({ error: 'Proveedor no encontrado' }, { status: 404 });
     }
 
-    // TODO: Verificar si el proveedor tiene comprobantes/órdenes asociados antes de eliminar
+    // Verificar si el proveedor tiene registros asociados que impidan eliminarlo.
+    // Solo se consultan las tablas que existen en la DB actual; el fallback P2003 cubre el resto.
+    const [facturas, ordenes, recepciones] = await Promise.all([
+      prisma.purchaseReceipt.count({ where: { proveedorId } }),
+      prisma.purchaseOrder.count({ where: { proveedorId } }),
+      prisma.goodsReceipt.count({ where: { proveedorId } }),
+    ]);
+
+    const totalAsociados = facturas + ordenes + recepciones;
+    if (totalAsociados > 0) {
+      const detalle: string[] = [];
+      if (facturas > 0) detalle.push(`${facturas} comprobante${facturas !== 1 ? 's' : ''}`);
+      if (ordenes > 0) detalle.push(`${ordenes} orden${ordenes !== 1 ? 'es' : ''} de compra`);
+      if (recepciones > 0) detalle.push(`${recepciones} recepción${recepciones !== 1 ? 'es' : ''}`);
+      return NextResponse.json(
+        { error: `No se puede eliminar el proveedor porque tiene ${detalle.join(', ')} asociado${detalle.length !== 1 ? 's' : ''}. Desactivelo en su lugar.` },
+        { status: 409 }
+      );
+    }
 
     await prisma.suppliers.delete({
       where: { id: proveedorId },
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    // Fallback: si Prisma lanza P2003 (foreign key) que no hayamos chequeado arriba
+    if (error?.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'No se puede eliminar el proveedor porque tiene documentos asociados. Desactivelo en su lugar.' },
+        { status: 409 }
+      );
+    }
     console.error('Error deleting proveedor:', error);
     return NextResponse.json(
       { error: 'Error al eliminar el proveedor' },
@@ -423,4 +448,43 @@ export async function DELETE(
   }
 }
 
+// PATCH /api/compras/proveedores/[id] - Activar o desactivar proveedor
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getUserFromToken();
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
 
+    const companyId = user.companies?.[0]?.companyId;
+    if (!companyId) {
+      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
+    }
+
+    const { id } = await params;
+    const proveedorId = parseInt(id);
+
+    const proveedor = await prisma.suppliers.findFirst({
+      where: { id: proveedorId, company_id: companyId },
+      select: { id: true, isBlocked: true },
+    });
+
+    if (!proveedor) {
+      return NextResponse.json({ error: 'Proveedor no encontrado' }, { status: 404 });
+    }
+
+    const updated = await prisma.suppliers.update({
+      where: { id: proveedorId },
+      data: { isBlocked: !proveedor.isBlocked },
+      select: { id: true, isBlocked: true },
+    });
+
+    return NextResponse.json({ success: true, isBlocked: updated.isBlocked });
+  } catch (error) {
+    console.error('Error toggling proveedor:', error);
+    return NextResponse.json({ error: 'Error al actualizar el proveedor' }, { status: 500 });
+  }
+}

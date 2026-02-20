@@ -79,8 +79,8 @@ export default function UnifiedAgendaPage() {
   return (
     <div className="w-full p-0">
       {/* Tab Navigation */}
-      <div className="px-4 md:px-6 pt-4 pb-3">
-        <div className="w-full sm:w-fit bg-muted/40 border border-border rounded-md p-1 h-9 overflow-x-auto flex items-center gap-0.5">
+      <div className="px-4 md:px-6 pt-4 pb-3 flex justify-center">
+        <div className="w-full sm:w-fit bg-muted/40 border border-border rounded-md p-1 h-auto min-h-9 overflow-x-auto flex items-center gap-0.5 flex-wrap sm:flex-nowrap">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.value;
@@ -109,7 +109,7 @@ export default function UnifiedAgendaPage() {
       )}
 
       {isTareasTab && (
-        <div className={activeTab === 'tareas' ? 'h-[calc(100vh-12rem)]' : 'px-4 md:px-6 pb-6'}>
+        <div className={activeTab === 'tareas' ? 'h-[calc(100vh-8rem)] overflow-hidden' : 'px-4 md:px-6 pb-6'}>
           <TareasContent activeTab={activeTab as TareasTab} />
         </div>
       )}

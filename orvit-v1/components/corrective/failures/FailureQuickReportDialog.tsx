@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -106,6 +108,8 @@ interface CreationResult {
 interface FailureQuickReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preselectedMachineId?: number;
+  preselectedComponentId?: string | number;
 }
 
 interface DuplicateCandidate {
@@ -134,6 +138,8 @@ interface DuplicateCandidate {
 export function FailureQuickReportDialog({
   open,
   onOpenChange,
+  preselectedMachineId,
+  preselectedComponentId,
 }: FailureQuickReportDialogProps) {
   const router = useRouter();
   const { hasPermission, user } = useAuth();
@@ -184,6 +190,16 @@ export function FailureQuickReportDialog({
       immediateSolution: '',
     },
   });
+
+  // Preseleccionar máquina y componente cuando el dialog se abre
+  useEffect(() => {
+    if (open && preselectedMachineId) {
+      form.setValue('machineId', preselectedMachineId);
+      if (preselectedComponentId) {
+        form.setValue('componentIds', [Number(preselectedComponentId)]);
+      }
+    }
+  }, [open, preselectedMachineId, preselectedComponentId]);
 
   // Observar si es observación o cierre inmediato
   const isObservation = form.watch('isObservation');
@@ -400,7 +416,7 @@ export function FailureQuickReportDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Nueva Falla - Reporte Rápido</DialogTitle>
             <DialogDescription>
@@ -411,11 +427,12 @@ export function FailureQuickReportDialog({
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
-              className="space-y-4 px-6 pt-4 pb-2"
+              id="quick-report-form"
             >
+            <DialogBody className="space-y-4">
               {/* === SECCIÓN RÁPIDA (3 campos) === */}
-              <div className="rounded-lg border p-4 space-y-4 bg-blue-50/50">
-                <p className="text-sm font-medium text-blue-900">
+              <div className="rounded-lg border p-4 space-y-4 bg-info-muted/50">
+                <p className="text-sm font-medium text-info-muted-foreground">
                   Reporte Rápido
                 </p>
 
@@ -497,7 +514,7 @@ export function FailureQuickReportDialog({
                   control={form.control}
                   name="causedDowntime"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
                       <div className="space-y-0.5">
                         <FormLabel>
                           3. ¿Paró la producción?
@@ -602,15 +619,13 @@ export function FailureQuickReportDialog({
                       {showDetails ? '− Ocultar Detalles' : '+ Agregar Detalles'}
                     </span>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
-                        showDetails ? 'rotate-180' : ''
-                      }`}
+                      className={cn('h-4 w-4 transition-transform', showDetails && 'rotate-180')}
                     />
                   </Button>
                 </CollapsibleTrigger>
 
                 <CollapsibleContent className="pt-3">
-                  <div className="rounded-lg border p-4 space-y-4 bg-gray-50/50">
+                  <div className="rounded-lg border p-4 space-y-4 bg-muted/50">
                     <p className="text-xs font-medium text-muted-foreground">
                       Información adicional (opcional)
                     </p>
@@ -639,7 +654,7 @@ export function FailureQuickReportDialog({
                         control={form.control}
                         name="isIntermittent"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
                             <div className="space-y-0.5">
                               <FormLabel className="cursor-pointer">
                                 Falla Intermitente
@@ -662,7 +677,7 @@ export function FailureQuickReportDialog({
                         control={form.control}
                         name="isSafetyRelated"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
                             <div className="space-y-0.5">
                               <FormLabel className="cursor-pointer">
                                 Riesgo Seguridad
@@ -685,7 +700,7 @@ export function FailureQuickReportDialog({
                         control={form.control}
                         name="isObservation"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
                             <div className="space-y-0.5">
                               <FormLabel className="cursor-pointer">
                                 Solo Observación
@@ -713,7 +728,7 @@ export function FailureQuickReportDialog({
 
                     {/* Cierre inmediato - solo si NO es observación */}
                     {!isObservation && (
-                      <div className="rounded-lg border border-green-200 p-4 bg-green-50/50 space-y-3">
+                      <div className="rounded-lg border border-success-muted p-4 bg-success-muted/50 space-y-3">
                         <FormField
                           control={form.control}
                           name="resolveImmediately"
@@ -721,7 +736,7 @@ export function FailureQuickReportDialog({
                             <FormItem className="flex flex-row items-center justify-between">
                               <div className="space-y-0.5">
                                 <FormLabel className="cursor-pointer flex items-center gap-2">
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  <CheckCircle2 className="h-4 w-4 text-success" />
                                   Ya lo resolví
                                 </FormLabel>
                                 <p className="text-xs text-muted-foreground">
@@ -788,29 +803,31 @@ export function FailureQuickReportDialog({
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Footer - mx negativo para compensar el px-6 del form */}
-              <DialogFooter className="-mx-6 mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={quickReportMutation.isPending}
-                >
-                  {quickReportMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Reportar Falla
-                </Button>
-              </DialogFooter>
+            </DialogBody>
             </form>
           </Form>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="quick-report-form"
+              size="sm"
+              disabled={quickReportMutation.isPending}
+            >
+              {quickReportMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Reportar Falla
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -835,9 +852,9 @@ export function FailureQuickReportDialog({
       <Dialog open={showSuccessModal} onOpenChange={(open) => {
         if (!open) resetAndClose();
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
+            <DialogTitle className="flex items-center gap-2 text-success">
               <CheckCircle2 className="h-5 w-5" />
               {creationResult?.isObservation
                 ? 'Observación Registrada'
@@ -854,6 +871,7 @@ export function FailureQuickReportDialog({
             </DialogDescription>
           </DialogHeader>
 
+          <DialogBody>
           {/* Resumen de lo creado */}
           <div className="space-y-3">
             {/* Falla */}
@@ -877,14 +895,14 @@ export function FailureQuickReportDialog({
 
             {/* OT creada (si existe) */}
             {creationResult?.workOrder && (
-              <div className="rounded-lg border border-blue-200 p-3 bg-blue-50/50">
+              <div className="rounded-lg border border-info-muted p-3 bg-info-muted/50">
                 <div className="flex items-center gap-2 text-sm">
-                  <FileText className="h-4 w-4 text-blue-600" />
+                  <FileText className="h-4 w-4 text-info-muted-foreground" />
                   <div>
-                    <p className="font-medium text-blue-900">
+                    <p className="font-medium text-info-muted-foreground">
                       OT #{creationResult.workOrder.id}
                     </p>
-                    <p className="text-xs text-blue-700">
+                    <p className="text-xs text-info-muted-foreground">
                       {creationResult.workOrder.title}
                     </p>
                   </div>
@@ -901,15 +919,16 @@ export function FailureQuickReportDialog({
             )}
 
             {creationResult?.resolvedImmediately && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
+              <div className="flex items-center gap-2 text-sm text-success">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Marcada como resuelta inmediatamente</span>
               </div>
             )}
           </div>
+          </DialogBody>
 
           {/* Acciones */}
-          <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={resetAndClose}

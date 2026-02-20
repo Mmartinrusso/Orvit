@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,11 +24,11 @@ import { toast } from 'sonner';
 type LoadOrderStatus = 'PENDIENTE' | 'CARGANDO' | 'CARGADA' | 'DESPACHADA' | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<LoadOrderStatus, { label: string; color: string; icon: React.ElementType }> = {
-  PENDIENTE: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Clock },
-  CARGANDO: { label: 'Cargando', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Package },
-  CARGADA: { label: 'Cargada', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle2 },
-  DESPACHADA: { label: 'Despachada', color: 'bg-green-100 text-green-700 border-green-200', icon: Truck },
-  CANCELADA: { label: 'Cancelada', color: 'bg-red-100 text-red-700 border-red-200', icon: X },
+  PENDIENTE: { label: 'Pendiente', color: 'bg-muted text-foreground border-border', icon: Clock },
+  CARGANDO: { label: 'Cargando', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
+  CARGADA: { label: 'Cargada', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
+  DESPACHADA: { label: 'Despachada', color: 'bg-success-muted text-success border-success-muted', icon: Truck },
+  CANCELADA: { label: 'Cancelada', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: X },
 };
 
 interface LoadOrderDetailHeaderProps {
@@ -88,7 +89,7 @@ export function LoadOrderDetailHeader({ loadOrder, onRefresh }: LoadOrderDetailH
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">Orden de Carga {loadOrder.numero}</h1>
-            <Badge className={`${config.color} border`}>
+            <Badge className={cn(config.color, 'border')}>
               <Icon className="w-4 h-4 mr-1" />
               {config.label}
             </Badge>
@@ -141,8 +142,8 @@ export function LoadOrderDetailHeader({ loadOrder, onRefresh }: LoadOrderDetailH
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
+              <div className="p-2 bg-info-muted rounded-lg">
+                <Calendar className="w-5 h-5 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Fecha</p>
@@ -176,8 +177,8 @@ export function LoadOrderDetailHeader({ loadOrder, onRefresh }: LoadOrderDetailH
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <User className="w-5 h-5 text-green-600" />
+              <div className="p-2 bg-success-muted rounded-lg">
+                <User className="w-5 h-5 text-success" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Chofer</p>
@@ -193,8 +194,8 @@ export function LoadOrderDetailHeader({ loadOrder, onRefresh }: LoadOrderDetailH
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <FileText className="w-5 h-5 text-orange-600" />
+              <div className="p-2 bg-warning-muted rounded-lg">
+                <FileText className="w-5 h-5 text-warning-muted-foreground" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Entrega</p>
@@ -260,13 +261,13 @@ export function LoadOrderDetailHeader({ loadOrder, onRefresh }: LoadOrderDetailH
 
       {/* Confirmation Info */}
       {loadOrder.confirmadoAt && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-success-muted border-success-muted">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <CheckCircle2 className="w-5 h-5 text-success" />
               <div>
-                <p className="text-sm font-medium text-green-900">Confirmado</p>
-                <p className="text-xs text-green-700">
+                <p className="text-sm font-medium text-success">Confirmado</p>
+                <p className="text-xs text-success">
                   {format(new Date(loadOrder.confirmadoAt), "dd/MM/yyyy 'a las' HH:mm", { locale: es })}
                   {loadOrder.confirmedBy && ` por ${loadOrder.confirmedBy.name}`}
                 </p>

@@ -19,6 +19,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Plus,
   Edit,
@@ -65,6 +66,7 @@ interface AvailableResponse {
 }
 
 export default function SectoresPage() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSector, setEditingSector] = useState<WorkSector | null>(null);
@@ -399,12 +401,18 @@ export default function SectoresPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => {
+                            onClick={async () => {
                               if (sector.employeeCount > 0) {
                                 toast.error('No se puede eliminar un sector con empleados');
                                 return;
                               }
-                              if (confirm('Eliminar este sector?')) {
+                              const ok = await confirm({
+                                title: 'Eliminar sector',
+                                description: '¿Eliminar este sector?',
+                                confirmText: 'Eliminar',
+                                variant: 'destructive',
+                              });
+                              if (ok) {
                                 deleteMutation.mutate(sector.id);
                               }
                             }}
@@ -431,7 +439,7 @@ export default function SectoresPage() {
             ) : !hasAvailable ? (
               <Card>
                 <CardContent className="py-10 text-center">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-success" />
                   <h3 className="text-lg font-medium mb-2">Todo importado</h3>
                   <p className="text-muted-foreground">
                     Ya tienes todos los sectores disponibles. Puedes crear sectores personalizados en "Mis Sectores".
@@ -547,15 +555,15 @@ export default function SectoresPage() {
                 )}
 
                 {/* Info box */}
-                <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
+                <Card className="bg-info-muted border-info-muted">
                   <CardContent className="py-4">
                     <div className="flex gap-3">
-                      <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <FileText className="h-5 w-5 text-info-muted-foreground flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-medium text-blue-900 dark:text-blue-100">
+                        <p className="font-medium text-info-muted-foreground">
                           Sectores para asignacion de empleados
                         </p>
-                        <p className="text-blue-700 dark:text-blue-300 mt-1">
+                        <p className="text-info-muted-foreground mt-1">
                           Los sectores te permiten organizar a tus empleados por area de trabajo.
                           Puedes importar los sectores de mantenimiento existentes o crear sectores personalizados.
                         </p>

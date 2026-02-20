@@ -694,7 +694,7 @@ export default function ListasPreciosPage() {
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium text-foreground">{list.nombre}</h3>
                             {list.esDefault && (
-                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              <Star className="h-4 w-4 text-warning-muted-foreground fill-yellow-500" />
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">{list.moneda}</p>
@@ -906,13 +906,13 @@ export default function ListasPreciosPage() {
 
               {/* Alertas */}
               {(analytics.alertas.listasSinProductos > 0 || analytics.alertas.listasSinClientes > 0) && (
-                <Card className="border-orange-200 bg-orange-50/50">
+                <Card className="border-warning-muted bg-warning-muted/50">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+                      <AlertTriangle className="h-5 w-5 text-warning-muted-foreground mt-0.5" />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-sm text-orange-900">Alertas de Listas</h3>
-                        <div className="mt-2 space-y-1 text-sm text-orange-800">
+                        <h3 className="font-semibold text-sm text-warning-muted-foreground">Alertas de Listas</h3>
+                        <div className="mt-2 space-y-1 text-sm text-warning-muted-foreground">
                           {analytics.alertas.listasSinProductos > 0 && (
                             <p>• {analytics.alertas.listasSinProductos} lista(s) sin productos</p>
                           )}
@@ -966,7 +966,7 @@ export default function ListasPreciosPage() {
                               </span>
                             </div>
                           </div>
-                          {lista.esDefault && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                          {lista.esDefault && <Star className="h-4 w-4 text-warning-muted-foreground fill-yellow-500" />}
                         </div>
                       ))}
                     </div>
@@ -1180,7 +1180,7 @@ export default function ListasPreciosPage() {
                       <DialogTitle className="text-base flex items-center gap-2">
                         {selectedList.nombre}
                         {selectedList.esDefault && (
-                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                          <Star className="h-4 w-4 text-warning-muted-foreground fill-yellow-500" />
                         )}
                       </DialogTitle>
                       <p className="text-xs text-muted-foreground">

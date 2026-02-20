@@ -179,8 +179,8 @@ export function FailuresDuplicadosView({
     return (
       <Card className={cn('p-6', className)}>
         <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-10 w-10 text-red-500" />
-          <p className="text-red-500">Error al cargar duplicados</p>
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <p className="text-destructive">Error al cargar duplicados</p>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -217,7 +217,7 @@ export function FailuresDuplicadosView({
           {stats.totalDuplicates} duplicados
         </Badge>
         {stats.potentialGroups > 0 && (
-          <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+          <Badge variant="outline" className="gap-1 border-warning-muted text-warning-muted-foreground">
             <AlertCircle className="h-3 w-3" />
             {stats.potentialGroups} grupos por revisar
           </Badge>
@@ -227,13 +227,13 @@ export function FailuresDuplicadosView({
       {/* Potential duplicates section */}
       {potentialDuplicates.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-amber-600 flex items-center gap-2">
+          <h3 className="text-sm font-medium text-warning-muted-foreground flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
             Posibles duplicados por revisar
           </h3>
 
           {potentialDuplicates.map((group: FailureOccurrence[], idx: number) => (
-            <Card key={idx} className="border-amber-200 bg-amber-50/50">
+            <Card key={idx} className="border-warning-muted bg-warning-muted/50">
               <CardHeader className="py-3 px-4">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Wrench className="h-4 w-4" />
@@ -251,7 +251,7 @@ export function FailuresDuplicadosView({
                   {group.map((failure) => (
                     <div
                       key={failure.id}
-                      className="flex items-center justify-between p-2 rounded border bg-white"
+                      className="flex items-center justify-between p-2 rounded border bg-card"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">#{failure.id}</span>
@@ -324,9 +324,9 @@ export function FailuresDuplicadosView({
                           variant="outline"
                           className={cn(
                             'text-[10px]',
-                            failure.status === 'OPEN' && 'border-blue-500 text-blue-600',
-                            failure.status === 'IN_PROGRESS' && 'border-amber-500 text-amber-600',
-                            failure.status === 'RESOLVED' && 'border-green-500 text-green-600'
+                            failure.status === 'OPEN' && 'border-info text-info-muted-foreground',
+                            failure.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
+                            failure.status === 'RESOLVED' && 'border-success text-success'
                           )}
                         >
                           {failure.status}
@@ -388,7 +388,7 @@ export function FailuresDuplicadosView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
                         onClick={() => handleUnlink(failure)}
                         title="Desvincular"
                       >

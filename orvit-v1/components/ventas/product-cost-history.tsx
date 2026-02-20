@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,9 +101,9 @@ export function ProductCostHistory({
   };
 
   const getChangeIcon = (percentage: number) => {
-    if (percentage > 0) return <TrendingUp className="w-4 h-4 text-red-600" />;
-    if (percentage < 0) return <TrendingDown className="w-4 h-4 text-green-600" />;
-    return <Minus className="w-4 h-4 text-gray-400" />;
+    if (percentage > 0) return <TrendingUp className="w-4 h-4 text-destructive" />;
+    if (percentage < 0) return <TrendingDown className="w-4 h-4 text-success" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
   const getSourceLabel = (source: string) => {
@@ -127,13 +128,13 @@ export function ProductCostHistory({
       case 'RECIPE':
         return 'bg-purple-100 text-purple-700';
       case 'PURCHASE':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-info-muted text-info-muted-foreground';
       case 'MANUAL':
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-muted text-foreground';
       case 'ADJUSTMENT':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-warning-muted text-warning-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -142,7 +143,7 @@ export function ProductCostHistory({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5" />
@@ -153,14 +154,14 @@ export function ProductCostHistory({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="flex-1 overflow-y-auto space-y-4">
+        <DialogBody className="space-y-4">
           {/* Estadisticas */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card>
                 <CardContent className="p-3">
                   <p className="text-xs text-muted-foreground">Costo Minimo</p>
-                  <p className="font-semibold text-green-600">
+                  <p className="font-semibold text-success">
                     {formatCurrency(stats.minCost)}
                   </p>
                 </CardContent>
@@ -168,7 +169,7 @@ export function ProductCostHistory({
               <Card>
                 <CardContent className="p-3">
                   <p className="text-xs text-muted-foreground">Costo Maximo</p>
-                  <p className="font-semibold text-red-600">
+                  <p className="font-semibold text-destructive">
                     {formatCurrency(stats.maxCost)}
                   </p>
                 </CardContent>
@@ -233,7 +234,7 @@ export function ProductCostHistory({
                 onClick={loadCostHistory}
                 disabled={loading}
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
               </Button>
             </div>
 
@@ -267,18 +268,12 @@ export function ProductCostHistory({
                             </span>
                             <Badge
                               variant="outline"
-                              className={`text-xs ${
-                                log.changePercentage > 0
-                                  ? 'text-red-600 border-red-200'
-                                  : log.changePercentage < 0
-                                  ? 'text-green-600 border-green-200'
-                                  : ''
-                              }`}
+                              className={cn('text-xs', log.changePercentage > 0 ? 'text-destructive border-destructive/30' : log.changePercentage < 0 ? 'text-success border-success-muted' : '')}
                             >
                               {log.changePercentage > 0 ? '+' : ''}
                               {log.changePercentage.toFixed(1)}%
                             </Badge>
-                            <Badge className={`text-xs ${getSourceBadgeColor(log.changeSource)}`}>
+                            <Badge className={cn('text-xs', getSourceBadgeColor(log.changeSource))}>
                               {getSourceLabel(log.changeSource)}
                             </Badge>
                           </div>

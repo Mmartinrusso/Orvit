@@ -31,9 +31,9 @@ export function MachineStatusWidget({ companyId, sectorId, style = 'donut-chart'
 
   // Simular estados basados en cantidad de máquinas
   const statusData = [
-    { label: 'Operativas', value: Math.floor(total * 0.75), color: '#22c55e', icon: <CheckCircle className="h-4 w-4" /> },
-    { label: 'Mantenimiento', value: Math.floor(total * 0.15), color: '#eab308', icon: <Wrench className="h-4 w-4" /> },
-    { label: 'Fuera de servicio', value: Math.floor(total * 0.10), color: '#ef4444', icon: <XCircle className="h-4 w-4" /> },
+    { label: 'Operativas', value: Math.floor(total * 0.75), color: 'hsl(var(--success))', icon: <CheckCircle className="h-4 w-4" /> },
+    { label: 'Mantenimiento', value: Math.floor(total * 0.15), color: 'hsl(var(--warning))', icon: <Wrench className="h-4 w-4" /> },
+    { label: 'Fuera de servicio', value: Math.floor(total * 0.10), color: 'hsl(var(--destructive))', icon: <XCircle className="h-4 w-4" /> },
   ].filter(d => d.value > 0);
 
   if (isLoading) {

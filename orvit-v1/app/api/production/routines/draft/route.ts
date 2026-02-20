@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { JWT_SECRET } from '@/lib/auth';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateRoutineDraftSchema, UpdateRoutineDraftSchema } from '@/lib/validations/production';
+import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,6 +142,53 @@ export async function POST(request: Request) {
         },
       });
 
+      // Si el cliente solicitó notificación de incompleto, calcular ítems faltantes y notificar
+      if (body.notifyIncomplete) {
+        try {
+          const draftWithTemplate = await prisma.productionRoutine.findUnique({
+            where: { id },
+            include: { template: { select: { name: true, items: true } } },
+          });
+
+          const templateItems = (draftWithTemplate?.template?.items as any[]) || [];
+          const savedResponses: any[] = responses || [];
+
+          const missingItems = templateItems
+            .filter((item: any) => !item.disabled)
+            .filter((item: any) => {
+              const response = savedResponses.find((r: any) => r.itemId === item.id);
+              if (!response) return true;
+              return !response.inputs?.some(
+                (inp: any) => inp.value !== null && inp.value !== undefined && inp.value !== ''
+              );
+            })
+            .map((item: any) => item.description || 'Ítem sin nombre');
+
+          if (missingItems.length > 0) {
+            const templateName = draftWithTemplate?.template?.name || 'Rutina';
+            const title = `Rutina incompleta: faltan ${missingItems.length} respuesta(s)`;
+            const pendingList = missingItems.slice(0, 3).join(', ');
+            const extra = missingItems.length > 3 ? ` y ${missingItems.length - 3} más` : '';
+            const message = `${templateName} — Pendiente: ${pendingList}${extra}`;
+
+            await createAndSendInstantNotification(
+              'RUTINA_INCOMPLETA',
+              userId,
+              companyId,
+              null,
+              null,
+              title,
+              message,
+              'medium',
+              { draftId: id, missingItems }
+            );
+          }
+        } catch (notifyErr) {
+          // Error en notificación no debe romper el guardado
+          console.warn('[Draft] Error enviando notificación de incompleto:', notifyErr);
+        }
+      }
+
       return NextResponse.json({ success: true, draft: updated });
     }
 
@@ -162,6 +210,45 @@ export async function POST(request: Request) {
       },
     });
 
+    // Programar recordatorios por ítem con deadline
+    try {
+      const template = await prisma.productionRoutineTemplate.findUnique({
+        where: { id: templateId },
+        select: { items: true, sectorId: true },
+      });
+      const items = (template?.items as any[]) || [];
+      const { addJob, QUEUE_NAMES } = await import('@/lib/jobs/queue-manager');
+
+      for (const item of items) {
+        if (item.disabled) continue;
+        const dc = item.deadlineConfig;
+        if (!dc) continue;
+
+        const delayMs = calculateDeadlineDelay(dc);
+        if (delayMs <= 0) continue; // Deadline ya pasó
+
+        await addJob(
+          QUEUE_NAMES.ROUTINE_DEADLINES,
+          'routine-item-deadline',
+          {
+            draftId: draft.id,
+            itemId: item.id,
+            itemDescription: item.description || item.inputs?.[0]?.label || 'Ítem',
+            operatorUserId: userId,
+            companyId,
+            sectorId: template?.sectorId ?? null,
+          },
+          {
+            delay: delayMs,
+            jobId: `routine-deadline-${draft.id}-${item.id}`,
+            attempts: 1,
+          }
+        );
+      }
+    } catch (scheduleErr) {
+      console.warn('[Draft] Error programando recordatorios de deadline:', scheduleErr);
+    }
+
     return NextResponse.json({ success: true, draft });
   } catch (error) {
     console.error('Error saving draft:', error);
@@ -170,6 +257,20 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function calculateDeadlineDelay(dc: { type: string; fixedTime?: string; relativeMinutes?: number }): number {
+  if (dc.type === 'relative' && dc.relativeMinutes) {
+    return dc.relativeMinutes * 60 * 1000;
+  }
+  if (dc.type === 'fixed' && dc.fixedTime) {
+    const [h, m] = dc.fixedTime.split(':').map(Number);
+    const deadline = new Date();
+    deadline.setHours(h, m, 0, 0);
+    if (deadline.getTime() <= Date.now()) return -1; // Ya pasó
+    return deadline.getTime() - Date.now();
+  }
+  return -1;
 }
 
 // DELETE /api/production/routines/draft - Delete a draft

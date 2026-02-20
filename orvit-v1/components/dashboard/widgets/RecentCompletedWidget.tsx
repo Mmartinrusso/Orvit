@@ -28,7 +28,7 @@ export function RecentCompletedWidget({
   return (
     <WidgetWrapper
       title="Completadas Recientemente"
-      icon={<CheckCircle className="h-4 w-4 text-green-500" />}
+      icon={<CheckCircle className="h-4 w-4 text-success" />}
       isLoading={isLoading}
       isError={isError}
       onRefresh={() => refetch()}
@@ -40,11 +40,11 @@ export function RecentCompletedWidget({
           {recentOrders.map((order: any) => (
             <div 
               key={order.id} 
-              className="flex items-center justify-between p-2 rounded-lg bg-green-50 border border-green-100"
+              className="flex items-center justify-between p-2 rounded-lg bg-success-muted border border-success-muted"
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center bg-green-100">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center bg-success-muted">
+                  <CheckCircle className="h-3.5 w-3.5 text-success" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-xs text-foreground truncate">
@@ -55,7 +55,7 @@ export function RecentCompletedWidget({
                   </div>
                 </div>
               </div>
-              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 ml-2 flex-shrink-0">
+              <Badge variant="outline" className="text-xs bg-success-muted text-success border-success-muted ml-2 flex-shrink-0">
                 Completada
               </Badge>
             </div>
@@ -63,8 +63,8 @@ export function RecentCompletedWidget({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-full py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-            <CheckCircle className="h-6 w-6 text-gray-400" />
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <CheckCircle className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-xs text-muted-foreground">No hay completadas recientes</p>
         </div>

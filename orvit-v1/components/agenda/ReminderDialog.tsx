@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarIcon, Clock, User, Tag } from 'lucide-react';
+import { CalendarIcon, Clock, User, Tag, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatDateTimeFull } from '@/lib/date-utils';
-import { DateTimeInput } from '@/components/ui/DateTimeInput';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { Contact, Reminder } from "@/types/agenda";
 
 interface ReminderDialogProps {
@@ -38,9 +39,9 @@ interface ReminderDialogProps {
 }
 
 const PRIORITY_OPTIONS = [
-  { value: 'baja', label: 'Baja', color: 'text-blue-600' },
-  { value: 'media', label: 'Media', color: 'text-yellow-600' },
-  { value: 'alta', label: 'Alta', color: 'text-red-600' },
+  { value: 'baja', label: 'Baja', color: 'text-info-muted-foreground' },
+  { value: 'media', label: 'Media', color: 'text-warning-muted-foreground' },
+  { value: 'alta', label: 'Alta', color: 'text-destructive' },
 ];
 
 const TYPE_OPTIONS = [
@@ -167,10 +168,10 @@ export function ReminderDialog({
       <DialogContent size="default">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
+            <Clock className="h-5 w-5 text-info-muted-foreground" />
             {reminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
             {preSelectedContact && (
-              <span className="text-sm font-normal text-gray-500">
+              <span className="text-sm font-normal text-muted-foreground">
                 para {preSelectedContact.name}
               </span>
             )}
@@ -192,10 +193,10 @@ export function ReminderDialog({
                 ? `ej. Llamar a ${preSelectedContact.name} sobre...`
                 : "ej. Llamar a cliente sobre propuesta"
               }
-              className={errors.title ? 'border-red-500' : ''}
+              className={errors.title ? 'border-destructive' : ''}
             />
             {errors.title && (
-              <p className="text-sm text-red-500">{errors.title}</p>
+              <p className="text-sm text-destructive">{errors.title}</p>
             )}
           </div>
 
@@ -218,14 +219,13 @@ export function ReminderDialog({
             <Label htmlFor="dueDate" className="text-sm font-medium">
               Fecha y Hora *
             </Label>
-            <DateTimeInput
+            <DateTimePicker
               value={formData.dueDate || ''}
-              onChange={(value) => handleInputChange('dueDate', value)}
+              onChange={(date) => handleInputChange('dueDate', date?.toISOString() ?? '')}
               placeholder="dd/mm/yyyy HH:mm"
-              error={!!errors.dueDate}
             />
             {errors.dueDate && (
-              <p className="text-sm text-red-500">{errors.dueDate}</p>
+              <p className="text-sm text-destructive">{errors.dueDate}</p>
             )}
           </div>
 
@@ -245,10 +245,10 @@ export function ReminderDialog({
                   {PRIORITY_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          option.value === 'alta' ? 'bg-red-500' :
-                          option.value === 'media' ? 'bg-yellow-500' : 'bg-blue-500'
-                        }`} />
+                        <div className={cn('w-2 h-2 rounded-full',
+                          option.value === 'alta' ? 'bg-destructive' :
+                          option.value === 'media' ? 'bg-warning' : 'bg-info'
+                        )} />
                         <span className={option.color}>{option.label}</span>
                       </div>
                     </SelectItem>
@@ -295,7 +295,7 @@ export function ReminderDialog({
                       <User className="h-4 w-4" />
                       <span>{selectedContact.name}</span>
                       {selectedContact.company && (
-                        <span className="text-gray-500">({selectedContact.company})</span>
+                        <span className="text-muted-foreground">({selectedContact.company})</span>
                       )}
                     </div>
                   )}
@@ -310,7 +310,7 @@ export function ReminderDialog({
                       <div className="flex flex-col">
                         <span>{contact.name}</span>
                         {contact.company && (
-                          <span className="text-xs text-gray-500">{contact.company}</span>
+                          <span className="text-xs text-muted-foreground">{contact.company}</span>
                         )}
                       </div>
                     </div>
@@ -322,8 +322,8 @@ export function ReminderDialog({
 
           {/* Vista previa de fecha */}
           {formData.dueDate && (
-            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+            <div className="bg-info-muted p-3 rounded-lg">
+              <p className="text-sm text-info-muted-foreground">
                 <CalendarIcon className="inline h-4 w-4 mr-1" />
                 Recordatorio programado para: {' '}
                 <strong>
@@ -354,10 +354,10 @@ export function ReminderDialog({
             onClick={handleSubmit}
           >
             {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Guardando...
-              </div>
+              </>
             ) : (
               reminder ? 'Actualizar' : 'Crear Recordatorio'
             )}

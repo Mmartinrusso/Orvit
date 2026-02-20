@@ -278,8 +278,8 @@ export function AddSolutionDialog({
                       className={cn(
                         'h-6 w-6',
                         formData.effectiveness && rating <= formData.effectiveness
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300 hover:text-yellow-200'
+                          ? 'fill-warning-muted-foreground text-warning-muted-foreground'
+                          : 'text-muted-foreground hover:text-warning-muted-foreground/50'
                       )}
                     />
                   </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -104,19 +105,19 @@ interface GoalsResponse {
 }
 
 const TIPOS_CONFIG: Record<GoalType, { label: string; icon: React.ElementType; color: string }> = {
-  VENTAS_MONTO: { label: 'Monto Ventas', icon: DollarSign, color: 'text-green-600' },
-  VENTAS_CANTIDAD: { label: 'Cantidad Ventas', icon: BarChart3, color: 'text-blue-600' },
+  VENTAS_MONTO: { label: 'Monto Ventas', icon: DollarSign, color: 'text-success' },
+  VENTAS_CANTIDAD: { label: 'Cantidad Ventas', icon: BarChart3, color: 'text-info-muted-foreground' },
   CLIENTES_NUEVOS: { label: 'Clientes Nuevos', icon: Users, color: 'text-purple-600' },
-  MARGEN: { label: 'Margen', icon: Percent, color: 'text-orange-600' },
+  MARGEN: { label: 'Margen', icon: Percent, color: 'text-warning-muted-foreground' },
   CONVERSION: { label: 'Conversión', icon: TrendingUp, color: 'text-teal-600' },
   COBRANZAS: { label: 'Cobranzas', icon: DollarSign, color: 'text-indigo-600' },
 };
 
 const NIVELES_CONFIG: Record<GoalLevel, { label: string; color: string }> = {
   EMPRESA: { label: 'Empresa', color: 'bg-purple-100 text-purple-700' },
-  VENDEDOR: { label: 'Vendedor', color: 'bg-blue-100 text-blue-700' },
-  EQUIPO: { label: 'Equipo', color: 'bg-green-100 text-green-700' },
-  PRODUCTO: { label: 'Producto', color: 'bg-orange-100 text-orange-700' },
+  VENDEDOR: { label: 'Vendedor', color: 'bg-info-muted text-info-muted-foreground' },
+  EQUIPO: { label: 'Equipo', color: 'bg-success-muted text-success' },
+  PRODUCTO: { label: 'Producto', color: 'bg-warning-muted text-warning-muted-foreground' },
   CATEGORIA: { label: 'Categoría', color: 'bg-pink-100 text-pink-700' },
 };
 
@@ -254,10 +255,10 @@ export function SalesGoalsList() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Metas Activas</CardTitle>
-              <Play className="h-4 w-4 text-green-600" />
+              <Play className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-success">
                 {summary.metasActivas}
               </div>
             </CardContent>
@@ -266,10 +267,10 @@ export function SalesGoalsList() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cumplimiento Promedio</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <TrendingUp className="h-4 w-4 text-info-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-info-muted-foreground">
                 {summary.cumplimientoPromedio.toFixed(1)}%
               </div>
             </CardContent>
@@ -278,10 +279,10 @@ export function SalesGoalsList() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Metas Cerradas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-gray-600" />
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-600">
+              <div className="text-2xl font-bold text-muted-foreground">
                 {summary.metasCerradas}
               </div>
             </CardContent>
@@ -404,7 +405,7 @@ export function SalesGoalsList() {
                         <div className="flex items-center gap-2">
                           {goal.nombre}
                           {goal.tieneIncentivo && (
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                            <Badge variant="outline" className="bg-warning-muted text-warning-muted-foreground">
                               Con incentivo
                             </Badge>
                           )}
@@ -412,7 +413,7 @@ export function SalesGoalsList() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <TipoIcon className={`h-4 w-4 ${tipoConfig.color}`} />
+                          <TipoIcon className={cn('h-4 w-4', tipoConfig.color)} />
                           <span className="text-sm">{tipoConfig.label}</span>
                         </div>
                       </TableCell>
@@ -462,19 +463,19 @@ export function SalesGoalsList() {
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           {goal.isActive && !goal.isClosed && (
-                            <Badge className="bg-green-100 text-green-700">
+                            <Badge className="bg-success-muted text-success">
                               <Play className="mr-1 h-3 w-3" />
                               Activa
                             </Badge>
                           )}
                           {!goal.isActive && !goal.isClosed && (
-                            <Badge className="bg-gray-100 text-gray-700">
+                            <Badge className="bg-muted text-foreground">
                               <Pause className="mr-1 h-3 w-3" />
                               Inactiva
                             </Badge>
                           )}
                           {goal.isClosed && (
-                            <Badge className="bg-gray-100 text-gray-500">
+                            <Badge className="bg-muted text-muted-foreground">
                               <CheckCircle2 className="mr-1 h-3 w-3" />
                               Cerrada
                             </Badge>

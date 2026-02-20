@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Plus,
   RefreshCw,
@@ -79,16 +80,16 @@ const estadoLabels: Record<string, string> = {
 };
 
 const estadoColors: Record<string, string> = {
-  SNCA_NUEVA: 'bg-blue-100 text-blue-800',
+  SNCA_NUEVA: 'bg-info-muted text-info-muted-foreground',
   SNCA_ENVIADA: 'bg-purple-100 text-purple-800',
-  SNCA_EN_REVISION: 'bg-yellow-100 text-yellow-800',
-  SNCA_APROBADA: 'bg-green-100 text-green-800',
-  SNCA_PARCIAL: 'bg-orange-100 text-orange-800',
-  SNCA_RECHAZADA: 'bg-red-100 text-red-800',
+  SNCA_EN_REVISION: 'bg-warning-muted text-warning-muted-foreground',
+  SNCA_APROBADA: 'bg-success-muted text-success',
+  SNCA_PARCIAL: 'bg-warning-muted text-warning-muted-foreground',
+  SNCA_RECHAZADA: 'bg-destructive/10 text-destructive',
   SNCA_NCA_RECIBIDA: 'bg-emerald-100 text-emerald-800',
-  SNCA_APLICADA: 'bg-gray-100 text-gray-800',
-  SNCA_CERRADA: 'bg-gray-100 text-gray-800',
-  SNCA_CANCELADA: 'bg-red-100 text-red-800',
+  SNCA_APLICADA: 'bg-muted text-foreground',
+  SNCA_CERRADA: 'bg-muted text-foreground',
+  SNCA_CANCELADA: 'bg-destructive/10 text-destructive',
 };
 
 const tipoLabels: Record<string, string> = {
@@ -101,6 +102,7 @@ const tipoLabels: Record<string, string> = {
 };
 
 export default function SolicitudesNcaPage() {
+  const confirm = useConfirm();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [solicitudes, setSolicitudes] = useState<SolicitudNCA[]>([]);
@@ -151,7 +153,13 @@ export default function SolicitudesNcaPage() {
   }, [fetchSolicitudes]);
 
   const handleEnviar = async (solicitud: SolicitudNCA) => {
-    if (!confirm(`¿Enviar solicitud ${solicitud.numero} al proveedor?`)) return;
+    const ok = await confirm({
+      title: 'Enviar solicitud',
+      description: `¿Enviar solicitud ${solicitud.numero} al proveedor?`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
     try {
       const response = await fetch(`/api/compras/solicitudes-nca/${solicitud.id}/enviar`, {
         method: 'POST'
@@ -164,7 +172,13 @@ export default function SolicitudesNcaPage() {
   };
 
   const handleCerrar = async (solicitud: SolicitudNCA) => {
-    if (!confirm(`¿Cerrar solicitud ${solicitud.numero}?`)) return;
+    const ok = await confirm({
+      title: 'Cerrar solicitud',
+      description: `¿Cerrar solicitud ${solicitud.numero}?`,
+      confirmText: 'Confirmar',
+      variant: 'default',
+    });
+    if (!ok) return;
     try {
       const response = await fetch(`/api/compras/solicitudes-nca/${solicitud.id}/cerrar`, {
         method: 'POST',
@@ -284,7 +298,7 @@ export default function SolicitudesNcaPage() {
                     </TableCell>
                     <TableCell className="text-right font-mono">
                       {solicitud.montoAprobado != null ? (
-                        <span className={solicitud.montoAprobado < solicitud.montoSolicitado ? 'text-orange-600' : 'text-green-600'}>
+                        <span className={solicitud.montoAprobado < solicitud.montoSolicitado ? 'text-warning-muted-foreground' : 'text-success'}>
                           ${solicitud.montoAprobado.toLocaleString('es-AR')}
                         </span>
                       ) : '-'}

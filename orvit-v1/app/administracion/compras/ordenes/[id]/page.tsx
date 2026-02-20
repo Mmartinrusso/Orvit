@@ -150,15 +150,15 @@ type EstadoOC =
   | 'CANCELADA';
 
 const ESTADOS_CONFIG: Record<EstadoOC, { label: string; color: string; icon: React.ElementType }> = {
-  BORRADOR: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: FileEdit },
-  PENDIENTE_APROBACION: { label: 'Pendiente de Aprobación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
-  APROBADA: { label: 'Aprobada', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle2 },
-  RECHAZADA: { label: 'Rechazada', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
+  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground border-border', icon: FileEdit },
+  PENDIENTE_APROBACION: { label: 'Pendiente de Aprobación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Clock },
+  APROBADA: { label: 'Aprobada', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
+  RECHAZADA: { label: 'Rechazada', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: XCircle },
   ENVIADA_PROVEEDOR: { label: 'Enviada al Proveedor', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Send },
-  CONFIRMADA: { label: 'Confirmada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  PARCIALMENTE_RECIBIDA: { label: 'Parcialmente Recibida', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Package },
-  COMPLETADA: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 },
-  CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-500 border-gray-200', icon: XCircle },
+  CONFIRMADA: { label: 'Confirmada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  PARCIALMENTE_RECIBIDA: { label: 'Parcialmente Recibida', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
+  COMPLETADA: { label: 'Completada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
+  CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground border-border', icon: XCircle },
 };
 
 const ACCIONES_POR_ESTADO: Record<EstadoOC, string[]> = {
@@ -528,7 +528,7 @@ export default function OrdenCompraDetallePage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Entrega:</span>
-                <span className={`text-sm font-medium ${diasAtraso ? 'text-red-600' : ''}`}>
+                <span className={`text-sm font-medium ${diasAtraso ? 'text-destructive' : ''}`}>
                   {orden.fechaEntregaEsperada
                     ? format(new Date(orden.fechaEntregaEsperada), 'dd/MM/yyyy', { locale: es })
                     : '-'}
@@ -537,7 +537,7 @@ export default function OrdenCompraDetallePage() {
               {orden.fechaEntregaReal && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Entregado:</span>
-                  <span className="text-sm font-medium text-green-600">
+                  <span className="text-sm font-medium text-success">
                     {format(new Date(orden.fechaEntregaReal), 'dd/MM/yyyy', { locale: es })}
                   </span>
                 </div>
@@ -574,15 +574,15 @@ export default function OrdenCompraDetallePage() {
 
         {/* Alertas / Mensajes */}
         {orden.estado === 'RECHAZADA' && orden.motivoRechazo && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-destructive/30 bg-destructive/10">
             <CardContent className="py-4">
               <div className="flex items-start gap-3">
-                <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                <XCircle className="w-5 h-5 text-destructive mt-0.5" />
                 <div>
-                  <p className="font-medium text-red-700">Orden Rechazada</p>
-                  <p className="text-sm text-red-600 mt-1">{orden.motivoRechazo}</p>
+                  <p className="font-medium text-destructive">Orden Rechazada</p>
+                  <p className="text-sm text-destructive mt-1">{orden.motivoRechazo}</p>
                   {orden.rechazadoByUser && (
-                    <p className="text-xs text-red-500 mt-2">
+                    <p className="text-xs text-destructive mt-2">
                       Por {orden.rechazadoByUser.name} el{' '}
                       {orden.rechazadoAt && format(new Date(orden.rechazadoAt), 'dd/MM/yyyy HH:mm', { locale: es })}
                     </p>
@@ -594,13 +594,13 @@ export default function OrdenCompraDetallePage() {
         )}
 
         {orden.esEmergencia && orden.motivoEmergencia && (
-          <Card className="border-orange-200 bg-orange-50">
+          <Card className="border-warning-muted bg-warning-muted">
             <CardContent className="py-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-warning-muted-foreground mt-0.5" />
                 <div>
-                  <p className="font-medium text-orange-700">Compra de Emergencia</p>
-                  <p className="text-sm text-orange-600 mt-1">{orden.motivoEmergencia}</p>
+                  <p className="font-medium text-warning-muted-foreground">Compra de Emergencia</p>
+                  <p className="text-sm text-warning-muted-foreground mt-1">{orden.motivoEmergencia}</p>
                 </div>
               </div>
             </CardContent>
@@ -644,16 +644,16 @@ export default function OrdenCompraDetallePage() {
                     </TableCell>
                     <TableCell className="text-center text-sm">
                       {item.cantidadRecibida > 0 ? (
-                        <span className={item.cantidadRecibida >= item.cantidad ? 'text-green-600' : 'text-orange-600'}>
+                        <span className={item.cantidadRecibida >= item.cantidad ? 'text-success' : 'text-warning-muted-foreground'}>
                           {item.cantidadRecibida}
                         </span>
                       ) : '-'}
                     </TableCell>
                     <TableCell className="text-center text-sm">
                       {item.cantidadPendiente > 0 ? (
-                        <span className="text-orange-600">{item.cantidadPendiente}</span>
+                        <span className="text-warning-muted-foreground">{item.cantidadPendiente}</span>
                       ) : (
-                        <CheckCircle2 className="w-4 h-4 text-green-600 mx-auto" />
+                        <CheckCircle2 className="w-4 h-4 text-success mx-auto" />
                       )}
                     </TableCell>
                     <TableCell className="text-right text-sm">
@@ -758,7 +758,7 @@ export default function OrdenCompraDetallePage() {
               </Card>
             )}
             {orden.notasInternas && (
-              <Card className="border-yellow-200 bg-yellow-50/50">
+              <Card className="border-warning-muted bg-warning-muted/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <FileText className="w-4 h-4" />

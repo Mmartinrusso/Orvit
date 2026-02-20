@@ -1,5 +1,7 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
+import { DEFAULT_COLORS } from '@/lib/colors';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,12 +12,7 @@ import { es } from 'date-fns/locale';
 import { useState } from 'react';
 import type { MatchSuggestion } from '@/hooks/use-bank-reconciliation';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart5: '#10b981',
-  chart4: '#f59e0b',
-  kpiNeutral: '#64748b',
-};
+
 
 interface MatchingSuggestionsProps {
   suggestions: MatchSuggestion[];
@@ -48,7 +45,7 @@ export default function MatchingSuggestions({
   isAccepting,
 }: MatchingSuggestionsProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const userColors = DEFAULT_COLORS;
+  const userColors = useUserColors();
 
   if (isLoading) {
     return (

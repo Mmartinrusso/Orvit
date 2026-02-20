@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DatePicker } from '@/components/ui/date-picker';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Proyecto {
   id: number;
@@ -71,6 +72,7 @@ const estadoLabels: Record<string, string> = {
 };
 
 export default function ProyectosPage() {
+  const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -172,7 +174,13 @@ export default function ProyectosPage() {
   };
 
   const handleDelete = async (proyecto: Proyecto) => {
-    if (!confirm(`¿Cancelar proyecto "${proyecto.nombre}"?`)) return;
+    const ok = await confirm({
+      title: 'Cancelar proyecto',
+      description: `¿Cancelar proyecto "${proyecto.nombre}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const response = await fetch(`/api/compras/proyectos/${proyecto.id}`, {
@@ -241,7 +249,7 @@ export default function ProyectosPage() {
                 <p className="text-sm text-muted-foreground">Proyectos Activos</p>
                 <p className="text-2xl font-bold">{activos}</p>
               </div>
-              <FolderKanban className="w-8 h-8 text-blue-500" />
+              <FolderKanban className="w-8 h-8 text-info-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -252,7 +260,7 @@ export default function ProyectosPage() {
                 <p className="text-sm text-muted-foreground">Presupuesto Total</p>
                 <p className="text-2xl font-bold">{formatCurrency(presupuestoTotal)}</p>
               </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
+              <DollarSign className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -263,7 +271,7 @@ export default function ProyectosPage() {
                 <p className="text-sm text-muted-foreground">Gastado</p>
                 <p className="text-2xl font-bold">{formatCurrency(gastadoTotal)}</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-orange-500" />
+              <TrendingUp className="w-8 h-8 text-warning-muted-foreground" />
             </div>
           </CardContent>
         </Card>

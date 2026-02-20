@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -271,7 +272,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
 
   return (
     <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="w-[99vw] max-w-[99vw] md:w-[700px] md:max-w-[700px] h-[95vh] md:h-auto md:max-h-[90vh] p-0 flex flex-col">
+      <DialogContent size="md" className="p-0">
         <DialogHeader className="p-3 md:p-4 border-b flex-shrink-0">
           <DialogTitle className="text-sm md:text-base">{initialValues ? 'Editar componente' : 'Agregar componente'}</DialogTitle>
           <DialogDescription className="text-xs md:text-sm">
@@ -291,7 +292,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
                 {parentComponent.breadcrumb && parentComponent.breadcrumb.length > 0 ? (
                   parentComponent.breadcrumb.map((item, index) => (
                     <span key={index} className="flex items-center gap-1">
-                      <span className={`truncate max-w-[80px] md:max-w-none ${index === parentComponent.breadcrumb!.length - 1 ? "text-primary font-medium" : ""}`}>
+                      <span className={cn('truncate max-w-[80px] md:max-w-none', index === parentComponent.breadcrumb!.length - 1 && 'text-primary font-medium')}>
                         {item}
                       </span>
                       {index < parentComponent.breadcrumb!.length - 1 && (
@@ -463,10 +464,10 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
             </div>
 
             {/* Sección de repuesto automático */}
-            <div className="border rounded-lg p-3 md:p-4 bg-blue-50 dark:bg-blue-950/20">
+            <div className="border rounded-lg p-3 md:p-4 bg-info-muted">
               <div className="flex items-center gap-2 mb-3">
-                <Package className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-                <h3 className="font-medium text-sm text-blue-900 dark:text-blue-100">Repuestos</h3>
+                <Package className="h-4 w-4 md:h-5 md:w-5 text-info" />
+                <h3 className="font-medium text-sm text-info-muted-foreground">Repuestos</h3>
                 <Badge variant="secondary" className="text-[10px]">Opcional</Badge>
               </div>
               
@@ -518,19 +519,19 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
                         <SelectItem value="none">
                           <div className="flex flex-col items-start">
                             <span>🚫 No vincular repuesto</span>
-                            <span className="text-xs text-gray-500">Este componente no requiere repuestos</span>
+                            <span className="text-xs text-muted-foreground">Este componente no requiere repuestos</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="link">
                           <div className="flex flex-col items-start">
                             <span>🔗 Vincular repuesto existente</span>
-                            <span className="text-xs text-gray-500">Seleccionar un repuesto que ya existe en el pañol</span>
+                            <span className="text-xs text-muted-foreground">Seleccionar un repuesto que ya existe en el pañol</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="create">
                           <div className="flex flex-col items-start">
                             <span>➕ Crear nuevo repuesto</span>
-                            <span className="text-xs text-gray-500">Crear un repuesto específico para este componente</span>
+                            <span className="text-xs text-muted-foreground">Crear un repuesto específico para este componente</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -542,23 +543,23 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
 
               {/* Mostrar información del repuesto actualmente vinculado */}
               {initialValues?.existingSpareId && initialValues?.spareName && (
-                <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                <div className="mt-4 p-3 bg-success-muted rounded border border-success-muted">
                   <div className="flex items-center gap-2 mb-2">
-                    <Package className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                    <Package className="h-4 w-4 text-success" />
+                    <span className="text-sm font-medium text-success">
                       Actualmente vinculado a: {initialValues.spareName}
                     </span>
                   </div>
                   {initialValues.spareDescription && (
-                    <div className="text-xs text-green-700 dark:text-green-300 mb-2">
+                    <div className="text-xs text-success mb-2">
                       {initialValues.spareDescription}
                     </div>
                   )}
-                  <div className="flex gap-4 text-xs text-green-600">
+                  <div className="flex gap-4 text-xs text-success">
                     <span>Stock: {initialValues.initialStock || 0}</span>
                     <span>Stock Mín: {initialValues.spareMinStock || 0}</span>
                   </div>
-                  <div className="mt-2 text-xs text-green-700 dark:text-green-300">
+                  <div className="mt-2 text-xs text-success">
                     💡 Puedes cambiar esta vinculación seleccionando otra opción arriba
                   </div>
                 </div>
@@ -566,8 +567,8 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
 
               {form.watch('spareAction') === 'link' && (
                 <div className="mt-4 space-y-4">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border">
-                    <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                  <div className="p-3 bg-info-muted rounded border">
+                    <p className="text-sm text-info-muted-foreground mb-3">
                       🔗 Selecciona un repuesto existente del pañol para vincular con este componente
                     </p>
 
@@ -625,7 +626,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
                                   <SelectItem key={spare.id} value={spare.id.toString()}>
                                     <div className="flex flex-col items-start">
                                       <span className="font-medium">{spare.name}</span>
-                                      <div className="flex gap-2 text-xs text-gray-500">
+                                      <div className="flex gap-2 text-xs text-muted-foreground">
                                         <span>Stock: {spare.stockQuantity}</span>
                                         <span>•</span>
                                         <span>{spare.brand} {spare.model}</span>
@@ -651,12 +652,12 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
                     />
                     
                     {availableSpares.length === 0 && !loadingSpares && (
-                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded">
-                        <p className="text-sm text-amber-800">
-                          No hay repuestos disponibles. 
-                          <button 
+                      <div className="mt-3 p-3 bg-warning-muted border border-warning-muted rounded">
+                        <p className="text-sm text-warning-muted-foreground">
+                          No hay repuestos disponibles.
+                          <button
                             type="button"
-                            className="text-blue-600 hover:underline ml-1"
+                            className="text-info hover:underline ml-1"
                             onClick={() => window.open('/panol', '_blank')}
                           >
                             Ir al pañol para crear repuestos
@@ -670,8 +671,8 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
 
               {form.watch('spareAction') === 'create' && (
                 <div className="mt-4 space-y-4">
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded border">
-                    <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                  <div className="p-3 bg-success-muted rounded border">
+                    <p className="text-sm text-success mb-3">
                       ➕ Se creará un nuevo repuesto específico para este componente
                     </p>
                   </div>
@@ -929,7 +930,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
           </form>
         </Form>
         </DialogBody>
-        <DialogFooter className="p-3 md:p-4 border-t flex-shrink-0 flex-row gap-2">
+        <DialogFooter className="p-3 md:p-4 flex-row gap-2">
           <Button type="button" variant="outline" size="sm" className="flex-1 md:flex-none h-9 text-xs md:text-sm" onClick={onClose}>
             Cancelar
           </Button>

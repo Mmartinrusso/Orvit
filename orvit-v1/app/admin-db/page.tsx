@@ -21,6 +21,19 @@ export default function AdminDBPage() {
     }
   };
 
+  const seedVentas = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/seed-ventas', { method: 'POST' });
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      setResult({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const createTable = async () => {
     setLoading(true);
     try {
@@ -46,20 +59,39 @@ export default function AdminDBPage() {
             <CardTitle>Configuración del Sistema de Mantenimiento</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button 
-              onClick={testDatabase} 
+            <Button
+              onClick={testDatabase}
               disabled={loading}
               variant="outline"
             >
               {loading ? 'Probando...' : 'Probar Conexión DB'}
             </Button>
-            
-            <Button 
-              onClick={createTable} 
+
+            <Button
+              onClick={createTable}
               disabled={loading}
               className="ml-2"
             >
               {loading ? 'Configurando...' : 'Configurar Sistema'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Datos de Prueba — Ventas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Crea 7 facturas con ítems para el mes actual (estado EMITIDA / COBRADA / PARCIALMENTE_COBRADA).
+              Aparecen en Costos → Ventas del mes corriente.
+            </p>
+            <Button
+              onClick={seedVentas}
+              disabled={loading}
+              variant="outline"
+            >
+              {loading ? 'Cargando...' : 'Cargar facturas de ejemplo'}
             </Button>
           </CardContent>
         </Card>
@@ -71,7 +103,7 @@ export default function AdminDBPage() {
             <CardTitle>Resultado</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
+            <pre className="bg-muted p-4 rounded text-sm overflow-auto">
               {JSON.stringify(result, null, 2)}
             </pre>
           </CardContent>

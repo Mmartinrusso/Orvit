@@ -3,62 +3,46 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+// Flag de módulo: ALTER TABLE solo corre una vez por proceso del servidor
+let migrationApplied = false;
+
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 Aplicando migración: Agregar campos de peso a la tabla Truck...');
-
-    // Agregar columna chasisWeight si no existe
-    try {
-      await prisma.$executeRawUnsafe(`
-        DO $$ BEGIN
-            ALTER TABLE "Truck" ADD COLUMN IF NOT EXISTS "chasisWeight" DOUBLE PRECISION;
-        EXCEPTION
-            WHEN duplicate_column THEN null;
-        END $$;
-      `);
-      console.log('✅ Columna chasisWeight agregada (o ya existía)');
-    } catch (error: any) {
-      if (error.message?.includes('duplicate_column') || error.message?.includes('already exists')) {
-        console.log('ℹ️  Columna chasisWeight ya existe');
-      } else {
-        throw error;
-      }
+    if (migrationApplied) {
+      return NextResponse.json({
+        success: true,
+        message: 'Migración ya aplicada en este proceso',
+        columnsAdded: ['chasisWeight', 'acopladoWeight'],
+      });
     }
 
-    // Agregar columna acopladoWeight si no existe
-    try {
-      await prisma.$executeRawUnsafe(`
-        DO $$ BEGIN
-            ALTER TABLE "Truck" ADD COLUMN IF NOT EXISTS "acopladoWeight" DOUBLE PRECISION;
-        EXCEPTION
-            WHEN duplicate_column THEN null;
-        END $$;
-      `);
-      console.log('✅ Columna acopladoWeight agregada (o ya existía)');
-    } catch (error: any) {
-      if (error.message?.includes('duplicate_column') || error.message?.includes('already exists')) {
-        console.log('ℹ️  Columna acopladoWeight ya existe');
-      } else {
-        throw error;
-      }
-    }
+    // ALTER TABLE con IF NOT EXISTS (PostgreSQL 9.6+) — no requiere DO $$ block
+    await prisma.$executeRaw`
+      ALTER TABLE "Truck" ADD COLUMN IF NOT EXISTS "chasisWeight" DOUBLE PRECISION
+    `;
+
+    await prisma.$executeRaw`
+      ALTER TABLE "Truck" ADD COLUMN IF NOT EXISTS "acopladoWeight" DOUBLE PRECISION
+    `;
+
+    migrationApplied = true;
 
     // Verificar que las columnas existen
-    const columns = await prisma.$queryRawUnsafe(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'Truck' 
-      AND column_name IN ('chasisWeight', 'acopladoWeight');
-    `) as any[];
+    const columns = await prisma.$queryRaw<Array<{ column_name: string }>>`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'Truck'
+        AND column_name IN ('chasisWeight', 'acopladoWeight')
+    `;
 
     return NextResponse.json({
       success: true,
       message: 'Migración completada exitosamente',
-      columnsAdded: columns.map((c: any) => c.column_name),
+      columnsAdded: columns.map((c) => c.column_name),
     });
 
   } catch (error: any) {
-    console.error('❌ Error durante la migración:', error);
+    console.error('Error durante la migración:', error);
     return NextResponse.json(
       {
         success: false,
@@ -67,8 +51,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
-

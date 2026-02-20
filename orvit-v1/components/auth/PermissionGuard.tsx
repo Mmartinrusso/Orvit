@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { Permission } from '@/lib/permissions';
+import { Loader2 } from 'lucide-react';
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -32,7 +33,7 @@ export function PermissionGuard({
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Verificando permisos...</p>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
 const DEBUG = false;
-const log = DEBUG ? console.log.bind(console) : () => {};
+const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -378,7 +378,7 @@ export default function ProduccionMensual() {
   // Funciones para carga masiva
   const downloadTemplate = () => {
     if (products.length === 0) {
-      alert('No hay productos disponibles. Cargue productos primero.');
+      toast.warning('No hay productos disponibles. Cargue productos primero.');
       return;
     }
     
@@ -413,14 +413,14 @@ export default function ProduccionMensual() {
         setUploadFile(file);
         setUploadResults(null);
       } else {
-        alert('Por favor seleccione un archivo CSV válido');
+        toast.warning('Por favor seleccione un archivo CSV válido');
       }
     }
   };
 
   const handleBulkUpload = async () => {
     if (!uploadFile || !currentCompany) {
-      alert('Seleccione un archivo primero.');
+      toast.warning('Seleccione un archivo primero.');
       return;
     }
 
@@ -461,19 +461,19 @@ export default function ProduccionMensual() {
       setUploadResults(result);
 
       if (result.success && result.summary.success > 0) {
-        alert(`✅ Éxito: ${result.summary.success} registros procesados`);
+        toast.success(`${result.summary.success} registros procesados`);
         await loadProductionRecords();
         setShowBulkUploadDialog(false);
         setUploadFile(null);
         setUploadResults(null);
       } else if (result.errors && result.errors.length > 0) {
-        alert(`⚠️ Errores encontrados: ${result.errors.length}. Revise la consola para detalles.`);
+        toast.warning(`Errores encontrados: ${result.errors.length}. Revise la consola para detalles.`);
         console.warn('Errores:', result.errors.slice(0, 5));
       }
       
     } catch (error: any) {
       console.error('❌ Error:', error);
-      alert(`❌ Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -496,7 +496,7 @@ export default function ProduccionMensual() {
             onClick={() => setShowNotesDialog(true)}
             variant="outline"
             size="sm"
-            className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+            className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted"
           >
             <BookOpen className="h-4 w-4 mr-2" />
             Notas
@@ -638,10 +638,10 @@ export default function ProduccionMensual() {
       <div className="space-y-4">
         {productionRecords.map((record) => (
           <Card key={record.id} className="overflow-hidden">
-            <CardHeader className="bg-gray-50">
+            <CardHeader className="bg-muted">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <Package className="h-5 w-5 text-blue-600" />
+                  <Package className="h-5 w-5 text-primary" />
                   <div>
                     <CardTitle className="text-lg">{record.product_name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -667,32 +667,32 @@ export default function ProduccionMensual() {
                   <h4 className="font-semibold">Estadísticas de Producción</h4>
                   
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 border rounded-lg bg-green-50">
-                      <div className="text-2xl font-bold text-green-600">
+                    <div className="text-center p-3 border rounded-lg bg-success-muted">
+                      <div className="text-2xl font-bold text-success">
                         {formatNumber(record.good_units)}
                       </div>
-                      <div className="text-sm text-green-700">Unidades Buenas</div>
+                      <div className="text-sm text-success-muted-foreground">Unidades Buenas</div>
                     </div>
-                    
-                    <div className="text-center p-3 border rounded-lg bg-red-50">
-                      <div className="text-2xl font-bold text-red-600">
+
+                    <div className="text-center p-3 border rounded-lg bg-destructive/10">
+                      <div className="text-2xl font-bold text-destructive">
                         {formatNumber(record.scrap_units)}
                       </div>
-                      <div className="text-sm text-red-700">Scrap</div>
+                      <div className="text-sm text-destructive">Scrap</div>
                     </div>
-                    
-                    <div className="text-center p-3 border rounded-lg bg-blue-50">
-                      <div className="text-2xl font-bold text-blue-600">
+
+                    <div className="text-center p-3 border rounded-lg bg-info-muted">
+                      <div className="text-2xl font-bold text-primary">
                         {formatNumber(record.total_units)}
                       </div>
-                      <div className="text-sm text-blue-700">Total</div>
+                      <div className="text-sm text-info-muted-foreground">Total</div>
                     </div>
                   </div>
 
                   {/* Eficiencia */}
                   {record.total_units > 0 && (
                     <div className="text-center p-3 border rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
+                      <div className="text-lg font-bold text-primary">
                         {((record.good_units / record.total_units) * 100).toFixed(1)}%
                       </div>
                       <div className="text-sm text-muted-foreground">Eficiencia</div>
@@ -704,11 +704,11 @@ export default function ProduccionMensual() {
                 <div className="space-y-4">
                   <h4 className="font-semibold">Observaciones</h4>
                   {record.observations ? (
-                    <div className="p-3 border rounded-lg bg-gray-50">
+                    <div className="p-3 border rounded-lg bg-muted">
                       <p className="text-sm">{record.observations}</p>
                     </div>
                   ) : (
-                    <div className="p-3 border rounded-lg bg-gray-50">
+                    <div className="p-3 border rounded-lg bg-muted">
                       <p className="text-sm text-muted-foreground">Sin observaciones</p>
                     </div>
                   )}
@@ -886,7 +886,7 @@ export default function ProduccionMensual() {
                 className="cursor-pointer"
               />
               {uploadFile && (
-                <div className="flex items-center space-x-2 text-sm text-green-600">
+                <div className="flex items-center space-x-2 text-sm text-success">
                   <CheckCircle className="h-4 w-4" />
                   <span>Archivo seleccionado: {uploadFile.name}</span>
                 </div>
@@ -895,7 +895,7 @@ export default function ProduccionMensual() {
             
             {/* Resultados de la carga */}
             {uploadResults && (
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-muted p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Resultado de la carga:</h4>
                 <div className="space-y-1 text-sm">
                   <div>✅ Registros procesados: {uploadResults.summary.success}</div>
@@ -903,7 +903,7 @@ export default function ProduccionMensual() {
                   {uploadResults.errors && uploadResults.errors.length > 0 && (
                     <div className="mt-2">
                       <p className="font-medium">Errores encontrados:</p>
-                      <ul className="list-disc list-inside text-xs text-red-600 max-h-20 overflow-y-auto">
+                      <ul className="list-disc list-inside text-xs text-destructive max-h-20 overflow-y-auto">
                         {uploadResults.errors.slice(0, 5).map((error: string, index: number) => (
                           <li key={index}>{error}</li>
                         ))}

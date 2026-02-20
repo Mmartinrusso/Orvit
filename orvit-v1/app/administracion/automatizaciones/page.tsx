@@ -68,6 +68,7 @@ import {
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // Types
 interface AutomationRule {
@@ -135,15 +136,16 @@ const ACTION_LABELS: Record<string, string> = {
 
 // Status colors
 const STATUS_COLORS: Record<string, string> = {
-  COMPLETED: 'bg-green-500',
-  FAILED: 'bg-red-500',
-  SKIPPED: 'bg-gray-500',
-  SIMULATED: 'bg-blue-500',
-  PENDING: 'bg-yellow-500',
+  COMPLETED: 'bg-success',
+  FAILED: 'bg-destructive',
+  SKIPPED: 'bg-muted-foreground',
+  SIMULATED: 'bg-info',
+  PENDING: 'bg-warning',
   RUNNING: 'bg-purple-500',
 };
 
 export default function AutomatizacionesPage() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState<AutomationRule | null>(null);
@@ -239,7 +241,7 @@ export default function AutomatizacionesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Zap className="h-8 w-8 text-yellow-500" />
+            <Zap className="h-8 w-8 text-warning-muted-foreground" />
             Automatizaciones
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -448,9 +450,15 @@ export default function AutomatizacionesPage() {
                                 Historial
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                className="text-red-600"
-                                onClick={() => {
-                                  if (confirm('¿Eliminar esta regla?')) {
+                                className="text-destructive"
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: 'Eliminar regla',
+                                    description: '¿Eliminar esta regla?',
+                                    confirmText: 'Eliminar',
+                                    variant: 'destructive',
+                                  });
+                                  if (ok) {
                                     deleteMutation.mutate(rule.id);
                                   }
                                 }}
@@ -532,7 +540,7 @@ export default function AutomatizacionesPage() {
                         </TableCell>
                         <TableCell>
                           {exec.errorMessage ? (
-                            <span className="text-red-500 text-sm truncate max-w-[200px] block">
+                            <span className="text-destructive text-sm truncate max-w-[200px] block">
                               {exec.errorMessage}
                             </span>
                           ) : (
@@ -875,9 +883,9 @@ function RuleHistoryDialog({
                   </TableCell>
                   <TableCell>
                     {exec.conditionsPassed ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-success" />
                     ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
+                      <XCircle className="h-4 w-4 text-destructive" />
                     )}
                   </TableCell>
                   <TableCell>
@@ -885,7 +893,7 @@ function RuleHistoryDialog({
                   </TableCell>
                   <TableCell>
                     {exec.errorMessage ? (
-                      <span className="text-red-500 text-sm">{exec.errorMessage}</span>
+                      <span className="text-destructive text-sm">{exec.errorMessage}</span>
                     ) : (
                       '-'
                     )}

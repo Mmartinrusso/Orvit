@@ -223,7 +223,7 @@ export function TaskListCard({
             variant={dueInfo.tone === "danger" ? "destructive" : "secondary"}
             className={cn(
               "text-[11px] h-5 px-2 font-normal shrink-0",
-              dueInfo.tone === "warning" && "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
+              dueInfo.tone === "warning" && "bg-warning-muted text-warning-muted-foreground"
             )}
           >
             {dueInfo.label}
@@ -256,7 +256,7 @@ export function TaskListCard({
                 <DropdownMenuItem 
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('Ver detalles clicked');
+
                     setIsMenuOpen(false);
                     onOpen(task.id);
                   }}
@@ -269,7 +269,7 @@ export function TaskListCard({
                     <DropdownMenuItem 
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log('Completar clicked');
+
                         setIsMenuOpen(false);
                         onComplete();
                       }}
@@ -284,7 +284,7 @@ export function TaskListCard({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log('Editar clicked');
+
                         setIsMenuOpen(false);
                         onEdit();
                       }}
@@ -299,7 +299,7 @@ export function TaskListCard({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log('Eliminar clicked');
+
                         setIsMenuOpen(false);
                         onDelete();
                       }}

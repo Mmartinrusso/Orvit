@@ -81,7 +81,7 @@ export function CostoBaseDetailModal({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-6 w-6 text-blue-600" />
+              <FileText className="h-6 w-6 text-info-muted-foreground" />
               Detalles de {costo.name}
             </DialogTitle>
             <Button
@@ -104,19 +104,19 @@ export function CostoBaseDetailModal({
                 <h3 className="font-semibold text-lg mb-2">Información General</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Descripción:</span>
+                    <span className="text-sm text-muted-foreground">Descripción:</span>
                     <span className="text-sm">{costo.description || 'Sin descripción'}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Categoría:</span>
+                    <span className="text-sm text-muted-foreground">Categoría:</span>
                     <Badge variant="secondary">{costo.categoryName}</Badge>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Tipo:</span>
+                    <span className="text-sm text-muted-foreground">Tipo:</span>
                     <Badge variant="outline">{costo.categoryType}</Badge>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Creado:</span>
+                    <span className="text-sm text-muted-foreground">Creado:</span>
                     <span className="text-sm">{formatDate(costo.createdAt)}</span>
                   </div>
                 </div>
@@ -126,21 +126,21 @@ export function CostoBaseDetailModal({
             <div className="space-y-4">
               <h3 className="font-semibold text-lg mb-2">Estadísticas</h3>
               <div className="grid grid-cols-4 gap-3">
-                            <div className="text-center p-3 bg-blue-50 rounded-lg">
-                              <p className="text-xl font-bold text-blue-600">{uniqueMonths}</p>
-                              <p className="text-xs text-gray-600">Meses</p>
+                            <div className="text-center p-3 bg-info-muted rounded-lg">
+                              <p className="text-xl font-bold text-info-muted-foreground">{uniqueMonths}</p>
+                              <p className="text-xs text-muted-foreground">Meses</p>
                             </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <p className="text-xl font-bold text-purple-600">{formatCurrency(averageAmount)}</p>
-                  <p className="text-xs text-gray-600">Promedio</p>
+                <div className="text-center p-3 bg-info-muted rounded-lg">
+                  <p className="text-xl font-bold text-info-muted-foreground">{formatCurrency(averageAmount)}</p>
+                  <p className="text-xs text-muted-foreground">Promedio</p>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(maxAmount)}</p>
-                  <p className="text-xs text-gray-600">Máximo</p>
+                <div className="text-center p-3 bg-success-muted rounded-lg">
+                  <p className="text-xl font-bold text-success">{formatCurrency(maxAmount)}</p>
+                  <p className="text-xs text-muted-foreground">Máximo</p>
                 </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xl font-bold text-orange-600">{formatCurrency(minAmount)}</p>
-                  <p className="text-xs text-gray-600">Mínimo</p>
+                <div className="text-center p-3 bg-warning-muted rounded-lg">
+                  <p className="text-xl font-bold text-warning-muted-foreground">{formatCurrency(minAmount)}</p>
+                  <p className="text-xs text-muted-foreground">Mínimo</p>
                 </div>
               </div>
             </div>

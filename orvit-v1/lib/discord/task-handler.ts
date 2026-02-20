@@ -17,6 +17,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { createSession, getSession, updateSession, deleteSession } from './voice-session';
+import { notifyTaskAssignedDiscord } from './notifications';
 
 // Colores para embeds
 const COLORS = {
@@ -97,20 +98,18 @@ function areNamesSimilar(name1: string, name2: string, threshold = 3): boolean {
   // Distancia Levenshtein del nombre completo
   if (levenshteinDistance(n1, n2) <= threshold) return true;
 
-  // Comparar cada palabra individualmente
-  const words1 = n1.split(/\s+/);
-  const words2 = n2.split(/\s+/);
+  // Comparar por palabras: TODAS las palabras de la búsqueda deben encontrar match
+  // en el candidato (evita falsos positivos por apellido compartido)
+  const words1 = n1.split(/\s+/).filter(w => w.length >= 3);
+  const words2 = n2.split(/\s+/).filter(w => w.length >= 3);
 
-  for (const w1 of words1) {
-    for (const w2 of words2) {
-      // Si alguna palabra es similar (2 o menos diferencias)
-      if (w1.length >= 3 && w2.length >= 3 && levenshteinDistance(w1, w2) <= 2) {
-        return true;
-      }
-    }
-  }
+  if (words1.length === 0) return false;
 
-  return false;
+  const allWordsMatch = words1.every(w1 =>
+    words2.some(w2 => levenshteinDistance(w1, w2) <= 2)
+  );
+
+  return allWordsMatch;
 }
 
 /**
@@ -159,6 +158,7 @@ export interface TaskSession {
     assigneeName?: string;
     dueDate?: string;
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    groupName?: string | null;
   };
   // Para selección de persona cuando hay múltiples candidatos
   personCandidates?: PersonCandidate[];
@@ -301,9 +301,25 @@ async function extractTaskDataWithGPT(text: string): Promise<TaskSession['extrac
         messages: [
           {
             role: 'system',
-            content: `Sos un asistente que RESUME y ESTRUCTURA pedidos/tareas en español argentino.
+            content: (() => {
+              const now = new Date();
+              const tzOpts: Intl.DateTimeFormatOptions = { timeZone: 'America/Argentina/Buenos_Aires', hour12: false };
+              const fechaActual = now.toLocaleString('es-AR', tzOpts);
+              // Calcular "mañana" en hora Argentina
+              const argNow = new Date(now.toLocaleString('en-US', tzOpts));
+              const mañana = new Date(argNow);
+              mañana.setDate(mañana.getDate() + 1);
+              mañana.setHours(12, 0, 0, 0);
+              // Formatear como ISO local Argentina (sin Z para evitar conversión UTC)
+              const pad = (n: number) => String(n).padStart(2, '0');
+              const mañanaISO = `${mañana.getFullYear()}-${pad(mañana.getMonth()+1)}-${pad(mañana.getDate())}T12:00:00`;
+              const hoyISO = `${argNow.getFullYear()}-${pad(argNow.getMonth()+1)}-${pad(argNow.getDate())}`;
 
-FECHA/HORA ACTUAL: ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}
+              return `Sos un asistente que RESUME y ESTRUCTURA pedidos/tareas en español argentino.
+
+FECHA/HORA ACTUAL: ${fechaActual}
+HOY ES: ${hoyISO}
+MAÑANA SERÁ: ${mañanaISO}
 
 REGLAS ESTRICTAS:
 
@@ -321,18 +337,24 @@ REGLAS ESTRICTAS:
    - "se lo estoy pidiendo a Mariano" → "Mariano"
    - Si no hay persona mencionada → null
 
-4. DUEDATE: Fecha/hora en formato ISO 8601. Interpretar:
-   - "para mañana" → mañana a las 09:00
-   - "lo necesito para mañana" → mañana a las 09:00
-   - "mañana a las 10" → mañana a las 10:00
-   - "el viernes 15hs" → viernes a las 15:00
-   - "urgente" → hoy en 1 hora
+4. DUEDATE: Fecha/hora en formato ISO 8601 (SIN zona horaria, hora local Argentina). Usar las fechas provistas arriba:
+   - "para mañana" → ${mañanaISO}
+   - "lo necesito para mañana" → ${mañanaISO}
+   - "mañana a las 10" → ${mañanaISO.replace('T12:00:00', 'T10:00:00')}
+   - "el viernes 15hs" → próximo viernes a las 15:00 (calcular desde HOY ES)
+   - "urgente" → hoy en 1 hora desde FECHA/HORA ACTUAL
    - Si no hay fecha → null
 
 5. PRIORITY: MEDIUM por defecto. URGENT si dice "urgente/ya/ahora". HIGH si dice "importante".
 
+6. GROUPNAME: Nombre del grupo/proyecto si se menciona explícitamente. Buscar patrones:
+   - "en el grupo [Nombre]", "para el grupo [Nombre]", "del proyecto [Nombre]"
+   - "en [Nombre]" cuando [Nombre] suena a un proyecto o carpeta (no una persona)
+   - Si no se menciona ningún grupo → null
+
 Responde ÚNICAMENTE con JSON válido (sin markdown):
-{"title":"...","description":"...o null","assigneeName":"...o null","dueDate":"2024-01-15T10:00:00 o null","priority":"MEDIUM"}`,
+{"title":"...","description":"...o null","assigneeName":"...o null","dueDate":"${mañanaISO} o null","priority":"MEDIUM","groupName":null}`;
+            })(),
           },
           {
             role: 'user',
@@ -368,6 +390,7 @@ Responde ÚNICAMENTE con JSON válido (sin markdown):
           assigneeName: parsed.assigneeName,
           dueDate: parsed.dueDate,
           priority: parsed.priority || 'MEDIUM',
+          groupName: parsed.groupName || null,
         };
       } catch (parseError) {
         console.error('[TaskHandler] Error parseando JSON de GPT:', parseError, 'Content:', content);
@@ -451,23 +474,25 @@ async function findPersonCandidates(
 ): Promise<PersonCandidate[]> {
   const candidatesMap = new Map<string, PersonCandidate & { score: number }>();
 
-  // Separar el nombre en palabras
+  // Separar el nombre en palabras (mínimo 2 chars)
   const words = searchName
     .split(/\s+/)
     .map(w => w.trim())
     .filter(w => w.length >= 2);
 
-  // Crear condiciones de búsqueda: nombre completo + cada palabra
-  const searchConditions = [
-    { contains: searchName, mode: 'insensitive' as const },
-    ...words.map(word => ({ contains: word, mode: 'insensitive' as const })),
-  ];
+  // Condiciones AND: el nombre debe contener TODAS las palabras (no alguna).
+  // Esto evita que "Lucas Ruso" matchee "Mariano Russo" porque "Ruso" ≈ "Russo".
+  // Si hay una sola palabra, AND es equivalente a OR (no hay diferencia).
+  // La coincidencia fuzzy por typos la maneja la fase 2 (areNamesSimilar).
+  const andConditions = words.length > 0
+    ? words.map(word => ({ name: { contains: word, mode: 'insensitive' as const } }))
+    : [{ name: { contains: searchName, mode: 'insensitive' as const } }];
 
-  // Buscar en usuarios de la empresa (búsqueda por substring)
+  // Buscar en usuarios de la empresa (búsqueda exacta por substring, AND de palabras)
   const matchedUsers = await prisma.user.findMany({
     where: {
       companies: { some: { companyId } },
-      OR: searchConditions.map(cond => ({ name: cond })),
+      AND: andConditions,
       isActive: true,
     },
     select: { id: true, name: true, email: true },
@@ -487,11 +512,11 @@ async function findPersonCandidates(
     }
   }
 
-  // Buscar en contactos del usuario (búsqueda por substring)
+  // Buscar en contactos del usuario (búsqueda exacta por substring, AND de palabras)
   const matchedContacts = await prisma.contact.findMany({
     where: {
       userId,
-      OR: searchConditions.map(cond => ({ name: cond })),
+      AND: andConditions,
       isActive: true,
     },
     select: { id: true, name: true, company: true, position: true },
@@ -656,6 +681,29 @@ async function createTask(
     }
   }
 
+  // ─── RESOLVER GRUPO ───
+  let resolvedGroupId: number | null = null;
+  if (data.groupName) {
+    try {
+      const matchedGroup = await (prisma as any).taskGroup.findFirst({
+        where: {
+          companyId,
+          isArchived: false,
+          name: { contains: data.groupName, mode: 'insensitive' },
+        },
+        select: { id: true, name: true },
+      });
+      if (matchedGroup) {
+        resolvedGroupId = matchedGroup.id;
+        console.log(`[TaskHandler] Grupo resuelto: "${matchedGroup.name}" (id=${matchedGroup.id})`);
+      } else {
+        console.log(`[TaskHandler] Grupo "${data.groupName}" no encontrado, se crea sin grupo`);
+      }
+    } catch (err) {
+      console.error('[TaskHandler] Error resolviendo grupo:', err);
+    }
+  }
+
   // ─── ROUTING INTELIGENTE ───
   // Si el asignado es un usuario del sistema → crear Task (tarea con feedback)
   // Si es contacto o sin asignar → crear AgendaTask (recordatorio/agenda)
@@ -672,7 +720,8 @@ async function createTask(
         assignedToId: assignedToUserId,
         createdById: userId,
         companyId,
-        tags: source === 'DISCORD_VOICE' ? ['discord', 'audio'] : ['discord'],
+        tags: [],
+        ...(resolvedGroupId ? { groupId: resolvedGroupId } : {}),
       },
     });
 
@@ -698,7 +747,27 @@ async function createTask(
           }
         );
       } catch (notifError) {
-        console.error('[TaskHandler] Error enviando notificación:', notifError);
+        console.error('[TaskHandler] Error enviando notificación interna:', notifError);
+      }
+
+      // Enviar DM de Discord al asignado (si tiene Discord vinculado)
+      try {
+        const createdByUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true },
+        });
+        await notifyTaskAssignedDiscord({
+          assigneeUserId: assignedToUserId,
+          taskId: task.id,
+          taskTitle: task.title,
+          description: task.description,
+          priority: data.priority || 'MEDIUM',
+          dueDate: task.dueDate,
+          createdByName: createdByUser?.name || 'ORVIT',
+          source,
+        });
+      } catch (dmError) {
+        console.error('[TaskHandler] Error enviando DM Discord:', dmError);
       }
     }
 
@@ -729,6 +798,7 @@ async function createTask(
       assignedToUserId,
       assignedToContactId,
       assignedToName,
+      ...(resolvedGroupId ? { groupId: resolvedGroupId } : {}),
     },
   });
 
@@ -866,6 +936,18 @@ export async function handleNewPersonName(message: any, session: TaskSession): P
       console.log(`[TaskHandler] Nuevo contacto creado: ${newContact.name} (ID: ${newContact.id})`);
     }
 
+    // Resolver grupo (si se extrajo groupName del texto original)
+    let newContactGroupId: number | null = null;
+    if (session.extractedData.groupName) {
+      try {
+        const g = await (prisma as any).taskGroup.findFirst({
+          where: { companyId: session.companyId, isArchived: false, name: { contains: session.extractedData.groupName, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (g) newContactGroupId = g.id;
+      } catch { /* ignorar */ }
+    }
+
     // Nuevo contacto → siempre AgendaTask (recordatorio de agenda)
     const task = await prisma.agendaTask.create({
       data: {
@@ -880,6 +962,7 @@ export async function handleNewPersonName(message: any, session: TaskSession): P
         companyId: session.companyId,
         assignedToContactId: newContact?.id || null,
         assignedToName: newContact?.name || undefined,
+        ...(newContactGroupId ? { groupId: newContactGroupId } : {}),
       },
     });
 
@@ -1001,10 +1084,15 @@ export async function handlePersonSelection(
   interaction: any,
   session: TaskSession
 ): Promise<void> {
+  // Deferir inmediatamente para evitar DiscordAPIError[10062]:
+  // las interacciones tienen ventana de 3s; las ops async (DB, DM) pueden excederla.
+  // deferUpdate() extiende la ventana a 15 minutos y luego editReply() actualiza el mensaje.
+  await interaction.deferUpdate();
+
   const value = interaction.values[0];
 
   if (!session.extractedData) {
-    await interaction.update({
+    await interaction.editReply({
       embeds: [{ title: '❌ Error', description: 'Sesión inválida', color: COLORS.ERROR }],
       components: [],
     });
@@ -1061,13 +1149,13 @@ export async function handlePersonSelection(
       taskType = result.taskType;
     }
 
-    await interaction.update({
+    await interaction.editReply({
       embeds: [buildTaskSuccessEmbed(task, taskType)],
       components: [],
     });
   } catch (error) {
     console.error('[TaskHandler] Error creando tarea tras selección:', error);
-    await interaction.update({
+    await interaction.editReply({
       embeds: [{ title: '❌ Error', description: 'Hubo un error creando la tarea.', color: COLORS.ERROR }],
       components: [],
     });

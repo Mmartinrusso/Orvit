@@ -280,8 +280,8 @@ export default function SectorSelection() {
             {isProductionArea && !loadingProductionSectors && productionSectors.length === 0 && !searchQuery && (
               <div className="col-span-full text-center py-12">
                 <div className="surface-card border-2 border-border/30 rounded-2xl p-8 max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Factory className="h-8 w-8 text-blue-500" />
+                  <div className="w-16 h-16 bg-info-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Factory className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Sin sectores de producción</h3>
                   <p className="text-muted-foreground text-sm mb-3">

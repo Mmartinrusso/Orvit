@@ -110,9 +110,9 @@ interface Resource {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Activo', color: 'bg-green-100 text-green-700' },
-  { value: 'MAINTENANCE', label: 'En Mantenimiento', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'INACTIVE', label: 'Inactivo', color: 'bg-gray-100 text-gray-600' },
+  { value: 'ACTIVE', label: 'Activo', color: 'bg-success-muted text-success' },
+  { value: 'MAINTENANCE', label: 'En Mantenimiento', color: 'bg-warning-muted text-warning-muted-foreground' },
+  { value: 'INACTIVE', label: 'Inactivo', color: 'bg-muted text-muted-foreground' },
 ];
 
 export default function ResourcesConfigPage() {
@@ -481,7 +481,7 @@ export default function ResourcesConfigPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Boxes className="h-6 w-6 text-orange-600" />
+              <Boxes className="h-6 w-6 text-warning-muted-foreground" />
               Recursos de Producción
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -609,7 +609,7 @@ export default function ResourcesConfigPage() {
                                     setDeleteDialogOpen(true);
                                   }}
                                 >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -761,7 +761,7 @@ export default function ResourcesConfigPage() {
                                     onClick={() => handleDuplicateResource(resource)}
                                     title="Duplicar"
                                   >
-                                    <Copy className="h-4 w-4 text-blue-500" />
+                                    <Copy className="h-4 w-4 text-info-muted-foreground" />
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -772,7 +772,7 @@ export default function ResourcesConfigPage() {
                                     }}
                                     title="Eliminar"
                                   >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                    <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </div>
                               </TableCell>
@@ -951,7 +951,7 @@ export default function ResourcesConfigPage() {
                             className="h-8 w-8"
                             onClick={() => removeAttribute(key)}
                           >
-                            <X className="h-4 w-4 text-red-500" />
+                            <X className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       ))}
@@ -1214,7 +1214,7 @@ export default function ResourcesConfigPage() {
                       <div key={key} className="space-y-1">
                         <Label className="text-sm">
                           {attrSchema.label}
-                          {attrSchema.required && <span className="text-red-500 ml-1">*</span>}
+                          {attrSchema.required && <span className="text-destructive ml-1">*</span>}
                           {attrSchema.unit && (
                             <span className="text-muted-foreground font-normal ml-1">({attrSchema.unit})</span>
                           )}

@@ -11,13 +11,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Edit, Trash2, CheckCircle, AlertTriangle, Clock, DollarSign, User, Calendar, X, FileText, CalendarDays, BarChart3, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { Plus, Edit, Trash2, CheckCircle, AlertTriangle, Clock, DollarSign, User, Calendar, X, FileText, CalendarDays, BarChart3, ChevronLeft, ChevronRight, Bell, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTaxBases, useTaxRecords, useTaxAlerts, useCreateTaxBase, useUpsertTaxRecord, useUpdateTaxRecordStatus, useDeleteTaxRecord, useDeleteTaxBase } from '@/hooks/use-tax-control';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 interface TaxBase {
   id: number;
@@ -81,6 +83,7 @@ interface TaxControlModalProps {
 export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog = false }: TaxControlModalProps) {
   const { currentCompany } = useCompany();
   const { hasPermission } = useAuth();
+  const confirm = useConfirm();
   
   // Verificar permisos
   const canManageControls = hasPermission('controles.manage');
@@ -167,10 +170,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
   });
 
   const statusColors = {
-    RECIBIDO: 'bg-blue-100 text-blue-800',
-    PAGADO: 'bg-green-100 text-green-800',
-    PENDIENTE: 'bg-yellow-100 text-yellow-800',
-    VENCIDO: 'bg-red-100 text-red-800'
+    RECIBIDO: 'bg-info-muted text-info-muted-foreground',
+    PAGADO: 'bg-success-muted text-success-muted-foreground',
+    PENDIENTE: 'bg-warning-muted text-warning-muted-foreground',
+    VENCIDO: 'bg-destructive/10 text-destructive'
   };
 
   const statusIcons = {
@@ -200,12 +203,12 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
     
     // Validaciones
     if (!baseFormData.name || baseFormData.name.trim() === '') {
-      alert('Por favor ingresa el nombre del impuesto');
+      toast.warning('Por favor ingresa el nombre del impuesto');
       return;
     }
     
     if (!baseFormData.recurringDay || baseFormData.recurringDay < 1 || baseFormData.recurringDay > 31) {
-      alert('Por favor selecciona un día válido del mes (1-31)');
+      toast.warning('Por favor selecciona un día válido del mes (1-31)');
       return;
     }
     
@@ -225,10 +228,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
         notes: ''
       });
       setIsCreateBaseDialogOpen(false);
-      alert(`✅ Planilla "${newBase.name}" creada exitosamente`);
+      toast.success(`Planilla "${newBase.name}" creada exitosamente`);
     } catch (error: any) {
       console.error('Error creating tax base:', error);
-      alert(`❌ Error al crear la planilla: ${error.message || 'Error desconocido'}`);
+      toast.error(`Error al crear la planilla: ${error.message || 'Error desconocido'}`);
     }
   };
 
@@ -287,7 +290,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
       }
     } catch (error: any) {
       console.error('Error creating/updating tax record:', error);
-      alert(error.message || 'Error al crear/actualizar registro');
+      toast.error(error.message || 'Error al crear/actualizar registro');
     }
   };
 
@@ -304,7 +307,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
       });
     } catch (error: any) {
       console.error('Error updating status:', error);
-      alert(error.message || 'Error al actualizar estado');
+      toast.error(error.message || 'Error al actualizar estado');
     }
   };
 
@@ -312,17 +315,22 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
   const handleDelete = async (id: number) => {
     if (!currentCompany) return;
     
-    if (confirm('¿Estás seguro de que quieres eliminar este registro?')) {
-      try {
-        await deleteRecordMutation.mutateAsync({ 
-          id, 
-          companyId: currentCompany.id,
-          month: selectedMonth 
-        });
-      } catch (error: any) {
-        console.error('Error deleting tax record:', error);
-        alert(error.message || 'Error al eliminar registro');
-      }
+    const ok = await confirm({
+      title: 'Eliminar registro',
+      description: '¿Estás seguro de que quieres eliminar este registro?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    try {
+      await deleteRecordMutation.mutateAsync({
+        id,
+        companyId: currentCompany.id,
+        month: selectedMonth
+      });
+    } catch (error: any) {
+      console.error('Error deleting tax record:', error);
+      toast.error(error.message || 'Error al eliminar registro');
     }
   };
 
@@ -335,13 +343,18 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
       ? `¿Estás seguro de que quieres eliminar la base "${name}"?\n\nSe eliminarán también ${recordsCount} registro${recordsCount !== 1 ? 's' : ''} asociado${recordsCount !== 1 ? 's' : ''}.\n\nEsta acción no se puede deshacer.`
       : `¿Estás seguro de que quieres eliminar la base "${name}"?\n\nEsta acción no se puede deshacer.`;
     
-    if (confirm(confirmMessage)) {
-      try {
-        await deleteBaseMutation.mutateAsync({ id, companyId: currentCompany.id });
-      } catch (error: any) {
-        console.error('Error deleting tax base:', error);
-        alert(error.message || 'Error al eliminar la base de impuesto');
-      }
+    const ok = await confirm({
+      title: 'Eliminar base de impuesto',
+      description: confirmMessage,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    try {
+      await deleteBaseMutation.mutateAsync({ id, companyId: currentCompany.id });
+    } catch (error: any) {
+      console.error('Error deleting tax base:', error);
+      toast.error(error.message || 'Error al eliminar la base de impuesto');
     }
   };
 
@@ -356,10 +369,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
         companyId: currentCompany.id,
         month: selectedMonth 
       });
-      alert('Impuesto marcado como pagado exitosamente');
+      toast.success('Impuesto marcado como pagado exitosamente');
     } catch (error: any) {
       console.error('Error marking as paid:', error);
-      alert(error.message || 'Error al marcar como pagado');
+      toast.error(error.message || 'Error al marcar como pagado');
     }
   };
 
@@ -379,7 +392,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Se generaron ${result.totalCreated} registros mensuales para ${selectedMonth}`);
+        toast.success(`Se generaron ${result.totalCreated} registros mensuales para ${selectedMonth}`);
         fetchTaxRecords();
       }
     } catch (error) {
@@ -531,7 +544,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     setIsCreateRecordDialogOpen(true);
                   }} 
                   size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-info hover:bg-info/90 text-info-foreground"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Ingreso de Impuesto
@@ -557,7 +570,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
 
           {/* Sistema de Pestañas */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="bases" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Impuestos
@@ -580,57 +593,57 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
             <TabsContent value="bases" className="space-y-4">
               {/* Resumen */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-l-4 border-l-blue-500">
+            <Card className="border-l-4 border-l-info">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total General</CardTitle>
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <DollarSign className="h-4 w-4 text-blue-600" />
+                <div className="p-2 bg-info-muted rounded-lg">
+                  <DollarSign className="h-4 w-4 text-info-muted-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{taxBases.length}</div>
+                <div className="text-2xl font-bold text-info-muted-foreground">{taxBases.length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {taxBases.length} base{taxBases.length !== 1 ? 's' : ''} de impuesto{taxBases.length !== 1 ? 's' : ''}
                 </p>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-yellow-500">
+            <Card className="border-l-4 border-l-warning">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Activas</CardTitle>
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Clock className="h-4 w-4 text-yellow-600" />
+                <div className="p-2 bg-warning-muted rounded-lg">
+                  <Clock className="h-4 w-4 text-warning-muted-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{taxBases.filter(base => base.isActive).length}</div>
+                <div className="text-2xl font-bold text-warning-muted-foreground">{taxBases.filter(base => base.isActive).length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Bases activas
                 </p>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-green-500">
+            <Card className="border-l-4 border-l-success">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Recurrentes</CardTitle>
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <div className="p-2 bg-success-muted rounded-lg">
+                  <CheckCircle className="h-4 w-4 text-success" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{taxBases.filter(base => base.isRecurring).length}</div>
+                <div className="text-2xl font-bold text-success">{taxBases.filter(base => base.isRecurring).length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Bases recurrentes
                 </p>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-red-500">
+            <Card className="border-l-4 border-l-destructive">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Inactivas</CardTitle>
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                <div className="p-2 bg-destructive/10 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{taxBases.filter(base => !base.isActive).length}</div>
+                <div className="text-2xl font-bold text-destructive">{taxBases.filter(base => !base.isActive).length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Bases inactivas
                 </p>
@@ -664,7 +677,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
               {loading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                     <p>Cargando impuestos...</p>
                   </div>
                 </div>
@@ -717,27 +730,27 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                         key={base.id}
                         className={cn(
                           "flex items-center justify-between p-6 border rounded-xl hover:shadow-md transition-all duration-200",
-                          !isActive && "opacity-60 border-gray-200"
+                          !isActive && "opacity-60 border-border"
                         )}
                       >
                         <div className="flex items-center space-x-4">
                           <div className={cn(
                             "p-3 rounded-xl",
-                            isActive && isRecurring && "bg-green-100",
-                            isActive && !isRecurring && "bg-blue-100",
-                            !isActive && "bg-gray-100"
+                            isActive && isRecurring && "bg-success-muted",
+                            isActive && !isRecurring && "bg-info-muted",
+                            !isActive && "bg-muted"
                           )}>
                             {isRecurring ? (
                               <Calendar className={cn(
                                 "h-5 w-5",
-                                isActive && "text-green-600",
-                                !isActive && "text-gray-600"
+                                isActive && "text-success",
+                                !isActive && "text-muted-foreground"
                               )} />
                             ) : (
                               <FileText className={cn(
                                 "h-5 w-5",
-                                isActive && "text-blue-600",
-                                !isActive && "text-gray-600"
+                                isActive && "text-info-muted-foreground",
+                                !isActive && "text-muted-foreground"
                               )} />
                             )}
                           </div>
@@ -823,10 +836,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                         <div className="flex flex-col items-end space-y-3">
                           <div className="text-right">
                             <div className="flex items-center gap-2 mb-2">
-                              <Badge 
+                              <Badge
                                 className={cn(
-                                  isActive && "bg-green-100 text-green-800",
-                                  !isActive && "bg-gray-100 text-gray-800"
+                                  isActive && "bg-success-muted text-success-muted-foreground",
+                                  !isActive && "bg-muted text-foreground"
                                 )}
                               >
                                 {isActive ? 'Activa' : 'Inactiva'}
@@ -852,7 +865,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                                   setIsCreateRecordDialogOpen(true);
                                 }}
                                 disabled={!isActive}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-info hover:bg-info/90 text-info-foreground"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Crear Registro
@@ -863,7 +876,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                                   <Button
                                     size="sm"
                                     onClick={() => handleMarkAsPaid(existingRecord.id)}
-                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    className="bg-success hover:bg-success/90 text-success-foreground"
                                   >
                                     <CheckCircle className="h-4 w-4 mr-1" />
                                     Marcar Pagado
@@ -895,7 +908,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                               onClick={() => {
                                 // TODO: Implementar edición de base
                               }}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="text-info-muted-foreground hover:text-info-muted-foreground hover:bg-info-muted"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -903,7 +916,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteBase(base.id, base.name)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1014,8 +1027,8 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 bg-info-muted rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-info-muted-foreground" />
                     </div>
                     <div>
                       <CardTitle className="text-lg">Control de Impuestos</CardTitle>
@@ -1033,15 +1046,15 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                 <CardContent>
                   {/* Resumen de Estados */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <Card className="border-l-4 border-l-gray-500">
+                    <Card className="border-l-4 border-l-muted-foreground">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Pendientes</CardTitle>
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                          <Clock className="h-4 w-4 text-gray-600" />
+                        <div className="p-2 bg-muted rounded-lg">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-gray-600">
+                        <div className="text-2xl font-bold text-muted-foreground">
                           {taxBases.filter(base => {
                             const record = taxRecords.find(r => r.taxBaseId === base.id && r.month === selectedMonth);
                             return !record;
@@ -1050,43 +1063,43 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                         <p className="text-xs text-muted-foreground mt-1">Sin ingresar</p>
                       </CardContent>
                     </Card>
-                    <Card className="border-l-4 border-l-blue-500">
+                    <Card className="border-l-4 border-l-info">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Recibidos</CardTitle>
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <CheckCircle className="h-4 w-4 text-blue-600" />
+                        <div className="p-2 bg-info-muted rounded-lg">
+                          <CheckCircle className="h-4 w-4 text-info-muted-foreground" />
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">
+                        <div className="text-2xl font-bold text-info-muted-foreground">
                           {taxRecords.filter(record => record.status === 'RECIBIDO' && (statusFilter === 'all' || statusFilter === 'RECIBIDO')).length}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Pendientes de pago</p>
                       </CardContent>
                     </Card>
-                    <Card className="border-l-4 border-l-green-500">
+                    <Card className="border-l-4 border-l-success">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Pagados</CardTitle>
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        <div className="p-2 bg-success-muted rounded-lg">
+                          <CheckCircle className="h-4 w-4 text-success" />
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-green-600">
+                        <div className="text-2xl font-bold text-success">
                           {taxRecords.filter(record => record.status === 'PAGADO' && (statusFilter === 'all' || statusFilter === 'PAGADO')).length}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Completados</p>
                       </CardContent>
                     </Card>
-                    <Card className="border-l-4 border-l-red-500">
+                    <Card className="border-l-4 border-l-destructive">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Vencidos</CardTitle>
-                        <div className="p-2 bg-red-100 rounded-lg">
-                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                        <div className="p-2 bg-destructive/10 rounded-lg">
+                          <AlertTriangle className="h-4 w-4 text-destructive" />
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-red-600">
+                        <div className="text-2xl font-bold text-destructive">
                           {taxRecords.filter(record => record.status === 'VENCIDO' && (statusFilter === 'all' || statusFilter === 'VENCIDO')).length}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Requieren atención</p>
@@ -1100,7 +1113,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     <Card>
                       <CardHeader>
                         <div className="flex items-center gap-2">
-                          <Clock className="h-5 w-5 text-gray-600" />
+                          <Clock className="h-5 w-5 text-muted-foreground" />
                           <CardTitle className="text-base">Pendientes</CardTitle>
                           <Badge variant="outline" className="text-xs">
                             {taxBases.filter(base => {
@@ -1119,10 +1132,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                             const record = taxRecords.find(r => r.taxBaseId === base.id && r.month === selectedMonth);
                             return !record;
                           }).map((base) => (
-                            <div key={base.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                            <div key={base.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:shadow-sm transition-shadow">
                               <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-gray-100 rounded-lg">
-                                  <Clock className="h-4 w-4 text-gray-600" />
+                                <div className="p-2 bg-muted rounded-lg">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
                                 </div>
                                 <div>
                                   <h4 className="font-medium">{base.name}</h4>
@@ -1143,7 +1156,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                                   });
                                   setIsCreateRecordDialogOpen(true);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-info hover:bg-info/90 text-info-foreground"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Ingresar
@@ -1155,7 +1168,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                             return !record;
                           }).length === 0 && (
                             <div className="text-center py-6 text-muted-foreground">
-                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-success" />
                               <p className="text-sm">Todos los impuestos han sido ingresados</p>
                             </div>
                           )}
@@ -1167,7 +1180,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     <Card>
                       <CardHeader>
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                          <CheckCircle className="h-5 w-5 text-info-muted-foreground" />
                           <CardTitle className="text-base">Recibidos</CardTitle>
                           <Badge variant="outline" className="text-xs">
                             {taxRecords.filter(record => record.status === 'RECIBIDO' && (statusFilter === 'all' || statusFilter === 'RECIBIDO')).length}
@@ -1180,10 +1193,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                       <CardContent>
                         <div className="space-y-3">
                           {taxRecords.filter(record => record.status === 'RECIBIDO' && (statusFilter === 'all' || statusFilter === 'RECIBIDO')).map((record) => (
-                            <div key={record.id} className="flex items-center justify-between p-3 border border-blue-200 rounded-lg hover:shadow-sm transition-shadow bg-blue-50/30">
+                            <div key={record.id} className="flex items-center justify-between p-3 border border-info-muted rounded-lg hover:shadow-sm transition-shadow bg-info-muted/30">
                               <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                                <div className="p-2 bg-info-muted rounded-lg">
+                                  <CheckCircle className="h-4 w-4 text-info-muted-foreground" />
                                 </div>
                                 <div>
                                   <h4 className="font-medium">{record.taxBase.name}</h4>
@@ -1195,7 +1208,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                               <Button
                                 size="sm"
                                 onClick={() => handleMarkAsPaid(record.id)}
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-success hover:bg-success/90 text-success-foreground"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 Marcar Pagado
@@ -1204,7 +1217,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                           ))}
                           {taxRecords.filter(record => record.status === 'RECIBIDO' && (statusFilter === 'all' || statusFilter === 'RECIBIDO')).length === 0 && (
                             <div className="text-center py-6 text-muted-foreground">
-                              <Clock className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                              <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                               <p className="text-sm">No hay impuestos recibidos</p>
                             </div>
                           )}
@@ -1216,7 +1229,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     <Card>
                       <CardHeader>
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle className="h-5 w-5 text-success" />
                           <CardTitle className="text-base">Pagados</CardTitle>
                           <Badge variant="outline" className="text-xs">
                             {taxRecords.filter(record => record.status === 'PAGADO' && (statusFilter === 'all' || statusFilter === 'PAGADO')).length}
@@ -1229,10 +1242,10 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                       <CardContent>
                         <div className="space-y-3">
                           {taxRecords.filter(record => record.status === 'PAGADO' && (statusFilter === 'all' || statusFilter === 'PAGADO')).map((record) => (
-                            <div key={record.id} className="flex items-center justify-between p-3 border border-green-200 rounded-lg hover:shadow-sm transition-shadow bg-green-50/30">
+                            <div key={record.id} className="flex items-center justify-between p-3 border border-success-muted rounded-lg hover:shadow-sm transition-shadow bg-success-muted/30">
                               <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-green-100 rounded-lg">
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                <div className="p-2 bg-success-muted rounded-lg">
+                                  <CheckCircle className="h-4 w-4 text-success" />
                                 </div>
                                 <div>
                                   <h4 className="font-medium">{record.taxBase.name}</h4>
@@ -1240,20 +1253,20 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                                     ${record.amount.toLocaleString()} - {record.month}
                                   </p>
                                   {record.paymentDate && (
-                                    <p className="text-xs text-green-600">
+                                    <p className="text-xs text-success">
                                       Pagado: {new Date(record.paymentDate).toLocaleDateString('es-AR')}
                                     </p>
                                   )}
                                 </div>
                               </div>
-                              <Badge className="bg-green-100 text-green-800">
+                              <Badge className="bg-success-muted text-success-muted-foreground">
                                 Completado
                               </Badge>
                             </div>
                           ))}
                           {taxRecords.filter(record => record.status === 'PAGADO' && (statusFilter === 'all' || statusFilter === 'PAGADO')).length === 0 && (
                             <div className="text-center py-6 text-muted-foreground">
-                              <Clock className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                              <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                               <p className="text-sm">No hay impuestos pagados</p>
                             </div>
                           )}
@@ -1265,7 +1278,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     <Card>
                       <CardHeader>
                         <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                          <AlertTriangle className="h-5 w-5 text-destructive" />
                           <CardTitle className="text-base">Vencidos</CardTitle>
                           <Badge variant="outline" className="text-xs">
                             {taxRecords.filter(record => record.status === 'VENCIDO' && (statusFilter === 'all' || statusFilter === 'VENCIDO')).length}
@@ -1278,17 +1291,17 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                       <CardContent>
                         <div className="space-y-3">
                           {taxRecords.filter(record => record.status === 'VENCIDO' && (statusFilter === 'all' || statusFilter === 'VENCIDO')).map((record) => (
-                            <div key={record.id} className="flex items-center justify-between p-3 border border-red-200 rounded-lg hover:shadow-sm transition-shadow bg-red-50/30">
+                            <div key={record.id} className="flex items-center justify-between p-3 border border-destructive/30 rounded-lg hover:shadow-sm transition-shadow bg-destructive/5">
                               <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-red-100 rounded-lg">
-                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                <div className="p-2 bg-destructive/10 rounded-lg">
+                                  <AlertTriangle className="h-4 w-4 text-destructive" />
                                 </div>
                                 <div>
                                   <h4 className="font-medium">{record.taxBase.name}</h4>
                                   <p className="text-sm text-muted-foreground">
                                     ${record.amount.toLocaleString()} - {record.month}
                                   </p>
-                                  <p className="text-xs text-red-600">
+                                  <p className="text-xs text-destructive">
                                     Vence: {new Date(record.alertDate).toLocaleDateString('es-AR')}
                                   </p>
                                 </div>
@@ -1297,7 +1310,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                                 <Button
                                   size="sm"
                                   onClick={() => handleMarkAsPaid(record.id)}
-                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  className="bg-success hover:bg-success/90 text-success-foreground"
                                 >
                                   <CheckCircle className="h-4 w-4 mr-1" />
                                   Pagar
@@ -1325,7 +1338,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                           ))}
                           {taxRecords.filter(record => record.status === 'VENCIDO' && (statusFilter === 'all' || statusFilter === 'VENCIDO')).length === 0 && (
                             <div className="text-center py-6 text-muted-foreground">
-                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-success" />
                               <p className="text-sm">¡Excelente! No hay impuestos vencidos</p>
                             </div>
                           )}
@@ -1343,8 +1356,8 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <CalendarDays className="h-5 w-5 text-blue-600" />
+                      <div className="p-2 bg-info-muted rounded-lg">
+                        <CalendarDays className="h-5 w-5 text-info-muted-foreground" />
                       </div>
                       <div>
                         <CardTitle className="text-lg">Calendario de Impuestos</CardTitle>
@@ -1381,18 +1394,18 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                 <CardContent>
                   {/* Filtros del Calendario - Compactos */}
                   <div className="mb-4">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+                    <div className="bg-muted/50 border border-border rounded-lg p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-900">Filtros</span>
+                          <CalendarDays className="h-4 w-4 text-info-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">Filtros</span>
                         </div>
                         <div className="flex gap-1">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setCalendarFilters({ received: true, paid: true, due: true })}
-                            className="h-7 px-2 text-xs bg-white hover:bg-blue-50 border-blue-200 text-blue-700"
+                            className="h-7 px-2 text-xs bg-background hover:bg-info-muted border-info-muted text-info-muted-foreground"
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Todos
@@ -1401,7 +1414,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                             variant="outline"
                             size="sm"
                             onClick={() => setCalendarFilters({ received: false, paid: false, due: false })}
-                            className="h-7 px-2 text-xs bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+                            className="h-7 px-2 text-xs bg-background hover:bg-accent border-border text-foreground"
                           >
                             <X className="h-3 w-3 mr-1" />
                             Ninguno
@@ -1414,72 +1427,72 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                         <div 
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200",
-                            calendarFilters.received 
-                              ? "border-blue-300 bg-blue-100 shadow-sm" 
-                              : "border-gray-200 bg-white hover:border-blue-200 hover:bg-blue-50"
+                            calendarFilters.received
+                              ? "border-info shadow-sm bg-info-muted"
+                              : "border-border bg-background hover:border-info-muted hover:bg-info-muted/50"
                           )}
                           onClick={() => setCalendarFilters(prev => ({ ...prev, received: !prev.received }))}
                         >
                           <div className={cn(
                             "w-3 h-3 rounded-full border flex items-center justify-center transition-all duration-200",
-                            calendarFilters.received 
-                              ? "bg-blue-500 border-blue-500" 
-                              : "border-gray-300"
+                            calendarFilters.received
+                              ? "bg-info border-info"
+                              : "border-border"
                           )}>
                             {calendarFilters.received && (
                               <CheckCircle className="h-2 w-2 text-white" />
                             )}
                           </div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-900">Recibido</span>
+                          <div className="w-2 h-2 bg-info rounded-full"></div>
+                          <span className="text-sm font-medium text-foreground">Recibido</span>
                         </div>
 
                         {/* Filtro Pagado */}
                         <div 
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200",
-                            calendarFilters.paid 
-                              ? "border-green-300 bg-green-100 shadow-sm" 
-                              : "border-gray-200 bg-white hover:border-green-200 hover:bg-green-50"
+                            calendarFilters.paid
+                              ? "border-success shadow-sm bg-success-muted"
+                              : "border-border bg-background hover:border-success-muted hover:bg-success-muted/50"
                           )}
                           onClick={() => setCalendarFilters(prev => ({ ...prev, paid: !prev.paid }))}
                         >
                           <div className={cn(
                             "w-3 h-3 rounded-full border flex items-center justify-center transition-all duration-200",
-                            calendarFilters.paid 
-                              ? "bg-green-500 border-green-500" 
-                              : "border-gray-300"
+                            calendarFilters.paid
+                              ? "bg-success border-success"
+                              : "border-border"
                           )}>
                             {calendarFilters.paid && (
                               <CheckCircle className="h-2 w-2 text-white" />
                             )}
                           </div>
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-900">Pagado</span>
+                          <div className="w-2 h-2 bg-success rounded-full"></div>
+                          <span className="text-sm font-medium text-foreground">Pagado</span>
                         </div>
 
                         {/* Filtro Vencimiento */}
                         <div 
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200",
-                            calendarFilters.due 
-                              ? "border-red-300 bg-red-100 shadow-sm" 
-                              : "border-gray-200 bg-white hover:border-red-200 hover:bg-red-50"
+                            calendarFilters.due
+                              ? "border-destructive shadow-sm bg-destructive/10"
+                              : "border-border bg-background hover:border-destructive/30 hover:bg-destructive/5"
                           )}
                           onClick={() => setCalendarFilters(prev => ({ ...prev, due: !prev.due }))}
                         >
                           <div className={cn(
                             "w-3 h-3 rounded-full border flex items-center justify-center transition-all duration-200",
-                            calendarFilters.due 
-                              ? "bg-red-500 border-red-500" 
-                              : "border-gray-300"
+                            calendarFilters.due
+                              ? "bg-destructive border-destructive"
+                              : "border-border"
                           )}>
                             {calendarFilters.due && (
                               <CheckCircle className="h-2 w-2 text-white" />
                             )}
                           </div>
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-gray-900">Vencimiento</span>
+                          <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                          <span className="text-sm font-medium text-foreground">Vencimiento</span>
                         </div>
                       </div>
                     </div>
@@ -1487,35 +1500,35 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
 
                   {/* Contador de eventos visibles - Compacto */}
                   <div className="mb-4">
-                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-3 shadow-sm">
+                    <div className="bg-muted/50 border border-border rounded-lg p-3 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <BarChart3 className="h-4 w-4 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-900">
+                          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">
                             {calendarDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
                           {calendarFilters.received && (
-                            <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 rounded-full">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              <span className="text-xs font-medium text-blue-800">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-info-muted rounded-full">
+                              <div className="w-2 h-2 bg-info rounded-full"></div>
+                              <span className="text-xs font-medium text-info-muted-foreground">
                                 {getCalendarEvents().filter(e => e.type === 'received').length}
                               </span>
                             </div>
                           )}
                           {calendarFilters.paid && (
-                            <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-xs font-medium text-green-800">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-success-muted rounded-full">
+                              <div className="w-2 h-2 bg-success rounded-full"></div>
+                              <span className="text-xs font-medium text-success-muted-foreground">
                                 {getCalendarEvents().filter(e => e.type === 'paid').length}
                               </span>
                             </div>
                           )}
                           {calendarFilters.due && (
-                            <div className="flex items-center gap-1 px-2 py-1 bg-red-100 rounded-full">
-                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                              <span className="text-xs font-medium text-red-800">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-destructive/10 rounded-full">
+                              <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                              <span className="text-xs font-medium text-destructive">
                                 {getCalendarEvents().filter(e => e.type === 'due').length}
                               </span>
                             </div>
@@ -1546,7 +1559,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                           className={cn(
                             "p-2 min-h-[60px] border rounded cursor-pointer hover:bg-muted/20 transition-colors",
                             isToday(date) && "bg-primary/10 border-primary/20",
-                            events.length > 0 && "bg-blue-50/50"
+                            events.length > 0 && "bg-info-muted/50"
                           )}
                         >
                           <div className="text-sm font-medium mb-1">{day}</div>
@@ -1556,9 +1569,9 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                                 key={index}
                                 className={cn(
                                   "text-xs px-1 py-0.5 rounded text-white",
-                                  event.type === 'received' && "bg-blue-500",
-                                  event.type === 'paid' && "bg-green-500",
-                                  event.type === 'due' && "bg-red-500"
+                                  event.type === 'received' && "bg-info",
+                                  event.type === 'paid' && "bg-success",
+                                  event.type === 'due' && "bg-destructive"
                                 )}
                               >
                                 {event.type === 'received' ? `Recibido: ${event.record?.taxBase.name || 'N/A'}` : 
@@ -1603,7 +1616,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
             <DialogBody className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="baseName" className="text-sm font-medium">
-                  Nombre del Impuesto <span className="text-red-500">*</span>
+                  Nombre del Impuesto <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="baseName"
@@ -1634,7 +1647,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
               
               <div className="space-y-2">
                 <Label htmlFor="baseRecurringDay" className="text-sm font-medium">
-                  Día del mes para la alerta <span className="text-red-500">*</span>
+                  Día del mes para la alerta <span className="text-destructive">*</span>
                 </Label>
                 <Select 
                   value={baseFormData.recurringDay.toString()} 
@@ -1651,8 +1664,8 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                <div className="bg-info-muted border border-info-muted rounded-md p-3">
+                  <p className="text-xs text-info-muted-foreground">
                     <strong>ℹ️ Información:</strong> El sistema generará automáticamente un recordatorio el día <strong>{baseFormData.recurringDay}</strong> de cada mes para este impuesto.
                   </p>
                 </div>
@@ -1787,7 +1800,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     className="pr-10"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               </div>

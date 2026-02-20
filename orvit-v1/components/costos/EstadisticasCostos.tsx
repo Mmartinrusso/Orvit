@@ -11,7 +11,8 @@ import {
   Target,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 import { useCostosStats } from '@/hooks/use-costos-stats';
 import { Button } from '@/components/ui/button';
@@ -43,14 +44,14 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8 text-red-600">
+      <div className="text-center p-8 text-destructive">
         <p>Error: {error}</p>
         <Button onClick={refreshStats} className="mt-4">
           Reintentar
@@ -61,7 +62,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
 
   if (!stats) {
     return (
-      <div className="text-center p-8 text-gray-500">
+      <div className="text-center p-8 text-muted-foreground">
         <p>No hay datos disponibles</p>
       </div>
     );
@@ -72,11 +73,11 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <BarChart3 className="h-6 w-6" />
             Estadísticas de Costos
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Análisis completo de costos por categoría y empleado
           </p>
         </div>
@@ -100,7 +101,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Costos</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats.totalGeneral)}</div>
@@ -113,7 +114,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Empleados</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
+            <Users className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalEmpleados}</div>
@@ -126,7 +127,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Categorías</CardTitle>
-            <Building2 className="h-4 w-4 text-purple-600" />
+            <Building2 className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCategorias}</div>
@@ -139,7 +140,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Promedio Salario</CardTitle>
-            <Target className="h-4 w-4 text-orange-600" />
+            <Target className="h-4 w-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats.promedioSalario)}</div>
@@ -152,7 +153,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
 
       {/* Tabs para diferentes vistas */}
       <Tabs defaultValue="categorias" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="categorias">Por Categoría</TabsTrigger>
           <TabsTrigger value="empleados">Por Empleado</TabsTrigger>
           <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
@@ -170,14 +171,14 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
             <CardContent>
               <div className="space-y-4">
                 {stats.distribucionPorCategoria.map((categoria, index) => (
-                  <div key={categoria.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div key={categoria.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
+                      <div className="w-8 h-8 rounded-full bg-info-muted text-info-muted-foreground flex items-center justify-center text-sm font-bold">
                         {index + 1}
                       </div>
                       <div>
                         <div className="font-semibold">{categoria.name}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           {categoria.empleadoCount} empleado{categoria.empleadoCount !== 1 ? 's' : ''}
                         </div>
                       </div>
@@ -205,22 +206,22 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
             <CardContent>
               <div className="space-y-4">
                 {stats.distribucionPorEmpleado.slice(0, showDetailed ? undefined : 10).map((empleado, index) => (
-                  <div key={empleado.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div key={empleado.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold">
+                      <div className="w-8 h-8 rounded-full bg-success-muted text-success flex items-center justify-center text-sm font-bold">
                         {index + 1}
                       </div>
                       <div>
                         <div className="font-semibold">{empleado.name}</div>
-                        <div className="text-sm text-gray-600">{empleado.role}</div>
+                        <div className="text-sm text-muted-foreground">{empleado.role}</div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-lg">{formatCurrency(empleado.totalCost)}</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Salario: {formatCurrency(empleado.grossSalary)}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Impuestos: {formatCurrency(empleado.payrollTaxes)}
                       </div>
                       <Badge variant="outline">{formatPercentage(empleado.porcentaje)}</Badge>
@@ -228,7 +229,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
                   </div>
                 ))}
                 {!showDetailed && stats.distribucionPorEmpleado.length > 10 && (
-                  <div className="text-center py-4 text-gray-500">
+                  <div className="text-center py-4 text-muted-foreground">
                     <p>Mostrando top 10 de {stats.distribucionPorEmpleado.length} empleados</p>
                     <p className="text-sm">Activa &quot;Vista Detallada&quot; para ver todos</p>
                   </div>
@@ -249,10 +250,10 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-success">
                   {stats.tendencias.empleadosNuevos}
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Contratados en el último mes
                 </p>
               </CardContent>
@@ -266,10 +267,10 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-3xl font-bold text-info-muted-foreground">
                   {formatPercentage(stats.tendencias.variacionUltimoMes)}
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Cambio respecto al mes anterior
                 </p>
               </CardContent>
@@ -284,10 +285,10 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
                   <CardTitle className="text-sm font-medium">Empleado Más Costoso</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold text-destructive">
                     {formatCurrency(stats.empleadoMasCostoso.totalCost)}
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {stats.empleadoMasCostoso.name}
                   </p>
                 </CardContent>
@@ -300,10 +301,10 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
                   <CardTitle className="text-sm font-medium">Categoría Más Costosa</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-2xl font-bold text-info-muted-foreground">
                     {formatCurrency(stats.categoriaMasCostosa.totalCost)}
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {stats.categoriaMasCostosa.name} ({stats.categoriaMasCostosa.empleadoCount} empleados)
                   </p>
                 </CardContent>

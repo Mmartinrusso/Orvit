@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -92,7 +93,7 @@ export function CotizacionToOrdenButton({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             {/* Resumen */}
             <div className="p-4 border rounded-lg bg-muted/50">
               <p className="text-sm font-semibold mb-2">Resumen de la Cotización</p>
@@ -165,13 +166,13 @@ export function CotizacionToOrdenButton({
             </div>
 
             {/* Información adicional */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-900">
+            <div className="p-3 bg-info-muted border border-info-muted rounded text-sm text-foreground">
               <p className="flex items-center gap-2">
                 <Check className="h-4 w-4" />
                 La cotización se marcará como CONVERTIDA automáticamente
               </p>
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)} disabled={converting}>

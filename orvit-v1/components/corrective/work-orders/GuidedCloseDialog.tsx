@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -204,7 +205,6 @@ export function GuidedCloseDialog({
       if (data.notes) cleanData.notes = data.notes;
     }
 
-    console.log('📤 [GuidedCloseDialog] Enviando datos:', cleanData);
     closeMutation.mutate(cleanData as CloseFormData);
   };
 
@@ -236,10 +236,10 @@ export function GuidedCloseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+      <DialogContent size="md" className="p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
             Cierre de Orden de Trabajo
           </DialogTitle>
           <DialogDescription>
@@ -248,8 +248,7 @@ export function GuidedCloseDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Contenido con scroll */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <DialogBody className="px-6 py-5 space-y-5">
           {/* Alerta de bloqueo */}
           {isBlocked && (
             <Alert variant="destructive">
@@ -533,10 +532,9 @@ export function GuidedCloseDialog({
               </Tabs>
             </form>
           </Form>
-        </div>
+        </DialogBody>
 
-        {/* Footer fijo */}
-        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+        <DialogFooter className="px-6 py-4 border-t">
           <Button
             type="button"
             variant="outline"
@@ -548,7 +546,7 @@ export function GuidedCloseDialog({
             type="submit"
             form="close-form"
             disabled={closeMutation.isPending || isBlocked}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-success hover:bg-success/90"
           >
             {closeMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

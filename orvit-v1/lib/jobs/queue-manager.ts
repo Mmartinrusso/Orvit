@@ -14,6 +14,7 @@ export const QUEUE_NAMES = {
   EMAIL: 'email',
   ERP_SYNC: 'erp-sync',
   DATA_IMPORT: 'data-import',
+  ROUTINE_DEADLINES: 'routine-deadlines',
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];

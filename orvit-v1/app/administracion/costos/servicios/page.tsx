@@ -377,28 +377,28 @@ export default function ServiciosPage() {
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
     switch (estado) {
       case 'ok':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>;
       case 'warning':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>;
       case 'danger':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>;
     }
   };
 
   const getVariacionIcon = (variacion: number) => {
     if (variacion > 0) {
-      return <TrendingUp className="h-4 w-4 text-red-500" />;
+      return <TrendingUp className="h-4 w-4 text-destructive" />;
     } else if (variacion < 0) {
-      return <TrendingDown className="h-4 w-4 text-green-500" />;
+      return <TrendingDown className="h-4 w-4 text-success" />;
     } else {
-      return <Clock className="h-4 w-4 text-gray-500" />;
+      return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getTipoBadge = (tipo: 'fijo' | 'variable') => {
     return tipo === 'fijo' 
-      ? <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Fijo</Badge>
-      : <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Variable</Badge>;
+      ? <Badge className="bg-info-muted text-info-muted-foreground hover:bg-info-muted">Fijo</Badge>
+      : <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Variable</Badge>;
   };
 
   // Funciones para manejar modales
@@ -769,7 +769,7 @@ export default function ServiciosPage() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalCostoServicios)}</div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-red-500" />
+              <TrendingUp className="h-4 w-4 text-destructive" />
               <span>+6.8% vs mes anterior</span>
             </div>
           </CardContent>
@@ -882,7 +882,7 @@ export default function ServiciosPage() {
                         <div className="font-medium">{formatCurrency(servicio.costoMensual)}</div>
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           {getVariacionIcon(servicio.variacion)}
-                          <span className={servicio.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                          <span className={servicio.variacion > 0 ? 'text-destructive' : 'text-success'}>
                             {servicio.variacion > 0 ? '+' : ''}{servicio.variacion.toFixed(1)}%
                           </span>
                         </div>
@@ -1065,24 +1065,24 @@ export default function ServiciosPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                     <span>Mantenimiento +12.3%</span>
                   </div>
-                  <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>
+                  <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                     <span>Electricidad +9.0%</span>
                   </div>
-                  <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>
+                  <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                     <span>Gas -2.2%</span>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>
+                  <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -1664,11 +1664,11 @@ export default function ServiciosPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Costo Máximo</Label>
-                  <div className="text-2xl font-bold text-red-600">{formatCurrency(estadisticasServicio.costoMaximo)}</div>
+                  <div className="text-2xl font-bold text-destructive">{formatCurrency(estadisticasServicio.costoMaximo)}</div>
                 </div>
                 <div className="space-y-2">
                   <Label>Costo Mínimo</Label>
-                  <div className="text-2xl font-bold text-green-600">{formatCurrency(estadisticasServicio.costoMinimo)}</div>
+                  <div className="text-2xl font-bold text-success">{formatCurrency(estadisticasServicio.costoMinimo)}</div>
                 </div>
                 <div className="space-y-2">
                   <Label>Variación Promedio</Label>

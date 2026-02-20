@@ -83,20 +83,20 @@ const TIPO_CONFIG = {
   FACTURA: {
     label: 'Factura',
     icon: FileText,
-    color: 'bg-blue-100 text-blue-700 border-blue-300',
-    iconColor: 'text-blue-600',
+    color: 'bg-info-muted text-info-muted-foreground border-info-muted',
+    iconColor: 'text-info-muted-foreground',
   },
   NC: {
     label: 'Nota de Crédito',
     icon: TrendingDown,
-    color: 'bg-green-100 text-green-700 border-green-300',
-    iconColor: 'text-green-600',
+    color: 'bg-success-muted text-success border-success-muted',
+    iconColor: 'text-success',
   },
   ND: {
     label: 'Nota de Débito',
     icon: TrendingUp,
-    color: 'bg-orange-100 text-orange-700 border-orange-300',
-    iconColor: 'text-orange-600',
+    color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+    iconColor: 'text-warning-muted-foreground',
   },
   REMITO: {
     label: 'Remito',
@@ -255,7 +255,7 @@ export default function ComprobantesPage() {
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setTipoFilter('FACTURA')}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
+                <FileText className="w-4 h-4 text-info-muted-foreground" />
                 Facturas
               </CardTitle>
             </CardHeader>
@@ -270,7 +270,7 @@ export default function ComprobantesPage() {
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setTipoFilter('NC')}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-green-600" />
+                <TrendingDown className="w-4 h-4 text-success" />
                 Notas de Crédito
               </CardTitle>
             </CardHeader>
@@ -285,7 +285,7 @@ export default function ComprobantesPage() {
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setTipoFilter('ND')}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-orange-600" />
+                <TrendingUp className="w-4 h-4 text-warning-muted-foreground" />
                 Notas de Débito
               </CardTitle>
             </CardHeader>
@@ -457,7 +457,7 @@ export default function ComprobantesPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             {comp.saldo !== undefined ? (
-                              <span className={comp.saldo > 0 ? 'text-red-600 font-medium' : ''}>
+                              <span className={comp.saldo > 0 ? 'text-destructive font-medium' : ''}>
                                 {formatCurrency(comp.saldo)}
                               </span>
                             ) : (

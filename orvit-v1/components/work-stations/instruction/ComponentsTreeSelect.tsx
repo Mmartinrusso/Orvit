@@ -124,7 +124,7 @@ function TreeNode({ node, selectedIds, onToggle, depth = 0, searchTerm }: TreeNo
         />
         
         {node.type === 'COMPONENT' ? (
-          <Cog className="h-4 w-4 text-blue-500 shrink-0" />
+          <Cog className="h-4 w-4 text-info-muted-foreground shrink-0" />
         ) : (
           <Layers className="h-4 w-4 text-purple-500 shrink-0" />
         )}

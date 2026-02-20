@@ -153,7 +153,7 @@ export default function AddSectorDialog({ children }: AddSectorDialogProps) {
             </div>
 
             {error && (
-              <div className="mb-2 p-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900 rounded-lg">{error}</div>
+              <div className="mb-2 p-2 text-sm text-destructive bg-destructive/10 rounded-lg">{error}</div>
             )}
             </DialogBody>
             <DialogFooter>

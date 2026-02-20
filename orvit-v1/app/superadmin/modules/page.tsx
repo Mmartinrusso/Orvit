@@ -63,9 +63,9 @@ const categoryIcons: Record<string, any> = {
 };
 
 const categoryColors: Record<string, string> = {
-  VENTAS: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  COMPRAS: 'bg-green-500/10 text-green-500 border-green-500/20',
-  MANTENIMIENTO: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+  VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
+  COMPRAS: 'bg-success/10 text-success border-success-muted/20',
+  MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
   COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
@@ -319,7 +319,7 @@ export default function ModulesPage() {
                               {module.name}
                             </span>
                             {module.isActive ? (
-                              <Badge className="text-[10px] bg-green-500/10 text-green-500 border-green-500/20">
+                              <Badge className="text-[10px] bg-success/10 text-success border-success-muted/20">
                                 Activo
                               </Badge>
                             ) : (

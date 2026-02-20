@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Template {
   id: string;
@@ -80,15 +81,16 @@ const iconMap: Record<string, any> = {
 };
 
 const categoryColors: Record<string, string> = {
-  VENTAS: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  COMPRAS: 'bg-green-500/10 text-green-500 border-green-500/20',
-  MANTENIMIENTO: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+  VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
+  COMPRAS: 'bg-success/10 text-success border-success-muted/20',
+  MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
   COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
 };
 
 export default function TemplatesPage() {
+  const confirm = useConfirm();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,7 +192,13 @@ export default function TemplatesPage() {
   }
 
   async function handleDelete(template: Template) {
-    if (!confirm(`¿Eliminar el template "${template.name}"?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar template',
+      description: `¿Eliminar el template "${template.name}"?`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`/api/superadmin/templates/${template.id}`, {
@@ -321,7 +329,7 @@ export default function TemplatesPage() {
                       <CardTitle className="text-base flex items-center gap-2">
                         {template.name}
                         {template.isDefault && (
-                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                          <Star className="h-4 w-4 text-warning-muted-foreground fill-yellow-500" />
                         )}
                       </CardTitle>
                       <CardDescription className="text-xs">

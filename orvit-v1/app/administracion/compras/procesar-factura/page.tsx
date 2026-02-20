@@ -206,9 +206,9 @@ export default function ProcesarFacturaPage() {
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'text-green-600';
-    if (confidence >= 0.7) return 'text-yellow-600';
-    return 'text-red-600';
+    if (confidence >= 0.9) return 'text-success';
+    if (confidence >= 0.7) return 'text-warning-muted-foreground';
+    return 'text-destructive';
   };
 
   return (
@@ -263,13 +263,13 @@ export default function ProcesarFacturaPage() {
                       <img
                         src={preview}
                         alt="Preview"
-                        className="w-full max-h-[400px] object-contain bg-gray-100"
+                        className="w-full max-h-[400px] object-contain bg-muted"
                       />
                     </div>
                   )}
                   {!preview && file.type === 'application/pdf' && (
-                    <div className="p-8 bg-gray-100 rounded-lg text-center">
-                      <FileImage className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                    <div className="p-8 bg-muted rounded-lg text-center">
+                      <FileImage className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
                       <p className="font-medium">{file.name}</p>
                       <p className="text-sm text-muted-foreground">PDF - Vista previa no disponible</p>
                     </div>
@@ -303,9 +303,9 @@ export default function ProcesarFacturaPage() {
 
           {/* Alertas */}
           {result?.duplicadoPotencial && (
-            <Alert className="border-yellow-500 bg-yellow-50">
-              <AlertTriangle className="w-4 h-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
+            <Alert className="border-warning-muted bg-warning-muted">
+              <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />
+              <AlertDescription className="text-warning-muted-foreground">
                 Se detectó una posible factura duplicada en el sistema.
                 Verifica antes de guardar.
               </AlertDescription>
@@ -313,9 +313,9 @@ export default function ProcesarFacturaPage() {
           )}
 
           {result?.data?.warnings && result.data.warnings.length > 0 && (
-            <Alert className="border-orange-500 bg-orange-50">
-              <AlertTriangle className="w-4 h-4 text-orange-600" />
-              <AlertDescription className="text-orange-800">
+            <Alert className="border-warning-muted bg-warning-muted">
+              <AlertTriangle className="w-4 h-4 text-warning-muted-foreground" />
+              <AlertDescription className="text-warning-muted-foreground">
                 <ul className="list-disc list-inside text-sm">
                   {result.data.warnings.map((w, i) => (
                     <li key={i}>{w}</li>
@@ -380,16 +380,16 @@ export default function ProcesarFacturaPage() {
                   </div>
                   {result.proveedorEncontrado && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-green-700">
+                      <CheckCircle className="w-4 h-4 text-success" />
+                      <span className="text-success">
                         Proveedor encontrado: {result.proveedorEncontrado.name}
                       </span>
                     </div>
                   )}
                   {!result.proveedorEncontrado && editedData?.proveedor?.cuit && (
                     <div className="flex items-center gap-2 text-sm">
-                      <XCircle className="w-4 h-4 text-yellow-600" />
-                      <span className="text-yellow-700">
+                      <XCircle className="w-4 h-4 text-warning-muted-foreground" />
+                      <span className="text-warning-muted-foreground">
                         Proveedor no encontrado - Se creará uno nuevo
                       </span>
                     </div>

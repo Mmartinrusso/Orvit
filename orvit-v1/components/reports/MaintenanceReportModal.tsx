@@ -44,16 +44,16 @@ export function MaintenanceReportModal({ isOpen, onClose, data }: MaintenanceRep
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="xl" className="max-h-[90vh] p-0 flex flex-col overflow-hidden gap-0 print:max-w-none print:max-h-none print:w-full print:h-auto print:overflow-visible print:p-0 print:border-none print:shadow-none">
+      <DialogContent size="xl" className="p-0 gap-0 print:max-w-none print:max-h-none print:w-full print:h-auto print:overflow-visible print:p-0 print:border-none print:shadow-none">
         {/* Screen-only Header */}
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0 screen-only">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-xl font-bold text-gray-900">
+              <DialogTitle className="text-xl font-bold text-foreground">
                 {data.company}
               </DialogTitle>
-              <p className="text-base text-gray-600 mt-0.5">{data.reportTitle}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{data.generatedAtLabel}</p>
+              <p className="text-base text-muted-foreground mt-0.5">{data.reportTitle}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{data.generatedAtLabel}</p>
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -89,8 +89,8 @@ export function MaintenanceReportModal({ isOpen, onClose, data }: MaintenanceRep
         </div>
 
         {/* Screen-only Footer */}
-        <div className="border-t bg-gray-50 px-6 py-2.5 flex-shrink-0 screen-only">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="border-t bg-muted px-6 py-2.5 flex-shrink-0 screen-only">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Listado generado automáticamente por el sistema de mantenimiento</span>
             <span>{data.generatedAtLabel}</span>
           </div>

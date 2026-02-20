@@ -91,6 +91,7 @@ import {
   CreditCard,
   AlertCircle,
   MessageSquarePlus,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -106,6 +107,7 @@ import { PageSearch } from '@/components/layout/PageSearch';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { ThemeSelector } from '@/components/ui/theme-selector';
 import { ModeIndicator } from '@/components/view-mode';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useModules, SIDEBAR_MODULE_MAP } from '@/contexts/ModulesContext';
 import {
@@ -250,6 +252,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     if (!requiredModules) return true; // Sin restricción de módulo
     return areAllModulesEnabled(requiredModules);
   }, [areAllModulesEnabled]);
+
+  // ViewMode - para restringir módulos que requieren T2
+  const { mode: viewMode } = useViewMode();
+  const isT2Active = viewMode === 'E';
 
   // Permisos de navegación
   const {
@@ -476,7 +482,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   // Cerrar el sidebar cuando cambia la ruta en móvil
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768 && isOpen) {
-      console.log('[SIDEBAR] pathname cambió, cerrando sidebar. pathname:', pathname);
       setIsOpen(false);
     }
   }, [pathname]); // Solo ejecutar cuando cambia pathname, no cuando cambia isOpen
@@ -1007,9 +1012,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }] : [])
   ];
 
-  // Módulo de Costos integrado
+  // Módulo de Costos integrado - requiere T2 (modo Extendido)
   const costosItems: SidebarItem[] = [
-    ...(canAccessCosts ? [{
+    ...(canAccessCosts && isT2Active ? [{
       name: 'Módulo de Costos',
       href: '/administracion/costos',
       icon: Calculator,
@@ -1474,17 +1479,17 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   // Si los permisos están cargando, mostrar un estado de carga
   if (permissionsLoading) {
     return (
-      <aside className={`fixed top-0 left-0 z-30 h-full w-64 border-r shadow-sm ${
-        theme === 'light' ? 'bg-white border-gray-200' : 'bg-black border-white/5'
-      }`}>
+      <aside className={cn('fixed top-0 left-0 z-30 h-full w-64 border-r shadow-sm',
+        theme === 'light' ? 'bg-background border-border' : 'bg-black border-white/5'
+      )}>
         <div className="flex flex-col h-full">
           <div className="h-16 px-4 flex items-center justify-center border-b">
-            <div className={`animate-pulse h-6 w-32 rounded ${
-              theme === 'light' ? 'bg-gray-300' : 'bg-white/10'
-            }`}></div>
+            <div className={cn('animate-pulse h-6 w-32 rounded',
+              theme === 'light' ? 'bg-muted' : 'bg-background/10'
+            )}></div>
           </div>
           <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         </div>
       </aside>
@@ -1903,8 +1908,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                               {subchild.badge !== undefined && subchild.badge !== 0 && (
                                                 <span className={cn(
                                                   "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
-                                                  subchild.badgeVariant === 'destructive' && "bg-red-500 text-white",
-                                                  subchild.badgeVariant === 'warning' && "bg-yellow-500 text-black",
+                                                  subchild.badgeVariant === 'destructive' && "bg-destructive text-destructive-foreground",
+                                                  subchild.badgeVariant === 'warning' && "bg-warning-muted text-warning-muted-foreground",
                                                   (!subchild.badgeVariant || subchild.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
                                                 )}>
                                                   {subchild.badge}
@@ -1941,8 +1946,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                       {child.badge !== undefined && child.badge !== 0 && (
                                         <span className={cn(
                                           "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
-                                          child.badgeVariant === 'destructive' && "bg-red-500 text-white",
-                                          child.badgeVariant === 'warning' && "bg-yellow-500 text-black",
+                                          child.badgeVariant === 'destructive' && "bg-destructive text-destructive-foreground",
+                                          child.badgeVariant === 'warning' && "bg-warning-muted text-warning-muted-foreground",
                                           (!child.badgeVariant || child.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
                                         )}>
                                           {child.badge}
@@ -2007,8 +2012,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                           {item.badge !== undefined && item.badge !== 0 && (
                             <span className={cn(
                               "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
-                              item.badgeVariant === 'destructive' && "bg-red-500 text-white",
-                              item.badgeVariant === 'warning' && "bg-yellow-500 text-black",
+                              item.badgeVariant === 'destructive' && "bg-destructive text-destructive-foreground",
+                              item.badgeVariant === 'warning' && "bg-warning-muted text-warning-muted-foreground",
                               (!item.badgeVariant || item.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
                             )}>
                               {item.badge}

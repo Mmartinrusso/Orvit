@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -162,7 +163,7 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
   };
 
   const getMovementTypeColor = (type: string) => {
-    return type === 'IN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return type === 'IN' ? 'bg-success-muted text-success' : 'bg-destructive/10 text-destructive';
   };
 
   const getMovementTypeText = (type: string) => {
@@ -180,7 +181,7 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
-            <Package className="h-6 w-6 text-blue-600" />
+            <Package className="h-6 w-6 text-info-muted-foreground" />
             Registrar Movimiento de Inventario
           </DialogTitle>
         </DialogHeader>
@@ -188,8 +189,8 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
         <DialogBody>
         <div className="space-y-6">
           {/* Tipo de Movimiento */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border dark:border-blue-800/30">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+          <div className="bg-info-muted p-4 rounded-lg border">
+            <h3 className="font-semibold text-info-muted-foreground mb-3 flex items-center gap-2">
               <MovementIcon className="h-4 w-4" />
               Tipo de Movimiento
             </h3>
@@ -221,8 +222,8 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
           </div>
 
           {/* Selección de Herramienta */}
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border dark:border-green-800/30">
-            <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
+          <div className="bg-success-muted p-4 rounded-lg border">
+            <h3 className="font-semibold text-success mb-3 flex items-center gap-2">
               <Package className="h-4 w-4" />
               Herramienta
             </h3>
@@ -260,15 +261,15 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
               </div>
 
               {selectedTool && (
-                <div className="bg-white dark:bg-gray-800 p-3 rounded border dark:border-gray-600">
+                <div className="bg-background p-3 rounded border">
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{selectedTool.name}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">📍 {selectedTool.location}</p>
+                      <p className="font-medium text-foreground">{selectedTool.name}</p>
+                      <p className="text-sm text-foreground">📍 {selectedTool.location}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Stock Actual</p>
-                      <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedTool.stockQuantity}</p>
+                      <p className="text-sm text-muted-foreground">Stock Actual</p>
+                      <p className="text-lg font-bold text-info-muted-foreground">{selectedTool.stockQuantity}</p>
                     </div>
                   </div>
                 </div>
@@ -277,8 +278,8 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
           </div>
 
           {/* Cantidad y Detalles */}
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border dark:border-yellow-800/30">
-            <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-3 flex items-center gap-2">
+          <div className="bg-warning-muted p-4 rounded-lg border">
+            <h3 className="font-semibold text-warning-muted-foreground mb-3 flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Detalles del Movimiento
             </h3>
@@ -294,7 +295,7 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
                   onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
                 />
                 {formData.type === 'OUT' && selectedTool && formData.quantity > selectedTool.stockQuantity && (
-                  <p className="text-red-600 text-sm mt-1">
+                  <p className="text-destructive text-sm mt-1">
                     Stock insuficiente (disponible: {selectedTool.stockQuantity})
                   </p>
                 )}
@@ -356,32 +357,32 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
 
           {/* Resumen */}
           {selectedTool && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border dark:border-gray-700/50">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Resumen del Movimiento</h3>
+            <div className="bg-muted p-4 rounded-lg border">
+              <h3 className="font-semibold text-foreground mb-3">Resumen del Movimiento</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Herramienta:</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{selectedTool.name}</span>
+                  <span className="text-foreground">Herramienta:</span>
+                  <span className="font-medium text-foreground">{selectedTool.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Tipo:</span>
+                  <span className="text-foreground">Tipo:</span>
                   <Badge className={getMovementTypeColor(formData.type)}>
                     {getMovementTypeText(formData.type)}
                   </Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Cantidad:</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{formData.quantity}</span>
+                  <span className="text-foreground">Cantidad:</span>
+                  <span className="font-medium text-foreground">{formData.quantity}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Stock actual:</span>
-                  <span className="text-gray-900 dark:text-gray-100">{selectedTool.stockQuantity}</span>
+                  <span className="text-foreground">Stock actual:</span>
+                  <span className="text-foreground">{selectedTool.stockQuantity}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Stock después:</span>
-                  <span className={`font-bold ${
-                    formData.type === 'IN' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                  }`}>
+                  <span className="text-foreground">Stock después:</span>
+                  <span className={cn('font-bold',
+                    formData.type === 'IN' ? 'text-success' : 'text-destructive'
+                  )}>
                     {formData.type === 'IN' 
                       ? selectedTool.stockQuantity + formData.quantity
                       : selectedTool.stockQuantity - formData.quantity

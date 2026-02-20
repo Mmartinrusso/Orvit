@@ -1,27 +1,41 @@
 'use client';
 
+import { useUserColors } from '@/hooks/use-user-colors';
+import { AVATAR_COLORS } from '@/lib/colors';
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, Calendar, AlertTriangle, MessageSquare, Mic } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { User, Calendar, AlertTriangle, MessageSquare, Mic, MoreVertical, Eye, Pencil, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/hooks/use-task-store';
 
-const DEFAULT_COLORS = {
-  chart1: '#6366f1',
-  chart2: '#8b5cf6',
-  chart3: '#ec4899',
-  chart4: '#f59e0b',
-  chart5: '#10b981',
-  chart6: '#06b6d4',
-  kpiPositive: '#10b981',
-  kpiNegative: '#ef4444',
-  kpiNeutral: '#64748b',
-};
+
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getInitials(name: string): string {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+}
+
+
 
 // Configuración de status (match con constantes de tareas)
 const STATUS_CONFIG: Record<string, {
@@ -33,26 +47,26 @@ const STATUS_CONFIG: Record<string, {
   'pendiente': {
     label: 'Pendiente',
     labelShort: 'Pend.',
-    color: 'text-slate-700',
-    bgColor: 'bg-slate-100',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
   },
   'en-curso': {
     label: 'En Curso',
     labelShort: 'En curso',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
+    color: 'text-info-muted-foreground',
+    bgColor: 'bg-info-muted',
   },
   'realizada': {
     label: 'Realizada',
     labelShort: 'Hecha',
-    color: 'text-green-700',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-muted',
   },
   'cancelada': {
     label: 'Cancelada',
     labelShort: 'Canc.',
-    color: 'text-red-700',
-    bgColor: 'bg-red-100',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
   },
 };
 
@@ -60,10 +74,12 @@ interface TasksKanbanViewProps {
   tasks: Task[];
   onSelect: (task: Task) => void;
   onStatusChange: (task: Task) => void;
+  onEdit?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 }
 
-export function TasksKanbanView({ tasks, onSelect, onStatusChange }: TasksKanbanViewProps) {
-  const userColors = DEFAULT_COLORS;
+export function TasksKanbanView({ tasks, onSelect, onStatusChange, onEdit, onDelete }: TasksKanbanViewProps) {
+  const userColors = useUserColors();
 
   // Agrupar tareas por persona asignada
   const tasksByPerson = useMemo(() => {
@@ -162,12 +178,19 @@ export function TasksKanbanView({ tasks, onSelect, onStatusChange }: TasksKanban
           <div className="p-3 border-b bg-muted/50 rounded-t-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${userColors.chart1}20` }}
-                >
-                  <User className="h-4 w-4" style={{ color: userColors.chart1 }} />
-                </div>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback
+                    style={{
+                      backgroundColor:
+                        personName === '__unassigned__'
+                          ? userColors.kpiNeutral
+                          : getAvatarColor(personName),
+                    }}
+                    className="text-white text-xs font-medium"
+                  >
+                    {personName === '__unassigned__' ? '?' : getInitials(personName)}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <h3 className="font-medium text-sm">
                     {personName === '__unassigned__' ? 'Sin asignar' : personName}
@@ -185,8 +208,8 @@ export function TasksKanbanView({ tasks, onSelect, onStatusChange }: TasksKanban
             <div className="space-y-2">
               {personTasks.map((task) => {
                 const statusConfig = STATUS_CONFIG[task.status] ?? {
-                  bgColor: 'bg-slate-100',
-                  color: 'text-slate-700',
+                  bgColor: 'bg-muted',
+                  color: 'text-muted-foreground',
                   labelShort: task.status,
                 };
                 const overdue = isOverdue(task);
@@ -198,7 +221,7 @@ export function TasksKanbanView({ tasks, onSelect, onStatusChange }: TasksKanban
                   <Card
                     key={task.id}
                     className={cn(
-                      'cursor-pointer transition-all hover:shadow-md',
+                      'cursor-pointer transition-all hover:shadow-md group',
                       'relative overflow-hidden'
                     )}
                     onClick={() => onSelect(task)}
@@ -240,8 +263,8 @@ export function TasksKanbanView({ tasks, onSelect, onStatusChange }: TasksKanban
                               <div
                                 className={cn(
                                   'flex items-center gap-1 text-xs',
-                                  overdue && 'text-red-600 font-medium',
-                                  dueToday && !overdue && 'text-amber-600'
+                                  overdue && 'text-destructive font-medium',
+                                  dueToday && !overdue && 'text-warning-muted-foreground'
                                 )}
                               >
                                 <Calendar className="h-3 w-3" />
@@ -287,6 +310,51 @@ export function TasksKanbanView({ tasks, onSelect, onStatusChange }: TasksKanban
                               </div>
                             </div>
                           )}
+                        </div>
+
+                        {/* 3-dot menu */}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                                aria-label="Acciones de tarea"
+                              >
+                                <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem onClick={() => onSelect(task)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver detalles
+                              </DropdownMenuItem>
+                              {onEdit && (
+                                <DropdownMenuItem onClick={() => onEdit(task)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => onStatusChange(task)}>
+                                {task.status === 'realizada' ? (
+                                  <><Circle className="h-4 w-4 mr-2" />Marcar pendiente</>
+                                ) : (
+                                  <><CheckCircle2 className="h-4 w-4 mr-2" />Marcar realizada</>
+                                )}
+                              </DropdownMenuItem>
+                              {onDelete && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => onDelete(task)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </CardContent>

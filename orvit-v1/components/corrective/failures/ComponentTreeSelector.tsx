@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import {
   Accordion,
@@ -325,9 +326,7 @@ export function ComponentTreeSelector({
                                   className="h-5 w-5 flex items-center justify-center shrink-0"
                                 >
                                   <ChevronDown
-                                    className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
-                                      isExpanded ? 'rotate-0' : '-rotate-90'
-                                    }`}
+                                    className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', isExpanded ? 'rotate-0' : '-rotate-90')}
                                   />
                                 </button>
                               ) : (
@@ -342,7 +341,7 @@ export function ComponentTreeSelector({
                               />
 
                               {/* Icono y nombre */}
-                              <Cog className="h-4 w-4 text-blue-500 shrink-0" />
+                              <Cog className="h-4 w-4 text-info-muted-foreground shrink-0" />
                               <span className="text-sm truncate">{component.name}</span>
                             </div>
 

@@ -13,6 +13,11 @@ import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +37,7 @@ import { LoadingButtonContent } from '@/components/ui/loading-state';
 import { useEnterNavigation } from '@/hooks/use-enter-navigation';
 import { Save, Package, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // Schema de validación
 const formSchema = z.object({
@@ -73,6 +79,7 @@ export function T2FormAdvanced({
   initialData,
   onSuccess,
 }: T2FormAdvancedProps) {
+  const confirm = useConfirm();
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [validatingCode, setValidatingCode] = useState(false);
@@ -150,7 +157,6 @@ export function T2FormAdvanced({
 
       // Simular API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Form data:', data);
 
       toast({
         title: isEdit ? 'Producto actualizado' : 'Producto creado',
@@ -174,28 +180,20 @@ export function T2FormAdvanced({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
-        {/* Header fijo */}
-        <div className="px-6 py-4 border-b bg-background shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-primary/10">
-              <Package className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold">
-                {isEdit ? 'Editar Producto' : 'Nuevo Producto'}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {isEdit
-                  ? 'Modifica los datos del producto'
-                  : 'Completa la información del producto. Usa Enter para avanzar entre campos.'}
-              </p>
-            </div>
-          </div>
-        </div>
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            {isEdit ? 'Editar Producto' : 'Nuevo Producto'}
+          </DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? 'Modifica los datos del producto'
+              : 'Completa la información del producto. Usa Enter para avanzar entre campos.'}
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Contenido scrolleable */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <DialogBody>
           <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Información básica */}
             <div>
@@ -203,17 +201,17 @@ export function T2FormAdvanced({
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs">
-                    Nombre del Producto <span className="text-red-500">*</span>
+                    Nombre del Producto <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     {...register('nombre')}
                     ref={registerField(0)}
                     onKeyDown={(e) => handleKeyDown(e, 0)}
                     placeholder="Ej: Tornillo hexagonal M8 x 30mm"
-                    className={errors.nombre ? 'border-red-500' : ''}
+                    className={errors.nombre ? 'border-destructive' : ''}
                   />
                   {errors.nombre && (
-                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.nombre.message}
                     </p>
@@ -223,7 +221,7 @@ export function T2FormAdvanced({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">
-                      Código <span className="text-red-500">*</span>
+                      Código <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <Input
@@ -231,14 +229,14 @@ export function T2FormAdvanced({
                         ref={registerField(1)}
                         onKeyDown={(e) => handleKeyDown(e, 1)}
                         placeholder="PRD-001"
-                        className={errors.codigo ? 'border-red-500' : ''}
+                        className={errors.codigo ? 'border-destructive' : ''}
                       />
                       {validatingCode && (
                         <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                       )}
                     </div>
                     {errors.codigo && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.codigo.message}
                       </p>
@@ -247,7 +245,7 @@ export function T2FormAdvanced({
 
                   <div>
                     <Label className="text-xs">
-                      Categoría <span className="text-red-500">*</span>
+                      Categoría <span className="text-destructive">*</span>
                     </Label>
                     <Select
                       value={watchedFields.categoria}
@@ -256,7 +254,7 @@ export function T2FormAdvanced({
                         trigger('categoria');
                       }}
                     >
-                      <SelectTrigger className={errors.categoria ? 'border-red-500' : ''}>
+                      <SelectTrigger className={errors.categoria ? 'border-destructive' : ''}>
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -268,7 +266,7 @@ export function T2FormAdvanced({
                       </SelectContent>
                     </Select>
                     {errors.categoria && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.categoria.message}
                       </p>
@@ -286,7 +284,7 @@ export function T2FormAdvanced({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">
-                    Costo <span className="text-red-500">*</span>
+                    Costo <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     type="number"
@@ -295,16 +293,16 @@ export function T2FormAdvanced({
                     ref={registerField(2)}
                     onKeyDown={(e) => handleKeyDown(e, 2)}
                     placeholder="0.00"
-                    className={errors.costo ? 'border-red-500' : ''}
+                    className={errors.costo ? 'border-destructive' : ''}
                   />
                   {errors.costo && (
-                    <p className="text-xs text-red-500 mt-1">{errors.costo.message}</p>
+                    <p className="text-xs text-destructive mt-1">{errors.costo.message}</p>
                   )}
                 </div>
 
                 <div>
                   <Label className="text-xs">
-                    Precio de Venta <span className="text-red-500">*</span>
+                    Precio de Venta <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     type="number"
@@ -313,10 +311,10 @@ export function T2FormAdvanced({
                     ref={registerField(3)}
                     onKeyDown={(e) => handleKeyDown(e, 3)}
                     placeholder="0.00"
-                    className={errors.precio ? 'border-red-500' : ''}
+                    className={errors.precio ? 'border-destructive' : ''}
                   />
                   {errors.precio && (
-                    <p className="text-xs text-red-500 mt-1">{errors.precio.message}</p>
+                    <p className="text-xs text-destructive mt-1">{errors.precio.message}</p>
                   )}
                 </div>
               </div>
@@ -326,11 +324,11 @@ export function T2FormAdvanced({
                 <Alert className="mt-3">
                   <AlertDescription className="text-xs">
                     <span className="font-medium">Margen de ganancia:</span>{' '}
-                    <span className={margen > 20 ? 'text-green-600 font-semibold' : 'text-amber-600 font-semibold'}>
+                    <span className={margen > 20 ? 'text-success font-semibold' : 'text-warning-muted-foreground font-semibold'}>
                       {margen.toFixed(1)}%
                     </span>
                     {margen < 10 && (
-                      <span className="text-amber-600 ml-2">(Margen bajo)</span>
+                      <span className="text-warning-muted-foreground ml-2">(Margen bajo)</span>
                     )}
                   </AlertDescription>
                 </Alert>
@@ -351,10 +349,10 @@ export function T2FormAdvanced({
                     ref={registerField(4)}
                     onKeyDown={(e) => handleKeyDown(e, 4)}
                     placeholder="0"
-                    className={errors.stock ? 'border-red-500' : ''}
+                    className={errors.stock ? 'border-destructive' : ''}
                   />
                   {errors.stock && (
-                    <p className="text-xs text-red-500 mt-1">{errors.stock.message}</p>
+                    <p className="text-xs text-destructive mt-1">{errors.stock.message}</p>
                   )}
                 </div>
 
@@ -364,10 +362,10 @@ export function T2FormAdvanced({
                     type="number"
                     {...register('stockMinimo', { valueAsNumber: true })}
                     placeholder="0"
-                    className={errors.stockMinimo ? 'border-red-500' : ''}
+                    className={errors.stockMinimo ? 'border-destructive' : ''}
                   />
                   {errors.stockMinimo && (
-                    <p className="text-xs text-red-500 mt-1">{errors.stockMinimo.message}</p>
+                    <p className="text-xs text-destructive mt-1">{errors.stockMinimo.message}</p>
                   )}
                 </div>
               </div>
@@ -385,7 +383,7 @@ export function T2FormAdvanced({
                 className="resize-none"
               />
               {errors.descripcion && (
-                <p className="text-xs text-red-500 mt-1">{errors.descripcion.message}</p>
+                <p className="text-xs text-destructive mt-1">{errors.descripcion.message}</p>
               )}
               <p className="text-xs text-muted-foreground mt-1">
                 {watchedFields.descripcion?.length || 0}/500 caracteres
@@ -406,15 +404,14 @@ export function T2FormAdvanced({
               />
             </div>
           </form>
-        </div>
+        </DialogBody>
 
-        {/* Footer fijo */}
-        <div className="px-6 py-3 border-t bg-muted/30 shrink-0">
-          <div className="flex items-center justify-between">
+        <DialogFooter>
+          <div className="flex items-center justify-between w-full">
             {hasChanges ? (
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-xs text-amber-600 font-medium">Cambios sin guardar</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-warning-muted-foreground animate-pulse" />
+                <span className="text-xs text-warning-muted-foreground font-medium">Cambios sin guardar</span>
               </div>
             ) : (
               <span className="text-xs text-muted-foreground">Sin cambios</span>
@@ -423,10 +420,15 @@ export function T2FormAdvanced({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
+                onClick={async () => {
                   if (hasChanges) {
-                    const confirmed = confirm('¿Descartar cambios sin guardar?');
-                    if (!confirmed) return;
+                    const ok = await confirm({
+                      title: 'Descartar cambios',
+                      description: '¿Descartar cambios sin guardar?',
+                      confirmText: 'Confirmar',
+                      variant: 'default',
+                    });
+                    if (!ok) return;
                   }
                   onOpenChange(false);
                 }}
@@ -449,7 +451,7 @@ export function T2FormAdvanced({
               </Button>
             </div>
           </div>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

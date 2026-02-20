@@ -46,6 +46,7 @@ interface FixedTask {
   estimatedTime: number;
   priority: 'baja' | 'media' | 'alta';
   isActive: boolean;
+  executionTime?: string;
   lastExecuted?: string;
   nextExecution: string;
   createdAt: string;
@@ -75,8 +76,8 @@ interface ExecutionHistory {
 
 function getPriorityColor(priority: string) {
   switch (priority) {
-    case 'alta': return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800/50';
-    case 'media': return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800/50';
+    case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
+    case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
     case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/50';
     default: return 'bg-muted text-muted-foreground border-border';
   }
@@ -236,7 +237,7 @@ export function FixedTaskDetailModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent size="lg" className="flex flex-col [&>button]:hidden">
+        <DialogContent size="lg" hideCloseButton>
           <DialogHeader>
             <div className="flex items-start justify-between">
               <div className="space-y-2">
@@ -264,7 +265,7 @@ export function FixedTaskDetailModal({
                   {task.isCompleted && (
                     <Badge 
                       variant="outline" 
-                      className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800/50"
+                      className="bg-success-muted text-success border-success-muted"
                     >
                       ✅ Completada
                     </Badge>
@@ -307,7 +308,7 @@ export function FixedTaskDetailModal({
                     size="sm"
                     variant="outline"
                     disabled
-                    className="text-green-600 dark:text-green-400"
+                    className="text-success"
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
                     Completada
@@ -330,6 +331,7 @@ export function FixedTaskDetailModal({
                   size="icon"
                   onClick={onClose}
                   className="shrink-0 h-8 w-8"
+                  aria-label="Cerrar"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -417,7 +419,14 @@ export function FixedTaskDetailModal({
                         <h4 className="font-medium text-sm text-muted-foreground mb-1">Próxima ejecución</h4>
                         <p className="text-foreground font-medium">{formatDate(task.nextExecution)}</p>
                       </div>
-                      
+
+                      {task.executionTime && (
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Hora de ejecución</h4>
+                          <p className="text-foreground font-medium">{task.executionTime}</p>
+                        </div>
+                      )}
+
                       <div>
                         <h4 className="font-medium text-sm text-muted-foreground mb-1">Creada el</h4>
                         <p className="text-foreground">{formatDate(task.createdAt)}</p>
@@ -426,7 +435,7 @@ export function FixedTaskDetailModal({
                       {task.completedAt && (
                         <div>
                           <h4 className="font-medium text-sm text-muted-foreground mb-1">Completada el</h4>
-                          <p className="text-foreground font-medium text-green-600 dark:text-green-400">
+                          <p className="text-success font-medium">
                             {formatDate(task.completedAt)}
                           </p>
                         </div>
@@ -481,19 +490,21 @@ export function FixedTaskDetailModal({
                                       </div>
                                     </div>
                                     <div className="flex gap-1">
-                                      <Button 
-                                        size="sm" 
+                                      <Button
+                                        size="sm"
                                         variant="outline"
                                         className="h-8 px-2"
                                         onClick={() => window.open(attachment.url, '_blank')}
+                                        aria-label="Descargar"
                                       >
                                         <Download className="h-3 w-3" />
                                       </Button>
-                                      <Button 
-                                        size="sm" 
+                                      <Button
+                                        size="sm"
                                         variant="outline"
                                         className="h-8 px-2"
                                         onClick={() => window.open(attachment.url, '_blank')}
+                                        aria-label="Abrir en nueva pestaña"
                                       >
                                         <ExternalLink className="h-3 w-3" />
                                       </Button>
@@ -561,7 +572,12 @@ export function FixedTaskDetailModal({
                           <h4 className="font-medium text-sm text-muted-foreground mb-1">Próxima ejecución</h4>
                           <p className="text-foreground font-medium">{formatDate(task.nextExecution)}</p>
                         </div>
-                        
+
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Hora de ejecución</h4>
+                          <p className="text-foreground font-medium">{task.executionTime || '—'}</p>
+                        </div>
+
                         <div>
                           <h4 className="font-medium text-sm text-muted-foreground mb-1">Tiempo estimado</h4>
                           <p className="text-foreground">{formatTime(task.estimatedTime)}</p>
@@ -628,7 +644,7 @@ export function FixedTaskDetailModal({
                               <div className="flex items-start justify-between mb-3">
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
-                                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                    <CheckCircle className="h-4 w-4 text-success" />
                                     <span className="font-medium text-sm text-foreground">
                                       Ejecutado por {execution.executedBy}
                                     </span>
@@ -643,7 +659,7 @@ export function FixedTaskDetailModal({
                                   </p>
                                   <Badge 
                                     variant="outline" 
-                                    className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800/50"
+                                    className="text-xs bg-success-muted text-success border-success-muted"
                                   >
                                     Completado
                                   </Badge>
@@ -666,7 +682,7 @@ export function FixedTaskDetailModal({
                                     {execution.attachments.map((fileName, index) => (
                                       <div 
                                         key={index}
-                                        className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800/50"
+                                        className="flex items-center gap-1 text-xs bg-info-muted text-info-muted-foreground px-2 py-1 rounded border border-info-muted"
                                       >
                                         <FileText className="h-3 w-3" />
                                         {fileName}

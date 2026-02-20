@@ -10,15 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CostoBaseDetailModal } from './CostoBaseDetailModal';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, X, Calendar, DollarSign, FileText, TrendingUp, BarChart3, Building2, Target, Activity, Zap, Eye, Info, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Calendar, DollarSign, FileText, TrendingUp, BarChart3, Building2, Target, Activity, Zap, Eye, Info, BookOpen, Loader2 } from 'lucide-react';
 import { NotesDialog } from '@/components/ui/NotesDialog';
 import { useState } from 'react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { toast } from 'sonner';
 
 interface CostosIndirectosNewProps {
   companyId: string;
 }
 
 export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
+  const confirm = useConfirm();
   const {
     costosBase,
     registrosMensuales,
@@ -192,31 +195,41 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
          refreshData();
        } else {
          const errorData = await response.json();
-         alert(`Error al actualizar: ${errorData.error || 'Error desconocido'}`);
+         toast.error(`Error al actualizar: ${errorData.error || 'Error desconocido'}`);
        }
      } catch (error) {
        console.error('Error al actualizar registro:', error);
-       alert('Error al actualizar el registro');
+       toast.error('Error al actualizar el registro');
      }
    };
 
   const handleDeleteCostoBase = async (costId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este costo?')) {
-      const success = await deleteCostoBase(costId);
-      if (success) {
-        // Actualizar datos inmediatamente
-        refreshData();
-      }
+    const ok = await confirm({
+      title: 'Eliminar costo',
+      description: '¿Estás seguro de que quieres eliminar este costo?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    const success = await deleteCostoBase(costId);
+    if (success) {
+      // Actualizar datos inmediatamente
+      refreshData();
     }
   };
 
   const handleDeleteRegistroMensual = async (recordId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este registro mensual?')) {
-      const success = await deleteRegistroMensual(recordId);
-      if (success) {
-        // Actualizar datos inmediatamente
-        refreshData();
-      }
+    const ok = await confirm({
+      title: 'Eliminar registro mensual',
+      description: '¿Estás seguro de que quieres eliminar este registro mensual?',
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    const success = await deleteRegistroMensual(recordId);
+    if (success) {
+      // Actualizar datos inmediatamente
+      refreshData();
     }
   };
 
@@ -387,29 +400,26 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
       }
 
       const result = await response.json();
-      console.log('Resultado de carga masiva:', result);
-      
+
       if (result.success) {
         const message = result.errors && result.errors.length > 0 
           ? `Costos cargados exitosamente!\n\nRegistros procesados: ${result.results.length}\nErrores: ${result.errors.length}\n\nErrores:\n${result.errors.join('\n')}`
           : 'Costos mensuales cargados exitosamente!';
         
-        alert(message);
+        toast.success(message);
         
         // Forzar actualización completa de datos
-        console.log('🔄 Refrescando datos después de carga masiva...');
         await refreshData();
-        console.log('✅ Datos refrescados exitosamente');
         
         setShowBulkUploadDialog(false);
         setBulkUploadFile(null);
         setBulkUploadPreview([]);
       } else {
-        alert(`Error al cargar los costos: ${result.message || 'Desconocido'}`);
+        toast.error(`Error al cargar los costos: ${result.message || 'Desconocido'}`);
       }
     } catch (error) {
       console.error('Error al cargar masivamente:', error);
-      alert('Error al cargar los costos masivamente. Verifica la consola.');
+      toast.error('Error al cargar los costos masivamente. Verifica la consola.');
     } finally {
       setBulkUploadLoading(false);
     }
@@ -417,12 +427,12 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
 
   if (loading) return (
     <div className="flex justify-center items-center p-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <Loader2 className="h-8 w-8 animate-spin text-foreground" />
     </div>
   );
   
   if (error) return (
-    <div className="text-red-500 p-4">Error: {error}</div>
+    <div className="text-destructive p-4">Error: {error}</div>
   );
 
   return (
@@ -451,7 +461,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
             <FileText className="h-4 w-4 mr-2" />
             Carga Masiva
           </Button>
-          <Button onClick={() => setShowNotesDialog(true)} variant="outline" size="sm" className="text-amber-700 hover:text-amber-800 hover:bg-amber-50">
+          <Button onClick={() => setShowNotesDialog(true)} variant="outline" size="sm" className="text-warning-muted-foreground hover:text-warning-muted-foreground hover:bg-warning-muted">
             <BookOpen className="h-4 w-4 mr-2" />
             Notas
           </Button>
@@ -463,7 +473,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Costos Base</CardTitle>
-            <Building2 className="h-4 w-4 text-blue-600" />
+            <Building2 className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{costosBase.length}</div>
@@ -476,7 +486,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Registros</CardTitle>
-            <FileText className="h-4 w-4 text-green-600" />
+            <FileText className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{registrosMensuales.length}</div>
@@ -489,7 +499,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                  <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
              <CardTitle className="text-sm font-medium">Total General</CardTitle>
-             <DollarSign className="h-4 w-4 text-green-600" />
+             <DollarSign className="h-4 w-4 text-success" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">
@@ -520,7 +530,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Categorías</CardTitle>
-            <Target className="h-4 w-4 text-purple-600" />
+            <Target className="h-4 w-4 text-info-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{categorias.length}</div>
@@ -549,8 +559,8 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <FileText className="h-6 w-6 text-blue-600" />
+                        <div className="w-12 h-12 bg-info-muted rounded-lg flex items-center justify-center">
+                          <FileText className="h-6 w-6 text-info-muted-foreground" />
                         </div>
                         <div>
                           <h3 className="font-medium text-base">{costo.name}</h3>
@@ -564,7 +574,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                             </Badge>
                           </div>
                                                      {stats.ultimoRegistro && (
-                             <div className="mt-2 p-2 bg-gray-50 rounded-md">
+                             <div className="mt-2 p-2 bg-muted rounded-md">
                                <p className="text-xs text-muted-foreground font-medium">Último registro:</p>
                                <p className="text-sm text-foreground">
                                  {stats.ultimoRegistro.month} • {formatCurrency(stats.ultimoRegistro.amount)}
@@ -583,7 +593,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewDetails(costo)}
-                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                          className="bg-info-muted hover:bg-info-muted text-info-muted-foreground border-info-muted"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Ver Detalles
@@ -610,7 +620,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => handleDeleteCostoBase(costo.id)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
@@ -633,8 +643,8 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Calendar className="h-6 w-6 text-green-600" />
+                      <div className="w-12 h-12 bg-success-muted rounded-lg flex items-center justify-center">
+                        <Calendar className="h-6 w-6 text-success" />
                       </div>
                       <div>
                         <h3 className="font-semibold">{registro.costName}</h3>
@@ -645,7 +655,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                             {registro.status === 'paid' ? 'Pagado' : 'Pendiente'}
                           </Badge>
                         </div>
-                        <p className="text-lg font-semibold text-green-600 mt-1">
+                        <p className="text-lg font-semibold text-success mt-1">
                           {formatCurrency(registro.amount)}
                         </p>
                       </div>
@@ -662,7 +672,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                        <Button
                          variant="outline"
                          size="sm"
-                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
                          onClick={() => handleDeleteRegistroMensual(registro.id)}
                        >
                          <Trash2 className="h-4 w-4 mr-1" />
@@ -684,8 +694,8 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 text-purple-600" />
+                      <div className="w-12 h-12 bg-info-muted rounded-lg flex items-center justify-center">
+                        <TrendingUp className="h-6 w-6 text-info-muted-foreground" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">{entry.costName}</h3>
@@ -736,19 +746,19 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{estadisticas.general.totalCostosBase}</p>
+                      <p className="text-2xl font-bold text-info-muted-foreground">{estadisticas.general.totalCostosBase}</p>
                       <p className="text-sm text-muted-foreground">Costos Base</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{estadisticas.general.totalRegistrosMensuales}</p>
+                      <p className="text-2xl font-bold text-success">{estadisticas.general.totalRegistrosMensuales}</p>
                       <p className="text-sm text-muted-foreground">Registros</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">{formatCurrency(estadisticas.general.totalGeneral)}</p>
+                      <p className="text-2xl font-bold text-info-muted-foreground">{formatCurrency(estadisticas.general.totalGeneral)}</p>
                       <p className="text-sm text-muted-foreground">Total General</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-orange-600">{estadisticas.general.totalCategorias}</p>
+                      <p className="text-2xl font-bold text-warning-muted-foreground">{estadisticas.general.totalCategorias}</p>
                       <p className="text-sm text-muted-foreground">Categorías</p>
                     </div>
                   </div>
@@ -763,14 +773,14 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                 <CardContent>
                   <div className="space-y-4">
                     {estadisticas.distribucionPorCategoria.map((cat) => (
-                      <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={cat.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                         <div>
                           <p className="font-medium">{cat.name}</p>
-                          <p className="text-sm text-gray-600">{cat.type}</p>
+                          <p className="text-sm text-muted-foreground">{cat.type}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">{formatCurrency(cat.totalAmount)}</p>
-                          <p className="text-sm text-gray-600">{cat.porcentaje.toFixed(1)}%</p>
+                          <p className="text-sm text-muted-foreground">{cat.porcentaje.toFixed(1)}%</p>
                         </div>
                       </div>
                     ))}
@@ -784,10 +794,11 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
 
       {/* Dialog: Crear Costo Base */}
       <Dialog open={showCostoBaseDialog} onOpenChange={setShowCostoBaseDialog}>
-        <DialogContent>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Crear Nuevo Costo Base</DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Nombre</label>
@@ -825,15 +836,17 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
               <Button variant="outline" onClick={() => setShowCostoBaseDialog(false)}>Cancelar</Button>
             </div>
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
       {/* Dialog: Crear Registro Mensual */}
       <Dialog open={showRegistroMensualDialog} onOpenChange={setShowRegistroMensualDialog}>
-        <DialogContent>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Registrar Costo Mensual</DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Costo Base</label>
@@ -906,15 +919,17 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
               <Button variant="outline" onClick={() => setShowRegistroMensualDialog(false)}>Cancelar</Button>
             </div>
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
       {/* Dialog: Editar Costo */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Editar Costo Base</DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Nombre</label>
@@ -952,6 +967,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
               <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
             </div>
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -961,7 +977,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
+              <FileText className="h-5 w-5 text-info-muted-foreground" />
               Carga Masiva de Registros Mensuales
             </DialogTitle>
           </DialogHeader>
@@ -975,30 +991,30 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-600 text-sm font-bold">1</span>
+                  <div className="w-6 h-6 bg-info-muted rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-info-muted-foreground text-sm font-bold">1</span>
                   </div>
                   <div>
                     <p className="font-medium">Descarga la plantilla CSV</p>
-                    <p className="text-sm text-gray-600">Usa el botón &quot;Descargar Plantilla&quot; para obtener el formato correcto</p>
+                    <p className="text-sm text-muted-foreground">Usa el botón &quot;Descargar Plantilla&quot; para obtener el formato correcto</p>
                   </div>
                 </div>
                                  <div className="flex items-start gap-3">
-                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                     <span className="text-blue-600 text-sm font-bold">2</span>
+                   <div className="w-6 h-6 bg-info-muted rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                     <span className="text-info-muted-foreground text-sm font-bold">2</span>
                    </div>
                                      <div>
                     <p className="font-medium">Llena la planilla</p>
-                    <p className="text-sm text-gray-600">Completa con tus datos: nombre del costo base existente, mes, monto y notas. Solo crea registros mensuales de costos que ya existen</p>
+                    <p className="text-sm text-muted-foreground">Completa con tus datos: nombre del costo base existente, mes, monto y notas. Solo crea registros mensuales de costos que ya existen</p>
                   </div>
                  </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-600 text-sm font-bold">3</span>
+                  <div className="w-6 h-6 bg-info-muted rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-info-muted-foreground text-sm font-bold">3</span>
                   </div>
                   <div>
                     <p className="font-medium">Sube la planilla</p>
-                    <p className="text-sm text-gray-600">Selecciona el archivo CSV y revisa la vista previa antes de confirmar</p>
+                    <p className="text-sm text-muted-foreground">Selecciona el archivo CSV y revisa la vista previa antes de confirmar</p>
                   </div>
                 </div>
               </CardContent>
@@ -1011,39 +1027,39 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300">
+                  <table className="w-full border-collapse border border-border">
                                          <thead>
-                       <tr className="bg-gray-50">
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Columna</th>
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Descripción</th>
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Ejemplo</th>
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Requerido</th>
+                       <tr className="bg-muted">
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Columna</th>
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Descripción</th>
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Ejemplo</th>
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Requerido</th>
                        </tr>
                      </thead>
                      <tbody>
                        <tr>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">nombre_costo</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm">Nombre del costo base existente</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">F-931</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm text-red-600 font-medium">Sí</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">nombre_costo</td>
+                         <td className="border border-border px-3 py-2 text-sm">Nombre del costo base existente</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">F-931</td>
+                         <td className="border border-border px-3 py-2 text-sm text-destructive font-medium">Sí</td>
                        </tr>
                        <tr>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">month</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm">Mes de imputación en formato YYYY-MM</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">2025-01</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm text-red-600 font-medium">Sí</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">month</td>
+                         <td className="border border-border px-3 py-2 text-sm">Mes de imputación en formato YYYY-MM</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">2025-01</td>
+                         <td className="border border-border px-3 py-2 text-sm text-destructive font-medium">Sí</td>
                        </tr>
                        <tr>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">monto</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm">Monto del costo (sin puntos ni comas)</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">1500000</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm text-red-600 font-medium">Sí</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">monto</td>
+                         <td className="border border-border px-3 py-2 text-sm">Monto del costo (sin puntos ni comas)</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">1500000</td>
+                         <td className="border border-border px-3 py-2 text-sm text-destructive font-medium">Sí</td>
                        </tr>
                        <tr>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">notas</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm">Notas adicionales</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm font-mono">Enero 2025</td>
-                         <td className="border border-gray-300 px-3 py-2 text-sm text-gray-600">No</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">notas</td>
+                         <td className="border border-border px-3 py-2 text-sm">Notas adicionales</td>
+                         <td className="border border-border px-3 py-2 text-sm font-mono">Enero 2025</td>
+                         <td className="border border-border px-3 py-2 text-sm text-muted-foreground">No</td>
                        </tr>
                      </tbody>
                   </table>
@@ -1064,13 +1080,13 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                       type="file"
                       accept=".csv"
                       onChange={handleFileUpload}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-info-muted file:text-info-muted-foreground hover:file:bg-info-muted"
                     />
                   </div>
                   
                   {bulkUploadFile && (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-800">
+                    <div className="p-3 bg-success-muted border border-success-muted rounded-lg">
+                      <p className="text-sm text-success">
                         <strong>Archivo seleccionado:</strong> {bulkUploadFile.name}
                       </p>
                     </div>
@@ -1087,27 +1103,27 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-300">
+                    <table className="w-full border-collapse border border-border">
                                            <thead>
-                       <tr className="bg-gray-50">
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Nombre Costo</th>
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Mes de Imputación</th>
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Monto</th>
-                         <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium">Notas</th>
+                       <tr className="bg-muted">
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Nombre Costo</th>
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Mes de Imputación</th>
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Monto</th>
+                         <th className="border border-border px-3 py-2 text-left text-sm font-medium">Notas</th>
                        </tr>
                      </thead>
                      <tbody>
                        {bulkUploadPreview.slice(0, 5).map((row, index) => (
                          <tr key={index}>
-                           <td className="border border-gray-300 px-3 py-2 text-sm">{row.nombre_costo}</td>
-                           <td className="border border-gray-300 px-3 py-2 text-sm font-mono">{row.mes}</td>
-                           <td className="border border-gray-300 px-3 py-2 text-sm font-mono">{row.monto}</td>
-                           <td className="border border-gray-300 px-3 py-2 text-sm">{row.notas || '-'}</td>
+                           <td className="border border-border px-3 py-2 text-sm">{row.nombre_costo}</td>
+                           <td className="border border-border px-3 py-2 text-sm font-mono">{row.mes}</td>
+                           <td className="border border-border px-3 py-2 text-sm font-mono">{row.monto}</td>
+                           <td className="border border-border px-3 py-2 text-sm">{row.notas || '-'}</td>
                          </tr>
                        ))}
                        {bulkUploadPreview.length > 5 && (
                          <tr>
-                           <td colSpan={4} className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500">
+                           <td colSpan={4} className="border border-border px-3 py-2 text-sm text-center text-muted-foreground">
                              ... y {bulkUploadPreview.length - 5} registros más
                            </td>
                          </tr>
@@ -1131,11 +1147,11 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                 <Button
                   onClick={handleBulkUpload}
                   disabled={bulkUploadLoading}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-info hover:bg-info/90"
                 >
                   {bulkUploadLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Procesando...
                     </>
                   ) : (
@@ -1154,10 +1170,11 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
 
        {/* Dialog: Editar Registro Mensual */}
        <Dialog open={showEditRegistroDialog} onOpenChange={setShowEditRegistroDialog}>
-         <DialogContent>
+         <DialogContent size="sm">
            <DialogHeader>
              <DialogTitle>Editar Registro Mensual</DialogTitle>
            </DialogHeader>
+           <DialogBody>
            <div className="space-y-4">
              <div>
                <label className="block text-sm font-medium mb-2">Mes de Imputación</label>
@@ -1201,6 +1218,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                <Button variant="outline" onClick={() => setShowEditRegistroDialog(false)}>Cancelar</Button>
              </div>
            </div>
+           </DialogBody>
          </DialogContent>
        </Dialog>
 

@@ -26,7 +26,7 @@ export function LineChart({
   showLabels = true,
   showDots = true,
   showArea = false,
-  color = '#3b82f6',
+  color = 'hsl(var(--primary))',
   areaColor,
   className,
   strokeWidth = 2,

@@ -345,21 +345,21 @@ export default function MateriaPrimaPage() {
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
     switch (estado) {
       case 'ok':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>;
+        return <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>;
       case 'warning':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>;
+        return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>;
       case 'danger':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>;
     }
   };
 
   const getVariacionIcon = (variacion: number) => {
     if (variacion > 0) {
-      return <TrendingUp className="h-4 w-4 text-red-500" />;
+      return <TrendingUp className="h-4 w-4 text-destructive" />;
     } else if (variacion < 0) {
-      return <TrendingDown className="h-4 w-4 text-green-500" />;
+      return <TrendingDown className="h-4 w-4 text-success" />;
     } else {
-      return <Clock className="h-4 w-4 text-gray-500" />;
+      return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -677,7 +677,7 @@ export default function MateriaPrimaPage() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalCostoMateriaPrima)}</div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-red-500" />
+              <TrendingUp className="h-4 w-4 text-destructive" />
               <span>+5.2% vs mes anterior</span>
             </div>
           </CardContent>
@@ -788,7 +788,7 @@ export default function MateriaPrimaPage() {
                         <div className="font-medium">{formatCurrency(insumo.precioActual)}</div>
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           {getVariacionIcon(insumo.variacion)}
-                          <span className={insumo.variacion > 0 ? 'text-red-500' : 'text-green-500'}>
+                          <span className={insumo.variacion > 0 ? 'text-destructive' : 'text-success'}>
                             {insumo.variacion > 0 ? '+' : ''}{insumo.variacion.toFixed(1)}%
                           </span>
                         </div>
@@ -986,24 +986,24 @@ export default function MateriaPrimaPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
                     <span>Hierro 6mm +9.09%</span>
                   </div>
-                  <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Crítico</Badge>
+                  <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">Crítico</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
                     <span>Arena Fina stock bajo</span>
                   </div>
-                  <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Atención</Badge>
+                  <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">Atención</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                     <span>Piedra Partida estable</span>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">OK</Badge>
+                  <Badge className="bg-success-muted text-success hover:bg-success-muted">OK</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -1359,10 +1359,10 @@ export default function MateriaPrimaPage() {
                 <div className="text-sm text-muted-foreground">Variación:</div>
                 <div className={`font-medium ${
                   Number(nuevoPrecio.precio) > editingInsumo.precioActual 
-                    ? 'text-red-500' 
+                    ? 'text-destructive' 
                     : Number(nuevoPrecio.precio) < editingInsumo.precioActual 
-                      ? 'text-green-500' 
-                      : 'text-gray-500'
+                      ? 'text-success' 
+                      : 'text-muted-foreground'
                 }`}>
                   {((Number(nuevoPrecio.precio) - editingInsumo.precioActual) / editingInsumo.precioActual * 100).toFixed(1)}%
                   {Number(nuevoPrecio.precio) > editingInsumo.precioActual ? ' (Incremento)' : 
@@ -1418,7 +1418,7 @@ export default function MateriaPrimaPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">Variación</div>
-                    <div className={`font-medium ${selectedInsumoForHistorial.variacion > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    <div className={`font-medium ${selectedInsumoForHistorial.variacion > 0 ? 'text-destructive' : 'text-success'}`}>
                       {selectedInsumoForHistorial.variacion > 0 ? '+' : ''}{selectedInsumoForHistorial.variacion.toFixed(1)}%
                     </div>
                   </div>
@@ -1445,7 +1445,7 @@ export default function MateriaPrimaPage() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className={`font-medium ${item.variacionPorcentual > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                <div className={`font-medium ${item.variacionPorcentual > 0 ? 'text-destructive' : 'text-success'}`}>
                                   {item.variacionPorcentual > 0 ? '+' : ''}{item.variacionPorcentual.toFixed(1)}%
                                 </div>
                               </div>
@@ -1499,7 +1499,7 @@ export default function MateriaPrimaPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Variación Total</Label>
-                    <div className={`text-lg font-medium ${estadisticasInsumo.variacionTotal > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    <div className={`text-lg font-medium ${estadisticasInsumo.variacionTotal > 0 ? 'text-destructive' : 'text-success'}`}>
                       {estadisticasInsumo.variacionTotal > 0 ? '+' : ''}{estadisticasInsumo.variacionTotal.toFixed(1)}%
                     </div>
                   </div>
@@ -1515,12 +1515,12 @@ export default function MateriaPrimaPage() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-muted-foreground">Tendencia</Label>
                   <div className="flex items-center space-x-2">
-                    {estadisticasInsumo.tendencia === 'ascendente' && <TrendingUp className="h-4 w-4 text-red-500" />}
-                    {estadisticasInsumo.tendencia === 'descendente' && <TrendingDown className="h-4 w-4 text-green-500" />}
-                    {estadisticasInsumo.tendencia === 'estable' && <BarChart3 className="h-4 w-4 text-blue-500" />}
+                    {estadisticasInsumo.tendencia === 'ascendente' && <TrendingUp className="h-4 w-4 text-destructive" />}
+                    {estadisticasInsumo.tendencia === 'descendente' && <TrendingDown className="h-4 w-4 text-success" />}
+                    {estadisticasInsumo.tendencia === 'estable' && <BarChart3 className="h-4 w-4 text-info-muted-foreground" />}
                     <span className={`font-medium ${
-                      estadisticasInsumo.tendencia === 'ascendente' ? 'text-red-500' : 
-                      estadisticasInsumo.tendencia === 'descendente' ? 'text-green-500' : 'text-blue-500'
+                      estadisticasInsumo.tendencia === 'ascendente' ? 'text-destructive' : 
+                      estadisticasInsumo.tendencia === 'descendente' ? 'text-success' : 'text-info-muted-foreground'
                     }`}>
                       {estadisticasInsumo.tendencia === 'ascendente' ? 'Ascendente' : 
                        estadisticasInsumo.tendencia === 'descendente' ? 'Descendente' : 'Estable'}

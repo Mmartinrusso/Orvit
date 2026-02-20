@@ -62,6 +62,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // Types
 interface User {
@@ -96,7 +97,7 @@ interface UsersResponse {
 const roleConfig: Record<string, { label: string; color: string; icon: any }> = {
   SUPERADMIN: {
     label: 'Super Admin',
-    color: 'bg-red-500/10 text-red-500 border-red-500/20',
+    color: 'bg-destructive/10 text-destructive border-destructive/30/20',
     icon: Shield,
   },
   ADMIN_ENTERPRISE: {
@@ -106,7 +107,7 @@ const roleConfig: Record<string, { label: string; color: string; icon: any }> = 
   },
   USER: {
     label: 'Usuario',
-    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    color: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
     icon: Users,
   },
 };
@@ -129,6 +130,7 @@ async function fetchUsers(params: {
 }
 
 export default function UsersPage() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -269,8 +271,8 @@ export default function UsersPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-info-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.total || 0}</p>
@@ -295,8 +297,8 @@ export default function UsersPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <UserCheck className="h-6 w-6 text-green-500" />
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.byRole?.USER || 0}</p>
@@ -308,8 +310,8 @@ export default function UsersPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-red-500" />
+              <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-destructive" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.byRole?.SUPERADMIN || 0}</p>
@@ -438,12 +440,12 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="text-center">
                     {user.isActive ? (
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
+                      <Badge className="bg-success/10 text-success border-success-muted/20">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Activo
                       </Badge>
                     ) : (
-                      <Badge className="bg-red-500/10 text-red-500 border-red-500/20">
+                      <Badge className="bg-destructive/10 text-destructive border-destructive/30/20">
                         <XCircle className="h-3 w-3 mr-1" />
                         Inactivo
                       </Badge>
@@ -465,8 +467,14 @@ export default function UsersPage() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => {
-                            if (confirm('Resetear contrasena de este usuario?')) {
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: 'Resetear contraseña',
+                              description: '¿Resetear la contraseña de este usuario?',
+                              confirmText: 'Confirmar',
+                              variant: 'default',
+                            });
+                            if (ok) {
                               resetPasswordMutation.mutate(user.id);
                             }
                           }}
@@ -729,9 +737,9 @@ function UserDetailDialog({
               <Label className="text-muted-foreground">Estado</Label>
               <p>
                 {user.isActive ? (
-                  <Badge className="bg-green-500/10 text-green-500">Activo</Badge>
+                  <Badge className="bg-success/10 text-success">Activo</Badge>
                 ) : (
-                  <Badge className="bg-red-500/10 text-red-500">Inactivo</Badge>
+                  <Badge className="bg-destructive/10 text-destructive">Inactivo</Badge>
                 )}
               </p>
             </div>

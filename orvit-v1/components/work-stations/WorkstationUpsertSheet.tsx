@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
   DialogTitle,
   DialogBody,
 } from '@/components/ui/dialog';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +54,7 @@ import WorkStationMachinesDialog from '@/components/mantenimiento/WorkStationMac
 import { useToast } from '@/hooks/use-toast';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Upload, Building2, Cog, Paperclip, Link2, Layers } from 'lucide-react';
-import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import {
   InstructionUpsertSheet,
   InstructionPayload,
@@ -237,8 +239,6 @@ export function WorkstationUpsertSheet({
         };
 
         extractAllItems(allItems);
-        console.log('📋 Total items aplanados:', machinesList.length);
-        console.log('🔧 Máquinas reales (solo nivel superior):', realMachinesList.length, realMachinesList.map(m => ({ id: m.id, name: m.name })));
         setAvailableMachines(machinesList);
         setRealMachinesOnly(realMachinesList);
         realMachinesOnlyRef.current = realMachinesList; // Actualizar ref también
@@ -274,16 +274,8 @@ export function WorkstationUpsertSheet({
       const wasNew = !workstation?.id;
       const hasPendingItems = pendingInstructives.length > 0 || pendingMachines.length > 0;
 
-      console.log('💾 [SUBMIT] Guardando workstation:', {
-        wasNew,
-        hasPendingItems,
-        pendingInstructivesCount: pendingInstructives.length,
-        pendingMachinesCount: pendingMachines.length
-      });
-
       // Marcar ANTES de guardar para que el estado esté listo
       if (wasNew && hasPendingItems) {
-        console.log('🚀 [SUBMIT] Estableciendo justCreated = true ANTES de onSave');
         setJustCreated(true);
         justCreatedRef.current = true; // También establecer en ref para persistir
       }
@@ -296,7 +288,6 @@ export function WorkstationUpsertSheet({
         sectorId: formData.sectorId,
       });
 
-      console.log('✅ [SUBMIT] onSave completado exitosamente');
     } catch (error) {
       console.error('❌ [SUBMIT] Error en onSave:', error);
       // Resetear flag si hubo error
@@ -307,19 +298,8 @@ export function WorkstationUpsertSheet({
 
   // Asociar instructivos y máquinas pendientes después de crear el puesto
   useEffect(() => {
-    console.log('🔍 [PENDING ITEMS] useEffect triggered:', {
-      workstationId: workstation?.id,
-      isEdit,
-      justCreated,
-      justCreatedRef: justCreatedRef.current,
-      pendingInstructivesCount: pendingInstructives.length,
-      pendingMachinesCount: pendingMachines.length,
-      willAssociate: workstation?.id && (justCreated || justCreatedRef.current) && (pendingInstructives.length > 0 || pendingMachines.length > 0)
-    });
-
     if (workstation?.id && (justCreated || justCreatedRef.current)) {
       if (pendingInstructives.length > 0 || pendingMachines.length > 0) {
-        console.log('✅ [PENDING ITEMS] Llamando associatePendingItems');
         setJustCreated(false); // Reset flag inmediatamente para evitar llamadas duplicadas
         justCreatedRef.current = false; // También resetear ref
 
@@ -328,7 +308,6 @@ export function WorkstationUpsertSheet({
           associatePendingItems();
         }, 100);
       } else {
-        console.log('⚠️ [PENDING ITEMS] No hay items pendientes para asociar');
         setJustCreated(false);
         justCreatedRef.current = false;
       }
@@ -336,9 +315,6 @@ export function WorkstationUpsertSheet({
   }, [workstation?.id, justCreated, pendingInstructives.length, pendingMachines.length]);
 
   const associatePendingItems = async () => {
-    console.log('🚀 associatePendingItems - workstation.id:', workstation?.id);
-    console.log('🚀 pendingInstructives:', pendingInstructives);
-    console.log('🚀 pendingMachines:', pendingMachines);
     if (!workstation?.id) {
       console.error('❌ No hay workstation.id, abortando associatePendingItems');
       return;
@@ -351,15 +327,12 @@ export function WorkstationUpsertSheet({
 
     try {
       // Asociar instructivos pendientes
-      console.log('📋 Iniciando asociación de instructivos...');
       for (const pendingInstr of pendingInstructives) {
         try {
-          console.log('📋 Procesando instructivo:', pendingInstr.title);
           let fileUrl = pendingInstr.fileUrl;
 
           // Si hay un archivo pendiente, subirlo primero
           if (pendingInstr.file) {
-            console.log('📤 Subiendo archivo del instructivo...');
             const formData = new FormData();
             formData.append('file', pendingInstr.file);
 
@@ -371,14 +344,12 @@ export function WorkstationUpsertSheet({
             if (uploadResponse.ok) {
               const uploadData = await uploadResponse.json();
               fileUrl = uploadData.url;
-              console.log('✅ Archivo subido exitosamente:', fileUrl);
             } else {
               console.error('❌ Error subiendo archivo:', await uploadResponse.text());
             }
           }
 
           // Crear el instructivo
-          console.log('📋 Creando instructivo en API...');
           const response = await fetch(`/api/work-stations/${workstation.id}/instructives`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -398,7 +369,6 @@ export function WorkstationUpsertSheet({
           });
 
           if (response.ok) {
-            console.log('✅ Instructivo creado exitosamente:', pendingInstr.title);
             instructivesSuccess++;
           } else {
             const errorText = await response.text();
@@ -412,13 +382,9 @@ export function WorkstationUpsertSheet({
       }
 
       // Asociar máquinas pendientes (solo máquinas, sin componentes)
-      console.log('🔧 Iniciando asociación de máquinas...');
-      console.log('🔧 Total de máquinas pendientes:', pendingMachines.length);
-
       // Asociar cada máquina
       for (const machineId of pendingMachines) {
         try {
-          console.log('🔧 Asociando máquina ID:', machineId, 'al workstation:', workstation.id);
           const response = await fetch(`/api/work-stations/${workstation.id}/machines`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -429,9 +395,7 @@ export function WorkstationUpsertSheet({
             }),
           });
 
-          console.log('🔧 Response status para ID', machineId, ':', response.status);
           if (response.ok) {
-            console.log('✅ Máquina asociada exitosamente:', machineId);
             machinesSuccess++;
           } else {
             const errorText = await response.text();
@@ -443,12 +407,6 @@ export function WorkstationUpsertSheet({
           machinesError++;
         }
       }
-
-      console.log('📊 Resumen de asociación:');
-      console.log('  Instructivos exitosos:', instructivesSuccess, '/', pendingInstructives.length);
-      console.log('  Instructivos con error:', instructivesError);
-      console.log('  Máquinas exitosas:', machinesSuccess, '/', pendingMachines.length);
-      console.log('  Máquinas con error:', machinesError);
 
       // Mostrar notificación al usuario
       const totalSuccess = instructivesSuccess + machinesSuccess;
@@ -473,7 +431,6 @@ export function WorkstationUpsertSheet({
       // Limpiar pendientes y recargar detalles
       setPendingInstructives([]);
       setPendingMachines([]);
-      console.log('🔄 Recargando detalles del workstation...');
       if (workstation.id) {
         fetchDetails();
       }
@@ -677,7 +634,6 @@ export function WorkstationUpsertSheet({
       }
     }
 
-    console.log('🟢 Máquinas pendientes encontradas:', foundMachines.length);
     setPendingMachinesData(foundMachines);
   };
   
@@ -714,7 +670,7 @@ export function WorkstationUpsertSheet({
 
           <DialogBody>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 h-9">
+            <TabsList className="w-full justify-start overflow-x-auto h-9">
               <TabsTrigger value="basica" className="text-xs">Información Básica</TabsTrigger>
               <TabsTrigger value="instructivos" className="text-xs">
                 Instructivos {(allInstructives.length > 0) && (
@@ -897,16 +853,6 @@ export function WorkstationUpsertSheet({
                       const componentIds = (instr as any)?.componentIds || [];
                       const attachmentsCount = (instr as any)?.attachments?.length || 0;
 
-                      console.log('📋 [CARD] Mostrando instructivo:', {
-                        id: instr.id,
-                        title: instr.title,
-                        scope,
-                        machineIds,
-                        componentIds,
-                        attachmentsCount,
-                        instr,
-                      });
-
                       return (
                       <Card key={instr.id} className="overflow-hidden hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
@@ -922,7 +868,7 @@ export function WorkstationUpsertSheet({
                                 )}
                                 {/* Mostrar máquinas directamente como badges */}
                                 {machineIds.length > 0 && availableMachines.filter(m => machineIds.includes(m.id) || machineIds.includes(String(m.id))).slice(0, 3).map((machine) => (
-                                  <Badge key={`machine-${machine.id}`} variant="outline" className="text-[10px] px-1.5 py-0.5 border-amber-500/30 text-amber-600 bg-amber-500/10">
+                                  <Badge key={`machine-${machine.id}`} variant="outline" className="text-[10px] px-1.5 py-0.5 border-warning-muted text-warning-muted-foreground bg-warning-muted">
                                     <Wrench className="h-2.5 w-2.5 mr-1" />
                                     {getDisplayName(machine.name)}
                                   </Badge>
@@ -944,8 +890,8 @@ export function WorkstationUpsertSheet({
                               {(instr.content || instr.description) && (
                                 <div 
                                   className="text-xs text-muted-foreground prose prose-sm max-w-none dark:prose-invert"
-                                  dangerouslySetInnerHTML={{ 
-                                    __html: instr.content || instr.description || '' 
+                                  dangerouslySetInnerHTML={{
+                                    __html: sanitizeHtml(instr.content || instr.description || '')
                                   }}
                                   style={{
                                     maxHeight: '80px',
@@ -966,7 +912,6 @@ export function WorkstationUpsertSheet({
                                 variant="ghost"
                                 size="icon-sm"
                                 onClick={() => {
-                                  console.log('✏️ [EDIT] Editando instructivo:', instr);
                                   setEditingInstructive(instr);
                                   setIsInstructiveDialogOpen(true);
                                 }}
@@ -977,7 +922,6 @@ export function WorkstationUpsertSheet({
                                 variant="ghost"
                                 size="icon-sm"
                                 onClick={() => {
-                                  console.log('🗑️ [DELETE] Solicitando confirmación para eliminar:', instr.id);
                                   confirmDeleteInstructive(instr.id);
                                 }}
                                 className="text-destructive hover:text-destructive"
@@ -1054,7 +998,7 @@ export function WorkstationUpsertSheet({
                               <div className="flex items-center gap-2">
                                 <Wrench className="h-4 w-4 text-primary shrink-0" />
                                 <h4 className="text-sm font-semibold text-foreground">{machine.name}</h4>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-green-600 border-green-500/30 bg-green-500/10">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-success border-success-muted bg-success-muted">
                                   Guardado
                                 </Badge>
                               </div>
@@ -1083,7 +1027,7 @@ export function WorkstationUpsertSheet({
                               <div className="flex items-center gap-2">
                                 <Wrench className="h-4 w-4 text-primary shrink-0" />
                                 <h4 className="text-sm font-semibold text-foreground">{machine.name}</h4>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-amber-600 border-amber-500/30 bg-amber-500/10">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-warning-muted-foreground border-warning-muted bg-warning-muted">
                                   Pendiente
                                 </Badge>
                               </div>
@@ -1141,19 +1085,15 @@ export function WorkstationUpsertSheet({
           } : undefined}
           machines={availableMachines.map(m => ({ id: m.id, name: m.name }))}
           loadComponentsByMachine={async (machineId) => {
-            console.log('🔧 loadComponentsByMachine - machineId:', machineId, 'sectorId:', formData.sectorId);
             try {
               const url = formData.sectorId
                 ? `/api/machines-and-components?companyId=${currentCompany?.id}&sectorId=${formData.sectorId}&machineId=${machineId}&includeComponents=true`
                 : `/api/machines-and-components?companyId=${currentCompany?.id}&machineId=${machineId}&includeComponents=true`;
 
-              console.log('🔧 Fetching URL:', url);
               const response = await fetch(url);
-              console.log('🔧 Response status:', response.status);
 
               if (response.ok) {
                 const data = await response.json();
-                console.log('🔧 Data recibida:', data);
 
                 // Buscar la máquina en el array de máquinas
                 const findMachineInArray = (items: any[], targetId: string): any => {
@@ -1171,10 +1111,8 @@ export function WorkstationUpsertSheet({
 
                 const allItems = data.machines || [];
                 const machine = findMachineInArray(allItems, machineId);
-                console.log('🔧 Máquina encontrada:', machine);
 
                 if (!machine || !machine.children) {
-                  console.log('⚠️ No se encontraron componentes para la máquina');
                   return [];
                 }
 
@@ -1191,7 +1129,6 @@ export function WorkstationUpsertSheet({
                   })) || [],
                 }));
 
-                console.log('🟢 Componentes mapeados:', components);
                 return components;
               }
               return [];
@@ -1253,11 +1190,11 @@ export function WorkstationUpsertSheet({
                   return (
                     <div
                       key={machine.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      className={cn('flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
                         isSelected
                           ? 'bg-primary/10 border-primary'
                           : 'hover:bg-muted/50 border-border'
-                      }`}
+                      )}
                       onClick={() => {
                         if (isSelected) {
                           setSelectedMachineIdsForDialog(prev => prev.filter(id => id !== String(machine.id)));
@@ -1266,9 +1203,9 @@ export function WorkstationUpsertSheet({
                         }
                       }}
                     >
-                      <div className={`h-5 w-5 rounded border flex items-center justify-center ${
+                      <div className={cn('h-5 w-5 rounded border flex items-center justify-center',
                         isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
-                      }`}>
+                      )}>
                         {isSelected && (
                           <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1678,25 +1615,19 @@ function PendingMachinesDialog({
 
   // Resetear selección y cargar máquinas cuando se abre el modal
   useEffect(() => {
-    console.log('🔵 PendingMachinesDialog useEffect - open:', open, 'sectorId:', sectorId, 'selectedMachineIds:', selectedMachineIds);
     if (open) {
       setSelectedMachines(selectedMachineIds);
       setSearchTerm('');
       setAvailableMachines([]);
       // Cargar máquinas automáticamente si hay un sector
       if (sectorId) {
-        console.log('🟢 Cargando máquinas para sector:', sectorId);
         loadAvailableMachines();
-      } else {
-        console.log('🔴 No hay sectorId definido');
       }
     }
   }, [open, selectedMachineIds]);
 
   const loadAvailableMachines = async () => {
-    console.log('🟡 loadAvailableMachines llamado - sectorId:', sectorId, 'companyId:', currentCompany?.id);
     if (!sectorId) {
-      console.log('🔴 No se puede cargar sin sectorId');
       toast({
         title: 'Aviso',
         description: 'Debes seleccionar un sector primero',
@@ -1711,26 +1642,20 @@ function PendingMachinesDialog({
         ? `/api/machines-and-components?companyId=${currentCompany?.id}&sectorId=${sectorId}&includeComponents=true`
         : `/api/machines-and-components?companyId=${currentCompany?.id}&includeComponents=true`;
 
-      console.log('🟡 Fetching URL:', url);
       const response = await fetch(url);
-      console.log('🟡 Response status:', response.status, response.ok);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('🟡 Data recibida:', data);
         const allItems = data.machines || [];
-        console.log('🟡 All items:', allItems);
         const machinesList: Machine[] = [];
 
         const extractMachines = (items: any[]) => {
           for (const item of items) {
-            console.log('🟡 Procesando item:', item.id, item.name, item.type);
             if (item.type === 'MACHINE' || item.type === 'COMPONENT' || item.type === 'SUBCOMPONENT') {
               machinesList.push({
                 id: item.id,
                 name: item.name || item.displayName,
               });
-              console.log('✅ Agregado:', item.id, item.name || item.displayName);
             }
             if (item.children) {
               extractMachines(item.children);
@@ -1739,7 +1664,6 @@ function PendingMachinesDialog({
         };
 
         extractMachines(allItems);
-        console.log('🟢 Máquinas extraídas:', machinesList);
         setAvailableMachines(machinesList);
       }
     } catch (error) {
@@ -1755,19 +1679,16 @@ function PendingMachinesDialog({
   };
 
   const toggleSelection = (machineId: number) => {
-    console.log('🔵 toggleSelection - machineId:', machineId);
     setSelectedMachines(prev => {
       const isSelected = prev.includes(machineId);
       const newSelection = isSelected
         ? prev.filter(id => id !== machineId)
         : [...prev, machineId];
-      console.log('🟡 Nueva selección:', newSelection);
       return newSelection;
     });
   };
 
   const handleSave = () => {
-    console.log('💾 handleSave - Guardando máquinas seleccionadas:', selectedMachines);
     onSave(selectedMachines);
     onOpenChange(false);
   };
@@ -1868,20 +1789,18 @@ function PendingMachinesDialog({
               {filteredMachines.map((machine) => (
                 <Card
                   key={machine.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedMachines.includes(machine.id)
-                      ? 'ring-2 ring-primary bg-primary/5'
-                      : ''
-                  }`}
+                  className={cn('cursor-pointer transition-all hover:shadow-md',
+                    selectedMachines.includes(machine.id) && 'ring-2 ring-primary bg-primary/5'
+                  )}
                   onClick={() => toggleSelection(machine.id)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
+                      <div className={cn('h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
                         selectedMachines.includes(machine.id)
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
-                      }`}>
+                      )}>
                         <Wrench className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1906,11 +1825,9 @@ function PendingMachinesDialog({
               {filteredMachines.map((machine) => (
                 <Card
                   key={machine.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedMachines.includes(machine.id)
-                      ? 'ring-2 ring-primary bg-primary/5'
-                      : ''
-                  }`}
+                  className={cn('cursor-pointer transition-all hover:shadow-md',
+                    selectedMachines.includes(machine.id) && 'ring-2 ring-primary bg-primary/5'
+                  )}
                   onClick={() => toggleSelection(machine.id)}
                 >
                   <CardContent className="p-3">
@@ -1922,11 +1839,11 @@ function PendingMachinesDialog({
                         className="h-4 w-4 shrink-0"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      <div className={cn('h-8 w-8 rounded-lg flex items-center justify-center shrink-0',
                         selectedMachines.includes(machine.id)
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
-                      }`}>
+                      )}>
                         <Wrench className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">

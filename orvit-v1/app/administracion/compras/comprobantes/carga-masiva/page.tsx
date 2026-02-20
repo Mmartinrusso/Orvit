@@ -1053,8 +1053,8 @@ export default function CargaMasivaPage() {
         key={file.id}
         className={cn(
           "transition-all",
-          file.status === 'approved' && "border-green-500 bg-green-50/50 dark:bg-green-900/10",
-          file.isDuplicate && file.status !== 'approved' && "border-amber-500 bg-amber-50/50 dark:bg-amber-900/10"
+          file.status === 'approved' && "border-success-muted bg-success-muted/50",
+          file.isDuplicate && file.status !== 'approved' && "border-warning-muted bg-warning-muted/50"
         )}
       >
         <CardHeader className="pb-2">
@@ -1070,10 +1070,10 @@ export default function CargaMasivaPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <CardTitle className="text-base truncate">{file.name}</CardTitle>
                   {file.status === 'approved' && (
-                    <Badge className="bg-green-500">Aprobada</Badge>
+                    <Badge className="bg-success">Aprobada</Badge>
                   )}
                   {file.isDuplicate && file.status !== 'approved' && (
-                    <Badge variant="outline" className="border-amber-500 text-amber-600">
+                    <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground">
                       {file.duplicateInfo?.confidence === 'confirmed' ? 'Duplicada' : 'Posible duplicada'}
                     </Badge>
                   )}
@@ -1121,14 +1121,14 @@ export default function CargaMasivaPage() {
 
             {/* Auto-swap indicator - Cuando se corrigió automáticamente la inversión proveedor/receptor */}
             {file.receptorValidation?.wasAutoSwapped && (
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="mb-4 p-3 bg-info-muted rounded-lg border border-info-muted">
                 <div className="flex items-start gap-2">
-                  <RefreshCw className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                  <RefreshCw className="h-4 w-4 text-info-muted-foreground mt-0.5 shrink-0" />
                   <div className="text-sm">
-                    <p className="font-medium text-blue-800 dark:text-blue-200">
+                    <p className="font-medium text-info-muted-foreground">
                       🔄 Auto-corrección aplicada
                     </p>
-                    <p className="mt-1 text-blue-700 dark:text-blue-300">
+                    <p className="mt-1 text-info-muted-foreground">
                       La IA confundió proveedor y receptor. Se intercambiaron automáticamente los datos.
                       Verifica que los datos del proveedor y receptor sean correctos.
                     </p>
@@ -1142,35 +1142,35 @@ export default function CargaMasivaPage() {
               <div className={cn(
                 "mb-4 p-4 rounded-lg border-2",
                 file.receptorOverride
-                  ? "bg-amber-50 dark:bg-amber-900/20 border-amber-400"
-                  : "bg-red-50 dark:bg-red-900/20 border-red-500"
+                  ? "bg-warning-muted border-warning-muted"
+                  : "bg-destructive/10 border-destructive/30"
               )}>
                 <div className="flex items-start gap-3">
                   <AlertTriangle className={cn(
                     "h-5 w-5 mt-0.5 shrink-0",
-                    file.receptorOverride ? "text-amber-600" : "text-red-600"
+                    file.receptorOverride ? "text-warning-muted-foreground" : "text-destructive"
                   )} />
                   <div className="text-sm flex-1">
                     <p className={cn(
                       "font-semibold",
-                      file.receptorOverride ? "text-amber-800 dark:text-amber-200" : "text-red-800 dark:text-red-200"
+                      file.receptorOverride ? "text-warning-muted-foreground" : "text-destructive"
                     )}>
                       ⚠️ CUIT del receptor no coincide con tu empresa
                     </p>
                     <p className={cn(
                       "mt-1",
-                      file.receptorOverride ? "text-amber-700 dark:text-amber-300" : "text-red-700 dark:text-red-300"
+                      file.receptorOverride ? "text-warning-muted-foreground" : "text-destructive"
                     )}>
                       {file.receptorValidation.message}
                     </p>
                     <div className="mt-2 grid grid-cols-2 gap-4 text-xs">
-                      <div className="p-2 bg-white dark:bg-gray-800 rounded border">
+                      <div className="p-2 bg-background rounded border">
                         <p className="text-muted-foreground">CUIT en factura (receptor):</p>
-                        <p className="font-bold text-red-600" style={{ fontFamily: 'Calibri, sans-serif' }}>{file.receptorValidation.extractedReceptorCuit || '-'}</p>
+                        <p className="font-bold text-destructive" style={{ fontFamily: 'Calibri, sans-serif' }}>{file.receptorValidation.extractedReceptorCuit || '-'}</p>
                       </div>
-                      <div className="p-2 bg-white dark:bg-gray-800 rounded border">
+                      <div className="p-2 bg-background rounded border">
                         <p className="text-muted-foreground">CUIT de tu empresa:</p>
-                        <p className="font-bold text-green-600" style={{ fontFamily: 'Calibri, sans-serif' }}>{file.receptorValidation.companyCuit || '-'}</p>
+                        <p className="font-bold text-success" style={{ fontFamily: 'Calibri, sans-serif' }}>{file.receptorValidation.companyCuit || '-'}</p>
                       </div>
                     </div>
                     {/* Checkbox para override */}
@@ -1183,14 +1183,14 @@ export default function CargaMasivaPage() {
                             f.id === file.id ? { ...f, receptorOverride: e.target.checked } : f
                           ));
                         }}
-                        className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                        className="h-4 w-4 rounded border-border text-warning-muted-foreground focus:ring-amber-500"
                       />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <span className="text-sm font-medium text-foreground">
                         La IA leyó mal el CUIT - confirmo que esta factura es correcta
                       </span>
                     </label>
                     {!file.receptorOverride && (
-                      <p className="mt-2 text-xs text-red-600 font-medium">
+                      <p className="mt-2 text-xs text-destructive font-medium">
                         Marca el checkbox de arriba si la factura es correcta y la IA confundió los datos.
                       </p>
                     )}
@@ -1201,12 +1201,12 @@ export default function CargaMasivaPage() {
 
             {/* Warnings */}
             {file.warnings && file.warnings.length > 0 && (
-              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="mb-4 p-3 bg-warning-muted rounded-lg border border-warning-muted">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-warning-muted-foreground mt-0.5 shrink-0" />
                   <div className="text-sm">
-                    <p className="font-medium text-amber-800 dark:text-amber-200">Advertencias:</p>
-                    <ul className="mt-1 space-y-0.5 text-amber-700 dark:text-amber-300">
+                    <p className="font-medium text-warning-muted-foreground">Advertencias:</p>
+                    <ul className="mt-1 space-y-0.5 text-warning-muted-foreground">
                       {file.warnings.map((w, i) => (
                         <li key={i}>• {w}</li>
                       ))}
@@ -1223,13 +1223,13 @@ export default function CargaMasivaPage() {
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                   Receptor (Destinatario de la factura)
                   {file.receptorValidation?.isValid && (
-                    <Badge className="bg-green-500 text-xs ml-2">✓ Coincide</Badge>
+                    <Badge className="bg-success text-xs ml-2">✓ Coincide</Badge>
                   )}
                 </h4>
                 <div className={cn(
                   "p-3 rounded-lg space-y-2",
                   file.receptorValidation?.isValid
-                    ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                    ? "bg-success-muted border border-success-muted"
                     : "bg-muted/50"
                 )}>
                   <div className="flex justify-between text-sm">
@@ -1291,7 +1291,7 @@ export default function CargaMasivaPage() {
                       </SelectContent>
                     </Select>
                     {file.matchedSupplier?.matched ? (
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="text-xs text-success mt-1">
                         ✓ Coincide con: {file.matchedSupplier.name}
                       </p>
                     ) : (
@@ -1300,7 +1300,7 @@ export default function CargaMasivaPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="mt-3 w-full gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                          className="mt-3 w-full gap-2 border-info-muted text-info-muted-foreground hover:bg-info-muted"
                           onClick={() => createSupplierFromExtraction(file.id)}
                           disabled={creatingSupplier === file.id}
                         >
@@ -1366,17 +1366,17 @@ export default function CargaMasivaPage() {
                   {file.itemMatching && (
                     <div className="flex items-center gap-2 ml-2">
                       {file.itemMatching.matched > 0 && (
-                        <Badge className="bg-green-500 text-xs">
+                        <Badge className="bg-success text-xs">
                           {file.itemMatching.matched} mapeados
                         </Badge>
                       )}
                       {file.itemMatching.aiAssisted && file.itemMatching.aiAssisted > 0 && (
-                        <Badge className="bg-blue-500 text-xs">
+                        <Badge className="bg-info text-xs">
                           ✨ {file.itemMatching.aiAssisted} con IA
                         </Badge>
                       )}
                       {file.itemMatching.needsMapping > 0 && (
-                        <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                        <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground text-xs">
                           {file.itemMatching.needsMapping} sin mapear
                         </Badge>
                       )}
@@ -1404,7 +1404,7 @@ export default function CargaMasivaPage() {
                           <TableRow
                             key={idx}
                             className={cn(
-                              !isMatched && item.needsMapping && "bg-amber-50 dark:bg-amber-900/10"
+                              !isMatched && item.needsMapping && "bg-warning-muted"
                             )}
                           >
                             <TableCell className="font-mono text-xs">{item.codigo || '-'}</TableCell>
@@ -1414,11 +1414,11 @@ export default function CargaMasivaPage() {
                                 <div className="flex items-center gap-1 mt-1">
                                   <CheckCircle className={cn(
                                     "h-3 w-3",
-                                    item.matchType === 'ai_assisted' ? "text-blue-600" : "text-green-600"
+                                    item.matchType === 'ai_assisted' ? "text-info-muted-foreground" : "text-success"
                                   )} />
                                   <span className={cn(
                                     "text-xs",
-                                    item.matchType === 'ai_assisted' ? "text-blue-600" : "text-green-600"
+                                    item.matchType === 'ai_assisted' ? "text-info-muted-foreground" : "text-success"
                                   )}>
                                     {item.matchType === 'exact_alias' ? 'Match por nombre' :
                                      item.matchType === 'exact_code' ? 'Match por código' :
@@ -1429,12 +1429,12 @@ export default function CargaMasivaPage() {
                               )}
                               {/* Mostrar sugerencias si no hay match */}
                               {!item.match && item.suggestions && item.suggestions.length > 0 && (
-                                <div className="mt-1 text-xs text-blue-600">
+                                <div className="mt-1 text-xs text-info-muted-foreground">
                                   Sugerencias: {item.suggestions.map((s, i) => (
                                     <span key={s.supplierItemId}>
                                       {i > 0 && ', '}
                                       <button
-                                        className="underline hover:text-blue-800"
+                                        className="underline hover:text-info-muted-foreground"
                                         onClick={() => updateItemMapping(file.id, idx, s.supplierItemId)}
                                       >
                                         {s.supplyName} ({s.similarity}%)
@@ -1484,7 +1484,7 @@ export default function CargaMasivaPage() {
                   </Table>
                 </div>
                 {file.itemMatching && file.itemMatching.needsMapping > 0 && (
-                  <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                  <p className="text-xs text-warning-muted-foreground mt-2 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Los items sin mapear se guardarán con la descripción de la factura. Mapeá los productos para unificar stock y comparar precios.
                   </p>
@@ -1561,13 +1561,13 @@ export default function CargaMasivaPage() {
               <div className="flex items-center justify-between gap-2 pt-2 border-t">
                 {/* Mensaje de bloqueo si CUIT no coincide Y no hay override */}
                 {file.receptorValidation && !file.receptorValidation.isValid && !file.receptorOverride && (
-                  <p className="text-xs text-red-600 flex items-center gap-1">
+                  <p className="text-xs text-destructive flex items-center gap-1">
                     <XCircle className="h-3 w-3" />
                     Marca el checkbox arriba para aprobar
                   </p>
                 )}
                 {file.receptorValidation && !file.receptorValidation.isValid && file.receptorOverride && (
-                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <p className="text-xs text-warning-muted-foreground flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Se aprobará con advertencia de CUIT
                   </p>
@@ -1580,7 +1580,7 @@ export default function CargaMasivaPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => rejectFile(file.id)}
-                    className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <XCircle className="h-4 w-4" />
                     Descartar
@@ -1588,7 +1588,7 @@ export default function CargaMasivaPage() {
                   <Button
                     size="sm"
                     onClick={() => approveFile(file.id)}
-                    className="gap-2 bg-green-600 hover:bg-green-700"
+                    className="gap-2 bg-success hover:bg-success"
                     disabled={
                       (!file.selectedProveedorId && !file.matchedSupplier?.matched) ||
                       (file.receptorValidation && !file.receptorValidation.isValid && !file.receptorOverride)
@@ -1684,12 +1684,12 @@ export default function CargaMasivaPage() {
                     <Badge variant="outline">{queuedCount} en cola</Badge>
                   )}
                   {extractedCount > 0 && (
-                    <Badge variant="outline" className="border-blue-500 text-blue-600">
+                    <Badge variant="outline" className="border-info-muted text-info-muted-foreground">
                       {extractedCount} extraídas
                     </Badge>
                   )}
                   {approvedCount > 0 && (
-                    <Badge className="bg-green-500">{approvedCount} aprobadas</Badge>
+                    <Badge className="bg-success">{approvedCount} aprobadas</Badge>
                   )}
                   {failedCount > 0 && (
                     <Badge variant="destructive">{failedCount} con error</Badge>
@@ -1740,7 +1740,7 @@ export default function CargaMasivaPage() {
                       size="sm"
                       onClick={saveApprovedInvoices}
                       disabled={saving}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-success hover:bg-success"
                     >
                       {saving ? (
                         <>
@@ -1769,7 +1769,7 @@ export default function CargaMasivaPage() {
                     key={file.id}
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-lg border",
-                      file.status === 'processing' && "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
+                      file.status === 'processing' && "border-info-muted bg-info-muted"
                     )}
                   >
                     <div className="w-10 h-12 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden">
@@ -1782,7 +1782,7 @@ export default function CargaMasivaPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
                       {file.status === 'processing' && (
-                        <p className="text-xs text-blue-600">Extrayendo datos con IA...</p>
+                        <p className="text-xs text-info-muted-foreground">Extrayendo datos con IA...</p>
                       )}
                       {file.status === 'queued' && (
                         <p className="text-xs text-muted-foreground">En cola</p>
@@ -1790,7 +1790,7 @@ export default function CargaMasivaPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {file.status === 'processing' && (
-                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        <Loader2 className="w-4 h-4 animate-spin text-info-muted-foreground" />
                       )}
                       <Button
                         variant="ghost"
@@ -1809,16 +1809,16 @@ export default function CargaMasivaPage() {
             {/* File list - Failed */}
             {uploadedFiles.filter(f => f.status === 'failed').length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-red-600">Con errores</h3>
+                <h3 className="text-sm font-medium text-destructive">Con errores</h3>
                 {uploadedFiles.filter(f => f.status === 'failed').map(file => (
                   <div
                     key={file.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10"
                   >
-                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
-                      <p className="text-xs text-red-600">{file.errorMessage}</p>
+                      <p className="text-xs text-destructive">{file.errorMessage}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -1863,12 +1863,12 @@ export default function CargaMasivaPage() {
                   {gridRows.length} fila(s)
                 </span>
                 {validGridCount > 0 && (
-                  <Badge variant="outline" className="text-green-600 border-green-200">
+                  <Badge variant="outline" className="text-success border-success-muted">
                     {validGridCount} válidos
                   </Badge>
                 )}
                 {errorGridCount > 0 && (
-                  <Badge variant="outline" className="text-red-600 border-red-200">
+                  <Badge variant="outline" className="text-destructive border-destructive/30">
                     {errorGridCount} con errores
                   </Badge>
                 )}
@@ -1943,8 +1943,8 @@ export default function CargaMasivaPage() {
                       <TableRow
                         key={row.id}
                         className={cn(
-                          row.status === 'error' && "bg-red-50 dark:bg-red-900/10",
-                          row.status === 'valid' && "bg-green-50 dark:bg-green-900/10"
+                          row.status === 'error' && "bg-destructive/10",
+                          row.status === 'valid' && "bg-success-muted"
                         )}
                       >
                         <TableCell className="text-xs text-muted-foreground">{index + 1}</TableCell>
@@ -2045,11 +2045,11 @@ export default function CargaMasivaPage() {
                         </TableCell>
                         <TableCell>
                           {row.status === 'valid' && (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <CheckCircle className="w-4 h-4 text-success" />
                           )}
                           {row.status === 'error' && (
                             <div className="flex items-center gap-1" title={row.errorMessage}>
-                              <AlertCircle className="w-4 h-4 text-red-600" />
+                              <AlertCircle className="w-4 h-4 text-destructive" />
                             </div>
                           )}
                           {row.status === 'pending' && (
@@ -2075,14 +2075,14 @@ export default function CargaMasivaPage() {
 
             {/* Error messages */}
             {errorGridCount > 0 && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-destructive mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                    <p className="text-sm font-medium text-destructive">
                       {errorGridCount} comprobante(s) con errores
                     </p>
-                    <ul className="text-xs text-red-600 mt-1 space-y-0.5">
+                    <ul className="text-xs text-destructive mt-1 space-y-0.5">
                       {gridRows.filter(r => r.status === 'error').map((r, i) => (
                         <li key={r.id}>Fila {gridRows.indexOf(r) + 1}: {r.errorMessage}</li>
                       ))}
@@ -2155,7 +2155,7 @@ export default function CargaMasivaPage() {
                           </Button>
                         </div>
                       </div>
-                      <div className="border rounded-lg overflow-auto bg-white max-h-[70vh]">
+                      <div className="border rounded-lg overflow-auto bg-background max-h-[70vh]">
                         {loadingHighResPreview ? (
                           <div className="h-64 flex items-center justify-center">
                             <div className="flex flex-col items-center gap-2">
@@ -2188,7 +2188,7 @@ export default function CargaMasivaPage() {
                     {/* Columna derecha: Datos extraídos (2/5 = 40%) */}
                     <div className="p-4 space-y-4 lg:col-span-2">
                       <h3 className="text-sm font-semibold flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-success" />
                         Datos Extraídos por IA
                       </h3>
 

@@ -231,10 +231,11 @@ export function useRecetas() {
 
   // Cargar datos cuando cambie la empresa
   useEffect(() => {
-    if (currentCompany?.id && companyContext) {
+    if (currentCompany?.id) {
       fetchRecipes();
     }
-  }, [currentCompany?.id, companyContext]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCompany?.id]);
 
   return {
     recipes,

@@ -58,9 +58,9 @@ export function ProfitabilityRankingTable({
 
   const getVelocityBadge = (velocity: 'ALTA' | 'MEDIA' | 'BAJA') => {
     const config = {
-      ALTA: { label: 'Alta', variant: 'default' as const, className: 'bg-green-100 text-green-800' },
-      MEDIA: { label: 'Media', variant: 'secondary' as const, className: 'bg-blue-100 text-blue-800' },
-      BAJA: { label: 'Baja', variant: 'outline' as const, className: 'bg-gray-100 text-gray-800' },
+      ALTA: { label: 'Alta', variant: 'default' as const, className: 'bg-success-muted text-success-muted-foreground' },
+      MEDIA: { label: 'Media', variant: 'secondary' as const, className: 'bg-info-muted text-info-muted-foreground' },
+      BAJA: { label: 'Baja', variant: 'outline' as const, className: 'bg-muted text-foreground' },
     };
     const { label, className } = config[velocity];
     return (
@@ -71,16 +71,16 @@ export function ProfitabilityRankingTable({
   };
 
   const getMarginIcon = (margin: number) => {
-    if (margin >= 40) return <TrendingUp className="w-4 h-4 text-green-600" />;
-    if (margin >= 20) return <Minus className="w-4 h-4 text-blue-600" />;
-    return <TrendingDown className="w-4 h-4 text-red-600" />;
+    if (margin >= 40) return <TrendingUp className="w-4 h-4 text-success" />;
+    if (margin >= 20) return <Minus className="w-4 h-4 text-primary" />;
+    return <TrendingDown className="w-4 h-4 text-destructive" />;
   };
 
   const getMarginColor = (margin: number) => {
-    if (margin >= 40) return 'text-green-600 font-semibold';
-    if (margin >= 20) return 'text-blue-600';
-    if (margin >= 0) return 'text-orange-600';
-    return 'text-red-600 font-semibold';
+    if (margin >= 40) return 'text-success font-semibold';
+    if (margin >= 20) return 'text-primary';
+    if (margin >= 0) return 'text-warning-muted-foreground';
+    return 'text-destructive font-semibold';
   };
 
   const SortButton = ({ field, label }: { field: string; label: string }) => (
@@ -104,7 +104,7 @@ export function ProfitabilityRankingTable({
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -187,7 +187,7 @@ export function ProfitabilityRankingTable({
               </TableCell>
 
               {/* Contribución */}
-              <TableCell className="text-right font-medium text-green-600">
+              <TableCell className="text-right font-medium text-success">
                 {formatCurrency(item.metrics.contribution)}
               </TableCell>
 

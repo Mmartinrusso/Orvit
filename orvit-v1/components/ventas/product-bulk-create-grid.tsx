@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Category } from '@/lib/types/sales';
 import { toast } from 'sonner';
 import { Save, X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface ProductBulkCreateGridProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ const createEmptyProduct = (): NewProduct => ({
 });
 
 export function ProductBulkCreateGrid({ isOpen, onClose, categories, onSave }: ProductBulkCreateGridProps) {
+  const confirm = useConfirm();
   const [products, setProducts] = useState<NewProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | HTMLButtonElement | null }>({});
@@ -172,12 +174,16 @@ export function ProductBulkCreateGrid({ isOpen, onClose, categories, onSave }: P
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     const hasData = products.some(p => p.name.trim() || p.code.trim());
     if (hasData) {
-      if (!confirm('Tienes datos sin guardar. Descartar cambios?')) {
-        return;
-      }
+      const ok = await confirm({
+        title: 'Descartar cambios',
+        description: 'Tienes datos sin guardar. ¿Descartar cambios?',
+        confirmText: 'Confirmar',
+        variant: 'default',
+      });
+      if (!ok) return;
     }
     onClose();
   };
