@@ -307,6 +307,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   // Cargar sectores cuando se selecciona un área
   useEffect(() => {
+    if (pathname === '/login') return;
     if (companyState.currentArea && companyState.currentCompany) {
       loadSectors(
         companyState.currentArea.id,
@@ -315,7 +316,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadSectors intentionally omitted to avoid re-fetch loops
-  }, [companyState.currentArea, companyState.currentCompany]);
+  }, [companyState.currentArea, companyState.currentCompany, pathname]);
 
   // Setear área
   const setArea = (area: Area | null) => {
