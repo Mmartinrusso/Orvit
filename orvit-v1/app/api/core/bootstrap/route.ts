@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
-import { verify } from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import { logApiPerformance, logApiError } from '@/lib/logger';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders, shouldDisableCache } from '@/lib/perf';
 
@@ -30,14 +30,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Verificar y decodificar token
-    let decoded: any;
+    let payload: any;
     try {
-      decoded = verify(token, process.env.JWT_SECRET || 'secret');
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'secret');
+      const result = await jwtVerify(token, secret);
+      payload = result.payload;
     } catch {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
-    const userId = decoded.userId || decoded.id;
+    const userId = payload.userId || payload.id;
     if (!userId) {
       return NextResponse.json({ error: 'Token sin userId' }, { status: 401 });
     }

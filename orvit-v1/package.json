@@ -113,6 +113,7 @@
     "embla-carousel-react": "^8.3.0",
     "eslint": "8.57.0",
     "eslint-config-next": "13.5.1",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "input-otp": "^1.2.4",

@@ -131,6 +131,11 @@ module.exports = withSentryConfig(
     // Automatically tree-shake Sentry logger statements to reduce bundle size
     disableLogger: true,
 
+    // Disable source maps upload (requires valid SENTRY_AUTH_TOKEN with correct permissions)
+    sourcemaps: {
+      disable: true,
+    },
+
     // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
     // See the following for more information:
     // https://docs.sentry.io/product/crons/

@@ -468,7 +468,7 @@ export function PedidoCompraDetailModal({
  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
  };
 
- const getInitials = (name: string) => name.split(').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+ const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
  const canAddCotizacion = pedido && ['ENVIADA', 'EN_COTIZACION', 'COTIZADA', 'EN_APROBACION'].includes(pedido.estado);
  const canAprobar = pedido && pedido.estado === 'EN_APROBACION';
