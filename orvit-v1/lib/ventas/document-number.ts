@@ -11,7 +11,8 @@ export type DocumentType =
   | 'NV'        // Nota de Venta (T2)
   | 'REC'       // Recibo
   | 'NC'        // Nota de Crédito
-  | 'ND';       // Nota de Débito
+  | 'ND'        // Nota de Débito
+  | 'LIQ';      // Liquidación de Vendedor
 
 interface GenerateNumberOptions {
   companyId: number;
@@ -102,6 +103,14 @@ async function getLastNumber(companyId: number, docType: DocumentType, prefix: s
         select: { numero: true }
       });
       break;
+
+    case 'LIQ':
+      result = await prisma.sellerLiquidacion.findFirst({
+        where: { companyId, numero: { startsWith: prefix } },
+        orderBy: { numero: 'desc' },
+        select: { numero: true }
+      });
+      break;
   }
 
   if (result?.numero) {
@@ -169,4 +178,11 @@ export async function generateCreditNoteNumber(companyId: number): Promise<strin
  */
 export async function generateDebitNoteNumber(companyId: number): Promise<string> {
   return generateDocumentNumber({ companyId, prefix: 'ND' });
+}
+
+/**
+ * Generate next liquidacion number
+ */
+export async function generateLiquidacionNumber(companyId: number): Promise<string> {
+  return generateDocumentNumber({ companyId, prefix: 'LIQ' });
 }

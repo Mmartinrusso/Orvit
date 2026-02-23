@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -486,8 +487,8 @@ export function DocumentFolderViewer({
       >
         {doc.originalName || doc.fileName}
       </button>
-      <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:block">
-        {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString('es-AR') : ''}
+      <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
+        {doc.uploadDate ? formatDate(doc.uploadDate) : ''}
       </span>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
         <Tooltip>
@@ -652,7 +653,7 @@ export function DocumentFolderViewer({
                   </span>
                 )}
 
-                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                <Badge variant="secondary" className="h-5 px-1.5 text-xs">
                   {docs.length}
                 </Badge>
               </button>
@@ -830,7 +831,7 @@ export function DocumentFolderViewer({
                       )}
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="flex-1 text-left text-sm text-muted-foreground">Sin carpeta</span>
-                      <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                      <Badge variant="outline" className="h-5 px-1.5 text-xs">
                         {documentsByFolder._sin_carpeta.length}
                       </Badge>
                     </button>

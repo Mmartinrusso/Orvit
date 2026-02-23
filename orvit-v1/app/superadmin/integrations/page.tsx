@@ -260,7 +260,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -290,8 +290,8 @@ export default function IntegrationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Zap className="h-6 w-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                <Zap className="h-6 w-6 text-accent-purple" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.enabled}</p>
@@ -355,7 +355,7 @@ export default function IntegrationsPage() {
                         </div>
                         <div>
                           <h3 className="font-medium text-sm">{integration.name}</h3>
-                          <Badge className={cn("text-[10px] mt-1", status.color)}>
+                          <Badge className={cn("text-xs mt-1", status.color)}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {status.label}
                           </Badge>

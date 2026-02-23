@@ -9,6 +9,7 @@
  */
 
 import { getUserFromToken, isAdminRole } from '@/lib/auth/shared-helpers';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // TIPOS (retrocompatibles con la interfaz original)
@@ -36,12 +37,20 @@ export async function getPayrollAuth(): Promise<PayrollAuthUser | null> {
   const user = await getUserFromToken();
   if (!user) return null;
 
+  // getUserFromToken() devuelve el nombre del rol de empresa (puede ser custom).
+  // Para nóminas necesitamos el rol del sistema (User.role: ADMIN, ADMIN_ENTERPRISE, etc.)
+  // ya que hasPayrollAccess hace un check de rol de sistema.
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true },
+  });
+
   return {
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: dbUser?.role || user.role,
     },
     companyId: user.companyId,
   };

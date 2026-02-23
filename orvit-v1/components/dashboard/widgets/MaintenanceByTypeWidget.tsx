@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { WidgetWrapper, WidgetProps } from './WidgetWrapper';
@@ -93,7 +94,7 @@ export function MaintenanceByTypeWidget({
                 />
               </div>
               <div className="text-xs text-success mt-1">
-                {((preventive / total) * 100).toFixed(1)}%
+                {formatNumber((preventive / total) * 100, 1)}%
               </div>
             </div>
             <div>
@@ -108,7 +109,7 @@ export function MaintenanceByTypeWidget({
                 />
               </div>
               <div className="text-xs text-warning-muted-foreground mt-1">
-                {((corrective / total) * 100).toFixed(1)}%
+                {formatNumber((corrective / total) * 100, 1)}%
               </div>
             </div>
           </div>

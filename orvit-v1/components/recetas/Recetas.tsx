@@ -1,7 +1,7 @@
 'use client';
 
 import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -811,7 +811,7 @@ export default function Recetas() {
   if (!products || !supplies) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando datos...</div>
+        <div className="text-lg">Cargando recetas...</div>
       </div>
     );
   }
@@ -1319,15 +1319,6 @@ export default function Recetas() {
       }).format(amount);
     };
     
-    // Función para formatear números con comas (sin símbolo de moneda)
-    const formatNumber = (num: number, decimals: number = 0) => {
-      return new Intl.NumberFormat('es-AR', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-        useGrouping: true, // Comas como separadores de miles
-      }).format(num);
-    };
-
     // Función para cargar receta actual para pruebas (actualizada)
     const loadCurrentRecipeForTestUpdated = async (productId: string) => {
       try {
@@ -3276,7 +3267,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-success">
-                        {Number(selectedRecipe.outputQuantity).toFixed(2)}
+                        {formatNumber(Number(selectedRecipe.outputQuantity), 2)}
                       </div>
                       <div className="text-sm text-muted-foreground">Productos por Batch</div>
                     </div>
@@ -3302,20 +3293,20 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     <div className="grid grid-cols-3 gap-4">
                       {selectedRecipe.cantidadPastones && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-info-muted-foreground">{Number(selectedRecipe.cantidadPastones).toFixed(2)}</div>
+                          <div className="text-2xl font-bold text-info-muted-foreground">{formatNumber(Number(selectedRecipe.cantidadPastones), 2)}</div>
                           <div className="text-sm text-muted-foreground">Pastones Utilizados</div>
                         </div>
                       )}
                       {selectedRecipe.metrosUtiles && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-success">{Number(selectedRecipe.metrosUtiles).toFixed(2)}m</div>
+                          <div className="text-2xl font-bold text-success">{formatNumber(Number(selectedRecipe.metrosUtiles), 2)}m</div>
                           <div className="text-sm text-muted-foreground">Metros Útiles</div>
                         </div>
                       )}
                       {selectedRecipe.cantidadPastones && selectedRecipe.metrosUtiles && (
                         <div className="text-center">
                           <div className="text-2xl font-bold text-info-muted-foreground">
-                            {(selectedRecipe.metrosUtiles / selectedRecipe.cantidadPastones).toFixed(2)}m
+                            {formatNumber(selectedRecipe.metrosUtiles / selectedRecipe.cantidadPastones, 2)}m
                           </div>
                           <div className="text-sm text-muted-foreground">Metros por Pastón</div>
                         </div>
@@ -3511,13 +3502,13 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                     <div className="font-semibold">
                                       {chartType === 'cost' 
                                         ? formatCurrency(item.cost)
-                                        : `${item.quantityPercentage.toFixed(1)}%`
+                                        : `${formatNumber(item.quantityPercentage, 1)}%`
                                       }
                                     </div>
                                     <div className="text-sm text-muted-foreground">
                                       {chartType === 'cost' 
-                                        ? `${item.costPercentage.toFixed(1)}% del costo`
-                                        : `${item.costPercentage.toFixed(1)}% del costo`
+                                        ? `${formatNumber(item.costPercentage, 1)}% del costo`
+                                        : `${formatNumber(item.costPercentage, 1)}% del costo`
                                       }
                                     </div>
                                   </div>
@@ -3533,7 +3524,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             <div>
                               <h5 className="font-bold text-lg">Total de la Receta</h5>
                               <p className="text-sm text-muted-foreground">
-                                {Number(totalQuantity).toFixed(3)} unidades • {chartData.length} insumos
+                                {formatNumber(Number(totalQuantity), 3)} unidades • {chartData.length} insumos
                                 {bankChartData.length > 0 && <span className="ml-2 text-xs bg-info-muted text-foreground px-1 rounded">{bankChartData.length} del banco</span>}
                               </p>
                             </div>
@@ -5198,7 +5189,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                       {costDiff >= 0 ? '+' : ''}{formatCurrency(costDiff)}
                                     </div>
                                     <div className={cn("text-xs", percentageDiff >= 0 ? "text-destructive" : "text-success")}>
-                                      {percentageDiff >= 0 ? '+' : ''}{percentageDiff.toFixed(1)}%
+                                      {percentageDiff >= 0 ? '+' : ''}{formatNumber(percentageDiff, 1)}%
                                     </div>
                                   </div>
                                 </td>
@@ -5376,13 +5367,13 @@ Total de ingredientes: ${reportData.ingredientes.length}
                           {(() => {
                             const totalTN = testIngredients.reduce((sum, ing) => sum + (parseFloat(ing.quantity) || 0), 0);
                             const totalKG = Number(totalTN) * 1000;
-                            return (Number(totalKG) || 0).toFixed(2);
+                            return formatNumber(Number(totalKG) || 0, 2);
                           })()} kg
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           ({(() => {
                             const totalTN = testIngredients.reduce((sum, ing) => sum + (parseFloat(ing.quantity) || 0), 0);
-                            return (Number(totalTN) || 0).toFixed(3);
+                            return formatNumber(Number(totalTN) || 0, 3);
                           })()} TN)
                         </div>
                       </div>
@@ -5418,10 +5409,10 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               )}
                             </div>
                             <div className={cn("text-base", excedeLimite ? "text-destructive font-bold" : "font-medium")}>
-                              {(Number(totalAridosKG) || 0).toFixed(2)} kg
+                              {formatNumber(Number(totalAridosKG) || 0, 2)} kg
                             </div>
                             <div className={cn("text-xs mt-1", excedeLimite ? "text-destructive" : "text-muted-foreground")}>
-                              ({(Number(totalAridosTN) || 0).toFixed(3)} TN)
+                              ({formatNumber(Number(totalAridosTN) || 0, 3)} TN)
                             </div>
                           </div>
                         );
@@ -5445,7 +5436,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Resumen de Costos por Unidad */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="p-4 bg-info-muted rounded-lg border border-info-muted">
                         <div className="text-sm font-medium text-info-muted-foreground">Materiales</div>
                         <div className="text-xl font-bold text-info-muted-foreground">
@@ -5482,7 +5473,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                     {/* Costos Totales para la Producción */}
                     <div className="p-4 bg-muted/10 rounded-lg border">
                       <h4 className="font-semibold mb-3">Costos Totales para {getProductionQuantityInUnits().toLocaleString('es-AR', { useGrouping: true })} unidades</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                           <div className="text-sm text-muted-foreground">Materiales</div>
                           <div className="text-lg font-bold">{formatCurrency(totalCostResults.materialsCost)}</div>
@@ -5516,7 +5507,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                         </div>
                         <div className="flex justify-between">
                           <span>Ratio de distribución:</span>
-                          <span className="font-medium">{(totalCostResults.distributionRatio * 100).toFixed(2)}%</span>
+                          <span className="font-medium">{formatNumber(totalCostResults.distributionRatio * 100, 2)}%</span>
                         </div>
                       </div>
                     </div>
@@ -5718,14 +5709,14 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                     <span className="text-muted-foreground">Variación del batch: </span>
                                     <span className={cn("font-medium", change.percentage > 0 ? "text-warning-muted-foreground" : change.percentage < 0 ? "text-success" : "")}>
                                       {change.percentage > 0 ? '+' : ''}
-                                      {change.percentage.toFixed(1)}%
+                                      {formatNumber(change.percentage, 1)}%
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Variación en el precio: </span>
                                     <span className={cn("font-medium", change.costVariationPercentage > 0 ? "text-warning-muted-foreground" : change.costVariationPercentage < 0 ? "text-success" : "")}>
                                       {change.costVariationPercentage > 0 ? '+' : ''}
-                                      {change.costVariationPercentage.toFixed(1)}%
+                                      {formatNumber(change.costVariationPercentage, 1)}%
                                     </span>
                                   </div>
                                 </div>
@@ -5847,7 +5838,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                                 </span>
                               </div>
                               <div className="text-xs text-muted-foreground mt-1">
-                                ({Math.abs(porcentajeDiferencia).toFixed(1)}%)
+                                ({formatNumber(Math.abs(porcentajeDiferencia), 1)}%)
                               </div>
                             </div>
                           </div>
@@ -5896,7 +5887,7 @@ Total de ingredientes: ${reportData.ingredientes.length}
                             {isAhorro ? '-' : '+'}{formatCurrency(Math.abs(diferenciaPorUnidad))}
                           </div>
                           <div className="text-xs font-medium text-muted-foreground">
-                            ({Math.abs(porcentajeDiferencia).toFixed(1)}%)
+                            ({formatNumber(Math.abs(porcentajeDiferencia), 1)}%)
                           </div>
                         </div>
                       </div>
@@ -5917,8 +5908,8 @@ Total de ingredientes: ${reportData.ingredientes.length}
                               axisLine={false}
                               tickLine={false}
                               tickFormatter={(value) => {
-                                if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-                                if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+                                if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
+                                if (value >= 1000) return `$${formatNumber(value / 1000, 0)}K`;
                                 return `$${value}`;
                               }}
                             />

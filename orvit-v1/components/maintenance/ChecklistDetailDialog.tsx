@@ -39,6 +39,7 @@ import {
  CalendarClock
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDateTime } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -1923,12 +1924,12 @@ export default function ChecklistDetailDialog({
  <h2 className="tracking-tight text-sm sm:text-base font-bold truncate">
  {checklist.title}
  </h2>
- <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-info-muted text-info-muted-foreground border-info-muted">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 bg-info-muted text-info-muted-foreground border-info-muted">
  v1.0
  </Badge>
  <Badge
  variant="outline"
- className={cn('text-[10px] h-5 px-1.5', checklist.isActive ? 'bg-success-muted text-success border-success-muted' : 'bg-muted text-foreground border-border')}
+ className={cn('text-xs h-5 px-1.5', checklist.isActive ? 'bg-success-muted text-success border-success-muted' : 'bg-muted text-foreground border-border')}
  >
  {checklist.isActive ? 'Activo' : 'Borrador'}
  </Badge>
@@ -2317,7 +2318,7 @@ function ChecklistHistoryContent({ checklistId, companyId, checklist, onPrintChe
  fecha.setHours(parseInt(horas) || 0, parseInt(minutos) || 0, 0, 0);
  }
  
- return format(fecha, 'dd/MM/yyyy HH:mm', { locale: es });
+ return formatDateTime(fecha);
  })()}
  </span>
  </div>
@@ -2617,7 +2618,7 @@ function ChecklistPrintModal({ executionId, isOpen, onClose }: { executionId: nu
  ...maintenanceItems,
  ...legacyCompleted.map((item: any) => ({
  maintenanceId: item.maintenanceId ?? item.id,
- completedDate: item.completedAt ? format(new Date(item.completedAt), 'dd/MM/yyyy HH:mm', { locale: es }) : '',
+ completedDate: item.completedAt ? formatDateTime(item.completedAt) : '',
  rescheduleDate: '',
  notes: item.justification || '',
  issues: '',
@@ -2841,7 +2842,7 @@ function ChecklistPrintModal({ executionId, isOpen, onClose }: { executionId: nu
  <div class="header-info">
  <div><strong>ID del Checklist:</strong> ${execution.checklistId}</div>
  <div><strong>ID de Ejecución:</strong> ${execution.id}</div>
- <div><strong>Fecha de Ejecución:</strong> ${format(new Date(execution.executedAt), 'dd/MM/yyyy HH:mm', { locale: es })}</div>
+ <div><strong>Fecha de Ejecución:</strong> ${formatDateTime(execution.executedAt)}</div>
  <div><strong>Ejecutado por:</strong> ${execution.executedBy}</div>
  <div><strong>Estado:</strong> ${execution.status === 'COMPLETED' ? 'Completado' : execution.status}</div>
  <div><strong>Items completados:</strong> ${execution.completedItems} / ${execution.totalItems}</div>
@@ -2884,7 +2885,7 @@ function ChecklistPrintModal({ executionId, isOpen, onClose }: { executionId: nu
  ...maintenanceItems,
  ...legacyCompleted.map((item: any) => ({
  maintenanceId: item.maintenanceId ?? item.id,
- completedDate: item.completedAt ? format(new Date(item.completedAt), 'dd/MM/yyyy HH:mm', { locale: es }) : '',
+ completedDate: item.completedAt ? formatDateTime(item.completedAt) : '',
  rescheduleDate: '',
  notes: item.justification || '',
  issues: '',
@@ -3011,7 +3012,7 @@ function ChecklistPrintModal({ executionId, isOpen, onClose }: { executionId: nu
  </div>
  <div className="print:py-2">
  <strong className="text-foreground">Fecha de Ejecución:</strong>{' '}
- <span className="ml-2">{format(new Date(execution.executedAt), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+ <span className="ml-2">{formatDateTime(execution.executedAt)}</span>
  </div>
  <div className="print:py-2">
  <strong className="text-foreground">Ejecutado por:</strong> <span className="ml-2">{execution.executedBy}</span>

@@ -35,7 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 // Loader component que muestra el progreso
 function Loader() {
@@ -51,7 +51,7 @@ function Loader() {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-xs text-muted-foreground">{progress.toFixed(0)}%</p>
+        <p className="text-xs text-muted-foreground">{formatNumber(progress, 0)}%</p>
       </div>
     </Html>
   );
@@ -429,7 +429,7 @@ export function Machine3DViewer({
         </div>
 
         {/* Instrucciones */}
-        <div className="absolute bottom-2 left-2 text-[10px] text-muted-foreground bg-background/60 backdrop-blur-sm rounded px-2 py-1">
+        <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/60 backdrop-blur-sm rounded px-2 py-1">
           <span className="hidden sm:inline">
             🖱️ Click + arrastrar: rotar | Scroll: zoom | Shift + arrastrar: mover
           </span>

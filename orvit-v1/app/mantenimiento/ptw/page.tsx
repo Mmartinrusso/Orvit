@@ -5,6 +5,8 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
+import { useApiMutation } from '@/hooks/use-api-mutation';
+import { toast as sonnerToast } from 'sonner';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { PermitToWork, PTWStatus, Machine } from '@/lib/types';
 import {
@@ -110,56 +112,59 @@ export default function PTWPage() {
     fetchWorkOrders();
   }, [fetchPermits, fetchMachines, fetchWorkOrders]);
 
-  const handleCreate = async (data: Partial<PermitToWork>) => {
-    try {
+  // ── Mutations ──────────────────────────────────────────────────────────────
+
+  const createMutation = useApiMutation<unknown, Partial<PermitToWork> & { companyId: number | null }>({
+    mutationFn: async (vars) => {
       const response = await fetch('/api/ptw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, companyId }),
+        body: JSON.stringify(vars),
       });
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Error al crear PTW');
       }
-      toast({ title: 'PTW creado', description: 'El permiso de trabajo fue creado exitosamente' });
-      fetchPermits();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      throw error;
-    }
-  };
+      return response.json();
+    },
+    successMessage: 'PTW creado',
+    errorMessage: 'Error al crear PTW',
+    onSuccess: () => { fetchPermits(); },
+  });
 
-  const handleUpdate = async (data: Partial<PermitToWork>) => {
-    if (!selectedPermit) return;
-    try {
-      const response = await fetch(`/api/ptw/${selectedPermit.id}`, {
+  const updateMutation = useApiMutation<unknown, { id: number; data: Partial<PermitToWork> }>({
+    mutationFn: async (vars) => {
+      const response = await fetch(`/api/ptw/${vars.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(vars.data),
       });
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Error al actualizar PTW');
       }
-      toast({ title: 'PTW actualizado', description: 'El permiso de trabajo fue actualizado' });
-      fetchPermits();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      throw error;
-    }
-  };
+      return response.json();
+    },
+    successMessage: 'PTW actualizado',
+    errorMessage: 'Error al actualizar PTW',
+    onSuccess: () => { fetchPermits(); },
+  });
 
-  const handleAction = async (action: string, permit: PermitToWork, extraData?: any) => {
-    try {
-      const response = await fetch(`/api/ptw/${permit.id}`, {
+  const actionMutation = useApiMutation<unknown, { permitId: number; action: string; extraData?: any }>({
+    mutationFn: async (vars) => {
+      const response = await fetch(`/api/ptw/${vars.permitId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...extraData }),
+        body: JSON.stringify({ action: vars.action, ...vars.extraData }),
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || `Error al ejecutar accion ${action}`);
+        throw new Error(error.error || `Error al ejecutar accion ${vars.action}`);
       }
+      return response.json();
+    },
+    successMessage: null,
+    onSuccess: (_data, vars) => {
       const actionLabels: Record<string, string> = {
         submit: 'enviado a aprobacion',
         approve: 'aprobado',
@@ -169,31 +174,42 @@ export default function PTWPage() {
         resume: 'reanudado',
         close: 'cerrado',
       };
-      toast({
-        title: 'PTW actualizado',
-        description: `El permiso fue ${actionLabels[action] || 'actualizado'}`,
-      });
+      sonnerToast.success(`PTW ${actionLabels[vars.action] || 'actualizado'}`);
       fetchPermits();
       setIsDetailOpen(false);
       setIsApprovalOpen(false);
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      throw error;
-    }
-  };
+    },
+  });
 
-  const handleDelete = async (permit: PermitToWork) => {
-    try {
-      const response = await fetch(`/api/ptw/${permit.id}`, { method: 'DELETE' });
+  const deleteMutation = useApiMutation<unknown, { id: number }>({
+    mutationFn: async (vars) => {
+      const response = await fetch(`/api/ptw/${vars.id}`, { method: 'DELETE' });
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Error al eliminar PTW');
       }
-      toast({ title: 'PTW eliminado', description: 'El permiso de trabajo fue eliminado' });
-      fetchPermits();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    }
+      return response.json();
+    },
+    successMessage: 'PTW eliminado',
+    errorMessage: 'Error al eliminar PTW',
+    onSuccess: () => { fetchPermits(); },
+  });
+
+  const handleCreate = async (data: Partial<PermitToWork>) => {
+    await createMutation.mutateAsync({ ...data, companyId });
+  };
+
+  const handleUpdate = async (data: Partial<PermitToWork>) => {
+    if (!selectedPermit) return;
+    await updateMutation.mutateAsync({ id: selectedPermit.id, data });
+  };
+
+  const handleAction = async (action: string, permit: PermitToWork, extraData?: any) => {
+    await actionMutation.mutateAsync({ permitId: permit.id, action, extraData });
+  };
+
+  const handleDelete = async (permit: PermitToWork) => {
+    await deleteMutation.mutateAsync({ id: permit.id });
   };
 
   const openActionDialog = (type: string, permit: PermitToWork) => {

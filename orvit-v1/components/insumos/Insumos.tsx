@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -370,7 +370,7 @@ export default function Insumos() {
               
               return [
                 `Precio: ${formattedValue}`,
-                `Cambio: ${change >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
+                `Cambio: ${change >= 0 ? '+' : ''}${formatNumber(percentageChange, 1)}%`
               ];
             }
             
@@ -728,7 +728,7 @@ export default function Insumos() {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -1261,7 +1261,7 @@ export default function Insumos() {
                                 </span>
                               </div>
                               <div className="text-xs text-info-muted-foreground mt-1">
-                                {trendData.totalPercentageChange > 0 ? '+' : ''}{trendData.totalPercentageChange.toFixed(1)}% total
+                                {trendData.totalPercentageChange > 0 ? '+' : ''}{formatNumber(trendData.totalPercentageChange, 1)}% total
                               </div>
                             </CardContent>
                           </Card>
@@ -1373,7 +1373,7 @@ export default function Insumos() {
                                       {trend.difference >= 0 ? '+' : ''}{formatCurrency(trend.difference)}
                                     </div>
                                     <div className={cn('text-xs', trend.type === 'increase' ? 'text-success' : trend.type === 'decrease' ? 'text-destructive' : 'text-muted-foreground')}>
-                                      {trend.percentageChange >= 0 ? '+' : ''}{trend.percentageChange.toFixed(1)}%
+                                      {trend.percentageChange >= 0 ? '+' : ''}{formatNumber(trend.percentageChange, 1)}%
                                     </div>
                                   </div>
                                 </div>

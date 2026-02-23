@@ -17,7 +17,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { CostBreakdownChart } from './CostBreakdownChart';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ProductPrice {
   id: number;
@@ -104,9 +104,7 @@ export function ProductCostCard({
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-AR').format(num);
-  };
+  // formatNumber imported from @/lib/utils
 
   const getStatusBadge = () => {
     if (product.calculated_cost === 0) {
@@ -174,7 +172,7 @@ export function ProductCostCard({
                   <span className={cn('ml-2 font-medium', getMarginColor(
                     ((product.average_sale_price - product.calculated_cost) / product.average_sale_price) * 100
                   ))}>
-                    ({(((product.average_sale_price - product.calculated_cost) / product.average_sale_price) * 100).toFixed(1)}% ganancia)
+                    ({formatNumber(((product.average_sale_price - product.calculated_cost) / product.average_sale_price) * 100, 1)}% ganancia)
                   </span>
                 )}
               </div>
@@ -234,7 +232,7 @@ export function ProductCostCard({
                     <div className="flex justify-between">
                       <span>Margen de ganancia:</span>
                       <span className={cn('font-medium', getMarginColor(margin))}>
-                        {margin.toFixed(1)}%
+                        {formatNumber(margin, 1)}%
                       </span>
                     </div>
                   )}
@@ -391,7 +389,7 @@ export function ProductCostCard({
                           <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                             <span>Porcentaje del total:</span>
                             <span>{product.distribution_info.category_total_meters > 0 
-                              ? ((product.distribution_info.product_meters_sold / product.distribution_info.category_total_meters) * 100).toFixed(2)
+                              ? formatNumber((product.distribution_info.product_meters_sold / product.distribution_info.category_total_meters) * 100, 2)
                               : '0.00'}%</span>
                           </div>
                           <div className="flex justify-between text-sm text-muted-foreground mt-1">
@@ -415,7 +413,7 @@ export function ProductCostCard({
                         </div>
                         <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                           <span>Porcentaje del total:</span>
-                          <span>{product.distribution_info.percentage_of_category ? product.distribution_info.percentage_of_category.toFixed(2) : (product.distribution_info.distribution_ratio * 100).toFixed(2)}%</span>
+                          <span>{product.distribution_info.percentage_of_category ? formatNumber(product.distribution_info.percentage_of_category, 2) : formatNumber(product.distribution_info.distribution_ratio * 100, 2)}%</span>
                         </div>
                       </div>
                     )}
@@ -470,7 +468,7 @@ export function ProductCostCard({
                           <td className="text-right p-3">{ingredient.unit_measure}</td>
                           <td className="text-right p-3">{formatCurrency(ingredient.unit_price)}</td>
                           <td className="text-right p-3 font-medium">{formatCurrency(ingredient.total_cost)}</td>
-                          <td className="text-right p-3 text-muted-foreground">{percentage.toFixed(1)}%</td>
+                          <td className="text-right p-3 text-muted-foreground">{formatNumber(percentage, 1)}%</td>
                         </tr>
                       );
                     })}
@@ -500,7 +498,7 @@ export function ProductCostCard({
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">({simulationEstadisticas.cuartosActuales?.toFixed(2) || '0'} cuartos)</span>
+                              <span className="text-sm text-muted-foreground">({simulationEstadisticas.cuartosActuales ? formatNumber(simulationEstadisticas.cuartosActuales, 2) : '0'} cuartos)</span>
                               <span className="text-xs text-muted-foreground bg-card/60 px-2 py-1 rounded">1 cuarto = 240 placas</span>
                             </div>
                           </div>
@@ -583,7 +581,7 @@ export function ProductCostCard({
                               <div className="flex items-center justify-between py-1.5 px-2 bg-card/60 rounded-md">
                                 <span className="font-medium text-muted-foreground">Cuartos:</span>
                                 <span className="font-semibold text-foreground">
-                                  {escenario.cuartos?.toFixed(2) || '0'}
+                                  {escenario.cuartos ? formatNumber(escenario.cuartos, 2) : '0'}
                                 </span>
                               </div>
                               
@@ -600,7 +598,7 @@ export function ProductCostCard({
                                     diferencia < 0 ? 'text-success' : diferencia > 0 ? 'text-destructive' : 'text-muted-foreground'
                                   )}>
                                     <span>{diferencia < 0 ? '↓' : diferencia > 0 ? '↑' : '→'}</span>
-                                    <span>{Math.abs(porcentajeCambio).toFixed(1)}%</span>
+                                    <span>{formatNumber(Math.abs(porcentajeCambio), 1)}%</span>
                                     <span className="text-muted-foreground">
                                       ({diferencia < 0 ? '-' : '+'}{formatCurrency(Math.abs(diferencia))})
                                     </span>
@@ -630,7 +628,7 @@ export function ProductCostCard({
                                         {esMejor ? 'Ahorro' : diferenciaCostoPorPlaca > 0 ? 'Más caro' : 'Igual'}
                                       </span>
                                       <span className="font-bold">
-                                        {Math.abs(porcentajeCambioPorPlaca).toFixed(2)}%
+                                        {formatNumber(Math.abs(porcentajeCambioPorPlaca), 2)}%
                                       </span>
                                     </div>
                                     <div className="text-muted-foreground pl-4">
@@ -667,7 +665,7 @@ export function ProductCostCard({
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">({simulationEstadisticas.metrosActuales?.toFixed(2) || '0'} metros)</span>
+                                <span className="text-sm text-muted-foreground">({simulationEstadisticas.metrosActuales ? formatNumber(simulationEstadisticas.metrosActuales, 2) : '0'} metros)</span>
                                 <span className="text-xs text-muted-foreground bg-card/60 px-2 py-1 rounded">1 banco = 1300 m útiles</span>
                               </div>
                             </div>
@@ -750,7 +748,7 @@ export function ProductCostCard({
                                 <div className="flex items-center justify-between py-1.5 px-2 bg-card/60 rounded-md">
                                   <span className="font-medium text-muted-foreground">Metros:</span>
                                   <span className="font-semibold text-foreground">
-                                    {escenario.metros?.toFixed(2) || '0'}
+                                    {escenario.metros ? formatNumber(escenario.metros, 2) : '0'}
                                   </span>
                                 </div>
                                 
@@ -767,7 +765,7 @@ export function ProductCostCard({
                                       diferencia < 0 ? 'text-success' : diferencia > 0 ? 'text-destructive' : 'text-muted-foreground'
                                     )}>
                                       <span>{diferencia < 0 ? '↓' : diferencia > 0 ? '↑' : '→'}</span>
-                                      <span>{Math.abs(porcentajeCambio).toFixed(1)}%</span>
+                                      <span>{formatNumber(Math.abs(porcentajeCambio), 1)}%</span>
                                       <span className="text-muted-foreground">
                                         ({diferencia < 0 ? '-' : '+'}{formatCurrency(Math.abs(diferencia))})
                                       </span>
@@ -797,7 +795,7 @@ export function ProductCostCard({
                                           {esMejor ? 'Ahorro' : diferenciaCostoPorUnidad > 0 ? 'Más caro' : 'Igual'}
                                         </span>
                                         <span className="font-bold">
-                                          {Math.abs(porcentajeCambioPorUnidad).toFixed(2)}%
+                                          {formatNumber(Math.abs(porcentajeCambioPorUnidad), 2)}%
                                         </span>
                                       </div>
                                       <div className="text-muted-foreground pl-4">
@@ -842,7 +840,7 @@ export function ProductCostCard({
                         <div className="flex justify-between">
                           <span>Margen de ganancia:</span>
                           <span className={cn('font-medium', getMarginColor(margin))}>
-                            {margin.toFixed(1)}%
+                            {formatNumber(margin, 1)}%
                           </span>
                         </div>
                       )}
@@ -999,7 +997,7 @@ export function ProductCostCard({
                               <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                                 <span>Porcentaje del total:</span>
                                 <span>{product.distribution_info.category_total_meters > 0 
-                                  ? ((product.distribution_info.product_meters_sold / product.distribution_info.category_total_meters) * 100).toFixed(2)
+                                  ? formatNumber((product.distribution_info.product_meters_sold / product.distribution_info.category_total_meters) * 100, 2)
                                   : '0.00'}%</span>
                               </div>
                               <div className="flex justify-between text-sm text-muted-foreground mt-1">
@@ -1023,7 +1021,7 @@ export function ProductCostCard({
                             </div>
                             <div className="flex justify-between text-info-muted-foreground font-semibold border-t border-info-muted pt-2">
                               <span>Porcentaje del total:</span>
-                              <span>{product.distribution_info.percentage_of_category ? product.distribution_info.percentage_of_category.toFixed(2) : (product.distribution_info.distribution_ratio * 100).toFixed(2)}%</span>
+                              <span>{product.distribution_info.percentage_of_category ? formatNumber(product.distribution_info.percentage_of_category, 2) : formatNumber(product.distribution_info.distribution_ratio * 100, 2)}%</span>
                             </div>
                           </div>
                         )}
@@ -1078,7 +1076,7 @@ export function ProductCostCard({
                               <td className="text-right p-3">{ingredient.unit_measure}</td>
                               <td className="text-right p-3">{formatCurrency(ingredient.unit_price)}</td>
                               <td className="text-right p-3 font-medium">{formatCurrency(ingredient.total_cost)}</td>
-                              <td className="text-right p-3 text-muted-foreground">{percentage.toFixed(1)}%</td>
+                              <td className="text-right p-3 text-muted-foreground">{formatNumber(percentage, 1)}%</td>
                             </tr>
                           );
                         })}

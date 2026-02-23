@@ -48,10 +48,11 @@ import {
  X,
  Users,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface PreventivoMetricasViewProps {
  className?: string;
@@ -172,27 +173,6 @@ function formatDuration(minutes: number | null | undefined): string {
  return `${hours}h ${mins}min`;
 }
 
-// Formatear fecha
-function formatDate(dateString: string | Date | null | undefined): string {
- if (!dateString) return '—';
- try {
- const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
- return format(date, 'dd/MM/yyyy HH:mm', { locale: es });
- } catch {
- return '—';
- }
-}
-
-// Formatear solo fecha
-function formatDateOnly(dateString: string | Date | null | undefined): string {
- if (!dateString) return '—';
- try {
- const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
- return format(date, 'dd/MM/yyyy', { locale: es });
- } catch {
- return '—';
- }
-}
 
 // Obtener color del badge de estado
 function getStatusColor(status: string): string {
@@ -465,7 +445,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  ...executions.map(e => [
  `"${e.checklistTitle}"`,
  `"${e.executedBy}"`,
- formatDate(e.executedAt),
+ formatDateTime(e.executedAt),
  translateStatus(e.status),
  e.completedItems,
  e.totalItems,
@@ -538,7 +518,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <Filter className="h-3.5 w-3.5" />
  <span className="hidden sm:inline">Filtros</span>
  {activeFiltersCount > 0 && (
- <Badge variant="secondary" className="h-5 min-w-5 px-1 text-[10px] rounded-full">
+ <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs rounded-full">
  {activeFiltersCount}
  </Badge>
  )}
@@ -645,9 +625,9 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <div>
  <p className="text-xs text-success font-medium">Cumplimiento</p>
  <p className="text-2xl font-bold text-success-muted-foreground">
- {derivedMetrics.itemCompletionRate.toFixed(1)}%
+ {formatNumber(derivedMetrics.itemCompletionRate, 1)}%
  </p>
- <p className="text-[10px] text-success flex items-center gap-1 mt-1">
+ <p className="text-xs text-success flex items-center gap-1 mt-1">
  <Target className="h-3 w-3" />
  {derivedMetrics.totalItems - derivedMetrics.skippedItems}/{derivedMetrics.totalItems} items
  </p>
@@ -668,7 +648,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <p className="text-2xl font-bold text-info-muted-foreground">
  {derivedMetrics.totalExecutions}
  </p>
- <p className="text-[10px] text-info-muted-foreground flex items-center gap-1 mt-1">
+ <p className="text-xs text-info-muted-foreground flex items-center gap-1 mt-1">
  <Activity className="h-3 w-3" />
  {derivedMetrics.completedExecutions} completas
  </p>
@@ -689,10 +669,10 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <p className="text-2xl font-bold text-warning-muted-foreground">
  {derivedMetrics.skippedItems}
  </p>
- <p className="text-[10px] text-warning-muted-foreground flex items-center gap-1 mt-1">
+ <p className="text-xs text-warning-muted-foreground flex items-center gap-1 mt-1">
  <SkipForward className="h-3 w-3" />
  {derivedMetrics.totalItems > 0
- ? ((derivedMetrics.skippedItems / derivedMetrics.totalItems) * 100).toFixed(1)
+ ? formatNumber((derivedMetrics.skippedItems / derivedMetrics.totalItems) * 100, 1)
  : 0}% del total
  </p>
  </div>
@@ -712,7 +692,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <p className="text-2xl font-bold text-purple-900">
  {formatDuration(derivedMetrics.avgExecutionTime)}
  </p>
- <p className="text-[10px] text-purple-600 flex items-center gap-1 mt-1">
+ <p className="text-xs text-purple-600 flex items-center gap-1 mt-1">
  <Timer className="h-3 w-3" />
  por ejecución
  </p>
@@ -777,7 +757,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <p className="text-2xl font-bold text-destructive">
  {kpiData?.overdueMaintenance || 0}
  </p>
- <p className="text-[10px] text-muted-foreground mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  en el período
  </p>
  </div>
@@ -795,8 +775,8 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <p className="text-2xl font-bold text-success">
  {kpiData?.completedOnTime || 0}
  </p>
- <p className="text-[10px] text-muted-foreground mt-1">
- {kpiData?.completionRate?.toFixed(1) || 0}% del total
+ <p className="text-xs text-muted-foreground mt-1">
+ {kpiData?.completionRate != null ? formatNumber(kpiData.completionRate, 1) : 0}% del total
  </p>
  </div>
  <CheckCircle className="h-8 w-8 text-success/20" />
@@ -812,7 +792,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <CardTitle className="text-sm flex items-center gap-2">
  <Target className="h-4 w-4 text-primary" />
  Cumplimiento de Mantenimiento Preventivo
- <Badge variant="outline" className="ml-auto text-[10px]">
+ <Badge variant="outline" className="ml-auto text-xs">
  Últimos 30 días
  </Badge>
  </CardTitle>
@@ -888,7 +868,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  }}
  />
  </div>
- <div className="flex gap-4 text-[10px]">
+ <div className="flex gap-4 text-xs">
  <span className="flex items-center gap-1">
  <div className="h-2 w-2 rounded-full bg-success-muted0" /> A tiempo
  </span>
@@ -993,7 +973,7 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  className="w-full bg-primary/80 rounded-t transition-all duration-300"
  style={{ height: `${Math.max(height, 5)}%` }}
  />
- <span className="text-[10px] text-muted-foreground">
+ <span className="text-xs text-muted-foreground">
  {format(new Date(month.month), 'MMM', { locale: es })}
  </span>
  </div>
@@ -1063,12 +1043,12 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2">
  <p className="font-medium text-sm truncate">{execution.checklistTitle}</p>
- <Badge className={cn("text-[10px]", getStatusColor(execution.status))}>
+ <Badge className={cn("text-xs", getStatusColor(execution.status))}>
  {translateStatus(execution.status)}
  </Badge>
  </div>
  <p className="text-xs text-muted-foreground mt-1">
- {execution.executedBy} • {formatDate(execution.executedAt)}
+ {execution.executedBy} • {formatDateTime(execution.executedAt)}
  </p>
  </div>
  <div className="flex items-center gap-4 text-sm">
@@ -1171,11 +1151,11 @@ export function PreventivoMetricasView({ className }: PreventivoMetricasViewProp
  <p className="text-xs text-muted-foreground truncate">
  {execution.checklistTitle}
  </p>
- <p className="text-[10px] text-muted-foreground mt-1">
- {formatDate(execution.executedAt)} • {execution.executedBy}
+ <p className="text-xs text-muted-foreground mt-1">
+ {formatDateTime(execution.executedAt)} • {execution.executedBy}
  </p>
  </div>
- <Badge variant="outline" className="text-[10px] shrink-0">
+ <Badge variant="outline" className="text-xs shrink-0">
  {formatDuration(execution.executionTime)}
  </Badge>
  </div>

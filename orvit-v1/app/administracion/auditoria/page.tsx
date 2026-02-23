@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -213,7 +214,7 @@ export default function AuditoriaPage() {
       {activeSection === 'general' && (
         <>
           {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Eventos</CardTitle>
@@ -372,7 +373,7 @@ export default function AuditoriaPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {priceChangeSummary.averageChangePercent.toFixed(1)}%
+                    {formatNumber(priceChangeSummary.averageChangePercent, 1)}%
                   </div>
                 </CardContent>
               </Card>
@@ -537,7 +538,7 @@ export default function AuditoriaPage() {
                             }`}
                           >
                             {log.changePercentage > 0 ? '+' : ''}
-                            {log.changePercentage.toFixed(1)}%
+                            {formatNumber(log.changePercentage, 1)}%
                           </Badge>
                         </TableCell>
                         <TableCell>

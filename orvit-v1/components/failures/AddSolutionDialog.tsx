@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { useAddSolution } from '@/hooks/maintenance/use-failure-solutions';
+import { useAddSolution } from '@/hooks/mantenimiento/use-failure-solutions';
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 

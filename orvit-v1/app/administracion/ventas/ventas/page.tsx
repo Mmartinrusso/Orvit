@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePermission } from '@/hooks/use-permissions';
+import { formatDate } from '@/lib/date-utils';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -431,7 +432,7 @@ export default function SalesPage() {
                           {sale.quoteId ? `COT-${sale.quoteId}` : '-'}
                         </TableCell>
                         <TableCell className="text-sm hidden md:table-cell">
-                          {new Date(sale.createdAt).toLocaleDateString('es-AR')}
+                          {formatDate(sale.createdAt)}
                         </TableCell>
                         <TableCell className="font-medium text-sm">
                           {formatCurrency(sale.total)}

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -821,7 +822,7 @@ export default function LoadOrdersPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setEstadoFilter('PENDIENTE')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
@@ -876,7 +877,7 @@ export default function LoadOrdersPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <Label>Buscar</Label>
                   <Input
@@ -1119,10 +1120,10 @@ export default function LoadOrdersPage() {
                           <TableCell className="text-right">
                             <div className="text-sm">
                               {order.pesoTotal && (
-                                <div>{order.pesoTotal.toFixed(0)} kg</div>
+                                <div>{formatNumber(order.pesoTotal, 0)} kg</div>
                               )}
                               {order.volumenTotal && (
-                                <div className="text-muted-foreground">{order.volumenTotal.toFixed(2)} m³</div>
+                                <div className="text-muted-foreground">{formatNumber(order.volumenTotal, 2)} m³</div>
                               )}
                               {!order.pesoTotal && !order.volumenTotal && '-'}
                             </div>
@@ -1353,12 +1354,12 @@ export default function LoadOrdersPage() {
                           />
                           {totalPeso > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Peso: {totalPeso.toFixed(2)} kg
+                              Peso: {formatNumber(totalPeso, 2)} kg
                             </p>
                           )}
                           {totalVolumen > 0 && (
                             <p className="text-xs text-muted-foreground">
-                              Volumen: {totalVolumen.toFixed(3)} m³
+                              Volumen: {formatNumber(totalVolumen, 3)} m³
                             </p>
                           )}
                         </div>
@@ -1399,26 +1400,24 @@ export default function LoadOrdersPage() {
                     <div>
                       <p className="text-muted-foreground">Peso Total</p>
                       <p className="text-lg font-semibold">
-                        {confirmItems
+                        {formatNumber(confirmItems
                           .reduce(
                             (sum, item) =>
                               sum + (item.pesoUnitario || 0) * (item.cantidadCargada || 0),
                             0
-                          )
-                          .toFixed(0)}{' '}
+                          ))}{' '}
                         kg
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Volumen Total</p>
                       <p className="text-lg font-semibold">
-                        {confirmItems
+                        {formatNumber(confirmItems
                           .reduce(
                             (sum, item) =>
                               sum + (item.volumenUnitario || 0) * (item.cantidadCargada || 0),
                             0
-                          )
-                          .toFixed(2)}{' '}
+                          ), 2)}{' '}
                         m³
                       </p>
                     </div>
@@ -1509,13 +1508,13 @@ export default function LoadOrdersPage() {
                   <div>
                     <Label className="text-muted-foreground">Peso Total</Label>
                     <p className="font-medium">
-                      {detailOrder.pesoTotal ? `${detailOrder.pesoTotal.toFixed(0)} kg` : '-'}
+                      {detailOrder.pesoTotal ? `${formatNumber(detailOrder.pesoTotal, 0)} kg` : '-'}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Volumen Total</Label>
                     <p className="font-medium">
-                      {detailOrder.volumenTotal ? `${detailOrder.volumenTotal.toFixed(2)} m³` : '-'}
+                      {detailOrder.volumenTotal ? `${formatNumber(detailOrder.volumenTotal, 2)} m³` : '-'}
                     </p>
                   </div>
                 </div>

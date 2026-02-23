@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -504,13 +505,13 @@ export default function CSVImportDialog({
                           </TableCell>
                           <TableCell className="text-xs">{item.referencia || '-'}</TableCell>
                           <TableCell className="text-xs text-right font-mono text-destructive">
-                            {item.debito > 0 ? item.debito.toFixed(2) : '-'}
+                            {item.debito > 0 ? formatNumber(item.debito, 2) : '-'}
                           </TableCell>
                           <TableCell className="text-xs text-right font-mono text-success">
-                            {item.credito > 0 ? item.credito.toFixed(2) : '-'}
+                            {item.credito > 0 ? formatNumber(item.credito, 2) : '-'}
                           </TableCell>
                           <TableCell className="text-xs text-right font-mono">
-                            {item.saldo !== 0 ? item.saldo.toFixed(2) : '-'}
+                            {item.saldo !== 0 ? formatNumber(item.saldo, 2) : '-'}
                           </TableCell>
                         </TableRow>
                       ))}

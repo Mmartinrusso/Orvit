@@ -364,7 +364,7 @@ function Badge({ label, tone, size = 'md' }: BadgeProps) {
  <span
  className={cn(
  'inline-flex items-center rounded-full border font-semibold whitespace-nowrap',
- size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-0.5',
+ size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-xs px-2.5 py-0.5',
  getBadgeBgClass(tone)
  )}
  >
@@ -386,7 +386,7 @@ interface KPICardProps {
 function KPICard({ label, value, tone }: KPICardProps) {
  return (
  <div className={cn('rounded-lg border p-3 text-center', getSummaryCardClass(tone))}>
- <div className={cn('text-[10px] font-medium uppercase tracking-wide mb-1', getSummaryLabelClass(tone))}>
+ <div className={cn('text-xs font-medium uppercase tracking-wide mb-1', getSummaryLabelClass(tone))}>
  {label}
  </div>
  <div className={cn('text-lg font-bold', getSummaryValueClass(tone))}>
@@ -465,7 +465,7 @@ function MachineBlock({ machine, compact }: MachineBlockProps) {
  {item.description}
  </p>
  )}
- <div className={cn('flex items-center gap-3 text-muted-foreground flex-wrap', compact ? 'mt-1 text-[10px]' : 'mt-2 text-xs')}>
+ <div className={cn('flex items-center gap-3 text-muted-foreground flex-wrap', compact ? 'mt-1 text-xs' : 'mt-2 text-xs')}>
  <span className="flex items-center gap-1">
  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
  <path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path>
@@ -648,7 +648,7 @@ export function MaintenanceReportModal({
  {/* Body */}
  <div className="flex-1 overflow-y-auto p-6">
  {/* KPIs */}
- <div className="grid grid-cols-4 gap-3 mb-5">
+ <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
  <KPICard label="Máquinas" value={totalMachines} tone="blue" />
  <KPICard label="Total Ítems" value={totalItems} tone="green" />
  <KPICard label="Tipos" value={Array.from(allTypes).slice(0, 2).join(', ')} tone="purple" />

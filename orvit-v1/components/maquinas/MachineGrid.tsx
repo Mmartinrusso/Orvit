@@ -399,7 +399,7 @@ export default function MachineGrid({
     }
 
     return (
-      <Badge className={cn(bgColor, "text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5")}>
+      <Badge className={cn(bgColor, "text-white border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-xs px-1.5 py-0.5")}>
         <Activity className="h-2.5 w-2.5" />
         {score}
       </Badge>
@@ -422,7 +422,7 @@ export default function MachineGrid({
 
     if (isExpired) {
       return (
-        <Badge className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title="Garantía vencida">
+        <Badge className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-xs px-1.5 py-0.5" title="Garantía vencida">
           <ShieldAlert className="h-2.5 w-2.5" />
           Vencida
         </Badge>
@@ -431,7 +431,7 @@ export default function MachineGrid({
 
     if (daysUntilExpiration <= 30) {
       return (
-        <Badge className="bg-warning/90 hover:bg-warning text-warning-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title={`Garantía vence en ${daysUntilExpiration} días`}>
+        <Badge className="bg-warning/90 hover:bg-warning text-warning-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-xs px-1.5 py-0.5" title={`Garantía vence en ${daysUntilExpiration} días`}>
           <Shield className="h-2.5 w-2.5" />
           {daysUntilExpiration}d
         </Badge>
@@ -440,7 +440,7 @@ export default function MachineGrid({
 
     if (daysUntilExpiration <= 90) {
       return (
-        <Badge className="bg-success/90 hover:bg-success text-success-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5" title={`Garantía válida por ${daysUntilExpiration} días`}>
+        <Badge className="bg-success/90 hover:bg-success text-success-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-xs px-1.5 py-0.5" title={`Garantía válida por ${daysUntilExpiration} días`}>
           <ShieldCheck className="h-2.5 w-2.5" />
           {Math.round(daysUntilExpiration / 30)}m
         </Badge>
@@ -1020,13 +1020,13 @@ export default function MachineGrid({
               {getWarrantyBadge((machine as any).warrantyExpiration)}
               {/* KPI Badges */}
               {(machine as any).pendingWorkOrders > 0 && (
-                <Badge className="bg-warning/90 hover:bg-warning text-warning-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5">
+                <Badge className="bg-warning/90 hover:bg-warning text-warning-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-xs px-1.5 py-0.5">
                   <Wrench className="h-2.5 w-2.5" />
                   {(machine as any).pendingWorkOrders}
                 </Badge>
               )}
               {(machine as any).openFailures > 0 && (
-                <Badge className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-[10px] px-1.5 py-0.5">
+                <Badge className="bg-destructive/90 hover:bg-destructive text-destructive-foreground border-0 shadow-lg backdrop-blur-sm flex items-center gap-1 text-xs px-1.5 py-0.5">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   {(machine as any).openFailures}
                 </Badge>
@@ -1050,7 +1050,7 @@ export default function MachineGrid({
             <div className="space-y-2">
 
               <div className="flex items-center justify-center gap-2">
-                <span className={cn("text-[11px]", getMutedTextClasses())}>
+                <span className={cn("text-xs", getMutedTextClasses())}>
                   Marca
                 </span>
                 <span className={cn("text-sm", getPrimaryTextClasses())}>
@@ -1059,7 +1059,7 @@ export default function MachineGrid({
               </div>
 
               <div className="flex items-center justify-center gap-2">
-                <span className={cn("text-[11px]", getMutedTextClasses())}>
+                <span className={cn("text-xs", getMutedTextClasses())}>
                   Modelo
                 </span>
                 <span className={cn("text-sm", getPrimaryTextClasses())}>
@@ -1068,7 +1068,7 @@ export default function MachineGrid({
               </div>
 
               <div className="flex items-center justify-center gap-2">
-                <span className={cn("text-[11px]", getMutedTextClasses())}>
+                <span className={cn("text-xs", getMutedTextClasses())}>
                   Serie
                 </span>
                 {machine.serialNumber ? (

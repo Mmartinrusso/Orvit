@@ -67,6 +67,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -314,7 +315,7 @@ export function CobranzasList({
         return [
           p.numero,
           p.client?.legalName || p.client?.name || '',
-          p.fechaPago ? format(new Date(p.fechaPago), 'dd/MM/yyyy') : '',
+          p.fechaPago ? formatDate(p.fechaPago) : '',
           metodoPago,
           ESTADOS_CONFIG[p.estado as EstadoPago]?.label || p.estado,
           p.totalPago.toString(),
@@ -342,7 +343,7 @@ export function CobranzasList({
     const config = ESTADOS_CONFIG[estado as EstadoPago] || ESTADOS_CONFIG.PENDIENTE;
     const Icon = config.icon;
     return (
-      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
+      <Badge className={cn(config.color, 'border text-xs px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -430,7 +431,7 @@ export function CobranzasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.pendientes}</p>
-                  <p className="text-[10px] text-muted-foreground">Pendientes</p>
+                  <p className="text-xs text-muted-foreground">Pendientes</p>
                 </div>
               </div>
             </CardContent>
@@ -447,7 +448,7 @@ export function CobranzasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.confirmados}</p>
-                  <p className="text-[10px] text-muted-foreground">Confirmados</p>
+                  <p className="text-xs text-muted-foreground">Confirmados</p>
                 </div>
               </div>
             </CardContent>
@@ -464,7 +465,7 @@ export function CobranzasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.rechazados}</p>
-                  <p className="text-[10px] text-muted-foreground">Rechazados</p>
+                  <p className="text-xs text-muted-foreground">Rechazados</p>
                 </div>
               </div>
             </CardContent>
@@ -481,7 +482,7 @@ export function CobranzasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.anulados}</p>
-                  <p className="text-[10px] text-muted-foreground">Anulados</p>
+                  <p className="text-xs text-muted-foreground">Anulados</p>
                 </div>
               </div>
             </CardContent>
@@ -495,7 +496,7 @@ export function CobranzasList({
                 </div>
                 <div>
                   <p className="text-lg font-bold text-success">{formatCurrency(kpis.totalMes)}</p>
-                  <p className="text-[10px] text-muted-foreground">Total Mes</p>
+                  <p className="text-xs text-muted-foreground">Total Mes</p>
                 </div>
               </div>
             </CardContent>
@@ -635,7 +636,7 @@ export function CobranzasList({
                           )}
                           {/* Mobile-only: show client below number */}
                           {!clienteId && (
-                            <div className="text-[10px] text-muted-foreground sm:hidden truncate max-w-[100px]">
+                            <div className="text-xs text-muted-foreground sm:hidden truncate max-w-[100px]">
                               {pago.client?.legalName || pago.client?.name || '-'}
                             </div>
                           )}

@@ -37,7 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
 import { useCompany } from '@/contexts/CompanyContext';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface DetalleItem {
   id: number;
@@ -184,7 +184,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompact(value: number): string {
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
   if (value >= 1000) return `$${Math.round(value / 1000)}K`;
   return formatCurrency(value);
 }
@@ -262,7 +262,7 @@ function MetricMiniCard({
             </span>
           )}
         </div>
-        {subValue && <p className="text-[10px] text-muted-foreground">{subValue}</p>}
+        {subValue && <p className="text-xs text-muted-foreground">{subValue}</p>}
       </div>
     </button>
   );
@@ -412,49 +412,49 @@ export default function TorreControlPage() {
             <TabsTrigger value="recepciones" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Recepciones
               {sectionTotals && sectionTotals.recepciones > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.recepciones}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.recepciones}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="facturas" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Facturas
               {sectionTotals && sectionTotals.facturas > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.facturas}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.facturas}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="ordenes" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Órdenes
               {sectionTotals && sectionTotals.ordenesCompra > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.ordenesCompra}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.ordenesCompra}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="pagos" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Pagos
               {sectionTotals && sectionTotals.pagos > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.pagos}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.pagos}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="nca" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               NCA
               {sectionTotals && sectionTotals.solicitudesNca > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.solicitudesNca}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.solicitudesNca}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="devoluciones" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Devoluciones
               {sectionTotals && sectionTotals.devoluciones > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.devoluciones}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.devoluciones}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="grni" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               GRNI
               {data?.grni && data.grni.cantidadRecepciones > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1 bg-warning-muted text-warning-muted-foreground">{data.grni.cantidadRecepciones}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1 bg-warning-muted text-warning-muted-foreground">{data.grni.cantidadRecepciones}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="stock" className="text-xs font-normal h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Stock
               {sectionTotals && sectionTotals.stock > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 text-[10px] px-1">{sectionTotals.stock}</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-5 text-xs px-1">{sectionTotals.stock}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
@@ -471,7 +471,7 @@ export default function TorreControlPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">URGENTE</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">URGENTE</p>
                         <p className="text-3xl font-bold tabular-nums" style={{ color: data.resumen.urgente > 0 ? userColors.kpiNegative : undefined }}>
                           {data.resumen.urgente}
                         </p>
@@ -480,7 +480,7 @@ export default function TorreControlPage() {
                             {formatCompact(data.resumen.montoUrgente)}
                           </p>
                         ) : (
-                          <p className="text-[10px] text-muted-foreground mt-1">Acción inmediata</p>
+                          <p className="text-xs text-muted-foreground mt-1">Acción inmediata</p>
                         )}
                       </div>
                       <div
@@ -501,11 +501,11 @@ export default function TorreControlPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">ATENCIÓN</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">ATENCIÓN</p>
                         <p className="text-3xl font-bold tabular-nums" style={{ color: data.resumen.requiereAtencion > 0 ? userColors.chart4 : undefined }}>
                           {data.resumen.requiereAtencion}
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">Revisar pronto</p>
+                        <p className="text-xs text-muted-foreground mt-1">Revisar pronto</p>
                       </div>
                       <div
                         className="h-12 w-12 rounded-full flex items-center justify-center"
@@ -525,11 +525,11 @@ export default function TorreControlPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">PENDIENTES</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">PENDIENTES</p>
                         <p className="text-3xl font-bold tabular-nums" style={{ color: data.resumen.totalPendientes > 0 ? userColors.chart1 : undefined }}>
                           {data.resumen.totalPendientes}
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">En proceso</p>
+                        <p className="text-xs text-muted-foreground mt-1">En proceso</p>
                       </div>
                       <div
                         className="h-12 w-12 rounded-full flex items-center justify-center"
@@ -549,11 +549,11 @@ export default function TorreControlPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">PRONTO PAGO</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">PRONTO PAGO</p>
                         <p className="text-3xl font-bold tabular-nums" style={{ color: data.prontoPago.disponibleHoy > 0 ? userColors.kpiPositive : undefined }}>
                           {data.prontoPago.disponibleHoy}
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">Disponible hoy</p>
+                        <p className="text-xs text-muted-foreground mt-1">Disponible hoy</p>
                       </div>
                       <div
                         className="h-12 w-12 rounded-full flex items-center justify-center"
@@ -645,7 +645,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Recepciones</span>
                         {sectionTotals && sectionTotals.recepciones > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart2}15`, color: userColors.chart2 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart2}15`, color: userColors.chart2 }}>
                             {sectionTotals.recepciones}
                           </Badge>
                         )}
@@ -711,7 +711,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Facturas</span>
                         {sectionTotals && sectionTotals.facturas > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart1}15`, color: userColors.chart1 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart1}15`, color: userColors.chart1 }}>
                             {sectionTotals.facturas}
                           </Badge>
                         )}
@@ -789,7 +789,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Órdenes de Compra</span>
                         {sectionTotals && sectionTotals.ordenesCompra > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart5}15`, color: userColors.chart5 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart5}15`, color: userColors.chart5 }}>
                             {sectionTotals.ordenesCompra}
                           </Badge>
                         )}
@@ -855,7 +855,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Pagos</span>
                         {sectionTotals && sectionTotals.pagos > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart3}15`, color: userColors.chart3 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart3}15`, color: userColors.chart3 }}>
                             {sectionTotals.pagos}
                           </Badge>
                         )}
@@ -916,7 +916,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Solicitudes NCA</span>
                         {sectionTotals && sectionTotals.solicitudesNca > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart6}15`, color: userColors.chart6 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart6}15`, color: userColors.chart6 }}>
                             {sectionTotals.solicitudesNca}
                           </Badge>
                         )}
@@ -982,7 +982,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Pronto Pago</span>
                         {sectionTotals && sectionTotals.prontoPago > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.kpiPositive}15`, color: userColors.kpiPositive }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.kpiPositive}15`, color: userColors.kpiPositive }}>
                             {sectionTotals.prontoPago}
                           </Badge>
                         )}
@@ -1031,7 +1031,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Devoluciones</span>
                         {data.devoluciones.total > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart4}15`, color: userColors.chart4 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart4}15`, color: userColors.chart4 }}>
                             {data.devoluciones.total}
                           </Badge>
                         )}
@@ -1086,7 +1086,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>GRNI</span>
                         {data.grni && data.grni.cantidadRecepciones > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart4}15`, color: userColors.chart4 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart4}15`, color: userColors.chart4 }}>
                             {data.grni.cantidadRecepciones}
                           </Badge>
                         )}
@@ -1140,7 +1140,7 @@ export default function TorreControlPage() {
                       <div className="flex-1">
                         <span>Stock & Reposición</span>
                         {sectionTotals && sectionTotals.stock > 0 && (
-                          <Badge variant="secondary" className="ml-2 text-[10px]" style={{ backgroundColor: `${userColors.chart5}15`, color: userColors.chart5 }}>
+                          <Badge variant="secondary" className="ml-2 text-xs" style={{ backgroundColor: `${userColors.chart5}15`, color: userColors.chart5 }}>
                             {sectionTotals.stock}
                           </Badge>
                         )}
@@ -2472,7 +2472,7 @@ function DetailSection({
                                 {detail.numero || detail.nombre || `#${detail.id}`}
                               </span>
                               {detail.oc && (
-                                <Badge variant="outline" className="text-[10px]">OC: {detail.oc}</Badge>
+                                <Badge variant="outline" className="text-xs">OC: {detail.oc}</Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">

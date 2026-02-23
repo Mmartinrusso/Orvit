@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -326,7 +327,7 @@ export default function MatchPage() {
             </div>
             <ArrowRight className="w-6 h-6 text-muted-foreground" />
             <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-accent-purple-muted flex items-center justify-center">
                 <FileText className="w-8 h-8 text-purple-600" />
               </div>
               <span className="text-sm mt-2">Factura</span>
@@ -487,7 +488,7 @@ export default function MatchPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Cargando...</p>
+              <p className="text-muted-foreground">Cargando comprobantes...</p>
             </div>
           ) : matchResults.length === 0 ? (
             <div className="text-center py-12">
@@ -805,7 +806,7 @@ export default function MatchPage() {
                               </span>
                               {exc.porcentajeDiff !== undefined && (
                                 <span className="text-destructive font-medium">
-                                  ({exc.porcentajeDiff.toFixed(1)}% diferencia)
+                                  ({formatNumber(exc.porcentajeDiff, 1)}% diferencia)
                                 </span>
                               )}
                               {exc.montoAfectado !== undefined && (

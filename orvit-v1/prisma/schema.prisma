@@ -174,6 +174,16 @@ model Company {
   clientPortalSessions ClientPortalSession[]
   clientPortalOrders   ClientPortalOrder[]
 
+  // Sistema de Liquidaciones de Vendedores
+  sellerLiquidaciones SellerLiquidacion[]
+
+  // Templates de Cotización
+  quoteTemplates     QuoteTemplate[]
+  quoteTextTemplates QuoteTextTemplate[]
+
+  // Sistema de Bundles
+  productBundles ProductBundle[]
+
   // Sistema de Acopios
   saleAcopios   SaleAcopio[]
   acopioRetiros AcopioRetiro[]
@@ -359,6 +369,7 @@ model CompanySettings {
   toleranciaPrecio         Decimal  @default(0.05) @db.Decimal(5, 4) // 5% tolerancia precio
   // Configuración de Almacén
   requireDespachoSignature Boolean  @default(false) // Requerir firma digital al confirmar recepción de despacho
+  sidebarConfig            Json?    @db.JsonB // CompanySidebarConfig | null → null usa estructura default de Orvit
   company                  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("CompanySettings")
@@ -379,6 +390,7 @@ model User {
   phone                   String? // Teléfono del usuario para billing/contacto
   discordUserId           String?                   @unique // ID de Discord del usuario para DMs
   sidebarPreferences      Json?                     @db.JsonB // User sidebar customization { ventas: { visible: [], pinned: [], order: [] } }
+  fontPreferences         Json?                     @db.JsonB // { fontSize: 16, overrides: { tabs: 0, tables: 0, sidebar: 0, headings: 0, buttons: 0 } }
   createdCategories       Category[]                @relation("CategoryCreator")
   clientsSold             Client[]                  @relation("ClientSeller")
   clientsBlocked          Client[]                  @relation("ClientBlockedBy")
@@ -536,6 +548,15 @@ model User {
 
   // Sistema de Módulos por Empresa
   modulesEnabled CompanyModule[] @relation("ModuleEnabledBy")
+
+  // Sistema de Liquidaciones de Vendedores
+  liquidacionesAsSeller    SellerLiquidacion[] @relation("LiquidacionSeller")
+  liquidacionesCreated     SellerLiquidacion[] @relation("LiquidacionCreatedBy")
+  liquidacionesConfirmed   SellerLiquidacion[] @relation("LiquidacionConfirmedBy")
+  liquidacionesPaid        SellerLiquidacion[] @relation("LiquidacionPaidBy")
+
+  // Sistema de Bundles
+  bundlesCreated ProductBundle[] @relation("BundleCreatedBy")
 
   // Sistema de Acopios
   acopiosCreated SaleAcopio[]   @relation("AcopioCreatedBy")
@@ -916,6 +937,8 @@ model UnidadMovil {
   combustible          String?
   capacidadCombustible Int?
   consumoPromedio      Float?
+  kmUpdateFrequencyDays Int?             // Cada cuántos días se debe registrar el km (null = sin frecuencia configurada)
+  ultimaLecturaKm      DateTime?         // Cuándo se registró el último km (para detectar lecturas vencidas)
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   company              Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -1370,8 +1393,10 @@ model SparePartReservation {
   pickedById   Int?
   returnedAt   DateTime?
   returnedById Int?
-  notes        String?
-  companyId    Int
+  notes           String?
+  companyId       Int
+  usedQuantity    Int?              // Repuestos: cuántos se instalaron realmente (null = no confirmado, fallback a quantity)
+  returnedDamaged Boolean           @default(false) // Herramientas: ¿volvió rota/dañada?
 
   tool       Tool      @relation(fields: [toolId], references: [id], onDelete: Cascade)
   workOrder  WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
@@ -2398,6 +2423,9 @@ model Product {
   alertStockEmail Boolean @default(true) // Alertar por email
   alertStockDays  Int? // Días de anticipación para alertas
 
+  // Comisiones
+  aplicaComision Boolean @default(true) // Si este producto genera comisión al vendedor
+
   category      Category         @relation(fields: [categoryId], references: [id])
   company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy     User             @relation("ProductCreator", fields: [createdById], references: [id])
@@ -2415,6 +2443,7 @@ model Product {
   invoiceItems    SalesInvoiceItem[]
   creditNoteItems SalesCreditDebitNoteItem[]
   priceListItems  SalesPriceListItem[]
+  bundleComponents ProductBundleComponent[] @relation("ProductBundleComponents")
 
   // Sistema de Acopios
   acopioItems SaleAcopioItem[] @relation("AcopioItemProduct")
@@ -8312,6 +8341,14 @@ enum QuoteType {
   NOTA_PEDIDO // Nota de pedido directa (el cliente ya decidió)
 }
 
+// Estado de liquidación de vendedor
+enum LiquidacionStatus {
+  BORRADOR
+  CONFIRMADA
+  PAGADA
+  ANULADA
+}
+
 enum SaleStatus {
   BORRADOR
   PENDIENTE_APROBACION
@@ -8795,6 +8832,7 @@ model Quote {
   total           Decimal  @db.Decimal(15, 2)
   moneda          String   @default("ARS") @db.VarChar(10)
   tipoCambio      Decimal? @db.Decimal(15, 4)
+  discriminarIva  Boolean  @default(false)
 
   // Condiciones
   condicionesPago    String? @db.VarChar(255)
@@ -8838,8 +8876,14 @@ model Quote {
   comisionPorcentaje Decimal? @db.Decimal(5, 2)
   comisionMonto      Decimal? @db.Decimal(15, 2)
 
+  // Logística
+  incluyeFlete Boolean @default(false) // Nosotros hacemos el flete
+
   // ViewMode
   docType DocType @default(T1)
+
+  // Template de cotización
+  templateId Int?
 
   // Tracking
   companyId Int
@@ -8853,6 +8897,7 @@ model Quote {
   company        Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdByUser  User                 @relation("QuoteCreatedBy", fields: [createdBy], references: [id])
   aprobadoByUser User?                @relation("QuoteApprovedBy", fields: [aprobadoPor], references: [id])
+  template       QuoteTemplate?       @relation("QuoteWithTemplate", fields: [templateId], references: [id])
   items          QuoteItem[]
   attachments    QuoteAttachment[]
   versions       QuoteVersion[]
@@ -8897,13 +8942,29 @@ model QuoteItem {
   margenItem     Decimal? @db.Decimal(5, 2)
   notas          String?
   orden          Int      @default(0)
+  aplicaComision Boolean  @default(true) // Si este ítem genera comisión al vendedor
 
-  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
+  quote         Quote                    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product       Product?                 @relation(fields: [productId], references: [id])
+  costBreakdown QuoteItemCostBreakdown[]
 
   @@index([quoteId])
   @@index([productId])
   @@map("quote_items")
+}
+
+// Desglose de costos por concepto de un item de cotización
+model QuoteItemCostBreakdown {
+  id          Int     @id @default(autoincrement())
+  quoteItemId Int
+  concepto    String  @db.VarChar(100)
+  monto       Decimal @db.Decimal(15, 2)
+  orden       Int     @default(0)
+
+  quoteItem QuoteItem @relation(fields: [quoteItemId], references: [id], onDelete: Cascade)
+
+  @@index([quoteItemId])
+  @@map("quote_item_cost_breakdowns")
 }
 
 model QuoteAttachment {
@@ -8935,6 +8996,95 @@ model QuoteVersion {
 
   @@index([quoteId])
   @@map("quote_versions")
+}
+
+// ============================================================================
+// TEMPLATE DE COTIZACIÓN CONFIGURABLE POR EMPRESA
+// ============================================================================
+
+model QuoteTemplate {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  nombre    String  @db.VarChar(100)
+  isDefault Boolean @default(false)
+
+  // Layout visual
+  headerLayout    String  @default("classic") @db.VarChar(20)  // classic | centered | banner | compact
+  logoPosition    String  @default("top-left") @db.VarChar(20) // top-left | top-center | top-right | none
+  logoSize        String  @default("medium") @db.VarChar(20)   // small | medium | large
+  primaryColor    String  @default("#000000") @db.VarChar(7)
+  accentColor     String  @default("#666666") @db.VarChar(7)
+  fontFamily      String  @default("sans") @db.VarChar(20)     // sans | serif | mono
+  showBorder      Boolean @default(true)
+  watermark       String? @db.VarChar(100)
+  separatorStyle  String  @default("solid") @db.VarChar(20)    // solid | dashed | double | none
+  separatorWeight String  @default("thin") @db.VarChar(20)     // thin | medium | thick
+  tableZebraRows    Boolean @default(false)
+  tableHeaderFill   Boolean @default(true)
+  tableBorderRadius String  @default("none") @db.VarChar(10)   // none | sm | md
+  preset            String? @db.VarChar(50)
+  notasPosition     String  @default("after_totals") @db.VarChar(20) // before_items | after_totals
+  logoUrl           String? @db.VarChar(500)                        // logo específico para cotizaciones (distinto al logo de la empresa)
+
+  // Header del documento
+  labelDocumento  String  @default("PRESUPUESTO") @db.VarChar(50)
+  showNumero      Boolean @default(true)
+  showFecha       Boolean @default(true)
+  showVencimiento Boolean @default(true)
+
+  // Columnas de la tabla de items (JSON)
+  // [{ field, label, visible, width?, align?, format? }]
+  columns Json @default("[]")
+
+  // Footer
+  showSubtotal    Boolean @default(true)
+  showIVA         Boolean @default(true)
+  showTotal       Boolean @default(true)
+  showCondiciones Boolean @default(true)
+  notasFooter     String?
+
+  // Firma digital
+  firmaHabilitada Boolean @default(false)
+  firmaNombre     String? @db.VarChar(100)
+  firmaCargo      String? @db.VarChar(100)
+  firmaImagen     String? // URL imagen de firma
+
+  // Aprobación online del cliente
+  allowOnlineApproval Boolean @default(false)
+  approvalMessage     String?
+
+  // Presets de condiciones de pago (JSON)
+  // [{ label: "Contado", value: "Pago al contado" }]
+  paymentConditionPresets Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quotes  Quote[] @relation("QuoteWithTemplate")
+
+  @@index([companyId])
+  @@index([companyId, isDefault])
+  @@map("quote_templates")
+}
+
+// Plantillas de texto reutilizables por empresa (notas, condiciones de pago/entrega)
+model QuoteTextTemplate {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  tipo      String   @db.VarChar(20) // NOTA | PAGO | ENTREGA
+  nombre    String   @db.VarChar(100)
+  contenido String   @db.Text
+  isDefault Boolean  @default(false)
+  orden     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, tipo])
+  @@map("quote_text_templates")
 }
 
 // Portal Cliente - Aceptación de Cotizaciones
@@ -9297,6 +9447,7 @@ model Sale {
   impuestos       Decimal @default(0) @db.Decimal(15, 2)
   total           Decimal @db.Decimal(15, 2)
   moneda          String  @default("ARS") @db.VarChar(10)
+  discriminarIva  Boolean @default(false)
 
   // Condiciones
   condicionesPago String? @db.VarChar(255)
@@ -9344,8 +9495,9 @@ model Sale {
   loadOrders     LoadOrder[]
   remitos        SaleRemito[]
   invoices       SalesInvoice[]
-  approvals      SalesApproval[] @relation("SaleApprovals")
-  acopios        SaleAcopio[]
+  approvals        SalesApproval[]         @relation("SaleApprovals")
+  acopios          SaleAcopio[]
+  liquidacionItems SellerLiquidacionItem[]
 
   @@unique([companyId, numero])
   @@index([companyId])
@@ -9379,17 +9531,33 @@ model SaleItem {
   costoUnitario     Decimal? @db.Decimal(15, 2)
   notas             String?
   orden             Int      @default(0)
+  aplicaComision    Boolean  @default(true) // Si este ítem genera comisión al vendedor
 
-  sale           Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product        Product?           @relation(fields: [productId], references: [id])
+  sale           Sale                   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product        Product?               @relation(fields: [productId], references: [id])
   deliveryItems  SaleDeliveryItem[]
   loadOrderItems LoadOrderItem[]
   remitoItems    SaleRemitoItem[]
   invoiceItems   SalesInvoiceItem[]
+  costBreakdown  SaleItemCostBreakdown[]
 
   @@index([saleId])
   @@index([productId])
   @@map("sale_items")
+}
+
+// Desglose de costos por concepto de un item de venta
+model SaleItemCostBreakdown {
+  id         Int     @id @default(autoincrement())
+  saleItemId Int
+  concepto   String  @db.VarChar(100)
+  monto      Decimal @db.Decimal(15, 2)
+  orden      Int     @default(0)
+
+  saleItem SaleItem @relation(fields: [saleItemId], references: [id], onDelete: Cascade)
+
+  @@index([saleItemId])
+  @@map("sale_item_cost_breakdowns")
 }
 
 // Entrega FÍSICA (SaleDelivery)
@@ -10565,6 +10733,112 @@ model CompanyModule {
   @@index([moduleId])
   @@index([isEnabled])
   @@map("company_modules")
+}
+
+// =============================================
+// SISTEMA DE LIQUIDACIONES DE VENDEDORES
+// =============================================
+
+// Liquidación principal — agrupa ventas de un vendedor en un periodo
+model SellerLiquidacion {
+  id                 Int               @id @default(autoincrement())
+  numero             String            @db.VarChar(50)
+  sellerId           Int
+  estado             LiquidacionStatus @default(BORRADOR)
+  fechaDesde         DateTime          @db.Date
+  fechaHasta         DateTime          @db.Date
+  totalVentas        Decimal           @db.Decimal(15, 2)
+  comisionPorcentaje Decimal           @db.Decimal(5, 2)
+  totalComisiones    Decimal           @db.Decimal(15, 2)
+  ajustes            Decimal           @default(0) @db.Decimal(15, 2)
+  totalLiquidacion   Decimal           @db.Decimal(15, 2)
+  notas              String?
+  notasInternas      String?
+  confirmadoPor      Int?
+  confirmadoAt       DateTime?
+  pagadoPor          Int?
+  pagadoAt           DateTime?
+  medioPago          String?           @db.VarChar(100)
+  referenciaPago     String?           @db.VarChar(255)
+  companyId          Int
+  createdBy          Int
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  seller           User                    @relation("LiquidacionSeller", fields: [sellerId], references: [id])
+  company          Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByUser    User                    @relation("LiquidacionCreatedBy", fields: [createdBy], references: [id])
+  confirmadoByUser User?                   @relation("LiquidacionConfirmedBy", fields: [confirmadoPor], references: [id])
+  pagadoByUser     User?                   @relation("LiquidacionPaidBy", fields: [pagadoPor], references: [id])
+  items            SellerLiquidacionItem[]
+
+  @@unique([companyId, numero])
+  @@index([companyId])
+  @@index([sellerId])
+  @@index([estado])
+  @@index([fechaDesde, fechaHasta])
+  @@map("seller_liquidaciones")
+}
+
+// Item de liquidación — snapshot de cada venta incluida
+model SellerLiquidacionItem {
+  id              Int      @id @default(autoincrement())
+  liquidacionId   Int
+  saleId          Int
+  saleNumero      String   @db.VarChar(50)
+  clienteNombre   String   @db.VarChar(255)
+  fechaVenta      DateTime @db.Date
+  totalVenta      Decimal  @db.Decimal(15, 2)
+  baseComision    Decimal  @default(0) @db.Decimal(15, 2) // Subtotal de ítems con aplicaComision=true
+  comisionMonto   Decimal  @db.Decimal(15, 2)
+  incluido        Boolean  @default(true)
+  motivoExclusion String?  @db.VarChar(255)
+
+  liquidacion SellerLiquidacion @relation(fields: [liquidacionId], references: [id], onDelete: Cascade)
+  sale        Sale              @relation(fields: [saleId], references: [id])
+
+  @@index([liquidacionId])
+  @@index([saleId])
+  @@map("seller_liquidacion_items")
+}
+
+// =============================================
+// BUNDLES DE PRODUCTOS (Combinar items del catálogo)
+// =============================================
+
+model ProductBundle {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @db.VarChar(255)
+  descripcion String?  @db.VarChar(500)
+  unidad      String   @default("UN") @db.VarChar(50)
+  companyId   Int
+  isActive    Boolean  @default(true)
+  createdBy   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  components    ProductBundleComponent[]
+  company       Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByUser User    @relation("BundleCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([companyId])
+  @@map("product_bundles")
+}
+
+model ProductBundleComponent {
+  id        Int     @id @default(autoincrement())
+  bundleId  Int
+  productId String?
+  concepto  String  @db.VarChar(100)
+  cantidad  Decimal @db.Decimal(15, 4)
+  monto     Decimal @db.Decimal(15, 2)
+  orden     Int     @default(0)
+
+  bundle  ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product Product?      @relation("ProductBundleComponents", fields: [productId], references: [id])
+
+  @@index([bundleId])
+  @@map("product_bundle_components")
 }
 
 // =============================================

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -883,7 +884,7 @@ export default function ServiciosPage() {
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           {getVariacionIcon(servicio.variacion)}
                           <span className={servicio.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                            {servicio.variacion > 0 ? '+' : ''}{servicio.variacion.toFixed(1)}%
+                            {servicio.variacion > 0 ? '+' : ''}{formatNumber(servicio.variacion, 1)}%
                           </span>
                         </div>
                       </div>
@@ -956,7 +957,7 @@ export default function ServiciosPage() {
                         <div className="text-sm text-muted-foreground">Costo total</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{categoria.variacion > 0 ? '+' : ''}{categoria.variacion.toFixed(1)}%</div>
+                        <div className="font-medium">{categoria.variacion > 0 ? '+' : ''}{formatNumber(categoria.variacion, 1)}%</div>
                         <div className="text-sm text-muted-foreground">Variación</div>
                       </div>
                     </div>
@@ -1048,7 +1049,7 @@ export default function ServiciosPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium">{formatCurrency(categoria.costoTotal)}</div>
-                          <div className="text-xs text-muted-foreground">{porcentaje.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground">{formatNumber(porcentaje, 1)}%</div>
                         </div>
                       </div>
                     );
@@ -1397,7 +1398,7 @@ export default function ServiciosPage() {
                   />
                   {nuevoCosto.costo > 0 && editingServicio.costoMensual > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      Variación: {((nuevoCosto.costo - editingServicio.costoMensual) / editingServicio.costoMensual * 100).toFixed(1)}%
+                      Variación: {formatNumber((nuevoCosto.costo - editingServicio.costoMensual) / editingServicio.costoMensual * 100, 1)}%
                     </div>
                   )}
                 </div>
@@ -1625,7 +1626,7 @@ export default function ServiciosPage() {
                         <div className="text-right">
                           <div className="font-medium">{formatCurrency(item.costo)}</div>
                           <div className="text-sm text-muted-foreground">
-                            {item.variacionPorcentual > 0 ? '+' : ''}{item.variacionPorcentual.toFixed(1)}% vs anterior
+                            {item.variacionPorcentual > 0 ? '+' : ''}{formatNumber(item.variacionPorcentual, 1)}% vs anterior
                           </div>
                         </div>
                       </div>
@@ -1672,7 +1673,7 @@ export default function ServiciosPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Variación Promedio</Label>
-                  <div className="text-2xl font-bold">{estadisticasServicio.variacionPromedio > 0 ? '+' : ''}{estadisticasServicio.variacionPromedio.toFixed(1)}%</div>
+                  <div className="text-2xl font-bold">{estadisticasServicio.variacionPromedio > 0 ? '+' : ''}{formatNumber(estadisticasServicio.variacionPromedio, 1)}%</div>
                 </div>
               </div>
             )}

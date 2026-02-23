@@ -56,15 +56,15 @@ export function WorkOrdersHeader({
   const hasFilters = filteredCount !== totalCount;
 
   return (
-    <div className="sticky top-0 z-20 border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-4">
+    <div className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="px-4 md:px-6 pt-4 pb-3 flex items-center justify-between gap-4">
         {/* Lado izquierdo: Título y contador */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="min-w-0">
-            <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">
+            <h1 className="text-xl font-semibold text-foreground truncate">
               Órdenes de Trabajo
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
+            <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
               Gestiona y supervisa todas las órdenes
             </p>
           </div>

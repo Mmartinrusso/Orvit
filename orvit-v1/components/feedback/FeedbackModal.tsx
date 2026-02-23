@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -120,15 +121,15 @@ function FeedbackCard({ fb, onClick }: { fb: FeedbackItem; onClick: () => void }
             <StatusIcon className={cn('h-3 w-3', safeStatus(fb.status) === 'en-progreso' && 'animate-spin')} />
             {status.label}
           </Badge>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <PriorityIcon className={cn('h-3 w-3', priority.color)} />
             {priority.label}
           </div>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {fb.user.name} · {formatDistanceToNow(new Date(fb.createdAt), { addSuffix: true, locale: es })}
           </span>
           {fb.adminResponse && (
-            <Badge variant="outline" size="sm" className="gap-1 text-[10px]">
+            <Badge variant="outline" size="sm" className="gap-1 text-xs">
               <MessageSquare className="h-2.5 w-2.5" />
               Respondido
             </Badge>
@@ -170,11 +171,50 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   const [priority, setPriority] = useState<FeedbackPriority>('media');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   // Admin response state
   const [adminResponse, setAdminResponse] = useState('');
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Mutations
+  const submitMutation = useApiMutation<{ feedback: FeedbackItem }, { type: FeedbackType; priority: FeedbackPriority; title: string; description: string }>({
+    mutationFn: createFetchMutation({ url: '/api/feedback', method: 'POST' }),
+    successMessage: '¡Feedback enviado!',
+    errorMessage: 'Error al enviar feedback',
+    onSuccess: () => {
+      resetForm();
+      setView('list');
+      setActiveTab('pendientes');
+      fetchFeedbacks();
+    },
+  });
+
+  const updateStatusMutation = useApiMutation<{ feedback: FeedbackItem }, { id: number; status: FeedbackStatus; read: boolean }>({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/feedback/${vars.id}`,
+      method: 'PATCH',
+    }),
+    successMessage: null,
+    errorMessage: 'Error al actualizar',
+    onSuccess: (data, vars) => {
+      setSelectedFeedback(data.feedback);
+      setFeedbacks(prev => prev.map(f => f.id === vars.id ? data.feedback : f));
+      toast.success(`Marcado como "${statusConfig[vars.status].label}"`);
+    },
+  });
+
+  const sendResponseMutation = useApiMutation<{ feedback: FeedbackItem }, { id: number; adminResponse: string; read: boolean }>({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/feedback/${vars.id}`,
+      method: 'PATCH',
+    }),
+    successMessage: 'Respuesta enviada',
+    errorMessage: 'Error al enviar respuesta',
+    onSuccess: (data) => {
+      setSelectedFeedback(data.feedback);
+      setFeedbacks(prev => prev.map(f => f.id === data.feedback.id ? data.feedback : f));
+      setAdminResponse('');
+    },
+  });
 
   // Fetch feedbacks
   const fetchFeedbacks = useCallback(async () => {
@@ -224,13 +264,16 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     }
   }, [feedbacks, activeTab]);
 
+  // Derived mutation states
+  const submitting = submitMutation.isPending;
+  const updatingStatus = updateStatusMutation.isPending || sendResponseMutation.isPending;
+
   // Handlers
   const resetForm = () => {
     setSelectedType(null);
     setPriority('media');
     setTitle('');
     setDescription('');
-    setSubmitting(false);
   };
 
   const handleClose = () => {
@@ -241,72 +284,21 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     onOpenChange(false);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selectedType || !title.trim() || !description.trim()) {
       toast.warning('Completá todos los campos');
       return;
     }
-    setSubmitting(true);
-    toast.loading('Enviando feedback...', { id: 'feedback-submit' });
-    try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: selectedType, priority, title: title.trim(), description: description.trim() }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success('¡Feedback enviado!', { id: 'feedback-submit' });
-      resetForm();
-      setView('list');
-      setActiveTab('pendientes');
-      fetchFeedbacks();
-    } catch {
-      toast.error('Error al enviar feedback', { id: 'feedback-submit' });
-    } finally {
-      setSubmitting(false);
-    }
+    submitMutation.mutate({ type: selectedType, priority, title: title.trim(), description: description.trim() });
   };
 
-  const handleUpdateStatus = async (id: number, status: FeedbackStatus) => {
-    setUpdatingStatus(true);
-    try {
-      const res = await fetch(`/api/feedback/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, read: true }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setSelectedFeedback(data.feedback);
-      setFeedbacks(prev => prev.map(f => f.id === id ? data.feedback : f));
-      toast.success(`Marcado como "${statusConfig[status].label}"`);
-    } catch {
-      toast.error('Error al actualizar');
-    } finally {
-      setUpdatingStatus(false);
-    }
+  const handleUpdateStatus = (id: number, status: FeedbackStatus) => {
+    updateStatusMutation.mutate({ id, status, read: true });
   };
 
-  const handleSendResponse = async () => {
+  const handleSendResponse = () => {
     if (!selectedFeedback || !adminResponse.trim()) return;
-    setUpdatingStatus(true);
-    try {
-      const res = await fetch(`/api/feedback/${selectedFeedback.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminResponse: adminResponse.trim(), read: true }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setSelectedFeedback(data.feedback);
-      setFeedbacks(prev => prev.map(f => f.id === selectedFeedback.id ? data.feedback : f));
-      setAdminResponse('');
-      toast.success('Respuesta enviada');
-    } catch {
-      toast.error('Error al enviar respuesta');
-    } finally {
-      setUpdatingStatus(false);
-    }
+    sendResponseMutation.mutate({ id: selectedFeedback.id, adminResponse: adminResponse.trim(), read: true });
   };
 
   const handleDelete = async (id: number) => {
@@ -387,26 +379,26 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                     <Clock className="h-3.5 w-3.5" />
                     Pendientes
                     {counts.pendientes > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.pendientes}</span>
+                      <span className="ml-0.5 text-xs bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.pendientes}</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="en-progreso" className="flex-1 gap-1.5">
                     <Loader2 className="h-3.5 w-3.5" />
                     En progreso
                     {counts.enProgreso > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-info text-info-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.enProgreso}</span>
+                      <span className="ml-0.5 text-xs bg-info text-info-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.enProgreso}</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="resueltos" className="flex-1 gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Resueltos
                     {counts.resueltos > 0 && (
-                      <span className="ml-0.5 text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.resueltos}</span>
+                      <span className="ml-0.5 text-xs bg-success text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.resueltos}</span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="todos" className="flex-1 gap-1.5">
                     Todos
-                    <span className="ml-0.5 text-[10px] bg-zinc-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.todos}</span>
+                    <span className="ml-0.5 text-xs bg-zinc-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.todos}</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -414,7 +406,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                   <div className="flex items-center justify-center py-12">
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Cargando...</p>
+                      <p className="text-xs text-muted-foreground">Cargando destinatarios...</p>
                     </div>
                   </div>
                 ) : (
@@ -656,7 +648,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                       })}
                     </div>
                     {selectedFeedback.resolvedAt && (
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Resuelto {formatDistanceToNow(new Date(selectedFeedback.resolvedAt), { addSuffix: true, locale: es })}
                       </p>
                     )}

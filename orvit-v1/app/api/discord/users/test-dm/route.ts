@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isBotReady, sendDM, connectBot } from '@/lib/discord';
+import { sendDMByDiscordIdViaBotService } from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,44 +48,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Verificar que el bot esté conectado, si no, intentar conectar
-    // Usar companyId del payload de auth (no del usuario porque es relación many-to-many)
-    const companyId = payload.companyId;
-
-    if (!isBotReady()) {
-      // Intentar auto-conectar el bot usando el token de la empresa
-      if (companyId) {
-        const company = await prisma.company.findUnique({
-          where: { id: companyId },
-          select: { discordBotToken: true },
-        });
-
-        if (company?.discordBotToken) {
-          console.log('🔄 Intentando auto-conectar el bot de Discord...');
-          const connectResult = await connectBot(company.discordBotToken);
-
-          if (!connectResult.success) {
-            return NextResponse.json(
-              { error: `El bot de Discord no está conectado: ${connectResult.error}` },
-              { status: 400 }
-            );
-          }
-        } else {
-          return NextResponse.json(
-            { error: 'El bot de Discord no está configurado. Contacta al administrador.' },
-            { status: 400 }
-          );
-        }
-      } else {
-        return NextResponse.json(
-          { error: 'El bot de Discord no está conectado' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // 4. Enviar mensaje de prueba
-    const result = await sendDM(user.discordUserId, {
+    // 3. Enviar mensaje de prueba
+    const result = await sendDMByDiscordIdViaBotService(user.discordUserId, {
       content: `Hola ${user.name}! Este es un mensaje de prueba desde ORVIT.`,
       embed: {
         title: '✅ Verificación Exitosa',

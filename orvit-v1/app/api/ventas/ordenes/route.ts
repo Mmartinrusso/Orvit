@@ -210,16 +210,19 @@ export async function POST(request: NextRequest) {
 
           // Obtener costo del producto (SOLO server-side)
           let costoUnitario = 0;
+          let productAplicaComision = true;
           if (item.productId) {
             const product = await prisma.product.findUnique({
               where: { id: item.productId },
-              select: { cost: true }
+              select: { cost: true, aplicaComision: true }
             });
             if (product?.cost) {
               costoUnitario = Number(product.cost);
               costoTotalCalc += costoUnitario * cantidad;
             }
+            productAplicaComision = product?.aplicaComision ?? true;
           }
+          const aplicaComision = item.aplicaComision !== undefined ? item.aplicaComision : productAplicaComision;
 
           return {
             productId: item.productId || null,
@@ -235,6 +238,7 @@ export async function POST(request: NextRequest) {
             costoUnitario,
             notas: item.notas || null,
             orden: index,
+            aplicaComision,
           };
         }));
 
@@ -307,6 +311,7 @@ export async function POST(request: NextRequest) {
               costoUnitario: item.costoUnitario,
               notas: item.notas,
               orden: item.orden,
+              aplicaComision: item.aplicaComision,
             }))
           });
 

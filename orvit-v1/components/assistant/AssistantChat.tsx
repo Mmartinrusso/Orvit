@@ -1072,10 +1072,10 @@ export function AssistantChat({ className }: AssistantChatProps) {
 
               {/* Footer con atajo */}
               <div className="mt-3 pt-2 border-t text-center">
-                <p className="text-[11px] text-muted-foreground hidden md:block">
-                  <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px] font-mono">Tab</kbd> × 2 para abrir/cerrar
+                <p className="text-xs text-muted-foreground hidden md:block">
+                  <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs font-mono">Tab</kbd> × 2 para abrir/cerrar
                 </p>
-                <p className="text-[11px] text-muted-foreground md:hidden">
+                <p className="text-xs text-muted-foreground md:hidden">
                   4 taps en pantalla para abrir
                 </p>
               </div>
@@ -1140,7 +1140,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
                     {/* Timestamp */}
                     <span
                       className={cn(
-                        'block text-[10px] mt-1',
+                        'block text-xs mt-1',
                         message.role === 'user' ? 'text-primary-foreground/60' : 'text-muted-foreground/60'
                       )}
                     >
@@ -1334,7 +1334,7 @@ export function AssistantChat({ className }: AssistantChatProps) {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2 px-1">
+              <p className="text-xs text-muted-foreground mt-2 px-1">
                 ↑↓ navegar • Tab completar • Enter enviar
               </p>
             </div>

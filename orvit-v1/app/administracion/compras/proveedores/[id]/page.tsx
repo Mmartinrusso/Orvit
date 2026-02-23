@@ -1,7 +1,9 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -867,7 +869,7 @@ export default function ProveedorDetailPage() {
     }
     doc.text(`Unidad: ${selectedItemDetalle.unidad || 'N/A'}`, 15, y);
     y += 5;
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 15, y);
+    doc.text(`Fecha: ${formatDate(new Date())}`, 15, y);
     y += 10;
 
     // Estadísticas resumen
@@ -893,7 +895,7 @@ export default function ProveedorDetailPage() {
       doc.text(`Máximo: $${precioMax.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`, 15, y);
       doc.text(`Promedio: $${precioAvg.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`, 80, y);
       y += 5;
-      doc.text(`Variación Total: ${variacionTotal > 0 ? '+' : ''}${variacionTotal.toFixed(1)}%`, 15, y);
+      doc.text(`Variación Total: ${variacionTotal > 0 ? '+' : ''}${formatNumber(variacionTotal, 1)}%`, 15, y);
       doc.text(`Total Compras: ${history.length}`, 80, y);
       y += 10;
     }
@@ -911,9 +913,9 @@ export default function ProveedorDetailPage() {
         : '-';
 
       return [
-        new Date(h.fecha).toLocaleDateString('es-AR'),
+        formatDate(h.fecha),
         `$${Number(h.precioUnitario).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
-        diff !== 0 ? `${diff > 0 ? '+' : ''}${diffPercent.toFixed(1)}%` : '-',
+        diff !== 0 ? `${diff > 0 ? '+' : ''}${formatNumber(diffPercent, 1)}%` : '-',
         comprobanteStr,
       ];
     });
@@ -1785,9 +1787,7 @@ export default function ProveedorDetailPage() {
     }).format(amount);
   };
 
-  const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString('es-AR');
-  };
+  // formatDate imported from @/lib/date-utils
 
   // Calcular días hasta vencimiento o días vencido
   const getDiasVencimiento = (fechaVencimiento: Date | string | null, saldo: number): { dias: number; texto: string; color: string } | null => {
@@ -2701,7 +2701,7 @@ export default function ProveedorDetailPage() {
                                 ) : item.variacionPorcentaje < 0 ? (
                                   <TrendingDown className="w-3 h-3 mr-1" />
                                 ) : null}
-                                {item.variacionPorcentaje > 0 ? '+' : ''}{item.variacionPorcentaje.toFixed(1)}%
+                                {item.variacionPorcentaje > 0 ? '+' : ''}{formatNumber(item.variacionPorcentaje, 1)}%
                               </Badge>
                             ) : (
                               <span className="text-muted-foreground text-xs">-</span>
@@ -2710,7 +2710,7 @@ export default function ProveedorDetailPage() {
                           <TableCell>
                             {item.ultimaCompra ? (
                               <span className="text-sm">
-                                {new Date(item.ultimaCompra).toLocaleDateString('es-AR')}
+                                {formatDate(item.ultimaCompra)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
@@ -2798,7 +2798,7 @@ export default function ProveedorDetailPage() {
                         <TableRow key={rec.id}>
                           <TableCell className="font-medium">{rec.numero}</TableCell>
                           <TableCell>
-                            {rec.fechaRecepcion ? new Date(rec.fechaRecepcion).toLocaleDateString('es-AR') : '-'}
+                            {rec.fechaRecepcion ? formatDate(rec.fechaRecepcion) : '-'}
                           </TableCell>
                           <TableCell>
                             {rec.numeroRemito || <span className="text-muted-foreground">-</span>}
@@ -2931,7 +2931,7 @@ export default function ProveedorDetailPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {dev.fechaSolicitud ? new Date(dev.fechaSolicitud).toLocaleDateString('es-AR') : '-'}
+                            {dev.fechaSolicitud ? formatDate(dev.fechaSolicitud) : '-'}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
@@ -3138,7 +3138,7 @@ export default function ProveedorDetailPage() {
                   </Table>
                 )}
     </div>
-              <div className="mt-2 inline-flex flex-wrap items-center gap-3 rounded-md bg-muted px-3 py-1.5 text-[11px] text-muted-foreground">
+              <div className="mt-2 inline-flex flex-wrap items-center gap-3 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground">
                 <span>
                   Facturas seleccionadas:{' '}
                   <span className="font-semibold">{selectedFacturas.length}</span>
@@ -3214,7 +3214,7 @@ export default function ProveedorDetailPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Total cheques:{' '}
                     <span className="font-semibold">
                       {formatCurrency(totalChequesSeleccionados)}
@@ -3258,7 +3258,7 @@ export default function ProveedorDetailPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Anticipos seleccionados:{' '}
                     <span className="font-semibold">
                       {anticiposSeleccionados.length}
@@ -3350,7 +3350,7 @@ export default function ProveedorDetailPage() {
                       type="button"
                       variant="outline"
                       size="xs"
-                      className="h-6 px-2 text-[10px]"
+                      className="h-6 px-2 text-xs"
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
@@ -3449,21 +3449,21 @@ export default function ProveedorDetailPage() {
               {/* Resumen compacto: saldo, pago, anticipo y diferencia */}
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded-md border px-3 py-2 bg-muted/40">
-                  <p className="text-[11px] text-muted-foreground">Saldo seleccionado</p>
+                  <p className="text-xs text-muted-foreground">Saldo seleccionado</p>
                   <p className="text-sm font-semibold">{formatCurrency(totalSeleccionado)}</p>
                 </div>
                 <div className="rounded-md border px-3 py-2 bg-muted/40">
-                  <p className="text-[11px] text-muted-foreground">Total pago</p>
+                  <p className="text-xs text-muted-foreground">Total pago</p>
                   <p className="text-sm font-semibold">{formatCurrency(totalPago)}</p>
                 </div>
                 <div className="rounded-md border px-3 py-2 bg-muted/40">
-                  <p className="text-[11px] text-muted-foreground">Anticipo a cuenta</p>
+                  <p className="text-xs text-muted-foreground">Anticipo a cuenta</p>
                   <p className="text-sm font-semibold">
                     {anticipo > 0 ? formatCurrency(anticipo) : formatCurrency(0)}
                   </p>
                 </div>
                 <div className="rounded-md border px-3 py-2 bg-muted/40">
-                  <p className="text-[11px] text-muted-foreground">Diferencia (pago - saldo)</p>
+                  <p className="text-xs text-muted-foreground">Diferencia (pago - saldo)</p>
                   <p className="text-sm font-semibold">{formatCurrency(diferencia)}</p>
                 </div>
               </div>
@@ -3534,7 +3534,7 @@ export default function ProveedorDetailPage() {
                 <div className="hidden print:block text-xs">
                   <div className="text-center mb-2">
                     <p className="text-sm font-bold">{pagoDetalleSeleccionado.company?.name || 'Orden de Pago'}</p>
-                    {pagoDetalleSeleccionado.company?.address && <p className="text-[11px]">{pagoDetalleSeleccionado.company.address}</p>}
+                    {pagoDetalleSeleccionado.company?.address && <p className="text-xs">{pagoDetalleSeleccionado.company.address}</p>}
                   </div>
                   <div className="flex justify-between">
                     <div><span className="font-semibold">Proveedor:</span> {proveedor?.razonSocial}</div>
@@ -3620,7 +3620,7 @@ export default function ProveedorDetailPage() {
                     <FileText className="w-3.5 h-3.5" />
                     Facturas Aplicadas
                     {pagoDetalleSeleccionado.recibos?.length > 0 && (
-                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{pagoDetalleSeleccionado.recibos.length}</Badge>
+                      <Badge variant="secondary" className="text-xs h-5 px-1.5">{pagoDetalleSeleccionado.recibos.length}</Badge>
                     )}
                   </p>
                   {(!pagoDetalleSeleccionado.recibos || pagoDetalleSeleccionado.recibos.length === 0) ? (
@@ -3632,9 +3632,9 @@ export default function ProveedorDetailPage() {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/30 hover:bg-muted/30">
-                            <TableHead className="text-[11px] font-medium h-8">Factura</TableHead>
-                            <TableHead className="text-[11px] font-medium text-right h-8">Total</TableHead>
-                            <TableHead className="text-[11px] font-medium text-right h-8">Aplicado</TableHead>
+                            <TableHead className="text-xs font-medium h-8">Factura</TableHead>
+                            <TableHead className="text-xs font-medium text-right h-8">Total</TableHead>
+                            <TableHead className="text-xs font-medium text-right h-8">Aplicado</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -3663,16 +3663,16 @@ export default function ProveedorDetailPage() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                       <FileText className="w-3.5 h-3.5" />
                       Cheques Utilizados
-                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{pagoDetalleSeleccionado.cheques.length}</Badge>
+                      <Badge variant="secondary" className="text-xs h-5 px-1.5">{pagoDetalleSeleccionado.cheques.length}</Badge>
                     </p>
                     <div className="border rounded-md overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/30 hover:bg-muted/30">
-                            <TableHead className="text-[11px] font-medium h-8">Tipo</TableHead>
-                            <TableHead className="text-[11px] font-medium h-8">Número</TableHead>
-                            <TableHead className="text-[11px] font-medium h-8">Banco</TableHead>
-                            <TableHead className="text-[11px] font-medium text-right h-8">Importe</TableHead>
+                            <TableHead className="text-xs font-medium h-8">Tipo</TableHead>
+                            <TableHead className="text-xs font-medium h-8">Número</TableHead>
+                            <TableHead className="text-xs font-medium h-8">Banco</TableHead>
+                            <TableHead className="text-xs font-medium text-right h-8">Importe</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -3693,7 +3693,7 @@ export default function ProveedorDetailPage() {
                 {/* Notas */}
                 {pagoDetalleSeleccionado.notas && (
                   <div className="p-3 rounded-md bg-muted/30 border">
-                    <p className="text-[11px] text-muted-foreground mb-1">Observaciones</p>
+                    <p className="text-xs text-muted-foreground mb-1">Observaciones</p>
                     <p className="text-xs">{pagoDetalleSeleccionado.notas}</p>
                   </div>
                 )}
@@ -3771,7 +3771,7 @@ export default function ProveedorDetailPage() {
                   {formatCurrency(saldoSeleccionadoConAnticipos)}
                 </span>
               </span>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 Facturas seleccionadas: <span className="font-semibold">{selectedFacturas.length}</span>
               </span>
             </div>
@@ -3779,7 +3779,7 @@ export default function ProveedorDetailPage() {
             {/* Filtros de cheques */}
             <div className="grid grid-cols-1 md:grid-cols-[3fr,2fr,2fr,3fr,auto] gap-2 text-xs items-end">
               <div className="space-y-1">
-                <Label className="text-[11px]">Buscar por número / banco / titular</Label>
+                <Label className="text-xs">Buscar por número / banco / titular</Label>
                 <Input
                   className="h-7 text-xs"
                   placeholder="Escribí texto..."
@@ -3790,7 +3790,7 @@ export default function ProveedorDetailPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px]">Importe desde</Label>
+                <Label className="text-xs">Importe desde</Label>
                 <Input
                   className="h-7 text-xs"
                   placeholder="Mínimo"
@@ -3801,7 +3801,7 @@ export default function ProveedorDetailPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px]">Importe hasta</Label>
+                <Label className="text-xs">Importe hasta</Label>
                 <Input
                   className="h-7 text-xs"
                   placeholder="Máximo"
@@ -3812,11 +3812,11 @@ export default function ProveedorDetailPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px]">Vencimiento entre (dd/mm/yyyy)</Label>
+                <Label className="text-xs">Vencimiento entre (dd/mm/yyyy)</Label>
                 <div className="flex gap-1">
                   <Input
                     type="text"
-                    className="h-7 text-[11px]"
+                    className="h-7 text-xs"
                     placeholder="dd/mm o dd/mm/aaaa"
                     value={chequesFilters.fechaDesdeInput}
                     onChange={(e) =>
@@ -3832,7 +3832,7 @@ export default function ProveedorDetailPage() {
                   />
                   <Input
                     type="text"
-                    className="h-7 text-[11px]"
+                    className="h-7 text-xs"
                     placeholder="dd/mm o dd/mm/aaaa"
                     value={chequesFilters.fechaHastaInput}
                     onChange={(e) =>
@@ -3853,12 +3853,12 @@ export default function ProveedorDetailPage() {
                   type="button"
                   size="xs"
                   variant={verMarcados ? 'default' : 'outline'}
-                  className="h-7 text-[11px]"
+                  className="h-7 text-xs"
                   onClick={() => setVerMarcados(prev => !prev)}
                 >
                   {verMarcados ? 'Ver todos' : 'Ver marcados'}
                 </Button>
-                <span className="text-[10px] text-muted-foreground text-right">
+                <span className="text-xs text-muted-foreground text-right">
                   Coinciden con filtro: <span className="font-semibold">{totalChequesQueCumplenFiltro}</span>
                 </span>
               </div>
@@ -3897,9 +3897,9 @@ export default function ProveedorDetailPage() {
                       // - Ambos: verde un poco más intenso con borde
                       let rowClass = '';
                       if (estaMarcado && verMarcados && cumpleFiltro) {
-                        rowClass = 'bg-emerald-100 border border-emerald-300';
+                        rowClass = 'bg-success-muted border border-success-muted';
                       } else if (estaMarcado && verMarcados) {
-                        rowClass = 'bg-emerald-50';
+                        rowClass = 'bg-success-muted';
                       } else if (cumpleFiltro) {
                         rowClass = 'bg-sky-50';
                       }
@@ -4236,7 +4236,7 @@ export default function ProveedorDetailPage() {
                           <TrendingDown className="w-3 h-3 text-success" />
                         ) : null}
                         <p className={`font-bold text-sm ${variacionTotal > 0 ? 'text-destructive' : variacionTotal < 0 ? 'text-success' : ''}`}>
-                          {variacionTotal > 0 ? '+' : ''}{variacionTotal.toFixed(1)}%
+                          {variacionTotal > 0 ? '+' : ''}{formatNumber(variacionTotal, 1)}%
                         </p>
                       </div>
                     </div>
@@ -4315,9 +4315,9 @@ export default function ProveedorDetailPage() {
                       const maxPrice = Math.max(...history.map(h => Number(h.precioUnitario)));
                       const minPrice = Math.min(...history.map(h => Number(h.precioUnitario)));
                       return (
-                        <div className="absolute left-0 top-0 bottom-4 flex flex-col justify-between text-[10px] text-muted-foreground pr-1 w-12">
-                          <span>${(maxPrice/1000).toFixed(0)}k</span>
-                          <span>${(minPrice/1000).toFixed(0)}k</span>
+                        <div className="absolute left-0 top-0 bottom-4 flex flex-col justify-between text-xs text-muted-foreground pr-1 w-12">
+                          <span>${formatNumber(maxPrice/1000, 0)}k</span>
+                          <span>${formatNumber(minPrice/1000, 0)}k</span>
                         </div>
                       );
                     })()}
@@ -4371,7 +4371,7 @@ export default function ProveedorDetailPage() {
                                   <p className="text-xs">{new Date(h.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</p>
                                   {diff !== 0 && (
                                     <p className={`text-xs font-medium ${isIncrease ? 'text-destructive' : 'text-success'}`}>
-                                      {isIncrease ? '▲' : '▼'} {Math.abs(diff).toLocaleString('es-AR')} ({((diff / Number(prev?.precioUnitario || 1)) * 100).toFixed(1)}%)
+                                      {isIncrease ? '▲' : '▼'} {Math.abs(diff).toLocaleString('es-AR')} ({formatNumber((diff / Number(prev?.precioUnitario || 1)) * 100, 1)}%)
                                     </p>
                                   )}
                                 </TooltipContent>
@@ -4382,7 +4382,7 @@ export default function ProveedorDetailPage() {
                       })()}
                     </div>
                     {/* Eje X labels */}
-                    <div className="ml-14 flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <div className="ml-14 flex justify-between text-xs text-muted-foreground mt-1">
                       <span>
                         {selectedItemDetalle.priceHistory.length > 0
                           ? new Date(selectedItemDetalle.priceHistory[selectedItemDetalle.priceHistory.length - 1].fecha).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
@@ -4445,7 +4445,7 @@ export default function ProveedorDetailPage() {
                             <TableRow key={h.id} className={isFirst ? 'bg-primary/5' : ''}>
                               <TableCell className="py-1.5">
                                 <div className="flex items-center gap-1">
-                                  {isFirst && <Badge variant="default" className="text-[10px] px-1 py-0">Últ</Badge>}
+                                  {isFirst && <Badge variant="default" className="text-xs px-1 py-0">Últ</Badge>}
                                   <span className="text-xs">{new Date(h.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
                                 </div>
                               </TableCell>
@@ -4459,9 +4459,9 @@ export default function ProveedorDetailPage() {
                                   <div className="flex items-center justify-end gap-1">
                                     <Badge
                                       variant="outline"
-                                      className={`text-[10px] px-1 py-0 ${diff > 0 ? 'border-destructive/30 text-destructive' : 'border-success-muted text-success'}`}
+                                      className={`text-xs px-1 py-0 ${diff > 0 ? 'border-destructive/30 text-destructive' : 'border-success-muted text-success'}`}
                                     >
-                                      {diff > 0 ? '+' : ''}{diffPercent.toFixed(1)}%
+                                      {diff > 0 ? '+' : ''}{formatNumber(diffPercent, 1)}%
                                     </Badge>
                                   </div>
                                 ) : (
@@ -4528,25 +4528,25 @@ export default function ProveedorDetailPage() {
                       return (
                         <div className="flex flex-wrap gap-2">
                           <div className="text-center px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
-                            <p className="text-[10px] text-muted-foreground">Actual</p>
+                            <p className="text-xs text-muted-foreground">Actual</p>
                             <p className="font-bold text-sm text-primary">
                               ${(qty * precioActual).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
                           <div className="text-center px-2 py-1 bg-success-muted rounded-md border border-success-muted">
-                            <p className="text-[10px] text-muted-foreground">Mín</p>
+                            <p className="text-xs text-muted-foreground">Mín</p>
                             <p className="font-semibold text-sm text-success">
                               ${(qty * precioMin).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
                           <div className="text-center px-2 py-1 bg-destructive/10 rounded-md border border-destructive/30">
-                            <p className="text-[10px] text-muted-foreground">Máx</p>
+                            <p className="text-xs text-muted-foreground">Máx</p>
                             <p className="font-semibold text-sm text-destructive">
                               ${(qty * precioMax).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>
                           </div>
                           <div className="text-center px-2 py-1 bg-muted/50 rounded-md">
-                            <p className="text-[10px] text-muted-foreground">Prom</p>
+                            <p className="text-xs text-muted-foreground">Prom</p>
                             <p className="font-semibold text-sm">
                               ${(qty * precioAvg).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                             </p>

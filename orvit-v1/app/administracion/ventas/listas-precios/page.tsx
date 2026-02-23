@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,7 +61,7 @@ import {
   Users,
   AlertTriangle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface PriceList {
   id: number;
@@ -480,7 +481,7 @@ export default function ListasPreciosPage() {
   const calcularMargen = (item: PriceListItem) => {
     if (!item.product.costPrice || item.product.costPrice === 0) return null;
     const margen = ((item.precioUnitario - item.product.costPrice) / item.product.costPrice) * 100;
-    return margen.toFixed(1);
+    return formatNumber(margen, 1);
   };
 
   const filteredProducts = products.filter(p =>
@@ -898,7 +899,7 @@ export default function ListasPreciosPage() {
                       <DollarSign className="h-8 w-8 text-muted-foreground/50" />
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Margen: {analytics.analisisPrecios.margenPromedio.toFixed(1)}%
+                      Margen: {formatNumber(analytics.analisisPrecios.margenPromedio, 1)}%
                     </p>
                   </CardContent>
                 </Card>
@@ -1002,7 +1003,7 @@ export default function ListasPreciosPage() {
                         <span className="text-sm font-medium">{lista.nombre}</span>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{lista.items} productos</span>
-                          <span>{new Date(lista.updatedAt).toLocaleDateString('es-AR')}</span>
+                          <span>{formatDate(lista.updatedAt)}</span>
                         </div>
                       </div>
                     ))}

@@ -197,6 +197,7 @@ export const saleItemSchema = z.object({
   precioUnitario: z.coerce.number().nonnegative('El precio debe ser positivo o cero'),
   descuento: z.coerce.number().min(0).max(100).default(0),
   notas: z.string().max(500).optional().nullable(),
+  aplicaComision: z.boolean().default(true),
 });
 
 export const createSaleSchema = z.object({
@@ -373,6 +374,17 @@ export const loadOrderFilterSchema = z.object({
 });
 
 // =============================================================================
+// Cost Breakdown Schema (Desglose de costos por item)
+// =============================================================================
+
+export const costBreakdownItemSchema = z.object({
+  concepto: z.string().min(1, 'Concepto requerido').max(100),
+  monto: z.coerce.number().nonnegative('El monto debe ser >= 0'),
+});
+
+export type CostBreakdownItemInput = z.infer<typeof costBreakdownItemSchema>;
+
+// =============================================================================
 // Quotation Schemas
 // =============================================================================
 
@@ -385,11 +397,14 @@ export const quotationItemSchema = z.object({
   precioUnitario: z.coerce.number().nonnegative('El precio debe ser positivo o cero'),
   descuento: z.coerce.number().min(0).max(100).default(0),
   notas: z.string().max(500).optional().nullable(),
+  costBreakdown: z.array(costBreakdownItemSchema).optional().default([]),
+  aplicaComision: z.boolean().default(true),
 });
 
 export const createQuotationSchema = z.object({
   clientId: z.string().min(1, 'Cliente requerido'),
   sellerId: z.coerce.number().int().positive().optional().nullable(),
+  templateId: z.coerce.number().int().positive().optional().nullable(),
   titulo: z.string().max(255).optional().nullable(),
   descripcion: z.string().max(2000).optional().nullable(),
   fechaEmision: z.string().datetime().optional(),
@@ -398,11 +413,13 @@ export const createQuotationSchema = z.object({
   condicionesPago: z.string().max(255).optional().nullable(),
   diasPlazo: z.coerce.number().int().nonnegative().optional().nullable(),
   condicionesEntrega: z.string().max(500).optional().nullable(),
+  incluyeFlete: z.boolean().optional().default(false),
   tiempoEntrega: z.string().max(255).optional().nullable(),
   lugarEntrega: z.string().max(500).optional().nullable(),
   notas: z.string().max(2000).optional().nullable(),
   notasInternas: z.string().max(2000).optional().nullable(),
   descuentoGlobal: z.coerce.number().min(0).max(100).default(0),
+  discriminarIva: z.boolean().default(false),
   items: z.array(quotationItemSchema).min(1, 'Debe agregar al menos un item'),
 });
 
@@ -633,6 +650,7 @@ export const createProductSchema = z.object({
 
   // Flags
   isActive: z.boolean().optional().default(true),
+  aplicaComision: z.boolean().optional().default(true),
 
   // Additional
   barcode: z.string().max(100).optional().nullable(),
@@ -911,3 +929,46 @@ export type QuoteSendInput = z.infer<typeof quoteSendSchema>;
 export type QuoteDuplicateInput = z.infer<typeof quoteDuplicateSchema>;
 export type PaymentActionInput = z.infer<typeof paymentActionSchema>;
 export type CreditNoteActionInput = z.infer<typeof creditNoteActionSchema>;
+
+// =============================================================================
+// Liquidaciones de Vendedores
+// =============================================================================
+
+export const liquidacionItemSchema = z.object({
+  saleId: z.coerce.number().int().positive(),
+  incluido: z.boolean().default(true),
+  motivoExclusion: z.string().max(255).optional().nullable(),
+});
+
+export const createLiquidacionSchema = z.object({
+  sellerId: z.coerce.number().int().positive('Vendedor requerido'),
+  fechaDesde: z.string().min(1, 'Fecha desde requerida'),
+  fechaHasta: z.string().min(1, 'Fecha hasta requerida'),
+  comisionPorcentaje: z.coerce.number().min(0).max(100).optional(),
+  ajustes: z.coerce.number().default(0),
+  notas: z.string().max(2000).optional().nullable(),
+  notasInternas: z.string().max(2000).optional().nullable(),
+  items: z.array(liquidacionItemSchema).min(1, 'Debe incluir al menos una venta'),
+});
+
+export const updateLiquidacionSchema = createLiquidacionSchema.partial();
+
+export const liquidacionFilterSchema = z.object({
+  ...paginationSchema.shape,
+  estado: z.enum(['BORRADOR', 'CONFIRMADA', 'PAGADA', 'ANULADA']).optional(),
+  sellerId: z.string().optional(),
+  fechaDesde: z.string().optional(),
+  fechaHasta: z.string().optional(),
+  search: z.string().optional(),
+});
+
+export const liquidacionActionSchema = z.object({
+  action: z.enum(['confirmar', 'pagar', 'anular']),
+  medioPago: z.string().max(100).optional(),
+  referenciaPago: z.string().max(255).optional(),
+  notas: z.string().max(2000).optional(),
+});
+
+export type CreateLiquidacionInput = z.infer<typeof createLiquidacionSchema>;
+export type UpdateLiquidacionInput = z.infer<typeof updateLiquidacionSchema>;
+export type LiquidacionActionInput = z.infer<typeof liquidacionActionSchema>;

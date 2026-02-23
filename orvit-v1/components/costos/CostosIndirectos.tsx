@@ -1,6 +1,8 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { 
   Building2, 
   Plus, 
@@ -208,7 +210,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
       </div>
 
       {/* Métricas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Costos</CardTitle>
@@ -230,7 +232,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
           <CardContent>
             <div className="text-2xl font-bold text-success">{formatCurrency(paidCosts)}</div>
             <p className="text-xs text-muted-foreground">
-              {totalCosts > 0 ? ((paidCosts / totalCosts) * 100).toFixed(1) : 0}% del total
+              {totalCosts > 0 ? formatNumber((paidCosts / totalCosts) * 100, 1) : 0}% del total
             </p>
           </CardContent>
         </Card>
@@ -243,7 +245,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
           <CardContent>
             <div className="text-2xl font-bold text-warning-muted-foreground">{formatCurrency(pendingCosts)}</div>
             <p className="text-xs text-muted-foreground">
-              {totalCosts > 0 ? ((pendingCosts / totalCosts) * 100).toFixed(1) : 0}% del total
+              {totalCosts > 0 ? formatNumber((pendingCosts / totalCosts) * 100, 1) : 0}% del total
             </p>
           </CardContent>
         </Card>
@@ -357,9 +359,9 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                           <div className="text-sm text-muted-foreground">{cost.categoryName}</div>
                           <div className="text-sm text-muted-foreground">{cost.description}</div>
                           <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                            <span>Vencimiento: {new Date(cost.dueDate).toLocaleDateString('es-AR')}</span>
+                            <span>Vencimiento: {formatDate(cost.dueDate)}</span>
                             <span>•</span>
-                            <span>Creado: {new Date(cost.createdAt).toLocaleDateString('es-AR')}</span>
+                            <span>Creado: {formatDate(cost.createdAt)}</span>
                           </div>
                         </div>
                       </div>
@@ -423,7 +425,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                           <div className="font-semibold">{entry.costName}</div>
                           <div className="text-sm text-muted-foreground">{entry.categoryName}</div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(entry.createdAt).toLocaleDateString('es-AR')} • {entry.month}
+                            {formatDate(entry.createdAt)} • {entry.month}
                           </div>
                         </div>
                       </div>
@@ -531,7 +533,7 @@ export function CostosIndirectos({ companyId }: CostosIndirectosProps) {
                             </div>
                             <div className="text-right">
                               <div className="font-bold">{formatCurrency(categoria.totalCost)}</div>
-                              <div className="text-sm text-muted-foreground">{categoria.porcentaje.toFixed(1)}%</div>
+                              <div className="text-sm text-muted-foreground">{formatNumber(categoria.porcentaje, 1)}%</div>
                             </div>
                           </div>
                         ))}

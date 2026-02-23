@@ -27,13 +27,13 @@ export const MaterialRequestStatusLabels: Record<MaterialRequestStatus, string> 
 };
 
 export const MaterialRequestStatusColors: Record<MaterialRequestStatus, string> = {
-  BORRADOR: 'bg-gray-100 text-gray-800',
-  PENDIENTE_APROBACION: 'bg-yellow-100 text-yellow-800',
-  APROBADA: 'bg-green-100 text-green-800',
-  PARCIALMENTE_DESPACHADA: 'bg-blue-100 text-blue-800',
-  DESPACHADA: 'bg-emerald-100 text-emerald-800',
-  CANCELADA: 'bg-red-100 text-red-800',
-  RECHAZADA: 'bg-red-100 text-red-800',
+  BORRADOR: 'bg-muted text-muted-foreground',
+  PENDIENTE_APROBACION: 'bg-warning-muted text-warning-muted-foreground',
+  APROBADA: 'bg-success-muted text-success-muted-foreground',
+  PARCIALMENTE_DESPACHADA: 'bg-info-muted text-info-muted-foreground',
+  DESPACHADA: 'bg-success-muted text-success-muted-foreground',
+  CANCELADA: 'bg-destructive/10 text-destructive',
+  RECHAZADA: 'bg-destructive/10 text-destructive',
 };
 
 // ============================================
@@ -81,12 +81,12 @@ export const DespachoStatusLabels: Record<DespachoStatus, string> = {
 };
 
 export const DespachoStatusColors: Record<DespachoStatus, string> = {
-  BORRADOR: 'bg-gray-100 text-gray-800',
-  EN_PREPARACION: 'bg-blue-100 text-blue-800',
-  LISTO_DESPACHO: 'bg-yellow-100 text-yellow-800',
-  DESPACHADO: 'bg-green-100 text-green-800',
-  RECIBIDO: 'bg-emerald-100 text-emerald-800',
-  CANCELADO: 'bg-red-100 text-red-800',
+  BORRADOR: 'bg-muted text-muted-foreground',
+  EN_PREPARACION: 'bg-info-muted text-info-muted-foreground',
+  LISTO_DESPACHO: 'bg-warning-muted text-warning-muted-foreground',
+  DESPACHADO: 'bg-success-muted text-success-muted-foreground',
+  RECIBIDO: 'bg-success-muted text-success-muted-foreground',
+  CANCELADO: 'bg-destructive/10 text-destructive',
 };
 
 // ============================================
@@ -130,10 +130,10 @@ export const DevolucionStatusLabels: Record<DevolucionStatus, string> = {
 };
 
 export const DevolucionStatusColors: Record<DevolucionStatus, string> = {
-  BORRADOR: 'bg-gray-100 text-gray-800',
-  PENDIENTE_REVISION: 'bg-yellow-100 text-yellow-800',
-  ACEPTADA: 'bg-green-100 text-green-800',
-  RECHAZADA: 'bg-red-100 text-red-800',
+  BORRADOR: 'bg-muted text-muted-foreground',
+  PENDIENTE_REVISION: 'bg-warning-muted text-warning-muted-foreground',
+  ACEPTADA: 'bg-success-muted text-success-muted-foreground',
+  RECHAZADA: 'bg-destructive/10 text-destructive',
 };
 
 // ============================================
@@ -159,11 +159,11 @@ export const ReservaStatusLabels: Record<ReservaStatus, string> = {
 };
 
 export const ReservaStatusColors: Record<ReservaStatus, string> = {
-  ACTIVA: 'bg-green-100 text-green-800',
-  CONSUMIDA_PARCIAL: 'bg-blue-100 text-blue-800',
-  CONSUMIDA: 'bg-gray-100 text-gray-800',
-  LIBERADA: 'bg-yellow-100 text-yellow-800',
-  EXPIRADA: 'bg-red-100 text-red-800',
+  ACTIVA: 'bg-success-muted text-success-muted-foreground',
+  CONSUMIDA_PARCIAL: 'bg-info-muted text-info-muted-foreground',
+  CONSUMIDA: 'bg-muted text-muted-foreground',
+  LIBERADA: 'bg-warning-muted text-warning-muted-foreground',
+  EXPIRADA: 'bg-destructive/10 text-destructive',
 };
 
 // ============================================
@@ -202,10 +202,10 @@ export const PriorityLabels: Record<Priority, string> = {
 };
 
 export const PriorityColors: Record<Priority, string> = {
-  LOW: 'bg-gray-100 text-gray-800',
-  MEDIUM: 'bg-blue-100 text-blue-800',
-  HIGH: 'bg-orange-100 text-orange-800',
-  CRITICAL: 'bg-red-100 text-red-800',
+  LOW: 'bg-muted text-muted-foreground',
+  MEDIUM: 'bg-info-muted text-info-muted-foreground',
+  HIGH: 'bg-warning-muted text-warning-muted-foreground',
+  CRITICAL: 'bg-destructive/10 text-destructive',
 };
 
 // ============================================
@@ -255,13 +255,13 @@ export const MovementTypeLabels: Record<MovementType, string> = {
 };
 
 export const MovementTypeColors: Record<MovementType, string> = {
-  ENTRADA: 'bg-green-100 text-green-800',
-  SALIDA: 'bg-red-100 text-red-800',
-  AJUSTE_POSITIVO: 'bg-blue-100 text-blue-800',
-  AJUSTE_NEGATIVO: 'bg-orange-100 text-orange-800',
-  TRANSFERENCIA_ENTRADA: 'bg-purple-100 text-purple-800',
-  TRANSFERENCIA_SALIDA: 'bg-purple-100 text-purple-800',
-  RESERVA: 'bg-yellow-100 text-yellow-800',
-  LIBERACION_RESERVA: 'bg-gray-100 text-gray-800',
-  CONSUMO_RESERVA: 'bg-emerald-100 text-emerald-800',
+  ENTRADA: 'bg-success-muted text-success-muted-foreground',
+  SALIDA: 'bg-destructive/10 text-destructive',
+  AJUSTE_POSITIVO: 'bg-info-muted text-info-muted-foreground',
+  AJUSTE_NEGATIVO: 'bg-warning-muted text-warning-muted-foreground',
+  TRANSFERENCIA_ENTRADA: 'bg-accent-purple-muted text-accent-purple-muted-foreground',
+  TRANSFERENCIA_SALIDA: 'bg-accent-purple-muted text-accent-purple-muted-foreground',
+  RESERVA: 'bg-warning-muted text-warning-muted-foreground',
+  LIBERACION_RESERVA: 'bg-muted text-muted-foreground',
+  CONSUMO_RESERVA: 'bg-success-muted text-success-muted-foreground',
 };

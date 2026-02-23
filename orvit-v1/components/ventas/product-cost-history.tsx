@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface CostLog {
   id: string;
@@ -271,7 +272,7 @@ export function ProductCostHistory({
                               className={cn('text-xs', log.changePercentage > 0 ? 'text-destructive border-destructive/30' : log.changePercentage < 0 ? 'text-success border-success-muted' : '')}
                             >
                               {log.changePercentage > 0 ? '+' : ''}
-                              {log.changePercentage.toFixed(1)}%
+                              {formatNumber(log.changePercentage, 1)}%
                             </Badge>
                             <Badge className={cn('text-xs', getSourceBadgeColor(log.changeSource))}>
                               {getSourceLabel(log.changeSource)}
@@ -287,9 +288,7 @@ export function ProductCostHistory({
                       <div className="text-xs text-right text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm', {
-                            locale: es,
-                          })}
+                          {formatDateTime(log.createdAt)}
                         </div>
                         {log.createdBy && (
                           <div className="flex items-center gap-1 mt-1">

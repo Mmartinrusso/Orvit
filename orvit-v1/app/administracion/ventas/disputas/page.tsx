@@ -8,12 +8,12 @@
 
 import { useState, useEffect } from 'react';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, FileText, Clock, CheckCircle2, XCircle, MessageSquare } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
 
 interface Disputa {
   id: number;
@@ -73,7 +73,7 @@ export default function DisputasPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -161,7 +161,7 @@ export default function DisputasPage() {
 
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span>
-                            Creada: {format(new Date(disputa.fechaCreacion), 'dd/MM/yyyy')}
+                            Creada: {formatDate(disputa.fechaCreacion)}
                           </span>
                           <Badge variant={disputa.prioridad === 'ALTA' ? 'destructive' : 'outline'}>
                             {disputa.prioridad}

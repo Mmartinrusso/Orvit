@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +29,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import InstructiveDialog from '@/components/mantenimiento/InstructiveDialog';
-import WorkStationMachinesDialog from '@/components/mantenimiento/WorkStationMachinesDialog';
+import InstructiveDialog from '@/components/maintenance/InstructiveDialog';
+import WorkStationMachinesDialog from '@/components/maintenance/WorkStationMachinesDialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
@@ -311,7 +312,7 @@ export default function WorkStationDetailPage() {
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    Creado: {new Date(workStation.createdAt).toLocaleDateString()}
+                    Creado: {formatDate(workStation.createdAt)}
                   </span>
                 </div>
               </div>
@@ -364,7 +365,7 @@ export default function WorkStationDetailPage() {
                           )}
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>Creado por: {instructive.createdBy.name}</span>
-                            <span>{new Date(instructive.createdAt).toLocaleDateString()}</span>
+                            <span>{formatDate(instructive.createdAt)}</span>
                             {instructive.fileSize && (
                               <span>{formatFileSize(instructive.fileSize)}</span>
                             )}

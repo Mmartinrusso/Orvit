@@ -2,13 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -90,7 +91,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompact(value: number): string {
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
   if (value >= 1000) return `$${Math.round(value / 1000)}K`;
   return formatCurrency(value);
 }
@@ -244,8 +245,8 @@ function HealthScoreGauge({ score, size = 160 }: { score: number; size?: number 
         />
 
         {/* Min/Max labels */}
-        <text x={center - radius - 8} y={gaugeY + 16} className="text-[10px] fill-muted-foreground" textAnchor="middle">0</text>
-        <text x={center + radius + 8} y={gaugeY + 16} className="text-[10px] fill-muted-foreground" textAnchor="middle">100</text>
+        <text x={center - radius - 8} y={gaugeY + 16} className="text-xs fill-muted-foreground" textAnchor="middle">0</text>
+        <text x={center + radius + 8} y={gaugeY + 16} className="text-xs fill-muted-foreground" textAnchor="middle">100</text>
 
         {/* Tick marks */}
         {[0, 25, 50, 75, 100].map((tick) => {
@@ -350,9 +351,9 @@ function BudgetProgress({ actual, budget, label }: { actual: number; budget: num
           />
         )}
       </div>
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>{percentage.toFixed(0)}% utilizado</span>
-        {isOver && <span className="text-destructive">+{overPercentage.toFixed(0)}% sobre presupuesto</span>}
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{formatNumber(percentage, 0)}% utilizado</span>
+        {isOver && <span className="text-destructive">+{formatNumber(overPercentage, 0)}% sobre presupuesto</span>}
       </div>
     </div>
   );
@@ -464,7 +465,7 @@ function MetricCard({
   compact?: boolean;
 }) {
   const colorClasses = {
-    default: 'bg-card',
+    default: '',
     success: 'bg-success/5 border-success-muted/20',
     warning: 'bg-warning/5 border-warning-muted/20',
     danger: 'bg-destructive/5 border-destructive/30/20'
@@ -482,8 +483,8 @@ function MetricCard({
       <CardContent className={cn("p-4", compact && "p-3")}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground truncate">{title}</p>
-            <p className={cn("font-semibold tabular-nums truncate", compact ? "text-xl" : "text-2xl")}>{value}</p>
+            <p className="text-xs font-medium text-muted-foreground truncate">{title}</p>
+            <p className={cn("font-bold tabular-nums truncate mt-1", compact ? "text-xl" : "text-2xl")}>{value}</p>
             {(subtitle || trend) && (
               <div className="flex items-center gap-2 mt-1">
                 {trend && <TrendIndicator trend={trend} value={trendValue} />}
@@ -492,7 +493,7 @@ function MetricCard({
             )}
           </div>
           {Icon && (
-            <div className="p-2 rounded-lg bg-muted/50">
+            <div className="p-2 rounded-lg bg-muted">
               <Icon className="h-4 w-4 text-muted-foreground" />
             </div>
           )}
@@ -606,7 +607,7 @@ export default function ComprasPage() {
     return (
       <div className="space-y-6">
         <div className="border-b border-border">
-          <div className="px-4 md:px-6 py-3">
+          <div className="px-4 md:px-6 pt-4 pb-3">
             <Skeleton className="h-7 w-48" />
             <Skeleton className="h-4 w-64 mt-2" />
           </div>
@@ -654,11 +655,11 @@ export default function ComprasPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="border-b border-border sticky top-0 z-10 bg-background/95 backdrop-blur">
-        <div className="px-4 md:px-6 py-3 flex items-center gap-4 justify-between">
-          <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Panel de Compras</h1>
-            <p className="text-xs text-muted-foreground">
-              {isAdmin ? 'Vista ejecutiva • ' : ''}{new Date(data.timestamp).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
+        <div className="px-4 md:px-6 pt-4 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Panel de Compras</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isAdmin ? 'Vista ejecutiva · ' : ''}{formatDateTime(data.timestamp)}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -670,7 +671,7 @@ export default function ComprasPage() {
                   type="button"
                   onClick={() => setRange(opt.value)}
                   className={cn(
-                    "px-2 py-0.5 text-[11px] font-medium transition-colors",
+                    "px-2 py-0.5 text-xs font-medium transition-colors",
                     "hover:bg-muted",
                     range === opt.value && "bg-background shadow-sm text-foreground",
                     idx === 0 ? "rounded-l-md" : idx === RANGE_OPTIONS.length - 1 ? "rounded-r-md" : ""
@@ -706,8 +707,7 @@ export default function ComprasPage() {
         {isAdmin && data.admin && ejecutivo && (
           <div className="grid grid-cols-12 gap-4">
             {/* Health Score Card - ENHANCED */}
-            <Card className="col-span-12 lg:col-span-3 bg-gradient-to-br from-background via-background to-muted/20 border-2 shadow-lg overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full" />
+            <Card className="col-span-12 lg:col-span-3 border shadow-sm overflow-hidden relative">
               <CardHeader className="pb-0 pt-4">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-primary/10">
@@ -723,7 +723,7 @@ export default function ComprasPage() {
 
                 {/* Health Factors Grid */}
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-success-muted/20">
+                  <div className="relative p-2.5 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={ejecutivo.healthFactors.pagosPuntuales} max={100} size={28} strokeWidth={3} color={COLORS.success} />
                       <div>
@@ -732,7 +732,7 @@ export default function ComprasPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-info-muted/20">
+                  <div className="relative p-2.5 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={ejecutivo.eficiencia.tasaCumplimiento} max={100} size={28} strokeWidth={3} color="#3B82F6" />
                       <div>
@@ -741,7 +741,7 @@ export default function ComprasPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-warning-muted/20">
+                  <div className="relative p-2.5 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={100 - ejecutivo.eficiencia.tasaRechazo} max={100} size={28} strokeWidth={3} color={COLORS.warning} />
                       <div>
@@ -750,7 +750,7 @@ export default function ComprasPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="relative p-2.5 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
+                  <div className="relative p-2.5 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-1.5">
                       <ProgressRing value={ejecutivo.healthFactors.stockOptimo} max={100} size={28} strokeWidth={3} color="#8B5CF6" />
                       <div>
@@ -769,13 +769,13 @@ export default function ComprasPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {/* Compras del Mes - Enhanced */}
                 <Card
-                  className="cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all bg-gradient-to-br from-primary/5 to-transparent border-primary/20"
+                  className="cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all bg-primary/5 border-primary/20"
                   onClick={() => openStatsDetail('compras')}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Compras Mes</p>
+                        <p className="text-xs font-medium text-muted-foreground">Compras Mes</p>
                         <p className="text-2xl font-bold text-primary tabular-nums mt-1">
                           <AnimatedCounter value={data.admin.comprasMes} prefix="$" duration={800} />
                         </p>
@@ -784,7 +784,7 @@ export default function ComprasPage() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <div className="p-1.5 rounded-lg bg-primary/10">
+                        <div className="p-2 rounded-lg bg-primary/10">
                           <DollarSign className="h-4 w-4 text-primary" />
                         </div>
                         <Sparkline data={chartData.slice(-6).map(d => d.value)} color="hsl(var(--primary))" />
@@ -798,15 +798,15 @@ export default function ComprasPage() {
                   className={cn(
                     "cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all",
                     data.admin.facturasVencidas > 0
-                      ? "bg-gradient-to-br from-red-500/10 to-transparent border-destructive/30/30"
-                      : "bg-gradient-to-br from-green-500/5 to-transparent border-success-muted/20"
+                      ? "border-destructive/30"
+                      : "border-success-muted/20"
                   )}
                   onClick={() => openStatsDetail('deuda')}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Deuda Total</p>
+                        <p className="text-xs font-medium text-muted-foreground">Deuda Total</p>
                         <p className={cn(
                           "text-2xl font-bold tabular-nums mt-1",
                           data.admin.facturasVencidas > 0 ? "text-destructive" : "text-foreground"
@@ -814,11 +814,11 @@ export default function ComprasPage() {
                           {formatCompact(data.admin.deudaTotal)}
                         </p>
                         {data.admin.facturasVencidas > 0 ? (
-                          <Badge variant="destructive" className="text-[10px] h-5 mt-1">
+                          <Badge variant="destructive" className="text-xs h-5 mt-1">
                             {data.admin.facturasVencidas} vencidas
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] h-5 mt-1 text-success border-success-muted/30">
+                          <Badge variant="outline" className="text-xs h-5 mt-1 text-success border-success-muted/30">
                             Al día
                           </Badge>
                         )}
@@ -841,7 +841,7 @@ export default function ComprasPage() {
                   className={cn(
                     "cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all",
                     data.admin.aprobacionesPendientes > 5
-                      ? "bg-gradient-to-br from-amber-500/10 to-transparent border-warning-muted/30"
+                      ? "border-warning-muted/30"
                       : ""
                   )}
                   onClick={() => openStatsDetail('ordenes')}
@@ -849,10 +849,10 @@ export default function ComprasPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">OC Pendientes</p>
+                        <p className="text-xs font-medium text-muted-foreground">OC Pendientes</p>
                         <p className="text-2xl font-bold tabular-nums mt-1">{data.basico.ordenesPendientes}</p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <Badge variant="secondary" className="text-[10px] h-5 bg-warning/10 text-warning-muted-foreground border-0">
+                          <Badge variant="secondary" className="text-xs h-5 bg-warning/10 text-warning-muted-foreground border-0">
                             {data.admin.aprobacionesPendientes} aprobar
                           </Badge>
                         </div>
@@ -872,15 +872,15 @@ export default function ComprasPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Solicitudes</p>
+                        <p className="text-xs font-medium text-muted-foreground">Solicitudes</p>
                         <p className="text-2xl font-bold tabular-nums mt-1">{data.basico.solicitudesPendientes}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           {data.basico.stockBajo > 0 ? (
-                            <Badge variant="secondary" className="text-[10px] h-5 bg-warning/10 text-warning-muted-foreground border-0">
+                            <Badge variant="secondary" className="text-xs h-5 bg-warning/10 text-warning-muted-foreground border-0">
                               {data.basico.stockBajo} stock bajo
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px] h-5 bg-success/10 text-success border-0">
+                            <Badge variant="secondary" className="text-xs h-5 bg-success/10 text-success border-0">
                               Stock OK
                             </Badge>
                           )}
@@ -989,7 +989,7 @@ export default function ComprasPage() {
 
             {/* Alertas Críticas - ENHANCED */}
             <Card className="col-span-12 lg:col-span-3 overflow-hidden">
-              <CardHeader className="pb-2 pt-3 bg-gradient-to-r from-background to-muted/20">
+              <CardHeader className="pb-2 pt-3">
                 <CardTitle className="text-sm font-medium flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <div className={cn(
@@ -1004,7 +1004,7 @@ export default function ComprasPage() {
                     Alertas
                   </span>
                   {ejecutivo.alertasCriticas.length > 0 && (
-                    <Badge variant="destructive" className="text-[10px] animate-pulse">
+                    <Badge variant="destructive" className="text-xs animate-pulse">
                       {ejecutivo.alertasCriticas.length}
                     </Badge>
                   )}
@@ -1090,7 +1090,7 @@ export default function ComprasPage() {
                     <Calendar className="h-4 w-4" />
                     Próximos Vencimientos
                   </span>
-                  <Badge variant="outline" className="text-[10px]">7 días</Badge>
+                  <Badge variant="outline" className="text-xs">7 días</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1114,7 +1114,7 @@ export default function ComprasPage() {
                           idx === 0 ? "bg-destructive" : idx === 1 ? "bg-warning" : "bg-info"
                         )} />
                         <span className="text-sm">{item.day}</span>
-                        <Badge variant="secondary" className="text-[10px] h-4">{item.count}</Badge>
+                        <Badge variant="secondary" className="text-xs h-5">{item.count}</Badge>
                       </div>
                       <span className={cn(
                         "text-sm font-medium",
@@ -1147,21 +1147,21 @@ export default function ComprasPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-info-muted/20">
-                    <div className="text-2xl font-bold text-info-muted-foreground">{ejecutivo.concentracion.proveedoresActivos30d}</div>
-                    <div className="text-[10px] text-muted-foreground">Proveedores activos (30d)</div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <div className="text-2xl font-bold text-foreground">{ejecutivo.concentracion.proveedoresActivos30d}</div>
+                    <div className="text-xs text-muted-foreground">Proveedores activos (30d)</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-success-muted/20">
-                    <div className="text-2xl font-bold text-success">{data.admin.recepcionesMes.cantidad}</div>
-                    <div className="text-[10px] text-muted-foreground">Recepciones del mes</div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <div className="text-2xl font-bold text-foreground">{data.admin.recepcionesMes.cantidad}</div>
+                    <div className="text-xs text-muted-foreground">Recepciones del mes</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
-                    <div className="text-2xl font-bold text-purple-600">{100 - ejecutivo.eficiencia.tasaRechazo}%</div>
-                    <div className="text-[10px] text-muted-foreground">Tasa aceptación</div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <div className="text-2xl font-bold text-foreground">{100 - ejecutivo.eficiencia.tasaRechazo}%</div>
+                    <div className="text-xs text-muted-foreground">Tasa aceptación</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-warning-muted/20">
-                    <div className="text-2xl font-bold text-warning-muted-foreground">{ejecutivo.eficiencia.tiempoPromedioCiclo}d</div>
-                    <div className="text-[10px] text-muted-foreground">Lead time prom.</div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <div className="text-2xl font-bold text-foreground">{ejecutivo.eficiencia.tiempoPromedioCiclo}d</div>
+                    <div className="text-xs text-muted-foreground">Lead time prom.</div>
                   </div>
                 </div>
               </CardContent>
@@ -1306,7 +1306,7 @@ export default function ComprasPage() {
                                       "text-xs font-medium",
                                       diff >= 0 ? "text-destructive" : "text-success"
                                     )}>
-                                      {diff >= 0 ? '+' : ''}{diff.toFixed(1)}% variación
+                                      {diff >= 0 ? '+' : ''}{formatNumber(diff, 1)}% variación
                                     </span>
                                   </div>
                                 </div>
@@ -1419,7 +1419,7 @@ export default function ComprasPage() {
                         {pieData.slice(0, 5).map((item, idx) => {
                           const prov = data.admin?.topProveedores.find(p => p.nombre === item.name);
                           const total = pieData.reduce((s, d) => s + d.value, 0);
-                          const percent = (item.value / total * 100).toFixed(0);
+                          const percent = formatNumber(item.value / total * 100, 0);
                           return (
                             <div
                               key={item.name}
@@ -1492,20 +1492,20 @@ export default function ComprasPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center p-3 rounded-lg bg-muted/30">
                     <div className="text-2xl font-semibold">{categorias.total}</div>
-                    <div className="text-[10px] text-muted-foreground">Total</div>
+                    <div className="text-xs text-muted-foreground">Total</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-success/10">
                     <div className="text-2xl font-semibold text-success">{categorias.conGasto}</div>
-                    <div className="text-[10px] text-muted-foreground">Con gasto</div>
+                    <div className="text-xs text-muted-foreground">Con gasto</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/20">
                     <div className="text-2xl font-semibold text-muted-foreground">{categorias.sinGasto}</div>
-                    <div className="text-[10px] text-muted-foreground">Sin gasto</div>
+                    <div className="text-xs text-muted-foreground">Sin gasto</div>
                   </div>
                 </div>
                 {categorias.topCategoria && (
                   <div className="mt-3 p-2 rounded bg-primary/5 border border-primary/10">
-                    <div className="text-[10px] text-muted-foreground">Top categoría</div>
+                    <div className="text-xs text-muted-foreground">Top categoría</div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium truncate">{categorias.topCategoria.nombre}</span>
                       <span className="text-sm font-semibold">{formatCompact(categorias.topCategoria.total)}</span>
@@ -1537,11 +1537,11 @@ export default function ComprasPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center p-3 rounded-lg bg-muted/30">
                     <div className="text-2xl font-semibold">{servicios.contratosActivos}</div>
-                    <div className="text-[10px] text-muted-foreground">Contratos activos</div>
+                    <div className="text-xs text-muted-foreground">Contratos activos</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-primary/10">
                     <div className="text-xl font-semibold">{formatCompact(servicios.gastoMensualEstimado)}</div>
-                    <div className="text-[10px] text-muted-foreground">Gasto mensual</div>
+                    <div className="text-xs text-muted-foreground">Gasto mensual</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-3">
@@ -1555,7 +1555,7 @@ export default function ComprasPage() {
                     )}>
                       {servicios.proximosVencimientos}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">Vencen 30d</div>
+                    <div className="text-xs text-muted-foreground">Vencen 30d</div>
                   </div>
                   <div className={cn(
                     "text-center p-2 rounded-lg",
@@ -1567,7 +1567,7 @@ export default function ComprasPage() {
                     )}>
                       {servicios.contratosCriticos}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">Críticos</div>
+                    <div className="text-xs text-muted-foreground">Críticos</div>
                   </div>
                 </div>
               </CardContent>
@@ -1639,7 +1639,7 @@ export default function ComprasPage() {
                     {data.admin.ordenesPorEstado.slice(0, 5).map((o) => (
                       <div key={o.estado} className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">{o.estado}</span>
-                        <Badge variant="secondary" className="text-[10px] h-5">{o.cantidad}</Badge>
+                        <Badge variant="secondary" className="text-xs h-5">{o.cantidad}</Badge>
                       </div>
                     ))}
                   </div>
@@ -1658,7 +1658,7 @@ export default function ComprasPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 px-1 text-[10px]"
+                    className="h-5 px-1 text-xs"
                     onClick={() => openFullView('items')}
                   >
                     Todos
@@ -1708,7 +1708,7 @@ export default function ComprasPage() {
                         onClick={() => router.push(`/administracion/compras/ordenes/${oc.id}`)}
                       >
                         <span className="text-muted-foreground truncate max-w-[100px]">{oc.numero}</span>
-                        <Badge variant={oc.diasRestantes <= 3 ? "destructive" : "outline"} className="text-[10px] h-5">
+                        <Badge variant={oc.diasRestantes <= 3 ? "destructive" : "outline"} className="text-xs h-5">
                           {oc.diasRestantes === 0 ? 'Hoy' : `${oc.diasRestantes}d`}
                         </Badge>
                       </div>

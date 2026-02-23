@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -369,7 +370,7 @@ export default function ProductosPage() {
   };
 
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+    return `${formatNumber(value, 1)}%`;
   };
 
   const getEstadoBadge = (estado: 'ok' | 'warning' | 'danger') => {
@@ -597,7 +598,7 @@ export default function ProductosPage() {
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getVariacionIcon(producto.variacion)}
                             <span className={producto.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                              {producto.variacion > 0 ? '+' : ''}{producto.variacion.toFixed(1)}%
+                              {producto.variacion > 0 ? '+' : ''}{formatNumber(producto.variacion, 1)}%
                             </span>
                           </div>
                         </div>
@@ -804,7 +805,7 @@ export default function ProductosPage() {
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           {getVariacionIcon(componente.variacion)}
                           <span className={componente.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                            {componente.variacion > 0 ? '+' : ''}{componente.variacion.toFixed(1)}%
+                            {componente.variacion > 0 ? '+' : ''}{formatNumber(componente.variacion, 1)}%
                           </span>
                         </div>
                       </div>

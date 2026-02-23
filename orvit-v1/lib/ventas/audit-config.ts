@@ -234,7 +234,7 @@ export const SALES_ACCION_CONFIG: Record<SalesAuditAction, SalesAccionConfigItem
   },
   APPLY_PAYMENT: {
     label: 'Pago Aplicado',
-    color: 'text-emerald-600',
+    color: 'text-success-muted-foreground',
     variant: 'success',
   },
   REVERSE: {

@@ -204,7 +204,7 @@ export default function MovimientosPage() {
               disabled={isFetching}
               className={cn(
                 "inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7",
-                "px-2 text-[11px] font-normal gap-1.5",
+                "px-2 text-xs font-normal gap-1.5",
                 "hover:bg-muted disabled:opacity-50",
                 isFetching && "bg-background shadow-sm"
               )}

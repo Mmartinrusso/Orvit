@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -204,7 +205,7 @@ export default function ForecastPage() {
                   </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {format(new Date(), 'dd/MM/yyyy')} → {format(addDays(new Date(), parseInt(days)), 'dd/MM/yyyy')}
+                  {formatDate(new Date())} → {formatDate(addDays(new Date(), parseInt(days)))}
                 </div>
               </div>
             </CardContent>

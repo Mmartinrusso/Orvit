@@ -14,7 +14,7 @@ const TareasContent = dynamic(() => import('@/components/tasks/TareasContent'), 
     <div className="flex items-center justify-center h-64">
       <div className="flex items-center space-x-2">
         <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
-        <span className="text-sm text-muted-foreground">Cargando...</span>
+        <span className="text-sm text-muted-foreground">Cargando agenda...</span>
       </div>
     </div>
   )

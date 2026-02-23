@@ -299,7 +299,7 @@ export async function middleware(request: NextRequest) {
 // Incluye rutas frontend + rutas API de debug para protección
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/).*)',
     '/api/debug-:path*',
     '/api/test-:path*',
     '/api/diagnostico-:path*',

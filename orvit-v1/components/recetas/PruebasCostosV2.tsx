@@ -19,7 +19,7 @@ import {
   ResponsiveContainer, Legend as RechartsLegend, Cell
 } from 'recharts';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface UserColorPreferences {
   chart1: string;
@@ -819,7 +819,7 @@ export default function PruebasCostosV2({
                 <Calculator className="h-4 w-4" />
                 Calcular Costo Total (con Empleados e Indirectos)
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Placas por Dia</label>
                   <Input
@@ -932,13 +932,13 @@ export default function PruebasCostosV2({
                     </div>
                   </div>
                   <div className="flex gap-4 text-xs text-muted-foreground mt-1">
-                    <span>Original: {change.originalQty.toFixed(4)} TN</span>
+                    <span>Original: {formatNumber(change.originalQty, 4)} TN</span>
                     <ArrowRight className="h-3 w-3" />
-                    <span>Nuevo: {change.newQty.toFixed(4)} TN</span>
+                    <span>Nuevo: {formatNumber(change.newQty, 4)} TN</span>
                     <span className={cn(
                       change.qtyPercent < 0 ? "text-success" : change.qtyPercent > 0 ? "text-warning-muted-foreground" : ""
                     )}>
-                      ({change.qtyPercent >= 0 ? '+' : ''}{change.qtyPercent.toFixed(1)}%)
+                      ({change.qtyPercent >= 0 ? '+' : ''}{formatNumber(change.qtyPercent, 1)}%)
                     </span>
                   </div>
                 </div>
@@ -1006,7 +1006,7 @@ export default function PruebasCostosV2({
                     {comparisonData.isSaving ? '-' : '+'}{formatCurrency(Math.abs(comparisonData.totalDiffPerUnit))}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    ({Math.abs(comparisonData.totalDiffPercent).toFixed(1)}%)
+                    ({formatNumber(Math.abs(comparisonData.totalDiffPercent), 1)}%)
                   </p>
                 </div>
               </div>
@@ -1053,8 +1053,8 @@ export default function PruebasCostosV2({
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(value) => {
-                      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-                      if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+                      if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
+                      if (value >= 1000) return `$${formatNumber(value / 1000, 0)}K`;
                       return `$${value}`;
                     }}
                   />
@@ -1200,7 +1200,7 @@ export default function PruebasCostosV2({
 
             {newIngredient.pulsos && newIngredient.kgPorPulso && (
               <p className="text-sm text-muted-foreground">
-                Cantidad calculada: {calculateToneladas(newIngredient.pulsos, newIngredient.kgPorPulso).toFixed(5)} TN
+                Cantidad calculada: {calculateToneladasformatNumber(newIngredient.pulsos, newIngredient.kgPorPulso, 5)} TN
               </p>
             )}
 

@@ -548,7 +548,7 @@ export function Machine3DViewerTab({
               <CardTitle className="text-sm flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-warning" />
                 Modelos 3D de Componentes
-                <Badge variant="secondary" className="ml-auto text-[10px]">
+                <Badge variant="secondary" className="ml-auto text-xs">
                   {componentsWithModels.count}/{componentsWithModels.total} con modelo
                 </Badge>
               </CardTitle>
@@ -606,7 +606,7 @@ export function Machine3DViewerTab({
                             <p className="text-sm font-medium truncate">
                               {component.name}
                             </p>
-                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               {component.brand && <span>{component.brand}</span>}
                               {component.model && <span>• {component.model}</span>}
                               {component.partNumber && <span>• {component.partNumber}</span>}
@@ -649,7 +649,7 @@ export function Machine3DViewerTab({
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2 text-[10px]"
+                                      className="h-7 px-2 text-xs"
                                       onClick={() => handleEditComponentModel(component)}
                                     >
                                       <LinkIcon className="h-3 w-3 mr-1" />
@@ -772,7 +772,7 @@ export function Machine3DViewerTab({
               </ScrollArea>
 
               {/* Leyenda */}
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t text-[10px] text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t text-xs text-muted-foreground flex-wrap">
                 <div className="flex items-center gap-1">
                   <Box className="h-3 w-3 text-primary" />
                   <span>Modelo cargado</span>
@@ -810,7 +810,7 @@ export function Machine3DViewerTab({
                   <p className="text-xs text-muted-foreground">
                     No hay modelos 3D guardados
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Sube un archivo GLB/GLTF o vincúlalo desde una URL
                   </p>
                 </div>
@@ -834,7 +834,7 @@ export function Machine3DViewerTab({
                         </span>
                       </div>
                       {activeModelUrl === doc.url && (
-                        <Badge variant="default" className="text-[10px]">
+                        <Badge variant="default" className="text-xs">
                           Activo
                         </Badge>
                       )}
@@ -870,7 +870,7 @@ export function Machine3DViewerTab({
                       <source.icon className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">{source.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {source.description}
                         </p>
                       </div>
@@ -1065,7 +1065,7 @@ export function Machine3DViewerTab({
                   value={componentModelUrl}
                   onChange={(e) => setComponentModelUrl(e.target.value)}
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Formatos soportados: GLB, GLTF. Deja vacío para eliminar el modelo actual.
                 </p>
               </div>
@@ -1073,7 +1073,7 @@ export function Machine3DViewerTab({
               {editingComponent?.currentUrl && (
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs font-medium mb-1">Modelo actual:</p>
-                  <p className="text-[10px] text-muted-foreground truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {editingComponent.currentUrl}
                   </p>
                 </div>

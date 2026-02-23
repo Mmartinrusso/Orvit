@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,7 +101,7 @@ export default function HealthScorePage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -234,7 +235,7 @@ export default function HealthScorePage() {
 
                   {machine.healthScoreUpdatedAt && (
                     <p className="text-xs text-muted-foreground">
-                      Actualizado: {new Date(machine.healthScoreUpdatedAt).toLocaleString()}
+                      Actualizado: {formatDateTime(machine.healthScoreUpdatedAt)}
                     </p>
                   )}
                 </div>

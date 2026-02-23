@@ -332,13 +332,13 @@ export function WorkOrdersGrid({
               <div className="flex items-center gap-1.5 flex-wrap mb-3">
                 <Badge
                   variant="outline"
-                  className={cn('text-[10px] px-2 py-0 h-5 border', statusColors[order.status])}
+                  className={cn('text-xs px-2 py-0 h-5 border', statusColors[order.status])}
                 >
                   {statusLabels[order.status]}
                 </Badge>
                 <Badge
                   variant="secondary"
-                  className="text-[10px] px-2 py-0 h-5"
+                  className="text-xs px-2 py-0 h-5"
                 >
                   {priorityLabels[order.priority]}
                 </Badge>

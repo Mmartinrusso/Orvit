@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Package, User, CheckCircle2 } from 'lucide-react';
@@ -141,7 +142,7 @@ export default function TurnosPage() {
                         <div className="flex items-center gap-4 text-sm">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {format(new Date(turno.fecha), 'dd/MM/yyyy')}
+                            {formatDate(turno.fecha)}
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4 text-muted-foreground" />

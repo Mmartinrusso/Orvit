@@ -340,7 +340,7 @@ export function DispatcherView({
       </div>
 
       {/* Resumen compacto */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-lg border bg-card p-3">
           <p className="text-xs text-muted-foreground">Entrantes</p>
           <p className="text-2xl font-bold">{summary?.totalEntrantes || 0}</p>

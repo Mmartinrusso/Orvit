@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePermission } from '@/hooks/use-permissions';
+import { formatDateTime } from '@/lib/date-utils';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import {
   Package,
   Calculator,
@@ -38,6 +39,7 @@ import {
   BarChart3,
   AlertCircle,
   Info,
+  Wallet,
 } from 'lucide-react';
 
 // Import modals
@@ -213,6 +215,15 @@ export default function VentasPage() {
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
 
+  // Liquidaciones pendientes
+  const [liqPendientes, setLiqPendientes] = useState<{ total: number; cantidad: number } | null>(null);
+  useEffect(() => {
+    fetch('/api/ventas/liquidaciones/stats', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.pendientePago) setLiqPendientes(d.pendientePago); })
+      .catch(() => {});
+  }, []);
+
   const { hasPermission: canViewClients } = usePermission('ventas.clientes.view');
   const { hasPermission: canViewProducts } = usePermission('ventas.productos.view');
   const { hasPermission: canViewQuotes } = usePermission('ventas.cotizaciones.view');
@@ -261,7 +272,7 @@ export default function VentasPage() {
   };
 
   const formatPercent = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+    return `${value >= 0 ? '+' : ''}${formatNumber(value, 1)}%`;
   };
 
   if (isLoading) {
@@ -303,7 +314,7 @@ export default function VentasPage() {
             disabled={isFetching}
             className={cn(
               "inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7",
-              "px-2 text-[11px] font-normal gap-1.5",
+              "px-2 text-xs font-normal gap-1.5",
               "hover:bg-muted disabled:opacity-50",
               isFetching && "bg-background shadow-sm"
             )}
@@ -313,6 +324,18 @@ export default function VentasPage() {
           </button>
         </div>
       </div>
+
+      {/* Alerta de Liquidaciones Pendientes */}
+      {liqPendientes && liqPendientes.cantidad > 0 && (
+        <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800 cursor-pointer" onClick={() => router.push('/administracion/ventas/liquidaciones')}>
+          <Wallet className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-700 dark:text-amber-400">
+            <strong>{liqPendientes.cantidad} liquidación{liqPendientes.cantidad > 1 ? 'es' : ''} pendiente{liqPendientes.cantidad > 1 ? 's' : ''} de pago</strong> por un total de{' '}
+            <strong>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(liqPendientes.total)}</strong>.
+            Click para ver detalle.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
@@ -335,12 +358,12 @@ export default function VentasPage() {
           {/* KPI Cards - Grid 1: Main Metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Ventas del Mes */}
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-info-muted">
+            <Card className="bg-primary/5">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-medium text-info-muted-foreground">Ventas del Mes</p>
-                    <p className="text-2xl font-bold mt-1 text-info-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">Ventas del Mes</p>
+                    <p className="text-2xl font-bold mt-1 text-primary">
                       {formatCurrency(data?.kpis.ventasMes || 0)}
                     </p>
                     <div className="flex items-center gap-1 mt-1">
@@ -357,8 +380,8 @@ export default function VentasPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="p-2 rounded-lg bg-info-muted">
-                    <DollarSign className="h-4 w-4 text-info-muted-foreground" />
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <DollarSign className="h-4 w-4 text-primary" />
                   </div>
                 </div>
               </CardContent>
@@ -388,15 +411,15 @@ export default function VentasPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Cobrado este Mes</p>
-                    <p className="text-2xl font-bold mt-1 text-success">
+                    <p className="text-2xl font-bold mt-1">
                       {formatCurrency(data?.kpis.cobranzasMes || 0)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatCurrency(data?.kpis.cobranzasPendientes || 0)} pendiente
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-success-muted">
-                    <CreditCard className="h-4 w-4 text-success" />
+                  <div className="p-2 rounded-lg bg-muted">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -411,8 +434,8 @@ export default function VentasPage() {
                     <p className="text-2xl font-bold mt-1">{data?.kpis.ordenesActivasCount || 0}</p>
                     <p className="text-xs text-muted-foreground mt-1">En preparación/tránsito</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                    <Package className="h-4 w-4 text-purple-600" />
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Package className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -442,11 +465,11 @@ export default function VentasPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Tasa de Conversión</p>
-                    <p className="text-2xl font-bold mt-1">{data?.kpis.tasaConversion.toFixed(1)}%</p>
+                    <p className="text-2xl font-bold mt-1">{formatNumber(data?.kpis.tasaConversion, 1)}%</p>
                     <p className="text-xs text-muted-foreground mt-1">Cotiz. → Ventas</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/20">
-                    <Target className="h-4 w-4 text-cyan-600" />
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Target className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -458,20 +481,20 @@ export default function VentasPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Cumplimiento Entregas</p>
-                    <p className="text-2xl font-bold mt-1 text-success">
-                      {data?.kpis.cumplimientoEntregas.toFixed(0)}%
+                    <p className="text-2xl font-bold mt-1">
+                      {formatNumber(data?.kpis.cumplimientoEntregas, 0)}%
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">On-time delivery</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-success-muted">
-                    <CheckCircle className="h-4 w-4 text-success" />
+                  <div className="p-2 rounded-lg bg-muted">
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Alertas de Riesgo IA */}
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-destructive/30 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('#alerts')}>
+            <Card className="border-destructive/30 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('#alerts')}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
@@ -627,7 +650,7 @@ export default function VentasPage() {
                         <div>
                           <p className="text-sm font-medium">{activity.description}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(activity.timestamp).toLocaleString('es-AR')}
+                            {formatDateTime(activity.timestamp)}
                           </p>
                         </div>
                       </div>
@@ -672,7 +695,7 @@ export default function VentasPage() {
                   <div className="mb-4">
                     <p className="text-sm text-muted-foreground">Demanda Proyectada Total</p>
                     <p className="text-3xl font-bold text-primary">
-                      {data?.mlInsights.demandForecast.nextMonthTotal.toFixed(0)} unidades
+                      {formatNumber(data?.mlInsights.demandForecast.nextMonthTotal, 0)} unidades
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {data?.mlInsights.demandForecast.trend === 'up' ? (
@@ -701,7 +724,7 @@ export default function VentasPage() {
                             </p>
                           </div>
                           <span className="text-sm font-bold text-primary">
-                            {product.forecast.toFixed(0)} un.
+                            {formatNumber(product.forecast, 0)} un.
                           </span>
                         </div>
                       ))}
@@ -766,7 +789,7 @@ export default function VentasPage() {
                 <div className="p-4 rounded-lg bg-success-muted">
                   <p className="text-sm text-muted-foreground">Score Promedio</p>
                   <p className="text-3xl font-bold text-success">
-                    {data?.mlInsights.creditRisk.averageScore.toFixed(0)}
+                    {formatNumber(data?.mlInsights.creditRisk.averageScore, 0)}
                   </p>
                 </div>
               </div>
@@ -846,7 +869,7 @@ export default function VentasPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={churn.churnProbability > 80 ? 'destructive' : 'secondary'}>
-                            {churn.churnProbability.toFixed(0)}% riesgo
+                            {formatNumber(churn.churnProbability, 0)}% riesgo
                           </Badge>
                         </div>
                       </div>
@@ -872,13 +895,13 @@ export default function VentasPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                <div className="p-4 rounded-lg bg-accent-purple-muted">
                   <p className="text-sm text-muted-foreground">Transacciones Sospechosas</p>
                   <p className="text-3xl font-bold text-purple-600">
                     {data?.mlInsights.anomalyDetection.suspiciousTransactions || 0}
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                <div className="p-4 rounded-lg bg-accent-purple-muted">
                   <p className="text-sm text-muted-foreground">Monto Total Marcado</p>
                   <p className="text-2xl font-bold text-purple-600">
                     {formatCurrency(data?.mlInsights.anomalyDetection.flaggedAmount || 0)}
@@ -893,12 +916,12 @@ export default function VentasPage() {
                     data.mlInsights.anomalyDetection.recentAnomalies.map((anomaly, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-3 rounded-lg border border-purple-200 bg-purple-50 dark:bg-purple-900/20"
+                        className="flex items-center justify-between p-3 rounded-lg border border-accent-purple-muted bg-accent-purple-muted"
                       >
                         <div>
                           <p className="text-sm font-medium">{anomaly.description}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(anomaly.timestamp).toLocaleString('es-AR')}
+                            {formatDateTime(anomaly.timestamp)}
                           </p>
                         </div>
                         <Badge variant={anomaly.severity === 'high' ? 'destructive' : 'secondary'}>
@@ -998,7 +1021,7 @@ export default function VentasPage() {
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{client.creditRating}</Badge>
                           <Badge variant={client.churnRisk > 60 ? 'destructive' : 'secondary'}>
-                            {client.churnRisk.toFixed(0)}% churn
+                            {formatNumber(client.churnRisk, 0)}% churn
                           </Badge>
                         </div>
                       </div>

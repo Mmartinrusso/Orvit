@@ -222,7 +222,7 @@ export function TaskListCard({
           <Badge
             variant={dueInfo.tone === "danger" ? "destructive" : "secondary"}
             className={cn(
-              "text-[11px] h-5 px-2 font-normal shrink-0",
+              "text-xs h-5 px-2 font-normal shrink-0",
               dueInfo.tone === "warning" && "bg-warning-muted text-warning-muted-foreground"
             )}
           >
@@ -336,7 +336,7 @@ export function TaskListCard({
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         {/* Subtareas */}
         {hasSubtasks && (
-          <Badge variant="outline" className="text-[11px] h-5 px-2 font-normal">
+          <Badge variant="outline" className="text-xs h-5 px-2 font-normal">
             Subtareas: {completedSubtasks}/{totalSubtasks}
           </Badge>
         )}
@@ -344,11 +344,11 @@ export function TaskListCard({
         {/* Etiquetas */}
         {hasTags && firstTag && (
           <>
-            <Badge variant="secondary" className="text-[11px] h-5 px-2 font-normal">
+            <Badge variant="secondary" className="text-xs h-5 px-2 font-normal">
               {firstTag}
             </Badge>
             {remainingTags > 0 && (
-              <Badge variant="outline" className="text-[11px] h-5 px-2 font-normal">
+              <Badge variant="outline" className="text-xs h-5 px-2 font-normal">
                 +{remainingTags}
               </Badge>
             )}
@@ -364,7 +364,7 @@ export function TaskListCard({
             <span className="text-muted-foreground/70 shrink-0">Supervisor:</span>
             <Avatar className="h-[18px] w-[18px] shrink-0">
               <AvatarImage src={task.requester.avatarUrl || undefined} alt={task.requester.name} />
-              <AvatarFallback className="text-[10px] bg-muted">
+              <AvatarFallback className="text-xs bg-muted">
                 {initials(task.requester.name)}
               </AvatarFallback>
             </Avatar>
@@ -380,7 +380,7 @@ export function TaskListCard({
             <span className="text-muted-foreground/70 shrink-0">Responsable:</span>
             <Avatar className="h-[18px] w-[18px] shrink-0">
               <AvatarImage src={task.assignee.avatarUrl || undefined} alt={task.assignee.name} />
-              <AvatarFallback className="text-[10px] bg-primary/10">
+              <AvatarFallback className="text-xs bg-primary/10">
                 {initials(task.assignee.name)}
               </AvatarFallback>
             </Avatar>

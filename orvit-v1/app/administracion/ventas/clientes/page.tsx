@@ -269,7 +269,7 @@ export default function ClientsPage() {
       <div className="w-full p-0">
         <div className="px-4 md:px-6 pt-4 pb-3">
           <h1 className="text-xl font-semibold text-foreground">Gestión de Clientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">Cargando...</p>
+          <p className="text-sm text-muted-foreground mt-1">Cargando clientes...</p>
         </div>
       </div>
     );
@@ -548,7 +548,7 @@ export default function ClientsPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate">{client.legalName}</span>
                             {client.isBlocked && (
-                              <Badge variant="destructive" className="text-[10px] h-4 px-1.5 shrink-0">
+                              <Badge variant="destructive" className="text-xs h-5 px-1.5 shrink-0">
                                 Bloqueado
                               </Badge>
                             )}

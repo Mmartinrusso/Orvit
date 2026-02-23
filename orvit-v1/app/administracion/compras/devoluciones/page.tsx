@@ -97,9 +97,9 @@ const estadoLabels: Record<string, string> = {
 const estadoColors: Record<string, string> = {
   BORRADOR: 'bg-muted text-foreground',
   SOLICITADA: 'bg-info-muted text-info-muted-foreground',
-  APROBADA_PROVEEDOR: 'bg-purple-100 text-purple-800',
+  APROBADA_PROVEEDOR: 'bg-accent-purple-muted text-accent-purple-muted-foreground',
   ENVIADA: 'bg-warning-muted text-warning-muted-foreground',
-  RECIBIDA_PROVEEDOR: 'bg-cyan-100 text-cyan-800',
+  RECIBIDA_PROVEEDOR: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground',
   EN_EVALUACION: 'bg-warning-muted text-warning-muted-foreground',
   RESUELTA: 'bg-success-muted text-success',
   RECHAZADA: 'bg-destructive/10 text-destructive',

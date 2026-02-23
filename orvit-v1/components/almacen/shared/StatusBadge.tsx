@@ -50,7 +50,7 @@ export function StatusBadge({
       variant="outline"
       className={cn(
         colorClass,
-        size === 'sm' && 'text-[10px] px-1.5 py-0',
+        size === 'sm' && 'text-xs px-1.5 py-0',
         className
       )}
     >

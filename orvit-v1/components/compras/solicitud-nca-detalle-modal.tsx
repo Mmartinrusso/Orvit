@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import {
  Dialog,
  DialogContent,
@@ -24,8 +24,7 @@ import {
  TableHeader,
  TableRow,
 } from '@/components/ui/table';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 import { Send, FileCheck, Loader2, CheckCircle } from 'lucide-react';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { toast } from 'sonner';
@@ -57,7 +56,7 @@ const estadoColors: Record<string, string> = {
  SNCA_APROBADA: 'bg-success-muted text-success-muted-foreground',
  SNCA_PARCIAL: 'bg-warning-muted text-warning-muted-foreground',
  SNCA_RECHAZADA: 'bg-destructive/10 text-destructive',
- SNCA_NCA_RECIBIDA: 'bg-emerald-100 text-emerald-800',
+ SNCA_NCA_RECIBIDA: 'bg-success-muted text-success-muted-foreground',
  SNCA_APLICADA: 'bg-muted text-foreground',
  SNCA_CERRADA: 'bg-muted text-foreground',
  SNCA_CANCELADA: 'bg-destructive/10 text-destructive',
@@ -185,14 +184,14 @@ export function SolicitudNcaDetalleModal({
  <div>
  <Label className="text-xs text-muted-foreground">Fecha Solicitud</Label>
  <p className="font-medium">
- {format(new Date(solicitud.fechaSolicitud), "dd/MM/yyyy HH:mm", { locale: es })}
+ {formatDateTime(solicitud.fechaSolicitud)}
  </p>
  </div>
  {solicitud.fechaEnvio && (
  <div>
  <Label className="text-xs text-muted-foreground">Fecha Envío</Label>
  <p className="font-medium">
- {format(new Date(solicitud.fechaEnvio), "dd/MM/yyyy HH:mm", { locale: es })}
+ {formatDateTime(solicitud.fechaEnvio)}
  </p>
  </div>
  )}
@@ -272,8 +271,8 @@ export function SolicitudNcaDetalleModal({
  <TableCell>{item.descripcion}</TableCell>
  <TableCell className="text-right">{item.cantidadFacturada} {item.unidad}</TableCell>
  <TableCell className="text-right">{item.cantidadSolicitada} {item.unidad}</TableCell>
- <TableCell className="text-right">${Number(item.precioUnitario).toFixed(2)}</TableCell>
- <TableCell className="text-right">${Number(item.subtotal).toFixed(2)}</TableCell>
+ <TableCell className="text-right">${formatNumber(Number(item.precioUnitario), 2)}</TableCell>
+ <TableCell className="text-right">${formatNumber(Number(item.subtotal), 2)}</TableCell>
  </TableRow>
  ))}
  </TableBody>
@@ -291,7 +290,7 @@ export function SolicitudNcaDetalleModal({
  <p className="mt-1">{solicitud.respuestaProveedor}</p>
  {solicitud.fechaRespuesta && (
  <p className="text-xs text-muted-foreground mt-2">
- {format(new Date(solicitud.fechaRespuesta), "dd/MM/yyyy HH:mm", { locale: es })}
+ {formatDateTime(solicitud.fechaRespuesta)}
  </p>
  )}
  </div>

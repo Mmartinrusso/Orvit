@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +71,7 @@ export default function FlujoCajaPage() {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
@@ -188,7 +189,7 @@ export default function FlujoCajaPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Posición Actual</CardTitle>
@@ -247,7 +248,7 @@ export default function FlujoCajaPage() {
               {formatCurrency(saldoProyectado)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Al {proyeccionDiaria[proyeccionDiaria.length - 1]?.fecha.toLocaleDateString('es-AR')}
+              Al {formatDate(proyeccionDiaria[proyeccionDiaria.length - 1]?.fecha)}
             </p>
           </CardContent>
         </Card>
@@ -350,7 +351,7 @@ export default function FlujoCajaPage() {
                         +{formatCurrency(Number(cheque.importe))}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(cheque.fechaVencimiento).toLocaleDateString('es-AR')}
+                        {formatDate(cheque.fechaVencimiento)}
                       </p>
                     </div>
                   </div>
@@ -388,7 +389,7 @@ export default function FlujoCajaPage() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {factura.fechaVencimiento
-                          ? new Date(factura.fechaVencimiento).toLocaleDateString('es-AR')
+                          ? formatDate(factura.fechaVencimiento)
                           : 'Sin fecha'}
                       </p>
                     </div>

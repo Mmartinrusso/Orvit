@@ -84,7 +84,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import ComprobanteFormModal from '@/components/compras/comprobante-form-modal';
 import { CargarRemitoDesdeFacturaModal } from '@/components/compras/cargar-remito-desde-factura-modal';
 import { NcaFromFacturaModal } from '@/components/compras/nca-from-factura-modal';
@@ -940,7 +940,7 @@ export default function ComprobantesPage() {
     const iva21 = iva21Manual
       ? (parseFloat(data.iva21) || 0)
       : neto > 0
-        ? parseFloat((neto * 0.21).toFixed(2))
+        ? parseFloat(formatNumber(neto * 0.21, 2))
         : 0;
     const noGravado = parseFloat(data.noGravado) || 0;
     const impInter = parseFloat(data.impInter) || 0;
@@ -1404,7 +1404,7 @@ export default function ComprobantesPage() {
     };
 
     return (
-      <Badge variant={variants[estado] || 'outline'} className="text-[10px] px-1.5 py-0">
+      <Badge variant={variants[estado] || 'outline'} className="text-xs px-1.5 py-0">
         {labels[estado] || estado}
       </Badge>
     );
@@ -1592,7 +1592,7 @@ export default function ComprobantesPage() {
   return (
     <div className="w-full p-0">
       {/* Header */}
-      <div className="px-4 md:px-6 pt-4 pb-3">
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
             <h1 className="text-xl font-semibold text-foreground">Carga de Comprobantes</h1>
@@ -1616,13 +1616,13 @@ export default function ComprobantesPage() {
         <div className="flex flex-col gap-3">
           {/* Primera fila: Búsqueda + Selectores */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 h-8 text-sm"
+                className="pl-8 h-8 text-xs"
               />
             </div>
 
@@ -1759,7 +1759,7 @@ export default function ComprobantesPage() {
       </div>
 
       {/* Tabla de Comprobantes */}
-      <div className="px-4 md:px-6 pb-6">
+      <div className="px-4 md:px-6 pt-4 pb-6">
         {filteredComprobantes.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-xl bg-muted/50 border border-dashed border-border flex items-center justify-center mx-auto mb-4">
@@ -1853,18 +1853,18 @@ export default function ComprobantesPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{comprobante.tipo}</Badge>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0">{comprobante.tipo}</Badge>
                       </TableCell>
                       <TableCell>
                         <p className="text-xs font-medium truncate max-w-[150px]">{comprobante.proveedorNombre}</p>
-                        <p className="text-[10px] text-muted-foreground">{comprobante.proveedorCuit}</p>
+                        <p className="text-xs text-muted-foreground">{comprobante.proveedorCuit}</p>
                       </TableCell>
                       <TableCell className="text-xs">{formatDate(comprobante.fechaEmision)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {comprobante.fechaVencimiento ? formatDate(comprobante.fechaVencimiento) : '-'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={comprobante.tipoPago === 'contado' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                        <Badge variant={comprobante.tipoPago === 'contado' ? 'default' : 'secondary'} className="text-xs px-1.5 py-0">
                           {comprobante.tipoPago === 'contado' ? 'Contado' : 'Cta Cte'}
                         </Badge>
                       </TableCell>
@@ -1872,17 +1872,17 @@ export default function ComprobantesPage() {
                       <TableCell>{getEstadoBadge(comprobante.estado)}</TableCell>
                       <TableCell className="text-center">
                         {comprobante.remitoEstado === 'confirmado' ? (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success-muted text-success border-success-muted">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 bg-success-muted text-success border-success-muted">
                             <Package className="w-3 h-3 mr-1" />
                             Confirmado
                           </Badge>
                         ) : comprobante.remitoEstado === 'borrador' ? (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-info-muted text-info-muted-foreground border-info-muted">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 bg-info-muted text-info-muted-foreground border-info-muted">
                             <Package className="w-3 h-3 mr-1" />
                             Borrador
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-warning-muted text-warning-muted-foreground border-warning-muted">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 bg-warning-muted text-warning-muted-foreground border-warning-muted">
                             <Truck className="w-3 h-3 mr-1" />
                             Sin remito
                           </Badge>

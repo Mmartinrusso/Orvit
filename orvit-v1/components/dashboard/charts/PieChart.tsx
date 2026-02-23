@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 export interface PieChartData {
   label: string;
@@ -116,7 +116,7 @@ export function PieChart({
               </span>
               {showPercentages && (
                 <span className="text-xs font-medium text-foreground">
-                  {slice.percentage.toFixed(0)}%
+                  {formatNumber(slice.percentage, 0)}%
                 </span>
               )}
             </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -88,7 +89,7 @@ export function ExportButton({ data, filename = 'costos-productos' }: ExportButt
           product.cost_breakdown.indirect_costs,
           product.cost_breakdown.employee_costs,
           product.cost_breakdown.total,
-          margin.toFixed(2)
+          formatNumber(margin, 2)
         ];
       });
 

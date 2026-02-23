@@ -189,7 +189,7 @@ export function WorkstationsTable({
               <TableCell className="text-xs">
                 <div>
                   <div className="font-medium">{workstation.name}</div>
-                  <div className="text-muted-foreground text-[11px]">
+                  <div className="text-muted-foreground text-xs">
                     {workstation.code}
                   </div>
                 </div>
@@ -197,7 +197,7 @@ export function WorkstationsTable({
               <TableCell>
                 <Badge
                   variant="outline"
-                  className={cn('text-[10px] px-2 py-0.5 h-5 border', statusColors[workstation.status])}
+                  className={cn('text-xs px-2 py-0.5 h-5 border', statusColors[workstation.status])}
                 >
                   {statusLabels[workstation.status] || workstation.status}
                 </Badge>

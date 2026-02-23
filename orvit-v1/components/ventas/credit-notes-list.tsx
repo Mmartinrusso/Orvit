@@ -74,8 +74,7 @@ import {
   FileX,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { formatCurrency } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
@@ -299,7 +298,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -534,7 +533,7 @@ export function CreditNotesList({ viewMode = 'S' }: CreditNotesListProps) {
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {format(new Date(note.fecha), 'dd/MM/yyyy', { locale: es })}
+                        {formatDate(note.fecha)}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         {MOTIVO_LABELS[note.motivo] || note.motivo}

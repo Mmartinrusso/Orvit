@@ -468,7 +468,7 @@ export function CotizacionesList({
     const config = ESTADOS_CONFIG[(estado || 'BORRADOR') as EstadoCotizacion] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
+      <Badge className={cn(config.color, 'border text-xs px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -559,7 +559,7 @@ export function CotizacionesList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.borradores}</p>
-                  <p className="text-[10px] text-muted-foreground">Borradores</p>
+                  <p className="text-xs text-muted-foreground">Borradores</p>
                 </div>
               </div>
             </CardContent>
@@ -576,7 +576,7 @@ export function CotizacionesList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.enviadas}</p>
-                  <p className="text-[10px] text-muted-foreground">Enviadas</p>
+                  <p className="text-xs text-muted-foreground">Enviadas</p>
                 </div>
               </div>
             </CardContent>
@@ -593,7 +593,7 @@ export function CotizacionesList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.aceptadas}</p>
-                  <p className="text-[10px] text-muted-foreground">Aceptadas</p>
+                  <p className="text-xs text-muted-foreground">Aceptadas</p>
                 </div>
               </div>
             </CardContent>
@@ -610,7 +610,7 @@ export function CotizacionesList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.perdidas}</p>
-                  <p className="text-[10px] text-muted-foreground">Perdidas</p>
+                  <p className="text-xs text-muted-foreground">Perdidas</p>
                 </div>
               </div>
             </CardContent>
@@ -627,7 +627,7 @@ export function CotizacionesList({
                 </div>
                 <div>
                   <p className="text-xl font-bold text-warning-muted-foreground">{kpis.vencidas}</p>
-                  <p className="text-[10px] text-muted-foreground">Vencidas</p>
+                  <p className="text-xs text-muted-foreground">Vencidas</p>
                 </div>
               </div>
             </CardContent>
@@ -785,7 +785,7 @@ export function CotizacionesList({
                       <TableCell className="text-xs">
                         <div className={vencida ? 'text-destructive font-medium' : ''}>
                           {cot.fechaValidez ? format(new Date(cot.fechaValidez), 'dd/MM/yy', { locale: es }) : '-'}
-                          {vencida && <span className="ml-1 text-[10px]">({Math.abs(diasVenc!)}d)</span>}
+                          {vencida && <span className="ml-1 text-xs">({Math.abs(diasVenc!)}d)</span>}
                         </div>
                       </TableCell>
                       <TableCell>{getEstadoBadge(cot.estado)}</TableCell>

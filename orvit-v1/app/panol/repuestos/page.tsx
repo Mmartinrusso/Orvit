@@ -481,10 +481,10 @@ export default function RepuestosPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">Críticos</p>
-                    <p className="text-2xl font-bold mt-1 text-purple-600">{kpis.critical}</p>
+                    <p className="text-2xl font-bold mt-1 text-accent-purple-muted-foreground">{kpis.critical}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                    <ShieldAlert className="h-4 w-4 text-purple-600" />
+                  <div className="p-2 rounded-lg bg-accent-purple-muted">
+                    <ShieldAlert className="h-4 w-4 text-accent-purple-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -605,7 +605,7 @@ export default function RepuestosPage() {
                           {part.isCritical && (
                             <Tooltip>
                               <TooltipTrigger>
-                                <ShieldAlert className="h-4 w-4 text-purple-600" />
+                                <ShieldAlert className="h-4 w-4 text-accent-purple-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>Repuesto crítico</TooltipContent>
                             </Tooltip>
@@ -761,7 +761,7 @@ export default function RepuestosPage() {
                 )}
                 <div className="flex items-center gap-2">
                   {selectedPart.isCritical && (
-                    <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30">
+                    <Badge className="bg-accent-purple-muted text-accent-purple-muted-foreground">
                       <ShieldAlert className="h-3 w-3 mr-1" />
                       Crítico
                     </Badge>
@@ -986,7 +986,7 @@ function SparePartForm({ formData, setFormData, onSubmit, onCancel, submitting, 
               onCheckedChange={(checked) => setFormData({ ...formData, isCritical: !!checked })}
             />
             <Label htmlFor="isCritical" className="cursor-pointer flex items-center gap-1">
-              <ShieldAlert className="h-4 w-4 text-purple-600" />
+              <ShieldAlert className="h-4 w-4 text-accent-purple-muted-foreground" />
               Repuesto Crítico
             </Label>
           </div>

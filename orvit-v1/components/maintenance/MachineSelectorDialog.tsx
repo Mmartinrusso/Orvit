@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,14 +97,7 @@ export default function MachineSelectorDialog({
  }
  };
 
- const formatDate = (dateString?: string) => {
- if (!dateString) return 'No programado';
- try {
- return new Date(dateString).toLocaleDateString('es-AR');
- } catch {
- return 'Fecha inválida';
- }
- };
+ // formatDate available from @/lib/date-utils if needed
 
  return (
  <Dialog open={isOpen} onOpenChange={onClose}>

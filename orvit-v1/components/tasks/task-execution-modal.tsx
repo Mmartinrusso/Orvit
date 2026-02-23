@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatNumber } from '@/lib/utils';
 import { Clock, FileText, CheckCircle, Upload, X, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -70,7 +70,7 @@ function getPriorityColor(priority: string) {
   switch (priority) {
     case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
     case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
-    case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/50';
+    case 'baja': return 'bg-success-muted text-success-muted-foreground border-success-muted';
     default: return 'bg-muted text-muted-foreground border-border';
   }
 }
@@ -272,7 +272,7 @@ export function TaskExecutionModal({
                         <FileText className="h-4 w-4 text-primary" />
                         <span className="text-sm text-foreground">{file.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          ({(file.size / 1024).toFixed(1)} KB)
+                          ({formatNumber(file.size / 1024, 1)} KB)
                         </span>
                       </div>
                       <Button

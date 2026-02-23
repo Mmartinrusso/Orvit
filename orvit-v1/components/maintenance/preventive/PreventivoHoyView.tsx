@@ -10,13 +10,13 @@ import {
  Clock,
  AlertTriangle,
  CheckCircle,
+  Check,
  Calendar as CalendarIcon,
  Wrench,
  Building,
  Cog,
  Settings,
  User,
- PlayCircle,
  SquarePen,
  Trash2,
  Copy,
@@ -27,9 +27,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
-import { useMaintenancePending } from '@/hooks/maintenance';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useMaintenancePending } from '@/hooks/mantenimiento';
+import { formatDate } from '@/lib/date-utils';
 import { stripHtmlTags } from '@/lib/utils';
 import {
  getPriorityLabel,
@@ -46,16 +45,6 @@ interface PreventivoHoyViewProps {
  onDeleteMaintenance?: (maintenance: any) => void;
  onDuplicateMaintenance?: (maintenance: any) => void;
 }
-
-const formatDate = (dateString: string) => {
- try {
- const date = new Date(dateString);
- if (isNaN(date.getTime())) return 'Sin fecha';
- return format(date, 'dd/MM/yyyy', { locale: es });
- } catch {
- return 'Sin fecha';
- }
-};
 
 /**
  * Calcula el badge SLA para mantenimientos preventivos.
@@ -661,7 +650,7 @@ function MaintenanceCard({
  if (!sla) return null;
  return (
  <span className={cn(
- 'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0',
+ 'inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border shrink-0',
  sla.className
  )}>
  <Clock className="h-2.5 w-2.5" />
@@ -786,7 +775,7 @@ function MaintenanceCard({
  }}
  title="Realizar mantenimiento"
  >
- <PlayCircle className="h-3.5 w-3.5" />
+ <Check className="h-4 w-4" />
  </Button>
  )}
  {onDelete && (

@@ -239,7 +239,7 @@ export default function SuperAdminLayout({
                     {isSidebarOpen && (
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sidebar-foreground">ORVIT</span>
-                        <Badge variant="outline" className="text-[10px] border-primary/50 text-primary">
+                        <Badge variant="outline" className="text-xs border-primary/50 text-primary">
                           SuperAdmin
                         </Badge>
                       </div>
@@ -256,7 +256,7 @@ export default function SuperAdminLayout({
                     <div className="space-y-4">
                       {navSections.map((section) => (
                         <div key={section.title}>
-                          <h3 className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+                          <h3 className="px-2 mb-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
                             {section.title}
                           </h3>
                           <ul className="flex flex-col gap-0.5">
@@ -280,7 +280,7 @@ export default function SuperAdminLayout({
                                     {item.badge && (
                                       <Badge
                                         variant="secondary"
-                                        className="text-[10px] bg-primary/20 text-primary border-0"
+                                        className="text-xs bg-primary/20 text-primary border-0"
                                       >
                                         {item.badge}
                                       </Badge>
@@ -333,10 +333,10 @@ export default function SuperAdminLayout({
                         <Database className="h-4 w-4 text-primary" />
                         <span className="text-xs font-medium text-sidebar-foreground">Sistema</span>
                       </div>
-                      <p className="text-[10px] text-sidebar-foreground/60">
+                      <p className="text-xs text-sidebar-foreground/60">
                         PostgreSQL conectado
                       </p>
-                      <p className="text-[10px] text-sidebar-foreground/60">
+                      <p className="text-xs text-sidebar-foreground/60">
                         v1.0.0
                       </p>
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,7 @@ const formatCurrency = (value: number): string => {
 };
 
 const formatPercent = (value: number): string => {
-  return value.toFixed(1) + '%';
+  return formatNumber(value, 1) + '%';
 };
 
 // Colores para el gráfico de torta
@@ -251,7 +251,7 @@ export function ConsolidatedDashboardV2({
         ) : (
           <>
             {/* KPIs principales */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Total Ingresos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -436,7 +436,7 @@ function SourceBadge({ source }: { source: string }) {
   return (
     <Tooltip>
       <TooltipTrigger>
-        <Badge variant="outline" className="text-[10px] font-normal">
+        <Badge variant="outline" className="text-xs font-normal">
           {source}
         </Badge>
       </TooltipTrigger>
@@ -509,7 +509,7 @@ function DashboardSkeleton() {
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-10 w-32" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i}>
             <CardHeader className="pb-2">

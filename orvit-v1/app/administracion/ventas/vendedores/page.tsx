@@ -21,8 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Plus, Edit, Trash2, Search, DollarSign, Target, TrendingUp, Mail, Phone, MapPin } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { User, Plus, Edit, Trash2, Search, DollarSign, Target, TrendingUp, Mail, Phone, MapPin, Eye, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { formatCurrency, cn, formatNumber } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
@@ -41,6 +42,7 @@ interface Vendedor {
 }
 
 export default function VendedoresPage() {
+  const router = useRouter();
   const confirm = useConfirm();
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,26 +182,38 @@ export default function VendedoresPage() {
   const avgComision = vendedores.length > 0
     ? vendedores.reduce((sum, v) => sum + v.comision, 0) / vendedores.length
     : 0;
+  const vendedoresConCuota = vendedores.filter(v => v.isActive && v.cuotaMensual > 0);
+  const avgCumplimiento = vendedoresConCuota.length > 0
+    ? vendedoresConCuota.reduce((sum, v) => sum + Math.min((v.ventasMes / v.cuotaMensual) * 100, 100), 0) / vendedoresConCuota.length
+    : 0;
+  const bajoCuotaCount = vendedoresConCuota.filter(v => (v.ventasMes / v.cuotaMensual) < 0.7).length;
 
   return (
     <PermissionGuard permission="ventas.config.edit">
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="w-full p-0">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Vendedores</h1>
-            <p className="text-sm md:text-base text-muted-foreground">
-              Gestión del equipo de ventas
-            </p>
+        <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Vendedores</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Gestión del equipo de ventas
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Vendedor
+              </Button>
+            </div>
           </div>
-          <Button onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Vendedor
-          </Button>
         </div>
 
+        {/* Content with padding */}
+        <div className="px-4 md:px-6 pt-4 space-y-4">
+
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -234,12 +248,12 @@ export default function VendedoresPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgComision.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">{formatNumber(avgComision, 1)}%</div>
               <p className="text-xs text-muted-foreground">Promedio de comisiones</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(bajoCuotaCount > 0 && "border-amber-300")}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-purple-600" />
@@ -247,8 +261,18 @@ export default function VendedoresPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">85%</div>
-              <p className="text-xs text-muted-foreground">Cumplimiento de cuotas</p>
+              <div className={cn(
+                "text-2xl font-bold",
+                avgCumplimiento >= 100 ? "text-success-muted-foreground" : avgCumplimiento >= 70 ? "text-amber-600" : "text-red-600"
+              )}>
+                {Math.round(avgCumplimiento)}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {bajoCuotaCount > 0
+                  ? <span className="text-amber-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{bajoCuotaCount} bajo cuota</span>
+                  : 'Cumplimiento de cuotas'
+                }
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -303,12 +327,22 @@ export default function VendedoresPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredVendedores.map((vendedor) => (
-                  <TableRow key={vendedor.id}>
+                {filteredVendedores.map((vendedor) => {
+                  const pctCuota = vendedor.cuotaMensual > 0 ? (vendedor.ventasMes / vendedor.cuotaMensual) * 100 : 100;
+                  const alertaCuota = vendedor.isActive && vendedor.cuotaMensual > 0 && pctCuota < 70;
+                  const cuotaColor = pctCuota >= 100 ? '#10b981' : pctCuota >= 70 ? '#f59e0b' : '#ef4444';
+                  return (
+                  <TableRow key={vendedor.id} className={cn(alertaCuota && "bg-red-50/50 dark:bg-red-950/10")}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-info-muted flex items-center justify-center">
-                          <User className="w-4 h-4 text-info-muted-foreground" />
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center",
+                          alertaCuota ? "bg-red-100 dark:bg-red-950/30" : "bg-info-muted"
+                        )}>
+                          {alertaCuota
+                            ? <AlertTriangle className="w-4 h-4 text-red-500" />
+                            : <User className="w-4 h-4 text-info-muted-foreground" />
+                          }
                         </div>
                         <div className="font-medium">{vendedor.nombre}</div>
                       </div>
@@ -337,7 +371,29 @@ export default function VendedoresPage() {
                     </TableCell>
                     <TableCell>{vendedor.comision}%</TableCell>
                     <TableCell className="text-right">{formatCurrency(vendedor.cuotaMensual)}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(vendedor.ventasMes)}</TableCell>
+                    <TableCell className="text-right">
+                      <div>
+                        <span className={cn("font-medium", alertaCuota && "text-red-600")}>
+                          {formatCurrency(vendedor.ventasMes)}
+                        </span>
+                        {vendedor.cuotaMensual > 0 && (
+                          <div className="mt-1">
+                            <div className="flex items-center justify-end gap-1 mb-0.5">
+                              {alertaCuota && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                              <span className="text-xs" style={{ color: cuotaColor }}>
+                                {Math.round(pctCuota)}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{ width: `${Math.min(pctCuota, 100)}%`, backgroundColor: cuotaColor }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={vendedor.isActive ? 'default' : 'secondary'}>
                         {vendedor.isActive ? 'Activo' : 'Inactivo'}
@@ -345,6 +401,14 @@ export default function VendedoresPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Ver resumen"
+                          onClick={() => router.push(`/administracion/ventas/vendedores/${vendedor.id}`)}
+                        >
+                          <Eye className="w-4 h-4 text-blue-600" />
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(vendedor)}>
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -354,11 +418,14 @@ export default function VendedoresPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
+
+        </div>{/* end content with padding */}
 
         {/* Create/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

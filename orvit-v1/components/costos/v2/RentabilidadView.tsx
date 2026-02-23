@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,7 +104,7 @@ const formatCurrency = (value: number): string =>
 const formatUnitCost = (value: number): string =>
   (value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const formatPercent = (value: number): string => (value ?? 0).toFixed(1) + '%';
+const formatPercent = (value: number): string => formatNumber(value ?? 0, 1) + '%';
 
 // Mini sparkline — gradient IDs prefixed with 'rent-' to avoid conflicts
 function Sparkline({ data, color, height = 40 }: { data: { value: number }[]; color: string; height?: number }) {
@@ -225,7 +225,7 @@ export function RentabilidadView({ colors, month: initialMonth }: RentabilidadVi
         .slice(0, 8)
         .map((p: ProductRow) => ({
           name: (p.productName || '—').slice(0, 14),
-          margen: Number(p.marginPercent.toFixed(1)),
+          margen: Number(formatNumber(p.marginPercent, 1)),
         })),
     [data]
   );
@@ -577,7 +577,7 @@ export function RentabilidadView({ colors, month: initialMonth }: RentabilidadVi
                             <div className="bg-background border rounded-lg p-2 shadow-md text-xs">
                               <p className="font-medium mb-1">{label}</p>
                               <p style={{ color: payload[0].value >= marginThreshold ? colors.kpiPositive : colors.kpiNegative }}>
-                                Margen: {Number(payload[0].value).toFixed(1)}%
+                                Margen: {formatNumber(Number(payload[0].value), 1)}%
                               </p>
                             </div>
                           );
@@ -819,7 +819,7 @@ export function RentabilidadView({ colors, month: initialMonth }: RentabilidadVi
                       <Sparkline data={t.history} color={t.color} height={40} />
                       <p className="text-base font-bold mt-1">{t.formatted}</p>
                       <p className="text-xs" style={{ color: deltaColor }}>
-                        {isPositiveDelta ? '+' : ''}{t.delta.toFixed(1)}% vs mes anterior
+                        {isPositiveDelta ? '+' : ''}{formatNumber(t.delta, 1)}% vs mes anterior
                       </p>
                     </CardContent>
                   </Card>
@@ -896,7 +896,7 @@ export function RentabilidadView({ colors, month: initialMonth }: RentabilidadVi
                               <p className="text-xs text-muted-foreground">{p.categoryName}</p>
                             )}
                             {!p.hasRecipe && (
-                              <Badge variant="outline" className="text-[10px] mt-0.5 text-warning-muted-foreground border-warning-muted">
+                              <Badge variant="outline" className="text-xs mt-0.5 text-warning-muted-foreground border-warning-muted">
                                 Sin receta
                               </Badge>
                             )}

@@ -690,7 +690,7 @@ export function ProductTable() {
                               <span className="text-sm">{product.currentStock}</span>
                               <span className="text-xs text-muted-foreground">{product.unit}</span>
                               {product.currentStock <= product.minStock && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Bajo</Badge>
+                                <Badge variant="destructive" className="text-xs px-1.5 py-0">Bajo</Badge>
                               )}
                             </div>
                           </TableCell>

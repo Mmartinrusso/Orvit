@@ -1,7 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell } from 'recharts';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface SemiGaugeProps {
   /** Porcentaje a mostrar (0-100). Se trunca automáticamente al rango. */
@@ -91,7 +91,7 @@ export function SemiGauge({
 
       {/* Valor — justo debajo de la línea plana, sin superposición */}
       <p className={cn('font-bold leading-none mt-1', dims.textSize)}>
-        {displayValue ?? `${capped.toFixed(1)}%`}
+        {displayValue ?? `${formatNumber(capped, 1)}%`}
       </p>
 
       {/* Etiqueta y meta */}

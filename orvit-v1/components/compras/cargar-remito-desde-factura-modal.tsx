@@ -394,7 +394,7 @@ export function CargarRemitoDesdeFacturaModal({
  {isLoading ? (
  <DialogBody className="flex items-center justify-center py-12">
  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
- <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+ <span className="ml-2 text-muted-foreground">Cargando factura...</span>
  </DialogBody>
  ) : (
  <DialogBody className="space-y-6">

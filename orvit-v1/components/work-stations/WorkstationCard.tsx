@@ -146,7 +146,7 @@ export function WorkstationCard({
           <div className="flex items-center gap-1 shrink-0">
             <Badge
               variant="outline"
-              className={cn('text-[10px] px-2 py-0 h-5 border shrink-0', statusColors[workstation.status])}
+              className={cn('text-xs px-2 py-0 h-5 border shrink-0', statusColors[workstation.status])}
             >
               {statusLabels[workstation.status] || workstation.status}
             </Badge>

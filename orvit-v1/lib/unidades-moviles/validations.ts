@@ -51,7 +51,8 @@ export const createUnidadMovilSchema = z.object({
     .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable()),
   combustible: z.string().max(30).optional().default(''),
   capacidadCombustible: z.number().int().min(0).optional().nullable(),
-  consumoPromedio: z.number().min(0).optional().nullable()
+  consumoPromedio: z.number().min(0).optional().nullable(),
+  kmUpdateFrequencyDays: z.number().int().min(1).max(365).optional().nullable() // Cada cuántos días registrar km
 });
 
 export const updateUnidadMovilSchema = createUnidadMovilSchema.partial().extend({

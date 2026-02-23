@@ -8,7 +8,7 @@ export default function ProduccionLoading() {
           <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           <Settings className="h-5 w-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
         </div>
-        <p className="text-sm text-muted-foreground">Cargando...</p>
+        <p className="text-sm text-muted-foreground">Cargando producción...</p>
       </div>
     </div>
   );

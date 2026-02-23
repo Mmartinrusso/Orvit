@@ -668,6 +668,8 @@ export default function OrdenesTrabajo() {
             {/* V2: Barra de vistas guardadas (presets) - siempre visible */}
             <WorkOrdersSavedViewsBar workOrders={workOrders} />
 
+            <div className="border-t border-border" />
+
             {/* Vista Lista: KPIs, filtros y grid/tabla */}
             {currentView === 'lista' && (
               <>
@@ -676,6 +678,8 @@ export default function OrdenesTrabajo() {
                   activeFilter={filters.status === null && filters.assignee === 'unassigned' ? 'UNASSIGNED' : filters.status}
                   onFilterClick={handleStatusFilterClick}
                 />
+
+                <div className="border-t border-border" />
 
                 <WorkOrdersFiltersBar
                   filters={filters}

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -129,7 +130,7 @@ export function SaleModal({
 
     return {
       subtotal: subtotal.toFixed(2),
-      taxes: taxes.toFixed(2),
+      taxes: formatNumber(taxes, 2),
       total: total.toFixed(2)
     };
   }, [watchedItems, products]);
@@ -385,7 +386,7 @@ export function SaleModal({
                   </div>
                   <div>
                     <p className="font-medium">Total:</p>
-                    <p>${fromQuote.total.toFixed(2)}</p>
+                    <p>${formatNumber(fromQuote.total, 2)}</p>
                   </div>
                   <div>
                     <p className="font-medium">Estado:</p>

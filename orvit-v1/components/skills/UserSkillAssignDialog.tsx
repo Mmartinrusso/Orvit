@@ -171,7 +171,7 @@ export function UserSkillAssignDialog({
             {skillsLoading ? (
               <div className="flex items-center gap-2 p-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">Cargando...</span>
+                <span className="text-sm text-muted-foreground">Cargando habilidades...</span>
               </div>
             ) : availableSkills.length === 0 ? (
               <Alert>

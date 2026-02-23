@@ -15,7 +15,7 @@ import {
   Bell,
   BellOff,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ProductWithLowStock {
   id: string;
@@ -293,7 +293,7 @@ export function StockAlertsPanel({
                         />
                       </div>
                       <p className="text-xs mt-1 text-right">
-                        {product.percentageOfMin.toFixed(0)}% del minimo
+                        {formatNumber(product.percentageOfMin, 0)}% del minimo
                       </p>
                     </div>
                   </div>

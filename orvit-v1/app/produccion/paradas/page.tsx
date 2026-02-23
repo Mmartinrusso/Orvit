@@ -69,7 +69,7 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import { toast } from 'sonner';
 import { format, subDays, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import NewDowntimeForm from '@/components/production/NewDowntimeForm';
+import NewDowntimeForm from '@/components/produccion/NewDowntimeForm';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface Downtime {
@@ -255,32 +255,30 @@ export default function DowntimesPage() {
   };
 
   return (
-    <div className="px-4 md:px-6 py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#ef444415' }}>
-              <AlertTriangle className="h-5 w-5" style={{ color: '#ef4444' }} />
-            </div>
-            Paradas de Producción
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Registro y análisis de paradas</p>
-        </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => fetchDowntimes()} disabled={loading} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          {canCreate && (
-            <Button size="sm" onClick={() => setShowNewDialog(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nueva Parada
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Paradas de Producción</h1>
+            <p className="text-sm text-muted-foreground mt-1">Registro y análisis de paradas</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => fetchDowntimes()} disabled={loading} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
             </Button>
-          )}
+            {canCreate && (
+              <Button size="sm" onClick={() => setShowNewDialog(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nueva Parada
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+
+      <div className="px-4 md:px-6 space-y-6">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -583,6 +581,7 @@ export default function DowntimesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }

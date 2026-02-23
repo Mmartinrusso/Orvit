@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { AlertTriangle, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -105,7 +105,7 @@ export function MarginIndicator({
             <div className="flex flex-col">
               {showPercentage && (
                 <span className="font-bold">
-                  {margin >= 0 ? '+' : ''}{margin.toFixed(1)}%
+                  {margin >= 0 ? '+' : ''}{formatNumber(margin, 1)}%
                 </span>
               )}
               {currencyWarning && (
@@ -120,10 +120,10 @@ export function MarginIndicator({
           <div className="space-y-2">
             <p className="font-medium">{statusMessage}</p>
             <div className="text-sm space-y-1">
-              <p>Costo: {costCurrency} {costPrice.toFixed(2)}</p>
-              <p>Venta: {saleCurrency} {salePrice.toFixed(2)}</p>
-              <p>Ganancia: {saleCurrency} {marginAmount.toFixed(2)}</p>
-              <p>Margen: {margin.toFixed(2)}%</p>
+              <p>Costo: {costCurrency} {formatNumber(costPrice, 2)}</p>
+              <p>Venta: {saleCurrency} {formatNumber(salePrice, 2)}</p>
+              <p>Ganancia: {saleCurrency} {formatNumber(marginAmount, 2)}</p>
+              <p>Margen: {formatNumber(margin, 2)}%</p>
               {marginMin !== undefined && (
                 <p className="text-muted-foreground">Mínimo: {marginMin}%</p>
               )}
@@ -165,7 +165,7 @@ export function MarginValue({
         className
       )}
     >
-      {margin >= 0 ? '+' : ''}{margin.toFixed(1)}%
+      {margin >= 0 ? '+' : ''}{formatNumber(margin, 1)}%
     </span>
   );
 }
@@ -249,7 +249,7 @@ export function MarginBar({
         style={{ left: `${Math.min(currentPos, 85)}%` }}
       >
         <span className="text-xs font-bold text-white drop-shadow-sm">
-          {current.toFixed(0)}%
+          {formatNumber(current, 0)}%
         </span>
       </div>
     </div>

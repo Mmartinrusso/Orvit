@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -254,7 +255,7 @@ export function StockLocationPicker({
             <p className="font-medium">{supplierItemName}</p>
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
               <span>Necesario: <strong className="text-foreground">{quantityNeeded}</strong></span>
-              <span>Disponible: <strong className={totalAvailable >= quantityNeeded ? 'text-success' : 'text-destructive'}>{totalAvailable.toFixed(2)}</strong></span>
+              <span>Disponible: <strong className={totalAvailable >= quantityNeeded ? 'text-success' : 'text-destructive'}>{formatNumber(totalAvailable, 2)}</strong></span>
             </div>
           </div>
 
@@ -351,7 +352,7 @@ export function StockLocationPicker({
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {loc.disponible.toFixed(2)}
+                        {formatNumber(loc.disponible, 2)}
                       </TableCell>
                       {pickMethod === 'MANUAL' ? (
                         <TableCell>
@@ -370,7 +371,7 @@ export function StockLocationPicker({
                         <TableCell className="text-right">
                           {autoSelection ? (
                             <span className="font-mono text-primary font-medium">
-                              {autoSelection.quantity.toFixed(2)}
+                              {formatNumber(autoSelection.quantity, 2)}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">-</span>
@@ -395,7 +396,7 @@ export function StockLocationPicker({
               <span>
                 Total seleccionado:{' '}
                 <strong className={isComplete ? 'text-success' : 'text-warning-muted-foreground'}>
-                  {totalSelected.toFixed(2)}
+                  {formatNumber(totalSelected, 2)}
                 </strong>{' '}
                 de {quantityNeeded}
               </span>

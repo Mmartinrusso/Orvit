@@ -192,4 +192,15 @@ export const VENTAS_PERMISSIONS = {
   COSTS_VIEW: 'ventas.costs.view',
   MARGINS_VIEW: 'ventas.margins.view',
   MARGINS_OVERRIDE: 'ventas.margins.override',
+
+  // Liquidaciones de Vendedores
+  LIQUIDACIONES_VIEW: 'ventas.liquidaciones.view',
+  LIQUIDACIONES_CREATE: 'ventas.liquidaciones.create',
+  LIQUIDACIONES_EDIT: 'ventas.liquidaciones.edit',
+  LIQUIDACIONES_DELETE: 'ventas.liquidaciones.delete',
+  LIQUIDACIONES_CONFIRM: 'ventas.liquidaciones.confirm',
+  LIQUIDACIONES_PAY: 'ventas.liquidaciones.pay',
+
+  // Resumen de Vendedores
+  VENDEDORES_RESUMEN: 'ventas.vendedores.resumen',
 } as const;

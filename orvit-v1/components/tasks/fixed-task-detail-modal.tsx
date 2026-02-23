@@ -1,5 +1,6 @@
 "use client";
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from "react";
 import { 
   Clock, FileText, Users, Calendar, Download, ExternalLink, 
@@ -78,7 +79,7 @@ function getPriorityColor(priority: string) {
   switch (priority) {
     case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
     case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
-    case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/50';
+    case 'baja': return 'bg-success-muted text-success-muted-foreground border-success-muted';
     default: return 'bg-muted text-muted-foreground border-border';
   }
 }
@@ -484,7 +485,7 @@ export function FixedTaskDetailModal({
                                         <span className="text-sm font-medium text-foreground">{attachment.name}</span>
                                         {attachment.size > 0 && (
                                           <span className="text-xs text-muted-foreground ml-2">
-                                            ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
+                                            ({formatNumber(attachment.size / 1024 / 1024, 2)} MB)
                                           </span>
                                         )}
                                       </div>

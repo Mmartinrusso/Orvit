@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
 import { Machine, MachineComponent } from '@/lib/types';
 import {
@@ -42,7 +43,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { useMachinesInitial } from '@/hooks/use-machines-initial';
 import { User } from 'lucide-react';
 import FailureTypeSelector from './FailureTypeSelector';
-import { FailureType } from '@/hooks/maintenance/use-failure-types';
+import { FailureType } from '@/hooks/mantenimiento/use-failure-types';
 
 interface Employee {
   id: string;
@@ -714,7 +715,7 @@ export default function FailureRegistrationDialog({
                 <div className="text-center">
                   <CloudUpload className="w-6 h-6 mx-auto text-muted-foreground mb-1.5" />
                   <p className="text-xs text-foreground">Haz clic o arrastra archivos aquí</p>
-                  <p className="text-[10px] text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB</p>
+                  <p className="text-xs text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB</p>
                   {failureData.files.length > 0 && (
                     <p className="text-xs text-success mt-1 font-medium">
                       {failureData.files.length} archivo(s) seleccionado(s)
@@ -733,7 +734,7 @@ export default function FailureRegistrationDialog({
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <FileText className="h-3.5 w-3.5 text-info-muted-foreground shrink-0" />
                       <span className="text-xs font-medium text-info-muted-foreground truncate">{file.name}</span>
-                      <span className="text-[10px] text-info-muted-foreground shrink-0">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      <span className="text-xs text-info-muted-foreground shrink-0">({formatNumber(file.size / 1024 / 1024, 2)} MB)</span>
                     </div>
                     <Button
                       type="button"

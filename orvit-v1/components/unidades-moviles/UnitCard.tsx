@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Zap,
   CalendarClock,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -58,6 +59,8 @@ export interface UnidadMovil {
   companyId: number;
   createdAt: string;
   updatedAt: string;
+  kmUpdateFrequencyDays?: number | null;
+  ultimaLecturaKm?: string | Date | null;
 }
 
 interface UnitCardProps {
@@ -69,6 +72,7 @@ interface UnitCardProps {
   onCreateWorkOrder?: (unidad: UnidadMovil) => void;
   onReportFailure?: (unidad: UnidadMovil) => void;
   onScheduleService?: (unidad: UnidadMovil) => void;
+  onLoadKilometraje?: (unidad: UnidadMovil) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   canReportFailure?: boolean;
@@ -101,6 +105,7 @@ export function UnitCard({
   onCreateWorkOrder,
   onReportFailure,
   onScheduleService,
+  onLoadKilometraje,
   canEdit = false,
   canDelete = false,
   canReportFailure = false,
@@ -142,6 +147,18 @@ export function UnitCard({
   const isOverdue = nextService?.isOverdue || false;
   const needsAttention = unidad.estado === 'FUERA_SERVICIO' || isOverdue;
 
+  // Km reading overdue check
+  const kmReadingOverdue = (() => {
+    if (!unidad.kmUpdateFrequencyDays) return null;
+    const lastRead = unidad.ultimaLecturaKm ? new Date(unidad.ultimaLecturaKm) : null;
+    if (!lastRead) return { daysLate: unidad.kmUpdateFrequencyDays, nextExpected: null };
+    const daysSinceLast = Math.floor((Date.now() - lastRead.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysSinceLast >= unidad.kmUpdateFrequencyDays) {
+      return { daysLate: daysSinceLast - unidad.kmUpdateFrequencyDays, nextExpected: null };
+    }
+    return null;
+  })();
+
   const handleCardClick = () => {
     onView(unidad);
   };
@@ -158,23 +175,6 @@ export function UnitCard({
           className
         )}
       >
-        {/* Urgency indicator */}
-        {needsAttention && (
-          <div className="absolute top-2 right-2 z-10">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="p-1 rounded-full bg-destructive/10 animate-pulse">
-                  <AlertTriangle className="h-3 w-3 text-destructive" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">
-                  {isOverdue ? 'Mantenimiento vencido' : 'Requiere atención'}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
 
         {/* Selection checkbox */}
         {onSelect && (
@@ -190,17 +190,33 @@ export function UnitCard({
         )}
 
         <CardContent className={cn('p-4 pt-5', onSelect && 'pt-8')}>
-          {/* Header: Nombre + Badge Estado */}
+          {/* Header: Nombre + Alerta + Badge Estado */}
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="font-semibold text-sm text-foreground line-clamp-2 flex-1">
               {unidad.nombre || 'Sin nombre'}
             </h3>
-            <Badge
-              variant="outline"
-              className={cn('text-[10px] px-2 py-0 h-5 border shrink-0', estadoColors[unidad.estado])}
-            >
-              {estadoLabels[unidad.estado] || unidad.estado}
-            </Badge>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {needsAttention && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-1 rounded-full bg-destructive/10">
+                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {isOverdue ? 'Mantenimiento vencido' : 'Requiere atención'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <Badge
+                variant="outline"
+                className={cn('text-xs px-2 py-0 h-5 border', estadoColors[unidad.estado])}
+              >
+                {estadoLabels[unidad.estado] || unidad.estado}
+              </Badge>
+            </div>
           </div>
 
           {/* Subheader: Tipo + Marca/Modelo */}
@@ -228,11 +244,31 @@ export function UnitCard({
             <div className="flex items-center gap-1.5 text-xs">
               <Gauge className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="text-muted-foreground">Medidor:</span>
-              <span className="font-normal text-foreground">
+              <span className="font-normal text-foreground flex-1">
                 {unidad.kilometraje !== null && unidad.kilometraje !== undefined
                   ? formatMeter(unidad.kilometraje)
                   : 'Sin dato'}
               </span>
+              {kmReadingOverdue && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="flex items-center gap-0.5 text-warning-muted-foreground cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); onLoadKilometraje?.(unidad); }}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      <span className="text-warning-muted-foreground">Actualizar km</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {kmReadingOverdue.daysLate > 0
+                        ? `Lectura de km atrasada ${kmReadingOverdue.daysLate} día${kmReadingOverdue.daysLate !== 1 ? 's' : ''}`
+                        : 'Falta registrar el km inicial'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
 
             {/* Próximo service */}
@@ -321,6 +357,12 @@ export function UnitCard({
                   <DropdownMenuItem onClick={() => onScheduleService(unidad)}>
                     <CalendarClock className="h-4 w-4 mr-2" />
                     Programar Service
+                  </DropdownMenuItem>
+                )}
+                {onLoadKilometraje && (
+                  <DropdownMenuItem onClick={() => onLoadKilometraje(unidad)}>
+                    <Gauge className="h-4 w-4 mr-2" />
+                    Cargar Kilometraje
                   </DropdownMenuItem>
                 )}
                 {canDelete && onDelete && (

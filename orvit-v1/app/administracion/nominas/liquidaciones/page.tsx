@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -271,7 +272,7 @@ export default function LiquidacionesPage() {
               disabled={isFetching}
               className={cn(
                 'inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7',
-                'px-2 text-[11px] font-normal gap-1.5',
+                'px-2 text-xs font-normal gap-1.5',
                 'hover:bg-muted disabled:opacity-50',
                 isFetching && 'bg-background shadow-sm'
               )}
@@ -303,7 +304,7 @@ export default function LiquidacionesPage() {
                       <SelectContent>
                         {periods.map((period) => (
                           <SelectItem key={period.id} value={period.id.toString()}>
-                            {formatPeriodDisplay(period.periodType, period.month, period.year)} - Pago: {new Date(period.paymentDate).toLocaleDateString('es-AR')}
+                            {formatPeriodDisplay(period.periodType, period.month, period.year)} - Pago: {formatDate(period.paymentDate)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -369,7 +370,7 @@ export default function LiquidacionesPage() {
                         <h3 className="font-medium">
                           {formatPeriodDisplay(payroll.periodType, payroll.month, payroll.year)}
                         </h3>
-                        <Badge variant={statusConfig[payroll.status]?.variant || 'secondary'} className="text-[10px]">
+                        <Badge variant={statusConfig[payroll.status]?.variant || 'secondary'} className="text-xs">
                           {statusConfig[payroll.status]?.label || payroll.status}
                         </Badge>
                       </div>
@@ -391,7 +392,7 @@ export default function LiquidacionesPage() {
                           <p className="font-medium text-success">{formatCurrency(payroll.totalNet)}</p>
                         </div>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Costo Empleador: {formatCurrency(payroll.totalEmployerCost)}
                       </p>
                     </div>
@@ -461,7 +462,7 @@ export default function LiquidacionesPage() {
             <DialogTitle className="flex items-center gap-2">
               Detalle de Liquidacion
               {selectedPayroll && (
-                <Badge variant={statusConfig[selectedPayroll.status]?.variant || 'secondary'} className="text-[10px]">
+                <Badge variant={statusConfig[selectedPayroll.status]?.variant || 'secondary'} className="text-xs">
                   {statusConfig[selectedPayroll.status]?.label || selectedPayroll.status}
                 </Badge>
               )}
@@ -530,7 +531,7 @@ export default function LiquidacionesPage() {
                           <TableCell className="text-right">
                             {item.daysWorked}/{item.daysInPeriod}
                             {item.prorateFactor < 1 && (
-                              <span className="text-[10px] text-muted-foreground ml-1">
+                              <span className="text-xs text-muted-foreground ml-1">
                                 ({Math.round(item.prorateFactor * 100)}%)
                               </span>
                             )}
@@ -573,7 +574,7 @@ export default function LiquidacionesPage() {
                                     )}
                                   </div>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground pt-2 border-t">
+                                <p className="text-xs text-muted-foreground pt-2 border-t">
                                   Costo Empleador: {formatCurrency(item.employerCost)}
                                 </p>
                               </div>

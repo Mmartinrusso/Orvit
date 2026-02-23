@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -802,12 +803,12 @@ export default function DistribucionCostos() {
                               key={cat.id}
                               className="transition-all duration-500 relative group"
                               style={{ width: `${percentage}%`, backgroundColor: categoryColors[i % categoryColors.length] }}
-                              title={`${cat.name}: ${percentage.toFixed(1)}%`}
+                              title={`${cat.name}: ${formatNumber(percentage, 1)}%`}
                             >
                               <div className="absolute inset-0 flex items-center justify-center">
                                 {percentage > 8 && (
-                                  <span className="text-[10px] font-bold text-white">
-                                    {percentage.toFixed(0)}%
+                                  <span className="text-xs font-bold text-white">
+                                    {formatNumber(percentage, 0)}%
                                   </span>
                                 )}
                               </div>
@@ -847,12 +848,12 @@ export default function DistribucionCostos() {
                             <h3 className="font-semibold text-sm text-foreground">{category.name}</h3>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            <Badge variant="outline" className="text-xs px-1.5 py-0">
                               {category.configCount} configs
                             </Badge>
                             {percentage > 0 && (
-                              <Badge className="text-[10px] px-1.5 py-0 text-white" style={{ backgroundColor: catColor }}>
-                                {percentage.toFixed(1)}%
+                              <Badge className="text-xs px-1.5 py-0 text-white" style={{ backgroundColor: catColor }}>
+                                {formatNumber(percentage, 1)}%
                               </Badge>
                             )}
                           </div>
@@ -968,9 +969,9 @@ export default function DistribucionCostos() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
-                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{cost.cost_type}</Badge>
+                          <Badge variant="secondary" className="text-xs uppercase tracking-wider">{cost.cost_type}</Badge>
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                          <Badge className="text-[10px]" style={{ backgroundColor: userColors.chart1 + '20', color: userColors.chart1 }}>{cost.productCategoryName}</Badge>
+                          <Badge className="text-xs" style={{ backgroundColor: userColors.chart1 + '20', color: userColors.chart1 }}>{cost.productCategoryName}</Badge>
                         </div>
 
                         <div className="flex items-center justify-between mb-2">
@@ -1083,11 +1084,11 @@ export default function DistribucionCostos() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
-                          <Badge variant={emp.isMatrixDistribution ? 'secondary' : 'outline'} className="text-[10px] uppercase tracking-wider">
+                          <Badge variant={emp.isMatrixDistribution ? 'secondary' : 'outline'} className="text-xs uppercase tracking-wider">
                             {emp.isMatrixDistribution ? 'Matriz' : 'Individual'}
                           </Badge>
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                          <Badge className="text-[10px]" style={{ backgroundColor: userColors.chart4 + '20', color: userColors.chart4 }}>{emp.productCategoryName}</Badge>
+                          <Badge className="text-xs" style={{ backgroundColor: userColors.chart4 + '20', color: userColors.chart4 }}>{emp.productCategoryName}</Badge>
                         </div>
 
                         <div className="flex items-center justify-between mb-2">

@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
-import { CounterPanel } from '@/components/machines';
+import { CounterPanel } from '@/components/maquinas/CounterPanel';
 import {
   Gauge,
   AlertTriangle,
@@ -129,13 +129,13 @@ export default function ContadoresPage() {
 
       {/* Summary Cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">

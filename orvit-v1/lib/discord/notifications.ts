@@ -24,12 +24,29 @@ import {
   type DiscordEmbed,
 } from './client';
 import {
-  isBotReady,
-  sendToChannel,
-  sendDM,
-  connectBot,
-  type DMMessageOptions,
-} from './bot';
+  sendDMViaBotService,
+  sendNotificationViaBotService,
+  sendToChannelViaBotService,
+} from './bot-service-client';
+
+// Re-export DMMessageOptions type for backward compatibility
+export interface DMMessageOptions {
+  content?: string;
+  embed?: {
+    title?: string;
+    description?: string;
+    color?: number;
+    fields?: Array<{ name: string; value: string; inline?: boolean }>;
+    footer?: string;
+    timestamp?: boolean;
+  };
+  buttons?: Array<{
+    customId: string;
+    label: string;
+    style: 'primary' | 'secondary' | 'success' | 'danger';
+    emoji?: string;
+  }>;
+}
 
 // Tipos de notificación
 type NotificationType =
@@ -108,44 +125,8 @@ async function getDiscordDestination(
 }
 
 /**
- * Auto-conecta el bot de Discord si no está conectado
- * Busca el token de la primera empresa que tenga uno configurado
- */
-async function ensureBotConnected(): Promise<boolean> {
-  if (isBotReady()) return true;
-
-  try {
-    // Buscar empresa con token de bot
-    const company = await prisma.company.findFirst({
-      where: { discordBotToken: { not: null } },
-      select: { discordBotToken: true }
-    });
-
-    if (!company?.discordBotToken) {
-      console.warn('⚠️ No hay token de bot Discord configurado');
-      return false;
-    }
-
-    console.log('🔄 Auto-conectando bot de Discord...');
-    const result = await connectBot(company.discordBotToken);
-
-    if (result.success) {
-      console.log('✅ Bot Discord auto-conectado');
-      return true;
-    }
-
-    console.warn('⚠️ No se pudo auto-conectar bot:', result.error);
-    return false;
-  } catch (error) {
-    console.error('❌ Error auto-conectando bot:', error);
-    return false;
-  }
-}
-
-/**
- * Envía un mensaje a Discord usando webhook o bot según disponibilidad
- * Prioridad: Canal via bot > Webhook
- * Auto-conecta el bot si no está conectado
+ * Envía un mensaje a Discord usando bot service o webhook según disponibilidad
+ * Prioridad: Bot service (Railway) > Webhook (local)
  */
 async function sendNotification(
   sectorId: number,
@@ -156,20 +137,11 @@ async function sendNotification(
   const destination = await getDiscordDestination(sectorId, type);
 
   console.log(`📤 [Discord] sendNotification tipo=${type}, sectorId=${sectorId}`);
-  console.log(`   channelId=${destination.channelId}, webhookUrl=${destination.webhookUrl ? 'SÍ' : 'NO'}`);
-  console.log(`   botReady=${isBotReady()}`);
 
-  // Auto-conectar bot si hay channel ID pero bot no está listo
-  if (destination.channelId && !isBotReady()) {
-    console.log('🔄 [Discord] Intentando auto-conectar bot...');
-    const connected = await ensureBotConnected();
-    console.log(`   Resultado auto-connect: ${connected ? '✅' : '❌'}`);
-  }
-
-  // Intentar enviar via bot si está conectado y hay channel ID
-  if (destination.channelId && isBotReady()) {
-    console.log(`📨 [Discord] Enviando via bot a canal ${destination.channelId}...`);
-    const result = await sendToChannel(destination.channelId, {
+  // Intentar enviar via bot service (Railway) si hay channel ID
+  if (destination.channelId) {
+    console.log(`📨 [Discord] Enviando via bot service a canal ${destination.channelId}...`);
+    const result = await sendToChannelViaBotService(destination.channelId, {
       embed: {
         title: embed.title,
         description: embed.description,
@@ -181,16 +153,16 @@ async function sendNotification(
     });
 
     if (result.success) {
-      console.log('✅ [Discord] Mensaje enviado via bot');
+      console.log('✅ [Discord] Mensaje enviado via bot service');
       return;
     }
-    console.warn(`⚠️ [Discord] Fallo envío via bot: ${result.error}`);
+    console.warn(`⚠️ [Discord] Fallo envío via bot service: ${result.error}`);
     // Si falla, intentar con webhook
   }
 
-  // Enviar via webhook
+  // Fallback: enviar via webhook (stateless, no necesita bot)
   if (destination.webhookUrl) {
-    console.log('📨 [Discord] Enviando via webhook...');
+    console.log('📨 [Discord] Enviando via webhook (fallback)...');
     await sendDiscordMessage(destination.webhookUrl, {
       embeds: [embed],
       username,
@@ -199,11 +171,8 @@ async function sendNotification(
     return;
   }
 
-  // Si llegamos aquí, no se pudo enviar por ningún medio
-  if (destination.channelId && !isBotReady()) {
-    console.error(`❌ [Discord] No se pudo enviar: Bot no conectado y sin webhook`);
-    console.error(`   Sector ${sectorId} tiene channelId pero el bot no pudo conectarse`);
-  } else if (!destination.channelId && !destination.webhookUrl) {
+  // Sin medio disponible
+  if (!destination.channelId && !destination.webhookUrl) {
     console.warn(`⚠️ [Discord] Sector ${sectorId} no tiene Discord configurado para ${type}`);
   }
 }
@@ -225,30 +194,13 @@ export async function sendNotificationToSector(
 
 /**
  * Envía un DM a un técnico por su userId de ORVIT
- * Auto-conecta el bot si no está conectado
+ * Usa el bot service externo (Railway) para enviar el DM
  */
 export async function sendTechnicianDM(
   userId: number,
   options: DMMessageOptions
 ): Promise<{ success: boolean; error?: string }> {
-  // Auto-conectar si no está listo
-  if (!isBotReady()) {
-    const connected = await ensureBotConnected();
-    if (!connected) {
-      return { success: false, error: 'Bot no conectado y no se pudo auto-conectar' };
-    }
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { discordUserId: true },
-  });
-
-  if (!user?.discordUserId) {
-    return { success: false, error: 'Usuario no tiene Discord vinculado' };
-  }
-
-  return sendDM(user.discordUserId, options);
+  return sendDMViaBotService(userId, options);
 }
 
 /**
@@ -497,7 +449,7 @@ export async function notifyOTAssigned(data: OTAssignedData): Promise<void> {
   await sendNotification(data.sectorId, 'OT_ASIGNADA', embed, 'ORVIT - Órdenes de Trabajo');
 
   // 2. Enviar DM al técnico asignado
-  if (data.assignedToId && isBotReady()) {
+  if (data.assignedToId) {
     const dmEmbed = {
       title: `📋 Nueva asignación - OT #${data.id}`,
       description: data.description?.substring(0, 300) || data.title,
@@ -799,7 +751,7 @@ export async function notifySLAAtRisk(data: SLAAlertData): Promise<void> {
   await sendNotification(data.sectorId, 'OT_ASIGNADA', embed, 'ORVIT - SLA');
 
   // 2. Enviar DM al técnico asignado
-  if (data.assignedToId && isBotReady()) {
+  if (data.assignedToId) {
     const dmEmbed = {
       title: `⚠️ SLA en Riesgo - OT #${data.workOrderId}`,
       description: `Tu orden "${data.title}" está por vencer.\n\n⏳ **${hoursText}** restantes`,
@@ -854,7 +806,7 @@ export async function notifySLABreached(data: SLAAlertData): Promise<void> {
   await sendNotification(data.sectorId, 'OT_ASIGNADA', embed, 'ORVIT - SLA');
 
   // 2. Enviar DM al técnico asignado
-  if (data.assignedToId && isBotReady()) {
+  if (data.assignedToId) {
     const dmEmbed = {
       title: `⛔ SLA Vencido - OT #${data.workOrderId}`,
       description: `Tu orden "${data.title}" **ha vencido**.\n\n🚨 Excedido hace **${overdueText}**`,
@@ -938,7 +890,7 @@ export async function notifyP1ToSectorTechnicians(
   data: P1FailureAlertData,
   technicianIds: number[]
 ): Promise<{ sent: number; failed: number }> {
-  if (!isBotReady() || technicianIds.length === 0) {
+  if (technicianIds.length === 0) {
     return { sent: 0, failed: 0 };
   }
 
@@ -1146,7 +1098,7 @@ export async function notifyPriorityEscalated(data: PriorityEscalationData): Pro
   await sendNotification(data.sectorId, 'FALLA_NUEVA', embed, 'ORVIT - Escalamiento');
 
   // 2. Enviar DM al técnico asignado
-  if (data.assignedToId && isBotReady()) {
+  if (data.assignedToId) {
     const dmEmbed = {
       title: `🆙 Prioridad Escalada - F-${data.failureId}`,
       description: `Tu falla asignada ha sido escalada.\n\n**${data.title}**\n\n${data.previousPriority} → **${data.newPriority}** ${newEmoji}`,
@@ -1197,10 +1149,6 @@ export interface DayStartData {
  * Envía DM de inicio del día a un técnico con su agenda
  */
 export async function notifyDayStart(data: DayStartData): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no conectado' };
-  }
-
   // Si no hay nada que mostrar, no enviar
   if (
     data.assignedOTs.length === 0 &&
@@ -1421,16 +1369,10 @@ export async function notifySectorDayStart(data: SectorDayStartData): Promise<{ 
     timestamp: new Date().toISOString(),
   };
 
-  // Auto-conectar bot si hay canal pero no está listo
-  if (channelId && !isBotReady()) {
-    await ensureBotConnected();
-  }
-
-  // Enviar al canal via bot
-  if (channelId && isBotReady()) {
+  // Enviar al canal via bot service
+  if (channelId) {
     try {
-      // Para sendToChannel: formato DMMessageOptions (singular, formato diferente)
-      const result = await sendToChannel(channelId, {
+      const result = await sendToChannelViaBotService(channelId, {
         embed: {
           title: `📌 Inicio del Día — ${data.sectorName}`,
           description: description.trim(),
@@ -1442,7 +1384,7 @@ export async function notifySectorDayStart(data: SectorDayStartData): Promise<{ 
       if (result.success) {
         return { success: true };
       }
-      console.warn('⚠️ Error enviando a canal:', result.error);
+      console.warn('⚠️ Error enviando a canal via bot service:', result.error);
     } catch (channelError) {
       console.warn('⚠️ Error enviando a canal, intentando webhook:', channelError);
     }

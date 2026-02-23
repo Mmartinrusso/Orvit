@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, BarChart3 } from 'lucide-react';
@@ -97,7 +97,7 @@ export function CostoBaseTrendChart({ costoName, monthlyRecords }: CostoBaseTren
             Evolución de Cambios
             {trend !== 'stable' && (
               <span className={cn('text-sm font-normal', trend === 'up' ? 'text-success' : 'text-destructive')}>
-                ({trend === 'up' ? '+' : ''}{trendPercentage.toFixed(1)}%)
+                ({trend === 'up' ? '+' : ''}{formatNumber(trendPercentage, 1)}%)
               </span>
             )}
           </CardTitle>
@@ -219,7 +219,7 @@ export function CostoBaseTrendChart({ costoName, monthlyRecords }: CostoBaseTren
                               {variation > 0 ? '+' : ''}{formatCurrency(variation)}
                             </span>
                             <span className={cn('text-xs', variation > 0 ? 'text-success' : variation < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                              ({variationPercentage > 0 ? '+' : ''}{variationPercentage.toFixed(1)}%)
+                              ({variationPercentage > 0 ? '+' : ''}{formatNumber(variationPercentage, 1)}%)
                             </span>
                           </div>
                         ) : (

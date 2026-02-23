@@ -34,7 +34,7 @@ import {
   ReservaTypeLabels,
   type ReservaType,
 } from '@/lib/almacen/types';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ReservasTabProps {
   onViewItem?: (supplierItemId: number) => void;
@@ -225,13 +225,13 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
                     </TableCell>
                     <TableCell>{reserva.warehouse?.nombre || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {reserva.cantidad?.toFixed(2) || '0.00'}
+                      {formatNumber(reserva.cantidad, 2)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {reserva.cantidadConsumida?.toFixed(2) || '0.00'}
+                      {formatNumber(reserva.cantidadConsumida, 2)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {reserva.cantidadPendiente?.toFixed(2) || (reserva.cantidad - (reserva.cantidadConsumida || 0)).toFixed(2)}
+                      {reserva.cantidadPendiente != null ? formatNumber(reserva.cantidadPendiente, 2) : formatNumber(reserva.cantidad - (reserva.cantidadConsumida || 0), 2)}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-[150px] truncate">
                       {reserva.materialRequest?.numero ||

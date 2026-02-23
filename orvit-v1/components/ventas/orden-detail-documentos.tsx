@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Truck, Package, Eye, Download } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import Link from 'next/link';
 
 interface OrdenDetailDocumentosProps {
@@ -75,7 +74,7 @@ export function OrdenDetailDocumentos({
                       <div className="flex-1">
                         <p className="font-medium text-sm">{loadOrder.numero}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(loadOrder.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+                          {formatDateTime(loadOrder.createdAt)}
                         </p>
                         {loadOrder.vehiculo && (
                           <p className="text-xs text-muted-foreground mt-1">
@@ -116,7 +115,7 @@ export function OrdenDetailDocumentos({
                         <p className="font-medium text-sm">{delivery.numero}</p>
                         <p className="text-xs text-muted-foreground">
                           {delivery.fechaEntrega
-                            ? format(new Date(delivery.fechaEntrega), 'dd/MM/yyyy', { locale: es })
+                            ? formatDate(delivery.fechaEntrega)
                             : 'Fecha no especificada'
                           }
                         </p>
@@ -161,7 +160,7 @@ export function OrdenDetailDocumentos({
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {remito.fechaEmision
-                            ? format(new Date(remito.fechaEmision), 'dd/MM/yyyy', { locale: es })
+                            ? formatDate(remito.fechaEmision)
                             : 'Sin emitir'
                           }
                         </p>
@@ -209,7 +208,7 @@ export function OrdenDetailDocumentos({
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {invoice.fechaEmision
-                            ? format(new Date(invoice.fechaEmision), 'dd/MM/yyyy', { locale: es })
+                            ? formatDate(invoice.fechaEmision)
                             : 'Sin emitir'
                           }
                         </p>

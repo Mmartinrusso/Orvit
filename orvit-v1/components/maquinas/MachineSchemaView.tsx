@@ -42,6 +42,7 @@ import html2canvas from 'html2canvas';
 import { Dialog as MiniDialog, DialogContent as MiniDialogContent, DialogHeader as MiniDialogHeader, DialogTitle as MiniDialogTitle, DialogDescription as MiniDialogDescription, DialogBody as MiniDialogBody } from '@/components/ui/dialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 
 interface MachineSchemaViewProps {
   machine: Machine;
@@ -999,7 +1000,82 @@ export default function MachineSchemaView({ machine, components, onComponentClic
   const [componentHistory, setComponentHistory] = useState<MachineComponent[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [actionHistory, setActionHistory] = useState<Array<{type: 'create' | 'move' | 'delete', componentId: string, previousParentId?: string | null, previousState?: MachineComponent[]}>>([]);
-  
+
+  // ── Mutations (useApiMutation) ──────────────────────────────────────
+
+  // POST: Duplicar componente
+  const duplicateComponentMutation = useApiMutation<any, { name: string; type: string; system: string; technicalInfo: string; machineId: number; parentId: number | null; createSpare: boolean; companyId?: number }>({
+    mutationFn: createFetchMutation({ url: '/api/components', method: 'POST' }),
+    successMessage: null, // Manejamos el toast manualmente después del state update
+    errorMessage: 'Error al duplicar el componente',
+    invalidateKeys: [['machines'], ['components']],
+  });
+
+  // DELETE: Eliminar componente
+  const deleteComponentMutation = useApiMutation<any, { componentId: string }>({
+    mutationFn: async ({ componentId }) => {
+      const response = await fetch(`/api/components/${componentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Error al eliminar el componente');
+      }
+      return response.json();
+    },
+    successMessage: null, // Manejamos el toast manualmente
+    errorMessage: 'Error al eliminar el componente',
+    invalidateKeys: [['machines'], ['components']],
+  });
+
+  // PATCH: Mover componente (actualizar parent)
+  const moveComponentMutation = useApiMutation<any, { componentId: string; parentId: number | null }>({
+    mutationFn: async ({ componentId, parentId }) => {
+      const response = await fetch(`/api/components/${componentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentId }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Error al actualizar el componente');
+      }
+      return response.json();
+    },
+    successMessage: 'Componente movido exitosamente',
+    errorMessage: 'Error al mover el componente',
+    invalidateKeys: [['machines'], ['components']],
+  });
+
+  // DELETE: Deshacer creación (fire-and-forget)
+  const undoCreateMutation = useApiMutation<any, { componentId: string }>({
+    mutationFn: async ({ componentId }) => {
+      const response = await fetch(`/api/components/${componentId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Error al deshacer creación');
+      return response.json();
+    },
+    successMessage: null,
+    errorMessage: 'Error al deshacer la creación',
+    invalidateKeys: [['machines'], ['components']],
+  });
+
+  // PATCH: Deshacer movimiento (fire-and-forget)
+  const undoMoveMutation = useApiMutation<any, { componentId: string; parentId: number | null }>({
+    mutationFn: async ({ componentId, parentId }) => {
+      const response = await fetch(`/api/components/${componentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentId }),
+      });
+      if (!response.ok) throw new Error('Error al deshacer movimiento');
+      return response.json();
+    },
+    successMessage: null,
+    errorMessage: 'Error al deshacer el movimiento',
+    invalidateKeys: [['machines'], ['components']],
+  });
+
   // Limpiar estados relacionados con el drag cuando se sale del modo edición
   useEffect(() => {
     if (!isEditMode) {
@@ -1171,111 +1247,97 @@ export default function MachineSchemaView({ machine, components, onComponentClic
   };
 
   // Función para confirmar y duplicar el componente
-  const confirmDuplicateComponent = async () => {
+  const confirmDuplicateComponent = () => {
     if (!duplicateComponentId) return;
 
-    try {
-      // Buscar el componente original
-      const originalComponent = buscarComponentePorId(localComponents, duplicateComponentId);
-      
-      if (!originalComponent) {
-        toast.error('Componente no encontrado');
-        setShowDuplicateDialog(false);
-        return;
-      }
+    // Buscar el componente original
+    const originalComponent = buscarComponentePorId(localComponents, duplicateComponentId);
 
-      // Validar que el nombre no esté vacío
-      const finalName = duplicateComponentName.trim();
-      if (!finalName || finalName === '-') {
-        toast.error('El nombre del componente no puede estar vacío');
-        return;
-      }
+    if (!originalComponent) {
+      toast.error('Componente no encontrado');
+      setShowDuplicateDialog(false);
+      return;
+    }
 
-      // Obtener companyId del localStorage
-      let companyId: number | null = null;
-      if (typeof window !== 'undefined') {
-        const savedCompany = localStorage.getItem('currentCompany');
-        if (savedCompany) {
-          try {
-            const company = JSON.parse(savedCompany);
-            companyId = company.id || null;
-          } catch (e) {
-            console.error('Error parseando currentCompany:', e);
-          }
+    // Validar que el nombre no esté vacío
+    const finalName = duplicateComponentName.trim();
+    if (!finalName || finalName === '-') {
+      toast.error('El nombre del componente no puede estar vacío');
+      return;
+    }
+
+    // Obtener companyId del localStorage
+    let companyId: number | null = null;
+    if (typeof window !== 'undefined') {
+      const savedCompany = localStorage.getItem('currentCompany');
+      if (savedCompany) {
+        try {
+          const company = JSON.parse(savedCompany);
+          companyId = company.id || null;
+        } catch (e) {
+          console.error('Error parseando currentCompany:', e);
         }
       }
-
-      // Crear el payload para duplicar
-      // Desactivar la creación automática de repuesto para la duplicación
-      const payload = {
-        name: finalName,
-        type: originalComponent.type || 'part',
-        system: originalComponent.system || '',
-        technicalInfo: originalComponent.technicalInfo || '',
-        machineId: machine.id,
-        parentId: originalComponent.parentId || null,
-        createSpare: false, // No crear repuesto automáticamente al duplicar
-        ...(companyId && { companyId }), // Solo incluir companyId si está disponible
-        // No incluir logo para evitar problemas de duplicación de imágenes
-      };
-
-      const response = await fetch('/api/components', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al duplicar el componente');
-      }
-
-      const result = await response.json();
-      const newComponent = result.component;
-
-      if (!newComponent || !newComponent.id) {
-        throw new Error('El componente duplicado no tiene un ID válido');
-      }
-
-      // Guardar estado anterior antes de actualizar (para deshacer)
-      const previousState = JSON.parse(JSON.stringify(localComponents));
-      const newHistory = componentHistory.slice(0, historyIndex + 1);
-      newHistory.push(previousState);
-      setComponentHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-
-      // Guardar acción en historial de acciones
-      setActionHistory(prev => [...prev.slice(0, historyIndex + 1), {
-        type: 'create',
-        componentId: newComponent.id.toString(),
-        previousState: previousState
-      }]);
-
-      // Actualizar la lista local de componentes
-      const updatedComponents = [...localComponents, newComponent as MachineComponent];
-      setLocalComponents(updatedComponents);
-
-      // Cerrar el diálogo
-      setShowDuplicateDialog(false);
-      setDuplicateComponentId(null);
-      setDuplicateComponentName('');
-
-      // Inmediatamente activar el drag del componente duplicado para que se pueda mover
-      setDraggedComponent(newComponent.id.toString());
-      
-      toast.success('Componente duplicado. Puedes moverlo a donde quieras.');
-    } catch (error: any) {
-      console.error('Error duplicando componente:', error);
-      toast.error(error.message || 'Error al duplicar el componente');
     }
+
+    // Crear el payload para duplicar
+    // Desactivar la creación automática de repuesto para la duplicación
+    const payload: any = {
+      name: finalName,
+      type: originalComponent.type || 'part',
+      system: originalComponent.system || '',
+      technicalInfo: originalComponent.technicalInfo || '',
+      machineId: machine.id,
+      parentId: originalComponent.parentId || null,
+      createSpare: false, // No crear repuesto automáticamente al duplicar
+      ...(companyId && { companyId }), // Solo incluir companyId si está disponible
+      // No incluir logo para evitar problemas de duplicación de imágenes
+    };
+
+    duplicateComponentMutation.mutate(payload, {
+      onSuccess: (result) => {
+        const newComponent = result.component;
+
+        if (!newComponent || !newComponent.id) {
+          toast.error('El componente duplicado no tiene un ID válido');
+          return;
+        }
+
+        // Guardar estado anterior antes de actualizar (para deshacer)
+        const previousState = JSON.parse(JSON.stringify(localComponents));
+        const newHistory = componentHistory.slice(0, historyIndex + 1);
+        newHistory.push(previousState);
+        setComponentHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+
+        // Guardar acción en historial de acciones
+        setActionHistory(prev => [...prev.slice(0, historyIndex + 1), {
+          type: 'create',
+          componentId: newComponent.id.toString(),
+          previousState: previousState
+        }]);
+
+        // Actualizar la lista local de componentes
+        const updatedComponents = [...localComponents, newComponent as MachineComponent];
+        setLocalComponents(updatedComponents);
+
+        // Cerrar el diálogo
+        setShowDuplicateDialog(false);
+        setDuplicateComponentId(null);
+        setDuplicateComponentName('');
+
+        // Inmediatamente activar el drag del componente duplicado para que se pueda mover
+        setDraggedComponent(newComponent.id.toString());
+
+        toast.success('Componente duplicado. Puedes moverlo a donde quieras.');
+      },
+    });
   };
 
   // Función para eliminar un componente
   const handleDeleteComponent = async (componentId: string) => {
     const componentToDelete = buscarComponentePorId(localComponents, componentId);
-    
+
     if (!componentToDelete) {
       toast.error('Componente no encontrado');
       return;
@@ -1290,57 +1352,42 @@ export default function MachineSchemaView({ machine, components, onComponentClic
     });
     if (!ok) return;
 
-    try {
-      const response = await fetch(`/api/components/${componentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    deleteComponentMutation.mutate({ componentId }, {
+      onSuccess: (result) => {
+        // Guardar estado anterior antes de eliminar (para deshacer)
+        const previousState = JSON.parse(JSON.stringify(localComponents));
+        const newHistory = componentHistory.slice(0, historyIndex + 1);
+        newHistory.push(previousState);
+        setComponentHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al eliminar el componente');
-      }
+        // Guardar acción en historial de acciones
+        const compToDelete = buscarComponentePorId(localComponents, componentId);
+        setActionHistory(prev => [...prev.slice(0, historyIndex + 1), {
+          type: 'delete',
+          componentId: componentId,
+          previousState: previousState,
+          previousParentId: compToDelete?.parentId || null
+        }]);
 
-      const result = await response.json();
+        // Actualizar la lista local de componentes eliminando el componente y sus hijos
+        const removeComponentFromTree = (components: MachineComponent[], idToRemove: string): MachineComponent[] => {
+          return components
+            .filter(comp => comp.id.toString() !== idToRemove)
+            .map(comp => ({
+              ...comp,
+              children: comp.children ? removeComponentFromTree(comp.children, idToRemove) : []
+            }));
+        };
 
-      // Guardar estado anterior antes de eliminar (para deshacer)
-      const previousState = JSON.parse(JSON.stringify(localComponents));
-      const newHistory = componentHistory.slice(0, historyIndex + 1);
-      newHistory.push(previousState);
-      setComponentHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
+        const updatedComponents = removeComponentFromTree(localComponents, componentId);
+        setLocalComponents(updatedComponents);
 
-      // Guardar acción en historial de acciones
-      const componentToDelete = buscarComponentePorId(localComponents, componentId);
-      setActionHistory(prev => [...prev.slice(0, historyIndex + 1), {
-        type: 'delete',
-        componentId: componentId,
-        previousState: previousState,
-        previousParentId: componentToDelete?.parentId || null
-      }]);
-
-      // Actualizar la lista local de componentes eliminando el componente y sus hijos
-      const removeComponentFromTree = (components: MachineComponent[], idToRemove: string): MachineComponent[] => {
-        return components
-          .filter(comp => comp.id.toString() !== idToRemove)
-          .map(comp => ({
-            ...comp,
-            children: comp.children ? removeComponentFromTree(comp.children, idToRemove) : []
-          }));
-      };
-
-      const updatedComponents = removeComponentFromTree(localComponents, componentId);
-      setLocalComponents(updatedComponents);
-
-      // Mostrar mensaje de éxito
-      const message = result.message || 'Componente eliminado correctamente.';
-      toast.success(message);
-    } catch (error: any) {
-      console.error('Error eliminando componente:', error);
-      toast.error(error.message || 'Error al eliminar el componente');
-    }
+        // Mostrar mensaje de éxito
+        const message = result.message || 'Componente eliminado correctamente.';
+        toast.success(message);
+      },
+    });
   };
 
   // Función recursiva para actualizar el parent de un componente en la estructura local
@@ -1366,66 +1413,50 @@ export default function MachineSchemaView({ machine, components, onComponentClic
   }, [findAndRemoveComponent, addComponentToParent]);
 
   // Función para actualizar el parent de un componente
-  const updateComponentParent = async (componentId: string, newParentId: string | null) => {
-    try {
-      // Validación local antes de enviar
-      const draggedComp = buscarComponentePorId(localComponents, componentId);
-      if (draggedComp && newParentId) {
-        const isChild = (parentId: string, childId: string): boolean => {
-          const parent = buscarComponentePorId(localComponents, parentId);
-          if (!parent || !parent.children || parent.children.length === 0) return false;
-          for (const child of parent.children) {
-            if (child.id.toString() === childId) return true;
-            if (isChild(child.id.toString(), childId)) return true;
-          }
-          return false;
-        };
-        
-        if (isChild(componentId, newParentId)) {
-          toast.error('No puedes mover un componente a sus propios hijos');
-          return;
+  const updateComponentParent = (componentId: string, newParentId: string | null) => {
+    // Validación local antes de enviar
+    const draggedComp = buscarComponentePorId(localComponents, componentId);
+    if (draggedComp && newParentId) {
+      const isChild = (parentId: string, childId: string): boolean => {
+        const parent = buscarComponentePorId(localComponents, parentId);
+        if (!parent || !parent.children || parent.children.length === 0) return false;
+        for (const child of parent.children) {
+          if (child.id.toString() === childId) return true;
+          if (isChild(child.id.toString(), childId)) return true;
         }
+        return false;
+      };
+
+      if (isChild(componentId, newParentId)) {
+        toast.error('No puedes mover un componente a sus propios hijos');
+        return;
       }
-
-      // Guardar estado anterior y parentId anterior antes de mover (para deshacer)
-      const previousState = JSON.parse(JSON.stringify(localComponents));
-      const previousParentId = draggedComp?.parentId?.toString() || null;
-      const newHistory = componentHistory.slice(0, historyIndex + 1);
-      newHistory.push(previousState);
-      setComponentHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-
-      // Guardar acción en historial de acciones
-      setActionHistory(prev => [...prev.slice(0, historyIndex + 1), {
-        type: 'move',
-        componentId: componentId,
-        previousParentId: previousParentId,
-        previousState: previousState
-      }]);
-
-      const response = await fetch(`/api/components/${componentId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          parentId: newParentId === 'root' || newParentId === null ? null : parseInt(newParentId)
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al actualizar el componente');
-      }
-
-      // Actualizar el estado local sin recargar la página
-      setLocalComponents(prev => updateComponentParentInTree(prev, componentId, newParentId));
-      
-      toast.success('Componente movido exitosamente');
-    } catch (error: any) {
-      console.error('Error actualizando parent del componente:', error);
-      toast.error(error.message || 'Error al mover el componente');
     }
+
+    // Guardar estado anterior y parentId anterior antes de mover (para deshacer)
+    const previousState = JSON.parse(JSON.stringify(localComponents));
+    const previousParentId = draggedComp?.parentId?.toString() || null;
+    const newHistory = componentHistory.slice(0, historyIndex + 1);
+    newHistory.push(previousState);
+    setComponentHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+
+    // Guardar acción en historial de acciones
+    setActionHistory(prev => [...prev.slice(0, historyIndex + 1), {
+      type: 'move',
+      componentId: componentId,
+      previousParentId: previousParentId,
+      previousState: previousState
+    }]);
+
+    const resolvedParentId = newParentId === 'root' || newParentId === null ? null : parseInt(newParentId);
+
+    moveComponentMutation.mutate({ componentId, parentId: resolvedParentId }, {
+      onSuccess: () => {
+        // Actualizar el estado local sin recargar la página
+        setLocalComponents(prev => updateComponentParentInTree(prev, componentId, newParentId));
+      },
+    });
   };
 
   // ✨ OPTIMIZADO: Filtrar solo componentes de primer nivel (sin padre) para respetar la jerarquía
@@ -2202,43 +2233,30 @@ export default function MachineSchemaView({ machine, components, onComponentClic
                  <Button 
                    variant="ghost" 
                    size="sm" 
-                   onClick={async () => {
+                   onClick={() => {
                      if (historyIndex < 0 || actionHistory.length === 0) return;
-                     
+
                      try {
                        const lastAction = actionHistory[actionHistory.length - 1];
                        const previousState = componentHistory[historyIndex];
-                       
+
                        if (!previousState || !lastAction) {
                          toast.error('No hay acciones para deshacer');
                          return;
                        }
-                       
+
                        // Restaurar estado anterior
                        const restoredState = JSON.parse(JSON.stringify(previousState));
-                       
+
                        // Ejecutar acción inversa según el tipo
                        if (lastAction.type === 'create') {
                          // Eliminar componente creado del backend
-                         try {
-                           await fetch(`/api/components/${lastAction.componentId}`, { method: 'DELETE' });
-                         } catch (err) {
-                           console.error('Error eliminando componente creado:', err);
-                         }
+                         undoCreateMutation.mutate({ componentId: lastAction.componentId });
                        } else if (lastAction.type === 'move') {
                          // Restaurar parentId anterior
                          if (lastAction.previousParentId !== undefined) {
-                           try {
-                             await fetch(`/api/components/${lastAction.componentId}`, {
-                               method: 'PATCH',
-                               headers: { 'Content-Type': 'application/json' },
-                               body: JSON.stringify({
-                                 parentId: lastAction.previousParentId === null || lastAction.previousParentId === 'null' ? null : parseInt(lastAction.previousParentId)
-                               }),
-                             });
-                           } catch (err) {
-                             console.error('Error restaurando parentId:', err);
-                           }
+                           const parentId = lastAction.previousParentId === null || lastAction.previousParentId === 'null' ? null : parseInt(lastAction.previousParentId);
+                           undoMoveMutation.mutate({ componentId: lastAction.componentId, parentId });
                          }
                        } else if (lastAction.type === 'delete') {
                          // Para eliminar, necesitaríamos recrear el componente

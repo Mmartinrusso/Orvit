@@ -203,7 +203,7 @@ export default function ContractorsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -306,7 +306,7 @@ export default function ContractorsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">Cargando...</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8">Cargando contratistas...</TableCell>
                 </TableRow>
               ) : filteredContractors.length === 0 ? (
                 <TableRow>

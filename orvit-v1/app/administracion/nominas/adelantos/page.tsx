@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -177,7 +178,7 @@ export default function AdelantosPage() {
               disabled={isFetching}
               className={cn(
                 'inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7',
-                'px-2 text-[11px] font-normal gap-1.5',
+                'px-2 text-xs font-normal gap-1.5',
                 'hover:bg-muted disabled:opacity-50',
                 isFetching && 'bg-background shadow-sm'
               )}
@@ -288,7 +289,7 @@ export default function AdelantosPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium">{adv.employeeName}</h3>
-                        <Badge variant={statusConfig[adv.status]?.variant || 'secondary'} className="text-[10px]">
+                        <Badge variant={statusConfig[adv.status]?.variant || 'secondary'} className="text-xs">
                           {statusConfig[adv.status]?.label || adv.status}
                         </Badge>
                       </div>
@@ -308,8 +309,8 @@ export default function AdelantosPage() {
                           <span className="font-medium">{formatCurrency(adv.remainingAmount)}</span>
                         </div>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Solicitado: {new Date(adv.requestDate).toLocaleDateString('es-AR')}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Solicitado: {formatDate(adv.requestDate)}
                       </p>
                     </div>
 

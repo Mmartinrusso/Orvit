@@ -377,7 +377,7 @@ export default function Productos() {
       </div>
 
              {/* Estadísticas */}
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">

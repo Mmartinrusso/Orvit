@@ -296,7 +296,7 @@ export function FacturasList({
     const config = ESTADOS_CONFIG[estado as EstadoFactura] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={cn(config.color, "border text-[10px] px-1.5 py-0.5 font-medium")}>
+      <Badge className={cn(config.color, "border text-xs px-1.5 py-0.5 font-medium")}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -311,7 +311,7 @@ export function FacturasList({
       'M': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     };
     return (
-      <Badge className={cn(colors[tipo] || "bg-muted text-foreground", "border text-[10px] px-1.5 py-0.5 font-medium")}>
+      <Badge className={cn(colors[tipo] || "bg-muted text-foreground", "border text-xs px-1.5 py-0.5 font-medium")}>
         {tipo}
       </Badge>
     );
@@ -507,7 +507,7 @@ export function FacturasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.borradores}</p>
-                  <p className="text-[10px] text-muted-foreground">Borradores</p>
+                  <p className="text-xs text-muted-foreground">Borradores</p>
                 </div>
               </div>
             </CardContent>
@@ -524,7 +524,7 @@ export function FacturasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.emitidas}</p>
-                  <p className="text-[10px] text-muted-foreground">Emitidas</p>
+                  <p className="text-xs text-muted-foreground">Emitidas</p>
                 </div>
               </div>
             </CardContent>
@@ -541,7 +541,7 @@ export function FacturasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.parciales}</p>
-                  <p className="text-[10px] text-muted-foreground">Parciales</p>
+                  <p className="text-xs text-muted-foreground">Parciales</p>
                 </div>
               </div>
             </CardContent>
@@ -558,7 +558,7 @@ export function FacturasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.cobradas}</p>
-                  <p className="text-[10px] text-muted-foreground">Cobradas</p>
+                  <p className="text-xs text-muted-foreground">Cobradas</p>
                 </div>
               </div>
             </CardContent>
@@ -575,7 +575,7 @@ export function FacturasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold text-destructive">{kpis.vencidas}</p>
-                  <p className="text-[10px] text-muted-foreground">Vencidas</p>
+                  <p className="text-xs text-muted-foreground">Vencidas</p>
                 </div>
               </div>
             </CardContent>
@@ -589,7 +589,7 @@ export function FacturasList({
                 </div>
                 <div>
                   <p className="text-lg font-bold">{formatCurrency(kpis.totalPendiente)}</p>
-                  <p className="text-[10px] text-muted-foreground">Pendiente</p>
+                  <p className="text-xs text-muted-foreground">Pendiente</p>
                 </div>
               </div>
             </CardContent>
@@ -735,7 +735,7 @@ export function FacturasList({
                         <div>
                           <span className="font-medium">{factura.numero}</span>
                           {!clienteId && (
-                            <div className="text-[10px] text-muted-foreground sm:hidden truncate max-w-[80px]">
+                            <div className="text-xs text-muted-foreground sm:hidden truncate max-w-[80px]">
                               {factura.client?.legalName || '-'}
                             </div>
                           )}
@@ -750,7 +750,7 @@ export function FacturasList({
                       <TableCell className="text-xs hidden lg:table-cell">
                         <div className={vencida ? 'text-destructive font-medium' : 'text-muted-foreground'}>
                           {factura.fechaVencimiento ? format(new Date(factura.fechaVencimiento), 'dd/MM/yy', { locale: es }) : '-'}
-                          {vencida && <span className="ml-1 text-[10px]">({Math.abs(diasVenc!)}d)</span>}
+                          {vencida && <span className="ml-1 text-xs">({Math.abs(diasVenc!)}d)</span>}
                         </div>
                       </TableCell>
                       <TableCell>{getEstadoBadge(factura.status)}</TableCell>

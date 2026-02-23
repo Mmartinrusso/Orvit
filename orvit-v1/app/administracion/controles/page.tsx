@@ -116,7 +116,7 @@ export default function ControlesPage() {
       status: 'active',
       lastUpdate: 'Actualizado ahora',
       onClick: () => setIsTaxControlModalOpen(true),
-      badge: loading ? 'Cargando...' : `${taxStats.vencidos} vencidos`,
+      badge: loading ? 'Cargando controles...' : `${taxStats.vencidos} vencidos`,
       badgeColor: taxStats.vencidos > 0 ? 'bg-destructive/10 text-destructive' : 'bg-success-muted text-success'
     }
   ];
@@ -158,7 +158,7 @@ export default function ControlesPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p>Cargando información de la empresa...</p>
+              <p>Cargando empresa...</p>
             </div>
           </div>
         </div>

@@ -339,7 +339,7 @@ export function WorkOrdersCalendarView({
               aspectRatio={1.8}
               eventContent={(eventInfo) => (
                 <div className="flex items-center gap-1 px-1 py-0.5 overflow-hidden">
-                  <span className="truncate text-[11px] font-medium">
+                  <span className="truncate text-xs font-medium">
                     {eventInfo.event.title}
                   </span>
                 </div>

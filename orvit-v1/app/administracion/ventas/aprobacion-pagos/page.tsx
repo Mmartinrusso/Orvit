@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { Clock, CheckCircle2, XCircle, RefreshCw, User, Calendar, DollarSign, FileText, CreditCard, Banknote } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
 
 interface PendingPayment {
   id: number;
@@ -249,7 +249,7 @@ export default function AprobacionPagosPage() {
               <CardContent className="py-12">
                 <div className="flex items-center justify-center">
                   <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">Cargando...</span>
+                  <span className="ml-2 text-muted-foreground">Cargando aprobaciones...</span>
                 </div>
               </CardContent>
             </Card>
@@ -284,7 +284,7 @@ export default function AprobacionPagosPage() {
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {format(new Date(payment.fechaPago), 'dd/MM/yyyy')}
+                        {formatDate(payment.fechaPago)}
                       </div>
                     </div>
                   </div>
@@ -324,7 +324,7 @@ export default function AprobacionPagosPage() {
                                   {cheque.numero} - {cheque.banco}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {cheque.titular} · Vence: {cheque.fechaVencimiento ? format(new Date(cheque.fechaVencimiento), 'dd/MM/yyyy') : 'N/A'}
+                                  {cheque.titular} · Vence: {cheque.fechaVencimiento ? formatDate(cheque.fechaVencimiento) : 'N/A'}
                                 </div>
                               </div>
                             </div>
@@ -363,7 +363,7 @@ export default function AprobacionPagosPage() {
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
                       Registrado por: {payment.createdByUser.name || 'Usuario'} ·{' '}
-                      {format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm')}
+                      {formatDateTime(payment.createdAt)}
                     </div>
                     <div className="flex gap-2">
                       <Button

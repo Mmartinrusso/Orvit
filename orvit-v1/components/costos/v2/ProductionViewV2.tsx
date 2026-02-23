@@ -55,6 +55,7 @@ import {
   AreaChart, Area,
 } from 'recharts';
 import { SemiGauge } from './SemiGauge';
+import { formatNumber } from '@/lib/utils';
 
 interface ProductionViewV2Props {
   companyId: string;
@@ -65,8 +66,6 @@ interface ProductionViewV2Props {
 
 const formatCurrency = (value: number): string =>
   value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-
-const formatNumber = (value: number): string => value.toLocaleString('es-AR');
 
 function Sparkline({ data, color, height = 40 }: { data: { value: number }[]; color: string; height?: number }) {
   if (data.length < 2) {
@@ -489,7 +488,7 @@ export function ProductionViewV2({
                             ${formatCurrency(item.value)}
                           </span>
                           <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
-                            {item.pct.toFixed(1)}%
+                            {formatNumber(item.pct, 1)}%
                           </span>
                           <Badge variant={item.hasRecipe ? 'secondary' : 'outline'} className="text-xs shrink-0">
                             {item.hasRecipe ? '✓' : '—'}
@@ -743,7 +742,7 @@ export function ProductionViewV2({
                           {isPositiveDelta
                             ? <TrendingUp className="h-3 w-3" />
                             : <TrendingDown className="h-3 w-3" />}
-                          {isPositiveDelta ? '+' : ''}{t.metric.delta.toFixed(1)}% vs mes anterior
+                          {isPositiveDelta ? '+' : ''}{formatNumber(t.metric.delta, 1)}% vs mes anterior
                         </p>
                       </CardContent>
                     </Card>
@@ -844,7 +843,7 @@ export function ProductionViewV2({
                                   />
                                 </div>
                                 <span className="text-xs text-muted-foreground w-10 text-right">
-                                  {pct.toFixed(1)}%
+                                  {formatNumber(pct, 1)}%
                                 </span>
                               </div>
                             </TableCell>
@@ -921,7 +920,7 @@ export function ProductionViewV2({
                                   />
                                 </div>
                                 <span className="text-xs text-muted-foreground w-10 text-right">
-                                  {pct.toFixed(1)}%
+                                  {formatNumber(pct, 1)}%
                                 </span>
                               </div>
                             </TableCell>

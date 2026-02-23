@@ -422,7 +422,7 @@ function RecurrenceGroupCard({
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[10px]',
+                            'text-xs',
                             occ.status === 'OPEN' && 'border-info text-info-muted-foreground',
                             occ.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
                             occ.status === 'RESOLVED' && 'border-success text-success'
@@ -437,12 +437,12 @@ function RecurrenceGroupCard({
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {occ.causedDowntime && (
-                          <Badge variant="destructive" className="text-[10px] px-1 py-0">
+                          <Badge variant="destructive" className="text-xs px-1 py-0">
                             Parada
                           </Badge>
                         )}
                         {occ.failureId && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          <Badge variant="outline" className="text-xs px-1 py-0">
                             OT #{occ.failureId}
                           </Badge>
                         )}

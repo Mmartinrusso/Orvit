@@ -2,7 +2,7 @@
 
 import React, { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
 import { formatCurrency } from './utils/metrics';
 import { InfoTooltip } from './InfoTooltip';
@@ -113,7 +113,7 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
                   <div className={cn("flex items-center gap-1 justify-end", getVariationColor(totalVariation))}>
                     {getVariationIcon(totalVariation)}
                     <span className="text-lg font-bold">
-                      {totalVariation > 0 ? '+' : ''}{totalVariation.toFixed(1)}%
+                      {totalVariation > 0 ? '+' : ''}{formatNumber(totalVariation, 1)}%
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -143,7 +143,7 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
                     <>
                       {getVariationIcon(component.variation)}
                       <span className={cn("text-xs font-semibold", getVariationColor(component.variation))}>
-                        {component.variation > 0 ? '+' : ''}{component.variation.toFixed(1)}%
+                        {component.variation > 0 ? '+' : ''}{formatNumber(component.variation, 1)}%
                       </span>
                     </>
                   ) : (
@@ -161,7 +161,7 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
                 <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10">
                   <TrendingUp className="h-3 w-3 text-destructive mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-destructive">
-                    <strong>{biggestIncrease.label}</strong> subió {biggestIncrease.variation?.toFixed(1)}%
+                    <strong>{biggestIncrease.label}</strong> subió {formatNumber(biggestIncrease.variation, 1)}%
                   </p>
                 </div>
               )}
@@ -169,7 +169,7 @@ export const CostVariation = memo(function CostVariation({ currentCosts, previou
                 <div className="flex items-start gap-2 p-2 rounded-md bg-success-muted">
                   <TrendingDown className="h-3 w-3 text-success mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-success">
-                    <strong>{biggestDecrease.label}</strong> bajó {Math.abs(biggestDecrease.variation || 0).toFixed(1)}%
+                    <strong>{biggestDecrease.label}</strong> bajó {formatNumber(Math.abs(biggestDecrease.variation || 0), 1)}%
                   </p>
                 </div>
               )}

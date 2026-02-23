@@ -72,7 +72,7 @@ export function NodeCard({
         </div>
         
         {/* Subtítulo */}
-        <div className="text-[11px] text-muted-foreground text-center mt-0.5">
+        <div className="text-xs text-muted-foreground text-center mt-0.5">
           {subtitle}
         </div>
       </div>

@@ -42,8 +42,8 @@ import {
  Receipt,
  ShoppingCart,
 } from 'lucide-react';
-import { format, differenceInDays, isPast } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { differenceInDays, isPast } from 'date-fns';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -261,7 +261,7 @@ export function CotizacionDetailModal({
  {isExpired ? 'Vencida' : `${daysUntilExpiry}d`}
  </p>
  <p className={cn("text-xs mt-1", isExpired ? "text-destructive" : "text-muted-foreground")}>
- {format(new Date(cotizacion.validezHasta), 'dd/MM/yyyy')}
+ {formatDate(cotizacion.validezHasta)}
  </p>
  </>
  ) : (
@@ -494,7 +494,7 @@ export function CotizacionDetailModal({
  <DialogFooter className="justify-between bg-muted/30">
  <div className="text-xs text-muted-foreground">
  {cotizacion.createdAt && (
- <span>Creado: {format(new Date(cotizacion.createdAt), "dd/MM/yyyy HH:mm")}</span>
+ <span>Creado: {formatDateTime(cotizacion.createdAt)}</span>
  )}
  </div>
  <Button variant="outline" onClick={onClose}>

@@ -25,7 +25,7 @@ import {
   Truck,
   ClipboardCheck
 } from 'lucide-react';
-import { useChecklistItemsTree, parseCode, compareCodes } from '@/hooks/maintenance/use-checklist-items-tree';
+import { useChecklistItemsTree, parseCode, compareCodes } from '@/hooks/mantenimiento/use-checklist-items-tree';
 import { fetchAllMaintenancesCached } from '@/hooks/use-all-maintenances';
 import { useCompany } from '@/contexts/CompanyContext';
 
@@ -441,7 +441,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                   </span>
                   <span>{safeText(machine.machineName)}</span>
                 </h4>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {machine.components.reduce((sum, c) =>
                     sum + c.subcomponents.reduce((s, sc) => s + sc.items.length, 0), 0
                   )} items
@@ -496,7 +496,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                                  <span className="text-xs font-mono font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                                     {item.code}
                                   </span>
                                   <h5 className="font-medium text-sm text-foreground truncate">
@@ -513,7 +513,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                               {/* Badge de tiempo con color */}
                               <Badge
                                 variant="outline"
-                                className={cn('text-[10px] shrink-0 flex items-center gap-1', getTimeColor(item.minutes))}
+                                className={cn('text-xs shrink-0 flex items-center gap-1', getTimeColor(item.minutes))}
                               >
                                 <Clock className="h-3 w-3" />
                                 {formatMinutes(item.minutes)}
@@ -556,7 +556,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-xs font-mono font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                             {item.code}
                           </span>
                           <h5 className="font-medium text-sm text-foreground truncate">
@@ -573,7 +573,7 @@ export function ChecklistItemsTab({ checklistId }: ChecklistItemsTabProps) {
                       {/* Badge de tiempo con color */}
                       <Badge
                         variant="outline"
-                        className={cn('text-[10px] shrink-0 flex items-center gap-1', getTimeColor(item.minutes))}
+                        className={cn('text-xs shrink-0 flex items-center gap-1', getTimeColor(item.minutes))}
                       >
                         <Clock className="h-3 w-3" />
                         {formatMinutes(item.minutes)}

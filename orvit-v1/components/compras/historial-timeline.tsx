@@ -104,13 +104,13 @@ function HistorialEventItem({ evento }: { evento: HistorialEvento }) {
  >
  {evento.numeroDocumento}
  </Link>
- <span className="text-[10px] text-muted-foreground">
+ <span className="text-xs text-muted-foreground">
  {evento.entidadLabel}
  </span>
  {evento.proveedor && (
  <>
- <span className="text-muted-foreground text-[10px]">•</span>
- <span className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+ <span className="text-muted-foreground text-xs">•</span>
+ <span className="text-xs text-muted-foreground truncate max-w-[180px]">
  {evento.proveedor.nombre}
  </span>
  </>
@@ -121,14 +121,14 @@ function HistorialEventItem({ evento }: { evento: HistorialEvento }) {
  <div className="flex items-center gap-2 mt-0.5">
  <Badge
  variant="outline"
- className={cn('text-[10px] font-normal px-1.5 py-0 h-5', getBadgeClasses())}
+ className={cn('text-xs font-normal px-1.5 py-0 h-5', getBadgeClasses())}
  >
  {evento.message}
  </Badge>
  </div>
 
  {/* Tercera línea: usuario y tiempo */}
- <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
+ <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
  <span>{evento.usuario.nombre}</span>
  <span>•</span>
  <span>{evento.relativeTime}</span>
@@ -136,7 +136,7 @@ function HistorialEventItem({ evento }: { evento: HistorialEvento }) {
 
  {/* Metadata adicional (razón de rechazo, etc.) */}
  {evento.metadata?.reason && evento.accion !== 'REJECT' && evento.accion !== 'CANCEL' && (
- <p className="mt-1 text-[10px] text-muted-foreground italic">
+ <p className="mt-1 text-xs text-muted-foreground italic">
  {evento.metadata.reason}
  </p>
  )}
@@ -193,7 +193,7 @@ export function HistorialTimeline({
  <div key={day}>
  {/* Separador de día */}
  <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1.5 px-3 border-b">
- <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+ <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
  {day}
  </span>
  </div>

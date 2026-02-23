@@ -80,7 +80,7 @@ export function LoadOrderDetailItems({ items, estado }: LoadOrderDetailItemsProp
                               {item.cantidadCargada}
                             </span>
                             {hasDifference && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0 bg-orange-100 text-orange-700 border-orange-200">
+                              <Badge variant="outline" className="text-xs px-1 py-0 bg-orange-100 text-orange-700 border-orange-200">
                                 ±
                               </Badge>
                             )}
@@ -167,11 +167,11 @@ export function LoadOrderDetailItems({ items, estado }: LoadOrderDetailItemsProp
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Peso estimado total:</span>
                   <span>
-                    {items.reduce(
+                    {formatNumber(items.reduce(
                       (sum, item) =>
                         sum + (item.pesoUnitario || 0) * (isConfirmed ? (item.cantidadCargada || 0) : (item.cantidad || 0)),
                       0
-                    ).toFixed(2)} kg
+                    ), 2)} kg
                   </span>
                 </div>
               )}
@@ -179,11 +179,11 @@ export function LoadOrderDetailItems({ items, estado }: LoadOrderDetailItemsProp
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Volumen estimado total:</span>
                   <span>
-                    {items.reduce(
+                    {formatNumber(items.reduce(
                       (sum, item) =>
                         sum + (item.volumenUnitario || 0) * (isConfirmed ? (item.cantidadCargada || 0) : (item.cantidad || 0)),
                       0
-                    ).toFixed(3)} m³
+                    ), 3)} m³
                   </span>
                 </div>
               )}

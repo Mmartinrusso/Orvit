@@ -35,7 +35,7 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 
 // Register ChartJS components
 ChartJS.register(
@@ -265,7 +265,7 @@ export function InvoicesDashboard() {
               {formatCurrency(data.totalCobrado)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {data.porcentajeCobrado.toFixed(1)}% del total
+              {formatNumber(data.porcentajeCobrado, 1)}% del total
             </p>
           </CardContent>
         </Card>
@@ -281,7 +281,7 @@ export function InvoicesDashboard() {
               {formatCurrency(data.saldoPendiente)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {(100 - data.porcentajeCobrado).toFixed(1)}% pendiente
+              {formatNumber(100 - data.porcentajeCobrado, 1)}% pendiente
             </p>
           </CardContent>
         </Card>

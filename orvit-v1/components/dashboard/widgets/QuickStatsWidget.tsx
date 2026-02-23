@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useWorkOrdersDashboard } from '@/hooks/use-work-orders-dashboard';
 import { useQuery } from '@tanstack/react-query';
 import { WidgetWrapper, WidgetProps } from './WidgetWrapper';
@@ -78,7 +78,7 @@ export function QuickStatsWidget({
     },
     mttr: {
       title: 'MTTR',
-      value: `${kpisData?.avgMTTR?.toFixed(1) || '0'}h`,
+      value: `${kpisData?.avgMTTR != null ? formatNumber(kpisData.avgMTTR, 1) : '0'}h`,
       icon: <Timer className="h-5 w-5" />,
       color: 'text-warning-muted-foreground',
       bgColor: 'bg-warning-muted',

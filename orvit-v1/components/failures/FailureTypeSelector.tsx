@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { useFailureTypes, FailureType } from '@/hooks/maintenance/use-failure-types';
+import { useFailureTypes, FailureType } from '@/hooks/mantenimiento/use-failure-types';
 
 interface FailureTypeSelectorProps {
   companyId: number | null;

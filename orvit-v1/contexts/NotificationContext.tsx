@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 import { useCompany } from './CompanyContext';
 import { useToast } from '@/hooks/use-toast';
 import { WorkOrderStatus, Priority } from '@/lib/types';
-import { useNotifications as useNotificationsHook } from '@/hooks/maintenance/use-notifications'; // ✨ OPTIMIZACIÓN: Hook centralizado
+import { useNotifications as useNotificationsHook } from '@/hooks/mantenimiento/use-notifications'; // ✨ OPTIMIZACIÓN: Hook centralizado
 
 export interface Notification {
   id: string;

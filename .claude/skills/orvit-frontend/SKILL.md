@@ -275,11 +275,111 @@ Handlers:       handleCreate/Update/Delete, handleBulkX, toggleSelection, handle
 
 ---
 
+## Pulido Visual — Reglas de calidad
+
+### Spacing (escala de 4px)
+```
+Padding interno de cards:          p-4 (16px) o p-5 (20px)
+Gap entre cards/KPIs:              gap-4 (16px)
+Gap entre elementos inline:        gap-2 (8px) o gap-3 (12px)
+Separación entre secciones:        space-y-6 (24px)
+Padding de botones en toolbars:    size="sm" (h-9 px-3)
+Margen label→input:                mb-1.5 o mb-2
+```
+
+### Tipografía
+```
+Títulos de página:       text-2xl font-bold tracking-tight
+Títulos de sección:      text-lg font-semibold
+Labels/subtítulos:       text-xs text-muted-foreground uppercase tracking-wider
+Valores KPI:             text-2xl font-bold
+Texto en tablas:         text-sm
+Texto secundario:        text-sm text-muted-foreground
+Texto mínimo (badges):   text-xs font-medium
+Monospace (IDs, códigos):text-sm font-mono
+```
+
+### Sombras y elevación
+```
+Card base:               shadow-none border (flat, limpio)
+Card hover:              hover:shadow-md transition-shadow
+Dialog/Modal:            shadow-lg (shadcn default)
+Dropdown/Popover:        shadow-md (shadcn default)
+Sticky headers:          shadow-sm border-b
+Cards importantes:       shadow-sm (un nivel arriba del base)
+```
+
+### Hover y estados interactivos
+```
+Cards clickeables:       hover:shadow-md hover:border-primary/30 transition-all duration-200
+Filas de tabla:          hover:bg-muted/50
+Botones ghost:           hover:bg-accent (shadcn default)
+Links/texto clickeable:  hover:underline
+Elementos seleccionados: ring-2 ring-primary bg-primary/5
+Disabled:                opacity-50 cursor-not-allowed pointer-events-none
+```
+
+### Transiciones
+```
+Interacciones rápidas (hover, toggle):    duration-150
+Cambios de layout (expand, collapse):     duration-200
+Modales, sheets, overlays:                duration-300
+SIEMPRE con:                              transition-all o transition-colors
+```
+
+### Bordes y radius
+```
+Cards:                   rounded-lg border
+Botones:                 rounded-md (shadcn default)
+Badges/pills:            rounded-full
+Inputs:                  rounded-md border (shadcn default)
+Barras de progreso:      rounded-full
+Imágenes/avatares:       rounded-full (circular) o rounded-lg (square)
+Borde sutil separador:   border-b border-border
+Borde de estado (izq):   border-l-2 o border-l-4 con color de estado
+```
+
+### Densidad
+```
+Tablas de datos:         p-2 text-sm — compacto, mucha info
+Cards de resumen:        p-4 — balance
+Dashboards/KPIs:         p-4 a p-5 — más respiro
+Formularios:             space-y-4 entre campos
+Headers de sección:      py-2 px-3 bg-muted/40 border-b — banda tipo "section header"
+```
+
+### Feedback visual inmediato
+```
+Carga:                   Skeleton o spinner con texto contextual ("Cargando ventas...")
+Éxito:                   toast.success con ícono ✓
+Error:                   toast.error con mensaje útil
+Acción en progreso:      Button disabled + Loader2 animate-spin
+Cambio guardado:         Flash verde sutil o toast breve
+Validación inline:       text-red-500 text-xs debajo del input
+```
+
+### Accesibilidad mínima
+```
+Focus visible:           focus-visible:ring-2 focus-visible:ring-ring (shadcn default, no quitar)
+Botones:                 SIEMPRE <Button> o <button>, nunca <div onClick>
+Contraste:               Texto sobre fondo: mínimo 4.5:1 (WCAG AA)
+ARIA:                    aria-label en botones de solo ícono
+Alt text:                alt descriptivo en imágenes
+Keyboard:                Tab order lógico, Enter/Space para activar
+```
+
+---
+
 ## Anti-patterns
 
 - ❌ Colores hardcodeados cuando hay `userColors`
 - ❌ `alert()` — usar `confirm()` solo para destructivos, toast para feedback
-- ❌ `stopPropagation` olvidado en elementos dentro de cards clickeables
+- ❌ `stopPropagation` olvidado en elementos dentro de cards clickeables — usar `<div onClick={e => e.stopPropagation()}>` wrapper
 - ❌ Fetch sin loading state
 - ❌ CSS custom cuando Tailwind puede hacerlo
 - ❌ Componente nuevo cuando existe uno en shadcn/ui
+- ❌ Padding inconsistente (mezclar p-3 con p-4 en cards del mismo nivel)
+- ❌ Hover sin transición (cambios bruscos)
+- ❌ Text-base para labels (usar text-xs uppercase tracking-wider)
+- ❌ Spinners sin texto contextual
+- ❌ `<div onClick>` en vez de `<Button>` — mata accesibilidad

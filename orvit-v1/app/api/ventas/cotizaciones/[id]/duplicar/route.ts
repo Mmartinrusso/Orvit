@@ -28,7 +28,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       where: { id: quoteId, companyId },
       include: {
         items: {
-          orderBy: { orden: 'asc' }
+          orderBy: { orden: 'asc' },
+          include: { costBreakdown: true }
         }
       }
     });
@@ -97,25 +98,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
       });
 
-      // Duplicar items
-      if (cotizacionOriginal.items.length > 0) {
-        await tx.quoteItem.createMany({
-          data: cotizacionOriginal.items.map((item, index) => ({
+      // Duplicar items con desglose de costos
+      for (let index = 0; index < cotizacionOriginal.items.length; index++) {
+        const originalItem = cotizacionOriginal.items[index];
+        const newItem = await tx.quoteItem.create({
+          data: {
             quoteId: cotizacion.id,
-            productId: item.productId,
-            codigo: item.codigo,
-            descripcion: item.descripcion,
-            cantidad: item.cantidad,
-            unidad: item.unidad,
-            precioUnitario: item.precioUnitario,
-            descuento: item.descuento,
-            subtotal: item.subtotal,
-            costoUnitario: item.costoUnitario,
-            margenItem: item.margenItem,
-            notas: item.notas,
+            productId: originalItem.productId,
+            codigo: originalItem.codigo,
+            descripcion: originalItem.descripcion,
+            cantidad: originalItem.cantidad,
+            unidad: originalItem.unidad,
+            precioUnitario: originalItem.precioUnitario,
+            descuento: originalItem.descuento,
+            subtotal: originalItem.subtotal,
+            costoUnitario: originalItem.costoUnitario,
+            margenItem: originalItem.margenItem,
+            notas: originalItem.notas,
             orden: index,
-          }))
+          }
         });
+
+        // Copiar desglose de costos
+        if (originalItem.costBreakdown && originalItem.costBreakdown.length > 0) {
+          await tx.quoteItemCostBreakdown.createMany({
+            data: originalItem.costBreakdown.map((cb) => ({
+              quoteItemId: newItem.id,
+              concepto: cb.concepto,
+              monto: cb.monto,
+              orden: cb.orden,
+            }))
+          });
+        }
       }
 
       // Crear versión inicial
@@ -167,7 +181,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             descuento: true,
             subtotal: true,
             notas: true,
-            orden: true
+            orden: true,
+            costBreakdown: {
+              select: { id: true, concepto: true, monto: true, orden: true },
+              orderBy: { orden: 'asc' as const },
+            },
           },
           orderBy: { orden: 'asc' }
         }

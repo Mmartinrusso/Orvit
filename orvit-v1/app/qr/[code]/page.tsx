@@ -71,7 +71,7 @@ export default function QRLandingPage({ params }: Params) {
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-            <p>Cargando información...</p>
+            <p>Cargando información del equipo...</p>
           </CardContent>
         </Card>
       </div>

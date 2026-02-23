@@ -60,8 +60,7 @@ import {
  Package
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { RegistrarPagoModal } from './RegistrarPagoModal';
 
 interface ReceiptItem {
@@ -151,7 +150,7 @@ const getEstadoBadge = (estado: string) => {
  aprobada: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Pendiente de Pago', icon: <CreditCard className="w-3 h-3" /> },
  rechazada: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Rechazada', icon: <XCircle className="w-3 h-3" /> },
  convertida: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Convertida', icon: <DollarSign className="w-3 h-3" /> },
- pagada: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Pagada', icon: <CheckCircle className="w-3 h-3" /> },
+ pagada: { color: 'bg-success-muted text-success-muted-foreground border-success-muted', label: 'Pagada', icon: <CheckCircle className="w-3 h-3" /> },
  cancelada: { color: 'bg-muted text-foreground border-border', label: 'Cancelada', icon: <XCircle className="w-3 h-3" /> }
  };
  return estados[estado] || estados.pendiente;
@@ -175,10 +174,7 @@ const formatCurrency = (amount: number) => {
  }).format(amount);
 };
 
-const formatDate = (dateStr: string | null) => {
- if (!dateStr) return '-';
- return format(new Date(dateStr), 'dd/MM/yyyy', { locale: es });
-};
+// formatDate imported from @/lib/date-utils (returns '' for null/undefined)
 
 export function SolicitudDetalleModal({
  solicitudId,
@@ -482,7 +478,7 @@ export function SolicitudDetalleModal({
  const rowContent = (
  <TableRow key={comp.id} className={hasItems ? 'cursor-help' : ''}>
  <TableCell className="text-xs">
- <Badge variant="outline" className="text-[10px] px-1.5">
+ <Badge variant="outline" className="text-xs px-1.5">
  {comp.receipt?.tipo || 'N/A'}
  </Badge>
  </TableCell>
@@ -519,7 +515,7 @@ export function SolicitudDetalleModal({
  className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1.5"
  >
  <span className="flex-1 truncate pr-2">{item.descripcion}</span>
- <span className="text-muted-foreground mx-3 whitespace-nowrap text-[10px]">
+ <span className="text-muted-foreground mx-3 whitespace-nowrap text-xs">
  {item.cantidad} {item.unidad}
  </span>
  <span className="font-medium whitespace-nowrap">
@@ -562,7 +558,7 @@ export function SolicitudDetalleModal({
  className="flex items-center justify-between text-xs bg-background rounded px-3 py-1.5 border"
  >
  <span className="flex-1 truncate">{item.descripcion}</span>
- <span className="text-muted-foreground mx-4 whitespace-nowrap text-[10px]">
+ <span className="text-muted-foreground mx-4 whitespace-nowrap text-xs">
  {item.cantidad} {item.unidad}
  </span>
  <span className="font-medium whitespace-nowrap">

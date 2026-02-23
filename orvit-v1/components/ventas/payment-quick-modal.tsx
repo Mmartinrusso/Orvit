@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 
 // =====================================================
 // TYPES
@@ -475,7 +476,7 @@ export function PaymentQuickModal({
                           {invoice.fechaVencimiento && (
                             <div className="flex items-center gap-2">
                               <span>
-                                {format(new Date(invoice.fechaVencimiento), 'dd/MM/yyyy')}
+                                {formatDate(invoice.fechaVencimiento)}
                               </span>
                               {invoice.diasVencido && invoice.diasVencido > 0 && (
                                 <Badge variant="destructive" className="text-xs">

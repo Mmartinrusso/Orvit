@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -108,7 +109,7 @@ export function OrdenDetailItems({ items, moneda }: OrdenDetailItemsProps) {
                         )}
                         {porcentajeEntregado > 0 && porcentajeEntregado < 100 && (
                           <Badge variant="default" className="bg-warning">
-                            Parcial ({porcentajeEntregado.toFixed(0)}%)
+                            Parcial ({formatNumber(porcentajeEntregado, 0)}%)
                           </Badge>
                         )}
                         {porcentajeEntregado === 100 && (

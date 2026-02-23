@@ -324,7 +324,7 @@ export default function BankReconciliation({
                           <TableCell className="text-xs max-w-[160px] truncate">
                             {item.descripcion}
                             {item.referencia && (
-                              <span className="text-muted-foreground ml-1 text-[10px]">
+                              <span className="text-muted-foreground ml-1 text-xs">
                                 ({item.referencia})
                               </span>
                             )}

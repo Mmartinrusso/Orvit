@@ -36,7 +36,7 @@ import { DespachoTypes, DespachoTypeLabels } from '@/lib/almacen/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/use-users';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface DespachoItem {
   supplierItemId: number;
@@ -397,7 +397,7 @@ export function DespachoFormModal({
                               'text-sm font-medium',
                               item.stockDisponible <= 0 && 'text-destructive'
                             )}>
-                              {item.stockDisponible?.toFixed(2)} {item.supplierItem?.unidad}
+                              {formatNumber(item.stockDisponible, 2)} {item.supplierItem?.unidad}
                             </p>
                             <p className="text-xs text-muted-foreground">disponible</p>
                           </div>
@@ -433,7 +433,7 @@ export function DespachoFormModal({
                         <span className={cn(
                           item.stockDisponible < item.cantidadDespachada && 'text-destructive'
                         )}>
-                          {item.stockDisponible.toFixed(2)}
+                          {formatNumber(item.stockDisponible, 2)}
                         </span>
                         <span className="text-muted-foreground ml-1">{item.unidad}</span>
                       </TableCell>

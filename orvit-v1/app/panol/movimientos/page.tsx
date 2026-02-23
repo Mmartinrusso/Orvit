@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { formatDateTime } from '@/lib/date-utils';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -76,7 +77,7 @@ const MOVEMENT_TYPES = {
   OUT: { label: 'Salida', icon: ArrowDownCircle, color: 'text-destructive' },
   TRANSFER: { label: 'Transferencia', icon: ArrowLeftRight, color: 'text-info-muted-foreground' },
   MAINTENANCE: { label: 'Mantenimiento', icon: Wrench, color: 'text-warning-muted-foreground' },
-  RETURN: { label: 'Devolución', icon: RotateCcw, color: 'text-purple-600' },
+  RETURN: { label: 'Devolución', icon: RotateCcw, color: 'text-accent-purple-muted-foreground' },
 };
 
 const ITEM_TYPE_ICONS: Record<string, React.ElementType> = {
@@ -167,7 +168,7 @@ export default function MovimientosPage() {
 
     const headers = ['Fecha', 'Tipo', 'Item', 'Cantidad', 'Razón', 'Usuario'];
     const rows = filteredMovements.map((m) => [
-      format(new Date(m.createdAt), 'dd/MM/yyyy HH:mm'),
+      formatDateTime(m.createdAt),
       MOVEMENT_TYPES[m.type]?.label || m.type,
       m.tool.name,
       m.type === 'OUT' ? `-${m.quantity}` : `+${m.quantity}`,

@@ -262,7 +262,7 @@ export default function ComponentesPage() {
               disabled={isFetching}
               className={cn(
                 'inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7',
-                'px-2 text-[11px] font-normal gap-1.5',
+                'px-2 text-xs font-normal gap-1.5',
                 'hover:bg-muted disabled:opacity-50',
                 isFetching && 'bg-background shadow-sm'
               )}
@@ -309,7 +309,7 @@ export default function ComponentesPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Los componentes globales aplican a todos los empleados. Los específicos solo al gremio seleccionado.
                     </p>
                   </div>
@@ -402,7 +402,7 @@ export default function ComponentesPage() {
                         placeholder="base * 0.0833"
                         className="h-9"
                       />
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Variables: base, gross, years, months, days_worked, days_in_period
                       </p>
                     </div>
@@ -516,7 +516,7 @@ export default function ComponentesPage() {
                           {c.calcType === 'FORMULA' && c.calcFormula}
                         </p>
                       </div>
-                      <Badge variant={c.isActive ? 'default' : 'secondary'} className="text-[10px] ml-2">
+                      <Badge variant={c.isActive ? 'default' : 'secondary'} className="text-xs ml-2">
                         {c.code}
                       </Badge>
                     </div>
@@ -568,7 +568,7 @@ export default function ComponentesPage() {
                           {c.calcType === 'FORMULA' && c.calcFormula}
                         </p>
                       </div>
-                      <Badge variant="destructive" className="text-[10px] ml-2">
+                      <Badge variant="destructive" className="text-xs ml-2">
                         {c.code}
                       </Badge>
                     </div>

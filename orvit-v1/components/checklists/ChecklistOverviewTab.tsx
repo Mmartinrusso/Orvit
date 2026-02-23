@@ -25,7 +25,7 @@ import {
   History,
   TrendingUp
 } from 'lucide-react';
-import { useChecklistDetail } from '@/hooks/maintenance/use-checklist-detail';
+import { useChecklistDetail } from '@/hooks/mantenimiento/use-checklist-detail';
 
 interface ChecklistOverviewTabProps {
   checklistId: number;
@@ -255,7 +255,7 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
         <div className="bg-info-muted border border-info-muted-foreground/20 rounded-lg p-3">
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5 text-info-muted-foreground" />
-            <span className="text-[10px] font-medium text-info-muted-foreground uppercase tracking-wide">Tiempo</span>
+            <span className="text-xs font-medium text-info-muted-foreground uppercase tracking-wide">Tiempo</span>
           </div>
           <p className="text-lg font-bold text-foreground mt-1">
             {formatMinutes(stats.estimatedMinutes)}
@@ -265,7 +265,7 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
         <div className="bg-success-muted border border-success/20 rounded-lg p-3">
           <div className="flex items-center gap-2">
             <CheckSquare className="h-3.5 w-3.5 text-success" />
-            <span className="text-[10px] font-medium text-success uppercase tracking-wide">Items</span>
+            <span className="text-xs font-medium text-success uppercase tracking-wide">Items</span>
           </div>
           <p className="text-lg font-bold text-foreground mt-1">
             {stats.totalItems}
@@ -276,7 +276,7 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
           <div className="bg-warning-muted border border-warning-muted-foreground/20 rounded-lg p-3">
             <div className="flex items-center gap-2">
               <Layers className="h-3.5 w-3.5 text-warning-muted-foreground" />
-              <span className="text-[10px] font-medium text-warning-muted-foreground uppercase tracking-wide">Fases</span>
+              <span className="text-xs font-medium text-warning-muted-foreground uppercase tracking-wide">Fases</span>
             </div>
             <p className="text-lg font-bold text-foreground mt-1">
               {stats.phasesCount}
@@ -287,7 +287,7 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
         <div className={cn('border rounded-lg p-3', getFrequencyColor(checklist.frequency))}>
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-medium uppercase tracking-wide">Frecuencia</span>
+            <span className="text-xs font-medium uppercase tracking-wide">Frecuencia</span>
           </div>
           <p className="text-lg font-bold mt-1">
             {getFrequencyLabel(checklist.frequency)}
@@ -420,7 +420,7 @@ export function ChecklistOverviewTab({ checklistId }: ChecklistOverviewTabProps)
               {(checklist as any).executionCount && (
                 <div className="text-right">
                   <p className="text-lg font-bold text-foreground">{(checklist as any).executionCount}</p>
-                  <p className="text-[10px] text-success uppercase tracking-wide">ejecuciones</p>
+                  <p className="text-xs text-success uppercase tracking-wide">ejecuciones</p>
                 </div>
               )}
             </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -399,7 +400,7 @@ export default function SimulacionesPage() {
                                 <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                                   {getVariacionIcon(escenario.variacion)}
                                   <span className={escenario.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                                    {escenario.variacion > 0 ? '+' : ''}{escenario.variacion.toFixed(1)}%
+                                    {escenario.variacion > 0 ? '+' : ''}{formatNumber(escenario.variacion, 1)}%
                                   </span>
                                 </div>
                               </div>
@@ -450,7 +451,7 @@ export default function SimulacionesPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{escenario.variacion > 0 ? '+' : ''}{escenario.variacion.toFixed(1)}%</div>
+                        <div className="font-medium">{escenario.variacion > 0 ? '+' : ''}{formatNumber(escenario.variacion, 1)}%</div>
                         <div className="text-sm text-muted-foreground">Variación</div>
                       </div>
                       {getEstadoBadge(escenario.estado)}

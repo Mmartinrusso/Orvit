@@ -33,8 +33,9 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { HealthScoreBadge, CriticalityBadge } from '@/components/machines/HealthScoreBadge';
-import { QRCodeGenerator } from '@/components/machines/QRCodeGenerator';
+import { formatDate } from '@/lib/date-utils';
+import { HealthScoreBadge, CriticalityBadge } from '@/components/maquinas/HealthScoreBadge';
+import { QRCodeGenerator } from '@/components/maquinas/QRCodeGenerator';
 import { Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -314,28 +315,28 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
                 <p className="text-xl font-bold text-success">
                   {statsData?.kpis?.mtbf ? `${statsData.kpis.mtbf}h` : '—'}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Tiempo medio entre fallas</p>
+                <p className="text-xs text-muted-foreground">Tiempo medio entre fallas</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">MTTR</p>
                 <p className="text-xl font-bold text-warning">
                   {statsData?.kpis?.mttr ? `${statsData.kpis.mttr}h` : '—'}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Tiempo medio de reparación</p>
+                <p className="text-xs text-muted-foreground">Tiempo medio de reparación</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">Disponibilidad</p>
                 <p className="text-xl font-bold text-info">
                   {statsData?.kpis?.availability ? `${statsData.kpis.availability}%` : '—'}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Uptime del activo</p>
+                <p className="text-xs text-muted-foreground">Uptime del activo</p>
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">OEE</p>
                 <p className="text-xl font-bold text-primary">
                   {statsData?.kpis?.oee ? `${statsData.kpis.oee}%` : '—'}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Eficiencia global</p>
+                <p className="text-xs text-muted-foreground">Eficiencia global</p>
               </div>
             </div>
           </CardContent>
@@ -404,7 +405,7 @@ export function MachineOverviewTab({ machine, companyId, onTabChange }: MachineO
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Vencimiento</span>
                   <span className="text-sm font-medium">
-                    {format(new Date(activeWarranty.endDate), 'dd/MM/yyyy')}
+                    {formatDate(activeWarranty.endDate)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

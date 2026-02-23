@@ -163,7 +163,7 @@ export default function SolicitudesPage() {
       aprobada: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Pend. de Pago' },
       rechazada: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Rechazada' },
       convertida: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Convertida' },
-      pagada: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Pagada' },
+      pagada: { color: 'bg-success-muted text-success-muted-foreground border-success-muted', label: 'Pagada' },
       cancelada: { color: 'bg-muted text-muted-foreground border-border', label: 'Cancelada' }
     };
     return estados[estado] || estados.pendiente;
@@ -352,26 +352,29 @@ export default function SolicitudesPage() {
   return (
     <div className="w-full p-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b">
-        <div className="flex items-center gap-3">
-          <FileCheck className="w-5 h-5 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Solicitudes de Pago</h1>
-          <span className="text-xs text-muted-foreground">
-            {filteredSolicitudes.length} solicitud(es)
-          </span>
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Solicitudes de Pago</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filteredSolicitudes.length} solicitud(es) registradas
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setShowModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Solicitud
+            </Button>
+          </div>
         </div>
-        <Button size="sm" onClick={() => setShowModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Solicitud
-        </Button>
       </div>
 
       {/* KPIs + Filtros inline */}
-      <div className="px-6 py-3 border-b bg-muted/30">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="px-4 md:px-6 py-3 border-b bg-muted/30">
+        <div className="flex flex-col space-y-2">
           {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 max-w-xs min-w-[200px]">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Buscar número, proveedor..."
@@ -413,7 +416,7 @@ export default function SolicitudesPage() {
           </div>
 
           {/* KPIs compactos */}
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             {borradores > 0 && (
               <div className="flex items-center gap-1.5">
                 <FileCheck className="w-3.5 h-3.5 text-muted-foreground" />
@@ -480,7 +483,7 @@ export default function SolicitudesPage() {
       </div>
 
       {/* Tabla */}
-      <div className="px-6">
+      <div className="px-4 md:px-6 pt-4">
         {loading ? (
           <div className="text-center py-12">
             <p className="text-xs text-muted-foreground">Cargando solicitudes...</p>
@@ -549,7 +552,7 @@ export default function SolicitudesPage() {
                                 "text-[9px] px-1 py-0 h-3.5",
                                 solicitud.docType === 'T2'
                                   ? "bg-warning-muted text-warning-muted-foreground border-warning-muted"
-                                  : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300"
+                                  : "bg-accent-purple-muted text-accent-purple-muted-foreground border-accent-purple-muted"
                               )}
                             >
                               {solicitud.docType}
@@ -563,12 +566,12 @@ export default function SolicitudesPage() {
                         {format(new Date(solicitud.fecha), 'dd/MM/yy', { locale: es })}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${prioridadInfo.color} border text-[10px] px-1.5 py-0 whitespace-nowrap`}>
+                        <Badge className={`${prioridadInfo.color} border text-xs px-1.5 py-0 whitespace-nowrap`}>
                           {prioridadInfo.label}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${estadoInfo.color} border text-[10px] px-1.5 py-0 whitespace-nowrap`}>
+                        <Badge className={`${estadoInfo.color} border text-xs px-1.5 py-0 whitespace-nowrap`}>
                           {estadoInfo.label}
                         </Badge>
                       </TableCell>

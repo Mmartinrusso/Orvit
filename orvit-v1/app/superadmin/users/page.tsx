@@ -102,7 +102,7 @@ const roleConfig: Record<string, { label: string; color: string; icon: any }> = 
   },
   ADMIN_ENTERPRISE: {
     label: 'Admin Empresa',
-    color: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    color: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
     icon: Building2,
   },
   USER: {
@@ -267,7 +267,7 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -284,8 +284,8 @@ export default function UsersPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-accent-purple" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.byRole?.ADMIN_ENTERPRISE || 0}</p>

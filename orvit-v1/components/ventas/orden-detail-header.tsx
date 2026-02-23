@@ -22,8 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 
 interface OrdenDetailHeaderProps {
   orden: any;
@@ -79,7 +78,7 @@ export function OrdenDetailHeader({
                   </Badge>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Creada el {format(new Date(orden.fechaEmision), 'dd/MM/yyyy HH:mm', { locale: es })}
+                  Creada el {formatDateTime(orden.fechaEmision)}
                 </p>
               </div>
             </div>
@@ -161,7 +160,7 @@ export function OrdenDetailHeader({
       </CardHeader>
 
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Cliente */}
           <div>
             <p className="text-sm text-muted-foreground">Cliente</p>
@@ -182,13 +181,13 @@ export function OrdenDetailHeader({
             <p className="text-sm text-muted-foreground">Entrega Estimada</p>
             <p className="font-semibold">
               {orden.fechaEntregaEstimada
-                ? format(new Date(orden.fechaEntregaEstimada), 'dd/MM/yyyy', { locale: es })
+                ? formatDate(orden.fechaEntregaEstimada)
                 : 'No especificada'
               }
             </p>
             {orden.fechaEntregaReal && (
               <p className="text-xs text-success">
-                Real: {format(new Date(orden.fechaEntregaReal), 'dd/MM/yyyy', { locale: es })}
+                Real: {formatDate(orden.fechaEntregaReal)}
               </p>
             )}
           </div>

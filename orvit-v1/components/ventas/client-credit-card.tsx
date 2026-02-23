@@ -17,7 +17,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { useCreditValidation, CreditValidationResult } from '@/hooks/use-credit-validation';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ClientCreditCardProps {
   clientId: string;
@@ -197,7 +197,7 @@ export function ClientCreditCard({
             <span className={cn(
               utilizationPercent >= 100 ? "text-destructive" : utilizationPercent >= 80 ? "text-warning-muted-foreground" : ""
             )}>
-              {creditStatus.utilizationPercent.toFixed(1)}%
+              {formatNumber(creditStatus.utilizationPercent, 1)}%
             </span>
           </div>
           <Progress value={utilizationPercent} className="h-2" />

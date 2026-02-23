@@ -6,7 +6,8 @@ const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 const logError = DEBUG ? console.error.bind(console) : () => {};
 
 import React, { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -374,10 +375,6 @@ export default function VentasMensuales() {
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-AR').format(num);
-  };
-
   // Funciones para carga masiva
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -696,7 +693,7 @@ export default function VentasMensuales() {
                     {record.month}
                   </Badge>
                   <div className="text-sm text-muted-foreground">
-                    Actualizado: {new Date(record.updated_at).toLocaleDateString('es-AR')}
+                    Actualizado: {formatDate(record.updated_at)}
                   </div>
                 </div>
               </div>

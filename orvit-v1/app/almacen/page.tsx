@@ -87,36 +87,33 @@ function AlmacenPageContent() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Warehouse className="h-5 w-5 text-primary" />
-          </div>
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-semibold">Gestión de Almacén</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl font-semibold text-foreground">Gestión de Almacén</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Solicitudes, despachos, inventario y movimientos
             </p>
           </div>
-        </div>
-
-        {/* Acciones rápidas */}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => openModal('solicitud', { mode: 'new' })}
-          >
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Nueva Solicitud
-          </Button>
-          <Button onClick={() => openModal('despacho', { mode: 'new' })}>
-            <PackageCheck className="h-4 w-4 mr-2" />
-            Nuevo Despacho
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => openModal('solicitud', { mode: 'new' })}
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Nueva Solicitud
+            </Button>
+            <Button onClick={() => openModal('despacho', { mode: 'new' })}>
+              <PackageCheck className="h-4 w-4 mr-2" />
+              Nuevo Despacho
+            </Button>
+          </div>
         </div>
       </div>
+
+      <div className="px-4 md:px-6 space-y-6">
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as AlmacenTab)}>
@@ -207,6 +204,7 @@ function AlmacenPageContent() {
         devolucionId={id}
         onClose={handleCloseModal}
       />
+      </div>
     </div>
   );
 }

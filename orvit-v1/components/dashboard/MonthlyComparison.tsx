@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { formatCurrency, formatPercentage } from './utils/metrics';
 
@@ -55,9 +55,9 @@ export function MonthlyComparison({ currentMonth, previousMonth, monthLabel }: M
     if (change === null) return 'N/A';
     const sign = change > 0 ? '+' : '';
     if (isPercentagePoints) {
-      return `${sign}${change.toFixed(1)}pp`;
+      return `${sign}${formatNumber(change, 1)}pp`;
     }
-    return `${sign}${change.toFixed(1)}%`;
+    return `${sign}${formatNumber(change, 1)}%`;
   };
 
   if (!previousMonth) {

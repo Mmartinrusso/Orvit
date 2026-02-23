@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -605,7 +606,7 @@ export function ServiciosManager() {
  <TableCell className="text-center">
  {contract.fechaFin ? (
  <div>
- <p>{new Date(contract.fechaFin).toLocaleDateString('es-AR')}</p>
+ <p>{formatDate(contract.fechaFin)}</p>
  {dias !== null && (
  <p className={cn('text-xs', dias <= 30 ? 'text-destructive' : 'text-muted-foreground')}>
  {dias > 0 ? `${dias} días` : 'Vencido'}
@@ -988,13 +989,13 @@ export function ServiciosManager() {
  <div className="grid grid-cols-2 gap-4">
  <div>
  <p className="text-sm text-muted-foreground">Fecha Inicio</p>
- <p>{new Date(selectedContract.fechaInicio).toLocaleDateString('es-AR')}</p>
+ <p>{formatDate(selectedContract.fechaInicio)}</p>
  </div>
  <div>
  <p className="text-sm text-muted-foreground">Fecha Fin</p>
  <p>
  {selectedContract.fechaFin
- ? new Date(selectedContract.fechaFin).toLocaleDateString('es-AR')
+ ? formatDate(selectedContract.fechaFin)
  : 'Sin vencimiento'}
  </p>
  </div>

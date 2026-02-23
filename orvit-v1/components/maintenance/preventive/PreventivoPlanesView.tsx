@@ -28,7 +28,7 @@ import {
  Building,
  Cog,
  Settings,
- PlayCircle,
+  Check,
  SquarePen,
  Trash2,
  Copy,
@@ -39,6 +39,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { stripHtmlTags } from '@/lib/utils';
 import {
  getPriorityLabel,
@@ -56,16 +57,6 @@ interface PreventivoPlanesViewProps {
  onDuplicatePlan?: (plan: any) => void;
  hideCreateButton?: boolean;
 }
-
-const formatDate = (dateString: string) => {
- try {
- const date = new Date(dateString);
- if (isNaN(date.getTime())) return 'Sin fecha';
- return format(date, 'dd/MM/yyyy', { locale: es });
- } catch {
- return 'Sin fecha';
- }
-};
 
 const getDurationDisplay = (maintenance: any) => {
  if (maintenance.timeValue && maintenance.timeUnit) {
@@ -375,7 +366,7 @@ export function PreventivoPlanesView({
  <Button variant="outline" size="icon" className={cn("relative", hasActiveFilters && "border-primary text-primary")}>
  <Filter className="h-4 w-4" />
  {hasActiveFilters && (
- <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-white flex items-center justify-center">
+ <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center">
  {activeFiltersCount}
  </span>
  )}
@@ -802,7 +793,7 @@ function PlanCard({
  onClick={(e) => { e.stopPropagation(); onExecute(plan); }}
  title="Ejecutar ahora"
  >
- <PlayCircle className="h-3.5 w-3.5" />
+ <Check className="h-4 w-4" />
  </Button>
  )}
  {onDelete && (

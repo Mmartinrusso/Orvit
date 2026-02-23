@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,7 @@ import {
   Bell,
   TrendingUp,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface ConditionMonitor {
@@ -232,7 +233,7 @@ export default function ConditionMonitoringPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -401,7 +402,7 @@ export default function ConditionMonitoringPage() {
                 <TableBody>
                   {loadingAlerts ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">Cargando...</TableCell>
+                      <TableCell colSpan={8} className="text-center py-8">Cargando monitoreo...</TableCell>
                     </TableRow>
                   ) : alerts.length === 0 ? (
                     <TableRow>
@@ -413,7 +414,7 @@ export default function ConditionMonitoringPage() {
                     alerts.map((alert) => (
                       <TableRow key={alert.id}>
                         <TableCell>
-                          {format(new Date(alert.createdAt), 'dd/MM/yyyy HH:mm')}
+                          {formatDateTime(alert.createdAt)}
                         </TableCell>
                         <TableCell className="font-medium">{alert.monitor_name}</TableCell>
                         <TableCell>{alert.machine_name}</TableCell>

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import {
   RefreshCw,
   Search,
@@ -509,9 +508,7 @@ export function RMASList() {
                           {rma.categoriaMotivo.replace(/_/g, ' ')}
                         </TableCell>
                         <TableCell>
-                          {format(new Date(rma.fechaSolicitud), 'dd/MM/yyyy', {
-                            locale: es,
-                          })}
+                          {formatDate(rma.fechaSolicitud)}
                         </TableCell>
                         <TableCell>{rma.items?.length || 0}</TableCell>
                         <TableCell>{rma.solicitante?.name || '-'}</TableCell>

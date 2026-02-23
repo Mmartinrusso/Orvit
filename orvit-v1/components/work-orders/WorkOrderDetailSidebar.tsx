@@ -4,7 +4,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { WorkOrder, WorkOrderStatus, Priority } from '@/lib/types';
-import { cn, formatHours } from '@/lib/utils';
+import { cn, formatHours, formatNumber } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -186,7 +186,7 @@ export function WorkOrderDetailSidebar({ workOrder }: WorkOrderDetailSidebarProp
                   <dt className="text-xs text-muted-foreground">Costo estimado</dt>
                   <dd className="text-xs text-foreground flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
-                    {workOrder.cost.toFixed(2)}€
+                    {formatNumber(workOrder.cost, 2)}€
                   </dd>
                 </div>
               )}

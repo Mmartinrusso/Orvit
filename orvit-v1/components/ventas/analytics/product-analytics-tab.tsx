@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState } from 'react';
 import { useProductAnalytics } from '@/hooks/use-product-analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,7 +104,7 @@ export function ProductAnalyticsTab({ productId }: ProductAnalyticsTabProps) {
               : 'Dentro del rango esperado'
           }
           alert={data.marginMetrics.belowMin}
-          trendInfo={`Proyectado: ${data.marginMetrics.projectedMargin.toFixed(1)}% | Dif: ${data.marginMetrics.difference > 0 ? '+' : ''}${data.marginMetrics.difference.toFixed(1)}%`}
+          trendInfo={`Proyectado: ${formatNumber(data.marginMetrics.projectedMargin, 1)}% | Dif: ${data.marginMetrics.difference > 0 ? '+' : ''}${formatNumber(data.marginMetrics.difference, 1)}%`}
         />
 
         <ProductKPICard

@@ -81,12 +81,12 @@ const estadoLabels: Record<string, string> = {
 
 const estadoColors: Record<string, string> = {
   SNCA_NUEVA: 'bg-info-muted text-info-muted-foreground',
-  SNCA_ENVIADA: 'bg-purple-100 text-purple-800',
+  SNCA_ENVIADA: 'bg-accent-purple-muted text-accent-purple-muted-foreground',
   SNCA_EN_REVISION: 'bg-warning-muted text-warning-muted-foreground',
   SNCA_APROBADA: 'bg-success-muted text-success',
   SNCA_PARCIAL: 'bg-warning-muted text-warning-muted-foreground',
   SNCA_RECHAZADA: 'bg-destructive/10 text-destructive',
-  SNCA_NCA_RECIBIDA: 'bg-emerald-100 text-emerald-800',
+  SNCA_NCA_RECIBIDA: 'bg-success-muted text-success-muted-foreground',
   SNCA_APLICADA: 'bg-muted text-foreground',
   SNCA_CERRADA: 'bg-muted text-foreground',
   SNCA_CANCELADA: 'bg-destructive/10 text-destructive',

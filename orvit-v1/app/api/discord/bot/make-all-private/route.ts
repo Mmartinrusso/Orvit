@@ -8,33 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isBotReady, makeCategoryPrivate, listGuilds, connectBot } from '@/lib/discord';
+import { manageBotChannels } from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * Auto-conecta el bot si no está conectado
- */
-async function ensureBotConnected(): Promise<boolean> {
-  if (isBotReady()) return true;
-
-  try {
-    const company = await prisma.company.findFirst({
-      where: { discordBotToken: { not: null } },
-      select: { discordBotToken: true }
-    });
-
-    if (!company?.discordBotToken) {
-      return false;
-    }
-
-    const result = await connectBot(company.discordBotToken);
-    return result.success;
-  } catch (error) {
-    console.error('Error auto-conectando bot:', error);
-    return false;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,16 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Auto-conectar el bot si no está conectado
-    const connected = await ensureBotConnected();
-    if (!connected) {
-      return NextResponse.json(
-        { error: 'No se pudo conectar el bot de Discord. Verifica el token.' },
-        { status: 500 }
-      );
-    }
-
-    // 4. Obtener guildId
+    // 3. Obtener guildId
     const company = await prisma.company.findUnique({
       where: { id: companyId },
       select: { discordGuildId: true }
@@ -85,9 +52,9 @@ export async function POST(request: NextRequest) {
     let guildId = company?.discordGuildId;
 
     if (!guildId) {
-      const guilds = listGuilds();
-      if (guilds.length > 0) {
-        guildId = guilds[0].id;
+      const guildsResult = await manageBotChannels('getGuilds', {});
+      if (guildsResult.success && guildsResult.guilds?.length > 0) {
+        guildId = guildsResult.guilds[0].id;
         await prisma.company.update({
           where: { id: companyId },
           data: { discordGuildId: guildId }
@@ -102,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Obtener todos los sectores con categoría de Discord
+    // 4. Obtener todos los sectores con categoría de Discord
     const sectors = await prisma.sector.findMany({
       where: {
         companyId,
@@ -122,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Hacer privada cada categoría
+    // 5. Hacer privada cada categoría
     const results: { sector: string; success: boolean; error?: string }[] = [];
     let successCount = 0;
     let errorCount = 0;
@@ -130,7 +97,7 @@ export async function POST(request: NextRequest) {
     for (const sector of sectors) {
       if (!sector.discordCategoryId) continue;
 
-      const result = await makeCategoryPrivate(guildId, sector.discordCategoryId);
+      const result = await manageBotChannels('makeCategoryPrivate', { guildId, categoryId: sector.discordCategoryId });
 
       if (result.success) {
         successCount++;

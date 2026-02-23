@@ -45,7 +45,7 @@ function KpiCard({ title, value, subtitle, icon, onClick, progress, highlight }:
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{title}</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{title}</p>
           <p className={cn(
             'text-2xl font-bold tabular-nums',
             highlight ? 'text-destructive' : 'text-foreground'
@@ -58,7 +58,7 @@ function KpiCard({ title, value, subtitle, icon, onClick, progress, highlight }:
           {progress && (
             <div className="mt-2">
               <Progress value={(progress.value / progress.max) * 100} className="h-1.5" />
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {progress.value} de {progress.max}
               </p>
             </div>
@@ -73,7 +73,7 @@ function KpiCard({ title, value, subtitle, icon, onClick, progress, highlight }:
       </div>
       {onClick && (
         <div className="flex items-center justify-end mt-2 pt-2 border-t border-border/50">
-          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
             Ver detalle <ChevronRight className="h-3 w-3" />
           </span>
         </div>

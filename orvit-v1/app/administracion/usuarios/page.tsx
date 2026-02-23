@@ -68,7 +68,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import UserEditDialog from '@/components/users/UserEditDialog';
+import UserEditDialog from '@/components/usuarios/UserEditDialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useGlobalCache, createCacheKey } from '@/hooks/use-global-cache';
@@ -766,7 +766,7 @@ export default function UsuariosPage() {
                             <div className="flex items-center gap-2">
                               <span className="font-medium truncate">{user.name}</span>
                               {isNewUser(user.createdAt) && (
-                                <Badge variant="outline" className="text-[10px] h-4 px-1.5 bg-primary/5 text-primary border-primary/20 shrink-0">
+                                <Badge variant="outline" className="text-xs h-5 px-1.5 bg-primary/5 text-primary border-primary/20 shrink-0">
                                   Nuevo
                                 </Badge>
                               )}

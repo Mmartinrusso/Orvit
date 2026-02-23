@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -221,9 +222,9 @@ function ParetoTable({ data }: { data: ReliabilityData['pareto'] }) {
                       {machine.failureCount}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">{percentage.toFixed(1)}%</TableCell>
+                  <TableCell className="text-right">{formatNumber(percentage, 1)}%</TableCell>
                   <TableCell className="text-right font-medium">
-                    {accumulated.toFixed(1)}%
+                    {formatNumber(accumulated, 1)}%
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">
                     {machine.totalDowntimeMinutes < 60
@@ -269,7 +270,7 @@ function MachineReliabilityTable({ data }: { data: ReliabilityData['byMachine'] 
                 <TableCell className="font-medium">{machine.machineName}</TableCell>
                 <TableCell className="text-right">{machine.failureCount}</TableCell>
                 <TableCell className="text-right">
-                  {machine.mtbfHours !== null ? machine.mtbfHours.toFixed(1) : 'N/A'}
+                  {machine.mtbfHours !== null ? formatNumber(machine.mtbfHours, 1) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
                   {machine.mttrMinutes !== null
@@ -350,7 +351,7 @@ export default function MTTRMTBFPage() {
 
       {/* KPIs */}
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map(i => (
             <Card key={i}>
               <CardHeader className="pb-2">
@@ -364,7 +365,7 @@ export default function MTTRMTBFPage() {
           ))}
         </div>
       ) : data ? (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <KPICard
             title="MTBF"
             value={data.global.mtbf.formatted}

@@ -45,7 +45,7 @@ const badgeVariants = cva(
         corrective:
           'border-warning/30 bg-warning/10 text-warning-muted-foreground',
         predictive:
-          'border-purple-200 bg-purple-100 text-purple-700 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+          'border-accent-purple-muted bg-accent-purple-muted text-accent-purple-muted-foreground',
 
         // Solid versions (for emphasis)
         'pending-solid':
@@ -59,10 +59,10 @@ const badgeVariants = cva(
         'corrective-solid':
           'border-transparent bg-warning text-warning-foreground',
         'predictive-solid':
-          'border-transparent bg-purple-500 text-white',
+          'border-transparent bg-accent-purple text-accent-purple-foreground',
       },
       size: {
-        sm: 'px-1.5 py-0.5 text-[10px]',
+        sm: 'px-1.5 py-0.5 text-xs',
         default: 'px-2 py-0.5 text-xs',
         lg: 'px-2.5 py-1 text-xs',
       },

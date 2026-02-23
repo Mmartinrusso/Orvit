@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatNumber } from '@/lib/utils';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,10 +226,6 @@ export default function ReportesPage() {
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-AR').format(num);
-  };
-
   const getVariacionIcon = (variacion: number) => {
     if (variacion > 0) return <TrendingUp className="w-4 h-4 text-success" />;
     if (variacion < 0) return <TrendingDown className="w-4 h-4 text-destructive" />;
@@ -379,7 +376,7 @@ export default function ReportesPage() {
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                           {reporte.descripcion}
                         </p>
-                        <Badge variant="secondary" className="mt-2 text-[10px]">
+                        <Badge variant="secondary" className="mt-2 text-xs">
                           {reporte.categoria}
                         </Badge>
                       </div>

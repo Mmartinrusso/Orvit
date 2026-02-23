@@ -1163,7 +1163,7 @@ export default function EmpleadosPage() {
                           <div className="font-medium flex items-center gap-2">
                             {emp.name}
                             {!emp.active && (
-                              <Badge variant="outline" className="text-[10px]">Inactivo</Badge>
+                              <Badge variant="outline" className="text-xs">Inactivo</Badge>
                             )}
                           </div>
                           {emp.role && (

@@ -178,7 +178,7 @@ export function TasksDashboard({ onNewTask, onFilterByStatus }: TasksDashboardPr
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                     'disabled:pointer-events-none disabled:opacity-50',
                     'data-[state=on]:text-accent-foreground data-[state=on]:bg-background data-[state=on]:shadow-sm',
-                    'px-3 py-1 text-[11px] font-normal h-8'
+                    'px-3 py-1 text-xs font-normal h-8'
                   )}
                 >
                   {opt.label}

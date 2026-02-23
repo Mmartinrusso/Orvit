@@ -102,12 +102,26 @@ export function useLoadTemplates(companyId: number | null | undefined): UseLoadT
       }
       return response.json();
     },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['load-templates'] });
+      const previous = queryClient.getQueryData<LoadTemplate[]>(['load-templates', companyId]);
+      queryClient.setQueryData<LoadTemplate[]>(
+        ['load-templates', companyId],
+        (old) => old?.filter(t => t.id !== id) ?? []
+      );
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['load-templates'] });
       toast.success('Template eliminado');
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['load-templates', companyId], context.previous);
+      }
       toast.error(error.message);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['load-templates'] });
     },
   });
 

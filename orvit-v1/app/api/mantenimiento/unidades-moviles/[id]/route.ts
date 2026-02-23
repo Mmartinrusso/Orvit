@@ -172,6 +172,7 @@ export async function PUT(
           ...(data.combustible !== undefined && { combustible: data.combustible }),
           ...(data.capacidadCombustible !== undefined && { capacidadCombustible: data.capacidadCombustible }),
           ...(data.consumoPromedio !== undefined && { consumoPromedio: data.consumoPromedio }),
+          ...(data.kmUpdateFrequencyDays !== undefined && { kmUpdateFrequencyDays: data.kmUpdateFrequencyDays }),
           updatedAt: new Date()
         },
         include: {

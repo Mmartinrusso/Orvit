@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -158,7 +159,7 @@ export function DeliveryEvidenceViewer({ delivery, evidences = [] }: DeliveryEvi
                         {evidence.descripcion || 'Documento sin descripción'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(evidence.createdAt).toLocaleDateString('es-AR')}
+                        {formatDate(evidence.createdAt)}
                       </p>
                     </div>
                   </div>

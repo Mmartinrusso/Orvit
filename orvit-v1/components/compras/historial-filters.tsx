@@ -130,7 +130,7 @@ export function HistorialFiltersComponent({
  key={qf}
  variant={filters.quickFilter === qf ? 'default' : 'outline'}
  size="sm"
- className="h-6 text-[10px] px-2"
+ className="h-6 text-xs px-2"
  onClick={() => handleQuickFilterChange(qf)}
  >
  {qf === 'hoy' && 'Hoy'}
@@ -143,7 +143,7 @@ export function HistorialFiltersComponent({
  <Button
  variant={filters.quickFilter === 'aprobaciones' ? 'default' : 'outline'}
  size="sm"
- className={cn('h-6 text-[10px] px-2', filters.quickFilter !== 'aprobaciones' && 'bg-success-muted hover:bg-success-muted text-success border-success-muted')}
+ className={cn('h-6 text-xs px-2', filters.quickFilter !== 'aprobaciones' && 'bg-success-muted hover:bg-success-muted text-success border-success-muted')}
  onClick={() => handleQuickFilterChange('aprobaciones')}
  >
  Aprobaciones
@@ -151,7 +151,7 @@ export function HistorialFiltersComponent({
  <Button
  variant={filters.quickFilter === 'rechazos' ? 'default' : 'outline'}
  size="sm"
- className={cn('h-6 text-[10px] px-2', filters.quickFilter !== 'rechazos' && 'bg-destructive/10 hover:bg-destructive/10 text-destructive border-destructive/30')}
+ className={cn('h-6 text-xs px-2', filters.quickFilter !== 'rechazos' && 'bg-destructive/10 hover:bg-destructive/10 text-destructive border-destructive/30')}
  onClick={() => handleQuickFilterChange('rechazos')}
  >
  Rechazos
@@ -174,7 +174,7 @@ export function HistorialFiltersComponent({
  variant="ghost"
  size="sm"
  onClick={() => setShowAdvanced(!showAdvanced)}
- className="text-[10px] gap-1 h-7"
+ className="text-xs gap-1 h-7"
  >
  Filtros avanzados
  {showAdvanced ? (
@@ -189,7 +189,7 @@ export function HistorialFiltersComponent({
  variant="ghost"
  size="sm"
  onClick={onClear}
- className="text-[10px] gap-1 text-muted-foreground h-7"
+ className="text-xs gap-1 text-muted-foreground h-7"
  >
  <X className="w-3 h-3" />
  Limpiar
@@ -202,7 +202,7 @@ export function HistorialFiltersComponent({
  <div className="grid grid-cols-4 gap-3 pt-2 border-t">
  {/* Tipo de documento */}
  <div className="space-y-1">
- <label className="text-[10px] text-muted-foreground">Tipo de documento</label>
+ <label className="text-xs text-muted-foreground">Tipo de documento</label>
  <Select
  value={filters.entidad}
  onValueChange={(v) =>
@@ -227,7 +227,7 @@ export function HistorialFiltersComponent({
 
  {/* Tipo de acción */}
  <div className="space-y-1">
- <label className="text-[10px] text-muted-foreground">Tipo de acción</label>
+ <label className="text-xs text-muted-foreground">Tipo de acción</label>
  <Select
  value={filters.accion}
  onValueChange={(v) =>
@@ -256,7 +256,7 @@ export function HistorialFiltersComponent({
 
  {/* Fecha desde */}
  <div className="space-y-1">
- <label className="text-[10px] text-muted-foreground">Desde</label>
+ <label className="text-xs text-muted-foreground">Desde</label>
  <DatePicker
  value={filters.fechaDesde}
  onChange={(date) =>
@@ -270,7 +270,7 @@ export function HistorialFiltersComponent({
 
  {/* Fecha hasta */}
  <div className="space-y-1">
- <label className="text-[10px] text-muted-foreground">Hasta</label>
+ <label className="text-xs text-muted-foreground">Hasta</label>
  <DatePicker
  value={filters.fechaHasta}
  onChange={(date) =>

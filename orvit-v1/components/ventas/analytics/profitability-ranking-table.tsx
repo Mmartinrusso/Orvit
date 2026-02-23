@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ProductMetrics {
   position: number;
@@ -173,7 +173,7 @@ export function ProfitabilityRankingTable({
 
               {/* Cantidad */}
               <TableCell className="text-right">
-                {item.metrics.quantitySold.toFixed(2)}
+                {formatNumber(item.metrics.quantitySold, 2)}
               </TableCell>
 
               {/* Margen */}
@@ -181,7 +181,7 @@ export function ProfitabilityRankingTable({
                 <div className="flex items-center justify-end gap-1">
                   {getMarginIcon(item.metrics.averageMargin)}
                   <span className={getMarginColor(item.metrics.averageMargin)}>
-                    {item.metrics.averageMargin.toFixed(2)}%
+                    {formatNumber(item.metrics.averageMargin, 2)}%
                   </span>
                 </div>
               </TableCell>
@@ -193,7 +193,7 @@ export function ProfitabilityRankingTable({
 
               {/* Rotación */}
               <TableCell className="text-right">
-                {item.metrics.turnoverRate.toFixed(2)}x
+                {formatNumber(item.metrics.turnoverRate, 2)}x
               </TableCell>
 
               {/* Velocidad */}

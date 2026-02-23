@@ -25,7 +25,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/hooks/use-task-store";
 import { TaskFileUpload, TaskFileAttachment } from "@/components/ui/TaskFileUpload";
@@ -347,7 +347,7 @@ export function EditTaskModal({ task, isOpen, onClose, onTaskUpdated }: EditTask
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dueDate ? format(dueDate, "dd/MM/yyyy") : "Seleccionar fecha"}
+                            {dueDate ? formatDate(dueDate) : "Seleccionar fecha"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">

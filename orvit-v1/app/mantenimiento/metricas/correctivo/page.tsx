@@ -50,7 +50,7 @@ export default function CorrectiveMetricsPage() {
     return (
       <div className="container mx-auto py-6 space-y-6">
         <Skeleton className="h-8 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
             <Skeleton key={i} className="h-32" />
           ))}
@@ -107,7 +107,7 @@ export default function CorrectiveMetricsPage() {
       </div>
 
       {/* KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Fallas */}
         <Card>
           <CardHeader className="pb-2">
@@ -261,7 +261,7 @@ export default function CorrectiveMetricsPage() {
           <CardTitle className="text-base">Umbrales SLA por Prioridad</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.entries(metrics?.sla?.thresholds || {}).map(([priority, hours]) => (
               <div key={priority} className="text-center p-4 bg-muted rounded-lg">
                 <Badge className={cn(

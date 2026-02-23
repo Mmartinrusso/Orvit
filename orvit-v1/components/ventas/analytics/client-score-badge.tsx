@@ -4,7 +4,7 @@ import { useClientScore } from '@/hooks/use-client-analytics';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ClientScoreBadgeProps {
   clientId: string;
@@ -63,10 +63,10 @@ export function ClientScoreBadge({ clientId, showTooltip = true, size = 'md' }: 
               <p className="text-xs text-muted-foreground">Score: {data.score}/100</p>
             </div>
             <div className="text-xs space-y-1">
-              <p><strong>Puntualidad:</strong> {data.breakdown.punctuality.toFixed(1)}/40</p>
-              <p><strong>Volumen:</strong> {data.breakdown.volume.toFixed(1)}/30</p>
-              <p><strong>Antigüedad:</strong> {data.breakdown.seniority.toFixed(1)}/15</p>
-              <p><strong>Consistencia:</strong> {data.breakdown.consistency.toFixed(1)}/10</p>
+              <p><strong>Puntualidad:</strong> {formatNumber(data.breakdown.punctuality, 1)}/40</p>
+              <p><strong>Volumen:</strong> {formatNumber(data.breakdown.volume, 1)}/30</p>
+              <p><strong>Antigüedad:</strong> {formatNumber(data.breakdown.seniority, 1)}/15</p>
+              <p><strong>Consistencia:</strong> {formatNumber(data.breakdown.consistency, 1)}/10</p>
             </div>
             {data.badges.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-2 border-t">

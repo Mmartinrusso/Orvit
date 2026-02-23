@@ -69,6 +69,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { toast } from 'sonner';
 import { OrdenCompraFormModal } from '@/components/compras/orden-compra-form-modal';
 import { OrdenCompraDetailModal } from '@/components/compras/orden-compra-detail-modal';
@@ -334,7 +335,7 @@ export function OrdenesCompraList({
  const config = ESTADOS_CONFIG[estado as EstadoOC] || ESTADOS_CONFIG.BORRADOR;
  const Icon = config.icon;
  return (
- <Badge className={cn(config.color, "border text-[10px] px-1.5 py-0.5 font-medium")}>
+ <Badge className={cn(config.color, "border text-xs px-1.5 py-0.5 font-medium")}>
  <Icon className="w-3 h-3 mr-1" />
  {config.label}
  </Badge>
@@ -520,7 +521,7 @@ export function OrdenesCompraList({
  </div>
  <div>
  <p className="text-xl font-bold">{kpis.borradores}</p>
- <p className="text-[10px] text-muted-foreground">Borradores</p>
+ <p className="text-xs text-muted-foreground">Borradores</p>
  </div>
  </div>
  </CardContent>
@@ -537,7 +538,7 @@ export function OrdenesCompraList({
  </div>
  <div>
  <p className="text-xl font-bold">{kpis.pendientesAprobacion}</p>
- <p className="text-[10px] text-muted-foreground">Pend. Aprob.</p>
+ <p className="text-xs text-muted-foreground">Pend. Aprob.</p>
  </div>
  </div>
  </CardContent>
@@ -554,7 +555,7 @@ export function OrdenesCompraList({
  </div>
  <div>
  <p className="text-xl font-bold">{kpis.enCurso}</p>
- <p className="text-[10px] text-muted-foreground">Confirmadas</p>
+ <p className="text-xs text-muted-foreground">Confirmadas</p>
  </div>
  </div>
  </CardContent>
@@ -571,7 +572,7 @@ export function OrdenesCompraList({
  </div>
  <div>
  <p className="text-xl font-bold">{kpis.completadas}</p>
- <p className="text-[10px] text-muted-foreground">Completadas</p>
+ <p className="text-xs text-muted-foreground">Completadas</p>
  </div>
  </div>
  </CardContent>
@@ -588,7 +589,7 @@ export function OrdenesCompraList({
  </div>
  <div>
  <p className="text-xl font-bold text-destructive">{kpis.atrasadas}</p>
- <p className="text-[10px] text-muted-foreground">Atrasadas</p>
+ <p className="text-xs text-muted-foreground">Atrasadas</p>
  </div>
  </div>
  </CardContent>
@@ -784,7 +785,7 @@ export function OrdenesCompraList({
  )}
  </div>
  <p className="text-xs text-muted-foreground">
- {format(new Date(orden.fechaEmision), 'dd/MM/yyyy', { locale: es })}
+ {formatDate(orden.fechaEmision)}
  </p>
  </div>
  </div>
@@ -1006,7 +1007,7 @@ export function OrdenesCompraList({
  </span>
  ))}
  {(orden._count?.items || 0) > 2 && (
- <span className="text-muted-foreground/70 text-[10px]">
+ <span className="text-muted-foreground/70 text-xs">
  +{(orden._count?.items || 0) - 2} más
  </span>
  )}

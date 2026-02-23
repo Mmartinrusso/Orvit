@@ -34,19 +34,19 @@ export function PurchasesKpisWidget({ data, isLoading }: WidgetComponentProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs text-muted-foreground">OC pendientes</p>
-              <p className="text-2xl font-semibold">{purchases.ocPending}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{purchases.ocPending}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Facturas por vencer (7d)</p>
-              <p className="text-2xl font-semibold">{purchases.invoicesDue7d}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{purchases.invoicesDue7d}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Gasto (30d)</p>
-              <p className="text-2xl font-semibold">{formatCurrencyARS(purchases.spend30d)}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{formatCurrencyARS(purchases.spend30d)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Proveedores activos</p>
-              <p className="text-2xl font-semibold">{purchases.suppliersActive}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{purchases.suppliersActive}</p>
             </div>
           </div>
         )}

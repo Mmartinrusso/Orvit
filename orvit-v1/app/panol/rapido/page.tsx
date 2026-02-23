@@ -216,8 +216,8 @@ export default function AccionesRapidasPage() {
       title: 'Pick por OT',
       description: 'Despachar por orden de trabajo',
       icon: ClipboardList,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 dark:bg-purple-950/30',
+      color: 'text-accent-purple-muted-foreground',
+      bgColor: 'bg-accent-purple-muted',
     },
   ];
 
@@ -340,7 +340,7 @@ export default function AccionesRapidasPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-purple-600" />
+                  <ClipboardList className="h-4 w-4 text-accent-purple-muted-foreground" />
                   Despachar por Orden de Trabajo
                 </CardTitle>
               </CardHeader>

@@ -59,6 +59,8 @@ interface KilometrajeHistoryProps {
   kilometrajeActual: number;
   canEdit?: boolean;
   onKilometrajeUpdated?: (nuevoKm: number) => void;
+  kmUpdateFrequencyDays?: number | null;
+  ultimaLecturaKm?: string | Date | null;
 }
 
 const tipoLabels: Record<string, string> = {
@@ -91,6 +93,8 @@ export function KilometrajeHistory({
   kilometrajeActual,
   canEdit = false,
   onKilometrajeUpdated,
+  kmUpdateFrequencyDays,
+  ultimaLecturaKm,
 }: KilometrajeHistoryProps) {
   const [logs, setLogs] = useState<KilometrajeLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,10 +154,18 @@ export function KilometrajeHistory({
 
       if (response.ok) {
         const data = await response.json();
-        toast({
-          title: 'Kilometraje registrado',
-          description: `+${data.kmRecorridos.toLocaleString()} km registrados`,
-        });
+        const kmDiff = data.kmRecorridos > 0 ? `+${data.kmRecorridos.toLocaleString()} km` : 'Sin cambio en km';
+        toast({ title: 'Kilometraje registrado', description: kmDiff });
+        // Alertar si hay mantenimientos preventivos vencidos
+        if (data.alertasMantenimiento?.length > 0) {
+          data.alertasMantenimiento.forEach((alerta: { title: string; kmDue: number }) => {
+            toast({
+              title: '⚠️ Mantenimiento vencido',
+              description: `"${alerta.title}" debía realizarse a los ${alerta.kmDue.toLocaleString()} km`,
+              variant: 'destructive',
+            });
+          });
+        }
         setIsDialogOpen(false);
         fetchLogs();
         if (onKilometrajeUpdated) {
@@ -198,15 +210,39 @@ export function KilometrajeHistory({
     );
   }
 
+  // Calcular próxima lectura esperada
+  const proximaLectura = (() => {
+    if (!kmUpdateFrequencyDays) return null;
+    const base = ultimaLecturaKm ? new Date(ultimaLecturaKm) : null;
+    if (!base) return null;
+    const next = new Date(base);
+    next.setDate(next.getDate() + kmUpdateFrequencyDays);
+    return next;
+  })();
+  const lecturaVencida = proximaLectura ? proximaLectura < new Date() : (!ultimaLecturaKm && !!kmUpdateFrequencyDays);
+
   return (
     <div className="space-y-4">
       {/* Header con botón de agregar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Gauge className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
             Actual: <span className="font-semibold text-foreground">{kilometrajeActual.toLocaleString()} km</span>
           </span>
+          {kmUpdateFrequencyDays && (
+            <span className={cn(
+              'text-xs px-2 py-0.5 rounded-full',
+              lecturaVencida
+                ? 'bg-warning-muted text-warning-muted-foreground'
+                : 'bg-muted text-muted-foreground'
+            )}>
+              {lecturaVencida ? '⚠ ' : ''}
+              {proximaLectura
+                ? `Próxima lectura: ${format(proximaLectura, 'dd MMM', { locale: es })}`
+                : `Cada ${kmUpdateFrequencyDays} días`}
+            </span>
+          )}
         </div>
         {canEdit && (
           <Button
@@ -228,7 +264,7 @@ export function KilometrajeHistory({
             <div className="flex items-center gap-2">
               <TrendingUp className="h-3.5 w-3.5 text-success" />
               <div>
-                <p className="text-[10px] text-muted-foreground">Km recorridos</p>
+                <p className="text-xs text-muted-foreground">Km recorridos</p>
                 <p className="text-xs font-semibold">{stats.kmRecorridos.toLocaleString()} km</p>
               </div>
             </div>
@@ -237,7 +273,7 @@ export function KilometrajeHistory({
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-info-muted-foreground" />
               <div>
-                <p className="text-[10px] text-muted-foreground">Promedio entre lecturas</p>
+                <p className="text-xs text-muted-foreground">Promedio entre lecturas</p>
                 <p className="text-xs font-semibold">{stats.promedioEntreLecturas.toLocaleString()} km</p>
               </div>
             </div>
@@ -251,7 +287,7 @@ export function KilometrajeHistory({
           <Gauge className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-xs text-muted-foreground">Sin registros de kilometraje</p>
           {canEdit && (
-            <p className="text-[10px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Registra la primera lectura del odómetro
             </p>
           )}
@@ -276,28 +312,28 @@ export function KilometrajeHistory({
                       {log.kilometraje.toLocaleString()} km
                     </span>
                     {kmDiff > 0 && (
-                      <span className="text-[10px] text-success">
+                      <span className="text-xs text-success">
                         +{kmDiff.toLocaleString()}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <Badge variant="outline" className={cn('text-[10px] h-4 px-1.5', tipoColors[log.tipo])}>
+                    <Badge variant="outline" className={cn('text-xs h-5 px-1.5', tipoColors[log.tipo])}>
                       {tipoLabels[log.tipo]}
                     </Badge>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
                     </span>
                   </div>
                   {log.notas && (
-                    <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {log.notas}
                     </p>
                   )}
                   {log.registradoPor && (
                     <div className="flex items-center gap-1 mt-1">
                       <User className="h-2.5 w-2.5 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {log.registradoPor.name}
                       </span>
                     </div>
@@ -332,7 +368,7 @@ export function KilometrajeHistory({
                 placeholder={`Mínimo: ${kilometrajeActual.toLocaleString()}`}
               />
               {formData.kilometraje > kilometrajeActual && (
-                <p className="text-[10px] text-success mt-1">
+                <p className="text-xs text-success mt-1">
                   +{(formData.kilometraje - kilometrajeActual).toLocaleString()} km desde última lectura
                 </p>
               )}

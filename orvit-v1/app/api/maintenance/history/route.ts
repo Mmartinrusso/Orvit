@@ -311,10 +311,10 @@ export async function GET(request: NextRequest) {
             status: 'COMPLETED',
             scheduledDate: tpl.nextMaintenanceDate?.toISOString() ?? null,
             completedDate: entry.executedAt ? new Date(entry.executedAt).toISOString() : null,
-            isFromChecklist: true,
+            isFromChecklist: false,
             reExecutionReason: entry.reExecutionReason ?? null,
             cost: entry.cost ?? null,
-            isFromChecklist: false,
+            operators: Array.isArray(entry.operators) ? entry.operators : [],
           });
         }
       } else if (tpl.lastMaintenanceDate) {
@@ -375,8 +375,13 @@ export async function GET(request: NextRequest) {
     }));
 
     // Combinar y ordenar
-    const combinedHistory = [...workOrderHistory, ...templateHistory, ...preventiveTemplateHistory, ...maintenanceHistoryData]
-      .sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
+    // Cuando se busca por maintenanceId específico (preventive template), solo incluir
+    // el historial directo de ese template — no mezclar work orders que podrían
+    // tener el mismo ID numérico por coincidencia.
+    const combinedHistory = (maintenanceIdNum
+      ? [...preventiveTemplateHistory, ...templateHistory.filter(t => t.maintenanceId === maintenanceIdNum)]
+      : [...workOrderHistory, ...templateHistory, ...preventiveTemplateHistory, ...maintenanceHistoryData]
+    ).sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
 
     // Paginar
     const startIndex = page * pageSize;

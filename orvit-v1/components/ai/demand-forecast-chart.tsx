@@ -26,7 +26,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ForecastData {
   date: Date;
@@ -123,7 +123,7 @@ export function DemandForecastChart({
       return (
         <div className="flex items-center text-muted-foreground">
           <Minus className="w-4 h-4 mr-1" />
-          <span className="text-sm">Estable ({change.toFixed(1)}%)</span>
+          <span className="text-sm">Estable ({formatNumber(change, 1)}%)</span>
         </div>
       );
     }
@@ -132,7 +132,7 @@ export function DemandForecastChart({
       return (
         <div className="flex items-center text-success">
           <TrendingUp className="w-4 h-4 mr-1" />
-          <span className="text-sm">Creciente (+{change.toFixed(1)}%)</span>
+          <span className="text-sm">Creciente (+{formatNumber(change, 1)}%)</span>
         </div>
       );
     }
@@ -140,7 +140,7 @@ export function DemandForecastChart({
     return (
       <div className="flex items-center text-destructive">
         <TrendingDown className="w-4 h-4 mr-1" />
-        <span className="text-sm">Decreciente ({change.toFixed(1)}%)</span>
+        <span className="text-sm">Decreciente ({formatNumber(change, 1)}%)</span>
       </div>
     );
   };
@@ -181,7 +181,7 @@ export function DemandForecastChart({
             <div>
               <p className="text-sm text-muted-foreground">Demanda Promedio</p>
               <p className="text-2xl font-bold">
-                {summary.avgDailyDemand.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">/día</span>
+                {formatNumber(summary.avgDailyDemand, 1)} <span className="text-sm font-normal text-muted-foreground">/día</span>
               </p>
             </div>
             <div>
@@ -404,8 +404,8 @@ export function DemandForecastChart({
               <div className="flex-1">
                 <h4 className="font-semibold text-success-muted-foreground">Demanda Total Proyectada</h4>
                 <p className="text-sm text-success-muted-foreground mt-1">
-                  Se espera una demanda total de <strong>{summary.totalForecastedDemand.toFixed(0)} unidades</strong> en
-                  los próximos {forecasts.length} días ({summary.avgDailyDemand.toFixed(1)} por día).
+                  Se espera una demanda total de <strong>{formatNumber(summary.totalForecastedDemand, 0)} unidades</strong> en
+                  los próximos {forecasts.length} días ({formatNumber(summary.avgDailyDemand, 1)} por día).
                 </p>
               </div>
             </div>

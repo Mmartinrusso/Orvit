@@ -310,7 +310,7 @@ export function NotificationCenter({ showTrigger = true, className }: Notificati
  <Badge
  variant="outline"
  className={cn(
- "text-[10px] px-1.5",
+ "text-xs px-1.5",
  priorityColors.border,
  priorityColors.text
  )}
@@ -319,7 +319,7 @@ export function NotificationCenter({ showTrigger = true, className }: Notificati
  </Badge>
  )}
  {notification.entityType && (
- <Badge variant="secondary" className="text-[10px]">
+ <Badge variant="secondary" className="text-xs">
  {notification.entityType}
  </Badge>
  )}

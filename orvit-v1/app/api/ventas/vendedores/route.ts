@@ -5,7 +5,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
-import { applyViewMode, getViewMode } from '@/lib/view-mode';
 import { createSalesRepSchema } from '@/lib/ventas/validation-schemas';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +14,8 @@ export async function GET(req: NextRequest) {
     const { user, error } = await requirePermission(VENTAS_PERMISSIONS.CONFIG_VIEW);
     if (error) return error;
 
-    const viewMode = getViewMode(req);
-
     const vendedores = await prisma.salesRep.findMany({
-      where: applyViewMode({ companyId: user!.companyId }, viewMode),
+      where: { companyId: user!.companyId },
       include: {
         zona: { select: { id: true, nombre: true } },
       },

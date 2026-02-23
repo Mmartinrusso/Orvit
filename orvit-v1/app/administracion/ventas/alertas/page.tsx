@@ -8,12 +8,12 @@
 
 import { useState, useEffect } from 'react';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, AlertCircle, XCircle, DollarSign, Calendar, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
 
 interface Alert {
   id: number;
@@ -91,7 +91,7 @@ export default function AlertasPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -202,7 +202,7 @@ export default function AlertasPage() {
                         <p className="text-sm">{alert.descripcion}</p>
 
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{format(new Date(alert.fecha), 'dd/MM/yyyy')}</span>
+                          <span>{formatDate(alert.fecha)}</span>
                           <span>•</span>
                           <span>{formatCurrency(alert.monto)}</span>
                         </div>

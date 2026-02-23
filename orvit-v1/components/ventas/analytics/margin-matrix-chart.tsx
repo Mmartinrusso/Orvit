@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import {
   ScatterChart,
   Scatter,
@@ -90,19 +91,19 @@ export function MarginMatrixChart({
           <div className="space-y-1 text-xs">
             <p>
               <span className="text-muted-foreground">Costo:</span>{' '}
-              <span className="font-medium">${point.costPrice.toFixed(2)}</span>
+              <span className="font-medium">${formatNumber(point.costPrice, 2)}</span>
             </p>
             <p>
               <span className="text-muted-foreground">Precio:</span>{' '}
-              <span className="font-medium">${point.salePrice.toFixed(2)}</span>
+              <span className="font-medium">${formatNumber(point.salePrice, 2)}</span>
             </p>
             <p>
               <span className="text-muted-foreground">Margen:</span>{' '}
-              <span className="font-medium">{point.margin.toFixed(2)}%</span>
+              <span className="font-medium">{formatNumber(point.margin, 2)}%</span>
             </p>
             <p>
               <span className="text-muted-foreground">Ventas:</span>{' '}
-              <span className="font-medium">${point.sales.toFixed(2)}</span>
+              <span className="font-medium">${formatNumber(point.sales, 2)}</span>
             </p>
             <p>
               <span className="text-muted-foreground">Velocidad:</span>{' '}

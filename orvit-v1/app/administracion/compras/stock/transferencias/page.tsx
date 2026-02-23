@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -475,7 +476,7 @@ export default function TransferenciasPage() {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              {new Date(transfer.createdAt).toLocaleDateString('es-AR')}
+                              {formatDate(transfer.createdAt)}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(transfer.createdAt), { addSuffix: true, locale: es })}

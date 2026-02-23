@@ -17,6 +17,7 @@ interface UnitsGridProps {
   onCreateWorkOrder?: (unidad: UnidadMovil) => void;
   onReportFailure?: (unidad: UnidadMovil) => void;
   onScheduleService?: (unidad: UnidadMovil) => void;
+  onLoadKilometraje?: (unidad: UnidadMovil) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   canReportFailure?: boolean;
@@ -38,6 +39,7 @@ export function UnitsGrid({
   onCreateWorkOrder,
   onReportFailure,
   onScheduleService,
+  onLoadKilometraje,
   canEdit = false,
   canDelete = false,
   canReportFailure = false,
@@ -129,6 +131,7 @@ export function UnitsGrid({
             onCreateWorkOrder={onCreateWorkOrder}
             onReportFailure={onReportFailure}
             onScheduleService={onScheduleService}
+            onLoadKilometraje={onLoadKilometraje}
             canEdit={canEdit}
             canDelete={canDelete}
             canReportFailure={canReportFailure}

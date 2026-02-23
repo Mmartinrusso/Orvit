@@ -13,7 +13,7 @@ import {
   Bell,
   Info
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { formatCurrency, formatPercentage } from './utils/metrics';
 
 interface AlertsCardProps {
@@ -90,7 +90,7 @@ export function AlertsCard({ data, previousMonthData }: AlertsCardProps) {
         id: 'cost-concentration',
         type: 'info',
         title: 'Concentración de Costos',
-        description: `${highCostComponent.label} representa +${highCostComponent.percentage.toFixed(1)}% del costo total.`,
+        description: `${highCostComponent.label} representa +${formatNumber(highCostComponent.percentage, 1)}% del costo total.`,
         action: 'Diversificar'
       });
     }

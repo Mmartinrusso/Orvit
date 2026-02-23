@@ -13,8 +13,6 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import {
-  isBotReady,
-  connectBot,
   notifyNewFailure,
   notifyFailureResolved,
   notifyP1ToSectorTechnicians,
@@ -31,7 +29,7 @@ import {
   notifyDayStart,
   notifySectorDayStart,
   sendDailySummary,
-} from '@/lib/discord';
+} from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,27 +89,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 4. Verificar que el bot esté conectado
-    if (!isBotReady()) {
-      const company = await prisma.company.findUnique({
-        where: { id: companyId },
-        select: { discordBotToken: true }
-      });
-
-      if (company?.discordBotToken) {
-        const connectResult = await connectBot(company.discordBotToken);
-        if (!connectResult.success) {
-          return NextResponse.json({
-            error: `Bot no conectado: ${connectResult.error}`,
-            help: 'Verifica que el token del bot sea correcto'
-          }, { status: 400 });
-        }
-      }
-    }
-
     const results: Record<string, { success: boolean; error?: string }> = {};
 
-    // 5. Ejecutar pruebas según el tipo
+    // 4. Ejecutar pruebas según el tipo
     const now = new Date();
 
     // ========== FALLAS ==========
@@ -474,7 +454,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 6. Calcular estadísticas
+    // 5. Calcular estadísticas
     const total = Object.keys(results).length;
     const successful = Object.values(results).filter(r => r.success).length;
     const failed = total - successful;

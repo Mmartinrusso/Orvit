@@ -84,7 +84,7 @@ const categoryColors: Record<string, string> = {
   VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
   COMPRAS: 'bg-success/10 text-success border-success-muted/20',
   MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
-  COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  COSTOS: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
 };
@@ -380,12 +380,12 @@ export default function TemplatesPage() {
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {(template.moduleKeys || []).slice(0, 4).map((key) => (
-                    <Badge key={key} variant="outline" className="text-[10px]">
+                    <Badge key={key} variant="outline" className="text-xs">
                       {key}
                     </Badge>
                   ))}
                   {(template.moduleKeys || []).length > 4 && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-xs">
                       +{template.moduleKeys.length - 4} más
                     </Badge>
                   )}
@@ -502,7 +502,7 @@ export default function TemplatesPage() {
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm truncate">{module.name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{module.key}</p>
+                              <p className="text-xs text-muted-foreground truncate">{module.key}</p>
                             </div>
                           </div>
                         ))}

@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isBotReady, createSectorChannels, listGuilds } from '@/lib/discord';
+import { manageBotChannels } from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,15 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Verificar que el bot esté conectado
-    if (!isBotReady()) {
-      return NextResponse.json(
-        { error: 'Bot no está conectado. Conéctalo primero.' },
-        { status: 400 }
-      );
-    }
-
-    // 4. Obtener datos del body
+    // 3. Obtener datos del body
     const body = await request.json();
     const { sectorId, guildId, channels } = body;
 
@@ -60,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Obtener el sector
+    // 4. Obtener el sector
     const sector = await prisma.sector.findUnique({
       where: { id: sectorId },
       include: {
@@ -77,12 +69,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Determinar el guildId a usar
+    // 5. Determinar el guildId a usar
     let targetGuildId = guildId || sector.company?.discordGuildId;
 
     if (!targetGuildId) {
-      // Usar el primer servidor disponible
-      const guilds = listGuilds();
+      // Usar el primer servidor disponible vía bot-service
+      const guildsResult = await manageBotChannels('getGuilds', {});
+      const guilds = guildsResult.guilds || [];
       if (guilds.length > 0) {
         targetGuildId = guilds[0].id;
       }
@@ -95,17 +88,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Crear la estructura de canales
-    const result = await createSectorChannels({
+    // 6. Crear la estructura de canales vía bot-service
+    const createChannels = channels || {
+      fallas: true,
+      preventivos: true,
+      ordenesTrabajo: true,
+      resumenDia: true,
+      general: true,
+    };
+
+    const result = await manageBotChannels('createSectorChannels', {
       guildId: targetGuildId,
       sectorName: sector.name,
-      createChannels: channels || {
-        fallas: true,
-        preventivos: true,
-        ordenesTrabajo: true,
-        resumenDia: true,
-        general: true,
-      },
+      createChannels,
     });
 
     if (!result.success) {
@@ -115,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 8. Actualizar el sector con los IDs de los canales
+    // 7. Actualizar el sector con los IDs de los canales
     const updateData: any = {
       discordCategoryId: result.categoryId,
     };
@@ -138,7 +133,7 @@ export async function POST(request: NextRequest) {
       data: updateData,
     });
 
-    // 9. Actualizar el guildId de la empresa si no estaba configurado
+    // 8. Actualizar el guildId de la empresa si no estaba configurado
     if (!sector.company?.discordGuildId) {
       await prisma.company.update({
         where: { id: sector.companyId },
@@ -155,7 +150,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Error en POST /api/discord/bot/create-sector-channels:', error);
+    console.error('Error en POST /api/discord/bot/create-sector-channels:', error);
     return NextResponse.json(
       { error: 'Error al crear canales', detail: error.message },
       { status: 500 }

@@ -87,8 +87,8 @@ import { useViewMode } from '@/hooks/use-view-mode';
 import { CotizacionDetailSheet } from '@/components/ventas/cotizacion-detail-sheet';
 import { CotizacionesDashboard } from '@/components/ventas/cotizaciones-dashboard';
 import { CotizacionesAlertaBanner, CotizacionesAlertasPopover } from '@/components/ventas/cotizaciones-alertas';
-import { QuoteQuickModal } from '@/components/ventas/quote-quick-modal';
-import { cn } from '@/lib/utils';
+import { QuoteEditorModal } from '@/components/ventas/quote-editor-modal';
+import { cn, formatNumber } from '@/lib/utils';
 import { useApiClient } from '@/hooks/use-api-client';
 
 // Types
@@ -397,7 +397,7 @@ export default function CotizacionesPage() {
     const config = ESTADOS_CONFIG[(estado || 'BORRADOR') as EstadoCotizacion] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={cn(config.bgColor, config.color, 'border-0 text-[10px] px-1.5 py-0.5 font-medium')}>
+      <Badge className={cn(config.bgColor, config.color, 'border-0 text-xs px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -422,11 +422,10 @@ export default function CotizacionesPage() {
   // Calculate KPIs from stats
   const kpis = useMemo(() => {
     if (!stats) return null;
-    const totalCotizaciones = stats.totales.cantidad;
     return {
-      total: totalCotizaciones,
-      montoTotal: stats.totales.montoTotal,
-      tasaAceptacion: stats.conversion.tasaAceptacion,
+      total: stats.totales.cantidad.valor,
+      montoTotal: stats.totales.montoTotal.valor,
+      tasaAceptacion: stats.conversion.tasaAceptacion.valor,
       porVencer: stats.porVencer.cantidad,
       porEstado: stats.porEstado,
     };
@@ -521,7 +520,7 @@ export default function CotizacionesPage() {
                   <Bell className="w-3.5 h-3.5 mr-1.5" />
                   Alertas
                   {stats?.porVencer?.cantidad ? (
-                    <Badge variant="destructive" className="ml-1.5 h-4 px-1 text-[10px]">
+                    <Badge variant="destructive" className="ml-1.5 h-5 px-1 text-xs">
                       {stats.porVencer.cantidad}
                     </Badge>
                   ) : null}
@@ -595,7 +594,7 @@ export default function CotizacionesPage() {
                         </div>
                         <div className="flex-1">
                           <p className="text-2xl font-bold">
-                            {statsLoading ? '-' : `${(kpis?.tasaAceptacion || 0).toFixed(1)}%`}
+                            {statsLoading ? '-' : `${formatNumber(Number(kpis?.tasaAceptacion || 0), 1)}%`}
                           </p>
                           <p className="text-xs text-muted-foreground">Tasa aceptación</p>
                         </div>
@@ -607,7 +606,7 @@ export default function CotizacionesPage() {
                         <div className="w-full bg-muted rounded-full h-1.5">
                           <div
                             className="bg-info h-1.5 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(kpis?.tasaAceptacion || 0, 100)}%` }}
+                            style={{ width: `${Math.min(Number(kpis?.tasaAceptacion || 0), 100)}%` }}
                           />
                         </div>
                       </div>
@@ -671,7 +670,7 @@ export default function CotizacionesPage() {
                         {config.label}
                         <Badge
                           variant={isActive ? 'secondary' : 'outline'}
-                          className="h-4 px-1 text-[10px] ml-1"
+                          className="h-4 px-1 text-xs ml-1"
                         >
                           {count}
                         </Badge>
@@ -692,8 +691,8 @@ export default function CotizacionesPage() {
                 </div>
 
                 {/* Filtros */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="relative flex-1 max-w-sm">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
                       placeholder="Buscar por número, cliente..."
@@ -705,24 +704,6 @@ export default function CotizacionesPage() {
                       className="pl-8 h-8 text-xs"
                     />
                   </div>
-
-                  <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-                    <SelectTrigger className="w-[160px] h-8 text-xs">
-                      <Filter className="w-3 h-3 mr-2" />
-                      <SelectValue placeholder="Filtrar estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all" className="text-xs">Todos los estados</SelectItem>
-                      {Object.entries(ESTADOS_CONFIG).map(([key, config]) => (
-                        <SelectItem key={key} value={key} className="text-xs">
-                          <div className="flex items-center gap-2">
-                            <config.icon className="w-3 h-3" />
-                            {config.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
 
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -878,7 +859,7 @@ export default function CotizacionesPage() {
                                 <TableCell className="text-xs">
                                   <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                      <span className="text-[10px] font-medium text-primary">
+                                      <span className="text-xs font-medium text-primary">
                                         {(cot.client?.legalName || cot.client?.name || 'C')[0].toUpperCase()}
                                       </span>
                                     </div>
@@ -887,7 +868,7 @@ export default function CotizacionesPage() {
                                         {cot.client?.legalName || cot.client?.name || '-'}
                                       </span>
                                       {/* Mobile-only: show total below client name */}
-                                      <span className="text-[10px] text-muted-foreground sm:hidden">
+                                      <span className="text-xs text-muted-foreground sm:hidden">
                                         {formatCurrency(Number(cot.total), cot.moneda)}
                                       </span>
                                     </div>
@@ -906,7 +887,7 @@ export default function CotizacionesPage() {
                                   )}>
                                     {cot.fechaValidez ? format(new Date(cot.fechaValidez), 'dd/MM/yy', { locale: es }) : '-'}
                                     {(vencida || porVencer) && diasVenc !== null && (
-                                      <span className="ml-1 text-[10px]">
+                                      <span className="ml-1 text-xs">
                                         ({diasVenc < 0 ? `${Math.abs(diasVenc)}d atrás` : `${diasVenc}d`})
                                       </span>
                                     )}
@@ -1082,7 +1063,7 @@ export default function CotizacionesPage() {
                               <p className="text-sm font-medium">{formatCurrency(item.total)}</p>
                               <Badge
                                 variant={item.diasRestantes <= 1 ? 'destructive' : 'outline'}
-                                className="text-[10px]"
+                                className="text-xs"
                               >
                                 {item.diasRestantes === 0 ? 'Vence hoy' :
                                   item.diasRestantes === 1 ? 'Vence mañana' :
@@ -1180,8 +1161,8 @@ export default function CotizacionesPage() {
             />
           )}
 
-          {/* Modal para crear cotización rápida */}
-          <QuoteQuickModal
+          {/* Modal para crear cotización */}
+          <QuoteEditorModal
             open={quoteModalOpen}
             onOpenChange={setQuoteModalOpen}
             onQuoteCreated={() => {

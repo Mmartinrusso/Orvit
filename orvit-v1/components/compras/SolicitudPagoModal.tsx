@@ -26,8 +26,7 @@ import {
  X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 const solicitudSchema = z.object({
@@ -771,13 +770,13 @@ export function SolicitudPagoModal({
  {factura.tipo} {factura.numeroSerie}-{factura.numeroFactura}
  </p>
  {isT2 && viewMode === 'E' && (
- <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-warning-muted text-warning-muted-foreground border-warning-muted">
+ <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-warning-muted text-warning-muted-foreground border-warning-muted">
  T2
  </Badge>
  )}
  </div>
  <p className="text-xs text-muted-foreground">
- Emisión: {format(new Date(factura.fechaEmision), 'dd/MM/yyyy', { locale: es })}
+ Emisión: {formatDate(factura.fechaEmision)}
  </p>
  </div>
  <div>
@@ -785,7 +784,7 @@ export function SolicitudPagoModal({
  <>
  <p className="text-xs text-muted-foreground">Vencimiento:</p>
  <p className={cn('text-sm', getDiasVencimientoColor(factura.diasVencimiento))}>
- {format(new Date(factura.fechaVencimiento), 'dd/MM/yyyy', { locale: es })}
+ {formatDate(factura.fechaVencimiento)}
  </p>
  {factura.diasVencimiento !== undefined && (
  <p className={cn('text-xs', getDiasVencimientoColor(factura.diasVencimiento))}>

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { notifyTaskDueSoon } from '@/lib/discord/agenda-notifications';
-import { connectBot, isBotReady } from '@/lib/discord/bot';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -50,14 +49,6 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`📋 [CRON Due Soon] ${tasksDueSoon.length} tarea(s) próximas a vencer`);
-
-    // Asegurar que el bot está conectado
-    if (!isBotReady()) {
-      const discordToken = process.env.DISCORD_BOT_TOKEN;
-      if (discordToken) {
-        await connectBot(discordToken);
-      }
-    }
 
     const results = {
       sent: 0,

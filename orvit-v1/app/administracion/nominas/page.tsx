@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -47,7 +47,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompact(value: number): string {
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
   if (value >= 1000) return `$${Math.round(value / 1000)}K`;
   return formatCurrency(value);
 }
@@ -274,7 +274,7 @@ export default function NominasPage() {
               disabled={isFetching}
               className={cn(
                 'inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7',
-                'px-2 text-[11px] font-normal gap-1.5',
+                'px-2 text-xs font-normal gap-1.5',
                 'hover:bg-muted disabled:opacity-50',
                 isFetching && 'bg-background shadow-sm'
               )}
@@ -407,19 +407,19 @@ export default function NominasPage() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-[10px] text-muted-foreground mb-1">Total Bruto</div>
+                    <div className="text-xs text-muted-foreground mb-1">Total Bruto</div>
                     <div className="text-lg font-semibold">{formatCompact(nextPayment.breakdown.grossSalaries)}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-[10px] text-muted-foreground mb-1">Descuentos</div>
+                    <div className="text-xs text-muted-foreground mb-1">Descuentos</div>
                     <div className="text-lg font-semibold text-destructive">-{formatCompact(nextPayment.breakdown.deductions)}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-[10px] text-muted-foreground mb-1">Adelantos</div>
+                    <div className="text-xs text-muted-foreground mb-1">Adelantos</div>
                     <div className="text-lg font-semibold text-warning-muted-foreground">-{formatCompact(nextPayment.breakdown.advances)}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-primary/10">
-                    <div className="text-[10px] text-muted-foreground mb-1">Neto a Pagar</div>
+                    <div className="text-xs text-muted-foreground mb-1">Neto a Pagar</div>
                     <div className="text-lg font-semibold text-primary">{formatCompact(nextPayment.breakdown.netTotal)}</div>
                   </div>
                 </div>

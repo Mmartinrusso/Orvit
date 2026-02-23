@@ -18,7 +18,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { AttachmentDraft } from './types';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { GoogleDrivePicker, GoogleDriveFile } from '@/components/ui/google-drive-picker';
 
 interface AttachmentsDropzoneProps {
@@ -64,7 +64,7 @@ const getFileIcon = (mime?: string, name?: string) => {
 const formatFileSize = (bytes?: number) => {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, 1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
@@ -302,7 +302,7 @@ export function AttachmentsDropzone({
                           </span>
                         )}
                         {attachment.isNew && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
                             Nuevo
                           </Badge>
                         )}

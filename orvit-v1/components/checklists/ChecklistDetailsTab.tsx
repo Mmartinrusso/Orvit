@@ -14,7 +14,7 @@ import {
   Calendar,
   AlertCircle
 } from 'lucide-react';
-import { useChecklistDetail } from '@/hooks/maintenance/use-checklist-detail';
+import { useChecklistDetail } from '@/hooks/mantenimiento/use-checklist-detail';
 
 interface ChecklistDetailsTabProps {
   checklist?: {

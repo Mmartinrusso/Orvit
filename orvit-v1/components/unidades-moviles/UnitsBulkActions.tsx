@@ -134,7 +134,7 @@ export function UnitsBulkActions({
                   onBulkChangeStatus(selectedUnits, 'ACTIVO');
                   onClearSelection();
                 }}>
-                  <Badge className="bg-success-muted text-success border-success/20 text-[10px] mr-2">
+                  <Badge className="bg-success-muted text-success border-success/20 text-xs mr-2">
                     Activo
                   </Badge>
                   Marcar como Activo
@@ -143,7 +143,7 @@ export function UnitsBulkActions({
                   onBulkChangeStatus(selectedUnits, 'MANTENIMIENTO');
                   onClearSelection();
                 }}>
-                  <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20 text-[10px] mr-2">
+                  <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted-foreground/20 text-xs mr-2">
                     Mant.
                   </Badge>
                   En Mantenimiento
@@ -152,7 +152,7 @@ export function UnitsBulkActions({
                   onBulkChangeStatus(selectedUnits, 'FUERA_SERVICIO');
                   onClearSelection();
                 }}>
-                  <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] mr-2">
+                  <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs mr-2">
                     Fuera
                   </Badge>
                   Fuera de Servicio
@@ -162,7 +162,7 @@ export function UnitsBulkActions({
                   onBulkChangeStatus(selectedUnits, 'DESHABILITADO');
                   onClearSelection();
                 }}>
-                  <Badge className="bg-muted text-muted-foreground text-[10px] mr-2">
+                  <Badge className="bg-muted text-muted-foreground text-xs mr-2">
                     Baja
                   </Badge>
                   Dar de Baja

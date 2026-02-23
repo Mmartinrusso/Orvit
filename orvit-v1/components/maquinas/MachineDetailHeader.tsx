@@ -31,8 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Machine, MachineStatus } from '@/lib/types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 interface MachineDetailHeaderProps {
@@ -87,13 +86,13 @@ export function MachineDetailHeader({
     switch (status) {
       case MachineStatus.ACTIVE:
       case 'ACTIVE':
-        return <Badge variant="default" className="bg-success text-success-foreground text-[10px] px-1.5 py-0">Activo</Badge>;
+        return <Badge variant="default" className="bg-success text-success-foreground text-xs px-1.5 py-0">Activo</Badge>;
       case MachineStatus.OUT_OF_SERVICE:
       case 'OUT_OF_SERVICE':
-        return <Badge variant="secondary" className="bg-warning text-warning-foreground text-[10px] px-1.5 py-0">Fuera de servicio</Badge>;
+        return <Badge variant="secondary" className="bg-warning text-warning-foreground text-xs px-1.5 py-0">Fuera de servicio</Badge>;
       case MachineStatus.DECOMMISSIONED:
       case 'DECOMMISSIONED':
-        return <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Baja</Badge>;
+        return <Badge variant="destructive" className="text-xs px-1.5 py-0">Baja</Badge>;
       default:
         return null;
     }
@@ -103,7 +102,7 @@ export function MachineDetailHeader({
     if (!stats.lastMaintenance) return 'Sin registro';
     try {
       const date = new Date(stats.lastMaintenance);
-      return format(date, 'dd/MM/yyyy');
+      return formatDate(date);
     } catch {
       return 'Sin registro';
     }
@@ -142,7 +141,7 @@ export function MachineDetailHeader({
             <h2 className="text-base font-semibold truncate">{machine.name}</h2>
             {getMachineStatusBadge(machine.status)}
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {sectorName && (
               <span className="flex items-center gap-0.5">
                 <MapPin className="h-3 w-3" />
@@ -263,7 +262,7 @@ export function MachineDetailHeader({
           <div className="flex items-center gap-2">
             <ClipboardList className={cn('h-5 w-5', stats.pendingOrders > 0 ? 'text-warning' : 'text-muted-foreground')} />
             <div>
-              <p className="text-[10px] text-muted-foreground leading-none">OT Pendientes</p>
+              <p className="text-xs text-muted-foreground leading-none">OT Pendientes</p>
               <p className={cn('text-xl font-bold leading-tight', stats.pendingOrders > 0 ? 'text-warning' : 'text-foreground')}>
                 {stats.pendingOrders}
               </p>
@@ -280,7 +279,7 @@ export function MachineDetailHeader({
           <div className="flex items-center gap-2">
             <AlertTriangle className={cn('h-5 w-5', stats.openFailures > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
-              <p className="text-[10px] text-muted-foreground leading-none">Fallas Abiertas</p>
+              <p className="text-xs text-muted-foreground leading-none">Fallas Abiertas</p>
               <p className={cn('text-xl font-bold leading-tight', stats.openFailures > 0 ? 'text-destructive' : 'text-foreground')}>
                 {stats.openFailures}
               </p>
@@ -293,7 +292,7 @@ export function MachineDetailHeader({
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-[10px] text-muted-foreground leading-none">Completas (7d)</p>
+              <p className="text-xs text-muted-foreground leading-none">Completas (7d)</p>
               <p className="text-xl font-bold text-foreground leading-tight">{stats.completedOrders}</p>
             </div>
           </div>
@@ -304,7 +303,7 @@ export function MachineDetailHeader({
           <div className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-[10px] text-muted-foreground leading-none">Preventivos (7d)</p>
+              <p className="text-xs text-muted-foreground leading-none">Preventivos (7d)</p>
               <p className="text-xl font-bold text-foreground leading-tight">{stats.preventiveOrders}</p>
             </div>
           </div>
@@ -315,7 +314,7 @@ export function MachineDetailHeader({
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-[10px] text-muted-foreground leading-none">Últ. Mantenimiento</p>
+              <p className="text-xs text-muted-foreground leading-none">Últ. Mantenimiento</p>
               <p className="text-sm font-bold text-foreground leading-tight">{lastMaintenanceFormatted}</p>
             </div>
           </div>

@@ -1,8 +1,10 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -180,9 +182,7 @@ export default function ClientDetailPage() {
     }).format(amount);
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('es-AR');
-  };
+  // formatDate imported from @/lib/date-utils
 
   const getEstadoBadge = (estado: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -392,7 +392,7 @@ export default function ClientDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Cliente desde</p>
                     <p className="text-sm font-medium">
-                      {new Date(client.createdAt).toLocaleDateString('es-AR')}
+                      {formatDate(client.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -429,7 +429,7 @@ export default function ClientDetailPage() {
                           )}
                           {discount.amount && (
                             <p className="text-sm text-muted-foreground">
-                              ${discount.amount.toFixed(2)} de descuento
+                              ${formatNumber(discount.amount, 2)} de descuento
                             </p>
                           )}
                           {discount.minQuantity && (

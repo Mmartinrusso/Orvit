@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Plus, Save, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface IndirectCost {
   id: number;
@@ -200,7 +200,7 @@ export default function CostDistributionMatrix({
     indirectCosts.forEach(cost => {
       const rowTotal = calculateRowTotal(cost.id.toString());
       if (rowTotal !== 100) {
-        errors.push(`${cost.label}: debe sumar 100% (actual: ${rowTotal.toFixed(1)}%)`);
+        errors.push(`${cost.label}: debe sumar 100% (actual: ${formatNumber(rowTotal, 1)}%)`);
       }
     });
 
@@ -298,7 +298,7 @@ export default function CostDistributionMatrix({
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-info" />
-              <span className="ml-2">Cargando datos...</span>
+              <span className="ml-2">Cargando distribución de costos...</span>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -315,7 +315,7 @@ export default function CostDistributionMatrix({
                           <div className="flex flex-col">
                             <span className="text-sm">{category.name}</span>
                             <span className="text-xs text-muted-foreground font-normal">
-                              Total: {(typeof columnTotal === 'number' ? columnTotal : 0).toFixed(1)}%
+                              Total: {formatNumber(typeof columnTotal === 'number' ? columnTotal : 0, 1)}%
                             </span>
                           </div>
                         </th>
@@ -363,7 +363,7 @@ export default function CostDistributionMatrix({
                             ) : (
                               <AlertCircle className="h-4 w-4" />
                             )}
-                            <span>{(typeof rowTotal === 'number' ? rowTotal : 0).toFixed(1)}%</span>
+                            <span>{formatNumber(typeof rowTotal === 'number' ? rowTotal : 0, 1)}%</span>
                           </div>
                         </td>
                       </tr>

@@ -323,7 +323,7 @@ export function FailuresDuplicadosView({
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[10px]',
+                            'text-xs',
                             failure.status === 'OPEN' && 'border-info text-info-muted-foreground',
                             failure.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
                             failure.status === 'RESOLVED' && 'border-success text-success'

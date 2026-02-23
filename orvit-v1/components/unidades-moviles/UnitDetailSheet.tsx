@@ -49,9 +49,11 @@ import {
   Image as ImageIcon,
   Loader2,
   Eye,
+  Plus,
 } from 'lucide-react';
+import UnidadMovilMaintenanceDialog from '@/components/maintenance/UnidadMovilMaintenanceDialog';
 import { FileViewer } from '@/components/ui/file-viewer';
-import { useDocuments } from '@/hooks/maintenance/use-documents';
+import { useDocuments } from '@/hooks/mantenimiento/use-documents';
 import { useQueryClient } from '@tanstack/react-query';
 import { UnidadMovil } from './UnitCard';
 import { KilometrajeHistory } from './KilometrajeHistory';
@@ -82,6 +84,7 @@ interface UnitDetailSheetProps {
   canEdit?: boolean;
   canDelete?: boolean;
   canReportFailure?: boolean;
+  defaultTab?: string;
   workOrders?: Array<{
     id: number;
     title: string;
@@ -139,12 +142,16 @@ export function UnitDetailSheet({
   canEdit = false,
   canDelete = false,
   canReportFailure = false,
+  defaultTab,
   workOrders = [],
   maintenanceHistory = [],
 }: UnitDetailSheetProps) {
-  const [activeTab, setActiveTab] = useState('resumen');
+  const [activeTab, setActiveTab] = useState(defaultTab || 'resumen');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [preventivos, setPreventivos] = useState<any[]>([]);
+  const [loadingPreventivos, setLoadingPreventivos] = useState(false);
+  const [showPreventiveDialog, setShowPreventiveDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -161,10 +168,51 @@ export function UnitDetailSheet({
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab('resumen');
+      setActiveTab(defaultTab || 'resumen');
       setUploadError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultTab]);
+
+  const fetchPreventivos = async () => {
+    if (!unidad) return;
+    setLoadingPreventivos(true);
+    try {
+      const res = await fetch(`/api/maintenance/unidad-movil?companyId=${unidad.companyId}&unidadMovilId=${unidad.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPreventivos(data.maintenances || []);
+      }
+    } catch (e) {
+      console.error('Error fetching preventivos:', e);
+    } finally {
+      setLoadingPreventivos(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'mantenimientos' && unidad?.id) {
+      fetchPreventivos();
+    }
+  }, [activeTab, unidad?.id]);
+
+  const handleDeletePreventivo = async (id: number) => {
+    try {
+      const res = await fetch(`/api/maintenance/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPreventivos(prev => prev.filter(p => p.id !== id));
+      }
+    } catch (e) {
+      console.error('Error deleting preventivo:', e);
+    }
+  };
+
+  const getFrequencyLabel = (freq: string) => {
+    const labels: Record<string, string> = {
+      DAILY: 'Diario', WEEKLY: 'Semanal', BIWEEKLY: 'Quincenal',
+      MONTHLY: 'Mensual', QUARTERLY: 'Trimestral', YEARLY: 'Anual',
+    };
+    return labels[freq] || freq || '-';
+  };
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -361,7 +409,7 @@ export function UnitDetailSheet({
               <div className="flex items-center gap-2 shrink-0">
                 <Badge
                   variant="outline"
-                  className={cn('text-[10px] px-2 py-0 h-5 border', estadoColors[unidad.estado])}
+                  className={cn('text-xs px-2 py-0 h-5 border', estadoColors[unidad.estado])}
                 >
                   {estadoLabels[unidad.estado] || unidad.estado}
                 </Badge>
@@ -438,6 +486,7 @@ export function UnitDetailSheet({
               <TabsList className="w-full justify-start overflow-x-auto h-9">
                 <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
                 <TabsTrigger value="km" className="text-xs">Km</TabsTrigger>
+                <TabsTrigger value="mantenimientos" className="text-xs">Preventivos</TabsTrigger>
                 <TabsTrigger value="ots" className="text-xs">OTs</TabsTrigger>
                 <TabsTrigger value="docs" className="text-xs">Docs</TabsTrigger>
                 <TabsTrigger value="historial" className="text-xs">Historial</TabsTrigger>
@@ -519,7 +568,89 @@ export function UnitDetailSheet({
                   unidadNombre={unidad.nombre}
                   kilometrajeActual={unidad.kilometraje || 0}
                   canEdit={canEdit}
+                  kmUpdateFrequencyDays={(unidad as any).kmUpdateFrequencyDays}
+                  ultimaLecturaKm={(unidad as any).ultimaLecturaKm}
                 />
+              </TabsContent>
+
+              {/* Tab Mantenimientos Preventivos */}
+              <TabsContent value="mantenimientos" className="space-y-3 mt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <CalendarClock className="h-3 w-3" />
+                    {preventivos.length} plan{preventivos.length !== 1 ? 'es' : ''}
+                  </span>
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPreventiveDialog(true)}
+                      className="h-7 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nuevo
+                    </Button>
+                  )}
+                </div>
+
+                {loadingPreventivos ? (
+                  <div className="py-8 text-center">
+                    <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                    <p className="text-xs text-muted-foreground">Cargando planes...</p>
+                  </div>
+                ) : preventivos.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <CalendarClock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">Sin planes de mantenimiento preventivo</p>
+                    {canEdit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPreventiveDialog(true)}
+                        className="h-7 text-xs mt-3"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Crear plan
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {preventivos.map((p) => (
+                      <div key={p.id} className="flex items-start gap-2 p-3 rounded-lg border bg-card">
+                        <CalendarClock className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{p.title}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              {getFrequencyLabel(p.frequency)}
+                            </span>
+                            {p.scheduledDate && (
+                              <span className="text-xs text-muted-foreground">
+                                Próximo: {formatDate(p.scheduledDate)}
+                              </span>
+                            )}
+                            {p.assignedToName && (
+                              <span className="text-xs text-muted-foreground">
+                                · {p.assignedToName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePreventivo(p.id)}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Tab OTs */}
@@ -552,11 +683,11 @@ export function UnitDetailSheet({
                       <Card key={wo.id} className="p-3">
                         <h4 className="text-xs font-medium">{wo.title}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-[10px] h-4">
+                          <Badge variant="outline" className="text-xs h-5">
                             {wo.status}
                           </Badge>
                           {wo.scheduledDate && (
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {formatDate(wo.scheduledDate)}
                             </span>
                           )}
@@ -610,14 +741,14 @@ export function UnitDetailSheet({
                 {documentsQuery.isLoading ? (
                   <div className="py-8 text-center">
                     <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
-                    <p className="text-xs text-muted-foreground">Cargando...</p>
+                    <p className="text-xs text-muted-foreground">Cargando unidad móvil...</p>
                   </div>
                 ) : !documentsQuery.data || documentsQuery.data.length === 0 ? (
                   <div className="py-8 text-center">
                     <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-xs text-muted-foreground">Sin documentos</p>
                     {canEdit && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Sube seguros, certificados y más
                       </p>
                     )}
@@ -635,7 +766,7 @@ export function UnitDetailSheet({
                             <p className="text-xs font-medium truncate">
                               {doc.originalName || doc.fileName || 'Documento'}
                             </p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                               {formatFileSize(doc.fileSize)}
                               {doc.uploadDate && (
                                 <> • {format(new Date(doc.uploadDate), 'dd/MM/yyyy', { locale: es })}</>
@@ -693,7 +824,7 @@ export function UnitDetailSheet({
                     {timeline.length} eventos
                   </span>
                   {workOrders.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {completedWorkOrders.length} completadas
                     </span>
                   )}
@@ -724,7 +855,7 @@ export function UnitDetailSheet({
                               <p className="text-xs font-medium truncate">{event.title}</p>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <p className="text-[10px] text-muted-foreground">
+                                  <p className="text-xs text-muted-foreground">
                                     {formatDistanceToNow(new Date(event.date), { addSuffix: true, locale: es })}
                                   </p>
                                 </TooltipTrigger>
@@ -755,6 +886,22 @@ export function UnitDetailSheet({
             setViewerOpen(false);
             setSelectedDoc(null);
           }}
+        />
+      )}
+
+      {/* Diálogo de mantenimiento preventivo */}
+      {unidad && (
+        <UnidadMovilMaintenanceDialog
+          isOpen={showPreventiveDialog}
+          onClose={() => setShowPreventiveDialog(false)}
+          onSave={() => {
+            setShowPreventiveDialog(false);
+            fetchPreventivos();
+          }}
+          companyId={unidad.companyId}
+          sectorId={unidad.sectorId}
+          selectedUnidad={unidad as any}
+          mode="create"
         />
       )}
     </TooltipProvider>

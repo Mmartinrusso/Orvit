@@ -38,8 +38,8 @@ export function InfoTooltip({ title, description, formula, className }: InfoTool
             <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
             {formula && (
               <div className="mt-2 pt-2 border-t border-border">
-                <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Fórmula:</p>
-                <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">
+                <p className="text-xs text-muted-foreground font-medium mb-0.5">Fórmula:</p>
+                <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                   {formula}
                 </code>
               </div>

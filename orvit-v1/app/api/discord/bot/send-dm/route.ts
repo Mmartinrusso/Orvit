@@ -9,7 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isBotReady, sendDM, sendBulkDM, DISCORD_COLORS } from '@/lib/discord';
+import { sendDMByDiscordIdViaBotService, callBotService } from '@/lib/discord/bot-service-client';
+import { DISCORD_COLORS } from '@/lib/discord/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,15 +29,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
-    // 2. Verificar que el bot esté conectado
-    if (!isBotReady()) {
-      return NextResponse.json(
-        { error: 'Bot no está conectado' },
-        { status: 400 }
-      );
-    }
-
-    // 3. Obtener datos del body
+    // 2. Obtener datos del body
     const body = await request.json();
     const {
       // Destinatario(s)
@@ -48,7 +41,7 @@ export async function POST(request: NextRequest) {
       embed,
     } = body;
 
-    // 4. Validar que hay contenido para enviar
+    // 3. Validar que hay contenido para enviar
     if (!content && !embed) {
       return NextResponse.json(
         { error: 'Se requiere content o embed' },
@@ -56,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Determinar destinatarios
+    // 4. Determinar destinatarios
     let targetDiscordIds: string[] = [];
 
     if (discordUserId) {
@@ -104,7 +97,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Preparar mensaje
+    // 5. Preparar mensaje
     const messageOptions = {
       content,
       embed: embed ? {
@@ -117,10 +110,10 @@ export async function POST(request: NextRequest) {
       } : undefined,
     };
 
-    // 7. Enviar mensaje(s)
+    // 6. Enviar mensaje(s) vía bot-service
     if (targetDiscordIds.length === 1) {
       // Envío individual
-      const result = await sendDM(targetDiscordIds[0], messageOptions);
+      const result = await sendDMByDiscordIdViaBotService(targetDiscordIds[0], messageOptions);
 
       if (!result.success) {
         return NextResponse.json(
@@ -134,20 +127,23 @@ export async function POST(request: NextRequest) {
         message: 'DM enviado exitosamente',
       });
     } else {
-      // Envío masivo
-      const results = await sendBulkDM(targetDiscordIds, messageOptions);
+      // Envío masivo vía bot-service
+      const result = await callBotService('/api/send-bulk-dm', {
+        discordUserIds: targetDiscordIds,
+        options: messageOptions,
+      });
 
       return NextResponse.json({
         success: true,
-        message: `DMs enviados: ${results.sent} exitosos, ${results.failed} fallidos`,
-        sent: results.sent,
-        failed: results.failed,
-        errors: results.errors.length > 0 ? results.errors : undefined,
+        message: `DMs enviados: ${result.sent || 0} exitosos, ${result.failed || 0} fallidos`,
+        sent: result.sent || 0,
+        failed: result.failed || 0,
+        errors: result.errors && result.errors.length > 0 ? result.errors : undefined,
       });
     }
 
   } catch (error: any) {
-    console.error('❌ Error en POST /api/discord/bot/send-dm:', error);
+    console.error('Error en POST /api/discord/bot/send-dm:', error);
     return NextResponse.json(
       { error: 'Error al enviar DM', detail: error.message },
       { status: 500 }

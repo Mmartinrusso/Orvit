@@ -331,7 +331,7 @@ export default function CostosPage() {
 
       {/* KPIs */}
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map(i => (
             <Card key={i}>
               <CardHeader className="pb-2">
@@ -345,7 +345,7 @@ export default function CostosPage() {
           ))}
         </div>
       ) : data ? (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <KPICard
             title="Costo Total"
             value={formatCurrency(data.kpis.totalCostPeriod)}

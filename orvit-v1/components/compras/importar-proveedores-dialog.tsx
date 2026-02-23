@@ -296,7 +296,7 @@ function PreviewTable({
  <ScrollArea className="h-[280px] border rounded-lg">
  <Table>
  <TableHeader>
- <TableRow className="bg-muted/30 text-[10px]">
+ <TableRow className="bg-muted/30 text-xs">
  <TableHead className="w-8 py-2" />
  <TableHead className="py-2">Nombre</TableHead>
  <TableHead className="py-2">CUIT</TableHead>
@@ -328,7 +328,7 @@ function PreviewTable({
  <TableCell className="py-1.5 font-medium">
  {item.nombre || <span className="text-muted-foreground italic">sin nombre</span>}
  {item.razonSocial && item.razonSocial !== item.nombre && (
- <span className="block text-[10px] text-muted-foreground">{item.razonSocial}</span>
+ <span className="block text-xs text-muted-foreground">{item.razonSocial}</span>
  )}
  </TableCell>
  <TableCell className="py-1.5 text-muted-foreground">{item.cuit || '-'}</TableCell>
@@ -357,7 +357,7 @@ function PreviewTable({
  </Table>
  </ScrollArea>
 
- <p className="text-[10px] text-muted-foreground">
+ <p className="text-xs text-muted-foreground">
  Hacé click en una fila para incluirla/omitirla. Los errores se omiten siempre.
  </p>
  </div>
@@ -389,7 +389,7 @@ function ImportResultView({ result, onClose }: { result: ImportResult; onClose: 
  <p className="text-xs font-medium text-warning-muted-foreground mb-1">Omitidos (duplicados u otros):</p>
  <ScrollArea className="h-[100px] border rounded-md p-2 bg-warning-muted/50 ">
  {result.detalle.omitidos.map((o, i) => (
- <p key={i} className="text-[11px] text-warning-muted-foreground py-0.5">
+ <p key={i} className="text-xs text-warning-muted-foreground py-0.5">
  <span className="font-medium">{o.nombre}</span> — {o.razon}
  </p>
  ))}
@@ -402,7 +402,7 @@ function ImportResultView({ result, onClose }: { result: ImportResult; onClose: 
  <p className="text-xs font-medium text-destructive mb-1">Errores:</p>
  <ScrollArea className="h-[80px] border rounded-md p-2 bg-destructive/10/50 ">
  {result.detalle.errores.map((e, i) => (
- <p key={i} className="text-[11px] text-destructive py-0.5">
+ <p key={i} className="text-xs text-destructive py-0.5">
  <span className="font-medium">{e.nombre}</span> — {e.error}
  </p>
  ))}
@@ -586,7 +586,7 @@ export function ImportarProveedoresDialog({ isOpen, onClose, onImportado }: Prop
  <div className="space-y-2">
  <div className="flex items-center justify-between">
  <p className="text-sm font-medium flex items-center gap-2">
- <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+ <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
  1
  </span>
  Copiá el prompt y enviáselo a ChatGPT o Claude
@@ -606,11 +606,11 @@ export function ImportarProveedoresDialog({ isOpen, onClose, onImportado }: Prop
  </Button>
  </div>
  <div className="relative">
- <pre className="text-[10px] text-muted-foreground bg-muted/50 border rounded-lg p-3 overflow-auto max-h-[120px] leading-relaxed whitespace-pre-wrap">
+ <pre className="text-xs text-muted-foreground bg-muted/50 border rounded-lg p-3 overflow-auto max-h-[120px] leading-relaxed whitespace-pre-wrap">
  {AI_PROMPT}
  </pre>
  </div>
- <p className="text-[11px] text-muted-foreground">
+ <p className="text-xs text-muted-foreground">
  Pegá el prompt en la IA, agregá tu lista de proveedores al final y enviá. La IA te va a devolver un JSON.
  </p>
  </div>
@@ -618,7 +618,7 @@ export function ImportarProveedoresDialog({ isOpen, onClose, onImportado }: Prop
  {/* Paso 2: Pegar resultado */}
  <div className="space-y-2">
  <p className="text-sm font-medium flex items-center gap-2">
- <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+ <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
  2
  </span>
  Pegá el JSON que devolvió la IA
@@ -641,7 +641,7 @@ export function ImportarProveedoresDialog({ isOpen, onClose, onImportado }: Prop
  {aiItems.length > 0 && (
  <div className="space-y-2">
  <p className="text-sm font-medium flex items-center gap-2">
- <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+ <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
  3
  </span>
  Revisá y confirmá
@@ -728,7 +728,7 @@ export function ImportarProveedoresDialog({ isOpen, onClose, onImportado }: Prop
  )}
 
  <Alert className="py-2">
- <AlertDescription className="text-[11px] text-muted-foreground">
+ <AlertDescription className="text-xs text-muted-foreground">
  <strong>Columnas esperadas:</strong> nombre, razonSocial, cuit, email, telefono, direccion, ciudad, provincia, codigoPostal, contactoNombre, condicionesPago, condicionIva, notas, codigo
  </AlertDescription>
  </Alert>

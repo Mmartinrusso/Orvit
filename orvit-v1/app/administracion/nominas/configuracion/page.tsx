@@ -491,7 +491,7 @@ export default function ConfiguracionPage() {
                         <div className="text-muted-foreground">
                           Pago: {new Date(p.paymentDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
                         </div>
-                        {p.isClosed && <div className="text-[10px]">Cerrado</div>}
+                        {p.isClosed && <div className="text-xs">Cerrado</div>}
                       </div>
                     ))}
                   </div>

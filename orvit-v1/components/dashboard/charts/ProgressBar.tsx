@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ProgressBarProps {
   value: number;
@@ -45,7 +45,7 @@ export function ProgressBar({
           )}
           {showValue && (
             <span className="text-xs font-medium text-foreground">
-              {showPercentage ? `${percentage.toFixed(0)}%` : `${value}/${max}`}
+              {showPercentage ? `${formatNumber(percentage, 0)}%` : `${value}/${max}`}
             </span>
           )}
         </div>
@@ -123,7 +123,7 @@ export function CircularProgress({
       
       {showValue && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold text-foreground">{percentage.toFixed(0)}%</span>
+          <span className="text-sm font-bold text-foreground">{formatNumber(percentage, 0)}%</span>
           {label && <span className="text-xs text-muted-foreground">{label}</span>}
         </div>
       )}

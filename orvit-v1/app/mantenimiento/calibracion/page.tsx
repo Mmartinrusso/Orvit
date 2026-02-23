@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +35,7 @@ import {
   Clock,
   Calendar,
 } from 'lucide-react';
-import { format, formatDistanceToNow, isPast } from 'date-fns';
+import { formatDistanceToNow, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Calibration {
@@ -158,7 +159,7 @@ export default function CalibrationPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -250,7 +251,7 @@ export default function CalibrationPage() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    Cargando...
+                    Cargando calibraciones...
                   </TableCell>
                 </TableRow>
               ) : filteredCalibrations.length === 0 ? (
@@ -284,7 +285,7 @@ export default function CalibrationPage() {
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm">
-                              {format(new Date(cal.nextCalibrationDate), 'dd/MM/yyyy')}
+                              {formatDate(cal.nextCalibrationDate)}
                             </p>
                             <p className={`text-xs ${isPast(new Date(cal.nextCalibrationDate)) ? 'text-destructive' : 'text-muted-foreground'}`}>
                               {formatDistanceToNow(new Date(cal.nextCalibrationDate), { addSuffix: true, locale: es })}

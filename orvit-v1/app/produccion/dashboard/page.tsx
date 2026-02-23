@@ -2,7 +2,7 @@
 
 import { useUserColors } from '@/hooks/use-user-colors';
 import React, { useState, useEffect, useCallback } from 'react';
-import EmployeeDashboard from '@/components/production/EmployeeDashboard';
+import EmployeeDashboard from '@/components/produccion/EmployeeDashboard';
 import {
   Factory,
   ClipboardList,
@@ -270,35 +270,32 @@ function ManagerDashboard() {
   }
 
   return (
-    <div className="px-4 md:px-6 py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-            <div
-              className="h-8 w-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${userColors.chart1}15` }}
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Dashboard de Producción</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {currentSector?.name} · Métricas y KPIs del módulo
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchKPIs()}
+              disabled={loading}
+              className="gap-2"
             >
-              <Factory className="h-5 w-5" style={{ color: userColors.chart1 }} />
-            </div>
-            Dashboard de Producción
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {currentSector?.name} · Métricas y KPIs del módulo
-          </p>
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+          </div>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fetchKPIs()}
-          disabled={loading}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
       </div>
+
+      <div className="px-4 md:px-6 space-y-6">
 
       {/* Filters */}
       <Card>
@@ -344,8 +341,8 @@ function ManagerDashboard() {
             {[
               {
                 label: 'Órdenes Activas', value: kpis.orders.inProgress,
-                sub: <Badge variant="outline" className="text-[10px]"><Pause className="h-2.5 w-2.5 mr-0.5" />{kpis.orders.paused} pausadas</Badge>,
-                icon: ClipboardList, color: userColors.chart1,
+                sub: <Badge variant="outline" className="text-xs"><Pause className="h-2.5 w-2.5 mr-0.5" />{kpis.orders.paused} pausadas</Badge>,
+                icon: ClipboardList,
                 link: '/produccion/ordenes?status=IN_PROGRESS', linkLabel: 'Ver órdenes',
               },
               {
@@ -356,29 +353,29 @@ function ManagerDashboard() {
                     {kpis.orders.planVsRealPercent >= 100 ? 'Cumplido' : 'Por debajo'}
                   </span>
                 ),
-                icon: BarChart3, color: kpis.orders.planVsRealPercent >= 100 ? userColors.kpiPositive : userColors.chart4,
+                icon: BarChart3,
               },
               {
                 label: '% Scrap', value: `${kpis.production.scrapPercent}%`,
                 sub: <span className="text-xs text-muted-foreground">{kpis.production.totalScrap.toLocaleString()} unidades</span>,
-                icon: AlertTriangle, color: kpis.production.scrapPercent > 5 ? userColors.kpiNegative : userColors.kpiPositive,
+                icon: AlertTriangle,
               },
               {
                 label: 'Disponibilidad', value: `${kpis.production.availabilityPercent}%`,
                 sub: <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{formatMinutes(kpis.production.totalDowntimeMinutes)} paradas</span>,
-                icon: Activity, color: kpis.production.availabilityPercent >= 85 ? userColors.kpiPositive : userColors.chart4,
+                icon: Activity,
               },
             ].map((kpi) => (
               <Card key={kpi.label}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{kpi.label}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
                       <p className="text-2xl font-bold mt-1">{kpi.value}</p>
                       <div className="mt-1">{kpi.sub}</div>
                     </div>
-                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${kpi.color}15` }}>
-                      <kpi.icon className="h-5 w-5" style={{ color: kpi.color }} />
+                    <div className="p-2 rounded-lg bg-muted">
+                      <kpi.icon className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                   {kpi.link && (
@@ -398,41 +395,41 @@ function ManagerDashboard() {
                 label: 'Paradas Totales', value: kpis.downtimes.total,
                 sub: (
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{kpis.downtimes.unplanned} no planif.</Badge>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{kpis.downtimes.planned} planif.</Badge>
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0">{kpis.downtimes.unplanned} no planif.</Badge>
+                    <Badge variant="outline" className="text-xs px-1.5 py-0">{kpis.downtimes.planned} planif.</Badge>
                   </div>
                 ),
-                icon: Pause, color: userColors.kpiNegative,
+                icon: Pause,
                 link: '/produccion/paradas', linkLabel: 'Ver paradas',
               },
               {
                 label: 'Aprobación QC', value: `${kpis.quality.approvalRate}%`,
                 sub: <span className="text-xs text-muted-foreground">{kpis.quality.approved}/{kpis.quality.total} controles</span>,
-                icon: CheckCircle2, color: kpis.quality.approvalRate >= 95 ? userColors.kpiPositive : userColors.chart4,
+                icon: CheckCircle2,
                 link: '/produccion/calidad', linkLabel: 'Ver calidad',
               },
               {
                 label: 'Lotes Bloqueados', value: kpis.lots.blocked,
-                sub: <Badge variant="outline" className="text-[10px] px-1.5 py-0">{kpis.lots.pending} pendientes</Badge>,
-                icon: Package, color: kpis.lots.blocked > 0 ? userColors.kpiNegative : userColors.kpiPositive,
+                sub: <Badge variant="outline" className="text-xs px-1.5 py-0">{kpis.lots.pending} pendientes</Badge>,
+                icon: Package,
                 link: '/produccion/calidad?tab=lots', linkLabel: 'Ver lotes',
               },
               {
                 label: 'Producción Total', value: kpis.production.totalGood.toLocaleString(),
                 sub: <span className="text-xs text-muted-foreground">+{kpis.production.totalRework.toLocaleString()} retrabajo</span>,
-                icon: TrendingUp, color: userColors.kpiPositive,
+                icon: TrendingUp,
               },
             ].map((kpi) => (
               <Card key={kpi.label}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{kpi.label}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
                       <p className="text-2xl font-bold mt-1">{kpi.value}</p>
                       <div className="mt-1">{kpi.sub}</div>
                     </div>
-                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${kpi.color}15` }}>
-                      <kpi.icon className="h-5 w-5" style={{ color: kpi.color }} />
+                    <div className="p-2 rounded-lg bg-muted">
+                      <kpi.icon className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                   {kpi.link && (
@@ -449,12 +446,12 @@ function ManagerDashboard() {
           {oeeData && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="h-5 w-1 rounded-full" style={{ backgroundColor: userColors.chart1 }} />
+                <div className="h-5 w-1 rounded-full bg-primary" />
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   OEE — Eficiencia Global del Equipo
                 </h2>
                 {oeeData.summary.performance === null && (
-                  <Badge variant="outline" className="text-[10px] text-warning-muted-foreground border-warning-muted">
+                  <Badge variant="outline" className="text-xs text-warning-muted-foreground border-warning-muted">
                     OEE Parcial · sin ciclo de referencia
                   </Badge>
                 )}
@@ -505,13 +502,13 @@ function ManagerDashboard() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                                <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
                                 <p className="text-2xl font-bold mt-1" style={{ color: item.value !== null ? color : userColors.kpiNeutral }}>
                                   {item.value !== null ? `${item.value}%` : 'N/D'}
                                 </p>
                               </div>
                               <div
-                                className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                                className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                                 style={{ backgroundColor: `${color}15`, color }}
                               >
                                 {item.metric}
@@ -526,9 +523,9 @@ function ManagerDashboard() {
                               </div>
                             )}
                             {statusLabel ? (
-                              <p className="text-[11px] font-medium" style={{ color }}>{statusLabel}</p>
+                              <p className="text-xs font-medium" style={{ color }}>{statusLabel}</p>
                             ) : item.note ? (
-                              <p className="text-[11px] text-warning-muted-foreground">{item.note}</p>
+                              <p className="text-xs text-warning-muted-foreground">{item.note}</p>
                             ) : null}
                           </CardContent>
                         </Card>
@@ -590,7 +587,7 @@ function ManagerDashboard() {
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-medium truncate max-w-[160px]">{wc.workCenterName}</span>
                                       <div className="flex items-center gap-3">
-                                        <div className="flex gap-2 text-[10px] text-muted-foreground">
+                                        <div className="flex gap-2 text-xs text-muted-foreground">
                                           <span>A:{wc.availability}%</span>
                                           <span>P:{wc.performance !== null ? `${wc.performance}%` : 'N/D'}</span>
                                           <span>Q:{wc.quality}%</span>
@@ -619,6 +616,12 @@ function ManagerDashboard() {
           )}
 
           {/* Charts Row */}
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full bg-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Producción y Paradas
+            </h2>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2">
@@ -678,6 +681,12 @@ function ManagerDashboard() {
           </div>
 
           {/* Bottom Row */}
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full bg-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Calidad y Actividad
+            </h2>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
@@ -742,7 +751,7 @@ function ManagerDashboard() {
                             {event.performedBy} · {format(new Date(event.performedAt), 'dd/MM HH:mm', { locale: es })}
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] shrink-0">{event.entityType.replace('_', ' ')}</Badge>
+                        <Badge variant="outline" className="text-xs shrink-0">{event.entityType.replace('_', ' ')}</Badge>
                       </div>
                     ))}
                   </div>
@@ -780,6 +789,7 @@ function ManagerDashboard() {
           </Card>
         </>
       )}
+      </div>
     </div>
   );
 }

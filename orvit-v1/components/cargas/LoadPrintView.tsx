@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useEffect, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Printer, X, Download } from 'lucide-react';
@@ -1711,7 +1711,7 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
                 <strong className="print-label-capacity">Capacidad:</strong> <span className="print-capacity-value">{load.truck.length} m{load.truck.maxWeight && ` • ${load.truck.maxWeight} Tn`}</span>
               </div>
               <div className="print-info-item text-xs sm:text-sm">
-                <strong className="print-label-total">Total Cargado:</strong> <span className="print-total-value">{totalLength.toFixed(2)} m{totalWeight > 0 && ` • ${totalWeight.toFixed(2)} Tn`}</span>
+                <strong className="print-label-total">Total Cargado:</strong> <span className="print-total-value">{formatNumber(totalLength, 2)} m{totalWeight > 0 && ` • ${formatNumber(totalWeight, 2)} Tn`}</span>
               </div>
             </div>
 
@@ -1792,13 +1792,13 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
             <div 
               className="print-summary mt-4 sm:mt-6 p-3 sm:p-4 md:p-6 border-2 border-primary rounded-lg"
               data-viguetas={load.items.reduce((sum, item) => sum + item.quantity, 0)}
-              data-metros={totalLength.toFixed(2)}
-              data-peso={totalWeight > 0 ? ` / Total de peso: ${totalWeight.toFixed(2)} Tn` : ''}
-              data-utilizacion={`${((totalLength / load.truck.length) * 100).toFixed(1)}%${load.truck.maxWeight ? ` • ${((totalWeight / load.truck.maxWeight) * 100).toFixed(1)}% peso` : ''}`}
+              data-metros={formatNumber(totalLength, 2)}
+              data-peso={totalWeight > 0 ? ` / Total de peso: ${formatNumber(totalWeight, 2)} Tn` : ''}
+              data-utilizacion={`${formatNumber((totalLength / load.truck.length) * 100, 1)}%${load.truck.maxWeight ? ` • ${formatNumber((totalWeight / load.truck.maxWeight) * 100, 1)}% peso` : ''}`}
             >
               <h3 className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 text-primary">Resumen de Carga</h3>
               <span className="print-summary-text" style={{ display: 'none' }}>
-                Total de viguetas: {load.items.reduce((sum, item) => sum + item.quantity, 0)} unidades / Total de metros: {totalLength.toFixed(2)} m{totalWeight > 0 ? ` / Total de peso: ${totalWeight.toFixed(2)} Tn` : ''} / Utilización: {((totalLength / load.truck.length) * 100).toFixed(1)}%{load.truck.maxWeight ? ` • ${((totalWeight / load.truck.maxWeight) * 100).toFixed(1)}% peso` : ''}
+                Total de viguetas: {load.items.reduce((sum, item) => sum + item.quantity, 0)} unidades / Total de metros: {formatNumber(totalLength, 2)} m{totalWeight > 0 ? ` / Total de peso: ${formatNumber(totalWeight, 2)} Tn` : ''} / Utilización: {formatNumber((totalLength / load.truck.length) * 100, 1)}%{load.truck.maxWeight ? ` • ${formatNumber((totalWeight / load.truck.maxWeight) * 100, 1)}% peso` : ''}
               </span>
               <table className="w-full">
                 <tbody>
@@ -1808,19 +1808,19 @@ const LoadPrintView = forwardRef<LoadPrintViewRef, LoadPrintViewProps>(
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base font-semibold">Total de metros:</td>
-                    <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base text-right font-bold">{totalLength.toFixed(2)} m</td>
+                    <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base text-right font-bold">{formatNumber(totalLength, 2)} m</td>
                   </tr>
                   {totalWeight > 0 && (
                     <tr className="border-b">
                       <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base font-semibold">Total de peso:</td>
-                      <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base text-right font-bold">{totalWeight.toFixed(2)} Tn</td>
+                      <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base text-right font-bold">{formatNumber(totalWeight, 2)} Tn</td>
                     </tr>
                   )}
                   <tr>
                     <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base font-semibold">Utilización de capacidad:</td>
                     <td className="py-2 sm:py-3 text-xs sm:text-sm md:text-base text-right font-bold">
-                      {((totalLength / load.truck.length) * 100).toFixed(1)}%
-                      {load.truck.maxWeight && ` • ${((totalWeight / load.truck.maxWeight) * 100).toFixed(1)}% peso`}
+                      {formatNumber((totalLength / load.truck.length) * 100, 1)}%
+                      {load.truck.maxWeight && ` • ${formatNumber((totalWeight / load.truck.maxWeight) * 100, 1)}% peso`}
                     </td>
                   </tr>
                 </tbody>

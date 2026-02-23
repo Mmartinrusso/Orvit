@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, PlayCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 
 interface ReExecuteChecklistDialogProps {
  isOpen: boolean;
@@ -60,7 +60,7 @@ export default function ReExecuteChecklistDialog({
  <div className="space-y-2">
  {nextResetDate ? (
  <p className="text-sm text-foreground">
- Se reiniciará automáticamente el {format(nextResetDate, 'dd/MM/yyyy')}
+ Se reiniciará automáticamente el {formatDate(nextResetDate)}
  (frecuencia {getFrequencyLabel(frequency)}).
  </p>
  ) : (

@@ -128,13 +128,13 @@ function ControlTreeNode({
         </span>
 
         {component.quantity && component.quantity > 1 && (
-          <Badge variant="secondary" className="text-[10px] h-4 px-1 shrink-0">
+          <Badge variant="secondary" className="text-xs h-5 px-1 shrink-0">
             x{component.quantity}
           </Badge>
         )}
 
         {component.itemNumber && (
-          <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+          <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
             {component.itemNumber}
           </span>
         )}
@@ -636,11 +636,11 @@ export function ControlModal({
                         {selectedComponent.name}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                        <Badge variant="secondary" className="text-xs h-5 px-1.5">
                           {selectedComponent.type === 'SYSTEM' ? 'Sistema' : selectedComponent.type === 'PART' ? 'Parte' : 'Componente'}
                         </Badge>
                         <Badge
-                          className="text-[10px] h-4 px-1.5"
+                          className="text-xs h-4 px-1.5"
                           style={{
                             backgroundColor: selectedComponent.confidence >= 0.9
                               ? '#10b98120' : selectedComponent.confidence >= 0.7
@@ -670,7 +670,7 @@ export function ControlModal({
                   <div className="p-3 space-y-4">
                     {/* Identificación */}
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
                         <Tag className="h-3 w-3" />
                         Identificación
                       </p>
@@ -731,7 +731,7 @@ export function ControlModal({
 
                     {/* Catálogo */}
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
                         <FileText className="h-3 w-3" />
                         Catálogo
                       </p>

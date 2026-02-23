@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,7 +138,7 @@ export default function RentabilidadPage() {
           <Skeleton className="h-4 w-96" />
         </div>
         <Skeleton className="h-32 w-full" />
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -201,7 +202,7 @@ export default function RentabilidadPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.averageMargin.toFixed(2)}%</div>
+            <div className="text-2xl font-bold">{formatNumber(summary.averageMargin, 2)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               De {summary.productsWithSales} productos con ventas
             </p>
@@ -219,7 +220,7 @@ export default function RentabilidadPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.totalProducts > 0
-                ? ((summary.productsWithSales / summary.totalProducts) * 100).toFixed(1)
+                ? formatNumber((summary.productsWithSales / summary.totalProducts) * 100, 1)
                 : 0}
               % con ventas
             </p>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -288,7 +288,7 @@ Carlos López;Mecánico;Técnicos`;
               <div className="flex items-center space-x-2 p-3 border rounded-lg bg-success-muted">
                 <FileText className="h-4 w-4 text-success" />
                 <span className="text-sm text-success-muted-foreground">
-                  Archivo seleccionado: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                  Archivo seleccionado: {file.name} ({formatNumber(file.size / 1024, 1)} KB)
                 </span>
               </div>
             )}

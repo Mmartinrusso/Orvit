@@ -275,7 +275,7 @@ export function InstructionUpsertSheet({
                   <Paperclip className="h-3.5 w-3.5" />
                   Archivos
                   {attachmentsCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                       {attachmentsCount}
                     </Badge>
                   )}
@@ -284,7 +284,7 @@ export function InstructionUpsertSheet({
                   <Link2 className="h-3.5 w-3.5" />
                   Asociaciones
                   {associationsCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                       {associationsCount}
                     </Badge>
                   )}

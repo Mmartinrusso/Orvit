@@ -291,15 +291,15 @@ export function StockList() {
  const enCamino = item.enCamino || 0;
 
  if (cantidad <= 0) {
- return <Badge className="bg-destructive/10 text-destructive border-destructive/30 text-[10px]">Sin Stock</Badge>;
+ return <Badge className="bg-destructive/10 text-destructive border-destructive/30 text-xs">Sin Stock</Badge>;
  }
  if (minimo > 0 && (disponible + enCamino) < minimo) {
- return <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted text-[10px]">Bajo</Badge>;
+ return <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted text-xs">Bajo</Badge>;
  }
  if (maximo > 0 && cantidad > maximo) {
- return <Badge className="bg-info-muted text-info-muted-foreground border-info-muted text-[10px]">Exceso</Badge>;
+ return <Badge className="bg-info-muted text-info-muted-foreground border-info-muted text-xs">Exceso</Badge>;
  }
- return <Badge className="bg-success-muted text-success border-success-muted text-[10px]">OK</Badge>;
+ return <Badge className="bg-success-muted text-success border-success-muted text-xs">OK</Badge>;
  };
 
  return (
@@ -347,7 +347,7 @@ export function StockList() {
  <Boxes className="w-4 h-4 text-muted-foreground" />
  <div>
  <p className="text-xl font-bold">{kpis.totalItems}</p>
- <p className="text-[10px] text-muted-foreground">Total Items</p>
+ <p className="text-xs text-muted-foreground">Total Items</p>
  </div>
  </div>
  </CardContent>
@@ -359,7 +359,7 @@ export function StockList() {
  <DollarSign className="w-4 h-4 text-success" />
  <div>
  <p className="text-xl font-bold">{formatCurrency(kpis.valorTotal)}</p>
- <p className="text-[10px] text-muted-foreground">Valor Total</p>
+ <p className="text-xs text-muted-foreground">Valor Total</p>
  </div>
  </div>
  </CardContent>
@@ -374,7 +374,7 @@ export function StockList() {
  <TrendingDown className="w-4 h-4 text-warning-muted-foreground" />
  <div>
  <p className="text-xl font-bold text-warning-muted-foreground">{kpis.itemsBajoStock}</p>
- <p className="text-[10px] text-muted-foreground">Bajo Stock</p>
+ <p className="text-xs text-muted-foreground">Bajo Stock</p>
  </div>
  </div>
  </CardContent>
@@ -386,7 +386,7 @@ export function StockList() {
  <AlertCircle className="w-4 h-4 text-destructive" />
  <div>
  <p className="text-xl font-bold text-destructive">{kpis.itemsSinStock}</p>
- <p className="text-[10px] text-muted-foreground">Sin Stock</p>
+ <p className="text-xs text-muted-foreground">Sin Stock</p>
  </div>
  </div>
  </CardContent>
@@ -398,7 +398,7 @@ export function StockList() {
  <Truck className="w-4 h-4 text-info-muted-foreground" />
  <div>
  <p className="text-xl font-bold text-info-muted-foreground">{formatCurrency(kpis.valorEnTransito)}</p>
- <p className="text-[10px] text-muted-foreground">En Transito</p>
+ <p className="text-xs text-muted-foreground">En Transito</p>
  </div>
  </div>
  </CardContent>
@@ -516,7 +516,7 @@ export function StockList() {
  {/* Preferir descripcionItem, fallback a supplierItem.nombre */}
  <p className="text-xs font-medium">{item.descripcionItem || item.supplierItem?.nombre}</p>
  {(item.codigoProveedor || item.supplierItem?.codigoProveedor) && (
- <p className="text-[10px] text-muted-foreground">Cod: {item.codigoProveedor || item.supplierItem?.codigoProveedor}</p>
+ <p className="text-xs text-muted-foreground">Cod: {item.codigoProveedor || item.supplierItem?.codigoProveedor}</p>
  )}
  </div>
  </TableCell>
@@ -622,20 +622,20 @@ export function StockList() {
  <TableCell className="text-xs font-mono">
  {/* Preferir código propio del stock, fallback a supply.code */}
  {item.codigoPropio || item.supplierItem?.supply?.code || (
- <span className="text-muted-foreground text-[10px]">-</span>
+ <span className="text-muted-foreground text-xs">-</span>
  )}
  </TableCell>
  <TableCell className="text-xs font-mono">
  {/* Preferir código proveedor del stock, fallback a supplierItem.codigoProveedor */}
  {item.codigoProveedor || item.supplierItem?.codigoProveedor || (
- <span className="text-muted-foreground text-[10px]">-</span>
+ <span className="text-muted-foreground text-xs">-</span>
  )}
  </TableCell>
  <TableCell>
  <div>
  {/* Preferir descripción del stock, fallback a supplierItem.nombre */}
  <p className="text-xs font-medium">{item.descripcionItem || item.supplierItem?.nombre}</p>
- <p className="text-[10px] text-muted-foreground">{item.supplierItem?.supplier?.name}</p>
+ <p className="text-xs text-muted-foreground">{item.supplierItem?.supplier?.name}</p>
  </div>
  </TableCell>
  <TableCell className="text-xs">{item.warehouse?.codigo}</TableCell>
@@ -662,11 +662,11 @@ export function StockList() {
  </TableCell>
  <TableCell className="text-center">
  {item.criticidad && CRITICIDAD_CONFIG[item.criticidad] ? (
- <Badge className={cn(CRITICIDAD_CONFIG[item.criticidad].color, 'text-[10px]')}>
+ <Badge className={cn(CRITICIDAD_CONFIG[item.criticidad].color, 'text-xs')}>
  {CRITICIDAD_CONFIG[item.criticidad].label}
  </Badge>
  ) : (
- <span className="text-[10px] text-muted-foreground">-</span>
+ <span className="text-xs text-muted-foreground">-</span>
  )}
  </TableCell>
  <TableCell>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -116,7 +117,7 @@ export function CotizacionToOrdenButton({
                   <span className="text-muted-foreground">Validez:</span>
                   <p className="font-medium">
                     {cotizacion.fechaValidez
-                      ? new Date(cotizacion.fechaValidez).toLocaleDateString('es-AR')
+                      ? formatDate(cotizacion.fechaValidez)
                       : 'No especificada'
                     }
                   </p>

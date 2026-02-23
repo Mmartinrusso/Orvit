@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -461,7 +462,7 @@ export default function ReporteConsumoPage() {
                         <TableCell className="font-medium">{item.supplierItemName}</TableCell>
                         <TableCell className="text-muted-foreground">{item.supplierItemCode}</TableCell>
                         <TableCell className="text-right">
-                          {item.totalCantidad.toFixed(2)} {item.unidad}
+                          {formatNumber(item.totalCantidad, 2)} {item.unidad}
                         </TableCell>
                         <TableCell className="text-right">{item.despachos}</TableCell>
                         <TableCell className="text-right font-medium">

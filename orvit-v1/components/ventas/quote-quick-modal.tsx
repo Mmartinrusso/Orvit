@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFoo
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Search, X, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Plus, Trash2, Search, X, Check, Layers } from 'lucide-react';
+import { cn, formatNumber } from '@/lib/utils';
+import { BundleBuilderDialog, BundleResult } from '@/components/ventas/bundle-builder-dialog';
 
 interface Product {
   id: string;
@@ -26,12 +27,14 @@ interface Client {
 }
 
 interface QuoteItem {
-  productId: string;
+  productId: string | null;
   productName: string;
   sku?: string;
   quantity: number;
   unitPrice: number;
   unit: string;
+  isBundle?: boolean;
+  costBreakdown?: { concepto: string; monto: number }[];
 }
 
 interface QuoteQuickModalProps {
@@ -52,6 +55,8 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('1');
   const [showProductSearch, setShowProductSearch] = useState(false);
+
+  const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
 
   // Refs para control de foco
   const productInputRef = useRef<HTMLInputElement>(null);
@@ -154,6 +159,19 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
     setTimeout(() => productInputRef.current?.focus(), 100);
   };
 
+  const handleBundleAdd = (result: BundleResult) => {
+    const newItem: QuoteItem = {
+      productId: null,
+      productName: result.descripcion,
+      quantity: 1,
+      unitPrice: result.precioUnitario,
+      unit: 'UN',
+      isBundle: true,
+      costBreakdown: result.costBreakdown,
+    };
+    setItems(prev => [...prev, newItem]);
+  };
+
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
@@ -183,9 +201,11 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
           description: `Cotización para ${selectedClient.legalName || selectedClient.name}`,
           items: items.map(item => ({
             productId: item.productId,
+            descripcion: item.productName,
             cantidad: item.quantity,
             precioUnitario: item.unitPrice,
-            descuento: 0
+            descuento: 0,
+            ...(item.costBreakdown?.length ? { costBreakdown: item.costBreakdown } : {}),
           })),
           validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           paymentTerms: 0,
@@ -209,6 +229,7 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
@@ -308,7 +329,7 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
                               <div className="flex flex-col">
                                 <span className="font-medium">{product.name}</span>
                                 <span className="text-xs text-muted-foreground">
-                                  {product.sku} | ${product.salePrice?.toFixed(2) || '0.00'}
+                                  {product.sku} | ${product.salePrice != null ? formatNumber(product.salePrice, 2) : '0.00'}
                                 </span>
                               </div>
                             </CommandItem>
@@ -341,9 +362,21 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              💡 Tip: Escribe el código o nombre, selecciona el producto, ingresa cantidad y presiona Enter
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                💡 Tip: Escribe el código o nombre, selecciona el producto, ingresa cantidad y presiona Enter
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs shrink-0"
+                onClick={() => setBundleDialogOpen(true)}
+              >
+                <Layers className="h-3.5 w-3.5 mr-1.5" />
+                Combinar productos
+              </Button>
+            </div>
           </div>
 
           {/* Lista de Items */}
@@ -363,15 +396,34 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
                   {items.map((item, index) => (
                     <tr key={index} className="border-t">
                       <td className="p-2">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{item.productName}</span>
-                          {item.sku && <span className="text-xs text-muted-foreground">{item.sku}</span>}
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium text-sm flex items-center gap-1.5">
+                            {item.isBundle && (
+                              <Layers className="w-3 h-3 text-primary shrink-0" />
+                            )}
+                            {item.productName}
+                          </span>
+                          {item.sku && (
+                            <span className="text-xs text-muted-foreground">{item.sku}</span>
+                          )}
+                          {item.isBundle && item.costBreakdown && (
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {item.costBreakdown.map((cb, i) => (
+                                <span
+                                  key={i}
+                                  className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded"
+                                >
+                                  {cb.concepto}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="text-right p-2">{item.quantity} {item.unit}</td>
-                      <td className="text-right p-2">${item.unitPrice.toFixed(2)}</td>
+                      <td className="text-right p-2">${formatNumber(item.unitPrice, 2)}</td>
                       <td className="text-right p-2 font-medium">
-                        ${(item.quantity * item.unitPrice).toFixed(2)}
+                        ${formatNumber(item.quantity * item.unitPrice, 2)}
                       </td>
                       <td className="p-2">
                         <Button
@@ -388,7 +440,7 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
                 <tfoot className="bg-muted font-bold">
                   <tr>
                     <td colSpan={3} className="text-right p-2">TOTAL:</td>
-                    <td className="text-right p-2">${calculateTotal().toFixed(2)}</td>
+                    <td className="text-right p-2">${formatNumber(calculateTotal(), 2)}</td>
                     <td></td>
                   </tr>
                 </tfoot>
@@ -408,5 +460,13 @@ export function QuoteQuickModal({ open, onOpenChange, onQuoteCreated }: QuoteQui
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <BundleBuilderDialog
+      open={bundleDialogOpen}
+      onOpenChange={setBundleDialogOpen}
+      products={products}
+      onAdd={handleBundleAdd}
+    />
+    </>
   );
 }

@@ -34,9 +34,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
-import { useChecklists } from '@/hooks/maintenance';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useChecklists } from '@/hooks/mantenimiento';
+import { formatDate } from '@/lib/date-utils';
 
 interface PreventivoChecklistsViewProps {
  className?: string;
@@ -54,7 +53,7 @@ const getEstadoBadge = (estado: string, hasInProgressExecution?: boolean) => {
  // Si hay una ejecución activa, mostrar "En ejecución"
  if (hasInProgressExecution) {
  return (
- <Badge className="text-[10px] bg-warning-muted text-warning-muted-foreground border-warning-muted animate-pulse">
+ <Badge className="text-xs bg-warning-muted text-warning-muted-foreground border-warning-muted animate-pulse">
  En ejecución
  </Badge>
  );
@@ -63,23 +62,13 @@ const getEstadoBadge = (estado: string, hasInProgressExecution?: boolean) => {
  switch (estado?.toUpperCase()) {
  case 'PUBLISHED':
  case 'ACTIVE':
- return <Badge className="text-[10px] bg-success-muted text-success border-success-muted">Publicada</Badge>;
+ return <Badge className="text-xs bg-success-muted text-success border-success-muted">Publicada</Badge>;
  case 'DRAFT':
- return <Badge className="text-[10px] bg-warning-muted text-warning-muted-foreground border-warning-muted">Borrador</Badge>;
+ return <Badge className="text-xs bg-warning-muted text-warning-muted-foreground border-warning-muted">Borrador</Badge>;
  case 'ARCHIVED':
- return <Badge className="text-[10px] bg-muted text-foreground border-border">Archivada</Badge>;
+ return <Badge className="text-xs bg-muted text-foreground border-border">Archivada</Badge>;
  default:
- return <Badge className="text-[10px] bg-info-muted text-info-muted-foreground border-info-muted">Activa</Badge>;
- }
-};
-
-const formatDate = (dateString: string) => {
- try {
- const date = new Date(dateString);
- if (isNaN(date.getTime())) return 'Sin fecha';
- return format(date, 'dd/MM/yyyy', { locale: es });
- } catch {
- return 'Sin fecha';
+ return <Badge className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">Activa</Badge>;
  }
 };
 
@@ -311,7 +300,7 @@ export function PreventivoChecklistsView({
  <Button variant="outline" size="icon" className={cn("relative", hasActiveFilters && "border-primary text-primary")}>
  <Filter className="h-4 w-4" />
  {hasActiveFilters && (
- <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-white flex items-center justify-center">
+ <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center">
  {frequencyFilter.length + statusFilter.length}
  </span>
  )}
@@ -459,7 +448,7 @@ export function PreventivoChecklistsView({
  {(checklist.tags || []).length > 0 && (
  <div className="flex flex-wrap items-center gap-2 mb-3">
  {checklist.tags.map((tag: string) => (
- <Badge key={tag} variant="outline" className="text-[10px]">
+ <Badge key={tag} variant="outline" className="text-xs">
  {tag}
  </Badge>
  ))}

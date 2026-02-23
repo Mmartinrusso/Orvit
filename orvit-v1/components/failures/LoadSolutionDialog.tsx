@@ -36,7 +36,7 @@ import { toast } from '@/hooks/use-toast';
 import { useCompany } from '@/contexts/CompanyContext';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAddSolution } from '@/hooks/maintenance/use-failure-solutions';
+import { useAddSolution } from '@/hooks/mantenimiento/use-failure-solutions';
 
 interface LoadSolutionDialogProps {
   isOpen: boolean;
@@ -531,7 +531,7 @@ export default function LoadSolutionDialog({
                 <div className="text-center">
                   <CloudUpload className="w-6 h-6 mx-auto text-muted-foreground mb-1.5" />
                   <p className="text-xs text-foreground">Haz clic o arrastra archivos aquí</p>
-                  <p className="text-[10px] text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB cada una</p>
+                  <p className="text-xs text-muted-foreground">PDF, DOC, XLS, imágenes hasta 10MB cada una</p>
                 </div>
               </label>
             </div>

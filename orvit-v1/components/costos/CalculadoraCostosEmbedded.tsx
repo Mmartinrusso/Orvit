@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import { useCalculadoraCostosFinal } from '@/hooks/use-dashboard-data';
 import { usePriceComparisons } from '@/hooks/use-price-comparisons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -284,7 +285,7 @@ export function CalculadoraCostosEmbedded() {
                                 name: comp.competitorName,
                                 prices: comp.products.reduce((acc: any, product: any) => {
                                     acc[product.productId] = product.competitorPrice !== null 
-                                        ? parseFloat((product.competitorPrice as number).toFixed(2))
+                                        ? parseFloat(formatNumber(product.competitorPrice as number, 2))
                                         : null;
                                     return acc;
                                 }, {})
@@ -1278,10 +1279,6 @@ export function CalculadoraCostosEmbedded() {
 
     // Funciones auxiliares
 
-    const formatNumber = (num: number) => {
-        return new Intl.NumberFormat('es-AR').format(num);
-    };
-
     const toggleProductExpansion = (productId: number) => {
         const newExpanded = new Set(expandedProducts);
         if (newExpanded.has(productId)) {
@@ -1531,7 +1528,7 @@ export function CalculadoraCostosEmbedded() {
                                                     </div>
                                                     {summary.viguetas.total_meters_sold > 0 && (
                                                         <div className="text-foreground">
-                                                            <span className="font-medium">Metros vendidos:</span> {summary.viguetas.total_meters_sold.toFixed(2)} m
+                                                            <span className="font-medium">Metros vendidos:</span> {formatNumber(summary.viguetas.total_meters_sold, 2)} m
                                                         </div>
                                                     )}
                                                 </div>
@@ -1564,7 +1561,7 @@ export function CalculadoraCostosEmbedded() {
                                                     </div>
                                                     {summary.adoquines.total_m2_sold > 0 && (
                                                         <div className="text-foreground">
-                                                            <span className="font-medium">Metros cuadrados vendidos:</span> {summary.adoquines.total_m2_sold.toFixed(2)} m²
+                                                            <span className="font-medium">Metros cuadrados vendidos:</span> {formatNumber(summary.adoquines.total_m2_sold, 2)} m²
                                                         </div>
                                                     )}
                                                 </div>
@@ -2401,7 +2398,7 @@ export function CalculadoraCostosEmbedded() {
                                     </h3>
                                     <div className="mb-3 text-sm text-foreground">
                                         <span className="font-medium">Placas actuales:</span> {simulationEstadisticas.placasActuales.toLocaleString('es-AR')} 
-                                        <span className="ml-2">({simulationEstadisticas.cuartosActuales.toFixed(2)} cuartos)</span>
+                                        <span className="ml-2">({formatNumber(simulationEstadisticas.cuartosActuales, 2)} cuartos)</span>
                                         <span className="ml-2 text-xs text-muted-foreground">1 cuarto = 240 placas</span>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2437,7 +2434,7 @@ export function CalculadoraCostosEmbedded() {
                                                             <span className="font-medium">Placas:</span> {escenario.placas.toLocaleString('es-AR')}
                                                         </div>
                                                         <div>
-                                                            <span className="font-medium">Cuartos:</span> {escenario.cuartos.toFixed(2)}
+                                                            <span className="font-medium">Cuartos:</span> {formatNumber(escenario.cuartos, 2)}
                                                         </div>
                                                         <div className="pt-1 border-t border-border">
                                                             <span className="font-medium">Costo Total:</span> ${totalCostos.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2447,7 +2444,7 @@ export function CalculadoraCostosEmbedded() {
                                                                 diferencia < 0 ? 'text-success' : diferencia > 0 ? 'text-destructive' : ''
                                                             )}>
                                                                 {diferencia < 0 ? '↓' : diferencia > 0 ? '↑' : ''} 
-                                                                {Math.abs(porcentajeCambio).toFixed(1)}% 
+                                                                {formatNumber(Math.abs(porcentajeCambio), 1)}% 
                                                                 ({diferencia < 0 ? '-' : '+'}${Math.abs(diferencia).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                                                             </div>
                                                         )}
@@ -2770,7 +2767,7 @@ export function CalculadoraCostosEmbedded() {
                                                     Competidores: {comparison.competitors.map(c => c.name).join(', ')}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Creada: {new Date(comparison.createdAt).toLocaleDateString('es-AR')}
+                                                    Creada: {formatDate(comparison.createdAt)}
                                                 </p>
                                             </div>
                                             <div className="flex gap-2">
@@ -2981,7 +2978,7 @@ export function CalculadoraCostosEmbedded() {
                                                             const isLast = competitorIndex === competitors.length - 1;
                                                             const competitorPrice = competitor.prices[product.id] ?? null;
                                                             const difference = competitorPrice !== null 
-                                                                ? parseFloat((myPrice - competitorPrice).toFixed(2))
+                                                                ? parseFloat(formatNumber(myPrice - competitorPrice, 2))
                                                                 : null;
                                                             // Calcular porcentaje solo si el precio del competidor es razonable (> 0.01)
                                                             const percentDifference = competitorPrice !== null && competitorPrice > 0.01
@@ -3048,7 +3045,7 @@ export function CalculadoraCostosEmbedded() {
                                                                     </td>
                                                                     <td className={cn('p-4 align-middle text-right font-medium', bgColor, !isLast && 'border-r-2', !isLast && borderColor, percentDifference !== null && (percentDifference > 0 ? 'text-destructive' : percentDifference < 0 ? 'text-success' : ''))}>
                                                                         {percentDifference !== null 
-                                                                            ? `${percentDifference > 0 ? '+' : ''}${percentDifference.toFixed(2)}%`
+                                                                            ? `${percentDifference > 0 ? '+' : ''}${formatNumber(percentDifference, 2)}%`
                                                                             : <span className="text-muted-foreground">-</span>
                                                                         }
                                                                     </td>
@@ -3093,7 +3090,7 @@ export function CalculadoraCostosEmbedded() {
                         <DialogHeader>
                             <DialogTitle>{currentComparison.name}</DialogTitle>
                             <DialogDescription>
-                                Comparativa con {currentComparison.competitors.map(c => c.name).join(', ')} - {new Date(currentComparison.createdAt).toLocaleDateString('es-AR')}
+                                Comparativa con {currentComparison.competitors.map(c => c.name).join(', ')} - {formatDate(currentComparison.createdAt)}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -3168,7 +3165,7 @@ export function CalculadoraCostosEmbedded() {
                                                         
                                                         const competitorPrice = competitor.prices[product.productId] ?? null;
                                                         const difference = competitorPrice !== null 
-                                                            ? parseFloat((product.myPrice - competitorPrice).toFixed(2))
+                                                            ? parseFloat(formatNumber(product.myPrice - competitorPrice, 2))
                                                             : null;
                                                         // Calcular porcentaje solo si el precio del competidor es razonable (> 0.01)
                                                         const percentDifference = competitorPrice !== null && competitorPrice > 0.01
@@ -3191,7 +3188,7 @@ export function CalculadoraCostosEmbedded() {
                                                                 </td>
                                                                 <td className={cn('p-4 align-middle text-right font-medium', bgColor, !isLast && 'border-r-2', !isLast && borderColor, percentDifference !== null && (percentDifference > 0 ? 'text-destructive' : percentDifference < 0 ? 'text-success' : ''))}>
                                                                     {percentDifference !== null 
-                                                                        ? `${percentDifference > 0 ? '+' : ''}${percentDifference.toFixed(2)}%`
+                                                                        ? `${percentDifference > 0 ? '+' : ''}${formatNumber(percentDifference, 2)}%`
                                                                         : <span className="text-muted-foreground">-</span>
                                                                     }
                                                                 </td>

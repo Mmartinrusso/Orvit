@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import {
   PieChart,
   Pie,
@@ -104,7 +104,7 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                     />
                     <span className="text-muted-foreground truncate">{item.name}</span>
                   </div>
-                  <span className="font-medium text-foreground ml-2">{item.percentage.toFixed(0)}%</span>
+                  <span className="font-medium text-foreground ml-2">{formatNumber(item.percentage, 0)}%</span>
                 </div>
               ))}
             </div>
@@ -144,7 +144,7 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
               marginPerUnit >= 15 ? "text-warning-muted-foreground" :
               "text-destructive"
             )}>
-              {marginPerUnit.toFixed(1)}%
+              {formatNumber(marginPerUnit, 1)}%
             </span>
           </div>
         </CardContent>
@@ -168,7 +168,7 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                   costToSalesRatio <= 75 ? "text-warning-muted-foreground" :
                   "text-destructive"
                 )}>
-                  {costToSalesRatio.toFixed(1)}%
+                  {formatNumber(costToSalesRatio, 1)}%
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -194,7 +194,7 @@ export function QuickInsightsRow({ data }: QuickInsightsRowProps) {
                   profitMargin >= 15 ? "text-warning-muted-foreground" :
                   "text-destructive"
                 )}>
-                  {profitMargin.toFixed(1)}%
+                  {formatNumber(profitMargin, 1)}%
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">

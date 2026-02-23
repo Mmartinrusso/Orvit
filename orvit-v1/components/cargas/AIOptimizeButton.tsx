@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -332,14 +332,14 @@ function OptimizationStats({ stats }: { stats: AIOptimizationStats }) {
       {/* Peso total */}
       <div className="p-3 border rounded-lg">
         <span className="text-xs text-muted-foreground">Peso Total</span>
-        <p className="text-lg font-semibold">{(stats.totalWeight / 1000).toFixed(2)} ton</p>
+        <p className="text-lg font-semibold">{formatNumber(stats.totalWeight / 1000, 2)} ton</p>
       </div>
 
       {/* Centro de gravedad */}
       <div className="p-3 border rounded-lg">
         <span className="text-xs text-muted-foreground">Centro de Gravedad</span>
         <p className="text-sm font-medium">
-          X:{stats.centerOfGravity.x.toFixed(2)} Y:{stats.centerOfGravity.y.toFixed(2)}
+          X:{formatNumber(stats.centerOfGravity.x, 2)} Y:{formatNumber(stats.centerOfGravity.y, 2)}
         </p>
       </div>
 

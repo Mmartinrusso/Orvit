@@ -48,13 +48,27 @@ export function useSidebarPreferences(module: 'ventas') {
 
       return response.json();
     },
+    onMutate: async (newPreferences) => {
+      await queryClient.cancelQueries({ queryKey: ['sidebar-preferences', module] });
+      const previous = queryClient.getQueryData<SidebarPreferences>(['sidebar-preferences', module]);
+      queryClient.setQueryData<SidebarPreferences>(
+        ['sidebar-preferences', module],
+        (old) => old ? { ...old, ...newPreferences } : old
+      );
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sidebar-preferences', module] });
       toast.success('Preferencias actualizadas');
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['sidebar-preferences', module], context.previous);
+      }
       console.error('Error updating sidebar preferences:', error);
       toast.error('Error al actualizar preferencias');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['sidebar-preferences', module] });
     },
   });
 

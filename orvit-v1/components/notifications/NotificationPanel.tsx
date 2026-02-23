@@ -490,15 +490,15 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                           )}
                         </div>
                       </div>
-                                            <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2 leading-snug">
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-snug">
                         {notification.message}
                       </p>
                         <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
+                          <span className="text-xs font-medium text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
                             {formatTimestamp(notification.timestamp)}
                           </span>
-                          <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium',
+                          <span className={cn('text-xs px-1.5 py-0.5 rounded font-medium',
                             notification.priority === 'urgent' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
                             notification.priority === 'high' ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted-foreground/20' :
                             notification.priority === 'medium' ? 'bg-warning-muted/60 text-warning-muted-foreground border border-warning-muted-foreground/20' :
@@ -512,7 +512,7 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                         {(notification.workOrderId || notification.taskId || notification.toolId || notification.reminderId || notification.relatedData?.link || notification.type?.startsWith('invoice_') || notification.type?.startsWith('cheque_') || notification.type === 'quote_expiring' || notification.type === 'payment_received') && (
                           <div className="flex items-center gap-1 text-primary opacity-70 group-hover:opacity-100 transition-opacity">
                             <ExternalLink className="h-3 w-3" />
-                            <span className="text-[10px] font-medium">Ver detalles</span>
+                            <span className="text-xs font-medium">Ver detalles</span>
                           </div>
                         )}
                       </div>
@@ -746,11 +746,11 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                           <div className="flex items-center gap-1 mb-1">
                             <Badge 
                               variant="outline" 
-                              className="text-[10px] font-medium px-2 py-0.5 bg-card border-border/50"
+                              className="text-xs font-medium px-2 py-0.5 bg-card border-border/50"
                             >
                               {getNotificationTypeLabel(notification.type)}
                             </Badge>
-                            <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold',
+                            <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold',
                               notification.priority === 'urgent' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
                               notification.priority === 'high' ? 'bg-warning-muted text-warning-muted-foreground border border-warning-muted-foreground/20' :
                               notification.priority === 'medium' ? 'bg-warning-muted/60 text-warning-muted-foreground border border-warning-muted-foreground/20' :
@@ -780,17 +780,17 @@ export default function NotificationPanel({ triggerClassName = '' }: { triggerCl
                       )}
                         </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground leading-snug mb-2 font-medium">
+                      <p className="text-xs text-muted-foreground leading-snug mb-2 font-medium">
                         {notification.message}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-muted-foreground bg-muted/80 border border-border/50 px-2 py-1 rounded">
+                        <span className="text-xs font-semibold text-muted-foreground bg-muted/80 border border-border/50 px-2 py-1 rounded">
                           📅 {formatTimestamp(notification.timestamp)}
                         </span>
                         {(notification.workOrderId || notification.taskId || notification.toolId || notification.reminderId || notification.relatedData?.link || notification.type?.startsWith('invoice_') || notification.type?.startsWith('cheque_') || notification.type === 'quote_expiring' || notification.type === 'payment_received') && (
                           <div className="flex items-center gap-1 text-primary font-medium opacity-70 group-hover:opacity-100 transition-all duration-200">
                             <ExternalLink className="h-3 w-3" />
-                            <span className="text-[10px]">Ver detalles</span>
+                            <span className="text-xs">Ver detalles</span>
                           </div>
                         )}
                       </div>

@@ -41,6 +41,7 @@ import {
  Calendar,
  Clock,
  User,
+ Users,
  Wrench,
  Building,
  FileText,
@@ -91,6 +92,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { useGlobalCache, createCacheKey } from '@/hooks/use-global-cache';
 import { toast } from '@/hooks/use-toast';
 
@@ -258,23 +260,8 @@ function ListItemRow({ icon, title, subtitle, badge, onClick }: ListItemRowProps
 // FUNCIONES UTILITARIAS
 // ============================================
 
-const formatDateTime = (date: string | Date) => {
- if (!date) return 'N/A';
- try {
- return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: es });
- } catch {
- return 'Fecha inválida';
- }
-};
-
-const formatDateOnly = (date: string | Date) => {
- if (!date) return 'N/A';
- try {
- return format(new Date(date), "dd/MM/yyyy", { locale: es });
- } catch {
- return 'Fecha inválida';
- }
-};
+// formatDateTime and formatDate are now imported from @/lib/date-utils
+const formatDateOnly = (date: string | Date) => formatDate(date) || 'N/A';
 
 const getMachineTypeLabel = (type: string) => {
  switch (type?.toUpperCase()) {
@@ -507,30 +494,18 @@ export default function MaintenanceDetailDialog({
 
  const fetchExecutionHistory = useCallback(async () => {
  if (!maintenance?.id) return;
- 
+
  const cacheKey = createCacheKey('maintenance-history', maintenance.id.toString(), companyId.toString());
- const cached = cache.get<any[]>(cacheKey);
- if (cached) {
- // Filtrar solo las ejecuciones de este mantenimiento
- const filtered = cached.filter((exec: any) => 
- Number(exec.maintenanceId) === Number(maintenance.id)
- );
- setExecutionHistory(filtered);
- return;
- }
- 
+ // Siempre limpiar caché para obtener datos frescos (operadores, etc.)
+ cache.remove(cacheKey);
+
  setLoadingHistory(true);
  try {
  const response = await fetch(`/api/maintenance/history?maintenanceId=${maintenance.id}&companyId=${companyId}`);
  if (response.ok) {
  const data = await response.json();
  const executions = data.data?.executions || [];
- // Filtrar solo las ejecuciones de este mantenimiento específico
- const filtered = executions.filter((exec: any) => 
- Number(exec.maintenanceId) === Number(maintenance.id)
- );
- setExecutionHistory(filtered);
- cache.set(cacheKey, filtered);
+ setExecutionHistory(executions);
  }
  } catch (error) {
  console.error('Error fetching execution history:', error);
@@ -838,7 +813,7 @@ export default function MaintenanceDetailDialog({
  setRescheduleDate(undefined);
  toast({
  title: 'Reprogramado',
- description: `Mantenimiento reprogramado para ${format(rescheduleDate, "dd/MM/yyyy", { locale: es })}`,
+ description: `Mantenimiento reprogramado para ${formatDate(rescheduleDate)}`,
  });
  }
  }, [rescheduleDate, onReschedule, maintenance]);
@@ -1202,7 +1177,7 @@ export default function MaintenanceDetailDialog({
  <TabsList className="h-auto flex-wrap bg-background border rounded-lg p-1 gap-1">
  <TabsTrigger
  value="overview"
- className="h-7 px-2 sm:px-3 rounded-md text-[10px] sm:text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+ className="h-7 px-2 sm:px-3 rounded-md text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
  >
  <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Resumen
@@ -1210,7 +1185,7 @@ export default function MaintenanceDetailDialog({
  {maintenance.type === 'CORRECTIVE' && (
  <TabsTrigger
  value="failure"
- className="h-7 px-2 sm:px-3 rounded-md text-[10px] sm:text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+ className="h-7 px-2 sm:px-3 rounded-md text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
  >
  <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Falla
@@ -1218,43 +1193,43 @@ export default function MaintenanceDetailDialog({
  )}
  <TabsTrigger
  value="equipment"
- className="h-7 px-2 sm:px-3 rounded-md text-[10px] sm:text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+ className="h-7 px-2 sm:px-3 rounded-md text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
  >
  <Building className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Equipos
  {(componentCount + subcomponentCount) > 0 && (
- <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">
+ <Badge variant="secondary" className="h-5 px-1 text-xs ml-0.5">
  {componentCount + subcomponentCount}
  </Badge>
  )}
  </TabsTrigger>
  <TabsTrigger
  value="schedule"
- className="h-7 px-2 sm:px-3 rounded-md text-[10px] sm:text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+ className="h-7 px-2 sm:px-3 rounded-md text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
  >
  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Programa
  </TabsTrigger>
  <TabsTrigger
  value="resources"
- className="h-7 px-2 sm:px-3 rounded-md text-[10px] sm:text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+ className="h-7 px-2 sm:px-3 rounded-md text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
  >
  <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Recursos
  {(toolsCount + partsCount + instructivesCount) > 0 && (
- <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">
+ <Badge variant="secondary" className="h-5 px-1 text-xs ml-0.5">
  {toolsCount + partsCount + instructivesCount}
  </Badge>
  )}
  </TabsTrigger>
  <TabsTrigger
  value="history"
- className="h-7 px-2 sm:px-3 rounded-md text-[10px] sm:text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+ className="h-7 px-2 sm:px-3 rounded-md text-xs font-medium flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
  >
  <History className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Historial
  {executionHistory.length > 0 && (
- <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">
+ <Badge variant="secondary" className="h-5 px-1 text-xs ml-0.5">
  {executionHistory.length}
  </Badge>
  )}
@@ -1547,7 +1522,7 @@ export default function MaintenanceDetailDialog({
  {evidence.type && (
  <Badge
  variant="secondary"
- className="absolute top-2 left-2 text-[10px] bg-black/60 text-white border-0"
+ className="absolute top-2 left-2 text-xs bg-black/60 text-white border-0"
  >
  {evidence.type === 'before' ? 'Antes' : evidence.type === 'after' ? 'Después' : 'Durante'}
  </Badge>
@@ -1666,7 +1641,7 @@ export default function MaintenanceDetailDialog({
  )}
  </Button>
  </div>
- <p className="text-[10px] text-muted-foreground mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  Enter envía · Shift+Enter nueva línea
  </p>
  </CardContent>
@@ -1700,11 +1675,11 @@ export default function MaintenanceDetailDialog({
  <div className="hidden sm:flex gap-3">
  <div className="text-center px-3 py-1.5 bg-background rounded-lg border">
  <p className="text-lg font-bold">{componentCount}</p>
- <p className="text-[10px] text-muted-foreground">Componentes</p>
+ <p className="text-xs text-muted-foreground">Componentes</p>
  </div>
  <div className="text-center px-3 py-1.5 bg-background rounded-lg border">
  <p className="text-lg font-bold">{subcomponentCount}</p>
- <p className="text-[10px] text-muted-foreground">Subcomponentes</p>
+ <p className="text-xs text-muted-foreground">Subcomponentes</p>
  </div>
  </div>
  </div>
@@ -1769,7 +1744,7 @@ export default function MaintenanceDetailDialog({
  </p>
  </div>
  {childSubs.length > 0 && (
- <Badge variant="secondary" className="text-[10px]">
+ <Badge variant="secondary" className="text-xs">
  {childSubs.length} sub
  </Badge>
  )}
@@ -1823,7 +1798,7 @@ export default function MaintenanceDetailDialog({
  Subcomponentes independientes
  </p>
  </div>
- <Badge variant="outline" className="text-[10px]">
+ <Badge variant="outline" className="text-xs">
  {orphanSubs.length}
  </Badge>
  </div>
@@ -1979,7 +1954,7 @@ export default function MaintenanceDetailDialog({
  isFirst ? 'bg-primary text-primary-foreground' : isPast ? 'bg-muted text-muted-foreground' : 'bg-muted'
  )}>
  <span className="text-lg font-bold leading-none">{format(date, 'd')}</span>
- <span className="text-[10px] uppercase">{format(date, 'MMM', { locale: es })}</span>
+ <span className="text-xs uppercase">{format(date, 'MMM', { locale: es })}</span>
  </div>
 
  {/* Info */}
@@ -2386,8 +2361,14 @@ export default function MaintenanceDetailDialog({
  <div className="flex flex-wrap items-center gap-4 text-xs mb-3">
  <div className="flex items-center gap-1.5 text-muted-foreground">
  <User className="h-3.5 w-3.5" />
- <span>{execution.assignedToName || 'Sin asignar'}</span>
+ <span>{execution.assignedToName || maintenance.assignedToName || assignedTo}</span>
  </div>
+ {execution.operators && execution.operators.length > 0 && (
+ <div className="flex items-center gap-1.5 text-muted-foreground">
+ <Users className="h-3.5 w-3.5" />
+ <span>{execution.operators.map((op: any) => op.name).join(', ')}</span>
+ </div>
+ )}
  {execution.actualDuration && (
  <div className="flex items-center gap-1.5 text-muted-foreground">
  <Timer className="h-3.5 w-3.5" />
@@ -2399,6 +2380,51 @@ export default function MaintenanceDetailDialog({
  </div>
  )}
  </div>
+
+ {/* Recursos utilizados */}
+ {(() => {
+ const resourcesUsed = execution.resourcesUsed || execution.spareParts;
+ if (!Array.isArray(resourcesUsed) || resourcesUsed.length === 0) return null;
+
+ const tools = resourcesUsed.filter((r: any) => ['TOOL', 'HAND_TOOL'].includes(r.toolItemType));
+ const parts = resourcesUsed.filter((r: any) => !['TOOL', 'HAND_TOOL'].includes(r.toolItemType));
+
+ return (
+ <div className="bg-muted/30 rounded-md p-2.5 text-xs mb-2">
+   <div className="flex items-center gap-1.5 text-muted-foreground mb-2">
+     <Package className="h-3 w-3" />
+     <span className="font-medium">Recursos utilizados</span>
+   </div>
+   <div className="space-y-1">
+     {tools.map((r: any, i: number) => (
+       <div key={`t-${i}`} className="flex items-center gap-2">
+         <Wrench className="h-3 w-3 text-muted-foreground" />
+         <span className="flex-1">{r.toolName}</span>
+         {r.returnedDamaged && (
+           <Badge variant="outline" className="h-4 text-[10px] px-1 border-destructive/30 text-destructive">
+             Dañada
+           </Badge>
+         )}
+       </div>
+     ))}
+     {parts.map((r: any, i: number) => (
+       <div key={`p-${i}`} className="flex items-center gap-2">
+         <Package className="h-3 w-3 text-muted-foreground" />
+         <span className="flex-1">{r.toolName}</span>
+         {r.usedQuantity != null && (
+           <span className="text-muted-foreground">x{r.usedQuantity}</span>
+         )}
+         {r.isAdHoc && (
+           <Badge variant="outline" className="h-4 text-[10px] px-1">
+             No planificado
+           </Badge>
+         )}
+       </div>
+     ))}
+   </div>
+ </div>
+ );
+ })()}
 
  {/* Notas */}
  {execution.notes && (
@@ -2516,7 +2542,7 @@ export default function MaintenanceDetailDialog({
  {entry.action}
  </span>
  {entry.field && (
- <Badge variant="outline" className="text-[10px]">
+ <Badge variant="outline" className="text-xs">
  {entry.field}
  </Badge>
  )}
@@ -2744,7 +2770,7 @@ export default function MaintenanceDetailDialog({
  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
  <p className="text-white text-sm">{selectedEvidence.caption}</p>
  <p className="text-white/60 text-xs mt-1">
- {format(selectedEvidence.uploadedAt, "dd/MM/yyyy HH:mm", { locale: es })} • {selectedEvidence.uploadedBy}
+ {formatDateTime(selectedEvidence.uploadedAt)} • {selectedEvidence.uploadedBy}
  </p>
  </div>
  )}

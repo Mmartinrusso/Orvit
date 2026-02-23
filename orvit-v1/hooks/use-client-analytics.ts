@@ -334,7 +334,21 @@ export function useUpdateClientNote(clientId: string, notaId: string) {
       if (!res.ok) throw new Error('Failed to update note');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ['client-notes', clientId] });
+      const queries = queryClient.getQueriesData<ClientNote[]>({ queryKey: ['client-notes', clientId] });
+      queryClient.setQueriesData<ClientNote[]>(
+        { queryKey: ['client-notes', clientId] },
+        (old) => old?.map(n => n.id === notaId ? { ...n, ...data } : n) ?? []
+      );
+      return { queries };
+    },
+    onError: (_err, _vars, context) => {
+      context?.queries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['client-notes', clientId] });
     },
   });
@@ -351,7 +365,21 @@ export function useDeleteClientNote(clientId: string, notaId: string) {
       if (!res.ok) throw new Error('Failed to delete note');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['client-notes', clientId] });
+      const queries = queryClient.getQueriesData<ClientNote[]>({ queryKey: ['client-notes', clientId] });
+      queryClient.setQueriesData<ClientNote[]>(
+        { queryKey: ['client-notes', clientId] },
+        (old) => old?.filter(n => n.id !== notaId) ?? []
+      );
+      return { queries };
+    },
+    onError: (_err, _vars, context) => {
+      context?.queries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['client-notes', clientId] });
     },
   });

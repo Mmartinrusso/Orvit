@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +51,7 @@ import {
  Building2,
  Loader2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useViewMode } from '@/contexts/ViewModeContext';
 
@@ -682,7 +683,7 @@ export function OrdenCompraFormModal({
  ) : (
  <TrendingDown className="w-3 h-3 mr-0.5" />
  )}
- {Math.abs(item.itemInfo.variacion).toFixed(1)}%
+ {formatNumber(Math.abs(item.itemInfo.variacion), 1)}%
  </span>
  )}
  </>
@@ -719,7 +720,7 @@ export function OrdenCompraFormModal({
  <CommandInput placeholder="Buscar item..." />
  <CommandList>
  <CommandEmpty>
- {loadingItems ? 'Cargando...' : 'No se encontraron items'}
+ {loadingItems ? 'Cargando artículos de la OC...' : 'No se encontraron items'}
  </CommandEmpty>
  <CommandGroup>
  {supplierItems.map((si) => (
@@ -749,7 +750,7 @@ export function OrdenCompraFormModal({
  <span>{si.codigoProveedor || '-'} • {si.unidad}</span>
  {si.ultimaCompra && (
  <span>
- Última: {new Date(si.ultimaCompra).toLocaleDateString('es-AR')}
+ Última: {formatDate(si.ultimaCompra)}
  </span>
  )}
  </div>
@@ -770,12 +771,12 @@ export function OrdenCompraFormModal({
  </span>
  )}
  {si.stockAlerta === 'sin_stock' && (
- <Badge variant="destructive" className="text-[10px] h-4 px-1">
+ <Badge variant="destructive" className="text-xs h-5 px-1">
  SIN STOCK
  </Badge>
  )}
  {si.stockAlerta === 'bajo_stock' && (
- <Badge variant="outline" className="text-[10px] h-4 px-1 border-warning-muted text-warning-muted-foreground">
+ <Badge variant="outline" className="text-xs h-5 px-1 border-warning-muted text-warning-muted-foreground">
  BAJO
  </Badge>
  )}

@@ -48,7 +48,9 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { cn } from '@/lib/utils';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -119,27 +121,35 @@ function GroupDialog({
   const [color, setColor] = useState(group?.color || '#6366f1');
   const [icon, setIcon] = useState<string | null>(group?.icon || null);
   const [description, setDescription] = useState(group?.description || '');
-  const [loading, setLoading] = useState(false);
 
-  const handleSave = async () => {
+  const createMutation = useApiMutation({
+    mutationFn: createFetchMutation({ url: '/api/task-groups', method: 'POST' }),
+    invalidateKeys: [['task-groups']],
+    successMessage: 'Grupo creado',
+    errorMessage: 'Error al guardar grupo',
+    onSuccess: () => { onSaved(); onClose(); },
+  });
+
+  const updateMutation = useApiMutation({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/task-groups/${vars.id}`,
+      method: 'PUT',
+    }),
+    invalidateKeys: [['task-groups']],
+    successMessage: 'Grupo actualizado',
+    errorMessage: 'Error al guardar grupo',
+    onSuccess: () => { onSaved(); onClose(); },
+  });
+
+  const loading = createMutation.isPending || updateMutation.isPending;
+
+  const handleSave = () => {
     if (!name.trim()) { toast.error('El nombre es requerido'); return; }
-    setLoading(true);
-    try {
-      const url = isEditing ? `/api/task-groups/${group!.id}` : '/api/task-groups';
-      const method = isEditing ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), color, icon, description: description.trim() || null, companyId }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Error al guardar'); }
-      toast.success(isEditing ? 'Grupo actualizado' : 'Grupo creado');
-      onSaved();
-      onClose();
-    } catch (err: any) {
-      toast.error(err.message || 'Error al guardar grupo');
-    } finally {
-      setLoading(false);
+    const payload = { name: name.trim(), color, icon, description: description.trim() || null, companyId };
+    if (isEditing) {
+      updateMutation.mutate({ id: group!.id, ...payload });
+    } else {
+      createMutation.mutate(payload);
     }
   };
 
@@ -202,40 +212,54 @@ function GroupDialog({
 export default function TaskGroupsSidebar({
   groups, selectedGroupId, onGroupSelect, companyId, onGroupsChange,
 }: TaskGroupsSidebarProps) {
+  const confirm = useConfirm();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingGroup, setEditingGroup] = useState<TaskGroup | undefined>(undefined);
   const [collapsed, setCollapsed] = useState(false);
 
   const totalCount = groups.reduce((acc, g) => acc + g.totalCount, 0);
 
-  const handleDelete = async (group: TaskGroup) => {
-    if (!confirm(`¿Eliminar el grupo "${group.name}"? Las tareas quedarán sin grupo.`)) return;
-    try {
-      toast.loading('Eliminando grupo...', { id: 'delete-group' });
-      const res = await fetch(`/api/task-groups/${group.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Error al eliminar');
-      toast.success('Grupo eliminado', { id: 'delete-group' });
-      if (selectedGroupId === group.id) onGroupSelect(null);
+  const deleteMutation = useApiMutation<unknown, { id: number }>({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/task-groups/${vars.id}`,
+      method: 'DELETE',
+    }),
+    invalidateKeys: [['task-groups']],
+    successMessage: 'Grupo eliminado',
+    errorMessage: 'Error al eliminar grupo',
+    onSuccess: (_data, vars) => {
+      if (selectedGroupId === vars.id) onGroupSelect(null);
       onGroupsChange();
-    } catch {
-      toast.error('Error al eliminar grupo', { id: 'delete-group' });
-    }
+    },
+  });
+
+  const archiveMutation = useApiMutation<unknown, { id: number; isArchived: boolean }>({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/task-groups/${vars.id}`,
+      method: 'PUT',
+    }),
+    invalidateKeys: [['task-groups']],
+    successMessage: null,
+    errorMessage: 'Error al archivar grupo',
+    onSuccess: (_data, vars) => {
+      toast.success(vars.isArchived ? 'Grupo archivado' : 'Grupo desarchivado');
+      if (selectedGroupId === vars.id) onGroupSelect(null);
+      onGroupsChange();
+    },
+  });
+
+  const handleDelete = async (group: TaskGroup) => {
+    const confirmed = await confirm({
+      title: '¿Estás seguro?',
+      description: `¿Eliminar el grupo "${group.name}"? Las tareas quedarán sin grupo.`,
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
+    deleteMutation.mutate({ id: group.id });
   };
 
-  const handleArchive = async (group: TaskGroup) => {
-    try {
-      const res = await fetch(`/api/task-groups/${group.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isArchived: !group.isArchived }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success(group.isArchived ? 'Grupo desarchivado' : 'Grupo archivado');
-      if (selectedGroupId === group.id) onGroupSelect(null);
-      onGroupsChange();
-    } catch {
-      toast.error('Error al archivar grupo');
-    }
+  const handleArchive = (group: TaskGroup) => {
+    archiveMutation.mutate({ id: group.id, isArchived: !group.isArchived });
   };
 
   // ── Sin grupos: mostrar solo un botón compacto ────────────────────────────

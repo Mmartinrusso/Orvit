@@ -68,10 +68,10 @@ const typeColors: Record<string, { bg: string; border: string; text: string; ico
  icon: <Info className="h-4 w-4 text-info-muted-foreground" />
  },
  success: {
- bg: 'bg-emerald-500/10',
- border: 'border-emerald-500/30',
- text: 'text-emerald-600',
- icon: <CheckCircle className="h-4 w-4 text-emerald-500" />
+ bg: 'bg-success/10',
+ border: 'border-success/30',
+ text: 'text-success-muted-foreground',
+ icon: <CheckCircle className="h-4 w-4 text-success" />
  }
 };
 
@@ -154,7 +154,7 @@ export function AIInsightsSection() {
  <CardTitle className="text-base flex items-center gap-2">
  <Sparkles className="h-5 w-5 text-primary" />
  Insights IA
- <Badge variant="secondary" className="text-[10px]">{insights.length}</Badge>
+ <Badge variant="secondary" className="text-xs">{insights.length}</Badge>
  </CardTitle>
  <Button variant="ghost" size="sm" onClick={handleRefresh} className="h-7 px-2">
  <RefreshCcw className="h-3 w-3" />
@@ -186,7 +186,7 @@ export function AIInsightsSection() {
  {insight.title}
  </h4>
  {insight.metric && (
- <Badge variant="outline" className={cn("text-[10px]", colors.text)}>
+ <Badge variant="outline" className={cn("text-xs", colors.text)}>
  {insight.metric}
  </Badge>
  )}

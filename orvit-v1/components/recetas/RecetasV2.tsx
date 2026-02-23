@@ -32,7 +32,7 @@ import {
   Square, CheckCircle2, XCircle, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 // Import sub-components
@@ -646,7 +646,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Insumos</p>
                       <p className="text-2xl font-bold">{stats.totalIngredients}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        ~{stats.avgIngredients.toFixed(1)} por receta
+                        ~{formatNumber(stats.avgIngredients, 1)} por receta
                       </p>
                     </div>
                     <div
@@ -701,7 +701,7 @@ ${detail.bankIngredients?.length ? `\n🏗️ INGREDIENTES BANCO:\n${detail.bank
             </div>
 
             {/* Row 2: Distribution and Details */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Distribution by Type */}
               <Card>
                 <CardContent className="p-4">

@@ -144,7 +144,7 @@ export function WorkOrdersTable({
                 <TableCell className="py-3">
                   <Badge
                     variant="outline"
-                    className={cn('text-[10px] border', statusColors[order.status])}
+                    className={cn('text-xs border', statusColors[order.status])}
                   >
                     {statusLabels[order.status]}
                   </Badge>
@@ -154,7 +154,7 @@ export function WorkOrdersTable({
                 <TableCell className="py-3">
                   <Badge
                     variant="outline"
-                    className={cn('text-[10px] border', priorityColors[order.priority])}
+                    className={cn('text-xs border', priorityColors[order.priority])}
                   >
                     {priorityLabels[order.priority]}
                   </Badge>
@@ -165,7 +165,7 @@ export function WorkOrdersTable({
                   {order.assignedTo ? (
                     <div className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-[10px] bg-muted">
+                        <AvatarFallback className="text-xs bg-muted">
                           {getInitials(order.assignedTo.name)}
                         </AvatarFallback>
                       </Avatar>

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 import { sendDailySummary, TaskReminderData } from '@/lib/discord/agenda-notifications';
-import { connectBot, isBotReady } from '@/lib/discord/bot';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -60,14 +59,6 @@ export async function POST(request: NextRequest) {
     ]);
 
     console.log(`📋 Encontradas: ${tasksDueTomorrow.length} mañana, ${tasksDueToday.length} hoy, ${tasksOverdue.length} vencidas`);
-
-    // Asegurar que el bot de Discord está conectado
-    if (!isBotReady()) {
-      const discordToken = process.env.DISCORD_BOT_TOKEN;
-      if (discordToken) {
-        await connectBot(discordToken);
-      }
-    }
 
     const notificationsSent: any[] = [];
     // Mapa para agrupar tareas por discordUserId para el resumen
@@ -297,7 +288,7 @@ export async function POST(request: NextRequest) {
 
     // --- Enviar UN resumen Discord por usuario ---
     let discordSummariesSent = 0;
-    if (isBotReady() && discordUserTasks.size > 0) {
+    if (discordUserTasks.size > 0) {
       for (const [discordUserId, userTasks] of discordUserTasks) {
         try {
           const totalTasks = userTasks.overdue.length + userTasks.dueToday.length + userTasks.dueTomorrow.length;

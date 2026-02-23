@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,7 +160,7 @@ export default function ChequesPage() {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardHeader><Skeleton className="h-4 w-24" /></CardHeader>
@@ -209,7 +210,7 @@ export default function ChequesPage() {
       </div>
 
       {/* Totales */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">En Cartera</CardTitle>
@@ -344,7 +345,7 @@ export default function ChequesPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span>{vencimiento.toLocaleDateString('es-AR')}</span>
+                          <span>{formatDate(vencimiento)}</span>
                           {cheque.estado === 'CARTERA' && diasRestantes <= 7 && diasRestantes >= 0 && (
                             <Badge variant="outline" className="text-warning-muted-foreground">
                               {diasRestantes === 0 ? 'Hoy' : `${diasRestantes}d`}

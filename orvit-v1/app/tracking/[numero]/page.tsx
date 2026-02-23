@@ -68,13 +68,13 @@ const ESTADO_INFO: Record<string, { label: string; color: string; icon: React.El
   },
   EN_TRANSITO: {
     label: 'En Tránsito',
-    color: 'bg-purple-100 text-purple-700',
+    color: 'bg-accent-purple-muted text-accent-purple-muted-foreground',
     icon: Truck,
     description: 'Tu pedido está en camino',
   },
   RETIRADA: {
     label: 'Retirada',
-    color: 'bg-cyan-100 text-cyan-700',
+    color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground',
     icon: Package,
     description: 'Pedido retirado en sucursal',
   },
@@ -141,7 +141,7 @@ export default function TrackingPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Cargando información...</p>
+          <p className="text-muted-foreground">Cargando seguimiento...</p>
         </div>
       </div>
     );

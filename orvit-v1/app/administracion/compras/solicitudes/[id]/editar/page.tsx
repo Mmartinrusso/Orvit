@@ -444,7 +444,7 @@ export default function EditarSolicitudPage() {
                               />
                             </TableCell>
                             <TableCell className="text-xs">
-                              <Badge variant="outline" className="text-[10px] px-1.5">
+                              <Badge variant="outline" className="text-xs px-1.5">
                                 {comp.tipo}
                               </Badge>
                             </TableCell>

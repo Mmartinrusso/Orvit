@@ -73,6 +73,14 @@ export async function DELETE(
         montosPorFactura.set(r.receiptId, current + Number(r.montoAplicado || 0));
       });
 
+      // Revertir movimientos de tesorería (devolver fondos a las cuentas)
+      // CashMovements de esta OP
+      await tx.cashMovement.deleteMany({ where: { paymentOrderId: id } });
+      // BankMovements de esta OP
+      await tx.bankMovement.deleteMany({ where: { paymentOrderId: id } });
+      // SupplierAccountMovements → pagoId tiene onDelete: SetNull, pero limpiar explícitamente
+      await tx.supplierAccountMovement.deleteMany({ where: { pagoId: id } });
+
       // Borrar la orden (los receipt se borran por onDelete: Cascade en Prisma)
       await tx.paymentOrder.delete({
         where: { id },

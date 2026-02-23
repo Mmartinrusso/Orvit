@@ -2,6 +2,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
+import { focusNextFormField } from '@/lib/form-navigation';
 
 const inputVariants = cva(
   'flex w-full rounded-md border border-input bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors',
@@ -25,12 +26,24 @@ export interface InputProps
     VariantProps<typeof inputVariants> {}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, inputSize, ...props }, ref) => {
+  ({ className, type, inputSize, onKeyDown, ...props }, ref) => {
+    const handleKeyDown = React.useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          const advanced = focusNextFormField(e.currentTarget);
+          if (advanced) e.preventDefault();
+        }
+        onKeyDown?.(e);
+      },
+      [onKeyDown]
+    );
+
     return (
       <input
         type={type}
         className={cn(inputVariants({ inputSize }), className)}
         ref={ref}
+        onKeyDown={handleKeyDown}
         {...props}
       />
     );

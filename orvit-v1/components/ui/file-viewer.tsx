@@ -365,7 +365,7 @@ function PDFViewer({ url, fileName }: { url: string; fileName: string }) {
               <Button
                 variant={viewMode === 'embed' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 text-[11px] sm:text-xs px-2 sm:px-3"
+                className="h-7 text-xs px-2 sm:px-3"
                 onClick={() => {
                   setViewMode('embed');
                   setLoading(true);
@@ -377,7 +377,7 @@ function PDFViewer({ url, fileName }: { url: string; fileName: string }) {
               <Button
                 variant={viewMode === 'google' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 text-[11px] sm:text-xs px-2 sm:px-3"
+                className="h-7 text-xs px-2 sm:px-3"
                 onClick={() => {
                   setViewMode('google');
                   setLoading(true);
@@ -393,7 +393,7 @@ function PDFViewer({ url, fileName }: { url: string; fileName: string }) {
         <Button
           variant="outline"
           size="sm"
-          className="h-7 text-[11px] sm:text-xs px-2 sm:px-3"
+          className="h-7 text-xs px-2 sm:px-3"
           onClick={() => window.open(url, '_blank')}
         >
           <ExternalLink className="h-3 w-3 sm:mr-1" />

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState } from 'react';
 import {
   Dialog,
@@ -150,7 +151,7 @@ export function ApproveRequestDialog({
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      {Number(item.cantidadSolicitada).toFixed(2)} {item.unidad}
+                      {formatNumber(Number(item.cantidadSolicitada), 2)} {item.unidad}
                     </TableCell>
                     <TableCell className="text-right">
                       <Input
@@ -523,11 +524,11 @@ export function ConfirmDispatchDialog({
                         </span>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {Number(item.cantidadDespachada).toFixed(2)} {item.unidad}
+                        {formatNumber(Number(item.cantidadDespachada), 2)} {item.unidad}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {item.stockAvailable !== undefined
-                          ? `${item.stockAvailable.toFixed(2)}`
+                          ? `${formatNumber(item.stockAvailable, 2)}`
                           : '-'}
                       </TableCell>
                       <TableCell className="text-center">

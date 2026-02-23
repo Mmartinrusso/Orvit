@@ -35,7 +35,7 @@ export function MetricCard({ title, value, trendValue, icon: Icon, color }: {
           <div>
             <p className="text-xs font-medium text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold mt-1">{value}</p>
-            {trendValue && <p className="text-[10px] text-muted-foreground mt-1">{trendValue}</p>}
+            {trendValue && <p className="text-xs text-muted-foreground mt-1">{trendValue}</p>}
           </div>
           <div
             className="p-2 rounded-lg"
@@ -124,7 +124,7 @@ export function HeatmapCalendar({ tasks, color }: { tasks: any[]; color?: string
     <div className="space-y-2">
       <div className="flex gap-1">
         <div className="w-4" />
-        {days.map(day => (<div key={day} className="w-3 text-[10px] text-muted-foreground text-center">{day}</div>))}
+        {days.map(day => (<div key={day} className="w-3 text-xs text-muted-foreground text-center">{day}</div>))}
       </div>
       <div className="flex gap-1">
         {Array.from({ length: weeks }, (_, weekIndex) => (
@@ -145,7 +145,7 @@ export function HeatmapCalendar({ tasks, color }: { tasks: any[]; color?: string
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>Menos</span>
         <div className="w-3 h-3 rounded-[2px] bg-muted" />
         {[0.2, 0.4, 0.6, 0.8].map((op, i) => (

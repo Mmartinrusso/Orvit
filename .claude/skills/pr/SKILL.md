@@ -48,7 +48,7 @@ Crear un PR hacia la rama base (default: `main`).
 
    🤖 Generado con [Claude Code](https://claude.ai/claude-code)
 
-   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+   Co-Authored-By: Claude <noreply@anthropic.com>
    EOF
    )"
    ```

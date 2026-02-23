@@ -134,7 +134,7 @@ export function TasksQuickFilters({
             {filter.count > 0 && (
               <Badge
                 variant="secondary"
-                className="ml-2 h-4 px-1.5 text-[10px]"
+                className="ml-2 h-5 px-1.5 text-xs"
               >
                 {filter.count}
               </Badge>

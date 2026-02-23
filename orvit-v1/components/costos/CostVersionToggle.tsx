@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,7 +134,7 @@ export function CostVersionToggle({ companyId, onVersionChange }: CostVersionTog
     return (
       <div className="flex items-center gap-2">
         <div className="animate-spin h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full" />
-        <span className="text-sm text-muted-foreground">Cargando...</span>
+        <span className="text-sm text-muted-foreground">Cargando versiones...</span>
       </div>
     );
   }
@@ -283,7 +284,7 @@ export function CostVersionToggle({ companyId, onVersionChange }: CostVersionTog
 
               {prerequisites?.config?.v2EnabledAt && (
                 <div className="text-xs text-muted-foreground pt-2 border-t">
-                  V2 habilitado: {new Date(prerequisites.config.v2EnabledAt).toLocaleDateString('es-AR')}
+                  V2 habilitado: {formatDate(prerequisites.config.v2EnabledAt)}
                 </div>
               )}
             </div>

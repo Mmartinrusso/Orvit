@@ -47,9 +47,8 @@ import {
   Eye,
 } from 'lucide-react';
 import { WorkStation } from './WorkstationCard';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { cn, formatNumber } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 
 interface WorkstationDetailSheetProps {
   workstation: WorkStation | null;
@@ -98,15 +97,7 @@ export function WorkstationDetailSheet({
 
   if (!workstation) return null;
 
-  const formatDate = (date?: string | Date) => {
-    if (!date) return 'Sin dato';
-    try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      return format(dateObj, 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return 'Sin dato';
-    }
-  };
+  // formatDate imported from @/lib/date-utils (returns '' for null/undefined)
 
   const instructives = workstation.instructives || [];
   // Transformar las máquinas para obtener la estructura correcta (pueden venir como WorkStationMachine con .machine anidado)
@@ -338,7 +329,7 @@ export function WorkstationDetailSheet({
                       <Building2 className="h-4 w-4 text-info-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground">Sector</p>
+                      <p className="text-xs text-muted-foreground">Sector</p>
                       <p className="text-xs font-semibold mt-0.5">{workstation.sector.name}</p>
                     </div>
                   </div>
@@ -350,10 +341,10 @@ export function WorkstationDetailSheet({
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2.5">
                     <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
-                      <FileText className="h-4 w-4 text-purple-600" />
+                      <FileText className="h-4 w-4 text-accent-purple-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground">Código</p>
+                      <p className="text-xs text-muted-foreground">Código</p>
                       <p className="text-xs font-semibold mt-0.5 font-mono">{workstation.code}</p>
                     </div>
                   </div>
@@ -366,12 +357,12 @@ export function WorkstationDetailSheet({
                   <div className="flex items-center gap-2.5">
                     <div className={cn(
                       "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                      workstation.status === 'ACTIVE' ? 'bg-emerald-500/10' :
+                      workstation.status === 'ACTIVE' ? 'bg-success/10' :
                       workstation.status === 'MAINTENANCE' ? 'bg-warning-muted' :
                       'bg-muted'
                     )}>
                       {workstation.status === 'ACTIVE' ? (
-                        <Power className="h-4 w-4 text-emerald-600" />
+                        <Power className="h-4 w-4 text-success-muted-foreground" />
                       ) : workstation.status === 'MAINTENANCE' ? (
                         <Wrench className="h-4 w-4 text-warning-muted-foreground" />
                       ) : (
@@ -379,10 +370,10 @@ export function WorkstationDetailSheet({
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground">Estado</p>
+                      <p className="text-xs text-muted-foreground">Estado</p>
                       <Badge
                         variant="outline"
-                        className={cn('text-[10px] px-1.5 py-0 h-4 mt-0.5 border', statusColors[workstation.status])}
+                        className={cn('text-xs px-1.5 py-0 h-4 mt-0.5 border', statusColors[workstation.status])}
                       >
                         {statusLabels[workstation.status] || workstation.status}
                       </Badge>
@@ -399,7 +390,7 @@ export function WorkstationDetailSheet({
                       <Clock className="h-4 w-4 text-warning-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground">Última actualización</p>
+                      <p className="text-xs text-muted-foreground">Última actualización</p>
                       <p className="text-xs font-semibold mt-0.5">{formatDate(workstation.updatedAt)}</p>
                     </div>
                   </div>
@@ -666,7 +657,7 @@ export function WorkstationDetailSheet({
                             <p className="text-sm font-medium">{selectedInstructive.fileName}</p>
                             {selectedInstructive.fileSize && (
                               <p className="text-xs text-muted-foreground">
-                                {(selectedInstructive.fileSize / 1024).toFixed(2)} KB
+                                {formatNumber(selectedInstructive.fileSize / 1024, 2)} KB
                               </p>
                             )}
                           </div>
@@ -768,14 +759,14 @@ export function WorkstationDetailSheet({
                           {componentIds.length > 0 && (
                             <div className="space-y-2">
                               <div className="flex items-center gap-1.5">
-                                <Building2 className="h-3.5 w-3.5 text-purple-600" />
+                                <Building2 className="h-3.5 w-3.5 text-accent-purple-muted-foreground" />
                                 <span className="text-xs font-medium text-muted-foreground">
                                   Componentes y Subcomponentes ({componentIds.length})
                                 </span>
                               </div>
                               <div className="space-y-1.5 pl-5">
                                 {loadingComponents ? (
-                                  <div className="text-xs text-muted-foreground py-2">Cargando...</div>
+                                  <div className="text-xs text-muted-foreground py-2">Cargando puesto de trabajo...</div>
                                 ) : (
                                   componentIds.map((id: any) => {
                                     const component = componentsMap.get(id);
@@ -789,19 +780,19 @@ export function WorkstationDetailSheet({
                                         className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/5 border border-purple-500/20"
                                       >
                                         <div className="h-6 w-6 rounded bg-purple-500/10 flex items-center justify-center shrink-0">
-                                          <Building2 className="h-3 w-3 text-purple-600" />
+                                          <Building2 className="h-3 w-3 text-accent-purple-muted-foreground" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-1.5">
                                             <span className="text-xs font-medium truncate">
                                               {displayName}
                                             </span>
-                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                                            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
                                               {typeLabel}
                                             </Badge>
                                           </div>
                                           {component?.code && (
-                                            <p className="text-[10px] text-muted-foreground">
+                                            <p className="text-xs text-muted-foreground">
                                               Código: {component.code}
                                             </p>
                                           )}

@@ -35,21 +35,21 @@ export function CostsKpisWidget({ data, isLoading }: WidgetComponentProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs text-muted-foreground">Costo mes</p>
-              <p className="text-2xl font-semibold">{formatCurrencyARS(costs.monthCost)}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{formatCurrencyARS(costs.monthCost)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Δ vs mes anterior</p>
-              <p className="text-2xl font-semibold">
+              <p data-slot="kpi-value" className="text-2xl font-semibold">
                 {delta === null ? '—' : `${Math.round(delta * 100)}%`}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Último cálculo</p>
-              <p className="text-2xl font-semibold">{costs.lastCalc}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{costs.lastCalc}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Mayor impacto</p>
-              <p className="text-2xl font-semibold truncate">{costs.biggestDriver}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold truncate">{costs.biggestDriver}</p>
             </div>
           </div>
         )}

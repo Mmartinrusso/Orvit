@@ -327,7 +327,7 @@ const categoryColors: Record<string, string> = {
   VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
   COMPRAS: 'bg-success/10 text-success border-success-muted/20',
   MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
-  COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  COSTOS: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
 };
@@ -606,7 +606,7 @@ export default function BillingPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -649,8 +649,8 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                <CreditCard className="h-6 w-6 text-accent-purple" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{plans.filter(p => p.isActive).length}</p>
@@ -897,8 +897,8 @@ export default function BillingPage() {
                           +{metrics.newSubscriptions} / -{metrics.canceledSubscriptions}
                         </p>
                       </div>
-                      <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                        <Activity className="h-6 w-6 text-purple-500" />
+                      <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                        <Activity className="h-6 w-6 text-accent-purple" />
                       </div>
                     </div>
                   </CardContent>
@@ -1281,7 +1281,7 @@ export default function BillingPage() {
                             <Zap className="h-3 w-3 mr-1" />
                             {sub.tokens.available}
                           </Badge>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {sub.tokens.included} inc + {sub.tokens.purchased} comp
                           </span>
                         </div>
@@ -1542,12 +1542,12 @@ export default function BillingPage() {
                       <p className="text-xs font-medium mb-2">Módulos incluidos:</p>
                       <div className="flex flex-wrap gap-1">
                         {plan.moduleKeys.slice(0, 5).map((key) => (
-                          <Badge key={key} variant="outline" className="text-[10px]">
+                          <Badge key={key} variant="outline" className="text-xs">
                             {key}
                           </Badge>
                         ))}
                         {plan.moduleKeys.length > 5 && (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             +{plan.moduleKeys.length - 5} más
                           </Badge>
                         )}
@@ -2410,7 +2410,7 @@ function EditPlanDialog({
                           <Checkbox checked={moduleKeys.includes(module.key)} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm truncate">{module.name}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{module.key}</p>
+                            <p className="text-xs text-muted-foreground truncate">{module.key}</p>
                           </div>
                         </div>
                       ))}

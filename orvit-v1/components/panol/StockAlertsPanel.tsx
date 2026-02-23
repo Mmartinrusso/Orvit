@@ -26,7 +26,7 @@ import {
   Cog,
   ShoppingCart,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { DEFAULT_COLORS } from '@/lib/colors';
 import { useCompany } from '@/contexts/CompanyContext';
 
@@ -443,7 +443,7 @@ export function StockAlertsPanel({
                                 {item.name}
                               </span>
                               {item.isCritical && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                                <Badge variant="destructive" className="text-xs px-1.5 py-0">
                                   CRÍTICO
                                 </Badge>
                               )}
@@ -511,8 +511,8 @@ export function StockAlertsPanel({
                             }}
                           />
                         </div>
-                        <p className="text-[10px] mt-1 text-right text-muted-foreground">
-                          {item.percentageOfMin.toFixed(0)}% del mínimo
+                        <p className="text-xs mt-1 text-right text-muted-foreground">
+                          {formatNumber(item.percentageOfMin, 0)}% del mínimo
                         </p>
                       </div>
                     </div>

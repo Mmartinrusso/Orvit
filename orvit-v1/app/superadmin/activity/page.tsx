@@ -77,7 +77,7 @@ const actionColors: Record<string, string> = {
   CREATE: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
   UPDATE: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
   DELETE: 'bg-destructive/10 text-destructive border-destructive/30/20',
-  VIEW: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  VIEW: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
   SETTINGS: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -239,7 +239,7 @@ export default function ActivityPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -269,8 +269,8 @@ export default function ActivityPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Plus className="h-6 w-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                <Plus className="h-6 w-6 text-accent-purple" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.creates}</p>

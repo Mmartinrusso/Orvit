@@ -69,7 +69,7 @@ export function useCreateAgendaTask() {
 }
 
 /**
- * Hook para actualizar tarea
+ * Hook para actualizar tarea (con optimistic update)
  */
 export function useUpdateAgendaTask() {
   const queryClient = useQueryClient();
@@ -77,7 +77,21 @@ export function useUpdateAgendaTask() {
   return useMutation({
     mutationFn: ({ taskId, data }: { taskId: number; data: UpdateAgendaTaskInput }) =>
       updateAgendaTask(taskId, data),
-    onSuccess: () => {
+    onMutate: async ({ taskId, data }) => {
+      await queryClient.cancelQueries({ queryKey: [TASKS_KEY] });
+      const queries = queryClient.getQueriesData<AgendaTask[]>({ queryKey: [TASKS_KEY] });
+      queryClient.setQueriesData<AgendaTask[]>(
+        { queryKey: [TASKS_KEY] },
+        (old) => old?.map(t => t.id === taskId ? { ...t, ...data } : t) ?? []
+      );
+      return { queries };
+    },
+    onError: (_err, _vars, context) => {
+      context?.queries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [TASKS_KEY] });
       queryClient.invalidateQueries({ queryKey: [STATS_KEY] });
     },
@@ -85,14 +99,28 @@ export function useUpdateAgendaTask() {
 }
 
 /**
- * Hook para eliminar tarea
+ * Hook para eliminar tarea (con optimistic update)
  */
 export function useDeleteAgendaTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (taskId: number) => deleteAgendaTask(taskId),
-    onSuccess: () => {
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries({ queryKey: [TASKS_KEY] });
+      const queries = queryClient.getQueriesData<AgendaTask[]>({ queryKey: [TASKS_KEY] });
+      queryClient.setQueriesData<AgendaTask[]>(
+        { queryKey: [TASKS_KEY] },
+        (old) => old?.filter(t => t.id !== taskId) ?? []
+      );
+      return { queries };
+    },
+    onError: (_err, _vars, context) => {
+      context?.queries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [TASKS_KEY] });
       queryClient.invalidateQueries({ queryKey: [STATS_KEY] });
     },

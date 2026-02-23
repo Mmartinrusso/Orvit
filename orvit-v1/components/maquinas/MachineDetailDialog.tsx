@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Machine, MachineComponent, MachineStatus, MachineType } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime, formatTime } from '@/lib/date-utils';
 import EnhancedMaintenancePanel from '@/components/maintenance/EnhancedMaintenancePanel';
 import MachineMaintenanceTab from '@/components/maintenance/MachineMaintenanceTab';
 import { debugLog } from '@/lib/logger';
@@ -32,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Cog, Info, FileText, History, Network, Tag, Building, Wrench, X, Eye, Plus, Loader2, FilePlus, Calendar, Download, CheckCircle, Clock, User, MapPin, Camera, ExternalLink, Settings, AlertTriangle, ClipboardList, File, Pencil, Trash2, Package, List, Grid, Shield, Hand, MousePointer, ZoomIn, ZoomOut, Home, RotateCcw, Maximize2, Search, UploadCloud, ChevronsUpDown, Check, AlertCircle, ImageIcon, ChevronUp, ChevronDown, Lightbulb, BarChart3, Box, Sparkles } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import ComponentDialog from './ComponentDialog';
 import AIComponentImportDialog from './AIComponentImportDialog';
 import ComponentDetailsModal from './ComponentDetailsModal';
@@ -58,12 +59,14 @@ import {
   Dialog as PdfDialog, 
   DialogContent as PdfDialogContent,
 } from '@/components/ui/dialog';
+import { useQueryClient } from '@tanstack/react-query';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/hooks/use-auth';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useMachineDetail } from '@/hooks/use-machine-detail';
-import { useMachineWorkOrders, useMachineFailures, useDocuments } from '@/hooks/maintenance'; // ✨ OPTIMIZACIÓN: Hooks centralizados
+import { useMachineWorkOrders, useMachineFailures, useDocuments } from '@/hooks/mantenimiento'; // ✨ OPTIMIZACIÓN: Hooks centralizados
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -790,20 +793,45 @@ const MachinePreventiveMaintenanceContent: React.FC<{
   const { currentCompany } = useCompany();
   const { user } = useAuth();
 
+  // ── Mutation: Completar mantenimiento preventivo ──
+  const completeMaintenanceMutation = useApiMutation<any, { maintenanceId: number; executionData: any }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/maintenance/preventive/${vars.maintenanceId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ executionData: vars.executionData }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al completar el mantenimiento');
+      }
+      return res.json();
+    },
+    invalidateKeys: [
+      ['preventive-maintenance', 'machine', machineId],
+      ['work-orders', 'machine', machineId],
+    ],
+    successMessage: 'Mantenimiento completado exitosamente',
+    errorMessage: 'No se pudo completar el mantenimiento',
+    onSuccess: () => {
+      fetchPreventiveMaintenances();
+    },
+  });
+
   useEffect(() => {
     fetchPreventiveMaintenances();
   }, [machineId, currentCompany]);
 
   const fetchPreventiveMaintenances = async () => {
     if (!currentCompany?.id) return;
-    
+
     setLoading(true);
     try {
-      const response = await fetch(`/api/maintenance/preventive?companyId=${currentCompany.id}`);
+      const response = await fetch(`/api/maintenance/preventive?companyId=${currentCompany.id}`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         // Filtrar por esta máquina específica
-        const machinePreventive = data.filter((maintenance: any) => 
+        const machinePreventive = data.filter((maintenance: any) =>
           maintenance.machineId === machineId
         );
         setPreventiveMaintenances(machinePreventive);
@@ -841,35 +869,18 @@ const MachinePreventiveMaintenanceContent: React.FC<{
   const handleSaveCorrectiveMaintenance = (data: any) => {
     log('Nuevo mantenimiento correctivo para máquina:', data);
     setIsCorrectiveDialogOpen(false);
-    // Aquí se implementaría la lógica para guardar el mantenimiento correctivo
-    // y posiblemente recargar la lista de mantenimientos
   };
 
-  const handleCompleteMaintenance = async (maintenance: any) => {
-    try {
-      const response = await fetch(`/api/maintenance/preventive/${maintenance.id}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          executionData: {
-            userId: user?.id,
-            notes: `Mantenimiento completado por ${user?.name}`,
-            actualHours: maintenance.estimatedHours,
-            executedAt: new Date().toISOString()
-          }
-        })
-      });
-
-      if (response.ok) {
-        toast.success('✅ Mantenimiento completado exitosamente');
-        fetchPreventiveMaintenances();
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al completar el mantenimiento');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'No se pudo completar el mantenimiento');
-    }
+  const handleCompleteMaintenance = (maintenance: any) => {
+    completeMaintenanceMutation.mutate({
+      maintenanceId: maintenance.id,
+      executionData: {
+        userId: user?.id,
+        notes: `Mantenimiento completado por ${user?.name}`,
+        actualHours: maintenance.estimatedHours,
+        executedAt: new Date().toISOString(),
+      },
+    });
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -961,7 +972,7 @@ const MachinePreventiveMaintenanceContent: React.FC<{
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        Próximo: {new Date(maintenance.nextMaintenanceDate).toLocaleDateString('es-ES')}
+                        Próximo: {formatDate(maintenance.nextMaintenanceDate)}
                       </span>
                       {maintenance.estimatedHours && (
                         <span className="flex items-center gap-1">
@@ -1111,6 +1122,8 @@ const MachineFailuresContent: React.FC<{
     }
   }, [failuresQuery.data, failuresQuery.isLoading]);
 
+  const failuresInvalidateKeys = [['machine-failures', Number(machineId), Number(currentCompany?.id)]];
+
   const fetchFailures = async () => {
     // ✨ Ya no se necesita fetch manual, el hook lo maneja
     // Mantener función por compatibilidad con handleSaveFailure
@@ -1118,6 +1131,92 @@ const MachineFailuresContent: React.FC<{
       await failuresQuery.refetch();
     }
   };
+
+  const [editingFailure, setEditingFailure] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingSolution, setEditingSolution] = useState<any>(null);
+  const [isSolutionEditModalOpen, setIsSolutionEditModalOpen] = useState(false);
+
+  // ── Mutations (useApiMutation) ──
+  const updateFailureMutation = useApiMutation<any, any>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/failures/${editingFailure?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al actualizar la falla');
+      }
+      return res.json();
+    },
+    invalidateKeys: failuresInvalidateKeys,
+    successMessage: 'Falla actualizada correctamente',
+    errorMessage: 'Error al actualizar la falla',
+    onSuccess: () => {
+      handleCloseEditModal();
+    },
+  });
+
+  const updateSolutionMutation = useApiMutation<any, any>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/failures/${editingSolution?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al actualizar la solución');
+      }
+      return res.json();
+    },
+    invalidateKeys: failuresInvalidateKeys,
+    successMessage: 'Solución actualizada correctamente',
+    errorMessage: 'Error al actualizar la solución',
+    onSuccess: () => {
+      handleCloseSolutionEditModal();
+    },
+  });
+
+  const deleteFailureMutation = useApiMutation<any, { id: number; title: string }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/failures/${vars.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al eliminar la falla');
+      }
+      return res.json();
+    },
+    invalidateKeys: failuresInvalidateKeys,
+    successMessage: null, // Custom message below
+    errorMessage: 'No se pudo eliminar la falla.',
+    onSuccess: (_data, vars) => {
+      toast.success(`La falla "${vars.title}" ha sido eliminada exitosamente.`);
+    },
+  });
+
+  const failureOccurrenceMutation = useApiMutation<any, { id: number; notes: string }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/failures/${vars.id}/occurrences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: vars.notes }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al registrar la ocurrencia');
+      }
+      return res.json();
+    },
+    invalidateKeys: failuresInvalidateKeys,
+    successMessage: 'Ocurrencia registrada correctamente',
+    errorMessage: 'Error al registrar la ocurrencia',
+  });
 
   const handleCreateFailure = () => {
     setIsCreateDialogOpen(true);
@@ -1132,11 +1231,6 @@ const MachineFailuresContent: React.FC<{
     setIsCreateDialogOpen(false);
     fetchFailures();
   };
-
-  const [editingFailure, setEditingFailure] = useState<any>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingSolution, setEditingSolution] = useState<any>(null);
-  const [isSolutionEditModalOpen, setIsSolutionEditModalOpen] = useState(false);
 
   const handleEditFailure = (failure: any) => {
     setEditingFailure(failure);
@@ -1158,113 +1252,25 @@ const MachineFailuresContent: React.FC<{
     setEditingSolution(null);
   };
 
-  const handleSaveEditedFailure = async (updatedData: any) => {
-    try {
-      const response = await fetch(`/api/failures/${editingFailure.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData),
-      });
-
-      if (response.ok) {
-        toast.success('Falla actualizada correctamente');
-        fetchFailures(); // Actualizar la lista
-        handleCloseEditModal();
-      } else {
-        toast.error('Error al actualizar la falla');
-      }
-    } catch (error) {
-      console.error('Error al actualizar falla:', error);
-      toast.error('Error al actualizar la falla');
-    }
+  const handleSaveEditedFailure = (updatedData: any) => {
+    updateFailureMutation.mutate(updatedData);
   };
 
-  const handleSaveEditedSolution = async (updatedData: any) => {
-    try {
-      log('💾 Guardando solución:', updatedData);
-      
-      const response = await fetch(`/api/failures/${editingSolution.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData),
-      });
-
-      if (response.ok) {
-        toast.success('Solución actualizada correctamente');
-        fetchFailures(); // Actualizar la lista
-        handleCloseSolutionEditModal();
-      } else {
-        toast.error('Error al actualizar la solución');
-      }
-    } catch (error) {
-      console.error('Error al actualizar solución:', error);
-      toast.error('Error al actualizar la solución');
-    }
+  const handleSaveEditedSolution = (updatedData: any) => {
+    log('💾 Guardando solución:', updatedData);
+    updateSolutionMutation.mutate(updatedData);
   };
 
-  const handleDeleteFailure = async (failure: any) => {
-    try {
-      log('Eliminando falla:', failure.id);
-      
-      const response = await fetch(`/api/failures/${failure.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        toast.success(`La falla "${failure.title}" ha sido eliminada exitosamente.`);
-        fetchFailures(); // Refrescar la lista
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Error al eliminar la falla');
-      }
-    } catch (error) {
-      console.error('Error al eliminar falla:', error);
-      toast.error('No se pudo eliminar la falla.');
-    }
+  const handleDeleteFailure = (failure: any) => {
+    log('Eliminando falla:', failure.id);
+    deleteFailureMutation.mutate({ id: failure.id, title: failure.title });
   };
 
-  const handleFailureOccurred = async (failure: any) => {
-    try {
-      // Registrar una ocurrencia de la falla existente
-      const response = await fetch(`/api/failures/${failure.id}/occurrences`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          notes: `Ocurrencia registrada el ${new Date().toLocaleString('es-ES')}`
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Ocurrencia registrada correctamente');
-        fetchFailures(); // Actualizar la lista para mostrar la nueva ocurrencia
-        
-        // Si el modal de detalles está abierto, actualizar las ocurrencias
-        if (isDetailModalOpen && selectedFailure?.id === failure.id) {
-          // Refrescar las ocurrencias en el modal
-          const occurrencesResponse = await fetch(`/api/failures/${failure.id}/occurrences`);
-          if (occurrencesResponse.ok) {
-            const data = await occurrencesResponse.json();
-            // Actualizar el estado de ocurrencias en el modal
-            // Esto se manejará automáticamente cuando se cierre y abra el modal
-          }
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Error al registrar la ocurrencia');
-      }
-    } catch (error) {
-      console.error('Error al registrar ocurrencia:', error);
-      toast.error('Error al registrar la ocurrencia');
-    }
+  const handleFailureOccurred = (failure: any) => {
+    failureOccurrenceMutation.mutate({
+      id: failure.id,
+      notes: `Ocurrencia registrada el ${formatDateTime(new Date())}`,
+    });
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -1566,7 +1572,7 @@ const MachineFailuresContent: React.FC<{
                       
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{new Date(failure.reportedDate).toLocaleDateString('es-ES')}</span>
+                        <span>{formatDate(failure.reportedDate)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />
@@ -1828,7 +1834,7 @@ export const DocumentListViewer: React.FC<{
       {loading ? (
         <div className="flex items-center justify-center py-6">
           <Loader2 className="animate-spin h-4 w-4" />
-          <span className="ml-2 text-xs text-muted-foreground">Cargando...</span>
+          <span className="ml-2 text-xs text-muted-foreground">Cargando máquina...</span>
         </div>
       ) : documents.length === 0 ? (
         <div className="text-center py-8">
@@ -1855,8 +1861,8 @@ export const DocumentListViewer: React.FC<{
               </div>
               {/* Fila secundaria: fecha + acciones */}
               <div className="flex items-center justify-between sm:justify-end gap-2 pl-6 sm:pl-0">
-                <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
-                  {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString('es-AR') : '-'}
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {doc.uploadDate ? formatDate(doc.uploadDate) : '-'}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
@@ -1954,6 +1960,47 @@ const DocumentacionTab: React.FC<{ machineId: string; canEditMachine: boolean }>
     staleTime: 60 * 1000
   });
 
+  const documentsInvalidateKeys = [['documents', 'machine', String(machineId)]];
+
+  // ── Mutations: Documentos ──
+  const deleteDocumentMutation = useApiMutation<any, { docId: string | number }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/documents/${vars.docId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Error al eliminar el documento');
+      return res.json();
+    },
+    invalidateKeys: documentsInvalidateKeys,
+    successMessage: 'Documento eliminado',
+    errorMessage: 'Error al eliminar el documento',
+    onSuccess: () => {
+      documentsQuery.refetch();
+    },
+  });
+
+  const moveDocumentMutation = useApiMutation<any, { docId: string | number; folder: string | null }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/documents/${vars.docId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ folder: vars.folder }),
+      });
+      if (!res.ok) throw new Error('Error al mover el documento');
+      return res.json();
+    },
+    invalidateKeys: documentsInvalidateKeys,
+    successMessage: null, // Custom message in onSuccess
+    errorMessage: 'Error al mover el documento',
+    onSuccess: (_data, vars) => {
+      documentsQuery.refetch();
+      toast.success(vars.folder ? `Documento movido a "${vars.folder}"` : 'Documento removido de carpeta');
+    },
+  });
+
   // ✨ Sincronizar estado local con datos del hook
   useEffect(() => {
     if (documentsQuery.data) {
@@ -2034,37 +2081,11 @@ const DocumentacionTab: React.FC<{ machineId: string; canEditMachine: boolean }>
 
     setError(null);
     setSuccess(null);
-    try {
-      const res = await fetch(`/api/documents/${docId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Error al eliminar el documento');
-      // Refetch y esperar antes de mostrar éxito
-      await documentsQuery.refetch();
-      setSuccess('Documento eliminado');
-    } catch (err: any) {
-      setError(err.message || 'Error desconocido');
-    }
+    deleteDocumentMutation.mutate({ docId });
   };
 
-  const handleMoveToFolder = async (docId: string | number, folder: string | null) => {
-    try {
-      const res = await fetch(`/api/documents/${docId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ folder }),
-      });
-      if (!res.ok) throw new Error('Error al mover el documento');
-      await documentsQuery.refetch();
-      setSuccess(folder ? `Documento movido a "${folder}"` : 'Documento removido de carpeta');
-    } catch (err: any) {
-      setError(err.message || 'Error al mover');
-    }
+  const handleMoveToFolder = (docId: string | number, folder: string | null) => {
+    moveDocumentMutation.mutate({ docId, folder });
   };
 
   // Handler para archivos importados desde Google Drive
@@ -2182,6 +2203,7 @@ export default function MachineDetailDialog({
   selectedComponentId
 }: MachineDetailDialogProps) {
   const { sectors } = useCompany();
+  const queryClient = useQueryClient();
   const confirm = useConfirm();
 
   // 🔍 PERMISOS DE MÁQUINAS
@@ -2338,6 +2360,103 @@ export default function MachineDetailDialog({
     }
   }, [machine?.id, refetchMachineDetail]);
 
+  const machineDetailInvalidateKeys = machine?.id ? [['machine-detail', Number(machine.id)]] : [];
+
+  // ── Mutations: Componentes ──
+  const saveComponentOrderMutation = useApiMutation<any, { order: {[key: string]: number} }>({
+    mutationFn: createFetchMutation({
+      url: () => `/api/maquinas/${machine?.id}/component-order`,
+      method: 'PUT',
+    }),
+    successMessage: null,
+    errorMessage: 'Error al guardar el orden de componentes',
+    onError: () => {
+      // El orden ya está guardado en localStorage, así que no es crítico
+    },
+  });
+
+  const deleteComponentMutation = useApiMutation<any, { componentId: number }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/components/${vars.componentId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar el componente');
+      return res.json();
+    },
+    invalidateKeys: machineDetailInvalidateKeys,
+    successMessage: null, // Custom message in onSuccess
+    errorMessage: 'No se pudo eliminar el componente',
+    onSuccess: (result, vars) => {
+      setComponentList(prev => prev.filter(c => Number(c.id) !== Number(vars.componentId)));
+      const message = result.message || 'El componente fue eliminado correctamente.';
+      toast.success(message);
+    },
+  });
+
+  const updateComponentMutation = useApiMutation<any, any>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/components/${componentToEdit?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) throw new Error('Error al actualizar el componente');
+      return res.json();
+    },
+    invalidateKeys: machineDetailInvalidateKeys,
+    successMessage: 'El componente fue actualizado correctamente.',
+    errorMessage: 'No se pudo actualizar el componente',
+    onSuccess: (result) => {
+      const updatedComponent = result.component;
+      log(`🔍 [FRONTEND] Resultado de la API:`, result);
+      log(`🔍 [FRONTEND] Componente actualizado:`, updatedComponent);
+      log(`🔍 [FRONTEND] Tools del componente:`, updatedComponent?.tools);
+
+      setComponentList(prev =>
+        prev.map(c => c.id === componentToEdit?.id ? updatedComponent : c)
+      );
+      setIsEditComponentDialogOpen(false);
+      setComponentToEdit(null);
+      if (machine?.id) {
+        fetchComponents();
+      }
+    },
+  });
+
+  const addComponentMutation = useApiMutation<any, any>({
+    mutationFn: async (vars) => {
+      const payload = { ...vars, machineId: machine?.id };
+      log('🔍 [MACHINE DETAIL] Payload a enviar:', payload);
+      const res = await fetch('/api/components', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      log('🔍 [MACHINE DETAIL] Response status:', res.status);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('🔍 [MACHINE DETAIL] Error response:', errorText);
+        throw new Error(`Error al crear el componente: ${res.status} ${errorText}`);
+      }
+      return res.json();
+    },
+    invalidateKeys: machineDetailInvalidateKeys,
+    successMessage: null, // Custom message in onSuccess
+    errorMessage: 'No se pudo crear el componente',
+    onSuccess: (result) => {
+      const newComponent = result.component;
+      if (!newComponent || !newComponent.id) {
+        toast.error('El componente creado no tiene un ID válido');
+        return;
+      }
+      setComponentList(prev => [...prev, newComponent]);
+      setIsAddComponentDialogOpen(false);
+      const spareMessage = result.spareCreated ? ' y se creó su repuesto automáticamente' : '';
+      toast.success(`El componente fue creado correctamente${spareMessage}.`);
+    },
+    onError: () => {
+      setIsAddComponentDialogOpen(false);
+    },
+  });
+
   // Función para cargar el orden de subcomponentes
   const loadSubcomponentOrder = useCallback(async (parentComponentId: string) => {
     if (!machine?.id) return;
@@ -2434,38 +2553,22 @@ export default function MachineDetailDialog({
   }, [componentList, loadComponentOrder, loadSubcomponentOrder]);
 
   // Función para guardar el orden de componentes en la base de datos
-  const saveComponentOrder = useCallback(async (newOrder: {[key: string]: number}) => {
+  const saveComponentOrder = useCallback((newOrder: {[key: string]: number}) => {
     if (!machine?.id) return;
-    
+
     debugLog('SAVE ORDER', 'Guardando orden:', newOrder);
     setIsSavingOrder(true);
-    
+
     // Guardar en localStorage inmediatamente (solución temporal)
     const localStorageKey = `machine_${machine.id}_component_order`;
     localStorage.setItem(localStorageKey, JSON.stringify(newOrder));
     log('💾 [SAVE ORDER] Orden guardado en localStorage');
-    
-    try {
-      const response = await fetch(`/api/maquinas/${machine.id}/component-order`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ order: newOrder }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al guardar el orden');
-      }
-      
-      log('✅ [SAVE ORDER] Orden de componentes guardado exitosamente en API');
-    } catch (error) {
-      console.error('❌ [SAVE ORDER] Error al guardar el orden de componentes en API:', error);
-      // El orden ya está guardado en localStorage, así que no es crítico
-    } finally {
-      setIsSavingOrder(false);
-    }
-  }, [machine?.id]);
+
+    saveComponentOrderMutation.mutate(
+      { order: newOrder },
+      { onSettled: () => setIsSavingOrder(false) }
+    );
+  }, [machine?.id, saveComponentOrderMutation]);
 
   // Funciones para reordenar componentes (logs reducidos)
   const moveComponentUp = useCallback((componentId: string) => {
@@ -2716,106 +2819,17 @@ export default function MachineDetailDialog({
       variant: 'destructive',
     });
     if (!ok) return;
-    try {
-      const res = await fetch(`/api/components/${componentId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Error al eliminar el componente');
-      
-      const result = await res.json();
-      setComponentList(componentList.filter(c => Number(c.id) !== Number(componentId)));
-      
-      // Mostrar mensaje personalizado si se eliminaron repuestos
-      const message = result.message || 'El componente fue eliminado correctamente.';
-      toast.success(message);
-    } catch (error) {
-      toast.error('No se pudo eliminar el componente');
-    }
+    deleteComponentMutation.mutate({ componentId });
   };
 
-  const handleUpdateComponent = async (data: any) => {
+  const handleUpdateComponent = (data: any) => {
     if (!componentToEdit) return;
-    
-    try {
-      const response = await fetch(`/api/components/${componentToEdit.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) throw new Error('Error al actualizar el componente');
-      
-      // Actualizar la lista de componentes
-      const result = await response.json();
-      const updatedComponent = result.component;
-      
-      log(`🔍 [FRONTEND] Resultado de la API:`, result);
-      log(`🔍 [FRONTEND] Componente actualizado:`, updatedComponent);
-      log(`🔍 [FRONTEND] Tools del componente:`, updatedComponent?.tools);
-      
-      setComponentList(prev => 
-        prev.map(c => c.id === componentToEdit.id ? updatedComponent : c)
-      );
-      
-      setIsEditComponentDialogOpen(false);
-      setComponentToEdit(null);
-      
-      // Refrescar la lista completa de componentes para asegurar que se carguen los tools
-      if (machine?.id) {
-        fetchComponents();
-      }
-      
-      toast.success('El componente fue actualizado correctamente.');
-    } catch (error) {
-      console.error('Error al actualizar componente:', error);
-      toast.error('No se pudo actualizar el componente');
-    }
+    updateComponentMutation.mutate(data);
   };
 
-  const handleAddComponent = async (data: any) => {
+  const handleAddComponent = (data: any) => {
     log('🔍 [MACHINE DETAIL] handleAddComponent llamado con datos:', data);
-    try {
-      const payload = {
-        ...data,
-        machineId: machine?.id,
-      };
-      log('🔍 [MACHINE DETAIL] Payload a enviar:', payload);
-      
-      const response = await fetch('/api/components', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      
-      log('🔍 [MACHINE DETAIL] Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🔍 [MACHINE DETAIL] Error response:', errorText);
-        throw new Error(`Error al crear el componente: ${response.status} ${errorText}`);
-      }
-      
-      const result = await response.json();
-      log('🔍 [MACHINE DETAIL] Result de la API:', result);
-      
-      // La API devuelve { component, spareCreated, tool, vinculationCreated }
-      // Necesitamos extraer solo el componente
-      const newComponent = result.component;
-      
-      if (!newComponent || !newComponent.id) {
-        throw new Error('El componente creado no tiene un ID válido');
-      }
-      
-      // Agregar el nuevo componente a la lista
-      setComponentList(prev => [...prev, newComponent]);
-      setIsAddComponentDialogOpen(false);
-      
-      // Mostrar mensaje de éxito
-      const spareMessage = result.spareCreated ? ' y se creó su repuesto automáticamente' : '';
-      toast.success(`El componente fue creado correctamente${spareMessage}.`);
-    } catch (error) {
-      console.error('Error al crear componente:', error);
-      setIsAddComponentDialogOpen(false);
-      toast.error('No se pudo crear el componente');
-    }
+    addComponentMutation.mutate(data);
   };
 
   const handleDeleteMachine = async (machineToDelete: Machine) => {
@@ -2892,60 +2906,60 @@ export default function MachineDetailDialog({
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col flex-1 overflow-x-hidden">
               <div className="mb-2 flex-shrink-0 px-1 sm:flex sm:justify-center">
                 <TabsList className="relative items-center justify-start text-muted-foreground w-full sm:w-fit gap-0.5 inline-flex h-9 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden">
-                  <TabsTrigger value="overview" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="overview" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <BarChart3 className="h-3.5 w-3.5 shrink-0" />
                     <span>Resumen</span>
                   </TabsTrigger>
-                  <TabsTrigger value="info" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="info" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Info className="h-3.5 w-3.5 shrink-0" />
                     <span>Info</span>
                   </TabsTrigger>
-                  <TabsTrigger value="schema" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="schema" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Network className="h-3.5 w-3.5 shrink-0" />
                     <span>Esquema</span>
                   </TabsTrigger>
-                  <TabsTrigger value="3d-viewer" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="3d-viewer" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Box className="h-3.5 w-3.5 shrink-0" />
                     <span>3D</span>
                   </TabsTrigger>
-                  <TabsTrigger value="maintenance" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="maintenance" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Settings className="h-3.5 w-3.5 shrink-0" />
                     <span>Mantenimiento</span>
                     {headerWorkOrders?.length > 0 ? (
-                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px] bg-info-muted text-info-muted-foreground">
+                      <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs bg-info-muted text-info-muted-foreground">
                         {headerWorkOrders.length}
                       </Badge>
                     ) : null}
                   </TabsTrigger>
-                  <TabsTrigger value="failures" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="failures" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                     <span>Fallas</span>
                     {headerFailures?.length > 0 ? (
-                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px] bg-destructive/10 text-destructive">
+                      <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs bg-destructive/10 text-destructive">
                         {headerFailures.length}
                       </Badge>
                     ) : null}
                   </TabsTrigger>
-                  <TabsTrigger value="solutions" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="solutions" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Lightbulb className="h-3.5 w-3.5 shrink-0" />
                     <span>Soluciones</span>
                   </TabsTrigger>
-                  <TabsTrigger value="components" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="components" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <Wrench className="h-3.5 w-3.5 shrink-0" />
                     <span>Componentes</span>
                     {componentList?.length ? (
-                      <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">
+                      <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs">
                         {componentList.length}
                       </Badge>
                     ) : null}
                   </TabsTrigger>
                   {canViewMachineHistory && (
-                    <TabsTrigger value="history" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                    <TabsTrigger value="history" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                       <History className="h-3.5 w-3.5 shrink-0" />
                       <span>Historial</span>
                     </TabsTrigger>
                   )}
-                  <TabsTrigger value="docs" className="flex items-center gap-1 text-[11px] font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
+                  <TabsTrigger value="docs" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <FileText className="h-3.5 w-3.5 shrink-0" />
                     <span>Documentos</span>
                   </TabsTrigger>
@@ -3041,7 +3055,7 @@ export default function MachineDetailDialog({
                           <>
                             <Button
                               variant="outline"
-                              className="h-7 sm:h-9 text-[10px] sm:text-xs px-2 sm:px-3"
+                              className="h-7 sm:h-9 text-xs px-2 sm:px-3"
                               onClick={() => setIsAIComponentDialogOpen(true)}
                             >
                               <Sparkles className="h-3 w-3 sm:mr-1.5" />
@@ -3050,7 +3064,7 @@ export default function MachineDetailDialog({
                             </Button>
                             <Button
                               variant="outline"
-                              className="h-7 sm:h-9 text-[10px] sm:text-xs px-2 sm:px-3"
+                              className="h-7 sm:h-9 text-xs px-2 sm:px-3"
                               onClick={() => {
                                 log('🔍 [MACHINE DETAIL] Botón "Agregar componente" presionado');
                                 log('🔍 [MACHINE DETAIL] canCreateMachine:', canCreateMachine);
@@ -3132,7 +3146,7 @@ export default function MachineDetailDialog({
                                   }
                                 }}
                                 onFocus={(e) => e.stopPropagation()}
-                                className="absolute top-2 left-2 h-6 w-8 text-center text-[10px] font-medium rounded bg-background/90 backdrop-blur-sm border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                                className="absolute top-2 left-2 h-6 w-8 text-center text-xs font-medium rounded bg-background/90 backdrop-blur-sm border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary"
                                 title="Cambiar posición"
                               />
                               {/* Acciones en esquina derecha */}
@@ -3169,17 +3183,17 @@ export default function MachineDetailDialog({
                             <CardContent className="p-3">
                               <h3 className="text-sm font-semibold text-foreground truncate">{component.name}</h3>
                               <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 px-1.5 py-0">
+                                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 px-1.5 py-0">
                                   {component.parentId === null || component.parentId === undefined ? 'Parte Principal' : getComponentTypeLabel(component.type)}
                                 </Badge>
                                 {component.system && (
-                                  <Badge variant="outline" className="text-[10px] bg-info-muted text-info-muted-foreground border-info-muted px-1.5 py-0">
+                                  <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted px-1.5 py-0">
                                     {getSystemLabel(component.system)}
                                   </Badge>
                                 )}
                               </div>
                               {component.technicalInfo && (
-                                <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1.5">
+                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
                                   {typeof component.technicalInfo === 'string'
                                     ? component.technicalInfo
                                     : ''}
@@ -3187,7 +3201,7 @@ export default function MachineDetailDialog({
                               )}
                               {/* Indicador de subcomponentes */}
                               {component.children && component.children.length > 0 && (
-                                <div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+                                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                                   <Wrench className="h-3 w-3" />
                                   <span>{component.children.length} pieza{component.children.length !== 1 ? 's' : ''}</span>
                                 </div>
@@ -3378,7 +3392,11 @@ export default function MachineDetailDialog({
           isOpen={showPreventiveDialog}
           onClose={() => setShowPreventiveDialog(false)}
           preselectedMachineId={machine.id}
-          onSave={() => setShowPreventiveDialog(false)}
+          onSave={() => {
+            setShowPreventiveDialog(false);
+            queryClient.invalidateQueries({ queryKey: ['preventive-maintenance', 'machine', machine.id] });
+            queryClient.invalidateQueries({ queryKey: ['work-orders', 'machine', machine.id] });
+          }}
         />
       )}
 
@@ -3390,6 +3408,7 @@ export default function MachineDetailDialog({
           preselectedMachineId={machine.id}
           onSave={() => {
             setShowCorrectiveDialog(false);
+            queryClient.invalidateQueries({ queryKey: ['work-orders', 'machine', machine.id] });
           }}
         />
       )}
@@ -3505,6 +3524,34 @@ const FailureDialog: React.FC<{
   const [showSolutionDialog, setShowSolutionDialog] = useState(false);
   const [isSavingFailure, setIsSavingFailure] = useState(false);
   const [isSavingSolution, setIsSavingSolution] = useState(false);
+
+  // ── Mutations: Fallas y Soluciones ──
+  const createFailureMutation = useApiMutation<any, any>({
+    mutationFn: createFetchMutation({ url: '/api/failures', method: 'POST' }),
+    successMessage: null, // Custom messages per usage
+    errorMessage: 'Error al registrar la falla',
+  });
+
+  const saveSolutionMutation = useApiMutation<any, { failureId: number; data: any }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/failures/${vars.failureId}/solution`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars.data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al guardar la solución');
+      }
+      return res.json();
+    },
+    successMessage: 'Solución cargada exitosamente',
+    errorMessage: 'Error al guardar la solución',
+    onSuccess: () => {
+      onSave();
+      onClose();
+    },
+  });
 
   // Funciones para obtener datos del pañol
   const fetchTools = async () => {
@@ -3995,165 +4042,107 @@ const FailureDialog: React.FC<{
   };
 
   // Función para guardar solo la falla (sin solución)
-  const handleSaveFailureOnly = async () => {
-    try {
-      setIsSavingFailure(true);
-      
-      // Preparar datos para enviar a la API (SOLO falla, sin solución)
-      const failureData = {
-        title: formData.title,
-        description: formData.description,
-        machineId: machineId,
-        selectedComponents: formData.selectedComponents,
-        selectedSubcomponents: formData.selectedSubcomponents,
-        failureType: formData.failureType,
-        priority: formData.priority,
-        estimatedHours: formData.estimatedHours,
-        reportedDate: formData.reportedDate,
-        // NO incluir solución en este paso
-        failureAttachments: failureAttachments
-      };
+  const handleSaveFailureOnly = () => {
+    const failureData = {
+      title: formData.title,
+      description: formData.description,
+      machineId: machineId,
+      selectedComponents: formData.selectedComponents,
+      selectedSubcomponents: formData.selectedSubcomponents,
+      failureType: formData.failureType,
+      priority: formData.priority,
+      estimatedHours: formData.estimatedHours,
+      reportedDate: formData.reportedDate,
+      failureAttachments: failureAttachments
+    };
 
-      log('📝 Enviando falla a la API (sin solución):', failureData);
+    log('📝 Enviando falla a la API (sin solución):', failureData);
+    setIsSavingFailure(true);
 
-      const response = await fetch('/api/failures', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(failureData)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
+    createFailureMutation.mutate(failureData, {
+      onSuccess: (result) => {
         log('✅ Falla guardada exitosamente (sin solución):', result);
         toast.success('Falla registrada exitosamente sin solución');
-        onSave(); // Refrescar la lista de fallas
-        onClose(); // Cerrar el modal
-      } else {
-        const error = await response.json();
-        console.error('❌ Error al guardar falla:', error);
-        toast.error('Error al registrar la falla: ' + (error.error || 'Error desconocido'));
-      }
-    } catch (error) {
-      console.error('❌ Error al guardar falla:', error);
-      toast.error('Error al registrar la falla');
-    } finally {
-      setIsSavingFailure(false);
-    }
+        onSave();
+        onClose();
+      },
+      onSettled: () => {
+        setIsSavingFailure(false);
+      },
+    });
   };
 
   // Función para crear falla y abrir modal de solución
-  const handleCreateFailureAndLoadSolution = async () => {
-    try {
-      setIsSavingFailure(true);
-      
-      // Preparar datos para enviar a la API (SOLO falla, sin solución)
-      const failureData = {
-        title: formData.title,
-        description: formData.description,
-        machineId: machineId,
-        selectedComponents: formData.selectedComponents,
-        selectedSubcomponents: formData.selectedSubcomponents,
-        failureType: formData.failureType,
-        priority: formData.priority,
-        estimatedHours: formData.estimatedHours,
-        reportedDate: formData.reportedDate,
-        // NO incluir solución en este paso
-        failureAttachments: failureAttachments
-      };
+  const handleCreateFailureAndLoadSolution = () => {
+    const failureData = {
+      title: formData.title,
+      description: formData.description,
+      machineId: machineId,
+      selectedComponents: formData.selectedComponents,
+      selectedSubcomponents: formData.selectedSubcomponents,
+      failureType: formData.failureType,
+      priority: formData.priority,
+      estimatedHours: formData.estimatedHours,
+      reportedDate: formData.reportedDate,
+      failureAttachments: failureAttachments
+    };
 
-      log('📝 Enviando falla a la API para luego cargar solución:', failureData);
+    log('📝 Enviando falla a la API para luego cargar solución:', failureData);
+    setIsSavingFailure(true);
 
-      const response = await fetch('/api/failures', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(failureData)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
+    createFailureMutation.mutate(failureData, {
+      onSuccess: (result) => {
         log('✅ Falla creada exitosamente, abriendo modal de solución:', result);
-        
-        // IMPORTANTE: Establecer el failureId ANTES de abrir el modal
+
         const newFailureId = result.id || result.failure?.id;
         log('🔍 ID de falla obtenido:', newFailureId);
         log('🔍 Resultado completo de la API:', result);
-        
-        setFailureId(newFailureId); // Guardar el ID de la falla creada
-        
-        // Verificar que el ID se estableció correctamente
+
+        setFailureId(newFailureId);
+
         setTimeout(() => {
           log('🔍 failureId después de setState:', newFailureId);
           if (newFailureId) {
             toast.success('Falla creada exitosamente. Ahora carga la solución.');
-            // Abrir directamente el modal de solución
             setShowSolutionDialog(true);
           } else {
             toast.error('Error: No se pudo obtener el ID de la falla');
           }
         }, 100);
-      } else {
-        const error = await response.json();
-        console.error('❌ Error al crear falla:', error);
-        toast.error('Error al crear la falla: ' + (error.error || 'Error desconocido'));
-      }
-    } catch (error) {
-      console.error('❌ Error al crear falla:', error);
-      toast.error('Error al crear la falla');
-    } finally {
-      setIsSavingFailure(false);
-    }
+      },
+      onSettled: () => {
+        setIsSavingFailure(false);
+      },
+    });
   };
 
   // Nueva función para guardar la solución
-  const handleSaveSolution = async () => {
+  const handleSaveSolution = () => {
     if (!failureId) {
       toast.error('No hay una falla guardada para agregar la solución');
       return;
     }
 
-    try {
-      setIsSavingSolution(true);
-      
-      const solutionData = {
-        failureId: failureId,
-        solution: formData.solution,
-        toolsUsed: formData.toolsUsed,
-        sparePartsUsed: formData.sparePartsUsed,
-        actualHours: formData.actualHours,
-        solutionAttachments: solutionAttachments
-      };
+    const solutionData = {
+      failureId: failureId,
+      solution: formData.solution,
+      toolsUsed: formData.toolsUsed,
+      sparePartsUsed: formData.sparePartsUsed,
+      actualHours: formData.actualHours,
+      solutionAttachments: solutionAttachments
+    };
 
-      log('📝 Enviando solución a la API:', solutionData);
+    log('📝 Enviando solución a la API:', solutionData);
+    setIsSavingSolution(true);
 
-      const response = await fetch(`/api/failures/${failureId}/solution`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+    saveSolutionMutation.mutate(
+      { failureId, data: solutionData },
+      {
+        onSettled: () => {
+          setIsSavingSolution(false);
         },
-        body: JSON.stringify(solutionData)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        log('✅ Solución guardada exitosamente:', result);
-        toast.success('Solución cargada exitosamente');
-        onSave(); // Refrescar la lista de fallas
-        onClose(); // Cerrar el modal
-      } else {
-        const error = await response.json();
-        console.error('❌ Error al guardar solución:', error);
-        toast.error('Error al guardar la solución: ' + (error.error || 'Error desconocido'));
       }
-    } catch (error) {
-      console.error('❌ Error al guardar solución:', error);
-      toast.error('Error al guardar la solución');
-    } finally {
-      setIsSavingSolution(false);
-    }
+    );
   };
 
   return (
@@ -4829,7 +4818,7 @@ const FailureDialog: React.FC<{
           
           <div className="space-y-6">
             {/* Estadísticas rápidas */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="bg-background border-border">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -5361,7 +5350,7 @@ const FailureDialog: React.FC<{
           <div className="text-sm text-muted-foreground">
             {viewingFile && (
               <span>
-                Tamaño: {(viewingFile.size / 1024 / 1024).toFixed(2)} MB • 
+                Tamaño: {formatNumber(viewingFile.size / 1024 / 1024, 2)} MB • 
                 Tipo: {viewingFile.type}
               </span>
             )}
@@ -5718,6 +5707,30 @@ const FailureDetailModal: React.FC<{
     }
   };
 
+  const deleteFailureDocumentMutation = useApiMutation<any, { document: any }>({
+    mutationFn: async (vars) => {
+      const url = vars.document.id
+        ? `/api/failures/${failure.id}/attachments/${vars.document.id}`
+        : `/api/upload/delete?url=${encodeURIComponent(vars.document.url)}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al eliminar el documento');
+      }
+      return res.json();
+    },
+    successMessage: 'Documento eliminado correctamente',
+    errorMessage: 'Error al eliminar el documento',
+    onSuccess: () => {
+      handleCloseDocumentViewer();
+      if (onRefresh) {
+        onRefresh();
+      } else {
+        onClose();
+      }
+    },
+  });
+
   const handleDeleteDocument = async (document: any) => {
     const ok = await confirm({
       title: 'Eliminar documento',
@@ -5727,43 +5740,8 @@ const FailureDetailModal: React.FC<{
     });
     if (!ok) return;
 
-    try {
-      log('Eliminando documento:', document);
-      
-      let response;
-      
-      // Si el documento tiene ID, usar la nueva API específica para attachments
-      if (document.id) {
-        response = await fetch(`/api/failures/${failure.id}/attachments/${document.id}`, {
-          method: 'DELETE'
-        });
-      } else {
-        // Fallback: usar la API genérica de eliminación de archivos
-        response = await fetch(`/api/upload/delete?url=${encodeURIComponent(document.url)}`, {
-          method: 'DELETE'
-        });
-      }
-
-      if (response.ok) {
-        toast.success('Documento eliminado correctamente');
-        handleCloseDocumentViewer();
-        
-        // Refrescar los datos de la falla para actualizar la lista de documentos
-        if (onRefresh) {
-          onRefresh();
-        } else {
-          // Fallback: cerrar el modal principal para forzar un refresh
-          onClose();
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error('Error al eliminar el documento: ' + (errorData.error || 'Error desconocido'));
-      }
-      
-    } catch (error) {
-      console.error('Error al eliminar documento:', error);
-      toast.error('Error al eliminar el documento');
-    }
+    log('Eliminando documento:', document);
+    deleteFailureDocumentMutation.mutate({ document });
   };
 
   return (
@@ -5883,7 +5861,7 @@ const FailureDetailModal: React.FC<{
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-foreground">Última vez</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{getLastOccurrenceDate().toLocaleDateString('es-ES')}</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(getLastOccurrenceDate())}</p>
                 </div>
 
                 <div className="bg-muted/30 border rounded-lg p-3">
@@ -5927,7 +5905,7 @@ const FailureDetailModal: React.FC<{
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
-                            {new Date(failure.reportedDate).toLocaleDateString('es-ES')} - {new Date(failure.reportedDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                            {formatDate(failure.reportedDate)} - {formatTime(failure.reportedDate)}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -5942,7 +5920,7 @@ const FailureDetailModal: React.FC<{
                           <div className="flex items-center gap-2">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">
-                              {new Date(occurrence.reportedAt).toLocaleDateString('es-ES')} - {new Date(occurrence.reportedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                              {formatDate(occurrence.reportedAt)} - {formatTime(occurrence.reportedAt)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
@@ -6053,7 +6031,7 @@ const FailureDetailModal: React.FC<{
                               Mantenimiento Correctivo #{index + 1}
                             </h4>
                             <div className="text-xs text-muted-foreground mb-2">
-                              Aplicado el {new Date(solution.completedDate).toLocaleDateString()} por {solution.appliedBy || 'No especificado'}
+                              Aplicado el {formatDate(solution.completedDate)} por {solution.appliedBy || 'No especificado'}
                             </div>
                           </div>
                         </div>
@@ -7176,7 +7154,7 @@ const ComponentSelectionModal: React.FC<{
 
         <div className="space-y-6">
           {/* Estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="rounded-lg border text-card-foreground shadow-sm bg-background border-border">
               <div className="p-4">
                 <div className="flex items-center justify-between">

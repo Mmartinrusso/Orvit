@@ -201,7 +201,8 @@ export async function POST(request: NextRequest) {
         garantiaHasta: data.garantiaHasta ? new Date(data.garantiaHasta) : null,
         combustible: data.combustible || '',
         capacidadCombustible: data.capacidadCombustible || null,
-        consumoPromedio: data.consumoPromedio || null
+        consumoPromedio: data.consumoPromedio || null,
+        kmUpdateFrequencyDays: data.kmUpdateFrequencyDays || null
       },
       include: {
         sector: {

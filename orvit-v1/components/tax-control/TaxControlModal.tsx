@@ -592,7 +592,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
             {/* Pestaña 1: Impuestos */}
             <TabsContent value="bases" className="space-y-4">
               {/* Resumen */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="border-l-4 border-l-info">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total General</CardTitle>
@@ -661,7 +661,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                     Bases de Impuestos
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    {loading ? 'Cargando...' : `${taxBases.length} base${taxBases.length !== 1 ? 's' : ''} de impuesto${taxBases.length !== 1 ? 's' : ''} configurada${taxBases.length !== 1 ? 's' : ''}`}
+                    {loading ? 'Cargando impuestos...' : `${taxBases.length} base${taxBases.length !== 1 ? 's' : ''} de impuesto${taxBases.length !== 1 ? 's' : ''} configurada${taxBases.length !== 1 ? 's' : ''}`}
                   </CardDescription>
                 </div>
                 {taxBases.length > 0 && !loading && (
@@ -1045,7 +1045,7 @@ export default function TaxControlModal({ isOpen, onClose, openCreateBaseDialog 
                 </CardHeader>
                 <CardContent>
                   {/* Resumen de Estados */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <Card className="border-l-4 border-l-muted-foreground">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Pendientes</CardTitle>

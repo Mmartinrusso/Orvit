@@ -19,8 +19,8 @@ import {
   Edit3,
   Loader2
 } from 'lucide-react';
-import { useChecklistInstructives, ChecklistInstructive } from '@/hooks/maintenance/use-checklist-instructives';
-import { useUpsertChecklistInstructives } from '@/hooks/maintenance/use-upsert-checklist-instructives';
+import { useChecklistInstructives, ChecklistInstructive } from '@/hooks/mantenimiento/use-checklist-instructives';
+import { useUpsertChecklistInstructives } from '@/hooks/mantenimiento/use-upsert-checklist-instructives';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChecklistInstructivesTabProps {

@@ -323,6 +323,7 @@ export function FailureQuickReportDialog({
       queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
       queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       queryClient.invalidateQueries({ queryKey: ['failure-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
       queryClient.invalidateQueries({ queryKey: ['work-orders'] });
 
       // Si fue vinculado a existente

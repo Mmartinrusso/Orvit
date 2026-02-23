@@ -31,7 +31,7 @@ import {
 import { Search, RefreshCw, AlertTriangle, Package, ArrowUpRight } from 'lucide-react';
 import { useInventario, useWarehouses, type InventarioFilters } from '../hooks';
 import { EmptyState } from '../shared/EmptyState';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface PreselectedItem {
   supplierItemId: number;
@@ -197,19 +197,19 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
                     </TableCell>
                     <TableCell>{item.warehouse?.nombre || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {item.stockActual?.toFixed(2) || '0.00'} {item.supplierItem?.unidad}
+                      {formatNumber(item.stockActual, 2)} {item.supplierItem?.unidad}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {item.stockReservado?.toFixed(2) || '0.00'}
+                      {formatNumber(item.stockReservado, 2)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {item.stockDisponible?.toFixed(2) || '0.00'}
+                      {formatNumber(item.stockDisponible, 2)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {item.stockMinimo?.toFixed(2) || '0.00'}
+                      {formatNumber(item.stockMinimo, 2)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {item.stockReorden?.toFixed(2) || '0.00'}
+                      {formatNumber(item.stockReorden, 2)}
                     </TableCell>
                     <TableCell>
                       <StockStatusBadge item={item} />

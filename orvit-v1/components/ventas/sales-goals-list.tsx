@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -241,7 +241,7 @@ export function SalesGoalsList() {
     <div className="space-y-4">
       {/* Stats Cards */}
       {summary && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Metas</CardTitle>
@@ -271,7 +271,7 @@ export function SalesGoalsList() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-info-muted-foreground">
-                {summary.cumplimientoPromedio.toFixed(1)}%
+                {formatNumber(summary.cumplimientoPromedio, 1)}%
               </div>
             </CardContent>
           </Card>
@@ -433,7 +433,7 @@ export function SalesGoalsList() {
                         <div className="space-y-1 min-w-[200px]">
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium">
-                              {cumplimiento.toFixed(1)}%
+                              {formatNumber(cumplimiento, 1)}%
                             </span>
                             <span className="text-muted-foreground">
                               {goal.tipo.includes('MONTO') || goal.tipo === 'COBRANZAS'

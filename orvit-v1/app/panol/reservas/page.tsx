@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -155,15 +156,9 @@ function getPriorityBadge(priority: string) {
   return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>;
 }
 
-function formatDate(dateString: string | null): string {
+function formatDateLocal(dateString: string | null): string {
   if (!dateString) return '-';
-  return new Date(dateString).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return formatDateTime(dateString) || '-';
 }
 
 export default function ReservasPage() {
@@ -253,7 +248,7 @@ export default function ReservasPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
@@ -385,7 +380,7 @@ export default function ReservasPage() {
                       {getStatusBadge(reservation.status)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(reservation.reservedAt)}
+                      {formatDateLocal(reservation.reservedAt)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -506,12 +501,12 @@ export default function ReservasPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Reservado</p>
-                  <p className="font-medium">{formatDate(selectedReservation.reservedAt)}</p>
+                  <p className="font-medium">{formatDateLocal(selectedReservation.reservedAt)}</p>
                 </div>
                 {selectedReservation.pickedAt && (
                   <div>
                     <p className="text-sm text-muted-foreground">Retirado</p>
-                    <p className="font-medium">{formatDate(selectedReservation.pickedAt)}</p>
+                    <p className="font-medium">{formatDateLocal(selectedReservation.pickedAt)}</p>
                     {selectedReservation.pickedBy && (
                       <p className="text-xs text-muted-foreground">por {selectedReservation.pickedBy.name}</p>
                     )}
@@ -520,7 +515,7 @@ export default function ReservasPage() {
                 {selectedReservation.returnedAt && (
                   <div>
                     <p className="text-sm text-muted-foreground">Devuelto</p>
-                    <p className="font-medium">{formatDate(selectedReservation.returnedAt)}</p>
+                    <p className="font-medium">{formatDateLocal(selectedReservation.returnedAt)}</p>
                     {selectedReservation.returnedBy && (
                       <p className="text-xs text-muted-foreground">por {selectedReservation.returnedBy.name}</p>
                     )}

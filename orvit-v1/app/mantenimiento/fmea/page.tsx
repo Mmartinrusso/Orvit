@@ -88,13 +88,13 @@ export default function FMEAPage() {
 
       {/* Summary Cards */}
       {summaryLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
       ) : summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">

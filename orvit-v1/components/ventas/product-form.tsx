@@ -44,6 +44,7 @@ const productSchema = z.object({
   location: z.string().min(1, 'La ubicación es requerida'),
   blocksPerM2: z.number().min(0, 'La cantidad debe ser mayor a 0').optional(),
   isActive: z.boolean(),
+  aplicaComision: z.boolean(),
   productionWorkCenterId: z.number().nullable().optional(),
   productionSectorId: z.number().nullable().optional(),
 });
@@ -89,6 +90,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
       location: product?.location || '',
       blocksPerM2: product?.blocksPerM2 || undefined,
       isActive: product?.isActive ?? true,
+      aplicaComision: (product as any)?.aplicaComision ?? true,
       productionWorkCenterId: (product as any)?.productionWorkCenterId || null,
       productionSectorId: (product as any)?.productionSectorId || null,
     }
@@ -96,6 +98,7 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
 
   const watchedCategoryId = watch('categoryId');
   const watchedActive = watch('isActive');
+  const watchedAplicaComision = watch('aplicaComision');
   const watchedWorkCenterId = watch('productionWorkCenterId');
   const watchedSectorId = watch('productionSectorId');
 
@@ -377,6 +380,20 @@ export function ProductForm({ product, isEditing = false }: ProductFormProps) {
                 onCheckedChange={(checked) => setValue('isActive', checked)}
               />
               <Label htmlFor="active">Producto activo</Label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div>
+                <p className="text-sm font-medium">Aplica comisión al vendedor</p>
+                <p className="text-xs text-muted-foreground">
+                  Si está desactivado, este producto no cuenta para el cálculo de comisiones
+                </p>
+              </div>
+              <Switch
+                id="aplicaComision"
+                checked={watchedAplicaComision}
+                onCheckedChange={(checked) => setValue('aplicaComision', checked)}
+              />
             </div>
 
             <Separator className="my-4" />

@@ -11,72 +11,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { getDiscordClient, connectBot, isBotReady, listGuilds } from '@/lib/discord/bot';
+import {
+  manageBotChannels,
+  checkChannelAccessViaBotService,
+} from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
-
-// Cargar discord.js dinámicamente para evitar problemas con webpack
-let discordModule: any = null;
-async function loadDiscordModule() {
-  if (!discordModule) {
-    // @ts-ignore
-    discordModule = await import(/* webpackIgnore: true */ 'discord.js');
-  }
-  return discordModule;
-}
-
-/**
- * Auto-conecta el bot si no está conectado
- */
-async function ensureBotConnected(): Promise<boolean> {
-  if (isBotReady()) return true;
-
-  try {
-    const company = await prisma.company.findFirst({
-      where: { discordBotToken: { not: null } },
-      select: { discordBotToken: true }
-    });
-
-    if (!company?.discordBotToken) {
-      return false;
-    }
-
-    const result = await connectBot(company.discordBotToken);
-    return result.success;
-  } catch (error) {
-    console.error('Error auto-conectando bot:', error);
-    return false;
-  }
-}
-
-/**
- * Verifica si un usuario puede ver un canal específico en Discord
- */
-async function canUserViewChannel(
-  guildId: string,
-  channelId: string,
-  discordUserId: string
-): Promise<boolean> {
-  try {
-    const discord = await loadDiscordModule();
-    const client = await getDiscordClient();
-    const guild = await client.guilds.fetch(guildId);
-    const channel = await guild.channels.fetch(channelId);
-
-    if (!channel) return false;
-
-    // Obtener el miembro
-    const member = await guild.members.fetch(discordUserId).catch(() => null);
-    if (!member) return false;
-
-    // Verificar permisos
-    const permissions = channel.permissionsFor(member);
-    return permissions?.has(discord.PermissionFlagsBits.ViewChannel) ?? false;
-  } catch (error) {
-    console.error(`Error verificando permisos para canal ${channelId}:`, error);
-    return false;
-  }
-}
 
 /**
  * POST /api/discord/sync-from-discord
@@ -111,9 +51,9 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findFirst({
       where: {
         id: userId,
-        companies: { some: { companyId } }
+        companies: { some: { companyId } },
       },
-      select: { id: true, discordUserId: true, name: true }
+      select: { id: true, discordUserId: true, name: true },
     });
 
     if (!user) {
@@ -127,26 +67,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Conectar bot primero (necesitamos el bot para obtener el guildId si no existe)
-    const connected = await ensureBotConnected();
-    if (!connected) {
-      return NextResponse.json(
-        { error: 'No se pudo conectar el bot de Discord' },
-        { status: 500 }
-      );
-    }
-
     // Obtener la empresa con su servidor de Discord
     let company = await prisma.company.findUnique({
       where: { id: companyId },
-      select: { discordGuildId: true }
+      select: { discordGuildId: true },
     });
 
     let guildId = company?.discordGuildId;
 
     // Si no tiene guildId configurado, intentar auto-detectar desde el bot
     if (!guildId) {
-      const guilds = listGuilds();
+      const guildsResult = await manageBotChannels('getGuilds', {});
+      const guilds = guildsResult.guilds || [];
+
       if (guilds.length === 0) {
         return NextResponse.json(
           { error: 'El bot no está en ningún servidor de Discord' },
@@ -154,14 +87,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Usar el primer servidor (o el único)
       guildId = guilds[0].id;
       console.log(`Auto-detectado servidor de Discord: ${guilds[0].name} (${guildId})`);
 
-      // Guardar el guildId en la empresa para futuras operaciones
       await prisma.company.update({
         where: { id: companyId },
-        data: { discordGuildId: guildId }
+        data: { discordGuildId: guildId },
       });
     }
 
@@ -169,7 +100,7 @@ export async function POST(request: NextRequest) {
     const sectors = await prisma.sector.findMany({
       where: {
         companyId,
-        discordCategoryId: { not: null }
+        discordCategoryId: { not: null },
       },
       select: {
         id: true,
@@ -179,7 +110,7 @@ export async function POST(request: NextRequest) {
         discordPreventivosChannelId: true,
         discordOTChannelId: true,
         discordGeneralChannelId: true,
-      }
+      },
     });
 
     const results: {
@@ -197,36 +128,47 @@ export async function POST(request: NextRequest) {
     let updated = 0;
 
     for (const sector of sectors) {
-      // Verificar permisos en cada canal
+      // Collect all channel IDs for this sector
+      const channelIds: string[] = [];
+      if (sector.discordFallasChannelId) channelIds.push(sector.discordFallasChannelId);
+      if (sector.discordPreventivosChannelId) channelIds.push(sector.discordPreventivosChannelId);
+      if (sector.discordOTChannelId) channelIds.push(sector.discordOTChannelId);
+      if (sector.discordGeneralChannelId) channelIds.push(sector.discordGeneralChannelId);
+
+      if (channelIds.length === 0) continue;
+
+      // Check access via bot service (single call per sector)
+      const accessResult = await checkChannelAccessViaBotService(
+        guildId,
+        user.discordUserId,
+        channelIds
+      );
+
+      const access = accessResult.access || {};
+
       const canViewFallas = sector.discordFallasChannelId
-        ? await canUserViewChannel(guildId, sector.discordFallasChannelId, user.discordUserId)
+        ? (access[sector.discordFallasChannelId] ?? false)
         : false;
-
       const canViewPreventivos = sector.discordPreventivosChannelId
-        ? await canUserViewChannel(guildId, sector.discordPreventivosChannelId, user.discordUserId)
+        ? (access[sector.discordPreventivosChannelId] ?? false)
         : false;
-
       const canViewOT = sector.discordOTChannelId
-        ? await canUserViewChannel(guildId, sector.discordOTChannelId, user.discordUserId)
+        ? (access[sector.discordOTChannelId] ?? false)
         : false;
-
       const canViewGeneral = sector.discordGeneralChannelId
-        ? await canUserViewChannel(guildId, sector.discordGeneralChannelId, user.discordUserId)
+        ? (access[sector.discordGeneralChannelId] ?? false)
         : false;
 
-      // Si tiene acceso a al menos un canal, crear/actualizar el registro
       const hasAnyAccess = canViewFallas || canViewPreventivos || canViewOT || canViewGeneral;
 
       if (hasAnyAccess) {
-        // Verificar si ya existe el acceso
         const existingAccess = await prisma.userDiscordAccess.findUnique({
           where: {
-            userId_sectorId: { userId, sectorId: sector.id }
-          }
+            userId_sectorId: { userId, sectorId: sector.id },
+          },
         });
 
         if (existingAccess) {
-          // Actualizar permisos existentes
           await prisma.userDiscordAccess.update({
             where: { id: existingAccess.id },
             data: {
@@ -234,11 +176,10 @@ export async function POST(request: NextRequest) {
               canViewPreventivos,
               canViewOT,
               canViewGeneral,
-            }
+            },
           });
           updated++;
         } else {
-          // Crear nuevo acceso
           await prisma.userDiscordAccess.create({
             data: {
               userId,
@@ -248,7 +189,7 @@ export async function POST(request: NextRequest) {
               canViewPreventivos,
               canViewOT,
               canViewGeneral,
-            }
+            },
           });
           created++;
         }
@@ -261,7 +202,7 @@ export async function POST(request: NextRequest) {
             preventivos: canViewPreventivos,
             ot: canViewOT,
             general: canViewGeneral,
-          }
+          },
         });
       }
     }
@@ -271,7 +212,7 @@ export async function POST(request: NextRequest) {
       message: `Sincronizado: ${created} nuevos, ${updated} actualizados`,
       created,
       updated,
-      details: results
+      details: results,
     });
   } catch (error: any) {
     console.error('Error en POST /api/discord/sync-from-discord:', error);

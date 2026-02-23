@@ -46,8 +46,7 @@ import {
  TrendingDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface AdjustmentItem {
  id: number;
@@ -295,7 +294,7 @@ export function AdjustmentDetailModal({
  <Calendar className="h-4 w-4" />
  <span className="font-medium">Fecha:</span>
  <span className="text-foreground">
- {format(new Date(adjustment.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+ {formatDateTime(adjustment.createdAt)}
  </span>
  </div>
  {adjustment.reasonCode && (

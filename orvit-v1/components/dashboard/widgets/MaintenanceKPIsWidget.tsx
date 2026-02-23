@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Timer, Activity, Target, CheckCircle2 } from 'lucide-react';
@@ -30,28 +31,28 @@ export function MaintenanceKPIsWidget({ companyId, sectorId, style = 'stat-card'
     {
       label: 'MTTR',
       value: data?.avgMTTR || 0,
-      displayValue: `${data?.avgMTTR?.toFixed(1) || '0'}h`,
+      displayValue: `${data?.avgMTTR != null ? formatNumber(data.avgMTTR, 1) : '0'}h`,
       icon: <Timer className="h-4 w-4 text-warning-muted-foreground" />,
       color: 'hsl(var(--chart-5))',
     },
     {
       label: 'MTBF',
       value: data?.avgMTBF || 0,
-      displayValue: `${data?.avgMTBF?.toFixed(0) || '0'}h`,
+      displayValue: `${data?.avgMTBF != null ? formatNumber(data.avgMTBF) : '0'}h`,
       icon: <Activity className="h-4 w-4 text-info-muted-foreground" />,
       color: 'hsl(var(--chart-1))',
     },
     {
       label: 'Disponibilidad',
       value: data?.uptime || 0,
-      displayValue: `${data?.uptime?.toFixed(1) || '0'}%`,
+      displayValue: `${data?.uptime != null ? formatNumber(data.uptime, 1) : '0'}%`,
       icon: <Target className="h-4 w-4 text-info-muted-foreground" />,
       color: 'hsl(var(--primary))',
     },
     {
       label: 'Completitud',
       value: data?.completionRate || 0,
-      displayValue: `${data?.completionRate?.toFixed(1) || '0'}%`,
+      displayValue: `${data?.completionRate != null ? formatNumber(data.completionRate, 1) : '0'}%`,
       icon: <CheckCircle2 className="h-4 w-4 text-success" />,
       color: 'hsl(var(--success))',
     },

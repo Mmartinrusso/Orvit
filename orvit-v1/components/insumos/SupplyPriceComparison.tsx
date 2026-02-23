@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -243,7 +243,7 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
 
       {/* Estadísticas de comparación */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cambio Total</CardTitle>
@@ -254,7 +254,7 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
                 {stats.totalChange >= 0 ? '+' : ''}{formatCurrency(stats.totalChange)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats.totalPercentageChange >= 0 ? '+' : ''}{stats.totalPercentageChange.toFixed(1)}%
+                {stats.totalPercentageChange >= 0 ? '+' : ''}{formatNumber(stats.totalPercentageChange, 1)}%
               </p>
             </CardContent>
           </Card>
@@ -426,7 +426,7 @@ export function SupplyPriceComparison({ supplyName, unitMeasure, priceRecords }:
                     <td className="p-2">
                       {index > 0 && (
                         <Badge variant={data.percentageChange > 0 ? 'default' : data.percentageChange < 0 ? 'destructive' : 'secondary'}>
-                          {data.percentageChange > 0 ? '+' : ''}{data.percentageChange.toFixed(1)}%
+                          {data.percentageChange > 0 ? '+' : ''}{formatNumber(data.percentageChange, 1)}%
                         </Badge>
                       )}
                     </td>

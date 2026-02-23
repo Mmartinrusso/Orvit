@@ -901,7 +901,7 @@ export default function DesignSystemPage() {
                 <CardTitle>Tamaños</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3 items-center">
-                <Badge className="px-1.5 py-0.5 text-[10px]">Extra Small</Badge>
+                <Badge className="px-1.5 py-0.5 text-xs">Extra Small</Badge>
                 <Badge className="px-2 py-0.5 text-xs">Small (default)</Badge>
                 <Badge className="px-2.5 py-1 text-sm">Medium</Badge>
                 <Badge className="px-3 py-1.5 text-base">Large</Badge>

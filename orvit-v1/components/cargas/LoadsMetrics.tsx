@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { DEFAULT_COLORS } from '@/lib/colors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,14 +60,14 @@ export default function LoadsMetrics({ loads, className, userColors = DEFAULT_CO
     },
     {
       title: 'Prom. Items/Carga',
-      value: metrics.avgItemsPerLoad.toFixed(1),
+      value: formatNumber(metrics.avgItemsPerLoad, 1),
       subtitle: 'por carga',
       icon: TrendingUp,
       color: userColors.chart2,
     },
     {
       title: 'Peso Total Mes',
-      value: `${metrics.totalWeightThisMonth.toFixed(1)} Tn`,
+      value: `${formatNumber(metrics.totalWeightThisMonth, 1)} Tn`,
       subtitle: 'toneladas',
       icon: Weight,
       color: userColors.chart4,

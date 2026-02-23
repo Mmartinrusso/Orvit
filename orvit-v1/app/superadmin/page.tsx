@@ -105,8 +105,6 @@ export default function SuperAdminDashboard() {
       value: stats?.totalCompanies || 0,
       subtitle: `${stats?.activeCompanies || 0} activas`,
       icon: Building2,
-      color: 'text-info-muted-foreground',
-      bgColor: 'bg-info/10',
       href: '/superadmin/companies',
     },
     {
@@ -114,8 +112,6 @@ export default function SuperAdminDashboard() {
       value: stats?.totalModules || 0,
       subtitle: `${stats?.activeModules || 0} activos`,
       icon: Puzzle,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
       href: '/superadmin/modules',
     },
     {
@@ -123,8 +119,6 @@ export default function SuperAdminDashboard() {
       value: stats?.totalUsers || 0,
       subtitle: 'En todas las empresas',
       icon: Users,
-      color: 'text-success',
-      bgColor: 'bg-success/10',
       href: '/superadmin/users',
     },
     {
@@ -132,8 +126,6 @@ export default function SuperAdminDashboard() {
       value: stats?.totalTemplates || 0,
       subtitle: 'Presets disponibles',
       icon: FileStack,
-      color: 'text-warning-muted-foreground',
-      bgColor: 'bg-warning/10',
       href: '/superadmin/templates',
     },
   ];
@@ -185,16 +177,16 @@ export default function SuperAdminDashboard() {
           const Icon = stat.icon;
           return (
             <Link key={stat.title} href={stat.href}>
-              <Card className="hover:border-primary/50 transition-all cursor-pointer group">
-                <CardContent className="pt-6">
+              <Card className="hover:border-primary/50 transition-all cursor-pointer">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">{stat.title}</p>
-                      <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{stat.title}</p>
+                      <p className="text-2xl font-bold mt-1">{stat.value}</p>
                       <p className="text-xs text-muted-foreground/70 mt-1">{stat.subtitle}</p>
                     </div>
-                    <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    <div className="p-2 rounded-lg bg-muted">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                 </CardContent>

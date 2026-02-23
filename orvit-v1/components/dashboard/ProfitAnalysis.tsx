@@ -182,7 +182,7 @@ export const ProfitAnalysis = memo(function ProfitAnalysis({ products, totalReve
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground w-10 text-right">
-                        {percentage.toFixed(0)}%
+                        {formatNumber(percentage, 0)}%
                       </span>
                     </div>
                   );

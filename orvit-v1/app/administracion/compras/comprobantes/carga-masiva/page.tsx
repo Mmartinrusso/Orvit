@@ -1471,7 +1471,7 @@ export default function CargaMasivaPage() {
                                 </Select>
                               ) : (
                                 <span className="text-xs text-muted-foreground italic">
-                                  {loadingSupplierItems === supplierId ? 'Cargando...' : 'Sin productos configurados'}
+                                  {loadingSupplierItems === supplierId ? 'Cargando artículos...' : 'Sin productos configurados'}
                                 </span>
                               )}
                             </TableCell>

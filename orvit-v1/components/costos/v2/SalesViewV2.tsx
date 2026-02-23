@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,7 +67,7 @@ interface SalesViewV2Props {
 const formatCurrency = (value: number): string =>
   value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-const formatPercent = (value: number): string => value.toFixed(1) + '%';
+const formatPercent = (value: number): string => formatNumber(value, 1) + '%';
 
 function Sparkline({ data, color, height = 40 }: { data: { value: number }[]; color: string; height?: number }) {
   if (data.length < 2) {
@@ -732,7 +733,7 @@ export function SalesViewV2({
                   { label: 'Ingresos', metric: trendMetrics.revenue, color: userColors.kpiPositive, formatted: `$${formatCurrency(trendMetrics.revenue.value)}`, positiveIsGood: true },
                   { label: 'COGS', metric: trendMetrics.cost, color: userColors.kpiNegative, formatted: `$${formatCurrency(trendMetrics.cost.value)}`, positiveIsGood: false },
                   { label: 'Margen Bruto', metric: trendMetrics.margin, color: userColors.chart1, formatted: `$${formatCurrency(trendMetrics.margin.value)}`, positiveIsGood: true },
-                  { label: '% Margen', metric: trendMetrics.marginPct, color: userColors.chart2, formatted: `${trendMetrics.marginPct.value.toFixed(1)}%`, positiveIsGood: true },
+                  { label: '% Margen', metric: trendMetrics.marginPct, color: userColors.chart2, formatted: `${formatNumber(trendMetrics.marginPct.value, 1)}%`, positiveIsGood: true },
                   { label: 'Ticket Prom.', metric: trendMetrics.ticket, color: userColors.chart6, formatted: `$${formatCurrency(trendMetrics.ticket.value)}`, positiveIsGood: true },
                 ].map(t => {
                   const isPositiveDelta = t.metric.delta >= 0;
@@ -749,7 +750,7 @@ export function SalesViewV2({
                           {isPositiveDelta
                             ? <TrendingUp className="h-3 w-3" />
                             : <TrendingDown className="h-3 w-3" />}
-                          {isPositiveDelta ? '+' : ''}{t.metric.delta.toFixed(1)}%
+                          {isPositiveDelta ? '+' : ''}{formatNumber(t.metric.delta, 1)}%
                         </p>
                       </CardContent>
                     </Card>
@@ -864,7 +865,7 @@ export function SalesViewV2({
                                   />
                                 </div>
                                 <span className="text-xs text-muted-foreground w-10 text-right">
-                                  {pct.toFixed(1)}%
+                                  {formatNumber(pct, 1)}%
                                 </span>
                               </div>
                             </TableCell>
@@ -944,7 +945,7 @@ export function SalesViewV2({
                                   />
                                 </div>
                                 <span className="text-xs text-muted-foreground w-10 text-right">
-                                  {pct.toFixed(1)}%
+                                  {formatNumber(pct, 1)}%
                                 </span>
                               </div>
                             </TableCell>

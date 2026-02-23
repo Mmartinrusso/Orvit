@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
@@ -246,6 +246,12 @@ export default function ComprobanteFormModal({
  });
  const [cuentaSearch, setCuentaSearch] = useState('');
  const [iva21Manual, setIva21Manual] = useState(false);
+ // Buffer de tipeo para campos monetarios — evita que formatMoney interfiera mientras se tipea
+ const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
+ const startRawEdit = (id: string, raw: string) =>
+   setRawInputs(prev => ({ ...prev, [id]: raw }));
+ const stopRawEdit = (id: string) =>
+   setRawInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
 
  // Estado para Conceptos del Gasto Indirecto
  const [conceptos, setConceptos] = useState<Array<{ id: string; descripcion: string; monto: string }>>([]);
@@ -852,9 +858,9 @@ export default function ComprobanteFormModal({
  const neto = subtotalItems;
  
  const iva21 = shouldUseManualIva
- ? (parseFloat(data.iva21) || 0)
+ ? (parseFloat(normalizeMoneyInput(String(data.iva21 || '0'))) || 0)
  : neto > 0
- ? parseFloat((neto * 0.21).toFixed(2))
+ ? Math.round(neto * 0.21 * 100) / 100
  : 0;
  const noGravado = parseFloat(normalizeMoneyInput(String(data.noGravado || '0'))) || 0;
  const impInter = parseFloat(normalizeMoneyInput(String(data.impInter || '0'))) || 0;
@@ -996,7 +1002,7 @@ export default function ComprobanteFormModal({
  inputValue.length === 5 && 
  inputValue.includes('/') && 
  inputValue.split('/').length === 2) {
- const completedValue = inputValue + '/2025';
+ const completedValue = inputValue + '/' + new Date().getFullYear();
  const isoValue = formatDDMMYYYYToISO(completedValue);
  if (isoValue) {
  setFormData({ ...formData, [field]: isoValue });
@@ -1046,6 +1052,14 @@ export default function ComprobanteFormModal({
  setFormData({ ...formData, [field]: '' });
  setDateInputValues({ ...dateInputValues, [field]: '' });
  }
+ } else if (inputValue && inputValue.length === 5 && inputValue.includes('/') && (field === 'fechaVencimiento' || field === 'fechaEmision')) {
+ // dd/mm sin año → auto-completar con año actual
+ const completedValue = inputValue + '/' + new Date().getFullYear();
+ const isoValue = formatDDMMYYYYToISO(completedValue);
+ if (isoValue) {
+   setFormData({ ...formData, [field]: isoValue });
+ }
+ setDateInputValues({ ...dateInputValues, [field]: '' });
  } else if (inputValue && inputValue.length > 0 && inputValue.length < 10) {
  setFormData({ ...formData, [field]: '' });
  setDateInputValues({ ...dateInputValues, [field]: '' });
@@ -1061,7 +1075,6 @@ export default function ComprobanteFormModal({
  'proveedor',
  'fechaEmision',
  'fechaVencimiento',
- 'fechaImputacion',
  'neto',
  'iva21',
  'noGravado',
@@ -1501,7 +1514,7 @@ export default function ComprobanteFormModal({
  resetForm();
  }
  }}>
- <DialogContent size="xl">
+ <DialogContent size="2xl">
  <DialogHeader>
  <DialogTitle>{comprobanteId ? 'Editar factura' : 'Nuevo Comprobante'}</DialogTitle>
  <DialogDescription>
@@ -1619,7 +1632,7 @@ export default function ComprobanteFormModal({
  <CommandList>
  <CommandEmpty>
  {loadingDevoluciones
- ? 'Cargando...'
+ ? 'Cargando devoluciones...'
  : 'No hay devoluciones disponibles'}
  </CommandEmpty>
  <CommandGroup>
@@ -1830,7 +1843,7 @@ export default function ComprobanteFormModal({
  </div>
 
  {/* Fechas */}
- <div className="grid grid-cols-3 gap-4">
+ <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label htmlFor="fechaEmision">Fecha de Emisión *</Label>
  <Input
@@ -1876,25 +1889,6 @@ export default function ComprobanteFormModal({
  placeholder="dd/mm"
  required={formData.tipoPago === 'cta_cte'}
  disabled={formData.tipoPago === 'contado'}
- />
- </div>
- <div className="space-y-2">
- <Label htmlFor="fechaImputacion">Fecha de Imputación *</Label>
- <Input
- id="fechaImputacion"
- type="text"
- value={dateInputValues.fechaImputacion || (formData.fechaImputacion ? formatDateToDDMMYYYY(formData.fechaImputacion) : '')}
- onChange={(e) => handleDateInputChange('fechaImputacion', e.target.value)}
- onBlur={() => handleDateBlur('fechaImputacion')}
- onKeyDown={(e) => {
- if (e.key === 'Enter') {
- e.preventDefault();
- handleDateBlur('fechaImputacion');
- moveToNextField('fechaImputacion');
- }
- }}
- placeholder="dd/mm/yyyy"
- required
  />
  </div>
  </div>
@@ -2130,10 +2124,14 @@ export default function ComprobanteFormModal({
  </TableCell>
  <TableCell>
  <Input
- type="number"
- step="0.01"
- value={item.cantidad}
- onChange={(e) => updateItem(item.id, 'cantidad', e.target.value)}
+ type="text"
+ value={rawInputs[`qty-${item.id}`] !== undefined ? rawInputs[`qty-${item.id}`] : (item.cantidad ? formatMoney(item.cantidad) : '')}
+ onFocus={(e) => { startRawEdit(`qty-${item.id}`, e.target.value); e.target.select(); }}
+ onChange={(e) => {
+ startRawEdit(`qty-${item.id}`, e.target.value);
+ updateItem(item.id, 'cantidad', normalizeMoneyInput(e.target.value));
+ }}
+ onBlur={() => stopRawEdit(`qty-${item.id}`)}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2185,22 +2183,25 @@ export default function ComprobanteFormModal({
  </TableCell>
  <TableCell>
  <Input
- type="number"
- step="0.01"
- value={item.precioUnitario}
- onChange={(e) => updateItem(item.id, 'precioUnitario', e.target.value)}
+ type="text"
+ value={rawInputs[`precio-${item.id}`] !== undefined ? rawInputs[`precio-${item.id}`] : (item.precioUnitario ? formatMoney(item.precioUnitario) : '')}
+ onFocus={(e) => { startRawEdit(`precio-${item.id}`, e.target.value); e.target.select(); }}
+ onChange={(e) => {
+ startRawEdit(`precio-${item.id}`, e.target.value);
+ updateItem(item.id, 'precioUnitario', normalizeMoneyInput(e.target.value));
+ }}
+ onBlur={() => stopRawEdit(`precio-${item.id}`)}
  data-field="precio-unitario"
- placeholder="0.00"
+ placeholder="0,00"
  />
  </TableCell>
  <TableCell>
  <Input
- type="number"
- step="0.01"
- value={item.subtotal}
+ type="text"
+ value={item.subtotal ? formatMoney(item.subtotal) : ''}
  readOnly
  className="bg-muted"
- placeholder="0.00"
+ placeholder="0,00"
  />
  </TableCell>
  <TableCell className="text-right">
@@ -2253,12 +2254,15 @@ export default function ComprobanteFormModal({
  <Input
  id="iva21"
  type="text"
- value={formData.iva21 ? formatMoney(formData.iva21) : ''}
+ value={rawInputs['iva21'] !== undefined ? rawInputs['iva21'] : (formData.iva21 ? formatMoney(formData.iva21) : '')}
+ onFocus={(e) => { startRawEdit('iva21', e.target.value); e.target.select(); }}
  onChange={(e) => {
+ startRawEdit('iva21', e.target.value);
  setIva21Manual(true);
  handleFieldChange('iva21', e.target.value);
  }}
  onBlur={(e) => {
+ stopRawEdit('iva21');
  if (!e.target.value) {
  setIva21Manual(false);
  calculateTotal();
@@ -2278,8 +2282,10 @@ export default function ComprobanteFormModal({
  <Input
  id="noGravado"
  type="text"
- value={formData.noGravado ? formatMoney(formData.noGravado) : ''}
- onChange={(e) => handleFieldChange('noGravado', e.target.value)}
+ value={rawInputs['noGravado'] !== undefined ? rawInputs['noGravado'] : (formData.noGravado ? formatMoney(formData.noGravado) : '')}
+ onFocus={(e) => { startRawEdit('noGravado', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('noGravado', e.target.value); handleFieldChange('noGravado', e.target.value); }}
+ onBlur={() => stopRawEdit('noGravado')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2297,8 +2303,10 @@ export default function ComprobanteFormModal({
  <Input
  id="impInter"
  type="text"
- value={formData.impInter ? formatMoney(formData.impInter) : ''}
- onChange={(e) => handleFieldChange('impInter', e.target.value)}
+ value={rawInputs['impInter'] !== undefined ? rawInputs['impInter'] : (formData.impInter ? formatMoney(formData.impInter) : '')}
+ onFocus={(e) => { startRawEdit('impInter', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('impInter', e.target.value); handleFieldChange('impInter', e.target.value); }}
+ onBlur={() => stopRawEdit('impInter')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2313,8 +2321,10 @@ export default function ComprobanteFormModal({
  <Input
  id="percepcionIVA"
  type="text"
- value={formData.percepcionIVA ? formatMoney(formData.percepcionIVA) : ''}
- onChange={(e) => handleFieldChange('percepcionIVA', e.target.value)}
+ value={rawInputs['percepcionIVA'] !== undefined ? rawInputs['percepcionIVA'] : (formData.percepcionIVA ? formatMoney(formData.percepcionIVA) : '')}
+ onFocus={(e) => { startRawEdit('percepcionIVA', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('percepcionIVA', e.target.value); handleFieldChange('percepcionIVA', e.target.value); }}
+ onBlur={() => stopRawEdit('percepcionIVA')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2329,8 +2339,10 @@ export default function ComprobanteFormModal({
  <Input
  id="percepcionIIBB"
  type="text"
- value={formData.percepcionIIBB ? formatMoney(formData.percepcionIIBB) : ''}
- onChange={(e) => handleFieldChange('percepcionIIBB', e.target.value)}
+ value={rawInputs['percepcionIIBB'] !== undefined ? rawInputs['percepcionIIBB'] : (formData.percepcionIIBB ? formatMoney(formData.percepcionIIBB) : '')}
+ onFocus={(e) => { startRawEdit('percepcionIIBB', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('percepcionIIBB', e.target.value); handleFieldChange('percepcionIIBB', e.target.value); }}
+ onBlur={() => stopRawEdit('percepcionIIBB')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2348,8 +2360,10 @@ export default function ComprobanteFormModal({
  <Input
  id="otrosConceptos"
  type="text"
- value={formData.otrosConceptos ? formatMoney(formData.otrosConceptos) : ''}
- onChange={(e) => handleFieldChange('otrosConceptos', e.target.value)}
+ value={rawInputs['otrosConceptos'] !== undefined ? rawInputs['otrosConceptos'] : (formData.otrosConceptos ? formatMoney(formData.otrosConceptos) : '')}
+ onFocus={(e) => { startRawEdit('otrosConceptos', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('otrosConceptos', e.target.value); handleFieldChange('otrosConceptos', e.target.value); }}
+ onBlur={() => stopRawEdit('otrosConceptos')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2364,8 +2378,10 @@ export default function ComprobanteFormModal({
  <Input
  id="iva105"
  type="text"
- value={formData.iva105 ? formatMoney(formData.iva105) : ''}
- onChange={(e) => handleFieldChange('iva105', e.target.value)}
+ value={rawInputs['iva105'] !== undefined ? rawInputs['iva105'] : (formData.iva105 ? formatMoney(formData.iva105) : '')}
+ onFocus={(e) => { startRawEdit('iva105', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('iva105', e.target.value); handleFieldChange('iva105', e.target.value); }}
+ onBlur={() => stopRawEdit('iva105')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2380,8 +2396,10 @@ export default function ComprobanteFormModal({
  <Input
  id="iva27"
  type="text"
- value={formData.iva27 ? formatMoney(formData.iva27) : ''}
- onChange={(e) => handleFieldChange('iva27', e.target.value)}
+ value={rawInputs['iva27'] !== undefined ? rawInputs['iva27'] : (formData.iva27 ? formatMoney(formData.iva27) : '')}
+ onFocus={(e) => { startRawEdit('iva27', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('iva27', e.target.value); handleFieldChange('iva27', e.target.value); }}
+ onBlur={() => stopRawEdit('iva27')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2399,8 +2417,10 @@ export default function ComprobanteFormModal({
  <Input
  id="exento"
  type="text"
- value={formData.exento ? formatMoney(formData.exento) : ''}
- onChange={(e) => handleFieldChange('exento', e.target.value)}
+ value={rawInputs['exento'] !== undefined ? rawInputs['exento'] : (formData.exento ? formatMoney(formData.exento) : '')}
+ onFocus={(e) => { startRawEdit('exento', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('exento', e.target.value); handleFieldChange('exento', e.target.value); }}
+ onBlur={() => stopRawEdit('exento')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
@@ -2415,8 +2435,10 @@ export default function ComprobanteFormModal({
  <Input
  id="iibb"
  type="text"
- value={formData.iibb ? formatMoney(formData.iibb) : ''}
- onChange={(e) => handleFieldChange('iibb', e.target.value)}
+ value={rawInputs['iibb'] !== undefined ? rawInputs['iibb'] : (formData.iibb ? formatMoney(formData.iibb) : '')}
+ onFocus={(e) => { startRawEdit('iibb', e.target.value); e.target.select(); }}
+ onChange={(e) => { startRawEdit('iibb', e.target.value); handleFieldChange('iibb', e.target.value); }}
+ onBlur={() => stopRawEdit('iibb')}
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();

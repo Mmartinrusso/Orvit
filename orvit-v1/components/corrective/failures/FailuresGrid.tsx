@@ -257,7 +257,7 @@ export function FailuresGrid({
                 </p>
               ) : failure.symptomsList && failure.symptomsList.length > 0 ? (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-warning-muted-foreground flex items-center gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-warning-muted-foreground flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Síntomas
                   </span>
@@ -266,13 +266,13 @@ export function FailuresGrid({
                       <Badge
                         key={symptom.id}
                         variant="secondary"
-                        className="text-[10px] px-1.5 py-0 h-5 bg-warning-muted text-warning-muted-foreground"
+                        className="text-xs px-1.5 py-0 h-5 bg-warning-muted text-warning-muted-foreground"
                       >
                         {symptom.label}
                       </Badge>
                     ))}
                     {failure.symptomsList.length > 3 && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
                         +{failure.symptomsList.length - 3}
                       </Badge>
                     )}
@@ -291,24 +291,24 @@ export function FailuresGrid({
               {/* Badges de características */}
               <div className="flex flex-wrap gap-1.5">
                 {hasWorkOrder && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-info-muted text-info-muted-foreground">
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 bg-info-muted text-info-muted-foreground">
                     <FileText className="mr-0.5 h-2.5 w-2.5" />
                     OT
                   </Badge>
                 )}
                 {failure.causedDowntime && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5">
                     <Clock className="mr-0.5 h-2.5 w-2.5" />
                     Downtime
                   </Badge>
                 )}
                 {failure.isIntermittent && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
                     Intermitente
                   </Badge>
                 )}
                 {failure.isSafetyRelated && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5">
                     <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />
                     Seguridad
                   </Badge>
@@ -344,7 +344,7 @@ export function FailuresGrid({
                   <Calendar className="h-3 w-3" />
                   {formatDistanceToNow(new Date(failure.reportedAt), { addSuffix: true, locale: es })}
                 </span>
-                <Badge className={cn('text-[10px] px-1.5 py-0 h-5', statusInfo.bgBadge)}>
+                <Badge className={cn('text-xs px-1.5 py-0 h-5', statusInfo.bgBadge)}>
                   {statusInfo.label}
                 </Badge>
               </div>

@@ -499,7 +499,7 @@ export function TaskDetailModal() {
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className={cn("text-[10px] px-1.5 py-0.5", getTagColor(tag))}
+                      className={cn("text-xs px-1.5 py-0.5", getTagColor(tag))}
                     >
                       #{translateTag(tag)}
                     </Badge>
@@ -633,13 +633,13 @@ export function TaskDetailModal() {
                               : "bg-muted rounded-tl-sm"
                           )}>
                             {!isOwn && (
-                              <p className="text-[10px] font-semibold mb-0.5 opacity-60">
+                              <p className="text-xs font-semibold mb-0.5 opacity-60">
                                 {msg.userName}
                               </p>
                             )}
                             <p className="leading-relaxed">{msg.content}</p>
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 px-1">
+                          <p className="text-xs text-muted-foreground mt-0.5 px-1">
                             {format(new Date(msg.createdAt), 'HH:mm · d MMM', { locale: es })}
                           </p>
                         </div>

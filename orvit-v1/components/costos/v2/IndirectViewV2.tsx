@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { DEFAULT_COLORS, type UserColorPreferences } from '@/lib/colors';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +44,7 @@ import {
   Star,
   SlidersHorizontal,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
@@ -66,7 +67,7 @@ interface IndirectViewV2Props {
 const formatCurrency = (value: number): string =>
   value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-const formatPercent = (value: number): string => value.toFixed(1) + '%';
+const formatPercent = (value: number): string => formatNumber(value, 1) + '%';
 
 const CATEGORY_LABELS: Record<string, string> = {
   IMP_SERV: 'Impuestos y Servicios',
@@ -492,7 +493,7 @@ export function IndirectViewV2({
                             ${formatCurrency(item.value)}
                           </span>
                           <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
-                            {item.pct.toFixed(1)}%
+                            {formatNumber(item.pct, 1)}%
                           </span>
                         </div>
                       ))}
@@ -803,7 +804,7 @@ export function IndirectViewV2({
                           {isPositiveDelta
                             ? <TrendingUp className="h-3 w-3" />
                             : <TrendingDown className="h-3 w-3" />}
-                          {isPositiveDelta ? '+' : ''}{t.metric.delta.toFixed(1)}% vs mes anterior
+                          {isPositiveDelta ? '+' : ''}{formatNumber(t.metric.delta, 1)}% vs mes anterior
                         </p>
                       </CardContent>
                     </Card>
@@ -958,7 +959,7 @@ export function IndirectViewV2({
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
                                 {item.fechaImputacion
-                                  ? new Date(item.fechaImputacion + 'T00:00:00').toLocaleDateString('es-AR')
+                                  ? formatDate(item.fechaImputacion + 'T00:00:00')
                                   : '—'}
                               </TableCell>
                               <TableCell>

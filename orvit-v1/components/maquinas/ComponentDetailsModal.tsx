@@ -53,6 +53,7 @@ import WorkOrderWizard from '../work-orders/WorkOrderWizard';
 import { FailureQuickReportDialog } from '@/components/corrective/failures/FailureQuickReportDialog';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { toast } from '@/hooks/use-toast';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import { DocumentListViewer } from './MachineDetailDialog';
 import { DocumentFolderViewer } from './DocumentFolderViewer';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,6 +61,7 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { Calendar, CalendarDays, User, MapPin, CheckCircle, Clock, Camera, ExternalLink } from 'lucide-react';
 
 // Lazy load del visor 3D - solo se carga cuando se accede a la pestaña 3D
@@ -989,7 +991,31 @@ export default function ComponentDetailsModal({
   // Estados para guardar/editar URL del modelo 3D
   const [showSetModelUrlDialog, setShowSetModelUrlDialog] = useState(false);
   const [newModelUrl, setNewModelUrl] = useState('');
-  const [savingModelUrl, setSavingModelUrl] = useState(false);
+
+  // PATCH: Guardar URL del modelo 3D
+  const saveModelUrlMutation = useApiMutation<any, { model3dUrl: string | null }>({
+    mutationFn: async (vars) => {
+      const response = await fetch(`/api/components/${component?.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al guardar');
+      }
+      return response.json();
+    },
+    successMessage: 'Modelo 3D asignado correctamente',
+    errorMessage: 'No se pudo guardar el modelo 3D',
+    invalidateKeys: [['machines'], ['components']],
+    onSuccess: () => {
+      setShowSetModelUrlDialog(false);
+      setNewModelUrl('');
+      // Recargar para ver cambios
+      window.location.reload();
+    },
+  });
 
   // Estados para generación de 3D desde foto
   const [showGenerateFromPhotoDialog, setShowGenerateFromPhotoDialog] = useState(false);
@@ -1004,30 +1030,9 @@ export default function ComponentDetailsModal({
   }>({ status: 'idle', message: '' });
 
   // Función para guardar URL del modelo 3D
-  const handleSaveModelUrl = async (url: string) => {
+  const handleSaveModelUrl = (url: string) => {
     if (!component) return;
-
-    setSavingModelUrl(true);
-    try {
-      const response = await fetch(`/api/components/${component.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model3dUrl: url || null })
-      });
-
-      if (!response.ok) throw new Error('Error al guardar');
-
-      toast({ title: 'Guardado', description: 'Modelo 3D asignado correctamente' });
-      setShowSetModelUrlDialog(false);
-      setNewModelUrl('');
-      // Recargar para ver cambios
-      window.location.reload();
-    } catch (error) {
-      console.error('Error saving model URL:', error);
-      toast({ title: 'Error', description: 'No se pudo guardar el modelo 3D', variant: 'destructive' });
-    } finally {
-      setSavingModelUrl(false);
-    }
+    saveModelUrlMutation.mutate({ model3dUrl: url || null });
   };
 
   // Función para manejar selección de foto
@@ -1476,13 +1481,15 @@ export default function ComponentDetailsModal({
       
       const result = await res.json();
       
-      toast({ 
-        title: 'Componente actualizado', 
-        description: result.spare ? 
+      toast({
+        title: 'Componente actualizado',
+        description: result.spare ?
           `Componente actualizado. ${result.spare.action === 'created' ? 'Repuesto creado automáticamente.' : result.spare.action === 'linked' ? 'Repuesto vinculado exitosamente.' : ''}` :
-          'El componente fue actualizado correctamente.' 
+          'El componente fue actualizado correctamente.'
       });
       setIsEditDialogOpen(false);
+      onClose();
+      if (onDeleted) onDeleted();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'No se pudo actualizar el componente', variant: 'destructive' });
     }
@@ -1718,7 +1725,7 @@ export default function ComponentDetailsModal({
                     {getCriticalityBadge(component.criticality)}
                     {getSafetyCriticalBadge(component.isSafetyCritical)}
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {(component.machineName || machineName) && (
                       <span className="flex items-center gap-0.5">
                         <Layers className="h-3 w-3" />
@@ -1819,7 +1826,7 @@ export default function ComponentDetailsModal({
                   <div className="flex items-center gap-2">
                     <Wrench className="h-5 w-5 text-info-muted-foreground" />
                     <div>
-                      <p className="text-[10px] text-muted-foreground leading-none">Subcomponentes</p>
+                      <p className="text-xs text-muted-foreground leading-none">Subcomponentes</p>
                       <p className="text-xl font-bold text-info-muted-foreground leading-tight">
                         {subcomponents.length}
                       </p>
@@ -1836,7 +1843,7 @@ export default function ComponentDetailsModal({
                   <div className="flex items-center gap-2">
                     <AlertTriangle className={cn('h-5 w-5', componentStats.openFailuresCount > 0 ? 'text-destructive' : 'text-muted-foreground')} />
                     <div>
-                      <p className="text-[10px] text-muted-foreground leading-none">Fallas Abiertas</p>
+                      <p className="text-xs text-muted-foreground leading-none">Fallas Abiertas</p>
                       <p className={cn('text-xl font-bold leading-tight', componentStats.openFailuresCount > 0 ? 'text-destructive' : 'text-foreground')}>
                         {componentStats.openFailuresCount}
                       </p>
@@ -1853,7 +1860,7 @@ export default function ComponentDetailsModal({
                   <div className="flex items-center gap-2">
                     <ClipboardList className={cn('h-5 w-5', componentStats.pendingWorkOrdersCount > 0 ? 'text-warning-muted-foreground' : 'text-muted-foreground')} />
                     <div>
-                      <p className="text-[10px] text-muted-foreground leading-none">OT Pendientes</p>
+                      <p className="text-xs text-muted-foreground leading-none">OT Pendientes</p>
                       <p className={cn('text-xl font-bold leading-tight', componentStats.pendingWorkOrdersCount > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
                         {componentStats.pendingWorkOrdersCount}
                       </p>
@@ -1866,7 +1873,7 @@ export default function ComponentDetailsModal({
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-[10px] text-muted-foreground leading-none">Total OTs</p>
+                      <p className="text-xs text-muted-foreground leading-none">Total OTs</p>
                       <p className="text-xl font-bold text-foreground leading-tight">{componentStats.workOrdersCount}</p>
                     </div>
                   </div>
@@ -1877,10 +1884,10 @@ export default function ComponentDetailsModal({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-[10px] text-muted-foreground leading-none">Últ. Mantenimiento</p>
+                      <p className="text-xs text-muted-foreground leading-none">Últ. Mantenimiento</p>
                       <p className="text-sm font-bold text-foreground leading-tight">
                         {componentStats.lastMaintenance
-                          ? format(new Date(componentStats.lastMaintenance), 'dd/MM/yyyy', { locale: es })
+                          ? formatDate(componentStats.lastMaintenance)
                           : 'Sin registro'}
                       </p>
                     </div>
@@ -1906,7 +1913,7 @@ export default function ComponentDetailsModal({
                   <Wrench className="h-3.5 w-3.5" />
                   <span>Subcomponentes</span>
                   {subcomponents.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-info-muted text-info-muted-foreground">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1 text-xs bg-info-muted text-info-muted-foreground">
                       {subcomponents.length}
                     </Badge>
                   )}
@@ -1915,7 +1922,7 @@ export default function ComponentDetailsModal({
                   <Settings className="h-3.5 w-3.5" />
                   <span>Mantenimiento</span>
                   {componentStats.pendingWorkOrdersCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-info-muted text-info-muted-foreground">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1 text-xs bg-info-muted text-info-muted-foreground">
                       {componentStats.pendingWorkOrdersCount}
                     </Badge>
                   )}
@@ -1924,7 +1931,7 @@ export default function ComponentDetailsModal({
                   <AlertTriangle className="h-3.5 w-3.5" />
                   <span>Fallas</span>
                   {componentStats.openFailuresCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] bg-destructive/10 text-destructive">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1 text-xs bg-destructive/10 text-destructive">
                       {componentStats.openFailuresCount}
                     </Badge>
                   )}
@@ -2297,7 +2304,7 @@ export default function ComponentDetailsModal({
                                     <Badge
                                       key={subpiece.id}
                                       variant="outline"
-                                      className="text-[10px] cursor-pointer hover:bg-secondary/80"
+                                      className="text-xs cursor-pointer hover:bg-secondary/80"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleViewSubcomponentDetails(subpiece);
@@ -2307,7 +2314,7 @@ export default function ComponentDetailsModal({
                                     </Badge>
                                   ))}
                                   {subcomponent.children.length > 3 && (
-                                    <Badge variant="outline" className="text-[10px]">
+                                    <Badge variant="outline" className="text-xs">
                                       +{subcomponent.children.length - 3} más
                                     </Badge>
                                   )}
@@ -2583,7 +2590,7 @@ export default function ComponentDetailsModal({
                           <CardTitle className="flex items-center gap-2 text-sm">
                             <Sparkles className="h-4 w-4 text-warning" />
                             <span>Sugerencias de la IA</span>
-                            <Badge variant="secondary" className="ml-auto text-[10px]">
+                            <Badge variant="secondary" className="ml-auto text-xs">
                               {aiSuggestions.suggestions.length} fuentes encontradas
                             </Badge>
                           </CardTitle>
@@ -2596,7 +2603,7 @@ export default function ComponentDetailsModal({
                                 <Lightbulb className="h-3.5 w-3.5 text-warning" />
                                 Análisis del componente
                               </div>
-                              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                              <div className="grid grid-cols-2 gap-2 text-xs">
                                 {aiSuggestions.aiAnalysis.componentType && (
                                   <div>
                                     <span className="text-muted-foreground">Tipo detectado:</span>
@@ -2622,9 +2629,9 @@ export default function ComponentDetailsModal({
                           {/* Términos de búsqueda sugeridos */}
                           {aiSuggestions.searchQueries && aiSuggestions.searchQueries.length > 0 && (
                             <div className="flex flex-wrap gap-1">
-                              <span className="text-[10px] text-muted-foreground mr-1">Búsquedas:</span>
+                              <span className="text-xs text-muted-foreground mr-1">Búsquedas:</span>
                               {aiSuggestions.searchQueries.slice(0, 3).map((query, i) => (
-                                <Badge key={i} variant="outline" className="text-[10px] font-mono">
+                                <Badge key={i} variant="outline" className="text-xs font-mono">
                                   {query}
                                 </Badge>
                               ))}
@@ -2656,7 +2663,7 @@ export default function ComponentDetailsModal({
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-[10px] text-muted-foreground truncate">
+                                  <p className="text-xs text-muted-foreground truncate">
                                     {suggestion.description}
                                   </p>
                                 </div>
@@ -2689,7 +2696,7 @@ export default function ComponentDetailsModal({
                             <div className="p-2 bg-info-muted rounded-lg border border-info-muted">
                               <div className="flex items-start gap-2">
                                 <Info className="h-4 w-4 text-info mt-0.5 flex-shrink-0" />
-                                <div className="text-[10px] text-info-muted-foreground space-y-0.5">
+                                <div className="text-xs text-info-muted-foreground space-y-0.5">
                                   {aiSuggestions.tips.map((tip, i) => (
                                     <p key={i}>• {tip}</p>
                                   ))}
@@ -2734,7 +2741,7 @@ export default function ComponentDetailsModal({
                               La IA analizará el nombre del componente <span className="font-medium text-foreground">"{component.name}"</span> y
                               buscará modelos 3D disponibles en catálogos industriales.
                             </p>
-                            <div className="flex flex-wrap justify-center gap-2 text-[10px] text-muted-foreground mb-4">
+                            <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground mb-4">
                               <span className="px-2 py-1 bg-muted rounded">🔧 TraceParts</span>
                               <span className="px-2 py-1 bg-muted rounded">📐 GrabCAD</span>
                               <span className="px-2 py-1 bg-muted rounded">⚙️ SKF</span>
@@ -2876,7 +2883,7 @@ export default function ComponentDetailsModal({
                 value={newModelUrl}
                 onChange={(e) => setNewModelUrl(e.target.value)}
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Formatos soportados: .glb, .gltf
               </p>
             </div>
@@ -2885,7 +2892,7 @@ export default function ComponentDetailsModal({
                 <Lightbulb className="h-4 w-4 text-warning mt-0.5" />
                 <div className="text-xs text-warning-muted-foreground">
                   <p className="font-medium mb-1">¿Dónde obtener la URL?</p>
-                  <ol className="list-decimal list-inside space-y-0.5 text-[10px]">
+                  <ol className="list-decimal list-inside space-y-0.5 text-xs">
                     <li>Descarga el modelo de TraceParts, GrabCAD, etc.</li>
                     <li>Súbelo a tu almacenamiento (S3, Google Drive, etc.)</li>
                     <li>Copia la URL pública directa del archivo</li>
@@ -2900,9 +2907,9 @@ export default function ComponentDetailsModal({
             </Button>
             <Button
               onClick={() => handleSaveModelUrl(newModelUrl)}
-              disabled={savingModelUrl || !newModelUrl.trim()}
+              disabled={saveModelUrlMutation.isPending || !newModelUrl.trim()}
             >
-              {savingModelUrl ? (
+              {saveModelUrlMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Guardando...
@@ -3034,7 +3041,7 @@ export default function ComponentDetailsModal({
                     <Info className="h-4 w-4 text-info mt-0.5" />
                     <div className="text-xs text-info-muted-foreground">
                       <p className="font-medium mb-1">Recomendaciones para mejores resultados:</p>
-                      <ul className="list-disc list-inside space-y-0.5 text-[10px]">
+                      <ul className="list-disc list-inside space-y-0.5 text-xs">
                         <li>Usa una foto clara con buena iluminación</li>
                         <li>El componente debe ocupar la mayor parte de la imagen</li>
                         <li>Evita fondos complejos</li>
@@ -3128,8 +3135,8 @@ export default function ComponentDetailsModal({
                 <Button variant="outline" onClick={() => setShowGenerateFromPhotoDialog(false)}>
                   Cerrar
                 </Button>
-                <Button onClick={handleUseGeneratedModel} disabled={savingModelUrl}>
-                  {savingModelUrl ? (
+                <Button onClick={handleUseGeneratedModel} disabled={saveModelUrlMutation.isPending}>
+                  {saveModelUrlMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Guardando...

@@ -753,7 +753,7 @@ export default function ZoneSchemaView({
                 <div className="text-[15px] font-semibold text-foreground text-center truncate max-w-[180px]">
                   {node.name}
                 </div>
-                <div className="text-[11px] text-muted-foreground text-center mt-0.5">
+                <div className="text-xs text-muted-foreground text-center mt-0.5">
                   Sector
                 </div>
               </div>

@@ -92,7 +92,7 @@ const ESTADOS_CONFIG: Record<EstadoEntrega, { label: string; color: string; icon
   EN_PREPARACION: { label: 'Preparación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
   LISTA_PARA_DESPACHO: { label: 'Lista', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
   EN_TRANSITO: { label: 'En Tránsito', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Truck },
-  RETIRADA: { label: 'Retirada', color: 'bg-cyan-100 text-cyan-700 border-cyan-200', icon: Package },
+  RETIRADA: { label: 'Retirada', color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground border-accent-cyan-muted', icon: Package },
   ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
   ENTREGA_FALLIDA: { label: 'Fallida', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: X },
   CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground border-border', icon: X },
@@ -354,7 +354,7 @@ export function EntregasList({
     const config = ESTADOS_CONFIG[estado as EstadoEntrega] || ESTADOS_CONFIG.PENDIENTE;
     const Icon = config.icon;
     return (
-      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
+      <Badge className={cn(config.color, 'border text-xs px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -404,7 +404,7 @@ export function EntregasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.pendientes}</p>
-                  <p className="text-[10px] text-muted-foreground">Pendientes</p>
+                  <p className="text-xs text-muted-foreground">Pendientes</p>
                 </div>
               </div>
             </CardContent>
@@ -421,7 +421,7 @@ export function EntregasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.listas}</p>
-                  <p className="text-[10px] text-muted-foreground">Listas</p>
+                  <p className="text-xs text-muted-foreground">Listas</p>
                 </div>
               </div>
             </CardContent>
@@ -438,7 +438,7 @@ export function EntregasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.enTransito}</p>
-                  <p className="text-[10px] text-muted-foreground">En Tránsito</p>
+                  <p className="text-xs text-muted-foreground">En Tránsito</p>
                 </div>
               </div>
             </CardContent>
@@ -455,7 +455,7 @@ export function EntregasList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.entregadas}</p>
-                  <p className="text-[10px] text-muted-foreground">Entregadas</p>
+                  <p className="text-xs text-muted-foreground">Entregadas</p>
                 </div>
               </div>
             </CardContent>

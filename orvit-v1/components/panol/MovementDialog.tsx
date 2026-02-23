@@ -243,7 +243,7 @@ export default function MovementDialog({ isOpen, onClose, onSave }: MovementDial
                     {isLoadingTools ? (
                       <div className="flex items-center justify-center py-4">
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        <span className="text-sm text-muted-foreground">Cargando...</span>
+                        <span className="text-sm text-muted-foreground">Cargando artículos...</span>
                       </div>
                     ) : tools.length === 0 ? (
                       <div className="py-4 text-center text-sm text-muted-foreground">

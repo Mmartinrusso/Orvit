@@ -811,7 +811,7 @@ export default function TrucksManager({ companyId }: TrucksManagerProps) {
         <div className="border-2 border-border rounded-lg overflow-hidden bg-card shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted border-b-2 border-border">
+              <thead className="bg-muted border-b-2 border-border sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">ID</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Nombre</th>

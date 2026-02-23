@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
@@ -43,7 +44,7 @@ import { useTheme } from '@/components/providers/ThemeProvider';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { StockConsumptionPanel } from '@/components/production/stock-consumption-panel';
+import { StockConsumptionPanel } from '@/components/produccion/stock-consumption-panel';
 import { useCompany } from '@/contexts/CompanyContext';
 
 interface ProductionOrder {
@@ -327,7 +328,7 @@ export default function ProductionOrderDetailPage() {
                   <span className="font-medium">
                     {Number(order.producedQuantity).toLocaleString()} / {Number(order.plannedQuantity).toLocaleString()} {order.targetUom}
                   </span>
-                  <span>{order.metrics.completionPercentage.toFixed(1)}%</span>
+                  <span>{formatNumber(order.metrics.completionPercentage, 1)}%</span>
                 </div>
                 <Progress value={order.metrics.completionPercentage} className="h-3" />
               </div>
@@ -339,7 +340,7 @@ export default function ProductionOrderDetailPage() {
               </p>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className={`text-2xl font-bold ${order.metrics.scrapPercentage > 5 ? 'text-destructive' : ''}`}>
-                  {order.metrics.scrapPercentage.toFixed(1)}%
+                  {formatNumber(order.metrics.scrapPercentage, 1)}%
                 </span>
                 <span className="text-sm text-muted-foreground">
                   ({Number(order.scrapQuantity).toLocaleString()} {order.targetUom})

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { LOTOProcedure, LOTOExecution, LOTOStatus, Machine } from '@/lib/types';
@@ -111,23 +112,29 @@ export default function LOTOPage() {
     fetchMachines();
   }, [fetchProcedures, fetchExecutions, fetchMachines]);
 
-  const handleCreateProcedure = async (data: Partial<LOTOProcedure>) => {
-    try {
+  const createProcedureMutation = useApiMutation<unknown, { data: Partial<LOTOProcedure>; companyId: number | null }>({
+    mutationFn: async ({ data, companyId: cId }) => {
       const response = await fetch('/api/loto/procedures', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, companyId }),
+        body: JSON.stringify({ ...data, companyId: cId }),
       });
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Error al crear procedimiento');
       }
+      return response.json();
+    },
+    successMessage: null,
+    errorMessage: 'Error al crear procedimiento',
+    onSuccess: () => {
       toast({ title: 'Procedimiento creado', description: 'El procedimiento LOTO fue creado exitosamente' });
       fetchProcedures();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      throw error;
-    }
+    },
+  });
+
+  const handleCreateProcedure = async (data: Partial<LOTOProcedure>) => {
+    await createProcedureMutation.mutateAsync({ data, companyId });
   };
 
   const handleUpdateProcedure = async (data: Partial<LOTOProcedure>) => {

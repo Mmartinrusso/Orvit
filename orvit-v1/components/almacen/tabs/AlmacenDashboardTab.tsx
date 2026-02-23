@@ -30,7 +30,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useAlmacenStats } from '../hooks';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -272,10 +272,10 @@ export function AlmacenDashboardTab({
                           'text-right font-medium',
                           item.available <= 0 ? 'text-destructive' : 'text-warning-muted-foreground'
                         )}>
-                          {item.available.toFixed(1)} {item.unit}
+                          {formatNumber(item.available, 1)} {item.unit}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {item.stockMinimo.toFixed(1)}
+                          {formatNumber(item.stockMinimo, 1)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -535,35 +535,16 @@ interface KPICardProps {
 }
 
 function KPICard({ title, value, description, icon: Icon, trend, color, onClick }: KPICardProps) {
-  const colorClasses = {
-    yellow: 'bg-warning-muted text-warning-muted-foreground border-warning/30',
-    blue: 'bg-info-muted text-info-muted-foreground border-primary/30',
-    green: 'bg-success-muted text-success border-success/30',
-    red: 'bg-destructive/10 text-destructive border-destructive/30',
-    purple: 'bg-muted text-foreground border-border',
-    orange: 'bg-warning-muted text-warning-muted-foreground border-warning/30',
-  };
-
-  const iconColors = {
-    yellow: 'text-warning-muted-foreground',
-    blue: 'text-primary',
-    green: 'text-success',
-    red: 'text-destructive',
-    purple: 'text-foreground',
-    orange: 'text-warning-muted-foreground',
-  };
-
   return (
     <Card
-      className={cn(
-        'cursor-pointer transition-all hover:shadow-md border-l-4',
-        colorClasses[color]
-      )}
+      className="cursor-pointer transition-all hover:shadow-md"
       onClick={onClick}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xs font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className={cn('h-4 w-4', iconColors[color])} />
+        <div className="p-2 rounded-lg bg-muted">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-baseline gap-2">

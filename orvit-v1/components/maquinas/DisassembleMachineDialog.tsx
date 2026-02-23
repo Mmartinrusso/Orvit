@@ -450,10 +450,10 @@ export default function DisassembleMachineDialog({
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm">{component.name}</span>
                             {component.code && (
-                              <Badge variant="outline" className="text-[10px]">{component.code}</Badge>
+                              <Badge variant="outline" className="text-xs">{component.code}</Badge>
                             )}
                           </div>
-                          <div className="flex gap-3 text-[10px] text-muted-foreground mt-0.5">
+                          <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
                             <span>{component.childrenCount} subcomp.</span>
                             <span>{component.stats.workOrders} OTs</span>
                             <span>{component.stats.failures} fallas</span>
@@ -515,7 +515,7 @@ export default function DisassembleMachineDialog({
                               <Box className="h-3 w-3" />
                               <span>{child.name}</span>
                               {child.childrenCount > 0 && (
-                                <span className="text-[10px]">({child.childrenCount} sub)</span>
+                                <span className="text-xs">({child.childrenCount} sub)</span>
                               )}
                               <ArrowRight className="h-3 w-3 mx-1" />
                               <span className="text-success">será componente</span>

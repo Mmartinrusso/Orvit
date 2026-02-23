@@ -597,6 +597,13 @@ export interface QuoteExtended {
   acceptance?: QuoteAcceptance;
 }
 
+export interface CostBreakdownItem {
+  id?: number;
+  concepto: string;
+  monto: number;
+  orden: number;
+}
+
 export interface QuoteItemExtended {
   id: number;
   quoteId: number;
@@ -613,6 +620,7 @@ export interface QuoteItemExtended {
   margenItem?: number;
   notas?: string;
   orden: number;
+  costBreakdown?: CostBreakdownItem[];
 }
 
 export interface QuoteAttachment {

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export interface TranslationSettings {
@@ -312,7 +312,7 @@ export function ImportDropzone({ onUploadComplete, disabled }: ImportDropzonePro
   const totalSize = files.reduce((sum, f) => sum + f.file.size, 0);
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, 1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 

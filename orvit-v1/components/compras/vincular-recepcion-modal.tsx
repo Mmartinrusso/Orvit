@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import {
  Dialog,
  DialogContent,
@@ -272,7 +273,7 @@ export function VincularRecepcionModal({
  </div>
  <div className="text-xs text-muted-foreground flex items-center gap-2">
  <span>
- {new Date(rec.fechaRecepcion).toLocaleDateString('es-AR')}
+ {formatDate(rec.fechaRecepcion)}
  </span>
  {rec.numeroRemito && <span>| Remito: {rec.numeroRemito}</span>}
  {rec._count?.items && <span>| {rec._count.items} items</span>}

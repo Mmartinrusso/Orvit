@@ -86,7 +86,7 @@ interface Movement {
 const ITEM_TYPE_CONFIG = {
   TOOL: { label: 'Herramientas', icon: Wrench, color: 'bg-info', textColor: 'text-info-muted-foreground', bgColor: 'bg-info-muted' },
   SUPPLY: { label: 'Insumos', icon: Box, color: 'bg-success', textColor: 'text-success', bgColor: 'bg-success-muted' },
-  SPARE_PART: { label: 'Repuestos', icon: Cog, color: 'bg-purple-500', textColor: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
+  SPARE_PART: { label: 'Repuestos', icon: Cog, color: 'bg-accent-purple', textColor: 'text-accent-purple-muted-foreground', bgColor: 'bg-accent-purple-muted' },
   HAND_TOOL: { label: 'Herr. Manuales', icon: Wrench, color: 'bg-warning', textColor: 'text-warning-muted-foreground', bgColor: 'bg-warning-muted' },
 };
 
@@ -421,8 +421,8 @@ export default function PanolDashboardPage() {
               <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                      <ClipboardList className="h-4 w-4 text-purple-600" />
+                    <div className="p-2 rounded-lg bg-accent-purple-muted">
+                      <ClipboardList className="h-4 w-4 text-accent-purple-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Reservas OT</p>
@@ -617,7 +617,7 @@ export default function PanolDashboardPage() {
                                   style={{ height: `${exitHeight}%`, minHeight: day.exits > 0 ? '4px' : '0' }}
                                 />
                               </div>
-                              <span className="text-[10px] text-muted-foreground truncate w-full text-center">{day.date}</span>
+                              <span className="text-xs text-muted-foreground truncate w-full text-center">{day.date}</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -638,7 +638,7 @@ export default function PanolDashboardPage() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-purple-600" />
+                    <BarChart3 className="h-4 w-4 text-accent-purple-muted-foreground" />
                     Distribución por Tipo
                   </CardTitle>
                 </CardHeader>
@@ -884,7 +884,7 @@ export default function PanolDashboardPage() {
 
               {/* Value Card - Only for admins */}
               {permissions.canViewCosts && (
-                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-success-muted">
+                <Card className="bg-success-muted border-success-muted">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-medium text-success">Valor del Inventario</p>

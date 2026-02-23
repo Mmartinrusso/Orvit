@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -789,7 +790,7 @@ export default function MateriaPrimaPage() {
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           {getVariacionIcon(insumo.variacion)}
                           <span className={insumo.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                            {insumo.variacion > 0 ? '+' : ''}{insumo.variacion.toFixed(1)}%
+                            {insumo.variacion > 0 ? '+' : ''}{formatNumber(insumo.variacion, 1)}%
                           </span>
                         </div>
                       </div>
@@ -869,7 +870,7 @@ export default function MateriaPrimaPage() {
                         <div className="text-sm text-muted-foreground">Costo total</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{categoria.variacion > 0 ? '+' : ''}{categoria.variacion.toFixed(1)}%</div>
+                        <div className="font-medium">{categoria.variacion > 0 ? '+' : ''}{formatNumber(categoria.variacion, 1)}%</div>
                         <div className="text-sm text-muted-foreground">Variación</div>
                       </div>
                     </div>
@@ -940,7 +941,7 @@ export default function MateriaPrimaPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium">{item.variacionPorcentual > 0 ? '+' : ''}{item.variacionPorcentual.toFixed(1)}%</div>
+                          <div className="font-medium">{item.variacionPorcentual > 0 ? '+' : ''}{formatNumber(item.variacionPorcentual, 1)}%</div>
                         </div>
                       </div>
                     </div>
@@ -969,7 +970,7 @@ export default function MateriaPrimaPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium">{formatCurrency(categoria.costoTotal)}</div>
-                          <div className="text-xs text-muted-foreground">{porcentaje.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground">{formatNumber(porcentaje, 1)}%</div>
                         </div>
                       </div>
                     );
@@ -1364,7 +1365,7 @@ export default function MateriaPrimaPage() {
                       ? 'text-success' 
                       : 'text-muted-foreground'
                 }`}>
-                  {((Number(nuevoPrecio.precio) - editingInsumo.precioActual) / editingInsumo.precioActual * 100).toFixed(1)}%
+                  {formatNumber((Number(nuevoPrecio.precio) - editingInsumo.precioActual) / editingInsumo.precioActual * 100, 1)}%
                   {Number(nuevoPrecio.precio) > editingInsumo.precioActual ? ' (Incremento)' : 
                    Number(nuevoPrecio.precio) < editingInsumo.precioActual ? ' (Decremento)' : ' (Sin cambios)'}
                 </div>
@@ -1419,7 +1420,7 @@ export default function MateriaPrimaPage() {
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">Variación</div>
                     <div className={`font-medium ${selectedInsumoForHistorial.variacion > 0 ? 'text-destructive' : 'text-success'}`}>
-                      {selectedInsumoForHistorial.variacion > 0 ? '+' : ''}{selectedInsumoForHistorial.variacion.toFixed(1)}%
+                      {selectedInsumoForHistorial.variacion > 0 ? '+' : ''}{formatNumber(selectedInsumoForHistorial.variacion, 1)}%
                     </div>
                   </div>
                 </div>
@@ -1446,7 +1447,7 @@ export default function MateriaPrimaPage() {
                               </div>
                               <div className="text-right">
                                 <div className={`font-medium ${item.variacionPorcentual > 0 ? 'text-destructive' : 'text-success'}`}>
-                                  {item.variacionPorcentual > 0 ? '+' : ''}{item.variacionPorcentual.toFixed(1)}%
+                                  {item.variacionPorcentual > 0 ? '+' : ''}{formatNumber(item.variacionPorcentual, 1)}%
                                 </div>
                               </div>
                             </div>
@@ -1500,7 +1501,7 @@ export default function MateriaPrimaPage() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">Variación Total</Label>
                     <div className={`text-lg font-medium ${estadisticasInsumo.variacionTotal > 0 ? 'text-destructive' : 'text-success'}`}>
-                      {estadisticasInsumo.variacionTotal > 0 ? '+' : ''}{estadisticasInsumo.variacionTotal.toFixed(1)}%
+                      {estadisticasInsumo.variacionTotal > 0 ? '+' : ''}{formatNumber(estadisticasInsumo.variacionTotal, 1)}%
                     </div>
                   </div>
                   <div className="space-y-2">

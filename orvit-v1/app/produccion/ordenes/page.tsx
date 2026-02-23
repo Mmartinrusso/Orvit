@@ -252,32 +252,30 @@ export default function ProductionOrdersPage() {
 
   return (
     <TooltipProvider>
-      <div className="px-4 md:px-6 py-6 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#6366f115' }}>
-                <Package className="h-5 w-5" style={{ color: '#6366f1' }} />
-              </div>
-              Órdenes de Producción
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Gestión de órdenes de producción</p>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => fetchOrders()} disabled={loading} className="gap-2">
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
-            {canCreate && (
-              <Button size="sm" onClick={() => router.push('/produccion/ordenes/nueva')} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Nueva Orden
+        <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Órdenes de Producción</h1>
+              <p className="text-sm text-muted-foreground mt-1">Gestión de órdenes de producción</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => fetchOrders()} disabled={loading} className="gap-2">
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Actualizar
               </Button>
-            )}
+              {canCreate && (
+                <Button size="sm" onClick={() => router.push('/produccion/ordenes/nueva')} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nueva Orden
+                </Button>
+              )}
+            </div>
           </div>
         </div>
+
+        <div className="px-4 md:px-6 space-y-6">
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -645,6 +643,7 @@ export default function ProductionOrdersPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </TooltipProvider>
   );

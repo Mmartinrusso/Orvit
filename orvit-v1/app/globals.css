@@ -71,6 +71,18 @@
     --info-foreground: 0 0% 100%;
     --info-muted: 214 95% 93%;
     --info-muted-foreground: 221 83% 28%;
+
+    /* Accent purple — COTIZADA, predictive */
+    --accent-purple: 271 81% 56%;
+    --accent-purple-foreground: 0 0% 100%;
+    --accent-purple-muted: 270 95% 95%;
+    --accent-purple-muted-foreground: 271 70% 35%;
+
+    /* Accent cyan — EN_PROCESO */
+    --accent-cyan: 189 94% 43%;
+    --accent-cyan-foreground: 0 0% 100%;
+    --accent-cyan-muted: 187 92% 93%;
+    --accent-cyan-muted-foreground: 189 80% 28%;
   }
 
   .dark {
@@ -131,6 +143,18 @@
     --info-foreground: 0 0% 100%;
     --info-muted: 217 40% 15%;
     --info-muted-foreground: 217 80% 75%;
+
+    /* Accent purple — dark */
+    --accent-purple: 271 81% 66%;
+    --accent-purple-foreground: 0 0% 100%;
+    --accent-purple-muted: 271 40% 15%;
+    --accent-purple-muted-foreground: 271 60% 75%;
+
+    /* Accent cyan — dark */
+    --accent-cyan: 189 94% 53%;
+    --accent-cyan-foreground: 0 0% 100%;
+    --accent-cyan-muted: 189 40% 15%;
+    --accent-cyan-muted-foreground: 189 60% 75%;
   }
 
   .black {
@@ -191,6 +215,18 @@
     --info-foreground: 0 0% 100%;
     --info-muted: 217 40% 12%;
     --info-muted-foreground: 217 80% 75%;
+
+    /* Accent purple — black */
+    --accent-purple: 271 81% 66%;
+    --accent-purple-foreground: 0 0% 100%;
+    --accent-purple-muted: 271 40% 12%;
+    --accent-purple-muted-foreground: 271 60% 75%;
+
+    /* Accent cyan — black */
+    --accent-cyan: 189 94% 53%;
+    --accent-cyan-foreground: 0 0% 100%;
+    --accent-cyan-muted: 189 40% 12%;
+    --accent-cyan-muted-foreground: 189 60% 75%;
   }
 
   .metal {
@@ -253,6 +289,18 @@
     --info-foreground: 0 0% 100%;
     --info-muted: 205 35% 18%;
     --info-muted-foreground: 205 60% 72%;
+
+    /* Accent purple — metal */
+    --accent-purple: 280 65% 60%;
+    --accent-purple-foreground: 0 0% 100%;
+    --accent-purple-muted: 280 35% 18%;
+    --accent-purple-muted-foreground: 280 50% 72%;
+
+    /* Accent cyan — metal */
+    --accent-cyan: 195 75% 50%;
+    --accent-cyan-foreground: 0 0% 100%;
+    --accent-cyan-muted: 195 35% 18%;
+    --accent-cyan-muted-foreground: 195 55% 72%;
   }
 
 
@@ -1351,90 +1399,6 @@ input[type="datetime-local"].date-format-es {
   scrollbar-color: hsl(var(--muted-foreground) / 0.6) transparent;
 }
 
-/* Forzar scroll en contenedores de máquinas */
-.machines-scroll-force {
-  overflow-y: auto !important;
-  height: 600px !important;
-  max-height: 600px !important;
-  background: #e3f2fd !important;
-  border-radius: 12px !important;
-  border: 3px solid #2196f3 !important;
-  position: relative !important;
-  box-shadow: 0 0 20px rgba(33, 150, 243, 0.4) !important;
-}
-
-/* DEBUG: Este CSS está siendo aplicado */
-.machines-scroll-force::before {
-  content: "🚨 CSS APLICADO - SCROLL FORZADO" !important;
-  position: absolute !important;
-  top: -30px !important;
-  left: 0 !important;
-  background: #ff0000 !important;
-  color: white !important;
-  padding: 5px 10px !important;
-  border-radius: 5px !important;
-  font-size: 12px !important;
-  font-weight: bold !important;
-  z-index: 1000 !important;
-}
-
-/* Scrollbar personalizado */
-.machines-scroll-force::-webkit-scrollbar {
-  width: 20px !important;
-  background: #f0f0f0 !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar-track {
-  background: #e0e0e0 !important;
-  border-radius: 10px !important;
-  margin: 4px !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar-thumb {
-  background: #2196f3 !important;
-  border-radius: 10px !important;
-  border: 3px solid #e0e0e0 !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar-thumb:hover {
-  background: #1976d2 !important;
-}
-
-.machines-scroll-force::before {
-  content: "📜 ÁREA DE SCROLL" !important;
-  position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  background: #2196f3 !important;
-  color: white !important;
-  padding: 4px 8px !important;
-  border-radius: 4px !important;
-  font-size: 10px !important;
-  font-weight: bold !important;
-  z-index: 10 !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar {
-  width: 25px !important;
-  background: #f0f0f0 !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar-track {
-  background: #e0e0e0 !important;
-  border-radius: 12px !important;
-  margin: 4px !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar-thumb {
-  background: #2196f3 !important;
-  border-radius: 12px !important;
-  border: 3px solid #e0e0e0 !important;
-}
-
-.machines-scroll-force::-webkit-scrollbar-thumb:hover {
-  background: #1976d2 !important;
-}
-
 /* Mejoras para el navbar fijo */
 .machines-navbar-fixed {
   position: sticky;
@@ -1494,6 +1458,11 @@ select:-webkit-autofill {
 @page {
   size: A4 portrait;
   margin: 12mm;
+}
+
+/* Reset font-size for print (ignore user preference) */
+@media print {
+  html { font-size: 16px !important; }
 }
 
 /* Print color support */

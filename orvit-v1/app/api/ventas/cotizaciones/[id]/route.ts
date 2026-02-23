@@ -76,7 +76,11 @@ export async function GET(
             // NO incluir costo ni margen por seguridad
             product: {
               select: { id: true, name: true, sku: true, unit: true }
-            }
+            },
+            costBreakdown: {
+              select: { id: true, concepto: true, monto: true, orden: true },
+              orderBy: { orden: 'asc' as const },
+            },
           }
         },
         attachments: true,
@@ -185,10 +189,12 @@ export async function PUT(
       fechaValidez,
       condicionesPago,
       condicionesEntrega,
+      incluyeFlete,
       tiempoEntrega,
       notas,
       notasInternas,
       items,
+      discriminarIva,
     } = body;
 
     // Calcular nuevos totales si hay items
@@ -229,12 +235,14 @@ export async function PUT(
           costo,
           margen,
           notas: item.notas || null,
+          costBreakdown: item.costBreakdown || [],
         };
       }));
     }
 
     const tasaIva = cotizacionExistente.tasaIva ? Number(cotizacionExistente.tasaIva) : 21;
-    const impuestos = subtotal * (tasaIva / 100);
+    const usarDiscriminarIva = discriminarIva !== undefined ? discriminarIva : cotizacionExistente.discriminarIva;
+    const impuestos = usarDiscriminarIva ? subtotal * (tasaIva / 100) : 0;
     const total = subtotal + impuestos;
 
     // Incrementar versión
@@ -252,37 +260,52 @@ export async function PUT(
           ...(fechaValidez && { fechaValidez: new Date(fechaValidez) }),
           ...(condicionesPago !== undefined && { condicionesPago }),
           ...(condicionesEntrega !== undefined && { condicionesEntrega }),
+          ...(incluyeFlete !== undefined && { incluyeFlete }),
           ...(tiempoEntrega !== undefined && { tiempoEntrega }),
           ...(notas !== undefined && { notas }),
           ...(notasInternas !== undefined && { notasInternas }),
           subtotal,
           impuestos,
           total,
+          discriminarIva: usarDiscriminarIva,
           version: nuevaVersion,
         }
       });
 
-      // Si hay items nuevos, reemplazar los existentes
+      // Si hay items nuevos, reemplazar los existentes (cascade elimina breakdowns)
       if (itemsConCalculos.length > 0) {
         await tx.quoteItem.deleteMany({
           where: { quoteId: id }
         });
 
-        await tx.quoteItem.createMany({
-          data: itemsConCalculos.map((item) => ({
-            quoteId: id,
-            productId: item.productId,
-            descripcion: item.descripcion,
-            cantidad: item.cantidad,
-            unidad: item.unidad,
-            precioUnitario: item.precioUnitario,
-            descuento: item.descuento,
-            subtotal: item.subtotal,
-            costo: item.costo,
-            margen: item.margen,
-            notas: item.notas,
-          }))
-        });
+        for (const item of itemsConCalculos) {
+          const createdItem = await tx.quoteItem.create({
+            data: {
+              quoteId: id,
+              productId: item.productId,
+              descripcion: item.descripcion,
+              cantidad: item.cantidad,
+              unidad: item.unidad,
+              precioUnitario: item.precioUnitario,
+              descuento: item.descuento,
+              subtotal: item.subtotal,
+              costoUnitario: item.costo,
+              margenItem: item.margen,
+              notas: item.notas,
+            }
+          });
+
+          if (item.costBreakdown && item.costBreakdown.length > 0) {
+            await tx.quoteItemCostBreakdown.createMany({
+              data: item.costBreakdown.map((cb: any, idx: number) => ({
+                quoteItemId: createdItem.id,
+                concepto: cb.concepto,
+                monto: parseFloat(String(cb.monto)),
+                orden: idx,
+              }))
+            });
+          }
+        }
       }
 
       // Crear nueva versión
@@ -347,7 +370,11 @@ export async function PUT(
             notas: true,
             product: {
               select: { id: true, name: true, sku: true }
-            }
+            },
+            costBreakdown: {
+              select: { id: true, concepto: true, monto: true, orden: true },
+              orderBy: { orden: 'asc' as const },
+            },
           }
         }
       }

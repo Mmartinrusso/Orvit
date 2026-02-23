@@ -183,7 +183,7 @@ function ChecklistItemRow({
             {item.description}
           </p>
           {item.required && (
-            <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0">
+            <Badge variant="outline" className="text-xs h-5 px-1 shrink-0">
               Req
             </Badge>
           )}

@@ -1,24 +1,103 @@
 ---
 name: orvit-discord
-description: Sistema Discord de Orvit — notificaciones, routing inteligente de tareas y agenda, bot commands. Usar al trabajar con lib/discord/, webhooks, TaskSession, notificaciones, task-handler o Discord bot.
+description: Sistema Discord de Orvit — bot standalone en Railway, HTTP API, notificaciones, routing inteligente de tareas y agenda. Usar al trabajar con lib/discord/, discord-bot/, webhooks, TaskSession, notificaciones, task-handler o Discord bot.
 ---
 
 # Discord Integration — Orvit
 
-## Arquitectura
+## Arquitectura (Standalone Bot)
 
 ```
+ORVIT App (Vercel) ──HTTP POST──→ Bot Service (Railway) ──WebSocket──→ Discord
+                                       ↑
+Discord Users ──DMs/Interactions──→ Bot Service ──Prisma──→ Misma Supabase DB
+```
+
+**IMPORTANTE**: El bot NO corre dentro de Next.js. Es un servicio Node.js independiente.
+
+### Estructura del bot (`discord-bot/`)
+```
+discord-bot/
+├── src/
+│   ├── index.ts               # Entry point: conecta bot + levanta HTTP server
+│   ├── http-server.ts         # Express API con auth (x-api-key)
+│   ├── bot/
+│   │   ├── client.ts          # Discord.js client + colores/emojis
+│   │   └── listeners.ts       # messageCreate + interactionCreate
+│   ├── handlers/
+│   │   ├── task-handler.ts    # Tareas vía Discord (texto + audio)
+│   │   ├── voice-handler.ts   # Compras por voz
+│   │   └── failure-voice-handler.ts  # Fallas por voz
+│   ├── discord/               # voice-session, queues, matchers, components
+│   ├── services/              # notifications, agenda-notifications, permissions-sync
+│   ├── ai/                    # failure-extractor, purchase-extractor, config
+│   └── lib/
+│       ├── prisma.ts          # Singleton Prisma (misma DB que orvit)
+│       └── corrective/        # priority-calculator
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
+
+### Comunicación desde ORVIT (`orvit-v1/lib/discord/`)
+```
 lib/discord/
-├── client.ts          # Cliente Discord.js + colores/emojis
-├── notifications.ts   # Envío de notificaciones (webhooks + bot DM)
-└── task-handler.ts    # Handler completo de tareas vía Discord (1700+ líneas)
+├── bot-service-client.ts      # ← USAR ESTE — HTTP client al bot service
+├── notifications.ts           # Funciones de notificación (usan bot-service-client)
+├── agenda-notifications.ts    # Notificaciones de agenda (usan bot-service-client)
+├── permissions-sync.ts        # Sync de permisos Discord (usa bot-service-client)
+└── index.ts                   # Re-exports de bot-service-client
+```
+
+**⚠️ NUNCA importar `discord.js` directamente desde orvit-v1. Usar `bot-service-client.ts`.**
+
+---
+
+## HTTP API del Bot Service
+
+```ts
+// Todos los endpoints requieren header: x-api-key: BOT_API_KEY
+
+// Estado
+GET  /health
+GET  /api/status
+
+// Mensajes
+POST /api/send-dm              // { userId, embed }
+POST /api/send-channel         // { channelId, embed }
+POST /api/send-notification    // { type, data, destination }
+POST /api/send-bulk-dm         // { messages: [{userId, embed}] }
+
+// Gestión
+POST /api/manage-channels      // { action, guildId, ... }
+POST /api/sync-permissions     // { companyId, ... }
+POST /api/check-channel-access // { channelId, userId }
+POST /api/guild-operations     // { operation, guildId, userId, ... }
+```
+
+### Usar desde ORVIT
+
+```ts
+import {
+  sendDMViaBotService,
+  sendToChannelViaBotService,
+  sendNotificationViaBotService,
+  getBotServiceStatus,
+} from '@/lib/discord/bot-service-client';
+
+// Enviar DM
+await sendDMViaBotService(userId, embedData);
+
+// Enviar a canal
+await sendToChannelViaBotService(channelId, embedData);
+
+// Notificación tipada
+await sendNotificationViaBotService('FALLA_NUEVA', data, destination);
 ```
 
 ---
 
 ## Routing Inteligente: Task vs AgendaTask
-
-El principio central: el mismo comando Discord crea cosas diferentes según el asignado.
 
 ```
 Mensaje Discord: "tarea: llamar a Juan mañana"
@@ -34,7 +113,6 @@ Mensaje Discord: "tarea: llamar a Juan mañana"
 ├─────────────────┼──────────────────────────────────┤
 │ Contact/externo │ prisma.agendaTask.create()        │
 │                 │ → Recordatorio en Agenda          │
-│                 │ → No notificación interna         │
 ├─────────────────┼──────────────────────────────────┤
 │ Sin asignar     │ prisma.agendaTask.create()        │
 │                 │ → Recordatorio personal           │
@@ -43,188 +121,69 @@ Mensaje Discord: "tarea: llamar a Juan mañana"
 
 ---
 
-## Task Detection
-
-```ts
-// isTaskCommand(content: string): boolean
-// Patrones detectados:
-"tarea: ...", "tarea ...", "pedido: ...", "pedido ..."
-// También soporta adjuntos de audio → transcripción Whisper
-```
-
----
-
 ## TaskSession — Máquina de estados
 
 ```ts
 export type TaskSessionStatus =
-  | 'AWAITING_AUDIO'            // Esperando audio
-  | 'AWAITING_CONFIRMATION'     // Confirmando datos extraídos
-  | 'PROCESSING'                // Procesando
-  | 'AWAITING_PERSON_SELECTION' // Eligiendo entre candidatos
-  | 'AWAITING_RESCHEDULE'       // Reprogramando fecha
-  | 'AWAITING_NEW_PERSON_NAME'; // Creando contacto nuevo
-
-export interface TaskSession {
-  type: 'TASK';
-  status: TaskSessionStatus;
-  userId: number;
-  companyId: number;
-  startedAt: Date;
-  extractedData?: {
-    title: string;
-    description?: string;
-    assigneeName?: string;
-    dueDate?: string;          // ISO string
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  };
-  personCandidates?: PersonCandidate[];
-  source?: 'DISCORD_TEXT' | 'DISCORD_VOICE';
-  discordMessageId?: string;
-}
-
-export interface PersonCandidate {
-  id: number;
-  name: string;
-  type: 'user' | 'contact';
-  extra?: string; // email, cargo, etc.
-}
+  | 'AWAITING_AUDIO'
+  | 'AWAITING_CONFIRMATION'
+  | 'PROCESSING'
+  | 'AWAITING_PERSON_SELECTION'
+  | 'AWAITING_RESCHEDULE'
+  | 'AWAITING_NEW_PERSON_NAME';
 ```
 
 ---
 
-## Fuzzy Matching de personas
+## Notificaciones
 
 ```ts
-// Usa distancia Levenshtein para manejar typos
-// "Marino Ruso" → encuentra "Mariano Russo"
-// Busca tanto en prisma.user como en prisma.contact
-// Devuelve lista de PersonCandidate ordenada por similitud
-
-findPersonCandidates(name: string, companyId: number): Promise<PersonCandidate[]>
-
-// Si hay 1 candidato → asigna directamente
-// Si hay 2-4 → muestra menú de selección en Discord
-// Si hay 0 → pregunta si crear contacto nuevo
-```
-
----
-
-## Flujo de creación de Task
-
-```ts
-// createTask(session, resolvedPerson) en task-handler.ts
-
-if (resolvedPersonType === 'user' && assignedToUserId) {
-  // Sistema Task
-  const task = await prisma.task.create({
-    data: {
-      companyId,
-      title: extractedData.title,
-      description: extractedData.description,
-      assignedTo: assignedToUserId,
-      dueDate: extractedData.dueDate,
-      priority: extractedData.priority,
-      status: 'PENDING',
-      source: 'DISCORD',
-    },
-  });
-  // DM al asignado con botones de acción
-  await sendDiscordDM(assignedToDiscordId, buildTaskEmbed(task));
-} else {
-  // AgendaTask / Contacto
-  const agendaTask = await prisma.agendaTask.create({
-    data: {
-      companyId,
-      title: extractedData.title,
-      assignedContactId: resolvedContactId,
-      dueDate: extractedData.dueDate,
-      priority: extractedData.priority,
-      source: 'DISCORD',
-    },
-  });
-}
+type NotificationType =
+  | 'FALLA_NUEVA' | 'FALLA_RESUELTA'
+  | 'OT_CREADA' | 'OT_ASIGNADA' | 'OT_COMPLETADA'
+  | 'PREVENTIVO_RECORDATORIO' | 'PREVENTIVO_COMPLETADO'
+  | 'RESUMEN_DIA';
 ```
 
 ---
 
 ## Audio — Whisper + GPT
 
-```ts
-// handleTaskAudio() en task-handler.ts
-// 1. Descarga adjunto de Discord
-// 2. Transcribe con OpenAI Whisper
-// 3. Extrae datos estructurados con GPT (title, assignee, date, priority)
-// 4. Confirma con el usuario vía mensaje interactivo
-// 5. Crea Task o AgendaTask según resolución de persona
-```
-
----
-
-## Notificaciones — notifications.ts
-
-```ts
-type NotificationType =
-  | 'FALLA_NUEVA'
-  | 'FALLA_RESUELTA'
-  | 'OT_CREADA'
-  | 'OT_ASIGNADA'
-  | 'OT_COMPLETADA'
-  | 'PREVENTIVO_RECORDATORIO'
-  | 'PREVENTIVO_COMPLETADO'
-  | 'RESUMEN_DIA';
-
-// Envío flexible: webhook URL o channel ID + bot token
-// Config por sector en Prisma: discordFallasWebhook, discordOTChannelId, etc.
-
-sendNotification(type: NotificationType, data: NotificationData, destination: string)
-```
+Flujo: adjunto de audio → Whisper transcribe → GPT extrae datos estructurados → confirmación interactiva → crea Task/AgendaTask.
 
 ---
 
 ## Colores y Emojis
 
 ```ts
-// client.ts
 export const DISCORD_COLORS = {
-  ERROR:      0xED4245,  // Rojo
-  WARNING:    0xFEE75C,  // Amarillo
-  SUCCESS:    0x57F287,  // Verde
-  INFO:       0x5865F2,  // Azul Discord
-  CRITICAL:   0x992D22,  // Rojo oscuro
-  PREVENTIVE: 0x3498DB,  // Azul claro
-  WORK_ORDER: 0xE67E22,  // Naranja
-  SUMMARY:    0x9B59B6,  // Violeta
+  ERROR: 0xED4245, WARNING: 0xFEE75C, SUCCESS: 0x57F287,
+  INFO: 0x5865F2, CRITICAL: 0x992D22, PREVENTIVE: 0x3498DB,
+  WORK_ORDER: 0xE67E22, SUMMARY: 0x9B59B6,
 };
 
 export const DISCORD_EMOJIS = {
   FALLA: '🔴', PREVENTIVO: '🔧', OT_NUEVA: '📋',
-  OT_COMPLETADA: '✅', URGENTE: '🚨', INFO: 'ℹ️',
-  WARNING: '⚠️', SUCCESS: '✅', TASK: '📌', AGENDA: '📅',
+  OT_COMPLETADA: '✅', URGENTE: '🚨', TASK: '📌', AGENDA: '📅',
 };
 ```
 
 ---
 
-## Flujos interactivos
+## Variables de entorno
 
-```
-Selección de persona:
-  Bot muestra botones numerados (1, 2, 3...) → usuario clickea → continúa
-
-Reprogramar:
-  Usuario dice "para el jueves" → GPT extrae fecha → confirma y actualiza
-
-Nuevo contacto:
-  No se encontró persona → bot pregunta nombre completo → crea Contact en Prisma
-```
-
----
-
-## Variables de entorno requeridas
-
+### Bot Service (discord-bot/.env)
 ```env
-DISCORD_BOT_TOKEN=...          # Bot token para DMs y botones
-DISCORD_GUILD_ID=...           # Servidor Discord
-OPENAI_API_KEY=...             # Para Whisper + GPT extraction
+DISCORD_BOT_TOKEN=...
+DISCORD_GUILD_ID=...
+OPENAI_API_KEY=...
+DATABASE_URL=...              # Misma DB que orvit
+BOT_API_KEY=...               # Auth para requests de ORVIT
+PORT=3001
+```
+
+### ORVIT (orvit-v1/.env)
+```env
+BOT_SERVICE_URL=https://bot.example.com   # URL del bot service en Railway
+BOT_API_KEY=...                            # Mismo key que el bot
 ```

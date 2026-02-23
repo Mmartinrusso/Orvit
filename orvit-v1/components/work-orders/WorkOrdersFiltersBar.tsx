@@ -217,7 +217,7 @@ export function WorkOrdersFiltersBar({
             placeholder="Buscar órdenes..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="pl-9 h-9 text-xs bg-background"
+            className="pl-9 h-8 text-xs bg-background"
           />
           {localSearch && (
             <Button
@@ -239,7 +239,7 @@ export function WorkOrdersFiltersBar({
           value={filters.status || 'ALL'}
           onValueChange={(value) => handleFilterChange('status', value === 'ALL' ? null : value)}
         >
-          <SelectTrigger className="h-9 flex-1 min-w-[130px] text-xs bg-background">
+          <SelectTrigger className="h-8 w-[130px] text-xs bg-background">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
@@ -257,7 +257,7 @@ export function WorkOrdersFiltersBar({
           value={filters.priority || 'ALL'}
           onValueChange={(value) => handleFilterChange('priority', value === 'ALL' ? null : value)}
         >
-          <SelectTrigger className="h-9 flex-1 min-w-[120px] text-xs bg-background">
+          <SelectTrigger className="h-8 w-[120px] text-xs bg-background">
             <SelectValue placeholder="Prioridad" />
           </SelectTrigger>
           <SelectContent>
@@ -274,7 +274,7 @@ export function WorkOrdersFiltersBar({
           value={filters.assignee || 'all'}
           onValueChange={(value) => handleFilterChange('assignee', value)}
         >
-          <SelectTrigger className="h-9 flex-1 min-w-[150px] text-xs bg-background">
+          <SelectTrigger className="h-8 w-[150px] text-xs bg-background">
             <SelectValue placeholder="Responsable" />
           </SelectTrigger>
           <SelectContent>
@@ -294,7 +294,7 @@ export function WorkOrdersFiltersBar({
             value={filters.machineId?.toString() || 'all'}
             onValueChange={(value) => handleFilterChange('machineId', value === 'all' ? null : parseInt(value))}
           >
-            <SelectTrigger className="h-9 flex-1 min-w-[150px] text-xs bg-background">
+            <SelectTrigger className="h-8 w-[150px] text-xs bg-background">
               <SelectValue placeholder="Máquina" />
             </SelectTrigger>
             <SelectContent>
@@ -313,7 +313,7 @@ export function WorkOrdersFiltersBar({
           value={filters.sortBy || 'none'}
           onValueChange={(value) => handleFilterChange('sortBy', value === 'none' ? undefined : value)}
         >
-          <SelectTrigger className="h-9 flex-1 min-w-[140px] text-xs bg-background">
+          <SelectTrigger className="h-8 w-[140px] text-xs bg-background">
             <ArrowUpDown className="h-3 w-3 mr-1.5" />
             <SelectValue placeholder="Ordenar" />
           </SelectTrigger>
@@ -336,12 +336,15 @@ export function WorkOrdersFiltersBar({
         >
           <Button 
             variant="outline" 
-            className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-9 text-xs"
+            className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-8 text-xs"
           >
             <SlidersHorizontal className="h-3 w-3 mr-1.5" />
             Más filtros
           </Button>
         </WorkOrdersAdvancedFiltersSheet>
+
+        {/* Separador vertical */}
+        <div className="h-6 w-px bg-border mx-1" />
 
         {/* Toggle vista */}
         <ToggleGroup
@@ -353,14 +356,14 @@ export function WorkOrdersFiltersBar({
           <ToggleGroupItem 
             value="grid" 
             aria-label="Vista de cuadrícula" 
-            className="h-9 px-3 data-[state=on]:bg-muted"
+            className="h-8 px-3 data-[state=on]:bg-muted"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
           </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="table" 
-            aria-label="Vista de tabla" 
-            className="h-9 px-3 data-[state=on]:bg-muted"
+          <ToggleGroupItem
+            value="table"
+            aria-label="Vista de tabla"
+            className="h-8 px-3 data-[state=on]:bg-muted"
           >
             <List className="h-3.5 w-3.5" />
           </ToggleGroupItem>

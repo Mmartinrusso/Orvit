@@ -100,7 +100,7 @@ export function KpiCard({ data, compact = false }: KpiCardProps) {
 
         {/* Valor principal */}
         <div className={cn(compact ? 'mb-2' : 'mb-3')}>
-          <p className={cn('font-bold text-foreground', compact ? 'text-xl' : 'text-2xl')}>
+          <p data-slot="kpi-value" className={cn('font-bold text-foreground', compact ? 'text-xl' : 'text-2xl')}>
             {formatCurrency(data.total)}
           </p>
           <p className={cn('text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>

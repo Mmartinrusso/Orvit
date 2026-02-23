@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -240,7 +241,7 @@ export function LogisticsConfig({ companyId }: LogisticsConfigProps) {
                   <p>• Radio de {config?.rutaMaxDistanciaKm || 5} km desde depósito</p>
                   <p>
                     • Área cubierta aproximada:{' '}
-                    {(Math.PI * Math.pow(parseFloat(config?.rutaMaxDistanciaKm || 5), 2)).toFixed(1)} km²
+                    {formatNumber(Math.PI * Math.pow(parseFloat(config?.rutaMaxDistanciaKm || 5), 2), 1)} km²
                   </p>
                 </div>
               </div>

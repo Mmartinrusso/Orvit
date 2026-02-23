@@ -351,15 +351,15 @@ export default function FallasPage() {
   return (
     <div className="h-screen sidebar-shell flex flex-col min-h-0">
       {/* V2: Header sticky con selector de vista */}
-      <div className="sticky top-0 z-20 border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-4">
+      <div className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="px-4 md:px-6 pt-4 pb-3 flex items-center justify-between gap-4">
           {/* Lado izquierdo: Título */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0">
-              <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">
+              <h1 className="text-xl font-semibold text-foreground truncate">
                 Fallas
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
+              <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
                 Sistema de Mantenimiento Correctivo
               </p>
             </div>
@@ -388,6 +388,8 @@ export default function FallasPage() {
           {/* V2: Barra de vistas guardadas (presets) - siempre visible */}
           <FailuresSavedViewsBar failures={gridData || []} />
 
+          <div className="border-t border-border" />
+
           {/* Vista Reportes: KPIs, filtros y grid/tabla */}
           {currentView === 'reportes' && (
             <>
@@ -396,6 +398,8 @@ export default function FallasPage() {
                 activeFilter={effectiveFilters}
                 onFilterChange={handleFiltersChange}
               />
+
+              <div className="border-t border-border" />
 
               {/* Filtros */}
               <FailureFiltersBar
@@ -412,6 +416,7 @@ export default function FallasPage() {
                   onClearAll={handleClearAll}
                   machineName={machineName}
                 />
+                <div className="h-6 w-px bg-border" />
                 <ToggleGroup
                   type="single"
                   value={viewMode}
@@ -529,6 +534,7 @@ export default function FallasPage() {
         onSuccess={() => {
           setEditDialogOpen(false);
           setFailureToEdit(null);
+          queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
         }}
       />
 
@@ -541,6 +547,7 @@ export default function FallasPage() {
         onSuccess={() => {
           setDeleteDialogOpen(false);
           setFailureToDelete(null);
+          queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
         }}
       />
     </div>

@@ -66,7 +66,7 @@ export function QuoteItemTable({ items, onUpdateItem, onRemoveItem }: QuoteItemT
                     <span>•</span>
                     <span>Costo: {formatCurrency(item.product.costPrice)}</span>
                     <span>•</span>
-                    <span className="text-success">Margen: {(((item.unitPrice - item.product.costPrice) / item.product.costPrice) * 100).toFixed(1)}%</span>
+                    <span className="text-success">Margen: {formatNumber(((item.unitPrice - item.product.costPrice) / item.product.costPrice) * 100, 1)}%</span>
                   </div>
                 </div>
                 {hasInsufficientStock(item) && (

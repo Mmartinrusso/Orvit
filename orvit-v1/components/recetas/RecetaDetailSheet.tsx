@@ -16,7 +16,7 @@ import {
   Clock, CheckCircle2, XCircle, Calculator, PieChart, BarChart3,
   TrendingUp, Info, Copy, Printer, Loader2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface RecetaDetailSheetProps {
   open: boolean;
@@ -286,7 +286,7 @@ export default function RecetaDetailSheet({
                                   <div className="flex-1">
                                     <p className="font-medium">{ing.supplyName}</p>
                                     <p className="text-sm text-muted-foreground">
-                                      {Number(ing.quantity || 0).toFixed(2)} {ing.unitMeasure}
+                                      {formatNumber(Number(ing.quantity || 0), 2)} {ing.unitMeasure}
                                       {ing.pulsos && ` (${ing.pulsos} pulsos × ${ing.kgPorPulso} kg)`}
                                     </p>
                                   </div>
@@ -295,7 +295,7 @@ export default function RecetaDetailSheet({
                                       ${cost.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                      {percentage.toFixed(1)}%
+                                      {formatNumber(percentage, 1)}%
                                     </p>
                                   </div>
                                 </div>
@@ -334,7 +334,7 @@ export default function RecetaDetailSheet({
                                     <div>
                                       <p className="font-medium">{ing.supplyName}</p>
                                       <p className="text-sm text-muted-foreground">
-                                        {Number(ing.quantity || 0).toFixed(2)} {ing.unitMeasure}
+                                        {formatNumber(Number(ing.quantity || 0), 2)} {ing.unitMeasure}
                                       </p>
                                     </div>
                                     <p className="font-medium text-info-muted-foreground">
@@ -453,7 +453,7 @@ export default function RecetaDetailSheet({
                                     />
                                     {ing.supplyName}
                                   </span>
-                                  <span className="font-medium">{ing.percentage.toFixed(1)}%</span>
+                                  <span className="font-medium">{formatNumber(ing.percentage, 1)}%</span>
                                 </div>
                                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                                   <div

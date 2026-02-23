@@ -401,10 +401,9 @@ export function CollectionsDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-success">
               {data.totalCobrado > 0 && data.totalPendiente + data.totalCobrado > 0
-                ? (
+                ? formatNumber(
                     (data.totalCobrado / (data.totalCobrado + data.totalPendiente)) *
-                    100
-                  ).toFixed(1)
+                    100, 1)
                 : 0}
               %
             </div>
@@ -489,7 +488,7 @@ export function CollectionsDashboard() {
                   <div className="font-semibold">{formatCurrency(status.monto)}</div>
                   <div className="text-xs text-muted-foreground">
                     {data.totalCobrado > 0
-                      ? ((status.monto / data.totalCobrado) * 100).toFixed(1)
+                      ? formatNumber((status.monto / data.totalCobrado) * 100, 1)
                       : 0}
                     % del total
                   </div>

@@ -26,19 +26,19 @@ export function TasksKpisWidget({ data, isLoading }: WidgetComponentProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs text-muted-foreground">Mis pendientes</p>
-              <p className="text-2xl font-semibold">{tasks.myPending}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{tasks.myPending}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Vencen hoy</p>
-              <p className="text-2xl font-semibold">{tasks.dueToday}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{tasks.dueToday}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Atrasadas</p>
-              <p className="text-2xl font-semibold">{tasks.overdue}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{tasks.overdue}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Completadas (7d)</p>
-              <p className="text-2xl font-semibold">{tasks.completed7d}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{tasks.completed7d}</p>
             </div>
           </div>
         )}

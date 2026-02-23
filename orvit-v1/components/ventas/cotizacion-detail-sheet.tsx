@@ -52,10 +52,16 @@ import {
   Loader2,
   ExternalLink,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  ListTree,
 } from 'lucide-react';
+import { CostBreakdownEditor } from '@/components/ventas/cost-breakdown-editor';
+import { QuoteCostComposition } from '@/components/ventas/quote-cost-composition';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface CotizacionDetailSheetProps {
   quoteId: number;
@@ -83,6 +89,7 @@ interface Quote {
   impuestos: number;
   total: number;
   moneda: string;
+  discriminarIva?: boolean;
   condicionesPago?: string;
   diasPlazo?: number;
   condicionesEntrega?: string;
@@ -127,6 +134,12 @@ interface Quote {
       name: string;
       sku?: string;
     };
+    costBreakdown?: Array<{
+      id: number;
+      concepto: string;
+      monto: number;
+      orden: number;
+    }>;
   }>;
   versions?: Array<{
     id: number;
@@ -167,12 +180,22 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     title: string;
     description: string;
     action: () => void;
   }>({ open: false, title: '', description: '', action: () => {} });
+
+  const toggleItemExpand = (itemId: number) => {
+    setExpandedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (open && quoteId) {
@@ -493,6 +516,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                     <table className="w-full text-sm">
                       <thead className="bg-muted">
                         <tr>
+                          <th className="w-8"></th>
                           <th className="px-3 py-2 text-left font-medium">Código</th>
                           <th className="px-3 py-2 text-left font-medium">Descripción</th>
                           <th className="px-3 py-2 text-right font-medium">Cant.</th>
@@ -502,31 +526,74 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                         </tr>
                       </thead>
                       <tbody>
-                        {quote.items.map((item, idx) => (
-                          <tr key={item.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                            <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                              {item.codigo || '-'}
-                            </td>
-                            <td className="px-3 py-2">
-                              <p className="font-medium">{item.descripcion}</p>
-                              {item.notas && (
-                                <p className="text-xs text-muted-foreground">{item.notas}</p>
+                        {quote.items.map((item, idx) => {
+                          const hasBreakdown = item.costBreakdown && item.costBreakdown.length > 0;
+                          const isExpanded = expandedItems.has(item.id);
+                          return (
+                            <>
+                              <tr key={item.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                                <td className="px-1 py-2 text-center">
+                                  {hasBreakdown && (
+                                    <button
+                                      onClick={() => toggleItemExpand(item.id)}
+                                      className="p-0.5 rounded hover:bg-muted"
+                                    >
+                                      {isExpanded
+                                        ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                                        : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                      }
+                                    </button>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                                  {item.codigo || '-'}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-medium">{item.descripcion}</p>
+                                    {hasBreakdown && (
+                                      <ListTree className="h-3.5 w-3.5 text-primary/60" />
+                                    )}
+                                  </div>
+                                  {item.notas && (
+                                    <p className="text-xs text-muted-foreground">{item.notas}</p>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {Number(item.cantidad).toLocaleString('es-AR')} {item.unidad}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {formatCurrency(Number(item.precioUnitario), quote.moneda)}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {Number(item.descuento) > 0 ? `${Number(item.descuento)}%` : '-'}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium">
+                                  {formatCurrency(Number(item.subtotal), quote.moneda)}
+                                </td>
+                              </tr>
+                              {hasBreakdown && isExpanded && (
+                                <tr key={`${item.id}-breakdown`} className="bg-muted/20">
+                                  <td colSpan={7} className="px-6 py-2">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex-1 space-y-1">
+                                        <p className="text-xs font-medium text-muted-foreground mb-1.5">Desglose del precio unitario</p>
+                                        {item.costBreakdown!.map((cb) => (
+                                          <div key={cb.id} className="flex justify-between text-sm pl-2 border-l-2 border-primary/30">
+                                            <span className="text-muted-foreground">{cb.concepto}</span>
+                                            <span className="font-medium tabular-nums">
+                                              {formatCurrency(Number(cb.monto), quote.moneda)}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
                               )}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {Number(item.cantidad).toLocaleString('es-AR')} {item.unidad}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {formatCurrency(Number(item.precioUnitario), quote.moneda)}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {Number(item.descuento) > 0 ? `${Number(item.descuento)}%` : '-'}
-                            </td>
-                            <td className="px-3 py-2 text-right font-medium">
-                              {formatCurrency(Number(item.subtotal), quote.moneda)}
-                            </td>
-                          </tr>
-                        ))}
+                            </>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -544,10 +611,17 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                           <span>-{formatCurrency(Number(quote.descuentoMonto), quote.moneda)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-sm">
-                        <span>IVA ({Number(quote.tasaIva)}%):</span>
-                        <span>{formatCurrency(Number(quote.impuestos), quote.moneda)}</span>
-                      </div>
+                      {quote.discriminarIva && Number(quote.impuestos) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span>IVA ({Number(quote.tasaIva)}%):</span>
+                          <span>{formatCurrency(Number(quote.impuestos), quote.moneda)}</span>
+                        </div>
+                      )}
+                      {!quote.discriminarIva && (
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>IVA incluido en precios</span>
+                        </div>
+                      )}
                       <Separator />
                       <div className="flex justify-between font-semibold text-lg">
                         <span>Total:</span>
@@ -555,6 +629,9 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                       </div>
                     </div>
                   </div>
+
+                  {/* Composición global de costos */}
+                  <QuoteCostComposition items={quote.items} moneda={quote.moneda} />
                 </TabsContent>
 
                 <TabsContent value="condiciones" className="mt-4 space-y-4">
@@ -647,7 +724,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                                 <div>
                                   <p className="font-medium">{version.motivo || 'Sin descripción'}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    {format(new Date(version.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                                    {formatDateTime(version.createdAt)}
                                     {version.createdByUser && ` por ${version.createdByUser.name}`}
                                   </p>
                                 </div>
@@ -737,7 +814,7 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                           </p>
                           {item.fecha && (
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(item.fecha), "dd/MM/yyyy HH:mm", { locale: es })}
+                              {formatDateTime(item.fecha)}
                             </p>
                           )}
                           {item.actor && (

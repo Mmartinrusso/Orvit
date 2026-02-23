@@ -5,6 +5,7 @@ const DEBUG = false;
 const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
 import { useState, useRef, useEffect } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -323,7 +324,7 @@ export function ProductFileUpload({
                     <div>
                       <p className="text-sm font-medium">{file.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
+                        {formatFileSize(file.size)} • {formatDate(file.uploadedAt)}
                       </p>
                     </div>
                   </div>

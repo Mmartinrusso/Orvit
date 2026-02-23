@@ -36,8 +36,8 @@ import {
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useCompany } from '@/contexts/CompanyContext';
-import NewRoutineTemplateForm from '@/components/production/NewRoutineTemplateForm';
-import NewRoutineExecutionForm from '@/components/production/NewRoutineExecutionForm';
+import NewRoutineTemplateForm from '@/components/produccion/NewRoutineTemplateForm';
+import NewRoutineExecutionForm from '@/components/produccion/NewRoutineExecutionForm';
 
 interface RoutineTemplate {
   id: number;

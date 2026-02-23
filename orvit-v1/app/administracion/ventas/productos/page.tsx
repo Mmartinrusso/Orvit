@@ -16,7 +16,7 @@ export default function ProductosPage() {
       <div className="w-full p-0">
         <div className="px-4 md:px-6 pt-4 pb-3">
           <h1 className="text-xl font-semibold text-foreground">Productos</h1>
-          <p className="text-sm text-muted-foreground mt-1">Cargando...</p>
+          <p className="text-sm text-muted-foreground mt-1">Cargando productos...</p>
         </div>
       </div>
     );

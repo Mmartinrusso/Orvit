@@ -63,7 +63,7 @@ import {
  AlertCircle,
  CheckCircle2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface Proveedor {
@@ -1018,7 +1018,7 @@ export function CotizacionFormModal({
  <div>
  <p className="font-medium text-sm">{pdfFile.name}</p>
  <p className="text-xs text-muted-foreground">
- {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+ {formatNumber(pdfFile.size / 1024 / 1024, 2)} MB
  </p>
  </div>
  </div>

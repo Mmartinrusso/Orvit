@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import {
  Dialog,
  DialogContent,
@@ -26,7 +27,7 @@ import {
  ShoppingCart,
  ArrowRight
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 // ============ UTILS ============
 function formatCurrency(value: number): string {
@@ -38,7 +39,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompact(value: number): string {
- if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+ if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
  return formatCurrency(value);
 }
@@ -234,7 +235,7 @@ function ProveedorDetailContent({
  <div className="grid grid-cols-6 gap-2">
  {data.comprasPorMes.map((m) => (
  <div key={m.mes} className="text-center p-2 rounded bg-muted/20">
- <div className="text-[10px] text-muted-foreground">{m.mes}</div>
+ <div className="text-xs text-muted-foreground">{m.mes}</div>
  <div className="text-sm font-medium">{formatCompact(m.total)}</div>
  </div>
  ))}
@@ -289,11 +290,11 @@ function ProveedorDetailContent({
  <div className="flex items-center gap-2">
  <span className="font-mono text-xs">{f.numero}</span>
  <span className="text-xs text-muted-foreground">
- {new Date(f.fecha).toLocaleDateString('es-AR')}
+ {formatDate(f.fecha)}
  </span>
  </div>
  <div className="flex items-center gap-2">
- <Badge variant={f.estado === 'pagada' ? 'default' : 'outline'} className="text-[10px]">
+ <Badge variant={f.estado === 'pagada' ? 'default' : 'outline'} className="text-xs">
  {f.estado}
  </Badge>
  <span className="font-medium">{formatCompact(f.total)}</span>
@@ -357,7 +358,7 @@ function ItemDetailContent({
  <div className="p-3 rounded-lg bg-muted/30">
  <div className="text-xs text-muted-foreground mb-1">Total Comprado (6m)</div>
  <div className="text-xl font-semibold">{formatCompact(data.totalComprado)}</div>
- <div className="text-xs text-muted-foreground">{data.cantidadTotal.toFixed(0)} unidades</div>
+ <div className="text-xs text-muted-foreground">{formatNumber(data.cantidadTotal, 0)} unidades</div>
  </div>
  <div className="p-3 rounded-lg bg-muted/30">
  <div className="text-xs text-muted-foreground mb-1">Precio Promedio</div>
@@ -374,7 +375,7 @@ function ItemDetailContent({
  ) : precioTrend < 0 ? (
  <TrendingDown className="h-4 w-4 text-success" />
  ) : null}
- {Math.abs(precioTrend).toFixed(1)}%
+ {formatNumber(Math.abs(precioTrend), 1)}%
  </div>
  <div className="text-xs text-muted-foreground">vs compra anterior</div>
  </div>
@@ -399,7 +400,7 @@ function ItemDetailContent({
  <div className="flex items-center gap-2">
  <span className="truncate max-w-[200px]">{p.nombre}</span>
  {idx === 0 && (
- <Badge variant="secondary" className="text-[10px]">Mejor precio</Badge>
+ <Badge variant="secondary" className="text-xs">Mejor precio</Badge>
  )}
  </div>
  <div className="flex items-center gap-3">
@@ -426,7 +427,7 @@ function ItemDetailContent({
  <div className="grid grid-cols-6 gap-2">
  {data.comprasPorMes.map((m) => (
  <div key={m.mes} className="text-center p-2 rounded bg-muted/20">
- <div className="text-[10px] text-muted-foreground">{m.mes}</div>
+ <div className="text-xs text-muted-foreground">{m.mes}</div>
  <div className="text-xs text-muted-foreground">{m.cantidad} uds</div>
  <div className="text-sm font-medium">{formatCompact(m.total)}</div>
  </div>
@@ -450,7 +451,7 @@ function ItemDetailContent({
  <div key={idx} className="flex items-center justify-between text-sm p-2 rounded bg-muted/20">
  <div className="flex items-center gap-3">
  <span className="text-xs text-muted-foreground">
- {new Date(c.fecha).toLocaleDateString('es-AR')}
+ {formatDate(c.fecha)}
  </span>
  <span className="truncate max-w-[150px]">{c.proveedor}</span>
  </div>

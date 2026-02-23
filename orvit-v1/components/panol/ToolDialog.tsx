@@ -509,13 +509,13 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
           {/* Inventario y Estado */}
           <div className="space-y-4">
             <div className="bg-card p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-accent-purple-muted-foreground mb-3 flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Inventario
               </h3>
               
               {formData.itemType && (
-                <div className="mb-3 p-2 bg-purple-100 dark:bg-purple-800/30 rounded text-xs text-purple-800 dark:text-purple-200">
+                <div className="mb-3 p-2 bg-accent-purple-muted rounded text-xs text-accent-purple-muted-foreground">
                   {formData.itemType === 'TOOL' 
                                     ? 'Herramientas: Se prestan temporalmente y se devuelven al pañol'
                 : 'Repuestos/Materiales: Se consumen en las máquinas y agotan el stock'
@@ -715,13 +715,13 @@ export default function ToolDialog({ isOpen, onClose, tool, mode, onSave }: Tool
                     </div>
                     <div className="text-sm text-success">Componentes totales</div>
                   </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="bg-accent-purple-muted p-4 rounded-lg border border-accent-purple-muted">
                     <div className="text-2xl font-bold text-purple-600">
                       {componentUsage.reduce((total, usage) => 
                         total + usage.components.reduce((sum: number, comp: any) => sum + (comp.quantityNeeded || 1), 0), 0
                       )}
                     </div>
-                    <div className="text-sm text-purple-700 dark:text-purple-300">Unidades necesarias</div>
+                    <div className="text-sm text-accent-purple-muted-foreground">Unidades necesarias</div>
                   </div>
                 </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -444,7 +445,7 @@ export default function TransferenciasPage() {
                 {transferencias.map((transfer) => (
                   <TableRow key={transfer.id}>
                     <TableCell className="font-medium">{transfer.numero}</TableCell>
-                    <TableCell>{new Date(transfer.fecha).toLocaleDateString('es-AR')}</TableCell>
+                    <TableCell>{formatDate(transfer.fecha)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {transfer.origenCaja ? (

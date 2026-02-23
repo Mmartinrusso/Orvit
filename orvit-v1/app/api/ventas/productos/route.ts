@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
       costType,
       recipeId,
       purchaseInputId,
+      aplicaComision,
     } = validation.data;
 
     // Execute with idempotency support
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
             location,
             blocksPerM2: blocksPerM2 ? parseInt(blocksPerM2) : null,
             isActive,
+            aplicaComision: aplicaComision ?? true,
             images: images,
             volumeUnit,
             salePrice: salePrice ? parseFloat(salePrice) : null,

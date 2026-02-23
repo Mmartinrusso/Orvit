@@ -113,7 +113,7 @@ export default function GarantiasPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -203,7 +203,7 @@ export default function GarantiasPage() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    Cargando...
+                    Cargando garantías...
                   </TableCell>
                 </TableRow>
               ) : filteredWarranties.length === 0 ? (

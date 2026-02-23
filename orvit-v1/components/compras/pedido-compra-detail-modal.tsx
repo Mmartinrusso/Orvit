@@ -483,7 +483,7 @@ export function PedidoCompraDetailModal({
  {loading ? (
  <div className="flex-1 flex items-center justify-center">
  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
- <span className="ml-2 text-xs text-muted-foreground">Cargando...</span>
+ <span className="ml-2 text-xs text-muted-foreground">Cargando pedido de compra...</span>
  </div>
  ) : !pedido ? (
  <div className="flex-1 flex flex-col items-center justify-center">
@@ -620,19 +620,19 @@ export function PedidoCompraDetailModal({
  </div>
  <div className="min-w-0">
  <span className="text-sm font-semibold truncate block">{cot.supplier.name}</span>
- <p className="text-[10px] text-muted-foreground font-mono">{cot.numero}</p>
+ <p className="text-xs text-muted-foreground font-mono">{cot.numero}</p>
  </div>
  </div>
  </div>
  <div className="flex flex-col items-end gap-1 shrink-0">
  {cot.esSeleccionada && (
- <Badge className="bg-primary text-primary-foreground text-[10px] h-5 px-2">
+ <Badge className="bg-primary text-primary-foreground text-xs h-5 px-2">
  <Check className="w-3 h-3 mr-1" />
  Seleccionada
  </Badge>
  )}
  {esRecomendada && !cot.esSeleccionada && (
- <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted text-[10px] h-5 px-2">
+ <Badge className="bg-warning-muted text-warning-muted-foreground border-warning-muted text-xs h-5 px-2">
  <Trophy className="w-3 h-3 mr-1" />
  Recomendada
  </Badge>
@@ -645,7 +645,7 @@ export function PedidoCompraDetailModal({
  <div className="px-4 py-3 border-b">
  <div className="flex items-end justify-between gap-2">
  <div>
- <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</span>
+ <span className="text-xs uppercase tracking-wider text-muted-foreground">Total</span>
  <p className={cn(
  'text-2xl font-bold leading-none mt-0.5',
  esMejorPrecio ? 'text-success' : ''
@@ -653,16 +653,16 @@ export function PedidoCompraDetailModal({
  {formatCurrency(cot.total, cot.moneda)}
  </p>
  {score && score.diffPrecio > 0 && (
- <p className="text-[10px] text-muted-foreground mt-1">+{score.diffPrecio}% vs mejor</p>
+ <p className="text-xs text-muted-foreground mt-1">+{score.diffPrecio}% vs mejor</p>
  )}
  </div>
  <div className="flex flex-col items-end gap-1">
  {esMejorPrecio && pedido.quotations.length > 1 && (
- <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-success-muted text-success border-success-muted">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 bg-success-muted text-success border-success-muted">
  Mejor precio
  </Badge>
  )}
- <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+ <div className="flex items-center gap-1 text-xs text-muted-foreground">
  <Truck className="w-3 h-3" />
  <span>{cot.plazoEntrega ? `${cot.plazoEntrega}d` : '-'}</span>
  <span className="mx-1">·</span>
@@ -677,7 +677,7 @@ export function PedidoCompraDetailModal({
  {cot.items && cot.items.length > 0 && (
  <div className="px-4 py-2 border-b bg-muted/20 flex-1">
  <div className="flex items-center justify-between mb-2">
- <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+ <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
  Items ({cot.items.length})
  </span>
  </div>
@@ -694,7 +694,7 @@ export function PedidoCompraDetailModal({
  </div>
  ))}
  {cot.items.length > 3 && (
- <p className="text-[10px] text-muted-foreground text-center pt-1">
+ <p className="text-xs text-muted-foreground text-center pt-1">
  +{cot.items.length - 3} items más
  </p>
  )}
@@ -703,7 +703,7 @@ export function PedidoCompraDetailModal({
  )}
 
  {/* Info extra compacta */}
- <div className="px-4 py-2 text-[10px] flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
+ <div className="px-4 py-2 text-xs flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
  <span className="flex items-center gap-1">
  <Calendar className="w-3 h-3" />
  {format(new Date(cot.fechaCotizacion), 'dd/MM/yy')}
@@ -983,7 +983,7 @@ export function PedidoCompraDetailModal({
  <DialogHeader>
  <div className="flex items-center justify-between">
  <DialogTitle className="text-xs font-medium">Vista previa</DialogTitle>
- <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => previewPdf && window.open(previewPdf, '_blank')}>
+ <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => previewPdf && window.open(previewPdf, '_blank')}>
  <FileDown className="w-3 h-3 mr-1" />Abrir
  </Button>
  </div>
@@ -1042,15 +1042,15 @@ export function PedidoCompraDetailModal({
  <div className="grid grid-cols-3 gap-2 text-center">
  <div className="p-2 bg-background rounded text-xs">
  <p className="font-bold text-primary">{analysis.pesos.precio}%</p>
- <p className="text-[10px] text-muted-foreground">Precio</p>
+ <p className="text-xs text-muted-foreground">Precio</p>
  </div>
  <div className="p-2 bg-background rounded text-xs">
  <p className="font-bold text-primary">{analysis.pesos.pago}%</p>
- <p className="text-[10px] text-muted-foreground">Plazo</p>
+ <p className="text-xs text-muted-foreground">Plazo</p>
  </div>
  <div className="p-2 bg-background rounded text-xs">
  <p className="font-bold text-primary">{analysis.pesos.entrega}%</p>
- <p className="text-[10px] text-muted-foreground">Entrega</p>
+ <p className="text-xs text-muted-foreground">Entrega</p>
  </div>
  </div>
  </div>
@@ -1059,7 +1059,7 @@ export function PedidoCompraDetailModal({
  {analysis.scores.map((score, index) => (
  <div key={score.id} className={cn('flex items-center justify-between p-2 rounded border text-xs', index === 0 && 'bg-primary/5 border-primary/30')}>
  <div className="flex items-center gap-2">
- <span className={cn('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold', index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+ <span className={cn('w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold', index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
  {index + 1}
  </span>
  <span className="font-medium">{score.supplier}</span>

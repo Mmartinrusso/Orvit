@@ -33,7 +33,7 @@ export default function AdministracionLayout({ children }: AdministracionLayoutP
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-muted-foreground">Cargando...</div>
+          <div className="text-muted-foreground">Cargando administración...</div>
         </div>
       </MainLayout>
     );

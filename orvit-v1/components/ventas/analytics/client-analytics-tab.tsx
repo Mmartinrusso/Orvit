@@ -27,7 +27,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface ClientAnalyticsTabProps {
   clientId: string;
@@ -124,13 +124,13 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
             <strong className="font-semibold">Alertas activas:</strong>
             <ul className="mt-2 list-disc list-inside space-y-1">
               {data.alerts.nearCreditLimit && (
-                <li>Cerca del límite de crédito ({data.creditMetrics.utilizationRate.toFixed(1)}%)</li>
+                <li>Cerca del límite de crédito ({formatNumber(data.creditMetrics.utilizationRate, 1)}%)</li>
               )}
               {data.alerts.exceededCreditLimit && (
                 <li>Límite de crédito excedido</li>
               )}
               {data.alerts.hasOverdueInvoices && (
-                <li>Facturas vencidas pendientes (${data.paymentMetrics.overdueAmount.toFixed(2)})</li>
+                <li>Facturas vencidas pendientes (${formatNumber(data.paymentMetrics.overdueAmount, 2)})</li>
               )}
               {data.alerts.slowPayer && (
                 <li>Pagador lento (DSO: {data.paymentMetrics.dso} días)</li>
@@ -180,7 +180,7 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
               <span>{data.salesMetrics.invoiceCount} facturas</span>
               {data.salesMetrics.growthRate !== 0 && (
                 <Badge variant={data.salesMetrics.growthRate > 0 ? 'default' : 'destructive'} className="text-xs">
-                  {data.salesMetrics.growthRate > 0 ? '+' : ''}{data.salesMetrics.growthRate.toFixed(1)}%
+                  {data.salesMetrics.growthRate > 0 ? '+' : ''}{formatNumber(data.salesMetrics.growthRate, 1)}%
                 </Badge>
               )}
             </div>
@@ -200,7 +200,7 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
             <div className="text-2xl font-bold">{data.paymentMetrics.dso} días</div>
             <div className="flex items-center space-x-2 mt-1">
               <Badge variant={data.paymentMetrics.punctualityRate >= 70 ? 'default' : 'destructive'}>
-                {data.paymentMetrics.punctualityRate.toFixed(1)}% puntual
+                {formatNumber(data.paymentMetrics.punctualityRate, 1)}% puntual
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -226,7 +226,7 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
                   data.creditMetrics.utilizationRate >= 75 ? 'text-warning-muted-foreground' :
                   'text-success'
                 )}>
-                  {data.creditMetrics.utilizationRate.toFixed(1)}%
+                  {formatNumber(data.creditMetrics.utilizationRate, 1)}%
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
@@ -298,7 +298,7 @@ export function ClientAnalyticsTab({ clientId }: ClientAnalyticsTabProps) {
                       <div>
                         <p className="text-sm font-medium">{product.productName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {product.quantityBought.toFixed(2)} unidades • {product.orderCount} pedidos
+                          {formatNumber(product.quantityBought, 2)} unidades • {product.orderCount} pedidos
                         </p>
                       </div>
                     </div>

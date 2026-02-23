@@ -33,7 +33,9 @@ export async function POST(
             legalName: true,
           }
         },
-        items: true,
+        items: {
+          include: { costBreakdown: true }
+        },
       }
     });
 
@@ -106,6 +108,7 @@ export async function POST(
           subtotal: cotizacion.subtotal,
           tasaIva: cotizacion.tasaIva,
           impuestos: cotizacion.impuestos,
+          discriminarIva: cotizacion.discriminarIva,
           descuentoTotal: cotizacion.descuentoTotal,
           total: cotizacion.total,
           condicionesPago: cotizacion.condicionesPago,
@@ -119,24 +122,38 @@ export async function POST(
         }
       });
 
-      // Crear items de la orden
-      await tx.saleItem.createMany({
-        data: cotizacion.items.map((item) => ({
-          saleId: orden.id,
-          productId: item.productId,
-          descripcion: item.descripcion,
-          cantidad: item.cantidad,
-          cantidadEntregada: 0,
-          cantidadPendiente: item.cantidad,
-          unidad: item.unidad,
-          precioUnitario: item.precioUnitario,
-          descuento: item.descuento,
-          subtotal: item.subtotal,
-          costo: item.costo,
-          margen: item.margen,
-          notas: item.notas,
-        }))
-      });
+      // Crear items de la orden con desglose de costos
+      for (const quoteItem of cotizacion.items) {
+        const saleItem = await tx.saleItem.create({
+          data: {
+            saleId: orden.id,
+            productId: quoteItem.productId,
+            descripcion: quoteItem.descripcion,
+            cantidad: quoteItem.cantidad,
+            cantidadEntregada: 0,
+            cantidadPendiente: quoteItem.cantidad,
+            unidad: quoteItem.unidad,
+            precioUnitario: quoteItem.precioUnitario,
+            descuento: quoteItem.descuento,
+            subtotal: quoteItem.subtotal,
+            costoUnitario: quoteItem.costoUnitario,
+            notas: quoteItem.notas,
+            aplicaComision: quoteItem.aplicaComision,
+          }
+        });
+
+        // Copiar desglose de costos de la cotización a la venta
+        if (quoteItem.costBreakdown && quoteItem.costBreakdown.length > 0) {
+          await tx.saleItemCostBreakdown.createMany({
+            data: quoteItem.costBreakdown.map((cb) => ({
+              saleItemId: saleItem.id,
+              concepto: cb.concepto,
+              monto: cb.monto,
+              orden: cb.orden,
+            }))
+          });
+        }
+      }
 
       // Actualizar cotización con referencia a la orden
       await tx.quote.update({

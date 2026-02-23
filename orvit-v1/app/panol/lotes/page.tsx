@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -378,7 +379,7 @@ export default function LotesPage() {
                                     {expInfo.status === 'expired' ? `Hace ${expInfo.days}d` : `${expInfo.days}d`}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {format(new Date(lot.expiresAt!), 'dd/MM/yyyy')}
+                                    {formatDate(lot.expiresAt!)}
                                   </p>
                                 </div>
                               </div>
@@ -394,7 +395,7 @@ export default function LotesPage() {
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
-                              {format(new Date(lot.receivedAt), 'dd/MM/yyyy')}
+                              {formatDate(lot.receivedAt)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -440,7 +441,7 @@ export default function LotesPage() {
                   </div>
                   <div className="p-3 rounded-lg bg-muted/50">
                     <p className="text-xs text-muted-foreground">Recibido</p>
-                    <p className="font-semibold">{format(new Date(selectedLot.receivedAt), 'dd/MM/yyyy')}</p>
+                    <p className="font-semibold">{formatDate(selectedLot.receivedAt)}</p>
                   </div>
                   {permissions.canViewCosts && selectedLot.unitCost && (
                     <div className="p-3 rounded-lg bg-muted/50">
@@ -481,7 +482,7 @@ export default function LotesPage() {
                   {loadingInstallations ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <div className="h-6 w-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin mx-auto mb-2" />
-                      Cargando...
+                      Cargando lotes...
                     </div>
                   ) : selectedLot.installations && selectedLot.installations.length > 0 ? (
                     <div className="space-y-3">
@@ -520,7 +521,7 @@ export default function LotesPage() {
                             </div>
                             <div className="text-right text-xs">
                               <p className="text-muted-foreground">
-                                {format(new Date(inst.installedAt), 'dd/MM/yyyy HH:mm')}
+                                {formatDateTime(inst.installedAt)}
                               </p>
                               {inst.workOrder && (
                                 <Badge variant="outline" className="text-xs mt-1">
@@ -533,7 +534,7 @@ export default function LotesPage() {
                           {inst.removedAt && (
                             <div className="mt-2 pt-2 border-t border-dashed text-xs text-muted-foreground">
                               <span className="text-destructive">Removido:</span>{' '}
-                              {format(new Date(inst.removedAt), 'dd/MM/yyyy HH:mm')}
+                              {formatDateTime(inst.removedAt)}
                               {inst.removalReason && ` - ${inst.removalReason}`}
                               {inst.removedBy && ` (por ${inst.removedBy.name})`}
                             </div>

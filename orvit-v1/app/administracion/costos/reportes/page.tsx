@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -226,11 +227,11 @@ export default function ReportesPage() {
 
   const getMargenBadge = (margen: number) => {
     if (margen >= 25) {
-      return <Badge className="bg-success-muted text-success hover:bg-success-muted">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-success-muted text-success hover:bg-success-muted">{formatNumber(margen, 1)}%</Badge>;
     } else if (margen >= 15) {
-      return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">{formatNumber(margen, 1)}%</Badge>;
     } else {
-      return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">{formatNumber(margen, 1)}%</Badge>;
     }
   };
 
@@ -288,7 +289,7 @@ export default function ReportesPage() {
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               {getTendenciaIcon(variacionTotal > 0 ? 'up' : 'down')}
               <span className={variacionTotal > 0 ? 'text-destructive' : 'text-success'}>
-                {variacionTotal > 0 ? '+' : ''}{variacionTotal.toFixed(1)}% vs mes anterior
+                {variacionTotal > 0 ? '+' : ''}{formatNumber(variacionTotal, 1)}% vs mes anterior
               </span>
             </div>
           </CardContent>
@@ -371,7 +372,7 @@ export default function ReportesPage() {
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getTendenciaIcon(reporte.tendencia)}
                             <span className={reporte.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                              {reporte.variacion > 0 ? '+' : ''}{reporte.variacion.toFixed(1)}%
+                              {reporte.variacion > 0 ? '+' : ''}{formatNumber(reporte.variacion, 1)}%
                             </span>
                           </div>
                         </div>
@@ -400,7 +401,7 @@ export default function ReportesPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium">{formatCurrency(reporte.costoActual)}</div>
-                          <div className="text-xs text-muted-foreground">{porcentaje.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground">{formatNumber(porcentaje, 1)}%</div>
                         </div>
                       </div>
                     );
@@ -493,15 +494,15 @@ export default function ReportesPage() {
                       <div>
                         <div className="font-medium">{insumo.nombre}</div>
                         <div className="text-sm text-muted-foreground">
-                          {insumo.categoria} • Impacto: {insumo.impacto.toFixed(1)}%
+                          {insumo.categoria} • Impacto: {formatNumber(insumo.impacto, 1)}%
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
-                        <div className="font-medium">{insumo.impacto.toFixed(1)}%</div>
+                        <div className="font-medium">{formatNumber(insumo.impacto, 1)}%</div>
                         <div className="text-sm text-muted-foreground">
-                          {insumo.variacion > 0 ? '+' : ''}{insumo.variacion.toFixed(1)}% variación
+                          {insumo.variacion > 0 ? '+' : ''}{formatNumber(insumo.variacion, 1)}% variación
                         </div>
                       </div>
                       {getEstadoBadge(insumo.estado)}

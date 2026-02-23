@@ -890,7 +890,7 @@ export function ComprehensiveDashboard({
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
-                            <p className="text-lg font-bold text-foreground">{(product.margin || 0).toFixed(1)}%</p>
+                            <p className="text-lg font-bold text-foreground">{formatNumber(product.margin || 0, 1)}%</p>
                             <p className="text-xs text-muted-foreground">{product.units} vendidas</p>
                           </div>
                         </div>
@@ -951,7 +951,7 @@ export function ComprehensiveDashboard({
                               <p className="text-xs font-bold text-success">MÁXIMA PRIORIDAD</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
-                              <strong className="text-foreground">{mejorOportunidad.name}</strong>: Margen {mejorOportunidad.margin?.toFixed(1)}%
+                              <strong className="text-foreground">{mejorOportunidad.name}</strong>: Margen {formatNumber(mejorOportunidad.margin, 1)}%
                               × {formatNumber(mejorOportunidad.units)} unidades = Mejor ROI.
                             </p>
                           </div>
@@ -991,7 +991,7 @@ export function ComprehensiveDashboard({
                               <p className="text-xs font-bold text-destructive">Acción Requerida</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
-                              {productosRiesgo.length} productos con margen {'<'}25%. Urgente: <strong className="text-foreground">{productosRiesgo[0].name}</strong> ({productosRiesgo[0].margin?.toFixed(1)}%).
+                              {productosRiesgo.length} productos con margen {'<'}25%. Urgente: <strong className="text-foreground">{productosRiesgo[0].name}</strong> ({formatNumber(productosRiesgo[0].margin, 1)}%).
                             </p>
                           </div>
                         )}
@@ -1011,7 +1011,7 @@ export function ComprehensiveDashboard({
                             )}>Concentración</p>
                           </div>
                           <p className="text-xs text-muted-foreground leading-tight">
-                            Top 10: <strong className="text-foreground">{concentracionTop10.toFixed(1)}%</strong> de ingresos.
+                            Top 10: <strong className="text-foreground">{formatNumber(concentracionTop10, 1)}%</strong> de ingresos.
                             {concentracionTop10 > 70 ? ' Diversificar.' : ' OK.'}
                           </p>
                         </div>
@@ -1038,8 +1038,8 @@ export function ComprehensiveDashboard({
                             </div>
                             <p className="text-xs text-muted-foreground leading-tight">
                               {ingresosViguetas > ingresosBloques
-                                ? `Viguetas lideran (${margenViguetas.toFixed(0)}% margen)`
-                                : `Bloques lideran (${margenBloques.toFixed(0)}% margen)`
+                                ? `Viguetas lideran (${formatNumber(margenViguetas, 0)}% margen)`
+                                : `Bloques lideran (${formatNumber(margenBloques, 0)}% margen)`
                               }
                             </p>
                           </div>
@@ -1636,7 +1636,7 @@ export function ComprehensiveDashboard({
                       )}>
                         <p className="text-xs font-bold text-foreground mb-1">Concentración de Producción</p>
                         <p className="text-xs text-muted-foreground leading-tight">
-                          Top 10 productos representan <strong>{concentracionTop10.toFixed(1)}%</strong> de la producción total.
+                          Top 10 productos representan <strong>{formatNumber(concentracionTop10, 1)}%</strong> de la producción total.
                           {concentracionTop10 > 70 ? ' Alta concentración en pocos productos.' : ' Buena diversificación del mix de producción.'}
                     </p>
                   </div>

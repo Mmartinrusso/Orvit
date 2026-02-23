@@ -1,4 +1,4 @@
-import type { DashboardSummary, RangeKey } from '@/hooks/useAdminDashboardSummary';
+import type { DashboardSummary, RangeKey } from '@/hooks/use-admin-dashboard-summary';
 
 export type WidgetDef = {
   id: string;

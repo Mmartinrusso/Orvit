@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,9 +68,7 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-AR');
-}
+// formatDate imported from @/lib/date-utils
 
 export default function TasasPage() {
   const confirm = useConfirm();

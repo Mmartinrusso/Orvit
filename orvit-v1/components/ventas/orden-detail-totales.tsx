@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
 
@@ -97,7 +97,7 @@ export function OrdenDetailTotales({ orden }: OrdenDetailTotalesProps) {
               <div className="flex justify-between text-sm">
                 <span>Margen %</span>
                 <span className={cn('font-bold', Number(orden.margenPorcentaje) < 15 ? 'text-destructive' : 'text-success')}>
-                  {Number(orden.margenPorcentaje).toFixed(2)}%
+                  {formatNumber(Number(orden.margenPorcentaje), 2)}%
                 </span>
               </div>
             </div>

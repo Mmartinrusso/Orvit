@@ -109,25 +109,37 @@ export function useCreatePriceComparison() {
  */
 export function useDeletePriceComparison() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, companyId }: { id: string; companyId: number | string }) => {
       const response = await fetch(`/api/price-comparisons?id=${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Error al eliminar comparación');
       }
-      
+
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      // Invalidar queries de comparaciones para esta empresa
-      queryClient.invalidateQueries({ 
-        queryKey: priceComparisonsKey(variables.companyId) 
-      });
+    onMutate: async ({ id, companyId }) => {
+      const key = priceComparisonsKey(companyId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<PriceComparison[]>(key);
+      queryClient.setQueryData<PriceComparison[]>(
+        key,
+        (old) => old?.filter(c => c.id !== id) ?? []
+      );
+      return { previous, key };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(context.key, context.previous);
+      }
+    },
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: priceComparisonsKey(variables.companyId) });
     },
   });
 }

@@ -48,7 +48,7 @@ import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useCargasBootstrap } from '@/hooks/use-cargas-bootstrap';
 import { DatePicker } from '@/components/ui/date-picker';
 import { exportLoadsToCSV, downloadCSV } from '@/lib/cargas/utils';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -1920,7 +1920,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                                   {itemsInPosition[0] && (() => {
                                     const item = itemsInPosition[0];
                                     return (
-                                      <div className="text-[10px] leading-tight">
+                                      <div className="text-xs leading-tight">
                                         <div className="font-medium truncate" title={item.productName}>
                                           {item.productName.substring(0, 15)}...
                                         </div>
@@ -2753,7 +2753,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
           <strong>Capacidad:</strong> ${load.truck.length}m${load.truck.maxWeight ? ` • ${load.truck.maxWeight}Tn` : ''}
         </div>
         <div class="print-info-item">
-          <strong>Total:</strong> ${totalLength.toFixed(2)}m${totalWeight > 0 ? ` • ${totalWeight.toFixed(2)}Tn` : ''}
+          <strong>Total:</strong> ${formatNumber(totalLength, 2)}m${totalWeight > 0 ? ` • ${formatNumber(totalWeight, 2)}Tn` : ''}
         </div>
       </div>
 
@@ -2788,19 +2788,19 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
               </tr>
               <tr>
                 <td>Total metros:</td>
-                <td>${totalLength.toFixed(2)} m</td>
+                <td>${formatNumber(totalLength, 2)} m</td>
               </tr>
               ${totalWeight > 0 ? `
                 <tr>
                   <td>Total peso:</td>
-                  <td>${totalWeight.toFixed(2)} Tn</td>
+                  <td>${formatNumber(totalWeight, 2)} Tn</td>
                 </tr>
               ` : ''}
               <tr>
                 <td>Utilización:</td>
                 <td>
-                  ${((totalLength / load.truck.length) * 100).toFixed(1)}%
-                  ${load.truck.maxWeight ? ` • ${((totalWeight / (load.truck.maxWeight || 1)) * 100).toFixed(1)}% peso` : ''}
+                  ${formatNumber((totalLength / load.truck.length) * 100, 1)}%
+                  ${load.truck.maxWeight ? ` • ${formatNumber((totalWeight / (load.truck.maxWeight || 1)) * 100, 1)}% peso` : ''}
                 </td>
               </tr>
             </tbody>
@@ -3139,7 +3139,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                         <span className="font-medium">
                           {selectedTruckData.type === 'EQUIPO' 
                             ? `${selectedTruckData.chasisLength || 0}m (Chasis) + ${selectedTruckData.acopladoLength || 0}m (Acoplado)`
-                            : `${totalLengthUsed.toFixed(2)} m`}
+                            : `${formatNumber(totalLengthUsed, 2)} m`}
                         </span>
                       </div>
                       {selectedTruckData.type === 'EQUIPO' ? (
@@ -3153,7 +3153,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Peso Chasis (cargado):</span>
                             <span className={cn("font-medium", selectedTruckData.chasisWeight && chasisWeight > (selectedTruckData.chasisWeight || 0) && "text-destructive")}>
-                              {chasisWeight.toFixed(2)} Tn
+                              {formatNumber(chasisWeight, 2)} Tn
                             </span>
                           </div>
                           {selectedTruckData.acopladoWeight && (
@@ -3165,13 +3165,13 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Peso Acoplado (cargado):</span>
                             <span className={cn("font-medium", selectedTruckData.acopladoWeight && acopladoWeight > (selectedTruckData.acopladoWeight || 0) && "text-destructive")}>
-                              {acopladoWeight.toFixed(2)} Tn
+                              {formatNumber(acopladoWeight, 2)} Tn
                             </span>
                           </div>
                           <div className="flex justify-between text-sm pt-1 border-t">
                             <span className="text-muted-foreground">Peso Total:</span>
                             <span className={cn("font-medium", totalWeight > (selectedTruckData.maxWeight || 0) && "text-destructive")}>
-                              {totalWeight.toFixed(2)} Tn
+                              {formatNumber(totalWeight, 2)} Tn
                             </span>
                           </div>
                         </>
@@ -3184,7 +3184,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Peso cargado:</span>
                             <span className={cn("font-medium", totalWeight > (selectedTruckData.maxWeight || 0) && "text-destructive")}>
-                              {totalWeight.toFixed(2)} Tn
+                              {formatNumber(totalWeight, 2)} Tn
                             </span>
                           </div>
                         </>
@@ -3491,7 +3491,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                               </td>
                               <td className="p-2">
                                 {item.productId && item.weight ? (
-                                  <span className="text-xs">{(item.weight * item.quantity).toFixed(2)}</span>
+                                  <span className="text-xs">{formatNumber(item.weight * item.quantity, 2)}</span>
                                 ) : (
                                   <span className="text-xs text-muted-foreground">-</span>
                                 )}
@@ -3932,7 +3932,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Total cargado:</span>
-                        <span className="font-semibold text-primary">{loadTotalLength.toFixed(2)} m</span>
+                        <span className="font-semibold text-primary">{formatNumber(loadTotalLength, 2)} m</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Viguetas:</span>
@@ -3964,7 +3964,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
           <div className="border-2 border-border rounded-lg overflow-hidden bg-card shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted border-b-2 border-border">
+                <thead className="bg-muted border-b-2 border-border sticky top-0 z-10">
                   <tr>
                     {selectionMode && (
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground w-10">
@@ -4064,7 +4064,7 @@ export default function LoadsManager({ companyId }: LoadsManagerProps) {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-sm">{load.truck.length} m</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-primary">{loadTotalLength.toFixed(2)} m</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-primary">{formatNumber(loadTotalLength, 2)} m</td>
                         <td className="px-4 py-3 text-sm">{totalItems} uds</td>
                         <td className="px-4 py-3 text-sm">{load.deliveryClient || '-'}</td>
                         {canManageLoads && !selectionMode && (

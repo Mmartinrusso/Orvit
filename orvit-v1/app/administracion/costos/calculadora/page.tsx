@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -179,10 +180,6 @@ export default function CalculadoraCostosPage() {
         const monthName = date.toLocaleString('es-AR', { month: 'long' });
         const capitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1);
         return `${capitalized} ${year}`;
-    };
-
-    const formatNumber = (num: number) => {
-        return new Intl.NumberFormat('es-AR').format(num);
     };
 
     const toggleProductExpansion = (productId: number) => {

@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { toast } from '@/hooks/use-toast';
 import { useGlobalCache, createCacheKey } from '@/hooks/use-global-cache';
 import { useMachinesInitial } from '@/hooks/use-machines-initial';
@@ -1096,13 +1097,13 @@ export default function MaintenanceDialog({
  {maintenance.scheduledDate && (
  <div className="flex items-center gap-1">
  <CalendarIcon className="h-3 w-3" />
- <span>Programado: {format(new Date(maintenance.scheduledDate), 'dd/MM/yyyy', { locale: es })}</span>
+ <span>Programado: {formatDate(maintenance.scheduledDate)}</span>
  </div>
  )}
  {maintenance.completedDate && (
  <div className="flex items-center gap-1">
  <CheckCircle2 className="h-3 w-3" />
- <span>Completado: {format(new Date(maintenance.completedDate), 'dd/MM/yyyy', { locale: es })}</span>
+ <span>Completado: {formatDate(maintenance.completedDate)}</span>
  </div>
  )}
  {maintenance.assignedWorker && (

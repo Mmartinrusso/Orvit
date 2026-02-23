@@ -436,58 +436,52 @@ export default function ProduccionDelDiaPage() {
   }
 
   return (
-    <div className="px-4 md:px-6 py-6 space-y-4">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-            <div
-              className="h-8 w-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${userColors.chart5}15` }}
-            >
-              <Package className="h-5 w-5" style={{ color: userColors.chart5 }} />
-            </div>
-            Producción del Día
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {currentSector.name}
-          </p>
-        </div>
-
-        {/* Status actions */}
-        <div className="flex items-center gap-2">
-          {session && (
-            <Badge className={cn('gap-1', statusConfig[session.status]?.color)}>
-              {statusConfig[session.status]?.icon}
-              {statusConfig[session.status]?.label}
-            </Badge>
-          )}
-          {session?.status === 'DRAFT' && session.entries.length > 0 && (
-            <Button size="sm" onClick={handleSubmit} disabled={submitting} className="gap-1">
-              <Send className="h-4 w-4" />
-              Enviar turno
-            </Button>
-          )}
-          {session?.status === 'SUBMITTED' && (
-            <>
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Producción del Día</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {currentSector.name}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {session && (
+              <Badge className={cn('gap-1', statusConfig[session.status]?.color)}>
+                {statusConfig[session.status]?.icon}
+                {statusConfig[session.status]?.label}
+              </Badge>
+            )}
+            {session?.status === 'DRAFT' && session.entries.length > 0 && (
+              <Button size="sm" onClick={handleSubmit} disabled={submitting} className="gap-1">
+                <Send className="h-4 w-4" />
+                Enviar turno
+              </Button>
+            )}
+            {session?.status === 'SUBMITTED' && (
+              <>
+                <Button size="sm" variant="outline" onClick={handleReopen} disabled={submitting} className="gap-1">
+                  <Unlock className="h-4 w-4" />
+                  Reabrir
+                </Button>
+                <Button size="sm" onClick={handleApprove} disabled={submitting} className="gap-1">
+                  <Check className="h-4 w-4" />
+                  Aprobar
+                </Button>
+              </>
+            )}
+            {session?.status === 'APPROVED' && (
               <Button size="sm" variant="outline" onClick={handleReopen} disabled={submitting} className="gap-1">
                 <Unlock className="h-4 w-4" />
                 Reabrir
               </Button>
-              <Button size="sm" onClick={handleApprove} disabled={submitting} className="gap-1">
-                <Check className="h-4 w-4" />
-                Aprobar
-              </Button>
-            </>
-          )}
-          {session?.status === 'APPROVED' && (
-            <Button size="sm" variant="outline" onClick={handleReopen} disabled={submitting} className="gap-1">
-              <Unlock className="h-4 w-4" />
-              Reabrir
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </div>
+
+      <div className="px-4 md:px-6 space-y-4">
 
       {/* Date & Shift Navigation */}
       <Card>
@@ -718,6 +712,7 @@ export default function ProduccionDelDiaPage() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +112,7 @@ export default function MachineMaintenanceTab({
   const { maintenanceHistory, isLoading: historyLoading, refetch } = useMachineMaintenanceHistory(
     machineId, true, companyId, sectorId
   );
-  const { workOrders, isLoading: workOrdersLoading, isError: workOrdersError } = useMachineWorkOrders(
+  const { workOrders, isLoading: workOrdersLoading, isError: workOrdersError, refetch: refetchWorkOrders } = useMachineWorkOrders(
     machineId, true, companyId, sectorId
   );
   const { components } = useMachineComponents(machineId, true);
@@ -257,7 +257,7 @@ export default function MachineMaintenanceTab({
     const cfg: Record<string, { label: string; icon: React.ReactNode; className: string; dot: string }> = {
       PENDING: { label: 'Pendiente', icon: <Clock className="h-3 w-3" />, className: 'bg-warning-muted text-warning-muted-foreground border-warning-muted/50', dot: 'bg-amber-400' },
       IN_PROGRESS: { label: 'En progreso', icon: <PlayCircle className="h-3 w-3" />, className: 'bg-info-muted text-info-muted-foreground border-info-muted/50', dot: 'bg-blue-400' },
-      COMPLETED: { label: 'Completado', icon: <CheckCircle2 className="h-3 w-3" />, className: 'bg-success-muted text-success border-success-muted/50', dot: 'bg-emerald-400' },
+      COMPLETED: { label: 'Completado', icon: <CheckCircle2 className="h-3 w-3" />, className: 'bg-success-muted text-success border-success-muted/50', dot: 'bg-success' },
       CANCELLED: { label: 'Cancelado', icon: <XCircle className="h-3 w-3" />, className: 'bg-muted text-muted-foreground border-border', dot: 'bg-gray-400' },
     };
     return cfg[status] || cfg.PENDING;
@@ -273,7 +273,7 @@ export default function MachineMaintenanceTab({
     const labels: Record<string, string> = { CRITICAL: 'Crítica', HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja' };
     if (!priority) return null;
     return (
-      <span className={cn('inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium', cfg[priority] || cfg.LOW)}>
+      <span className={cn('inline-flex items-center rounded-full border px-1.5 py-0.5 text-xs font-medium', cfg[priority] || cfg.LOW)}>
         {labels[priority] || priority}
       </span>
     );
@@ -319,7 +319,7 @@ export default function MachineMaintenanceTab({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <p className="font-semibold text-sm truncate">{wo.title}</p>
-              {isOverdue && <Badge variant="destructive" className="text-[10px] h-4 px-1 shrink-0">Vencida</Badge>}
+              {isOverdue && <Badge variant="destructive" className="text-xs h-5 px-1 shrink-0">Vencida</Badge>}
               {getPriorityBadge(wo.priority)}
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
@@ -358,7 +358,7 @@ export default function MachineMaintenanceTab({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Badge className={cn(statusCfg.className, 'text-[10px] border gap-1')}>
+            <Badge className={cn(statusCfg.className, 'text-xs border gap-1')}>
               {statusCfg.icon}
               {statusCfg.label}
             </Badge>
@@ -385,7 +385,7 @@ export default function MachineMaintenanceTab({
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <CalendarDays className="h-4 w-4 text-primary" />
             </div>
-            <Badge className={cn(statusCfg.className, 'text-[10px] border')}>
+            <Badge className={cn(statusCfg.className, 'text-xs border')}>
               {statusCfg.label}
             </Badge>
           </div>
@@ -411,7 +411,7 @@ export default function MachineMaintenanceTab({
                   {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
                 </span>
                 {daysUntil !== null && wo.status === 'PENDING' && (
-                  <span className="font-semibold text-[10px]">
+                  <span className="font-semibold text-xs">
                     {daysUntil < 0 ? `${Math.abs(daysUntil)}d vencido` : daysUntil === 0 ? 'Hoy' : `${daysUntil}d`}
                   </span>
                 )}
@@ -426,7 +426,7 @@ export default function MachineMaintenanceTab({
           </div>
 
           {wo.component && (
-            <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-xs text-muted-foreground">
               <Box className="h-3 w-3" />
               {wo.component.name}
             </div>
@@ -442,7 +442,7 @@ export default function MachineMaintenanceTab({
     const statusCfg = getStatusConfig(wo.status);
     const isOverdue = wo.status === 'PENDING' && wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date());
     const daysUntil = wo.scheduledDate ? differenceInDays(new Date(wo.scheduledDate), new Date()) : null;
-    const accentColor = wo.status === 'COMPLETED' ? 'bg-emerald-500' : isOverdue ? 'bg-destructive' : 'bg-amber-500';
+    const accentColor = wo.status === 'COMPLETED' ? 'bg-success' : isOverdue ? 'bg-destructive' : 'bg-amber-500';
 
     if (viewMode === 'list') {
       return (
@@ -463,7 +463,7 @@ export default function MachineMaintenanceTab({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <p className="font-semibold text-sm truncate">{wo.title}</p>
-              {isOverdue && <Badge variant="destructive" className="text-[10px] h-4 px-1 shrink-0">Vencida</Badge>}
+              {isOverdue && <Badge variant="destructive" className="text-xs h-5 px-1 shrink-0">Vencida</Badge>}
               {getPriorityBadge(wo.priority)}
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
@@ -498,7 +498,7 @@ export default function MachineMaintenanceTab({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Badge className={cn(statusCfg.className, 'text-[10px] border gap-1')}>
+            <Badge className={cn(statusCfg.className, 'text-xs border gap-1')}>
               {statusCfg.icon}
               {statusCfg.label}
             </Badge>
@@ -523,7 +523,7 @@ export default function MachineMaintenanceTab({
             <div className="h-8 w-8 rounded-lg bg-warning-muted/50 flex items-center justify-center shrink-0">
               <Wrench className="h-4 w-4 text-warning-muted-foreground" />
             </div>
-            <Badge className={cn(statusCfg.className, 'text-[10px] border')}>
+            <Badge className={cn(statusCfg.className, 'text-xs border')}>
               {statusCfg.label}
             </Badge>
           </div>
@@ -539,7 +539,7 @@ export default function MachineMaintenanceTab({
                   {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
                 </span>
                 {daysUntil !== null && wo.status === 'PENDING' && (
-                  <span className="font-semibold text-[10px]">
+                  <span className="font-semibold text-xs">
                     {daysUntil < 0 ? `${Math.abs(daysUntil)}d` : `${daysUntil}d`}
                   </span>
                 )}
@@ -560,7 +560,7 @@ export default function MachineMaintenanceTab({
           </div>
 
           {wo.component && (
-            <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="mt-3 pt-2.5 border-t flex items-center gap-1.5 text-xs text-muted-foreground">
               <Box className="h-3 w-3" />
               {wo.component.name}
             </div>
@@ -630,7 +630,7 @@ export default function MachineMaintenanceTab({
                         <TooltipContent>Calidad de ejecución</TooltipContent>
                       </Tooltip>
                     )}
-                    <Badge variant="secondary" className="text-[10px] gap-1">
+                    <Badge variant="secondary" className="text-xs gap-1">
                       <CheckCircle2 className="h-3 w-3 text-success" />
                       Ejecutado
                     </Badge>
@@ -660,7 +660,7 @@ export default function MachineMaintenanceTab({
                   {item.cost !== null && item.cost !== undefined && (
                     <span className="flex items-center gap-1.5">
                       <span className="text-muted-foreground">Costo:</span>
-                      <span className="font-medium">${Number(item.cost).toFixed(0)}</span>
+                      <span className="font-medium">${formatNumber(Number(item.cost), 0)}</span>
                     </span>
                   )}
                 </div>
@@ -742,7 +742,7 @@ export default function MachineMaintenanceTab({
                     {preventiveStats.pending + preventiveStats.inProgress}
                   </p>
                   {preventiveStats.overdue > 0 && (
-                    <p className="text-[10px] text-destructive font-medium mt-0.5">{preventiveStats.overdue} vencidas</p>
+                    <p className="text-xs text-destructive font-medium mt-0.5">{preventiveStats.overdue} vencidas</p>
                   )}
                 </div>
                 <div className={cn('h-10 w-10 rounded-full flex items-center justify-center', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'bg-warning-muted/50' : 'bg-muted')}>
@@ -758,7 +758,7 @@ export default function MachineMaintenanceTab({
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completados</p>
                   <p className="text-2xl font-bold text-success">{preventiveStats.completed}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5 text-success" />
@@ -810,7 +810,7 @@ export default function MachineMaintenanceTab({
                   {correctiveStats.pending}
                 </p>
                 {correctiveStats.overdue > 0 && (
-                  <p className="text-[10px] text-destructive font-medium mt-0.5">{correctiveStats.overdue} vencidas</p>
+                  <p className="text-xs text-destructive font-medium mt-0.5">{correctiveStats.overdue} vencidas</p>
                 )}
               </div>
               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -840,7 +840,7 @@ export default function MachineMaintenanceTab({
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completados</p>
                 <p className="text-2xl font-bold text-success">{correctiveStats.completed}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
                 <CheckCircle2 className="h-5 w-5 text-success" />
@@ -897,7 +897,7 @@ export default function MachineMaintenanceTab({
                 {f.label}
                 {f.count > 0 && (
                   <span className={cn(
-                    'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold',
+                    'inline-flex h-5 min-w-[1rem] items-center justify-center rounded-full px-1 text-xs font-bold',
                     subFilter === f.key ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
                   )}>
                     {f.count}
@@ -1042,12 +1042,12 @@ export default function MachineMaintenanceTab({
                 </div>
                 <span>Preventivo</span>
                 {preventiveOrders.length > 0 && (
-                  <Badge className="ml-0.5 h-4 px-1 text-[10px] bg-primary text-primary-foreground border-0">
+                  <Badge className="ml-0.5 h-5 px-1 text-xs bg-primary text-primary-foreground border-0">
                     {preventiveOrders.length}
                   </Badge>
                 )}
                 {preventiveStats.overdue > 0 && (
-                  <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+                  <Badge variant="destructive" className="h-5 px-1 text-xs">
                     {preventiveStats.overdue}v
                   </Badge>
                 )}
@@ -1061,12 +1061,12 @@ export default function MachineMaintenanceTab({
                 </div>
                 <span>Correctivo</span>
                 {correctiveOrders.length > 0 && (
-                  <Badge className="ml-0.5 h-4 px-1 text-[10px] bg-amber-500 text-white border-0">
+                  <Badge className="ml-0.5 h-5 px-1 text-xs bg-amber-500 text-white border-0">
                     {correctiveOrders.length}
                   </Badge>
                 )}
                 {correctiveStats.overdue > 0 && (
-                  <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+                  <Badge variant="destructive" className="h-5 px-1 text-xs">
                     {correctiveStats.overdue}v
                   </Badge>
                 )}
@@ -1090,7 +1090,7 @@ export default function MachineMaintenanceTab({
             preselectedMachineId={machineId}
             preselectedComponentId={componentId}
             preselectedParentComponentId={parentComponentId}
-            onSave={() => { setShowPreventiveDialog(false); refetch(); }}
+            onSave={() => { setShowPreventiveDialog(false); refetch(); refetchWorkOrders(); }}
           />
         )}
 

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { toast } from 'sonner';
 
 type LoadOrderStatus = 'PENDIENTE' | 'CARGANDO' | 'CARGADA' | 'DESPACHADA' | 'CANCELADA';
@@ -149,7 +150,7 @@ export function LoadOrderDetailHeader({ loadOrder, onRefresh }: LoadOrderDetailH
                 <p className="text-xs text-muted-foreground">Fecha</p>
                 <p className="text-sm font-medium">
                   {loadOrder.fecha
-                    ? format(new Date(loadOrder.fecha), 'dd/MM/yyyy', { locale: es })
+                    ? formatDate(loadOrder.fecha)
                     : '-'}
                 </p>
               </div>

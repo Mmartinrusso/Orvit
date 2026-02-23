@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -308,7 +309,7 @@ export default function ProyectosPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Cargando...</p>
+              <p className="text-muted-foreground">Cargando proyectos...</p>
             </div>
           ) : filteredProyectos.length === 0 ? (
             <div className="text-center py-12">
@@ -352,7 +353,7 @@ export default function ProyectosPage() {
                       <div className="w-24">
                         <Progress value={getProgressPercent(proyecto)} className="h-2" />
                         <p className="text-xs text-muted-foreground mt-1">
-                          {getProgressPercent(proyecto).toFixed(0)}%
+                          {getProgressPercentformatNumber(proyecto, 0)}%
                         </p>
                       </div>
                     </TableCell>

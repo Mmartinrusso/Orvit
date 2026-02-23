@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateTime } from "@/lib/date-utils";
 import {
   CheckCircle2,
   Eye,
@@ -302,24 +303,24 @@ export function TaskRowCard({
           {/* Fila 2: Chips compactos */}
           <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
             {dueInfo && (
-              <Badge variant={dueInfo.variant} className="text-[10px] h-4 px-1.5 font-normal">
+              <Badge variant={dueInfo.variant} className="text-xs h-5 px-1.5 font-normal">
                 {dueInfo.label}
               </Badge>
             )}
             {task.tags && task.tags.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">
+              <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal">
                 {task.tags.length}
               </Badge>
             )}
             {hasSubtasks && (
-              <span className="text-[10px] text-muted-foreground font-normal">
+              <span className="text-xs text-muted-foreground font-normal">
                 {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
               </span>
             )}
             {task.updatedAt && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     <span>
                       {new Date(task.updatedAt).toLocaleDateString("es-AR", {
@@ -332,7 +333,7 @@ export function TaskRowCard({
                 <TooltipContent>
                   <p>
                     Actualizada:{" "}
-                    {new Date(task.updatedAt).toLocaleString("es-AR")}
+                    {formatDateTime(task.updatedAt)}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -343,7 +344,7 @@ export function TaskRowCard({
           {task.assignedTo && (
             <div className="flex items-center gap-1.5">
               <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-[10px] bg-primary/10">
+                <AvatarFallback className="text-xs bg-primary/10">
                   {initials(task.assignedTo.name)}
                 </AvatarFallback>
               </Avatar>

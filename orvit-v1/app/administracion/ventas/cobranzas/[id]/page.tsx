@@ -346,7 +346,7 @@ export default function PaymentDetailPage({ params }: { params: { id: string } }
       {/* Status Card */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <Label className="text-xs text-muted-foreground">Estado</Label>
               <div className="mt-1">

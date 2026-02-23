@@ -43,6 +43,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -95,7 +96,25 @@ export default function RecepcionesPage() {
   // Modal de eliminar
   const [recepcionAEliminar, setRecepcionAEliminar] = useState<Recepcion | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Mutation: eliminar recepción
+  const deleteRecepcion = useApiMutation<unknown, { id: number }>({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/compras/recepciones/${vars.id}`,
+      method: 'DELETE',
+    }),
+    successMessage: 'Recepción eliminada correctamente',
+    errorMessage: 'Error al eliminar la recepción',
+    onSuccess: () => {
+      setIsDeleteOpen(false);
+      setRecepcionAEliminar(null);
+      loadRecepciones();
+    },
+    onError: () => {
+      setIsDeleteOpen(false);
+      setRecepcionAEliminar(null);
+    },
+  });
 
   const loadRecepciones = async (page = 1) => {
     setLoading(true);
@@ -149,24 +168,9 @@ export default function RecepcionesPage() {
     setIsDeleteOpen(true);
   };
 
-  const confirmarEliminar = async () => {
+  const confirmarEliminar = () => {
     if (!recepcionAEliminar) return;
-    setDeleteLoading(true);
-    try {
-      const resp = await fetch(`/api/compras/recepciones/${recepcionAEliminar.id}`, { method: 'DELETE' });
-      if (!resp.ok) {
-        const data = await resp.json();
-        throw new Error(data.error || 'Error al eliminar');
-      }
-      toast.success('Recepción eliminada correctamente');
-      loadRecepciones();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al eliminar la recepción');
-    } finally {
-      setDeleteLoading(false);
-      setIsDeleteOpen(false);
-      setRecepcionAEliminar(null);
-    }
+    deleteRecepcion.mutate({ id: recepcionAEliminar.id });
   };
 
   const formatDate = (dateStr: string) => {
@@ -288,12 +292,12 @@ export default function RecepcionesPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium">{recepcion.numero}</span>
                           {recepcion.esEmergencia && (
-                            <Badge variant="destructive" className="text-[10px] px-1 py-0">
+                            <Badge variant="destructive" className="text-xs px-1 py-0">
                               Emerg
                             </Badge>
                           )}
                           {recepcion.requiereRegularizacion && !recepcion.regularizada && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 text-warning-muted-foreground">
+                            <Badge variant="outline" className="text-xs px-1 py-0 text-warning-muted-foreground">
                               Reg
                             </Badge>
                           )}
@@ -314,7 +318,7 @@ export default function RecepcionesPage() {
                       </TableCell>
                       <TableCell className="text-xs text-center">{recepcion._count.items}</TableCell>
                       <TableCell>
-                        <Badge variant={estadoInfo.variant} className="text-[10px] px-1.5 py-0">
+                        <Badge variant={estadoInfo.variant} className="text-xs px-1.5 py-0">
                           {estadoInfo.label}
                         </Badge>
                       </TableCell>
@@ -420,7 +424,7 @@ export default function RecepcionesPage() {
         title="Eliminar Recepción"
         description={`¿Estás seguro de que querés eliminar la recepción ${recepcionAEliminar?.numero}?${recepcionAEliminar?.estado === 'CONFIRMADA' ? ' Se revertirá el stock y la factura vinculada volverá a estado "sin ingreso".' : ''} Esta acción no se puede deshacer.`}
         onConfirm={confirmarEliminar}
-        loading={deleteLoading}
+        loading={deleteRecepcion.isPending}
       />
     </div>
   );

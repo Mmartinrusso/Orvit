@@ -230,15 +230,15 @@ export function ClientFormFieldConfig({ onConfigChange }: ClientFormFieldConfigP
                                       {feature.name}
                                     </Label>
                                     {isCore && (
-                                      <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                      <Badge variant="secondary" className="text-xs px-1 py-0">
                                         Obligatorio
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  <p className="text-xs text-muted-foreground mt-0.5">
                                     {feature.description}
                                   </p>
-                                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                  <p className="text-xs text-muted-foreground/70 mt-0.5">
                                     Campos: {feature.fields.join(', ')}
                                   </p>
                                 </div>

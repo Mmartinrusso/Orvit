@@ -35,7 +35,7 @@ import {
  Calendar,
  FileText
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 // ============ UTILS ============
 function formatCurrency(value: number): string {
@@ -47,7 +47,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompact(value: number): string {
- if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+ if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
  return formatCurrency(value);
 }
@@ -358,7 +358,7 @@ export function DashboardFullViewSheet({
  ) : (
  <TrendingDown className="h-3 w-3" />
  )}
- {Math.abs(item.variacionPrecio).toFixed(1)}%
+ {formatNumber(Math.abs(item.variacionPrecio), 1)}%
  </span>
  )}
  </div>
@@ -367,7 +367,7 @@ export function DashboardFullViewSheet({
  <Badge variant="outline">{item.cantidadProveedores}</Badge>
  </TableCell>
  <TableCell className="text-center">
- <span className="text-muted-foreground">{item.cantidadTotal.toFixed(0)} uds</span>
+ <span className="text-muted-foreground">{formatNumber(item.cantidadTotal, 0)} uds</span>
  </TableCell>
  <TableCell>
  <ChevronRight className="h-4 w-4 text-muted-foreground" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -66,7 +66,7 @@ export function CreditStatusBadge({
       lines.push('Sin credito disponible');
     }
     if (status.utilizationPercent >= 80 && status.hasCredit) {
-      lines.push(`Utilizacion: ${status.utilizationPercent.toFixed(0)}%`);
+      lines.push(`Utilizacion: ${formatNumber(status.utilizationPercent, 0)}%`);
     }
     if (lines.length === 0) {
       lines.push('Credito OK');
@@ -87,7 +87,7 @@ export function CreditStatusBadge({
             {status.statusLabel}
             {showUtilization && status.hasCredit && (
               <span className="ml-1 text-xs opacity-75">
-                ({status.utilizationPercent.toFixed(0)}%)
+                ({formatNumber(status.utilizationPercent, 0)}%)
               </span>
             )}
           </Badge>

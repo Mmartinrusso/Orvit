@@ -1109,13 +1109,13 @@ export default function PermisosPage() {
                             <Badge
                               key={permission.id || index}
                               variant="outline"
-                              className="text-[10px] h-5 font-mono"
+                              className="text-xs h-5 font-mono"
                             >
                               {permission.name.length > 15 ? permission.name.slice(0, 15) + '...' : permission.name}
                             </Badge>
                           ))}
                           {roleData.permissions.length > 3 && (
-                            <Badge variant="secondary" className="text-[10px] h-5">
+                            <Badge variant="secondary" className="text-xs h-5">
                               +{roleData.permissions.length - 3}
                             </Badge>
                           )}
@@ -1662,7 +1662,7 @@ export default function PermisosPage() {
                               <div className="flex items-center gap-2">
                                 <Badge
                                   variant={grantedInCategory === categoryPermissions.length ? 'default' : 'secondary'}
-                                  className="text-[10px] h-5"
+                                  className="text-xs h-5"
                                 >
                                   {grantedInCategory}/{categoryPermissions.length}
                                 </Badge>
@@ -1724,7 +1724,7 @@ export default function PermisosPage() {
                                         )}
                                       </div>
                                       {permission.description && (
-                                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
                                           {permission.description}
                                         </p>
                                       )}
@@ -2085,12 +2085,12 @@ export default function PermisosPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 {rolePermsInCategory > 0 && (
-                                  <Badge variant="secondary" className="text-[10px] h-5">
+                                  <Badge variant="secondary" className="text-xs h-5">
                                     {rolePermsInCategory} del rol
                                   </Badge>
                                 )}
                                 {customPermsInCategory > 0 && (
-                                  <Badge className="text-[10px] h-5 bg-primary/10 text-primary hover:bg-primary/20">
+                                  <Badge className="text-xs h-5 bg-primary/10 text-primary hover:bg-primary/20">
                                     {customPermsInCategory} custom
                                   </Badge>
                                 )}
@@ -2163,18 +2163,18 @@ export default function PermisosPage() {
                                           {permission.name}
                                         </code>
                                         {isFromRole && (
-                                          <Badge variant="outline" className="text-[10px] h-4 shrink-0">
+                                          <Badge variant="outline" className="text-xs h-5 shrink-0">
                                             Del rol
                                           </Badge>
                                         )}
                                         {hasPersonalized && (
-                                          <Badge className="text-[10px] h-4 bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+                                          <Badge className="text-xs h-5 bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
                                             Personalizado
                                           </Badge>
                                         )}
                                       </div>
                                       {permission.description && (
-                                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
                                           {permission.description}
                                         </p>
                                       )}

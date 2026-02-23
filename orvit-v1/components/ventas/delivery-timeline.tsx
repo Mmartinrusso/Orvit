@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -31,7 +31,7 @@ const ESTADOS_CONFIG: Record<DeliveryStatus, { label: string; color: string; ico
   EN_PREPARACION: { label: 'En Preparación', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package },
   LISTA_PARA_DESPACHO: { label: 'Lista para Despacho', color: 'bg-info-muted text-info-muted-foreground', icon: CheckCircle2 },
   EN_TRANSITO: { label: 'En Tránsito', color: 'bg-purple-100 text-purple-700', icon: Truck },
-  RETIRADA: { label: 'Retirada', color: 'bg-cyan-100 text-cyan-700', icon: Package },
+  RETIRADA: { label: 'Retirada', color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground', icon: Package },
   ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success', icon: CheckCircle2 },
   ENTREGA_FALLIDA: { label: 'Entrega Fallida', color: 'bg-destructive/10 text-destructive', icon: X },
   PARCIAL: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package },
@@ -177,7 +177,7 @@ export function DeliveryTimeline({ delivery, auditLogs = [] }: DeliveryTimelineP
                     rel="noopener noreferrer"
                     className="text-primary hover:underline font-mono text-xs"
                   >
-                    {Number(gps.lat).toFixed(6)}, {Number(gps.lng).toFixed(6)}
+                    {formatNumber(Number(gps.lat), 6)}, {formatNumber(Number(gps.lng), 6)}
                   </a>
                 </div>
               ))}

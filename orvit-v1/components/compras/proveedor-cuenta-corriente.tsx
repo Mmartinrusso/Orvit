@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,6 +90,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import ComprobanteFormModal from '@/components/compras/comprobante-form-modal';
 import { generatePaymentOrderPDF, PaymentOrderPDFData } from '@/lib/pdf/payment-order-pdf';
 import { pdfToImages } from '@/lib/pdf/pdf-to-image';
@@ -268,14 +270,12 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  // Estados para eliminar
  const [facturaAEliminar, setFacturaAEliminar] = useState<FacturaCompra | null>(null);
  const [isDeleteFacturaOpen, setIsDeleteFacturaOpen] = useState(false);
- const [deleteFacturaLoading, setDeleteFacturaLoading] = useState(false);
 
  // Estados para cargar remito
  const [facturaIngresoStock, setFacturaIngresoStock] = useState<any | null>(null);
  const [isIngresoModalOpen, setIsIngresoModalOpen] = useState(false);
  const [ordenPagoAEliminar, setOrdenPagoAEliminar] = useState<any | null>(null);
  const [isDeleteOrdenPagoOpen, setIsDeleteOrdenPagoOpen] = useState(false);
- const [deleteOrdenPagoLoading, setDeleteOrdenPagoLoading] = useState(false);
 
  // Estados para eliminar NCA/NC
  const [ncaAEliminar, setNcaAEliminar] = useState<{
@@ -285,7 +285,6 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  aplicada?: boolean;
  } | null>(null);
  const [isDeleteNcaOpen, setIsDeleteNcaOpen] = useState(false);
- const [deleteNcaLoading, setDeleteNcaLoading] = useState(false);
 
  // Estados para NCA/NC desde factura
  const [ncaModalOpen, setNcaModalOpen] = useState(false);
@@ -439,7 +438,6 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  } | null>(null);
  const [remitoAEliminar, setRemitoAEliminar] = useState<{ id: number; numero: string } | null>(null);
  const [isDeleteRemitoOpen, setIsDeleteRemitoOpen] = useState(false);
- const [deleteRemitoLoading, setDeleteRemitoLoading] = useState(false);
 
  // Cheques de terceros (mock)
  const [chequesCartera, setChequesCartera] = useState<ChequeTercero[]>([
@@ -466,9 +464,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
  };
 
- const formatDate = (date: Date | string) => {
- return new Date(date).toLocaleDateString('es-AR');
- };
+ // formatDate is now imported from @/lib/date-utils
 
  const getPrefijoComprobante = (tipoCompleto?: string | null): string => {
  if (!tipoCompleto) return '';
@@ -1306,6 +1302,128 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  }
  }, [proveedorId, viewModeLoading, mode]);
 
+ // ============ MUTATIONS (useApiMutation) ============
+
+ // DELETE factura/comprobante
+ const deleteFacturaMutation = useApiMutation<unknown, { id: string; docType?: string }>({
+  mutationFn: async (vars) => {
+   const docTypeParam = vars.docType ? `?docType=${vars.docType}` : '';
+   const resp = await fetch(`/api/compras/comprobantes/${vars.id}${docTypeParam}`, { method: 'DELETE' });
+   if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Error al eliminar');
+   }
+   return resp.json();
+  },
+  successMessage: 'Factura eliminada',
+  errorMessage: 'Error al eliminar la factura',
+  onSuccess: () => {
+   loadProveedorData(proveedorId);
+   setIsDeleteFacturaOpen(false);
+   setFacturaAEliminar(null);
+  },
+  onError: () => {
+   setIsDeleteFacturaOpen(false);
+   setFacturaAEliminar(null);
+  },
+ });
+
+ // DELETE remito/recepcion
+ const deleteRemitoMutation = useApiMutation<unknown, { id: number }>({
+  mutationFn: async (vars) => {
+   const resp = await fetch(`/api/compras/recepciones/${vars.id}`, { method: 'DELETE' });
+   if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw new Error(data.error || 'Error al eliminar');
+   }
+   return resp.json();
+  },
+  successMessage: 'Remito eliminado correctamente',
+  errorMessage: 'Error al eliminar el remito',
+  onSuccess: () => {
+   loadProveedorData(proveedorId);
+   setIsDeleteRemitoOpen(false);
+   setRemitoAEliminar(null);
+  },
+  onError: () => {
+   setIsDeleteRemitoOpen(false);
+   setRemitoAEliminar(null);
+  },
+ });
+
+ // DELETE orden de pago
+ const deleteOrdenPagoMutation = useApiMutation<unknown, { id: string | number }>({
+  mutationFn: async (vars) => {
+   const resp = await fetch(`/api/compras/ordenes-pago/${vars.id}`, { method: 'DELETE' });
+   if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Error al eliminar');
+   }
+   return resp.json();
+  },
+  successMessage: 'Orden de pago eliminada',
+  errorMessage: 'Error al eliminar la orden de pago',
+  onSuccess: () => {
+   loadProveedorData(proveedorId);
+   setIsDeleteOrdenPagoOpen(false);
+   setOrdenPagoAEliminar(null);
+  },
+  onError: () => {
+   setIsDeleteOrdenPagoOpen(false);
+   setOrdenPagoAEliminar(null);
+  },
+ });
+
+ // DELETE NCA/nota de credito
+ const deleteNcaMutation = useApiMutation<any, { id: number }>({
+  mutationFn: async (vars) => {
+   const resp = await fetch(`/api/compras/notas-credito-debito/${vars.id}`, { method: 'DELETE' });
+   const data = await resp.json().catch(() => ({}));
+   if (!resp.ok) {
+    throw new Error(data.error || 'Error al eliminar');
+   }
+   return data;
+  },
+  successMessage: null, // Custom toast in onSuccess
+  errorMessage: 'Error al eliminar NCA',
+  onSuccess: (data) => {
+   if (data?.devolucionEliminada) {
+    toast.success(`NCA y devolución ${data.devolucionEliminada.numero} eliminadas correctamente`);
+   } else {
+    toast.success('NCA eliminada correctamente');
+   }
+   if (proveedorId) {
+    loadNotasCredito(proveedorId);
+    loadProveedorData(proveedorId);
+   }
+   setIsDeleteNcaOpen(false);
+   setNcaAEliminar(null);
+  },
+  onError: () => {
+   setIsDeleteNcaOpen(false);
+   setNcaAEliminar(null);
+  },
+ });
+
+ // DELETE attachment from OP
+ const deleteAttachmentOPMutation = useApiMutation<unknown, { opId: string | number; attachmentId: number }>({
+  mutationFn: async (vars) => {
+   const resp = await fetch(`/api/compras/ordenes-pago/${vars.opId}/attachments?attachmentId=${vars.attachmentId}`, {
+    method: 'DELETE',
+   });
+   if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Error al eliminar');
+   }
+   return resp.json();
+  },
+  successMessage: 'Comprobante eliminado',
+  errorMessage: 'Error al eliminar comprobante',
+  onSuccess: (_data, vars) => {
+   setPagoDetalleAttachments(prev => prev.filter(att => att.id !== vars.attachmentId));
+  },
+ });
+
  // ============ FUNCIONES DE ACCIONES ============
  const abrirEditarFactura = (factura: FacturaCompra) => {
  setFacturaEditandoId(factura.id);
@@ -1353,22 +1471,9 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  setIsDeleteFacturaOpen(true);
  };
 
- const confirmarEliminarFactura = async () => {
+ const confirmarEliminarFactura = () => {
  if (!facturaAEliminar) return;
- setDeleteFacturaLoading(true);
- try {
- const docTypeParam = facturaAEliminar.docType ? `?docType=${facturaAEliminar.docType}` : '';
- const resp = await fetch(`/api/compras/comprobantes/${facturaAEliminar.id}${docTypeParam}`, { method: 'DELETE' });
- if (!resp.ok) throw new Error('Error al eliminar');
- toast.success('Factura eliminada');
- loadProveedorData(proveedorId);
- } catch (error) {
- toast.error('Error al eliminar la factura');
- } finally {
- setDeleteFacturaLoading(false);
- setIsDeleteFacturaOpen(false);
- setFacturaAEliminar(null);
- }
+ deleteFacturaMutation.mutate({ id: facturaAEliminar.id, docType: facturaAEliminar.docType });
  };
 
  const abrirEliminarRemito = (recepcion: { id: number; numero: string }) => {
@@ -1376,24 +1481,9 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  setIsDeleteRemitoOpen(true);
  };
 
- const confirmarEliminarRemito = async () => {
+ const confirmarEliminarRemito = () => {
  if (!remitoAEliminar) return;
- setDeleteRemitoLoading(true);
- try {
- const resp = await fetch(`/api/compras/recepciones/${remitoAEliminar.id}`, { method: 'DELETE' });
- if (!resp.ok) {
- const data = await resp.json();
- throw new Error(data.error || 'Error al eliminar');
- }
- toast.success('Remito eliminado correctamente');
- loadProveedorData(proveedorId);
- } catch (error: any) {
- toast.error(error.message || 'Error al eliminar el remito');
- } finally {
- setDeleteRemitoLoading(false);
- setIsDeleteRemitoOpen(false);
- setRemitoAEliminar(null);
- }
+ deleteRemitoMutation.mutate({ id: remitoAEliminar.id });
  };
 
  const abrirEliminarOrdenPago = (orden: any) => {
@@ -1422,21 +1512,9 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  }
  };
 
- const confirmarEliminarOrdenPago = async () => {
+ const confirmarEliminarOrdenPago = () => {
  if (!ordenPagoAEliminar) return;
- setDeleteOrdenPagoLoading(true);
- try {
- const resp = await fetch(`/api/compras/ordenes-pago/${ordenPagoAEliminar.id}`, { method: 'DELETE' });
- if (!resp.ok) throw new Error('Error al eliminar');
- toast.success('Orden de pago eliminada');
- loadProveedorData(proveedorId);
- } catch (error) {
- toast.error('Error al eliminar la orden de pago');
- } finally {
- setDeleteOrdenPagoLoading(false);
- setIsDeleteOrdenPagoOpen(false);
- setOrdenPagoAEliminar(null);
- }
+ deleteOrdenPagoMutation.mutate({ id: ordenPagoAEliminar.id });
  };
 
  // ============ FUNCIONES PARA CARGA DESDE PDF ============
@@ -1627,27 +1705,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  });
  if (!ok) return;
 
- const opId = pagoDetalleSeleccionado.id;
-
- try {
- toast.loading('Eliminando...', { id: 'delete-comp' });
-
- const resp = await fetch(`/api/compras/ordenes-pago/${opId}/attachments?attachmentId=${attachmentId}`, {
- method: 'DELETE',
- });
-
- if (!resp.ok) {
- throw new Error('Error al eliminar');
- }
-
- toast.success('Comprobante eliminado', { id: 'delete-comp' });
-
- // Actualizar lista local
- setPagoDetalleAttachments(prev => prev.filter(att => att.id !== attachmentId));
- } catch (error) {
- console.error('Error eliminando comprobante:', error);
- toast.error('Error al eliminar comprobante', { id: 'delete-comp' });
- }
+ deleteAttachmentOPMutation.mutate({ opId: pagoDetalleSeleccionado.id, attachmentId });
  };
 
  // ============ FUNCIONES PARA NCA Y DEVOLUCION ============
@@ -1725,41 +1783,9 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  setIsDeleteNcaOpen(true);
  };
 
- const confirmarEliminarNca = async () => {
+ const confirmarEliminarNca = () => {
  if (!ncaAEliminar) return;
- setDeleteNcaLoading(true);
-
- try {
- toast.loading('Eliminando NCA...', { id: 'delete-nca' });
- const response = await fetch(`/api/compras/notas-credito-debito/${ncaAEliminar.id}`, {
- method: 'DELETE',
- });
-
- const data = await response.json();
-
- if (!response.ok) {
- throw new Error(data.error || 'Error al eliminar');
- }
-
- // Mostrar mensaje apropiado según si se eliminó también la devolución
- if (data.devolucionEliminada) {
- toast.success(`NCA y devolución ${data.devolucionEliminada.numero} eliminadas correctamente`, { id: 'delete-nca' });
- } else {
- toast.success('NCA eliminada correctamente', { id: 'delete-nca' });
- }
-
- // Recargar datos
- if (proveedorId) {
- loadNotasCredito(proveedorId);
- loadProveedorData(proveedorId);
- }
- } catch (error: any) {
- toast.error(error.message || 'Error al eliminar NCA', { id: 'delete-nca' });
- } finally {
- setDeleteNcaLoading(false);
- setIsDeleteNcaOpen(false);
- setNcaAEliminar(null);
- }
+ deleteNcaMutation.mutate({ id: ncaAEliminar.id });
  };
 
  // ============ FUNCIONES DE PDF ============
@@ -2023,7 +2049,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  if (loading) {
  return (
  <div className="flex items-center justify-center py-12">
- <p className="text-muted-foreground">Cargando...</p>
+ <p className="text-muted-foreground">Cargando cuenta corriente...</p>
  </div>
  );
  }
@@ -2047,7 +2073,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </Button>
  <div className="flex-1">
  <h1 className="text-xl md:text-2xl font-bold flex items-center gap-3">
- <Building2 className="w-6 h-6 text-emerald-600" />
+ <Building2 className="w-6 h-6 text-success-muted-foreground" />
  {proveedor.razonSocial || proveedor.nombre}
  </h1>
  <p className="text-xs text-muted-foreground">CUIT: {proveedor.cuit}</p>
@@ -2072,7 +2098,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </div>
  {estadisticasCuenta.montoVencido > 0 && (
  <div className="mt-2 pt-2 border-t">
- <p className="text-[10px] text-destructive flex items-center gap-1">
+ <p className="text-xs text-destructive flex items-center gap-1">
  <AlertCircle className="w-3 h-3" />
  {formatCurrency(estadisticasCuenta.montoVencido)} vencido
  </p>
@@ -2093,7 +2119,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </div>
  </div>
  <div className="mt-2 pt-2 border-t">
- <p className="text-[10px] text-muted-foreground">
+ <p className="text-xs text-muted-foreground">
  {facturas.length} factura{facturas.length !== 1 ? 's' : ''} registrada{facturas.length !== 1 ? 's' : ''}
  </p>
  </div>
@@ -2112,7 +2138,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </div>
  </div>
  <div className="mt-2 pt-2 border-t">
- <p className="text-[10px] text-muted-foreground">
+ <p className="text-xs text-muted-foreground">
  {pagosUnicosRender.length} pago{pagosUnicosRender.length !== 1 ? 's' : ''} registrado{pagosUnicosRender.length !== 1 ? 's' : ''}
  </p>
  </div>
@@ -2132,7 +2158,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </div>
  {estadisticasCuenta.facturasProximasVencer > 0 && (
  <div className="mt-2 pt-2 border-t">
- <p className="text-[10px] text-warning-muted-foreground flex items-center gap-1">
+ <p className="text-xs text-warning-muted-foreground flex items-center gap-1">
  <Clock className="w-3 h-3" />
  {estadisticasCuenta.facturasProximasVencer} próxima{estadisticasCuenta.facturasProximasVencer !== 1 ? 's' : ''} a vencer
  </p>
@@ -2427,7 +2453,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  return (
  <Card key={grupo.factura.id} className="overflow-hidden border-l-4 border-l-blue-500">
  {/* Header de la factura */}
- <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 px-4 py-3 border-b">
+ <div className="bg-info-muted px-4 py-3 border-b">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  <Badge className="bg-info-muted text-info-muted-foreground border-0">
@@ -2457,13 +2483,13 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  const badgeStyles: Record<string, string> = {
  'OP': 'text-purple-600 border-purple-300',
  'NCA': 'text-success border-success-muted',
- 'NC': 'text-emerald-600 border-emerald-300',
+ 'NC': 'text-success-muted-foreground border-success-muted',
  'REMITO': 'text-warning-muted-foreground border-warning-muted',
  };
  const montoStyles: Record<string, string> = {
  'OP': 'text-purple-600',
  'NCA': 'text-success',
- 'NC': 'text-emerald-600',
+ 'NC': 'text-success-muted-foreground',
  'REMITO': 'text-warning-muted-foreground',
  };
  return (
@@ -2481,7 +2507,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div className="flex items-center gap-3 pl-4 border-l-2 border-muted">
  <Badge
  variant="outline"
- className={cn('text-[10px]', badgeStyles[doc.tipo] || 'text-foreground border-border')}
+ className={cn('text-xs', badgeStyles[doc.tipo] || 'text-foreground border-border')}
  >
  {doc.tipo}
  </Badge>
@@ -2500,7 +2526,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  -{formatCurrency(doc.haber)}
  </p>
  )}
- <Badge variant="outline" className="text-[10px]">
+ <Badge variant="outline" className="text-xs">
  {doc.estado}
  </Badge>
  </div>
@@ -2556,7 +2582,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <>
  <div className="overflow-x-auto max-h-[calc(100vh-350px)] min-h-[400px] overflow-y-auto">
  <Table>
- <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+ <TableHeader className="shadow-sm">
  <TableRow className="bg-muted/50 hover:bg-muted/50 border-b">
  <TableHead className="text-xs font-medium w-[70px]">Tipo</TableHead>
  <TableHead className="text-xs font-medium">Número</TableHead>
@@ -2593,8 +2619,8 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  'FCA': { bg: 'bg-info-muted ', text: 'text-info-muted-foreground ', icon: <FileText className="w-3 h-3" /> },
  'PPT': { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300', icon: <FileText className="w-3 h-3" /> },
  'NCA': { bg: 'bg-success-muted ', text: 'text-success ', icon: <Receipt className="w-3 h-3" /> },
- 'NC': { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300', icon: <Receipt className="w-3 h-3" /> },
- 'OP': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', icon: <CreditCard className="w-3 h-3" /> },
+ 'NC': { bg: 'bg-success-muted', text: 'text-success-muted-foreground', icon: <Receipt className="w-3 h-3" /> },
+ 'OP': { bg: 'bg-accent-purple-muted', text: 'text-accent-purple-muted-foreground', icon: <CreditCard className="w-3 h-3" /> },
  'REMITO': { bg: 'bg-warning-muted ', text: 'text-warning-muted-foreground ', icon: <Truck className="w-3 h-3" /> },
  'ANT': { bg: 'bg-teal-100 dark:bg-teal-900/30', text: 'text-teal-700 dark:text-teal-300', icon: <TrendingUp className="w-3 h-3" /> },
  };
@@ -2621,7 +2647,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  }}
  >
  <TableCell>
- <Badge className={cn('text-[10px] px-1.5 py-0.5 border-0 gap-1', config.bg, config.text)}>
+ <Badge className={cn('text-xs px-1.5 py-0.5 border-0 gap-1', config.bg, config.text)}>
  {config.icon}
  {doc.tipo}
  </Badge>
@@ -2648,7 +2674,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  {(() => {
  const diasInfo = getDiasVencimiento(doc.vencimiento, doc.saldo);
  if (!diasInfo) return null;
- return <span className={cn('text-[10px] font-medium px-1 py-0 rounded', diasInfo.color)}>{diasInfo.texto}</span>;
+ return <span className={cn('text-xs font-medium px-1 py-0 rounded', diasInfo.color)}>{diasInfo.texto}</span>;
  })()}
  </div>
  ) : '-'}
@@ -2657,7 +2683,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div className="flex items-center gap-1">
  {getEstadoBadge(doc.estado)}
  {(doc.tipo === 'FCA' || doc.tipo === 'PPT') && doc.ingresoConfirmado && (
- <span className="inline-flex items-center text-[10px] text-success bg-success-muted px-1 py-0.5 rounded" title="Stock ingresado">
+ <span className="inline-flex items-center text-xs text-success bg-success-muted px-1 py-0.5 rounded" title="Stock ingresado">
  <Truck className="w-3 h-3" />
  </span>
  )}
@@ -2988,7 +3014,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <>
  <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
  <Table>
- <TableHeader className="sticky top-0 bg-background z-10">
+ <TableHeader>
  <TableRow className="bg-muted/30 hover:bg-muted/30">
  <TableHead className="text-xs font-medium w-[80px]">N° OP</TableHead>
  <TableHead className="text-xs font-medium w-[80px]">Fecha</TableHead>
@@ -3007,7 +3033,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  if (m.includes('efectivo')) return { icon: Banknote, color: 'text-success', bg: 'bg-success-muted ' };
  if (m.includes('transferencia')) return { icon: ArrowRight, color: 'text-info-muted-foreground', bg: 'bg-info-muted ' };
  if (m.includes('cheque')) return { icon: FileText, color: 'text-warning-muted-foreground', bg: 'bg-warning-muted ' };
- if (m.includes('orden')) return { icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' };
+ if (m.includes('orden')) return { icon: CreditCard, color: 'text-purple-600', bg: 'bg-accent-purple-muted' };
  return { icon: CircleDollarSign, color: 'text-muted-foreground', bg: 'bg-muted/50' };
  };
  const metodoInfo = getMetodoInfo(pago.metodo || '');
@@ -3132,15 +3158,15 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div className="flex items-center gap-2 mt-0.5">
  <span className="text-xs text-muted-foreground">{formatDate(mov.fecha)}</span>
  {mov.tipo === 'factura' && mov.saldo !== undefined && mov.saldo > 0 && (
- <Badge variant="outline" className="text-[10px] h-4 px-1">Saldo: {formatCurrency(mov.saldo)}</Badge>
+ <Badge variant="outline" className="text-xs h-5 px-1">Saldo: {formatCurrency(mov.saldo)}</Badge>
  )}
  {mov.tipo === 'factura' && mov.estado && (
- <Badge variant={mov.estado === 'pagada' ? 'default' : mov.estado === 'pendiente' ? 'outline' : 'secondary'} className="text-[10px] h-4 px-1">
+ <Badge variant={mov.estado === 'pagada' ? 'default' : mov.estado === 'pendiente' ? 'outline' : 'secondary'} className="text-xs h-5 px-1">
  {mov.estado}
  </Badge>
  )}
  {mov.tipo === 'recepcion' && mov.estado && (
- <Badge variant={mov.estado === 'confirmada' ? 'default' : mov.estado === 'borrador' ? 'outline' : 'secondary'} className="text-[10px] h-4 px-1">
+ <Badge variant={mov.estado === 'confirmada' ? 'default' : mov.estado === 'borrador' ? 'outline' : 'secondary'} className="text-xs h-5 px-1">
  {mov.estado === 'confirmada' ? 'Confirmado' : mov.estado === 'borrador' ? 'Pendiente' : mov.estado}
  </Badge>
  )}
@@ -3268,7 +3294,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  title="Eliminar Factura"
  description={`¿Estás seguro de que querés eliminar la factura ${facturaAEliminar?.numero}? Esta acción no se puede deshacer.`}
  onConfirm={confirmarEliminarFactura}
- loading={deleteFacturaLoading}
+ loading={deleteFacturaMutation.isPending}
  />
 
  {/* Modal Confirmar eliminar orden de pago */}
@@ -3278,7 +3304,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  title="Eliminar Orden de Pago"
  description={`¿Estás seguro de que querés eliminar la orden de pago OP-${ordenPagoAEliminar?.id}? Esta acción revertirá los pagos aplicados a las facturas.`}
  onConfirm={confirmarEliminarOrdenPago}
- loading={deleteOrdenPagoLoading}
+ loading={deleteOrdenPagoMutation.isPending}
  />
 
  {/* Modal Confirmar eliminar remito */}
@@ -3288,7 +3314,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  title="Eliminar Remito"
  description={`¿Estás seguro de que querés eliminar el remito ${remitoAEliminar?.numero}? Se revertirá el stock y la factura volverá a estado "sin ingreso". Esta acción no se puede deshacer.`}
  onConfirm={confirmarEliminarRemito}
- loading={deleteRemitoLoading}
+ loading={deleteRemitoMutation.isPending}
  />
 
  {/* Modal Confirmar eliminar NCA/NC */}
@@ -3311,7 +3337,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  return `${base} Esta acción no se puede deshacer.`;
  })()}
  onConfirm={confirmarEliminarNca}
- loading={deleteNcaLoading}
+ loading={deleteNcaMutation.isPending}
  />
 
  {/* Modal de Órdenes de Compra */}
@@ -3363,7 +3389,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <TableCell className="text-xs text-center">{oc.itemsCount}</TableCell>
  <TableCell className="text-xs font-medium">{formatCurrency(oc.total)}</TableCell>
  <TableCell>
- <Badge variant={oc.estado === 'completada' ? 'default' : oc.estado === 'pendiente' ? 'outline' : 'secondary'} className="text-[10px] px-1.5 py-0">{oc.estado}</Badge>
+ <Badge variant={oc.estado === 'completada' ? 'default' : oc.estado === 'pendiente' ? 'outline' : 'secondary'} className="text-xs px-1.5 py-0">{oc.estado}</Badge>
  </TableCell>
  </TableRow>
  ))}
@@ -3570,7 +3596,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
  <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
  </div>
- <span className="absolute bottom-1 left-1 right-1 text-[10px] bg-black/50 text-white rounded px-1 truncate">Firma</span>
+ <span className="absolute bottom-1 left-1 right-1 text-xs bg-black/50 text-white rounded px-1 truncate">Firma</span>
  </button>
  )}
  </div>
@@ -3670,7 +3696,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div className="space-y-2">
  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
  <FileText className="w-3.5 h-3.5" />Facturas Aplicadas
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{pagoDetalleSeleccionado.recibos.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{pagoDetalleSeleccionado.recibos.length}</Badge>
  </p>
  <div className="border rounded-md overflow-hidden">
  <Table>
@@ -3701,7 +3727,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
 
  {pagoDetalleSeleccionado.notas && (
  <div className="p-3 rounded-md bg-muted/30 border">
- <p className="text-[11px] text-muted-foreground mb-1">Observaciones</p>
+ <p className="text-xs text-muted-foreground mb-1">Observaciones</p>
  <p className="text-xs">{pagoDetalleSeleccionado.notas}</p>
  </div>
  )}
@@ -3709,11 +3735,11 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  {/* Comprobantes adjuntos */}
  <div className="space-y-2">
  <div className="flex items-center justify-between">
- <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+ <p className="text-xs text-muted-foreground flex items-center gap-1.5">
  <Paperclip className="w-3 h-3" />
  Comprobantes adjuntos
  {pagoDetalleAttachments.length > 0 && (
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{pagoDetalleAttachments.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{pagoDetalleAttachments.length}</Badge>
  )}
  </p>
  {/* Botón para agregar comprobantes */}
@@ -3733,7 +3759,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <Button
  variant="outline"
  size="sm"
- className="h-6 text-[10px] px-2"
+ className="h-6 text-xs px-2"
  disabled={uploadingComprobantesOP}
  onClick={() => comprobantesInputRef.current?.click()}
  >
@@ -3793,7 +3819,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  ))}
  </div>
  ) : (
- <p className="text-[11px] text-muted-foreground italic p-2 text-center border border-dashed rounded-md">
+ <p className="text-xs text-muted-foreground italic p-2 text-center border border-dashed rounded-md">
  Sin comprobantes adjuntos
  </p>
  )}
@@ -3826,8 +3852,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  setIsPdfModalOpen(true);
  } catch (error) {
  console.error('Error generando PDF:', error);
- toast.dismiss('pdf-gen');
- toast.error('Error al generar el PDF');
+ toast.error('Error al generar el PDF', { id: 'pdf-gen' });
  }
  }}>
  <Printer className="w-3.5 h-3.5 mr-2" />
@@ -3851,20 +3876,17 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  };
  toast.loading('Generando PDF con comprobantes...', { id: 'pdf-send' });
  const url = await generatePaymentOrderPDF(pdfData);
- toast.dismiss('pdf-send');
-
  // Abrir el PDF combinado (OP + comprobantes adjuntos)
  window.open(url, '_blank');
 
  if (pagoDetalleAttachments.length > 0) {
- toast.success(`PDF generado con ${pagoDetalleAttachments.length} comprobante${pagoDetalleAttachments.length > 1 ? 's' : ''} incluido${pagoDetalleAttachments.length > 1 ? 's' : ''}`);
+ toast.success(`PDF generado con ${pagoDetalleAttachments.length} comprobante${pagoDetalleAttachments.length > 1 ? 's' : ''} incluido${pagoDetalleAttachments.length > 1 ? 's' : ''}`, { id: 'pdf-send' });
  } else {
- toast.success('PDF generado');
+ toast.success('PDF generado', { id: 'pdf-send' });
  }
  } catch (error) {
  console.error('Error generando PDF:', error);
- toast.dismiss('pdf-send');
- toast.error('Error al generar el PDF');
+ toast.error('Error al generar el PDF', { id: 'pdf-send' });
  }
  }}>
  <Send className="w-3.5 h-3.5 mr-2" />
@@ -4068,26 +4090,26 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  {/* Info básica */}
  <div className={cn('grid gap-2', quickViewExpanded ? 'grid-cols-6' : 'grid-cols-4')}>
  <div>
- <p className="text-[10px] text-muted-foreground">Tipo</p>
- <Badge variant="outline" className="text-[10px] mt-0.5">{quickViewFactura.tipo}</Badge>
+ <p className="text-xs text-muted-foreground">Tipo</p>
+ <Badge variant="outline" className="text-xs mt-0.5">{quickViewFactura.tipo}</Badge>
  </div>
  <div>
- <p className="text-[10px] text-muted-foreground">Estado</p>
+ <p className="text-xs text-muted-foreground">Estado</p>
  <div className="mt-0.5 flex items-center gap-1">
  {getEstadoBadge(quickViewFactura.estado)}
  {quickViewFactura.ingresoConfirmado && (
- <span className="inline-flex items-center text-[10px] text-success bg-success-muted px-1 py-0.5 rounded" title="Stock ingresado">
+ <span className="inline-flex items-center text-xs text-success bg-success-muted px-1 py-0.5 rounded" title="Stock ingresado">
  <Truck className="w-3 h-3" />
  </span>
  )}
  </div>
  </div>
  <div>
- <p className="text-[10px] text-muted-foreground">Emisión</p>
+ <p className="text-xs text-muted-foreground">Emisión</p>
  <p className="text-xs font-medium">{formatDate(quickViewFactura.fecha)}</p>
  </div>
  <div>
- <p className="text-[10px] text-muted-foreground">Venc.</p>
+ <p className="text-xs text-muted-foreground">Venc.</p>
  <p className="text-xs font-medium">
  {quickViewFactura.vencimiento ? formatDate(quickViewFactura.vencimiento) : '-'}
  </p>
@@ -4095,11 +4117,11 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  {quickViewExpanded && (
  <>
  <div>
- <p className="text-[10px] text-muted-foreground">Total</p>
+ <p className="text-xs text-muted-foreground">Total</p>
  <p className="text-xs font-semibold">{formatCurrency(quickViewFactura.total)}</p>
  </div>
  <div>
- <p className="text-[10px] text-muted-foreground">Saldo</p>
+ <p className="text-xs text-muted-foreground">Saldo</p>
  <p className={cn('text-xs font-semibold', quickViewFactura.saldo > 0 ? 'text-destructive' : 'text-success')}>
  {formatCurrency(quickViewFactura.saldo)}
  </p>
@@ -4113,7 +4135,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div>
  <div className="flex items-center gap-1.5 mb-2">
  <Package className="w-3.5 h-3.5 text-muted-foreground" />
- <p className="text-[10px] font-medium text-muted-foreground uppercase">
+ <p className="text-xs font-medium text-muted-foreground uppercase">
  Items / Productos
  {quickViewDetails?.items?.length ? ` (${quickViewDetails.items.length})` : ''}
  </p>
@@ -4127,16 +4149,16 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <Table>
  <TableHeader>
  <TableRow className="bg-muted/30">
- <TableHead className="text-[10px] font-medium py-1.5 px-2">Item</TableHead>
- <TableHead className="text-[10px] font-medium py-1.5 px-2 w-[60px] text-right">Cant.</TableHead>
- <TableHead className="text-[10px] font-medium py-1.5 px-2 w-[80px] text-right">Precio</TableHead>
- <TableHead className="text-[10px] font-medium py-1.5 px-2 w-[80px] text-right">Subtotal</TableHead>
+ <TableHead className="text-xs font-medium py-1.5 px-2">Item</TableHead>
+ <TableHead className="text-xs font-medium py-1.5 px-2 w-[60px] text-right">Cant.</TableHead>
+ <TableHead className="text-xs font-medium py-1.5 px-2 w-[80px] text-right">Precio</TableHead>
+ <TableHead className="text-xs font-medium py-1.5 px-2 w-[80px] text-right">Subtotal</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
  {quickViewDetails.items.map((item) => (
  <TableRow key={item.id} className="hover:bg-muted/20">
- <TableCell className="text-[10px] py-1.5 px-2">
+ <TableCell className="text-xs py-1.5 px-2">
  <span className={quickViewExpanded ? '' : 'line-clamp-1'}>
  {item.descripcion || item.supplierItem?.nombre || '-'}
  </span>
@@ -4146,13 +4168,13 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </span>
  )}
  </TableCell>
- <TableCell className="text-[10px] py-1.5 px-2 text-right whitespace-nowrap">
+ <TableCell className="text-xs py-1.5 px-2 text-right whitespace-nowrap">
  {item.cantidad} {item.unidad}
  </TableCell>
- <TableCell className="text-[10px] py-1.5 px-2 text-right">
+ <TableCell className="text-xs py-1.5 px-2 text-right">
  {formatCurrency(item.precioUnitario)}
  </TableCell>
- <TableCell className="text-[10px] py-1.5 px-2 text-right font-medium">
+ <TableCell className="text-xs py-1.5 px-2 text-right font-medium">
  {formatCurrency(item.subtotal)}
  </TableCell>
  </TableRow>
@@ -4162,7 +4184,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  </div>
  ) : (
  <div className="text-center py-3 bg-muted/20 rounded-md">
- <p className="text-[10px] text-muted-foreground">Sin items registrados</p>
+ <p className="text-xs text-muted-foreground">Sin items registrados</p>
  </div>
  )}
  </div>
@@ -4173,11 +4195,11 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <div className="h-px bg-border" />
  <div className="grid grid-cols-2 gap-3">
  <div>
- <p className="text-[10px] text-muted-foreground">Total</p>
+ <p className="text-xs text-muted-foreground">Total</p>
  <p className="text-sm font-semibold">{formatCurrency(quickViewFactura.total)}</p>
  </div>
  <div>
- <p className="text-[10px] text-muted-foreground">Saldo</p>
+ <p className="text-xs text-muted-foreground">Saldo</p>
  <p className={cn('text-sm font-semibold', quickViewFactura.saldo > 0 ? 'text-destructive' : 'text-success')}>
  {formatCurrency(quickViewFactura.saldo)}
  </p>
@@ -4189,7 +4211,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  <>
  <div className="h-px bg-border" />
  <div>
- <p className="text-[10px] text-muted-foreground">Días hasta vencimiento</p>
+ <p className="text-xs text-muted-foreground">Días hasta vencimiento</p>
  {(() => {
  const diasInfo = getDiasVencimiento(quickViewFactura.vencimiento, quickViewFactura.saldo);
  if (!diasInfo) return <p className="text-xs">-</p>;
@@ -4323,7 +4345,7 @@ export default function ProveedorCuentaCorriente({ proveedorId, showHeader = fal
  {docLabel}
  </Badge>
  {isT2Doc && (
- <Badge variant="secondary" className="text-[10px]">T2</Badge>
+ <Badge variant="secondary" className="text-xs">T2</Badge>
  )}
  </div>
  <DialogTitle className="text-lg mt-1">{ncaDetalleData.numero}</DialogTitle>

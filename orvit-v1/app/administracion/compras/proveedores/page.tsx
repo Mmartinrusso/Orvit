@@ -49,6 +49,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 
 interface Proveedor {
   id: string;
@@ -93,7 +94,74 @@ export default function ProveedoresPage() {
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ── Mutations ──────────────────────────────────────────
+  const deleteSingleMutation = useApiMutation<unknown, { id: string }>({
+    mutationFn: async ({ id }) => {
+      const response = await fetch(`/api/compras/proveedores/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al eliminar el proveedor');
+      }
+      return response.json();
+    },
+    successMessage: 'Proveedor eliminado',
+    errorMessage: 'Error al eliminar el proveedor',
+    onSuccess: () => { loadProveedores(); },
+  });
+
+  const bulkDeleteMutation = useApiMutation<{ successCount: number; errorCount: number }, { ids: Set<string> }>({
+    mutationFn: async ({ ids }) => {
+      let successCount = 0;
+      let errorCount = 0;
+      for (const id of ids) {
+        try {
+          const response = await fetch(`/api/compras/proveedores/${id}`, { method: 'DELETE' });
+          if (response.ok) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch {
+          errorCount++;
+        }
+      }
+      // If all failed, throw so onError fires
+      if (successCount === 0 && errorCount > 0) {
+        throw new Error(`${errorCount} proveedor(es) no se pudieron eliminar`);
+      }
+      return { successCount, errorCount };
+    },
+    successMessage: null, // Custom toasts below
+    onSuccess: (data) => {
+      if (data.successCount > 0) {
+        toast.success(`${data.successCount} proveedor(es) eliminado(s)`);
+      }
+      if (data.errorCount > 0) {
+        toast.error(`${data.errorCount} proveedor(es) no se pudieron eliminar`);
+      }
+      setSelectedIds(new Set());
+      loadProveedores();
+    },
+  });
+
+  const toggleActiveMutation = useApiMutation<unknown, { proveedor: Proveedor }>({
+    mutationFn: async ({ proveedor }) => {
+      const response = await fetch(`/api/compras/proveedores/${proveedor.id}`, { method: 'PATCH' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al actualizar el proveedor');
+      }
+      return response.json();
+    },
+    successMessage: null, // Dynamic message in onSuccess
+    onSuccess: (_data, { proveedor }) => {
+      const wasActive = proveedor.estado === 'activo';
+      toast.success(wasActive ? 'Proveedor desactivado' : 'Proveedor activado');
+      loadProveedores();
+    },
+    errorMessage: 'Error al actualizar el proveedor',
+  });
 
   const loadProveedores = async () => {
     setLoading(true);
@@ -193,35 +261,7 @@ export default function ProveedoresPage() {
     });
     if (!ok) return;
 
-    setIsDeleting(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const id of selectedIds) {
-      try {
-        const response = await fetch(`/api/compras/proveedores/${id}`, {
-          method: 'DELETE'
-        });
-        if (response.ok) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
-      } catch (error) {
-        errorCount++;
-      }
-    }
-
-    setIsDeleting(false);
-    setSelectedIds(new Set());
-
-    if (successCount > 0) {
-      toast.success(`${successCount} proveedor(es) eliminado(s)`);
-    }
-    if (errorCount > 0) {
-      toast.error(`${errorCount} proveedor(es) no se pudieron eliminar`);
-    }
-    loadProveedores();
+    bulkDeleteMutation.mutate({ ids: selectedIds });
   };
 
   const handleDeleteSingle = async (id: string) => {
@@ -233,20 +273,7 @@ export default function ProveedoresPage() {
     });
     if (!ok) return;
 
-    try {
-      const response = await fetch(`/api/compras/proveedores/${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        toast.success('Proveedor eliminado');
-        loadProveedores();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Error al eliminar el proveedor');
-      }
-    } catch (error) {
-      toast.error('Error al eliminar el proveedor');
-    }
+    deleteSingleMutation.mutate({ id });
   };
 
   const handleToggleActive = async (proveedor: Proveedor) => {
@@ -261,48 +288,38 @@ export default function ProveedoresPage() {
     });
     if (!ok) return;
 
-    try {
-      const response = await fetch(`/api/compras/proveedores/${proveedor.id}`, { method: 'PATCH' });
-      if (response.ok) {
-        toast.success(desactivando ? 'Proveedor desactivado' : 'Proveedor activado');
-        loadProveedores();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Error al actualizar el proveedor');
-      }
-    } catch {
-      toast.error('Error al actualizar el proveedor');
-    }
+    toggleActiveMutation.mutate({ proveedor });
   };
 
   return (
     <div className="w-full p-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b">
-        <div className="flex items-center gap-3">
-          <Building2 className="w-5 h-5 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Proveedores</h1>
-          <span className="text-xs text-muted-foreground">
-            {filteredProveedores.length} proveedor(es)
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
-            <Upload className="w-4 h-4 mr-2" />
-            Importar
-          </Button>
-          <Button size="sm" onClick={() => {
-            setEditingProveedor(null);
-            setIsModalOpen(true);
-          }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Proveedor
-          </Button>
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Proveedores</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filteredProveedores.length} proveedor(es) registrados
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Button size="sm" onClick={() => {
+              setEditingProveedor(null);
+              setIsModalOpen(true);
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Proveedor
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Filtros inline */}
-      <div className="px-6 py-3 border-b bg-muted/30">
+      <div className="px-4 md:px-6 py-3 border-b bg-muted/30">
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -329,7 +346,7 @@ export default function ProveedoresPage() {
 
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (
-        <div className="mx-6 mt-4 flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+        <div className="mx-4 md:mx-6 mt-4 flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">
               {selectedIds.size} seleccionado(s)
@@ -349,9 +366,9 @@ export default function ProveedoresPage() {
             size="sm"
             className="h-7 text-xs"
             onClick={handleBulkDelete}
-            disabled={isDeleting}
+            disabled={bulkDeleteMutation.isPending}
           >
-            {isDeleting ? (
+            {bulkDeleteMutation.isPending ? (
               <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
             ) : (
               <Trash2 className="h-3.5 w-3.5 mr-1" />
@@ -362,7 +379,7 @@ export default function ProveedoresPage() {
       )}
 
       {/* Tabla de Proveedores */}
-      <div className="px-6">
+      <div className="px-4 md:px-6 pt-4">
         {loading ? (
           <div className="text-center py-12">
             <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
@@ -414,7 +431,7 @@ export default function ProveedoresPage() {
                     <TableCell className="text-xs">
                       <span className="font-medium">{proveedor.nombre}</span>
                       {proveedor.razonSocial && proveedor.razonSocial !== proveedor.nombre && (
-                        <span className="block text-[10px] text-muted-foreground truncate max-w-[200px]">
+                        <span className="block text-xs text-muted-foreground truncate max-w-[200px]">
                           {proveedor.razonSocial}
                         </span>
                       )}
@@ -428,7 +445,7 @@ export default function ProveedoresPage() {
                         </div>
                       )}
                       {proveedor.telefono && (
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Phone className="w-2.5 h-2.5" />
                           {proveedor.telefono}
                         </div>
@@ -437,7 +454,7 @@ export default function ProveedoresPage() {
                     <TableCell>
                       <Badge
                         variant={proveedor.estado === 'activo' ? 'default' : 'secondary'}
-                        className="text-[10px] px-1.5 py-0"
+                        className="text-xs px-1.5 py-0"
                       >
                         {proveedor.estado === 'activo' ? 'Activo' : 'Inactivo'}
                       </Badge>

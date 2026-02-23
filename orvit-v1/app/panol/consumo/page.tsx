@@ -200,8 +200,8 @@ export default function ConsumoPage() {
                     <p className="text-xs font-medium text-muted-foreground">OTs Atendidas</p>
                     <p className="text-2xl font-bold">{summary.uniqueOTs}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <ClipboardList className="h-5 w-5 text-purple-600" />
+                  <div className="h-10 w-10 rounded-full bg-accent-purple-muted flex items-center justify-center">
+                    <ClipboardList className="h-5 w-5 text-accent-purple-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -222,7 +222,7 @@ export default function ConsumoPage() {
             </Card>
 
             {permissions.canViewCosts && (
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-success-muted">
+              <Card className="bg-success-muted border-success-muted">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -313,7 +313,7 @@ export default function ConsumoPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Wrench className="h-4 w-4 text-purple-600" />
+                  <Wrench className="h-4 w-4 text-accent-purple-muted-foreground" />
                   Top 10 Máquinas por Consumo
                 </CardTitle>
               </CardHeader>

@@ -151,14 +151,14 @@ export default function MachineFailuresTab({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return <Badge variant="destructive" className="text-[10px] px-1.5">Abierta</Badge>;
+        return <Badge variant="destructive" className="text-xs px-1.5">Abierta</Badge>;
       case 'IN_PROGRESS':
-        return <Badge className="bg-warning text-[10px] px-1.5">En Progreso</Badge>;
+        return <Badge className="bg-warning text-xs px-1.5">En Progreso</Badge>;
       case 'RESOLVED':
       case 'CLOSED':
-        return <Badge variant="secondary" className="text-[10px] px-1.5">Resuelta</Badge>;
+        return <Badge variant="secondary" className="text-xs px-1.5">Resuelta</Badge>;
       default:
-        return <Badge variant="outline" className="text-[10px] px-1.5">{status}</Badge>;
+        return <Badge variant="outline" className="text-xs px-1.5">{status}</Badge>;
     }
   };
 
@@ -166,13 +166,13 @@ export default function MachineFailuresTab({
     if (!priority) return null;
     switch (priority.toUpperCase()) {
       case 'CRITICAL':
-        return <Badge variant="destructive" className="text-[10px] px-1.5">Crítica</Badge>;
+        return <Badge variant="destructive" className="text-xs px-1.5">Crítica</Badge>;
       case 'HIGH':
-        return <Badge className="bg-warning text-warning-foreground text-[10px] px-1.5">Alta</Badge>;
+        return <Badge className="bg-warning text-warning-foreground text-xs px-1.5">Alta</Badge>;
       case 'MEDIUM':
-        return <Badge className="bg-warning/80 text-warning-foreground text-[10px] px-1.5">Media</Badge>;
+        return <Badge className="bg-warning/80 text-warning-foreground text-xs px-1.5">Media</Badge>;
       case 'LOW':
-        return <Badge variant="outline" className="text-[10px] px-1.5">Baja</Badge>;
+        return <Badge variant="outline" className="text-xs px-1.5">Baja</Badge>;
       default:
         return null;
     }
@@ -201,7 +201,7 @@ export default function MachineFailuresTab({
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-[10px] text-muted-foreground">Total</p>
+              <p className="text-xs text-muted-foreground">Total</p>
               <p className="text-lg font-bold">{stats.total}</p>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function MachineFailuresTab({
           <div className="flex items-center gap-2">
             <AlertCircle className={cn('h-4 w-4', stats.open > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
-              <p className="text-[10px] text-muted-foreground">Abiertas</p>
+              <p className="text-xs text-muted-foreground">Abiertas</p>
               <p className={cn('text-lg font-bold', stats.open > 0 && 'text-destructive')}>{stats.open}</p>
             </div>
           </div>
@@ -231,7 +231,7 @@ export default function MachineFailuresTab({
           <div className="flex items-center gap-2">
             <Clock className={cn('h-4 w-4', stats.inProgress > 0 ? 'text-warning' : 'text-muted-foreground')} />
             <div>
-              <p className="text-[10px] text-muted-foreground">En Progreso</p>
+              <p className="text-xs text-muted-foreground">En Progreso</p>
               <p className={cn('text-lg font-bold', stats.inProgress > 0 && 'text-warning')}>{stats.inProgress}</p>
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function MachineFailuresTab({
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-[10px] text-muted-foreground">Resueltas</p>
+              <p className="text-xs text-muted-foreground">Resueltas</p>
               <p className="text-lg font-bold">{stats.resolved}</p>
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function MachineFailuresTab({
           <div className="flex items-center gap-2">
             <Timer className={cn('h-4 w-4', stats.withDowntime > 0 ? 'text-primary' : 'text-muted-foreground')} />
             <div>
-              <p className="text-[10px] text-muted-foreground">Con Parada</p>
+              <p className="text-xs text-muted-foreground">Con Parada</p>
               <p className={cn('text-lg font-bold', stats.withDowntime > 0 && 'text-primary')}>{stats.withDowntime}</p>
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function MachineFailuresTab({
           <div className="flex items-center gap-2">
             <AlertTriangle className={cn('h-4 w-4', stats.critical > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
-              <p className="text-[10px] text-muted-foreground">Críticas</p>
+              <p className="text-xs text-muted-foreground">Críticas</p>
               <p className={cn('text-lg font-bold', stats.critical > 0 && 'text-destructive')}>{stats.critical}</p>
             </div>
           </div>
@@ -373,19 +373,19 @@ export default function MachineFailuresTab({
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {getPriorityBadge(failure.priority)}
                     {failure.component && (
-                      <Badge variant="outline" className="text-[10px] px-1.5">
+                      <Badge variant="outline" className="text-xs px-1.5">
                         <Wrench className="h-2.5 w-2.5 mr-0.5" />
                         {failure.component.name}
                       </Badge>
                     )}
                     {failure.causedDowntime && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5">
+                      <Badge variant="destructive" className="text-xs px-1.5">
                         <Timer className="h-2.5 w-2.5 mr-0.5" />
                         Parada
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(failure.reportedAt), 'dd/MM/yy HH:mm', { locale: es })}
@@ -412,10 +412,10 @@ export default function MachineFailuresTab({
                       <span className="text-sm font-medium truncate">{failure.title}</span>
                       {getPriorityBadge(failure.priority)}
                       {failure.causedDowntime && (
-                        <Badge variant="destructive" className="text-[10px] px-1">Parada</Badge>
+                        <Badge variant="destructive" className="text-xs px-1">Parada</Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                       {failure.component && <span>{failure.component.name}</span>}
                       <span>•</span>
                       <span>{format(new Date(failure.reportedAt), 'dd/MM/yy HH:mm', { locale: es })}</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,8 @@ import {
   ClipboardList,
   RefreshCw,
   Search,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Table,
@@ -76,7 +78,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { Slider } from '@/components/ui/slider';
+import { useFontSize } from '@/hooks/use-font-size';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 
 // Icono de Discord
 const DiscordIcon = ({ className }: { className?: string }) => (
@@ -140,7 +145,9 @@ export default function ConfiguracionPage() {
   const { toast } = useToast();
   const { canConfigureCompany, isLoading: permissionLoading } = useCompanySettingsPermission();
   const { theme, setTheme } = useTheme();
+  const { fontSize, setFontSize, resetFontSize, overrides, setOverride, resetAll, hasOverrides } = useFontSize();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { mode, canToggle } = useViewMode();
 
   const normalizeTab = (raw: string | null) => {
@@ -160,7 +167,6 @@ export default function ConfiguracionPage() {
     email: '',
     avatar: '',
   });
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   // Company state
@@ -175,7 +181,6 @@ export default function ConfiguracionPage() {
     logoDark: '',
     logoLight: '',
   });
-  const [isCompanyLoading, setIsCompanyLoading] = useState(false);
   const [isLogoLightUploading, setIsLogoLightUploading] = useState(false);
   const [isLogoDarkUploading, setIsLogoDarkUploading] = useState(false);
 
@@ -189,7 +194,6 @@ export default function ConfiguracionPage() {
   const [discordStatus, setDiscordStatus] = useState<{ linked: boolean; discordUserId: string | null }>({ linked: false, discordUserId: null });
   const [discordLoading, setDiscordLoading] = useState(true);
   const [discordInput, setDiscordInput] = useState('');
-  const [discordLinking, setDiscordLinking] = useState(false);
   const [discordTestLoading, setDiscordTestLoading] = useState(false);
 
   // T2 config state (solo visible en modo E)
@@ -199,7 +203,6 @@ export default function ConfiguracionPage() {
     pin: '',
     sessionTimeout: 30,
   });
-  const [t2Loading, setT2Loading] = useState(false);
   const [showT2Pin, setShowT2Pin] = useState(false);
 
   // Purchase config state
@@ -208,17 +211,12 @@ export default function ConfiguracionPage() {
     permitirEdicionItems: true,
     requiereMotivoEdicion: true,
   });
-  const [purchaseConfigLoading, setPurchaseConfigLoading] = useState(false);
   const [showPurchasePassword, setShowPurchasePassword] = useState(false);
 
   // Discord Access Management state
   const [discordUsers, setDiscordUsers] = useState<DiscordUser[]>([]);
   const [discordSectors, setDiscordSectors] = useState<DiscordSector[]>([]);
   const [discordAccessLoading, setDiscordAccessLoading] = useState(false);
-  const [discordAccessSaving, setDiscordAccessSaving] = useState(false);
-  const [discordSyncing, setDiscordSyncing] = useState(false);
-  const [discordMakingPrivate, setDiscordMakingPrivate] = useState(false);
-  const [discordResyncing, setDiscordResyncing] = useState(false);
   const [discordSearchTerm, setDiscordSearchTerm] = useState('');
   const [selectedDiscordUser, setSelectedDiscordUser] = useState<DiscordUser | null>(null);
   const [discordEditDialogOpen, setDiscordEditDialogOpen] = useState(false);
@@ -228,6 +226,256 @@ export default function ConfiguracionPage() {
     remove: number[];
     update: { sectorId: number; perms: Partial<ChannelPermissions> }[];
   }>({ add: [], remove: [], update: [] });
+
+  // ===== MUTATIONS (useApiMutation) =====
+
+  // Save user profile
+  const saveProfileMutation = useApiMutation<any, { name: string; avatar: string }>({
+    mutationFn: async (vars) => {
+      const response = await fetch(`/api/users/${user?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: vars.name, avatar: vars.avatar }),
+      });
+      if (!response.ok) throw new Error('Error al guardar el perfil');
+      return response.json();
+    },
+    successMessage: 'Perfil actualizado correctamente',
+    errorMessage: 'Error al guardar el perfil',
+    onSuccess: () => {
+      window.location.reload();
+    },
+  });
+
+  // Save company details
+  const saveCompanyMutation = useApiMutation<any, Record<string, string>>({
+    mutationFn: async (vars) => {
+      const response = await fetch(`/api/companies/${currentCompany?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!response.ok) throw new Error('Error al guardar la empresa');
+      return response.json();
+    },
+    successMessage: 'Empresa actualizada correctamente',
+    errorMessage: 'Error al guardar la empresa',
+    onSuccess: (data) => {
+      updateCurrentCompany(data);
+    },
+  });
+
+  // Link Discord user
+  const linkDiscordMutation = useApiMutation<any, { discordUserId: string }>({
+    mutationFn: createFetchMutation({
+      url: '/api/discord/users/link',
+      method: 'POST',
+    }),
+    successMessage: 'Tu cuenta de Discord fue vinculada exitosamente',
+    errorMessage: 'No se pudo vincular Discord',
+    onSuccess: (_data, vars) => {
+      setDiscordStatus({ linked: true, discordUserId: vars.discordUserId });
+      setDiscordInput('');
+    },
+  });
+
+  // Unlink Discord user
+  const unlinkDiscordMutation = useApiMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/discord/users/link', { method: 'DELETE' });
+      if (!response.ok) throw new Error('No se pudo desvincular Discord');
+      return response.json();
+    },
+    successMessage: 'Ya no recibirás notificaciones por Discord',
+    errorMessage: 'No se pudo desvincular Discord',
+    onSuccess: () => {
+      setDiscordStatus({ linked: false, discordUserId: null });
+    },
+  });
+
+  // Save T2 / ViewMode config
+  const saveT2ConfigMutation = useApiMutation<any, { enabled: boolean; hotkey: string; pinEnabled: boolean; pin?: string; sessionTimeout: number }>({
+    mutationFn: async (vars) => {
+      const res = await fetch(`/api/company/${currentCompany?.id}/view-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) throw new Error('No se pudo guardar la configuración');
+      return res.json();
+    },
+    successMessage: 'Configuración de ViewMode actualizada',
+    errorMessage: 'No se pudo guardar la configuración',
+    onSuccess: () => {
+      setT2Config(prev => ({ ...prev, pin: '' }));
+    },
+  });
+
+  // Save purchase config
+  const savePurchaseConfigMutation = useApiMutation<any, Record<string, unknown>>({
+    mutationFn: async (vars) => {
+      const res = await fetch('/api/compras/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'No se pudo guardar la configuración');
+      }
+      return res.json();
+    },
+    successMessage: 'Configuración de Compras actualizada',
+    errorMessage: 'Error al guardar configuración de compras',
+    onSuccess: () => {
+      setPurchaseConfig(prev => ({ ...prev, claveEdicionItems: '' }));
+    },
+  });
+
+  // Sync from Discord
+  const syncFromDiscordMutation = useApiMutation<any, { userId: number }>({
+    mutationFn: async (vars) => {
+      const res = await fetch('/api/discord/sync-from-discord', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al sincronizar');
+      return data;
+    },
+    successMessage: null,
+    errorMessage: 'Error al sincronizar desde Discord',
+    onSuccess: async (data) => {
+      toast({
+        title: 'Sincronizado',
+        description: data.message || `${data.created} nuevos, ${data.updated} actualizados`,
+      });
+      // Reload the selected user data
+      if (selectedDiscordUser) {
+        const userRes = await fetch(`/api/discord/user-access?userId=${selectedDiscordUser.id}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          if (userData.user) {
+            setSelectedDiscordUser(userData.user);
+            setDiscordPendingChanges({ add: [], remove: [], update: [] });
+          }
+        }
+      }
+      fetchDiscordAccessData();
+    },
+  });
+
+  // Make all Discord categories private
+  const makeAllCategoriesPrivateMutation = useApiMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/discord/bot/make-all-private', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al hacer privadas las categorías');
+      return data;
+    },
+    successMessage: null,
+    errorMessage: 'Error al hacer privadas las categorías',
+    onSuccess: (data: any) => {
+      toast({ title: 'Categorías actualizadas', description: data.message });
+    },
+  });
+
+  // Resync all Discord access
+  const resyncAllAccessMutation = useApiMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/discord/bot/resync-all-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al re-sincronizar');
+      return data;
+    },
+    successMessage: null,
+    errorMessage: 'Error al re-sincronizar accesos',
+    onSuccess: (data: any) => {
+      toast({ title: 'Accesos sincronizados', description: data.message });
+      fetchDiscordAccessData();
+    },
+  });
+
+  // Save Discord access changes (complex multi-step)
+  const saveDiscordAccessMutation = useApiMutation<void, {
+    user: DiscordUser;
+    changes: typeof discordPendingChanges;
+  }>({
+    mutationFn: async ({ user: dUser, changes }) => {
+      // 1. Add new accesses
+      if (changes.add.length > 0) {
+        for (const access of changes.add) {
+          const res = await fetch('/api/discord/user-access', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: dUser.id,
+              sectorIds: [access.sectorId],
+              channelPermissions: {
+                fallas: access.perms.canViewFallas,
+                preventivos: access.perms.canViewPreventivos,
+                ot: access.perms.canViewOT,
+                general: access.perms.canViewGeneral,
+              },
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error);
+          }
+        }
+      }
+
+      // 2. Remove accesses
+      if (changes.remove.length > 0) {
+        const res = await fetch(
+          `/api/discord/user-access?userId=${dUser.id}&sectorIds=${changes.remove.join(',')}`,
+          { method: 'DELETE' }
+        );
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error);
+        }
+      }
+
+      // 3. Update permissions
+      if (changes.update.length > 0) {
+        for (const update of changes.update) {
+          const res = await fetch('/api/discord/user-access', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: dUser.id,
+              sectorId: update.sectorId,
+              channelPermissions: {
+                fallas: update.perms.canViewFallas,
+                preventivos: update.perms.canViewPreventivos,
+                ot: update.perms.canViewOT,
+                general: update.perms.canViewGeneral,
+              },
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error);
+          }
+        }
+      }
+    },
+    successMessage: 'Cambios de acceso guardados correctamente',
+    errorMessage: 'Error al guardar cambios de acceso',
+    onSuccess: (_data, { changes }) => {
+      fetchDiscordAccessData();
+      setDiscordEditDialogOpen(false);
+    },
+  });
 
   // Load user data
   useEffect(() => {
@@ -361,28 +609,12 @@ export default function ConfiguracionPage() {
   }, [searchParams, canConfigureCompany]);
 
   // Handlers
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = () => {
     if (!profileData.name.trim()) {
       toast({ title: "Error", description: "El nombre es requerido", variant: "destructive" });
       return;
     }
-
-    setIsProfileLoading(true);
-    try {
-      const response = await fetch(`/api/users/${user?.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: profileData.name, avatar: profileData.avatar }),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar el perfil');
-      window.location.reload();
-      toast({ title: "Guardado", description: "Perfil actualizado correctamente" });
-    } catch (error) {
-      toast({ title: "Error", description: "Error al guardar el perfil", variant: "destructive" });
-    } finally {
-      setIsProfileLoading(false);
-    }
+    saveProfileMutation.mutate({ name: profileData.name, avatar: profileData.avatar });
   };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -428,36 +660,19 @@ export default function ConfiguracionPage() {
     }
   };
 
-  const handleSaveCompany = async () => {
+  const handleSaveCompany = () => {
     if (!companyData.name.trim()) {
       toast({ title: "Error", description: "El nombre de la empresa es requerido", variant: "destructive" });
       return;
     }
-
-    setIsCompanyLoading(true);
-    try {
-      const response = await fetch(`/api/companies/${currentCompany?.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: companyData.name.trim(),
-          cuit: companyData.cuit.trim(),
-          address: companyData.address.trim(),
-          phone: companyData.phone.trim(),
-          email: companyData.email.trim(),
-          website: companyData.website.trim(),
-        }),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar la empresa');
-      const updatedCompany = await response.json();
-      updateCurrentCompany(updatedCompany);
-      toast({ title: "Guardado", description: "Empresa actualizada correctamente" });
-    } catch (error) {
-      toast({ title: "Error", description: "Error al guardar la empresa", variant: "destructive" });
-    } finally {
-      setIsCompanyLoading(false);
-    }
+    saveCompanyMutation.mutate({
+      name: companyData.name.trim(),
+      cuit: companyData.cuit.trim(),
+      address: companyData.address.trim(),
+      phone: companyData.phone.trim(),
+      email: companyData.email.trim(),
+      website: companyData.website.trim(),
+    });
   };
 
   const handleCompanyLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>, mode: 'light' | 'dark') => {
@@ -517,7 +732,7 @@ export default function ConfiguracionPage() {
   };
 
   // Discord handlers
-  const handleLinkDiscord = async () => {
+  const handleLinkDiscord = () => {
     if (!discordInput.trim()) {
       toast({ title: 'Error', description: 'Ingresa tu ID de Discord', variant: 'destructive' });
       return;
@@ -529,44 +744,11 @@ export default function ConfiguracionPage() {
       return;
     }
 
-    setDiscordLinking(true);
-    try {
-      const response = await fetch('/api/discord/users/link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discordUserId: discordInput.trim() }),
-      });
-
-      if (response.ok) {
-        setDiscordStatus({ linked: true, discordUserId: discordInput.trim() });
-        setDiscordInput('');
-        toast({ title: 'Discord vinculado', description: 'Tu cuenta de Discord fue vinculada exitosamente' });
-      } else {
-        const data = await response.json();
-        throw new Error(data.error || 'Error al vincular');
-      }
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'No se pudo vincular Discord', variant: 'destructive' });
-    } finally {
-      setDiscordLinking(false);
-    }
+    linkDiscordMutation.mutate({ discordUserId: discordInput.trim() });
   };
 
-  const handleUnlinkDiscord = async () => {
-    setDiscordLinking(true);
-    try {
-      const response = await fetch('/api/discord/users/link', { method: 'DELETE' });
-      if (response.ok) {
-        setDiscordStatus({ linked: false, discordUserId: null });
-        toast({ title: 'Discord desvinculado', description: 'Ya no recibirás notificaciones por Discord' });
-      } else {
-        throw new Error('Error');
-      }
-    } catch {
-      toast({ title: 'Error', description: 'No se pudo desvincular Discord', variant: 'destructive' });
-    } finally {
-      setDiscordLinking(false);
-    }
+  const handleUnlinkDiscord = () => {
+    unlinkDiscordMutation.mutate();
   };
 
   const handleTestDiscordDM = async () => {
@@ -588,62 +770,24 @@ export default function ConfiguracionPage() {
   };
 
   // T2 Config save handler
-  const handleSaveT2Config = async () => {
+  const handleSaveT2Config = () => {
     if (!currentCompany?.id) return;
-
-    setT2Loading(true);
-    try {
-      const res = await fetch(`/api/company/${currentCompany.id}/view-config`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enabled: true,
-          hotkey: t2Config.hotkey,
-          pinEnabled: t2Config.pinEnabled,
-          pin: t2Config.pin || undefined,
-          sessionTimeout: t2Config.sessionTimeout,
-        }),
-      });
-
-      if (res.ok) {
-        toast({ title: 'Guardado', description: 'Configuración de ViewMode actualizada' });
-        setT2Config(prev => ({ ...prev, pin: '' }));
-      } else {
-        toast({ title: 'Error', description: 'No se pudo guardar la configuración', variant: 'destructive' });
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Error al guardar', variant: 'destructive' });
-    } finally {
-      setT2Loading(false);
-    }
+    saveT2ConfigMutation.mutate({
+      enabled: true,
+      hotkey: t2Config.hotkey,
+      pinEnabled: t2Config.pinEnabled,
+      pin: t2Config.pin || undefined,
+      sessionTimeout: t2Config.sessionTimeout,
+    });
   };
 
   // Purchase Config save handler
-  const handleSavePurchaseConfig = async () => {
-    setPurchaseConfigLoading(true);
-    try {
-      const res = await fetch('/api/compras/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...(purchaseConfig.claveEdicionItems && { claveEdicionItems: purchaseConfig.claveEdicionItems }),
-          permitirEdicionItems: purchaseConfig.permitirEdicionItems,
-          requiereMotivoEdicion: purchaseConfig.requiereMotivoEdicion,
-        }),
-      });
-
-      if (res.ok) {
-        toast({ title: 'Guardado', description: 'Configuración de Compras actualizada' });
-        setPurchaseConfig(prev => ({ ...prev, claveEdicionItems: '' }));
-      } else {
-        const data = await res.json();
-        toast({ title: 'Error', description: data.error || 'No se pudo guardar la configuración', variant: 'destructive' });
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Error al guardar', variant: 'destructive' });
-    } finally {
-      setPurchaseConfigLoading(false);
-    }
+  const handleSavePurchaseConfig = () => {
+    savePurchaseConfigMutation.mutate({
+      ...(purchaseConfig.claveEdicionItems && { claveEdicionItems: purchaseConfig.claveEdicionItems }),
+      permitirEdicionItems: purchaseConfig.permitirEdicionItems,
+      requiereMotivoEdicion: purchaseConfig.requiereMotivoEdicion,
+    });
   };
 
   // ===== DISCORD ACCESS MANAGEMENT HANDLERS =====
@@ -796,7 +940,7 @@ export default function ConfiguracionPage() {
   };
 
   // Guardar cambios de Discord
-  const saveDiscordChanges = async () => {
+  const saveDiscordChanges = () => {
     if (!selectedDiscordUser) return;
 
     const hasChanges = discordPendingChanges.add.length > 0 ||
@@ -808,124 +952,16 @@ export default function ConfiguracionPage() {
       return;
     }
 
-    setDiscordAccessSaving(true);
-    try {
-      // 1. Agregar nuevos accesos
-      if (discordPendingChanges.add.length > 0) {
-        for (const access of discordPendingChanges.add) {
-          const res = await fetch('/api/discord/user-access', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: selectedDiscordUser.id,
-              sectorIds: [access.sectorId],
-              channelPermissions: {
-                fallas: access.perms.canViewFallas,
-                preventivos: access.perms.canViewPreventivos,
-                ot: access.perms.canViewOT,
-                general: access.perms.canViewGeneral,
-              }
-            })
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error);
-          }
-        }
-        toast({ title: 'Éxito', description: `Acceso otorgado a ${discordPendingChanges.add.length} sector(es)` });
-      }
-
-      // 2. Remover accesos
-      if (discordPendingChanges.remove.length > 0) {
-        const res = await fetch(
-          `/api/discord/user-access?userId=${selectedDiscordUser.id}&sectorIds=${discordPendingChanges.remove.join(',')}`,
-          { method: 'DELETE' }
-        );
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error);
-        }
-        toast({ title: 'Éxito', description: `Acceso revocado de ${discordPendingChanges.remove.length} sector(es)` });
-      }
-
-      // 3. Actualizar permisos
-      if (discordPendingChanges.update.length > 0) {
-        for (const update of discordPendingChanges.update) {
-          const res = await fetch('/api/discord/user-access', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: selectedDiscordUser.id,
-              sectorId: update.sectorId,
-              channelPermissions: {
-                fallas: update.perms.canViewFallas,
-                preventivos: update.perms.canViewPreventivos,
-                ot: update.perms.canViewOT,
-                general: update.perms.canViewGeneral,
-              }
-            })
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error);
-          }
-        }
-        toast({ title: 'Éxito', description: 'Permisos actualizados' });
-      }
-
-      await fetchDiscordAccessData();
-      setDiscordEditDialogOpen(false);
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Error al guardar cambios', variant: 'destructive' });
-    } finally {
-      setDiscordAccessSaving(false);
-    }
+    saveDiscordAccessMutation.mutate({
+      user: selectedDiscordUser,
+      changes: discordPendingChanges,
+    });
   };
 
   // Sincronizar permisos desde Discord
-  const syncFromDiscord = async () => {
+  const syncFromDiscord = () => {
     if (!selectedDiscordUser) return;
-
-    setDiscordSyncing(true);
-    try {
-      const res = await fetch('/api/discord/sync-from-discord', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedDiscordUser.id })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al sincronizar');
-      }
-
-      toast({
-        title: 'Sincronizado',
-        description: data.message || `${data.created} nuevos, ${data.updated} actualizados`
-      });
-
-      // Recargar datos del usuario desde la API
-      const userRes = await fetch(`/api/discord/user-access?userId=${selectedDiscordUser.id}`);
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        if (userData.user) {
-          setSelectedDiscordUser(userData.user);
-          setDiscordPendingChanges({ add: [], remove: [], update: [] });
-        }
-      }
-
-      // También actualizar la lista principal
-      fetchDiscordAccessData();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Error al sincronizar desde Discord',
-        variant: 'destructive'
-      });
-    } finally {
-      setDiscordSyncing(false);
-    }
+    syncFromDiscordMutation.mutate({ userId: selectedDiscordUser.id });
   };
 
   // Hacer todas las categorías de Discord privadas
@@ -937,33 +973,7 @@ export default function ConfiguracionPage() {
       variant: 'default',
     });
     if (!ok) return;
-
-    setDiscordMakingPrivate(true);
-    try {
-      const res = await fetch('/api/discord/bot/make-all-private', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al hacer privadas las categorías');
-      }
-
-      toast({
-        title: 'Categorías actualizadas',
-        description: data.message
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Error al hacer privadas las categorías',
-        variant: 'destructive'
-      });
-    } finally {
-      setDiscordMakingPrivate(false);
-    }
+    makeAllCategoriesPrivateMutation.mutate();
   };
 
   // Re-sincronizar todos los accesos de Discord
@@ -975,35 +985,7 @@ export default function ConfiguracionPage() {
       variant: 'default',
     });
     if (!ok) return;
-
-    setDiscordResyncing(true);
-    try {
-      const res = await fetch('/api/discord/bot/resync-all-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al re-sincronizar');
-      }
-
-      toast({
-        title: 'Accesos sincronizados',
-        description: data.message
-      });
-
-      fetchDiscordAccessData();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Error al re-sincronizar accesos',
-        variant: 'destructive'
-      });
-    } finally {
-      setDiscordResyncing(false);
-    }
+    resyncAllAccessMutation.mutate();
   };
 
   return (
@@ -1105,8 +1087,8 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveProfile} disabled={isProfileLoading}>
-                  {isProfileLoading ? (
+                <Button onClick={handleSaveProfile} disabled={saveProfileMutation.isPending}>
+                  {saveProfileMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
@@ -1167,6 +1149,10 @@ export default function ConfiguracionPage() {
                     ViewMode
                   </TabsTrigger>
                 )}
+<TabsTrigger value="cotizaciones">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Cotizaciones
+                </TabsTrigger>
               </TabsList>
 
               {/* Sub-tab: Datos de Empresa */}
@@ -1305,8 +1291,8 @@ export default function ConfiguracionPage() {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleSaveCompany} disabled={isCompanyLoading}>
-                        {isCompanyLoading ? (
+                      <Button onClick={handleSaveCompany} disabled={saveCompanyMutation.isPending}>
+                        {saveCompanyMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
                           <Save className="h-4 w-4 mr-2" />
@@ -1394,8 +1380,8 @@ export default function ConfiguracionPage() {
                     )}
 
                     <div className="flex justify-end pt-4">
-                      <Button onClick={handleSavePurchaseConfig} disabled={purchaseConfigLoading}>
-                        {purchaseConfigLoading ? (
+                      <Button onClick={handleSavePurchaseConfig} disabled={savePurchaseConfigMutation.isPending}>
+                        {savePurchaseConfigMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
                           <Save className="h-4 w-4 mr-2" />
@@ -1428,9 +1414,9 @@ export default function ConfiguracionPage() {
                               variant="outline"
                               size="sm"
                               onClick={makeAllCategoriesPrivate}
-                              disabled={discordMakingPrivate}
+                              disabled={makeAllCategoriesPrivateMutation.isPending}
                             >
-                              {discordMakingPrivate ? (
+                              {makeAllCategoriesPrivateMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               ) : (
                                 <EyeOff className="h-4 w-4 mr-2" />
@@ -1448,9 +1434,9 @@ export default function ConfiguracionPage() {
                               variant="outline"
                               size="sm"
                               onClick={resyncAllAccess}
-                              disabled={discordResyncing}
+                              disabled={resyncAllAccessMutation.isPending}
                             >
-                              {discordResyncing ? (
+                              {resyncAllAccessMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               ) : (
                                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -1675,8 +1661,8 @@ export default function ConfiguracionPage() {
                       </div>
 
                       <div className="flex justify-end pt-4">
-                        <Button onClick={handleSaveT2Config} disabled={t2Loading}>
-                          {t2Loading ? (
+                        <Button onClick={handleSaveT2Config} disabled={saveT2ConfigMutation.isPending}>
+                          {saveT2ConfigMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           ) : (
                             <Save className="h-4 w-4 mr-2" />
@@ -1688,6 +1674,27 @@ export default function ConfiguracionPage() {
                   </Card>
                 </TabsContent>
               )}
+
+{/* Sub-tab: Cotizaciones */}
+              <TabsContent value="cotizaciones" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      Templates de Cotización
+                    </CardTitle>
+                    <CardDescription>
+                      Configurá el diseño del presupuesto que ven tus clientes: logo, colores, columnas, firma y condiciones de pago.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button onClick={() => router.push('/administracion/configuracion/cotizaciones')}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Abrir editor de templates
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </TabsContent>
         )}
@@ -1773,16 +1780,102 @@ export default function ConfiguracionPage() {
                     <Moon className="h-4 w-4 mr-2" />
                     Oscuro
                   </Button>
-                  <Button
-                    variant={theme === 'metal' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTheme('metal')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Metal
-                  </Button>
                 </div>
               </div>
+
+              {/* Tamaño de texto */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <Label>Tamaño de texto</Label>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-muted-foreground">A</span>
+                  <Slider
+                    value={[fontSize]}
+                    onValueChange={([v]) => setFontSize(v, true)}
+                    onValueCommit={([v]) => setFontSize(v)}
+                    min={14}
+                    max={22}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <span className="text-lg font-medium text-muted-foreground">A</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {fontSize}px {fontSize === 16 && '(predeterminado)'}
+                  </p>
+                  {fontSize !== 16 && (
+                    <Button variant="ghost" size="sm" onClick={resetFontSize}>
+                      Restablecer
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Ajustes individuales — colapsable */}
+              <details className="pt-4 border-t border-border group/details">
+                <summary className="flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open/details:rotate-90" />
+                    <Label className="cursor-pointer">Ajustes por elemento</Label>
+                    {hasOverrides && (
+                      <Badge variant="secondary" className="text-xs">
+                        {Object.values(overrides).filter(v => v > 0).length} ajustado{Object.values(overrides).filter(v => v > 0).length !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
+                  {hasOverrides && (
+                    <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground" onClick={(e) => { e.preventDefault(); resetAll(); }}>
+                      Restablecer
+                    </Button>
+                  )}
+                </summary>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {([
+                    { key: 'tabs' as const, label: 'Pestañas', icon: '⊞', steps: ['0.75rem', '0.875rem', '1rem'] },
+                    { key: 'tables' as const, label: 'Tablas', icon: '▤', steps: ['0.875rem', '1rem', '1.125rem'] },
+                    { key: 'sidebar' as const, label: 'Barra lateral', icon: '☰', steps: ['0.875rem', '1rem', '1.125rem'] },
+                    { key: 'headings' as const, label: 'Títulos', icon: 'H', steps: ['1.5rem', '1.875rem', '2.25rem'] },
+                    { key: 'buttons' as const, label: 'Botones', icon: '▢', steps: ['0.875rem', '1rem', '1.125rem'] },
+                    { key: 'forms' as const, label: 'Formularios', icon: '⊡', steps: ['0.875rem', '1rem', '1.125rem'] },
+                    { key: 'kpis' as const, label: 'KPIs', icon: '#', steps: ['1.5rem', '1.875rem', '2.25rem'] },
+                    { key: 'descriptions' as const, label: 'Descripciones', icon: '¶', steps: ['0.875rem', '1rem', '1.125rem'] },
+                  ] as const).map(({ key, label, icon, steps: stepValues }) => (
+                    <div key={key} className={cn(
+                      'rounded-lg border p-2.5 space-y-2 transition-colors',
+                      overrides[key] > 0 ? 'border-primary/30 bg-primary/5' : 'border-border'
+                    )}>
+                      {/* Header + preview text */}
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded bg-muted flex items-center justify-center text-xs text-muted-foreground font-mono shrink-0">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{label}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Ejemplo: <span style={{ fontSize: stepValues[overrides[key]] }}>Abc</span>
+                          </p>
+                        </div>
+                      </div>
+                      {/* Compact selector */}
+                      <div className="flex gap-1">
+                        {['N', 'G', 'XG'].map((stepLabel, i) => (
+                          <button
+                            key={i}
+                            title={['Normal', 'Grande', 'Muy grande'][i]}
+                            className={cn(
+                              'flex-1 rounded py-1 text-[10px] font-medium transition-colors',
+                              overrides[key] === i
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'bg-muted text-muted-foreground hover:text-foreground'
+                            )}
+                            onClick={() => setOverride(key, i)}
+                          >
+                            {stepLabel}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
             </CardContent>
           </Card>
 
@@ -1830,9 +1923,9 @@ export default function ConfiguracionPage() {
                       variant="outline"
                       size="sm"
                       onClick={handleUnlinkDiscord}
-                      disabled={discordLinking}
+                      disabled={unlinkDiscordMutation.isPending}
                     >
-                      {discordLinking ? (
+                      {unlinkDiscordMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : (
                         <Unlink className="h-4 w-4 mr-2" />
@@ -1865,10 +1958,10 @@ export default function ConfiguracionPage() {
                     />
                     <Button
                       onClick={handleLinkDiscord}
-                      disabled={discordLinking || !discordInput.trim()}
+                      disabled={linkDiscordMutation.isPending || !discordInput.trim()}
                       className="bg-[#5865F2] hover:bg-[#4752C4]"
                     >
-                      {discordLinking ? (
+                      {linkDiscordMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : (
                         <LinkIcon className="h-4 w-4 mr-2" />
@@ -1956,9 +2049,9 @@ export default function ConfiguracionPage() {
               variant="outline"
               size="sm"
               onClick={syncFromDiscord}
-              disabled={discordSyncing}
+              disabled={syncFromDiscordMutation.isPending}
             >
-              {discordSyncing ? (
+              {syncFromDiscordMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -2094,13 +2187,13 @@ export default function ConfiguracionPage() {
             </Button>
             <Button
               onClick={saveDiscordChanges}
-              disabled={discordAccessSaving || (
+              disabled={saveDiscordAccessMutation.isPending || (
                 discordPendingChanges.add.length === 0 &&
                 discordPendingChanges.remove.length === 0 &&
                 discordPendingChanges.update.length === 0
               )}
             >
-              {discordAccessSaving ? (
+              {saveDiscordAccessMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Guardando...

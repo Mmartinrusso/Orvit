@@ -25,6 +25,7 @@ import {
   MoreVertical,
   Copy,
   Wrench,
+  Gauge,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -43,6 +44,7 @@ interface UnitsTableProps {
   onDelete?: (unidad: UnidadMovil) => void;
   onDuplicate?: (unidad: UnidadMovil) => void;
   onCreateWorkOrder?: (unidad: UnidadMovil) => void;
+  onLoadKilometraje?: (unidad: UnidadMovil) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   sortBy?: string;
@@ -97,6 +99,7 @@ export function UnitsTable({
   onDelete,
   onDuplicate,
   onCreateWorkOrder,
+  onLoadKilometraje,
   canEdit = false,
   canDelete = false,
   sortBy,
@@ -189,7 +192,7 @@ export function UnitsTable({
               <TableCell className="text-xs">
                 <div>
                   <div className="font-medium">{unidad.nombre}</div>
-                  <div className="text-muted-foreground text-[11px]">
+                  <div className="text-muted-foreground text-xs">
                     {unidad.tipo} • {unidad.marca} {unidad.modelo}
                   </div>
                 </div>
@@ -197,7 +200,7 @@ export function UnitsTable({
               <TableCell>
                 <Badge
                   variant="outline"
-                  className={cn('text-[10px] px-2 py-0.5 h-5 border', estadoColors[unidad.estado])}
+                  className={cn('text-xs px-2 py-0.5 h-5 border', estadoColors[unidad.estado])}
                 >
                   {estadoLabels[unidad.estado] || unidad.estado}
                 </Badge>
@@ -212,7 +215,7 @@ export function UnitsTable({
               </TableCell>
               <TableCell className="text-xs">
                 {unidad.workOrdersCount ? (
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="secondary" className="text-xs">
                     {unidad.workOrdersCount}
                   </Badge>
                 ) : (
@@ -255,6 +258,12 @@ export function UnitsTable({
                       <DropdownMenuItem onClick={() => onCreateWorkOrder(unidad)}>
                         <Wrench className="h-4 w-4 mr-2" />
                         Crear OT
+                      </DropdownMenuItem>
+                    )}
+                    {onLoadKilometraje && (
+                      <DropdownMenuItem onClick={() => onLoadKilometraje(unidad)}>
+                        <Gauge className="h-4 w-4 mr-2" />
+                        Cargar Kilometraje
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />

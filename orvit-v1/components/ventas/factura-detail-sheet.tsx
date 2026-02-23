@@ -63,6 +63,7 @@ import {
 import { toast } from 'sonner';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 
 interface FacturaDetailSheetProps {
   invoiceId: number;
@@ -136,7 +137,7 @@ interface Invoice {
 const estadoConfig: Record<string, { label: string; color: string; icon: any }> = {
   BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground', icon: FileText },
   EMITIDA: { label: 'Emitida', color: 'bg-info-muted text-info-muted-foreground', icon: Send },
-  ENVIADA: { label: 'Enviada', color: 'bg-cyan-100 text-cyan-700', icon: Send },
+  ENVIADA: { label: 'Enviada', color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground', icon: Send },
   PARCIALMENTE_COBRADA: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground', icon: CreditCard },
   COBRADA: { label: 'Cobrada', color: 'bg-success-muted text-success', icon: CheckCircle },
   VENCIDA: { label: 'Vencida', color: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
@@ -665,7 +666,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                           <TableRow key={payment.id}>
                             <TableCell className="font-medium">{payment.numero}</TableCell>
                             <TableCell>
-                              {format(new Date(payment.fecha), "dd/MM/yyyy", { locale: es })}
+                              {formatDate(payment.fecha)}
                             </TableCell>
                             <TableCell>{payment.metodoPago}</TableCell>
                             <TableCell className="text-right font-medium">
@@ -705,7 +706,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Vencimiento CAE</p>
                           <p className="font-medium">
-                            {format(new Date(invoice.caeVencimiento), "dd/MM/yyyy", { locale: es })}
+                            {formatDate(invoice.caeVencimiento)}
                           </p>
                         </div>
                       )}

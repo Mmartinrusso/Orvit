@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +37,7 @@ import {
   CheckCircle2,
   Calendar,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface LubricationPoint {
@@ -204,7 +205,7 @@ export default function LubricationPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -292,7 +293,7 @@ export default function LubricationPage() {
                 <TableBody>
                   {loadingPoints ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">Cargando...</TableCell>
+                      <TableCell colSpan={8} className="text-center py-8">Cargando puntos de lubricación...</TableCell>
                     </TableRow>
                   ) : filteredPoints.length === 0 ? (
                     <TableRow>
@@ -354,7 +355,7 @@ export default function LubricationPage() {
                 <TableBody>
                   {loadingExecutions ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">Cargando...</TableCell>
+                      <TableCell colSpan={8} className="text-center py-8">Cargando registros de lubricación...</TableCell>
                     </TableRow>
                   ) : executions.length === 0 ? (
                     <TableRow>
@@ -368,7 +369,7 @@ export default function LubricationPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {format(new Date(exec.executedAt), 'dd/MM/yyyy HH:mm')}
+                            {formatDateTime(exec.executedAt)}
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">{exec.point_name}</TableCell>

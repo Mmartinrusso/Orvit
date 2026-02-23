@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, FileText, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,7 +117,7 @@ export default function MachineTable({
                 <TableCell>{machine.model}</TableCell>
                 <TableCell>
                   {machine.acquisitionDate && !isNaN(new Date(machine.acquisitionDate).getTime())
-                    ? format(new Date(machine.acquisitionDate), 'dd/MM/yyyy')
+                    ? formatDate(machine.acquisitionDate)
                     : 'Sin fecha'}
                 </TableCell>
                 <TableCell>{getMachineStatusBadge(machine.status)}</TableCell>

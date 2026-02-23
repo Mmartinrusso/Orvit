@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
 import { DEFAULT_COLORS } from '@/lib/colors';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -180,7 +181,7 @@ function TrendIndicator({ trend }: { trend: TrendValue }) {
     return (
       <span className="inline-flex items-center gap-0.5 text-xs" style={{ color: DEFAULT_COLORS.kpiNeutral }}>
         <Minus className="w-3 h-3" />
-        <span>{trend.variacion > 0 ? '+' : ''}{trend.variacion.toFixed(1)}%</span>
+        <span>{trend.variacion > 0 ? '+' : ''}{formatNumber(trend.variacion, 1)}%</span>
       </span>
     );
   }
@@ -189,7 +190,7 @@ function TrendIndicator({ trend }: { trend: TrendValue }) {
     return (
       <span className="inline-flex items-center gap-0.5 text-xs" style={{ color: DEFAULT_COLORS.kpiPositive }}>
         <TrendingUp className="w-3 h-3" />
-        <span>+{trend.variacion.toFixed(1)}%</span>
+        <span>+{formatNumber(trend.variacion, 1)}%</span>
       </span>
     );
   }
@@ -197,7 +198,7 @@ function TrendIndicator({ trend }: { trend: TrendValue }) {
   return (
     <span className="inline-flex items-center gap-0.5 text-xs" style={{ color: DEFAULT_COLORS.kpiNegative }}>
       <TrendingDown className="w-3 h-3" />
-      <span>{trend.variacion.toFixed(1)}%</span>
+      <span>{formatNumber(trend.variacion, 1)}%</span>
     </span>
   );
 }
@@ -292,7 +293,7 @@ export function CotizacionesDashboard() {
             <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
             <FileText className="h-5 w-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
           </div>
-          <p className="text-sm text-muted-foreground">Cargando datos...</p>
+          <p className="text-sm text-muted-foreground">Cargando cotizaciones...</p>
         </div>
       </div>
     );
@@ -418,7 +419,7 @@ export function CotizacionesDashboard() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">
                   Tasa Aceptación
                 </p>
-                <p className="text-2xl font-bold">{stats.conversion.tasaAceptacion.valor.toFixed(1)}%</p>
+                <p className="text-2xl font-bold">{formatNumber(stats.conversion.tasaAceptacion.valor, 1)}%</p>
                 <div className="flex items-center gap-2 mt-1">
                   <TrendIndicator trend={stats.conversion.tasaAceptacion} />
                   <span className="text-xs text-muted-foreground">
@@ -629,19 +630,19 @@ export function CotizacionesDashboard() {
                   <div>
                     <p className="text-muted-foreground">Tasa Aceptación</p>
                     <p className="font-semibold" style={{ color: DEFAULT_COLORS.chart5 }}>
-                      {stats.conversion.tasaAceptacion.valor.toFixed(1)}%
+                      {formatNumber(stats.conversion.tasaAceptacion.valor, 1)}%
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Tasa Conversión</p>
                     <p className="font-semibold" style={{ color: DEFAULT_COLORS.chart2 }}>
-                      {stats.conversion.tasaConversion.toFixed(1)}%
+                      {formatNumber(stats.conversion.tasaConversion, 1)}%
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Tasa Pérdida</p>
                     <p className="font-semibold" style={{ color: DEFAULT_COLORS.kpiNegative }}>
-                      {stats.conversion.tasaPerdida.toFixed(1)}%
+                      {formatNumber(stats.conversion.tasaPerdida, 1)}%
                     </p>
                   </div>
                 </div>
@@ -782,7 +783,7 @@ export function CotizacionesDashboard() {
                       <div>
                         <p className="text-sm font-medium truncate max-w-[200px]">{vendedor.nombre}</p>
                         <p className="text-xs text-muted-foreground">
-                          {vendedor.cotizaciones} cot. | {vendedor.tasaAceptacion.toFixed(0)}% aceptación
+                          {vendedor.cotizaciones} cot. | {formatNumber(vendedor.tasaAceptacion, 0)}% aceptación
                         </p>
                       </div>
                     </div>

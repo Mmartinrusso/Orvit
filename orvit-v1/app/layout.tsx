@@ -68,6 +68,9 @@ export default function RootLayout({
         <meta property="og:title" content="ORVIT" />
         <meta property="og:description" content="Gestión integral de mantenimiento y tareas" />
         
+        {/* Tamaño de tipografía — aplicar antes del render para evitar flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var fs=localStorage.getItem('fontSize');if(fs)document.documentElement.style.fontSize=fs+'px';var ov=localStorage.getItem('fontSizeOverrides');if(ov){try{var o=JSON.parse(ov),css='',steps={tabs:['0.75rem','0.875rem','1rem'],tables:['0.875rem','1rem','1.125rem'],sidebar:['0.875rem','1rem','1.125rem'],headings:['1.5rem','1.875rem','2.25rem'],buttons:['0.875rem','1rem','1.125rem'],forms:['0.875rem','1rem','1.125rem'],kpis:['1.5rem','1.875rem','2.25rem'],descriptions:['0.875rem','1rem','1.125rem']},sels={tabs:'[role="tab"]',tables:'table',sidebar:'aside[data-sidebar] *',headings:'[data-slot="card-title"]',buttons:'button:not([role="tab"]):not([data-sidebar="menu-button"])',forms:'input,textarea,select,label',kpis:'[data-slot="kpi-value"]',descriptions:'[data-slot="card-description"]'};for(var k in o){if(o[k]>0&&steps[k])css+=sels[k]+'{font-size:'+steps[k][o[k]]+'!important}\\n';}if(css){var s=document.createElement('style');s.id='font-size-overrides';s.textContent=css;document.head.appendChild(s);}}catch(e){}}})();` }} />
+
         {/* Configuración de zona horaria para tareas automáticas */}
         <script
           dangerouslySetInnerHTML={{

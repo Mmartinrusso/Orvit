@@ -235,7 +235,7 @@ export function ClientFormConfig() {
                   <Icon className="w-3.5 h-3.5" />
                   {cat.name}
                   {enabledCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1 text-xs">
                       {enabledCount}
                     </Badge>
                   )}

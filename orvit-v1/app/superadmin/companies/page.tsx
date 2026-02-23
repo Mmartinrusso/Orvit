@@ -553,7 +553,7 @@ export default function CompaniesPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -596,8 +596,8 @@ export default function CompaniesPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-purple-500" />
+                <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-accent-purple" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.totalUsers}</p>

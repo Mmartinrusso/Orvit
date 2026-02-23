@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -217,7 +218,7 @@ export default function LoadOrderDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Entregas</CardTitle>
@@ -251,7 +252,7 @@ export default function LoadOrderDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg font-semibold">
-              {new Date(loadOrder.fechaEntregaEstimada).toLocaleDateString('es-AR')}
+              {formatDate(loadOrder.fechaEntregaEstimada)}
             </div>
           </CardContent>
         </Card>

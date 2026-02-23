@@ -306,18 +306,18 @@ export function ChecklistExecutionTab({
         <div className="bg-info-muted border border-info-muted-foreground/20 rounded-lg p-3 text-center">
           <Timer className="h-5 w-5 text-info-muted-foreground mx-auto mb-1" />
           <p className="text-lg font-bold text-foreground">{totals.totalDurationLabel}</p>
-          <p className="text-[10px] text-info-muted-foreground uppercase tracking-wide">Tiempo Total</p>
+          <p className="text-xs text-info-muted-foreground uppercase tracking-wide">Tiempo Total</p>
         </div>
         <div className="bg-success-muted border border-success/20 rounded-lg p-3 text-center">
           <SquareCheckBig className="h-5 w-5 text-success mx-auto mb-1" />
           <p className="text-lg font-bold text-foreground">{totals.totalItems}</p>
-          <p className="text-[10px] text-success uppercase tracking-wide">Items</p>
+          <p className="text-xs text-success uppercase tracking-wide">Items</p>
         </div>
         {totals.phasesCount > 0 && (
           <div className="bg-warning-muted border border-warning-muted-foreground/20 rounded-lg p-3 text-center">
             <Layers className="h-5 w-5 text-warning-muted-foreground mx-auto mb-1" />
             <p className="text-lg font-bold text-foreground">{totals.phasesCount}</p>
-            <p className="text-[10px] text-warning-muted-foreground uppercase tracking-wide">Fases</p>
+            <p className="text-xs text-warning-muted-foreground uppercase tracking-wide">Fases</p>
           </div>
         )}
       </div>

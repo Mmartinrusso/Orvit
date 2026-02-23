@@ -70,6 +70,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
@@ -133,10 +134,10 @@ const ESTADOS_CONFIG: Record<EstadoPedido, { label: string; color: string; icon:
  BORRADOR: { label: 'Borrador', color: 'bg-muted text-foreground ', icon: FileEdit },
  ENVIADA: { label: 'Enviada', color: 'bg-info-muted text-info-muted-foreground ', icon: Send },
  EN_COTIZACION: { label: 'En Cotización', color: 'bg-warning-muted text-warning-muted-foreground ', icon: Clock },
- COTIZADA: { label: 'Cotizada', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: FileText },
+ COTIZADA: { label: 'Cotizada', color: 'bg-accent-purple-muted text-accent-purple-muted-foreground', icon: FileText },
  EN_APROBACION: { label: 'Pend. Aprob.', color: 'bg-warning-muted text-warning-muted-foreground ', icon: AlertTriangle },
  APROBADA: { label: 'Aprobada', color: 'bg-success-muted text-success ', icon: CheckCircle2 },
- EN_PROCESO: { label: 'En Proceso', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400', icon: Clock },
+ EN_PROCESO: { label: 'En Proceso', color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground', icon: Clock },
  COMPLETADA: { label: 'Completada', color: 'bg-success-muted text-success ', icon: CheckCircle2 },
  RECHAZADA: { label: 'Rechazada', color: 'bg-destructive/10 text-destructive ', icon: XCircle },
  CANCELADA: { label: 'Cancelada', color: 'bg-muted text-muted-foreground dark:text-muted-foreground', icon: XCircle },
@@ -352,8 +353,8 @@ export function PedidosCompraList() {
  ESTADOS_CONFIG[p.estado as EstadoPedido]?.label || p.estado,
  PRIORIDAD_CONFIG[p.prioridad]?.label || p.prioridad,
  p.solicitante?.name || '',
- format(new Date(p.createdAt), 'dd/MM/yyyy', { locale: es }),
- p.fechaNecesidad ? format(new Date(p.fechaNecesidad), 'dd/MM/yyyy', { locale: es }) : '',
+ formatDate(p.createdAt),
+ p.fechaNecesidad ? formatDate(p.fechaNecesidad) : '',
  p.items?.length || 0
  ]);
 
@@ -426,7 +427,7 @@ export function PedidosCompraList() {
  disabled={refreshing}
  className={cn(
  "inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7",
- "px-2 text-[11px] font-normal gap-1.5",
+ "px-2 text-xs font-normal gap-1.5",
  "hover:bg-muted disabled:opacity-50",
  refreshing && "bg-background shadow-sm"
  )}
@@ -531,10 +532,10 @@ export function PedidosCompraList() {
  <div className="flex items-start justify-between">
  <div>
  <p className="text-xs font-medium text-muted-foreground">En Proceso</p>
- <p className="text-2xl font-bold mt-1 text-cyan-600">{kpis.enProceso}</p>
+ <p className="text-2xl font-bold mt-1 text-accent-cyan-muted-foreground">{kpis.enProceso}</p>
  </div>
- <div className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/20">
- <ShoppingCart className="h-4 w-4 text-cyan-600" />
+ <div className="p-2 rounded-lg bg-accent-cyan-muted">
+ <ShoppingCart className="h-4 w-4 text-accent-cyan-muted-foreground" />
  </div>
  </div>
  </CardContent>

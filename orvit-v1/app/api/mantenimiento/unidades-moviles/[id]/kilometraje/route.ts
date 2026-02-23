@@ -243,6 +243,7 @@ export async function POST(
           where: { id: unidadId },
           data: {
             kilometraje: data.kilometraje,
+            ultimaLecturaKm: new Date(),
             updatedAt: new Date()
           },
           select: { id: true, kilometraje: true }
@@ -254,6 +255,29 @@ export async function POST(
 
     // 6. Calcular km recorridos desde última lectura
     const kmRecorridos = data.kilometraje - unidad.kilometraje;
+    const nuevoKilometraje = result.updatedUnidad?.kilometraje || unidad.kilometraje;
+
+    // 7. Verificar si algún mantenimiento preventivo por km vence con esta lectura
+    const alertasMantenimiento: Array<{ id: number; title: string; kmDue: number; kmActual: number }> = [];
+    if (data.kilometraje > unidad.kilometraje) {
+      const templatesVencidos = await prisma.preventiveTemplate.findMany({
+        where: {
+          unidadMovilId: unidadId,
+          maintenanceTrigger: 'KILOMETERS',
+          nextMaintenanceKilometers: { lte: data.kilometraje },
+          isActive: true
+        },
+        select: { id: true, title: true, nextMaintenanceKilometers: true }
+      });
+      for (const t of templatesVencidos) {
+        alertasMantenimiento.push({
+          id: t.id,
+          title: t.title,
+          kmDue: t.nextMaintenanceKilometers || 0,
+          kmActual: data.kilometraje
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -270,7 +294,8 @@ export async function POST(
       },
       kmRecorridos,
       unidadActualizada: result.updatedUnidad !== null,
-      nuevoKilometraje: result.updatedUnidad?.kilometraje || unidad.kilometraje,
+      nuevoKilometraje,
+      alertasMantenimiento,
       message: 'Kilometraje registrado correctamente'
     });
 

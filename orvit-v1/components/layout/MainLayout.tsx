@@ -83,7 +83,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <div
             className="hidden md:block fixed left-0 top-0 h-full w-3 z-50 cursor-pointer"
             onMouseEnter={() => {
-              setIsHoverOpen(true);
               setIsSidebarOpen(true);
             }}
           />

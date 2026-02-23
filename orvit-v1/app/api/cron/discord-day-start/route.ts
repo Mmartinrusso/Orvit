@@ -17,7 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { notifyDayStart, notifySectorDayStart, isBotReady, connectBot } from '@/lib/discord';
+import { notifyDayStart, notifySectorDayStart } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,34 +30,6 @@ export async function POST(request: NextRequest) {
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       if (process.env.NODE_ENV === 'production') {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-      }
-    }
-
-    // Auto-conectar el bot si no está listo
-    if (!isBotReady()) {
-      // Buscar una empresa con token de bot configurado
-      const companyWithBot = await prisma.company.findFirst({
-        where: { discordBotToken: { not: null } },
-        select: { discordBotToken: true }
-      });
-
-      if (companyWithBot?.discordBotToken) {
-        console.log('🔄 Auto-conectando bot de Discord...');
-        const connectResult = await connectBot(companyWithBot.discordBotToken);
-        if (!connectResult.success) {
-          return NextResponse.json({
-            success: false,
-            message: `Bot no pudo conectarse: ${connectResult.error}`,
-            sent: 0
-          });
-        }
-        console.log('✅ Bot conectado automáticamente');
-      } else {
-        return NextResponse.json({
-          success: false,
-          message: 'No hay token de bot configurado',
-          sent: 0
-        });
       }
     }
 

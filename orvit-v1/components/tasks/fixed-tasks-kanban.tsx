@@ -273,7 +273,7 @@ function getPriorityColor(priority: string) {
   switch (priority) {
     case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
     case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
-    case 'baja': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800';
+    case 'baja': return 'bg-success-muted text-success-muted-foreground border-success-muted';
     default: return 'bg-muted text-muted-foreground border-border';
   }
 }
@@ -400,7 +400,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                         <CardTitle className="text-sm font-medium text-foreground">
                           {column.title}
                         </CardTitle>
-                        <p className="text-[10px] text-muted-foreground">{column.description}</p>
+                        <p className="text-xs text-muted-foreground">{column.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -429,7 +429,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                           style={{ width: `${columnProgress}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-medium">{columnProgress}%</span>
+                      <span className="text-xs text-muted-foreground font-medium">{columnProgress}%</span>
                     </div>
                   )}
                 </CardHeader>
@@ -454,7 +454,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                               {task.isCompleted && (
                                 <div className="flex items-center gap-1.5 mb-1">
                                   <CheckCircle className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-[10px] text-muted-foreground font-medium">Completada</span>
+                                  <span className="text-xs text-muted-foreground font-medium">Completada</span>
                                 </div>
                               )}
                               <h4 className={cn(
@@ -514,12 +514,12 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium text-foreground truncate">{task.assignedTo.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{task.department}</p>
+                              <p className="text-xs text-muted-foreground">{task.department}</p>
                             </div>
                           </div>
 
                           {/* Metadata compacta */}
-                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               <span>{task.executionTime || formatTime(task.estimatedTime)}</span>
@@ -536,7 +536,7 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
 
                           {/* Estado de reinicio para tareas completadas */}
                           {task.isCompleted && (
-                            <div className="flex items-center gap-1.5 text-[10px] mb-3 px-2 py-1.5 rounded-md bg-muted/70 text-muted-foreground">
+                            <div className="flex items-center gap-1.5 text-xs mb-3 px-2 py-1.5 rounded-md bg-muted/70 text-muted-foreground">
                               <RotateCcw className="h-3 w-3" />
                               <span>{getNextResetInfo(task.frequency, task.nextExecution).text}</span>
                             </div>
@@ -544,12 +544,12 @@ export function FixedTasksKanban({ tasks: propTasks, onTaskClick, onEditTask, on
 
                           {/* Footer con badge de prioridad */}
                           <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                            <Badge variant="outline" className={cn("text-[10px] h-5", getPriorityColor(task.priority))}>
+                            <Badge variant="outline" className={cn("text-xs h-5", getPriorityColor(task.priority))}>
                               {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                             </Badge>
 
                             {!task.isActive && (
-                              <Badge variant="destructive" className="text-[10px] h-5">Inactiva</Badge>
+                              <Badge variant="destructive" className="text-xs h-5">Inactiva</Badge>
                             )}
                           </div>
                         </div>

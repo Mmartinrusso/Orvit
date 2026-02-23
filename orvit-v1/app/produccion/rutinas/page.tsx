@@ -69,16 +69,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 
 import { toast } from 'sonner';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import NewRoutineExecutionForm from '@/components/production/NewRoutineExecutionForm';
-import NewRoutineTemplateForm from '@/components/production/NewRoutineTemplateForm';
-import RoutinePendingCard from '@/components/production/RoutinePendingCard';
+import NewRoutineExecutionForm from '@/components/produccion/NewRoutineExecutionForm';
+import NewRoutineTemplateForm from '@/components/produccion/NewRoutineTemplateForm';
+import RoutinePendingCard from '@/components/produccion/RoutinePendingCard';
 
-import { useRoutineExecutions } from '@/hooks/production/use-routine-executions';
-import { useRoutineTemplates, type RoutineTemplate } from '@/hooks/production/use-routine-templates';
-import { useRoutineDrafts } from '@/hooks/production/use-routine-drafts';
-import { useMyRoutines } from '@/hooks/production/use-my-routines';
+import { useRoutineExecutions } from '@/hooks/produccion/use-routine-executions';
+import { useRoutineTemplates, type RoutineTemplate } from '@/hooks/produccion/use-routine-templates';
+import { useRoutineDrafts } from '@/hooks/produccion/use-routine-drafts';
+import { useMyRoutines } from '@/hooks/produccion/use-my-routines';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface RoutineExecutionDetail {
@@ -197,6 +198,20 @@ export default function RoutinesPage() {
     }
   };
 
+  const deleteExecutionMutation = useApiMutation<unknown, { id: number }>({
+    mutationFn: async ({ id }) => {
+      const res = await fetch(`/api/production/routines/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Error al eliminar');
+      return data;
+    },
+    successMessage: 'Ejecución eliminada',
+    errorMessage: 'Error al eliminar',
+    onSuccess: () => {
+      invalidateExecutions();
+    },
+  });
+
   const handleDeleteExecution = async (id: number) => {
     const ok = await confirm({
       title: 'Eliminar ejecución',
@@ -205,18 +220,7 @@ export default function RoutinesPage() {
       variant: 'destructive',
     });
     if (!ok) return;
-    try {
-      const res = await fetch(`/api/production/routines/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Ejecución eliminada');
-        invalidateExecutions();
-      } else {
-        toast.error(data.error || 'Error al eliminar');
-      }
-    } catch {
-      toast.error('Error al eliminar');
-    }
+    deleteExecutionMutation.mutate({ id });
   };
 
   const handleResumeDraft = async (draft: any) => {
@@ -240,24 +244,31 @@ export default function RoutinesPage() {
     }
   };
 
-  const handleSendReminder = async (draft: any) => {
-    try {
-      toast.loading('Enviando recordatorio...', { id: 'reminder' });
+  const sendReminderMutation = useApiMutation<unknown, { draftId: number }>({
+    mutationFn: async ({ draftId }) => {
       const res = await fetch('/api/production/routines/draft/remind', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId: draft.id }),
+        body: JSON.stringify({ draftId }),
       });
       const data = await res.json();
-      if (data.success) {
-        toast.success('Recordatorio enviado por Discord', { id: 'reminder' });
-        invalidateDrafts();
-      } else {
-        toast.error(data.error || 'Error al enviar', { id: 'reminder' });
-      }
-    } catch {
-      toast.error('Error al enviar recordatorio', { id: 'reminder' });
-    }
+      if (!data.success) throw new Error(data.error || 'Error al enviar');
+      return data;
+    },
+    successMessage: null,
+    onSuccess: () => {
+      toast.success('Recordatorio enviado por Discord', { id: 'reminder' });
+      invalidateDrafts();
+    },
+    onError: () => {
+      // The hook already shows toast.error — dismiss the loading toast
+      toast.dismiss('reminder');
+    },
+  });
+
+  const handleSendReminder = (draft: any) => {
+    toast.loading('Enviando recordatorio...', { id: 'reminder' });
+    sendReminderMutation.mutate({ draftId: draft.id });
   };
 
   const handleViewDraftDetail = (draft: any) => {
@@ -393,40 +404,43 @@ export default function RoutinesPage() {
   };
 
   return (
-    <div className="px-4 md:px-6 py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Rutinas de Producción</h1>
-          <p className="text-sm text-muted-foreground">
-            Checklists operativos, ejecuciones y seguimiento
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
-            Actualizar
-          </Button>
-          {canExecute && (
-            <Button size="sm" onClick={() => { setDraftToResume(null); setSelectedTemplate(null); setShowExecuteDialog(true); }}>
-              <Play className="h-4 w-4 mr-2" />
-              Ejecutar Rutina
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Rutinas de Producción</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Checklists operativos, ejecuciones y seguimiento
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
+              Actualizar
             </Button>
-          )}
-          {canManage && (
-            <Button size="sm" variant="outline" onClick={() => setShowNewTemplateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Plantilla
-            </Button>
-          )}
+            {canExecute && (
+              <Button size="sm" onClick={() => { setDraftToResume(null); setSelectedTemplate(null); setShowExecuteDialog(true); }}>
+                <Play className="h-4 w-4 mr-2" />
+                Ejecutar Rutina
+              </Button>
+            )}
+            {canManage && (
+              <Button size="sm" variant="outline" onClick={() => setShowNewTemplateDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Plantilla
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+
+      <div className="px-4 md:px-6 space-y-6">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -645,7 +659,7 @@ export default function RoutinesPage() {
                                 }}
                               />
                             </svg>
-                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{ color: progressColor }}>
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold" style={{ color: progressColor }}>
                               {draft.progress.percentage}%
                             </span>
                           </div>
@@ -660,7 +674,7 @@ export default function RoutinesPage() {
                                 {isOverdue && ` (excede ${maxMinutes})`}
                               </span>
                               {minutesSinceLastActivity > 5 && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-warning-muted-foreground border-warning-muted">
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 text-warning-muted-foreground border-warning-muted">
                                   Inactivo {minutesSinceLastActivity}m
                                 </Badge>
                               )}
@@ -1336,7 +1350,7 @@ export default function RoutinesPage() {
                       <div key={i} className="p-3 rounded-lg bg-muted/40 border">
                         <div className="flex items-center gap-2 mb-1">
                           <meta.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{meta.label}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">{meta.label}</p>
                         </div>
                         <p className="font-medium text-sm truncate">{meta.value}</p>
                       </div>
@@ -1395,6 +1409,7 @@ export default function RoutinesPage() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
@@ -1522,7 +1537,7 @@ function DraftItemRow({ item, response }: { item: any; response: any }) {
               {item.description || item.label}
             </p>
             <span className={cn(
-              'text-[10px] font-medium uppercase tracking-wider shrink-0 px-2 py-0.5 rounded-full',
+              'text-xs font-medium uppercase tracking-wider shrink-0 px-2 py-0.5 rounded-full',
               hasResponse
                 ? 'bg-success-muted text-success'
                 : 'bg-muted text-muted-foreground'

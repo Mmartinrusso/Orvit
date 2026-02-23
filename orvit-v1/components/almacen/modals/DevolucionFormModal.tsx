@@ -33,7 +33,7 @@ import { Loader2, Plus, Trash2, Search, RotateCcw } from 'lucide-react';
 import { useDevolucionesMutations, useWarehouses, useInventario } from '../hooks';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface DevolucionItem {
   supplierItemId: number;
@@ -342,7 +342,7 @@ export function DevolucionFormModal({
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">
-                              {item.stockDisponible?.toFixed(2)} {item.supplierItem?.unidad}
+                              {formatNumber(item.stockDisponible, 2)} {item.supplierItem?.unidad}
                             </p>
                             <p className="text-xs text-muted-foreground">en stock</p>
                           </div>

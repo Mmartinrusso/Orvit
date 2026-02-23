@@ -103,11 +103,11 @@ export function DeliveryMap({
                       <div className="font-medium truncate">
                         {delivery.numero}
                       </div>
-                      <div className="text-[10px] opacity-75 truncate">
+                      <div className="text-xs opacity-75 truncate">
                         {delivery.sale.client.legalName || delivery.sale.client.name}
                       </div>
                       {delivery.direccionEntrega && (
-                        <div className="text-[10px] opacity-60 truncate mt-1">
+                        <div className="text-xs opacity-60 truncate mt-1">
                           {delivery.direccionEntrega}
                         </div>
                       )}

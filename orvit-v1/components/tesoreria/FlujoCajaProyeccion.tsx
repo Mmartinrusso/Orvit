@@ -424,7 +424,7 @@ export default function FlujoCajaProyeccion() {
                         <div className="bg-background border rounded-lg shadow-lg p-3 text-sm">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium">{d?.fullDate}</p>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            <Badge variant="outline" className="text-xs px-1.5 py-0">
                               {isProj ? 'Proyectado' : 'Historico'}
                             </Badge>
                           </div>

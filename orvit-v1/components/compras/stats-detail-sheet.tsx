@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatDate } from '@/lib/date-utils';
 import {
  Sheet,
  SheetContent,
@@ -66,7 +67,7 @@ import {
  AlertCircle,
  CheckCircle2,
 } from 'lucide-react';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, formatNumber } from '@/lib/utils';
 
 type StatType = 'compras' | 'deuda' | 'ordenes' | 'flujo' | 'items' | 'recepciones' | 'categorias' | 'servicios';
 
@@ -92,7 +93,7 @@ const PIE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4
 const ABC_COLORS = { A: '#10B981', B: '#F59E0B', C: '#6B7280' };
 
 function formatCompact(value: number): string {
- if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+ if (value >= 1000000) return `$${formatNumber(value / 1000000, 1)}M`;
  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
  return formatCurrency(value);
 }
@@ -217,7 +218,7 @@ function ComprasDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  {variacionMes !== 0 && (
  <span className={cn('flex items-center gap-0.5 text-xs', variacionMes > 0 ? 'text-destructive' : 'text-success')}>
  {variacionMes > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
- {Math.abs(variacionMes).toFixed(1)}%
+ {formatNumber(Math.abs(variacionMes), 1)}%
  </span>
  )}
  <span className="text-xs text-muted-foreground">vs mes ant.</span>
@@ -232,7 +233,7 @@ function ComprasDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  {variacionYoY !== 0 && (
  <span className={cn('flex items-center gap-0.5 text-xs', variacionYoY > 0 ? 'text-destructive' : 'text-success')}>
  {variacionYoY > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
- {Math.abs(variacionYoY).toFixed(1)}%
+ {formatNumber(Math.abs(variacionYoY), 1)}%
  </span>
  )}
  <span className="text-xs text-muted-foreground">vs año ant.</span>
@@ -261,7 +262,7 @@ function ComprasDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  </div>
  <div>
  <p className="text-xs text-muted-foreground">Concentración Top 3</p>
- <p className="text-lg font-bold">{(data.metricas?.concentracionTop3 || 0).toFixed(1)}%</p>
+ <p className="text-lg font-bold">{formatNumber(data.metricas?.concentracionTop3 || 0, 1)}%</p>
  </div>
  </div>
  </CardContent>
@@ -308,7 +309,7 @@ function ComprasDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  <span className="font-medium">{formatCompact(c.total)}</span>
  </div>
  <Progress value={c.porcentaje} className="h-2" />
- <p className="text-xs text-muted-foreground">{c.porcentaje.toFixed(1)}% del total</p>
+ <p className="text-xs text-muted-foreground">{formatNumber(c.porcentaje, 1)}% del total</p>
  </div>
  ))}
  </div>
@@ -373,7 +374,7 @@ function ComprasDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  <span className="text-sm font-medium">{p.nombre}</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="text-xs text-muted-foreground">{p.porcentaje.toFixed(1)}%</span>
+ <span className="text-xs text-muted-foreground">{formatNumber(p.porcentaje, 1)}%</span>
  <span className="text-sm font-bold">{formatCompact(p.total)}</span>
  <ChevronRight className="h-4 w-4 text-muted-foreground" />
  </div>
@@ -469,7 +470,7 @@ function DeudaDetail({ data, onNavigate }: { data: any; onNavigate?: (path: stri
  </div>
  <Progress value={percent} className="h-2" />
  <p className="text-xs text-muted-foreground">
- {Number(bucket.cantidad || 0)} facturas ({percent.toFixed(1)}%)
+ {Number(bucket.cantidad || 0)} facturas ({formatNumber(percent, 1)}%)
  </p>
  </div>
  );
@@ -515,7 +516,7 @@ function DeudaDetail({ data, onNavigate }: { data: any; onNavigate?: (path: stri
  <span className="truncate flex-1">{p.nombre}</span>
  <span className="font-medium">{formatCompact(p.total)}</span>
  {p.utilizacion !== null && (
- <Badge variant={p.utilizacion > 80 ? "destructive" : "outline"} className="text-[10px]">
+ <Badge variant={p.utilizacion > 80 ? "destructive" : "outline"} className="text-xs">
  {p.utilizacion}%
  </Badge>
  )}
@@ -622,17 +623,17 @@ function OrdenesDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  <div className="grid grid-cols-3 gap-4">
  <div>
  <p className="text-xs text-muted-foreground">Promedio</p>
- <p className="text-2xl font-bold">{(data.tiempoProcesamientoDias?.promedio || 0).toFixed(1)}</p>
+ <p className="text-2xl font-bold">{formatNumber(data.tiempoProcesamientoDias?.promedio || 0, 1)}</p>
  <p className="text-xs text-muted-foreground">días</p>
  </div>
  <div>
  <p className="text-xs text-muted-foreground">Mínimo</p>
- <p className="text-2xl font-bold">{(data.tiempoProcesamientoDias?.minimo || 0).toFixed(1)}</p>
+ <p className="text-2xl font-bold">{formatNumber(data.tiempoProcesamientoDias?.minimo || 0, 1)}</p>
  <p className="text-xs text-muted-foreground">días</p>
  </div>
  <div>
  <p className="text-xs text-muted-foreground">Máximo</p>
- <p className="text-2xl font-bold">{(data.tiempoProcesamientoDias?.maximo || 0).toFixed(1)}</p>
+ <p className="text-2xl font-bold">{formatNumber(data.tiempoProcesamientoDias?.maximo || 0, 1)}</p>
  <p className="text-xs text-muted-foreground">días</p>
  </div>
  </div>
@@ -654,7 +655,7 @@ function OrdenesDetail({ data, onNavigate }: { data: any; onNavigate?: (path: st
  </p>
  </div>
  <div className={cn('text-2xl font-bold', data.metricas.tasaRechazo > 5 ? 'text-destructive' : 'text-success')}>
- {data.metricas.tasaRechazo.toFixed(1)}%
+ {formatNumber(data.metricas.tasaRechazo, 1)}%
  </div>
  </div>
  </CardContent>
@@ -768,9 +769,9 @@ function FlujoDetail({ data, onNavigate }: { data: any; onNavigate?: (path: stri
  ].map((item) => (
  <Card key={item.key} className={item.color}>
  <CardContent className="pt-3 pb-3 px-2">
- <p className="text-[10px] text-muted-foreground">{item.label}</p>
+ <p className="text-xs text-muted-foreground">{item.label}</p>
  <p className="text-sm font-bold">{formatCompact(data.resumen?.[item.key]?.total || 0)}</p>
- <p className="text-[10px] text-muted-foreground">{data.resumen?.[item.key]?.cantidad || 0} fact.</p>
+ <p className="text-xs text-muted-foreground">{data.resumen?.[item.key]?.cantidad || 0} fact.</p>
  </CardContent>
  </Card>
  ))}
@@ -795,7 +796,7 @@ function FlujoDetail({ data, onNavigate }: { data: any; onNavigate?: (path: stri
  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCompact(v)} />
  <Tooltip
  formatter={(value: number) => formatCurrency(value)}
- labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
+ labelFormatter={(label) => formatDate(label)}
  />
  <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
  </BarChart>
@@ -854,7 +855,7 @@ function FlujoDetail({ data, onNavigate }: { data: any; onNavigate?: (path: stri
  <div className="text-right">
  <p className="text-sm font-bold">{formatCurrency(f.total)}</p>
  <p className="text-xs text-warning-muted-foreground">
- Vence {new Date(f.vencimiento).toLocaleDateString('es-AR')}
+ Vence {formatDate(f.vencimiento)}
  </p>
  </div>
  </div>
@@ -1001,14 +1002,14 @@ function ItemsDetail({ data }: { data: any }) {
  <div>
  <p className="font-bold">{formatCompact(item.totalComprado)}</p>
  <p className="text-xs text-muted-foreground">
- {item.porcentaje.toFixed(1)}%
+ {formatNumber(item.porcentaje, 1)}%
  </p>
  </div>
  </TableCell>
  <TableCell className="text-right">
  {item.variacionPrecio > 0 && (
  <span className={cn('text-xs', item.variacionPrecio > 20 ? 'text-destructive' : 'text-muted-foreground')}>
- +{item.variacionPrecio.toFixed(0)}%
+ +{formatNumber(item.variacionPrecio, 0)}%
  </span>
  )}
  </TableCell>
@@ -1045,7 +1046,7 @@ function RecepcionesDetail({ data, onNavigate }: { data: any; onNavigate?: (path
  <div className="flex items-center gap-1">
  {variacion !== 0 && (
  <span className={cn('text-xs', variacion > 0 ? 'text-success' : 'text-destructive')}>
- {variacion > 0 ? '+' : ''}{variacion.toFixed(1)}%
+ {variacion > 0 ? '+' : ''}{formatNumber(variacion, 1)}%
  </span>
  )}
  </div>
@@ -1078,7 +1079,7 @@ function RecepcionesDetail({ data, onNavigate }: { data: any; onNavigate?: (path
  </p>
  </div>
  <div className={cn('text-2xl font-bold', data.metricas.tasaDiferencias > 10 ? 'text-destructive' : 'text-success')}>
- {data.metricas.tasaDiferencias.toFixed(1)}%
+ {formatNumber(data.metricas.tasaDiferencias, 1)}%
  </div>
  </div>
  </CardContent>
@@ -1104,7 +1105,7 @@ function RecepcionesDetail({ data, onNavigate }: { data: any; onNavigate?: (path
  </div>
  <div className="text-right">
  <p className={cn('text-lg font-bold', p.leadTimeDias > 15 ? 'text-warning-muted-foreground' : 'text-success')}>
- {p.leadTimeDias.toFixed(1)}
+ {formatNumber(p.leadTimeDias, 1)}
  </p>
  <p className="text-xs text-muted-foreground">días promedio</p>
  </div>
@@ -1136,7 +1137,7 @@ function RecepcionesDetail({ data, onNavigate }: { data: any; onNavigate?: (path
  formatter={(value: number, name: string) =>
  name === 'total' ? formatCurrency(value) : value
  }
- labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
+ labelFormatter={(label) => formatDate(label)}
  />
  <Bar dataKey="cantidad" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
  </BarChart>
@@ -1167,7 +1168,7 @@ function RecepcionesDetail({ data, onNavigate }: { data: any; onNavigate?: (path
  <div className="text-right">
  <p className="text-sm font-bold">{formatCompact(r.total)}</p>
  <p className="text-xs text-muted-foreground">
- {new Date(r.fecha).toLocaleDateString('es-AR')}
+ {formatDate(r.fecha)}
  </p>
  </div>
  </div>
@@ -1245,7 +1246,7 @@ function CategoriasDetail({ data }: { data: any }) {
  />
  <span className="truncate flex-1">{c.categoria}</span>
  <span className="font-medium">{formatCompact(c.total)}</span>
- <span className="text-muted-foreground">({c.porcentaje.toFixed(1)}%)</span>
+ <span className="text-muted-foreground">({formatNumber(c.porcentaje, 1)}%)</span>
  </div>
  ))}
  </div>

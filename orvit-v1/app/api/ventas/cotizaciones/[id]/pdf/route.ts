@@ -618,7 +618,7 @@ function generateQuotePDF(cotizacion: any): string {
     </div>
   </div>
 
-  ${cotizacion.condicionesPago || cotizacion.condicionesEntrega || cotizacion.tiempoEntrega || cotizacion.lugarEntrega ? `
+  ${cotizacion.condicionesPago || cotizacion.condicionesEntrega || cotizacion.incluyeFlete || cotizacion.tiempoEntrega || cotizacion.lugarEntrega ? `
   <div class="conditions-section">
     ${cotizacion.condicionesPago ? `
     <div class="condition-box">
@@ -629,10 +629,13 @@ function generateQuotePDF(cotizacion: any): string {
       </div>
     </div>
     ` : ''}
-    ${cotizacion.condicionesEntrega ? `
+    ${cotizacion.incluyeFlete || cotizacion.condicionesEntrega ? `
     <div class="condition-box">
       <div class="condition-label">Condiciones de Entrega</div>
-      <div class="condition-value">${cotizacion.condicionesEntrega}</div>
+      <div class="condition-value">
+        ${cotizacion.incluyeFlete ? '<span style="display:inline-block;background:#dcfce7;color:#166534;font-weight:600;border-radius:4px;padding:1px 7px;font-size:9pt;margin-bottom:4px;">&#10003; FLETE INCLUIDO</span>' : ''}
+        ${cotizacion.condicionesEntrega ? `${cotizacion.incluyeFlete ? '<br>' : ''}${cotizacion.condicionesEntrega}` : ''}
+      </div>
     </div>
     ` : ''}
     ${cotizacion.tiempoEntrega ? `

@@ -55,6 +55,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import Link from 'next/link';
 
 interface AttributeSchema {
@@ -396,39 +397,37 @@ export default function ResourcesConfigPage() {
     setResourceDialogOpen(true);
   };
 
-  const handleSaveResource = async () => {
+  const saveResourceMutation = useApiMutation<unknown, { isEdit: boolean; id?: number; form: typeof resourceForm }>({
+    mutationFn: async ({ isEdit, id, form }) => {
+      const url = isEdit ? `/api/production/resources/${id}` : '/api/production/resources';
+      const res = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Error al guardar');
+      return data;
+    },
+    successMessage: null,
+    errorMessage: 'Error al guardar',
+    onSuccess: (_data, vars) => {
+      toast.success(vars.isEdit ? 'Recurso actualizado' : 'Recurso creado');
+      setResourceDialogOpen(false);
+      fetchResources();
+    },
+  });
+
+  const handleSaveResource = () => {
     if (!resourceForm.code || !resourceForm.name || !resourceForm.resourceTypeId) {
       toast.error('Código, nombre y tipo son requeridos');
       return;
     }
-
-    setSaving(true);
-    try {
-      const url = selectedResource
-        ? `/api/production/resources/${selectedResource.id}`
-        : '/api/production/resources';
-
-      const res = await fetch(url, {
-        method: selectedResource ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(resourceForm),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        toast.success(selectedResource ? 'Recurso actualizado' : 'Recurso creado');
-        setResourceDialogOpen(false);
-        fetchResources();
-      } else {
-        toast.error(data.error || 'Error al guardar');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Error al guardar');
-    } finally {
-      setSaving(false);
-    }
+    saveResourceMutation.mutate({
+      isEdit: !!selectedResource,
+      id: selectedResource?.id,
+      form: resourceForm,
+    });
   };
 
   // === Delete handler ===
@@ -1293,8 +1292,8 @@ export default function ResourcesConfigPage() {
             <Button variant="outline" onClick={() => setResourceDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveResource} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Button onClick={handleSaveResource} disabled={saveResourceMutation.isPending}>
+              {saveResourceMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {selectedResource ? 'Guardar' : 'Crear'}
             </Button>
           </DialogFooter>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatNumber } from '@/lib/utils';
 import { X, Calendar, User, Clock, FileText, Users, Building, Tag, MessageCircle, Trash2, Archive, Download, Send } from "lucide-react";
 import {
   Dialog,
@@ -15,8 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDateTime } from '@/lib/date-utils';
 import { translateTag, getTagColor } from "@/lib/tag-utils";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -397,7 +396,7 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
                                 {file.name}
                               </h4>
                               <p className="text-xs text-muted-foreground mt-1">
-                                {file.size ? `${(file.size / 1024).toFixed(1)} KB` : 'Tamaño desconocido'}
+                                {file.size ? `${formatNumber(file.size / 1024, 1)} KB` : 'Tamaño desconocido'}
                               </p>
                               {file.uploadedBy && (
                                 <p className="text-xs text-muted-foreground mt-1">
@@ -405,7 +404,7 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
                                 </p>
                               )}
                               <p className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(file.uploadedAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                                {formatDateTime(file.uploadedAt)}
                               </p>
                             </div>
                           </div>
@@ -461,7 +460,7 @@ export function TaskHistoryDetailModal({ task, isOpen, onClose }: TaskHistoryDet
                             </div>
                             <span className="font-medium text-sm">{comment.userName}</span>
                             <span className="text-xs text-muted-foreground">
-                              {format(new Date(comment.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                              {formatDateTime(comment.createdAt)}
                             </span>
                           </div>
                           <p className="text-sm leading-relaxed pl-8">{comment.content}</p>

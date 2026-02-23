@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState } from 'react';
@@ -129,7 +129,7 @@ export default function MatchingSuggestions({
                         {formatCurrency(suggestion.bankMovement.monto)}
                       </span>
                       {' · Score: '}
-                      {bestMatch.score.toFixed(0)}
+                      {formatNumber(bestMatch.score, 0)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export default function MatchingSuggestions({
                           <div className="flex items-center gap-2 mt-1">
                             <ConfidenceBadge confidence={match.confidence} />
                             <span className="text-xs text-muted-foreground">
-                              Score: {match.score.toFixed(0)}/100
+                              Score: {formatNumber(match.score, 0)}/100
                             </span>
                           </div>
                         </div>

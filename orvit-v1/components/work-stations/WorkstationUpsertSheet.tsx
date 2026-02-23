@@ -49,7 +49,7 @@ import {
   X,
 } from 'lucide-react';
 import { WorkStation } from './WorkstationCard';
-import InstructiveDialog from '@/components/mantenimiento/InstructiveDialog';
+import InstructiveDialog from '@/components/maintenance/InstructiveDialog';
 import WorkStationMachinesDialog from '@/components/mantenimiento/WorkStationMachinesDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -674,14 +674,14 @@ export function WorkstationUpsertSheet({
               <TabsTrigger value="basica" className="text-xs">Información Básica</TabsTrigger>
               <TabsTrigger value="instructivos" className="text-xs">
                 Instructivos {(allInstructives.length > 0) && (
-                  <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 h-4">
+                  <Badge variant="secondary" className="ml-2 text-xs px-1.5 py-0 h-5">
                     {allInstructives.length}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="maquinas" className="text-xs">
                 Máquinas {(uniqueMachines.length > 0) && (
-                  <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 h-4">
+                  <Badge variant="secondary" className="ml-2 text-xs px-1.5 py-0 h-5">
                     {uniqueMachines.length}
                   </Badge>
                 )}
@@ -861,28 +861,28 @@ export function WorkstationUpsertSheet({
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="text-sm font-semibold text-foreground">{instr.title}</h4>
                                 {attachmentsCount > 0 && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                                  <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
                                     <Paperclip className="h-2.5 w-2.5 mr-1" />
                                     {attachmentsCount}
                                   </Badge>
                                 )}
                                 {/* Mostrar máquinas directamente como badges */}
                                 {machineIds.length > 0 && availableMachines.filter(m => machineIds.includes(m.id) || machineIds.includes(String(m.id))).slice(0, 3).map((machine) => (
-                                  <Badge key={`machine-${machine.id}`} variant="outline" className="text-[10px] px-1.5 py-0.5 border-warning-muted text-warning-muted-foreground bg-warning-muted">
+                                  <Badge key={`machine-${machine.id}`} variant="outline" className="text-xs px-1.5 py-0.5 border-warning-muted text-warning-muted-foreground bg-warning-muted">
                                     <Wrench className="h-2.5 w-2.5 mr-1" />
                                     {getDisplayName(machine.name)}
                                   </Badge>
                                 ))}
                                 {/* Mostrar componentes directamente como badges */}
                                 {componentIds.length > 0 && availableMachines.filter(m => componentIds.includes(m.id) || componentIds.includes(String(m.id))).slice(0, 3).map((component) => (
-                                  <Badge key={`component-${component.id}`} variant="outline" className="text-[10px] px-1.5 py-0.5 border-purple-500/30 text-purple-600 bg-purple-500/10">
+                                  <Badge key={`component-${component.id}`} variant="outline" className="text-xs px-1.5 py-0.5 border-purple-500/30 text-purple-600 bg-purple-500/10">
                                     <Cog className="h-2.5 w-2.5 mr-1" />
                                     {getDisplayName(component.name)}
                                   </Badge>
                                 ))}
                                 {/* Mostrar contador si hay más de 6 */}
                                 {(machineIds.length + componentIds.length > 6) && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
+                                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-muted-foreground">
                                     +{(machineIds.length + componentIds.length) - 6} más
                                   </Badge>
                                 )}
@@ -998,7 +998,7 @@ export function WorkstationUpsertSheet({
                               <div className="flex items-center gap-2">
                                 <Wrench className="h-4 w-4 text-primary shrink-0" />
                                 <h4 className="text-sm font-semibold text-foreground">{machine.name}</h4>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-success border-success-muted bg-success-muted">
+                                <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-success border-success-muted bg-success-muted">
                                   Guardado
                                 </Badge>
                               </div>
@@ -1027,7 +1027,7 @@ export function WorkstationUpsertSheet({
                               <div className="flex items-center gap-2">
                                 <Wrench className="h-4 w-4 text-primary shrink-0" />
                                 <h4 className="text-sm font-semibold text-foreground">{machine.name}</h4>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-warning-muted-foreground border-warning-muted bg-warning-muted">
+                                <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-warning-muted-foreground border-warning-muted bg-warning-muted">
                                   Pendiente
                                 </Badge>
                               </div>

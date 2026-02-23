@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -343,7 +344,7 @@ export default function ProcesarFacturaPage() {
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <span className="text-sm font-medium">Nivel de confianza:</span>
                   <Badge className={getConfidenceColor(editedData.confianza)}>
-                    {(editedData.confianza * 100).toFixed(0)}%
+                    {formatNumber(editedData.confianza * 100, 0)}%
                   </Badge>
                 </div>
               )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/date-utils";
 import { CheckCircle, Eye, MoreHorizontal, PencilLine, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ function formatDateArg(dateStr: string | undefined) {
   if (!dateStr) return "-";
   const zoned = toZonedTime(new Date(dateStr), ARG_TIMEZONE);
   zoned.setHours(0, 0, 0, 0);
-  return zoned.toLocaleDateString('es-AR');
+  return formatDate(zoned);
 }
 
 // Componente PriorityBadge simple
@@ -223,14 +224,14 @@ export function TaskCard({ task }: TaskCardProps) {
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-[11px]">{initials(task.assignedTo?.name)}</AvatarFallback>
+                    <AvatarFallback className="text-xs">{initials(task.assignedTo?.name)}</AvatarFallback>
                   </Avatar>
                   <span className="truncate">Asignado: {task.assignedTo?.name || "—"}</span>
                 </div>
                 <span className="text-muted-foreground/60">•</span>
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-[11px]">{initials(task.createdBy?.name)}</AvatarFallback>
+                    <AvatarFallback className="text-xs">{initials(task.createdBy?.name)}</AvatarFallback>
                   </Avatar>
                   <span className="truncate">Solicitante: {task.createdBy?.name || "—"}</span>
                 </div>

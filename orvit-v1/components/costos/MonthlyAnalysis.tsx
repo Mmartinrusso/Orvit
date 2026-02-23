@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,7 +201,7 @@ export default function MonthlyAnalysis() {
   };
 
   const formatPercentage = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+    return `${value >= 0 ? '+' : ''}${formatNumber(value, 1)}%`;
   };
 
   const getTrendIcon = (value: number) => {
@@ -308,7 +309,7 @@ export default function MonthlyAnalysis() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year">Año</Label>
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
@@ -488,7 +489,7 @@ export default function MonthlyAnalysis() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           {getTrendIcon(comparisonData.differences.supplies)}
@@ -581,7 +582,7 @@ export default function MonthlyAnalysis() {
                       <div className="text-right">
                         <div className="font-semibold">{formatCurrency(supply.price_per_unit)}</div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(supply.last_updated).toLocaleDateString('es-AR')}
+                          {formatDate(supply.last_updated)}
                         </div>
                       </div>
                     </div>
@@ -670,7 +671,7 @@ export default function MonthlyAnalysis() {
                       <div className="text-right">
                         <div className="font-semibold">{formatCurrency(cost.amount)}</div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(cost.last_updated).toLocaleDateString('es-AR')}
+                          {formatDate(cost.last_updated)}
                         </div>
                       </div>
                     </div>

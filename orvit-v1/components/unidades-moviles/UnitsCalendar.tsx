@@ -137,12 +137,12 @@ export function UnitsCalendar({
         </div>
         <div className="flex items-center gap-2">
           {monthStats.overdueCount > 0 && (
-            <Badge variant="destructive" className="text-[10px] h-5">
+            <Badge variant="destructive" className="text-xs h-5">
               <AlertTriangle className="h-3 w-3 mr-1" />
               {monthStats.overdueCount} vencidos
             </Badge>
           )}
-          <Badge variant="secondary" className="text-[10px] h-5">
+          <Badge variant="secondary" className="text-xs h-5">
             {monthStats.upcomingCount} próximos
           </Badge>
         </div>
@@ -176,7 +176,7 @@ export function UnitsCalendar({
         {/* Weekday headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {WEEKDAYS.map(day => (
-            <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
+            <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">
               {day}
             </div>
           ))}
@@ -202,7 +202,7 @@ export function UnitsCalendar({
                 )}
               >
                 <div className={cn(
-                  'text-[10px] font-medium mb-1',
+                  'text-xs font-medium mb-1',
                   isTodayDate && 'text-primary',
                   !isCurrentMonth && 'text-muted-foreground'
                 )}>
@@ -229,7 +229,7 @@ export function UnitsCalendar({
                       <TooltipContent side="right">
                         <div className="space-y-1">
                           <p className="font-medium text-xs">{event.unidad.nombre}</p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {event.unidad.tipo} • {event.unidad.patente}
                           </p>
                           {event.isOverdue && (
@@ -263,7 +263,7 @@ export function UnitsCalendar({
                 Sin mantenimiento programado
               </span>
             </div>
-            <Badge variant="outline" className="text-[10px] h-5 border-warning-muted-foreground/30">
+            <Badge variant="outline" className="text-xs h-5 border-warning-muted-foreground/30">
               {unitsWithoutSchedule.length} unidades
             </Badge>
           </div>
@@ -275,7 +275,7 @@ export function UnitsCalendar({
                     variant="outline"
                     size="sm"
                     onClick={() => onScheduleService?.(unidad)}
-                    className="h-7 text-[10px] gap-1 border-warning-muted-foreground/30 hover:bg-warning-muted"
+                    className="h-7 text-xs gap-1 border-warning-muted-foreground/30 hover:bg-warning-muted"
                   >
                     <Truck className="h-3 w-3" />
                     {unidad.nombre}
@@ -287,7 +287,7 @@ export function UnitsCalendar({
               </Tooltip>
             ))}
             {unitsWithoutSchedule.length > 6 && (
-              <Badge variant="secondary" className="text-[10px] h-7 px-2">
+              <Badge variant="secondary" className="text-xs h-7 px-2">
                 +{unitsWithoutSchedule.length - 6} más
               </Badge>
             )}
@@ -296,7 +296,7 @@ export function UnitsCalendar({
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-primary/20" />
           <span>Programado</span>

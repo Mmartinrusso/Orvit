@@ -666,7 +666,7 @@ export default function MaintenanceFilterModal({
  key={filter}
  type="button"
  onClick={() => setStatusFilter(filter as 'all' | 'active' | 'inactive')}
- className={cn('px-2 py-1 text-[10px] font-medium rounded transition-colors', statusFilter === filter ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
+ className={cn('px-2 py-1 text-xs font-medium rounded transition-colors', statusFilter === filter ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
  >
  {filter === 'all' ? 'Todos' : filter === 'active' ? 'Activos' : 'Inactivos'}
  </button>
@@ -743,18 +743,18 @@ export default function MaintenanceFilterModal({
  <div className="flex items-center gap-2">
  <span className="font-medium text-xs truncate">{machine.name}</span>
  {machine.maintenanceCount !== undefined && machine.maintenanceCount > 0 && (
- <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+ <Badge variant="outline" className="text-xs px-1 py-0 h-5">
  {machine.maintenanceCount} mant.
  </Badge>
  )}
  </div>
- <div className="text-[10px] text-muted-foreground">
+ <div className="text-xs text-muted-foreground">
  {machine.sector?.name || 'Sin sector'}
  </div>
  </div>
  <Badge
  variant={machine.status === 'ACTIVE' ? 'default' : 'secondary'}
- className="text-[10px] px-1.5 py-0 shrink-0"
+ className="text-xs px-1.5 py-0 shrink-0"
  >
  {formatMachineStatus(machine.status)}
  </Badge>
@@ -766,11 +766,11 @@ export default function MaintenanceFilterModal({
  {isLoadingComps ? (
  <div className="py-2 text-center">
  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mx-auto" />
- <p className="text-[10px] text-muted-foreground mt-1">Cargando componentes...</p>
+ <p className="text-xs text-muted-foreground mt-1">Cargando componentes...</p>
  </div>
  ) : components.length === 0 ? (
  <div className="py-2 text-center">
- <p className="text-[10px] text-muted-foreground">Sin componentes</p>
+ <p className="text-xs text-muted-foreground">Sin componentes</p>
  </div>
  ) : (
  components.map((component) => {
@@ -816,7 +816,7 @@ export default function MaintenanceFilterModal({
  onClick={() => handleComponentToggle(component.id, machine.id, subcompIds)}
  >
  <Cog className="h-3 w-3 text-info-muted-foreground" />
- <span className="text-[11px] font-medium">{component.name}</span>
+ <span className="text-xs font-medium">{component.name}</span>
  {subcomps.length > 0 && (
  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">
  {subcomps.length} sub
@@ -843,7 +843,7 @@ export default function MaintenanceFilterModal({
  onCheckedChange={() => handleSubcomponentToggle(subcomp.id, component.id, machine.id)}
  />
  <Settings2 className="h-2.5 w-2.5 text-violet-600" />
- <span className="text-[10px]">{subcomp.name}</span>
+ <span className="text-xs">{subcomp.name}</span>
  </div>
  );
  })}
@@ -889,18 +889,18 @@ export default function MaintenanceFilterModal({
  <div className="flex items-center gap-2">
  <span className="font-medium text-xs truncate">{unidad.nombre}</span>
  {unidad.maintenanceCount !== undefined && unidad.maintenanceCount > 0 && (
- <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+ <Badge variant="outline" className="text-xs px-1 py-0 h-5">
  {unidad.maintenanceCount} mant.
  </Badge>
  )}
  </div>
- <div className="text-[10px] text-muted-foreground">
+ <div className="text-xs text-muted-foreground">
  {unidad.patente && `${unidad.patente} • `}{unidad.sector?.name || 'Sin sector'}
  </div>
  </div>
  <Badge
  variant={unidad.estado === 'ACTIVO' ? 'default' : 'secondary'}
- className="text-[10px] px-1.5 py-0 shrink-0"
+ className="text-xs px-1.5 py-0 shrink-0"
  >
  {unidad.estado}
  </Badge>

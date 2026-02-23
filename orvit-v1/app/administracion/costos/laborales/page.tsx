@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -935,7 +936,7 @@ export default function CostosLaboralesPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium">{formatCurrency(categoria.costoTotal)}</div>
-                          <div className="text-xs text-muted-foreground">{porcentaje.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground">{formatNumber(porcentaje, 1)}%</div>
                         </div>
                       </div>
                     );

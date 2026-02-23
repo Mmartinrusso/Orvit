@@ -281,7 +281,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
           {/* Breadcrumb de jerarquía */}
           {parentComponent && (
             <div className="mt-2 p-2 bg-muted/50 rounded-md">
-              <div className="flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
                 <span className="font-medium">Ubicación:</span>
                 {machineName && (
                   <>
@@ -305,7 +305,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
                 )}
               </div>
               {parentComponent.depth !== undefined && (
-                <div className="mt-1 text-[10px] md:text-xs text-muted-foreground">
+                <div className="mt-1 text-xs text-muted-foreground">
                   Nivel {parentComponent.depth + 1} → Nuevo: nivel {parentComponent.depth + 2}
                 </div>
               )}
@@ -458,7 +458,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
-              <div className="relative flex justify-center text-[10px] md:text-xs uppercase">
+              <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">Vinculación con Pañol</span>
               </div>
             </div>
@@ -468,7 +468,7 @@ export default function ComponentDialog({ isOpen, onClose, onSave, machineId, in
               <div className="flex items-center gap-2 mb-3">
                 <Package className="h-4 w-4 md:h-5 md:w-5 text-info" />
                 <h3 className="font-medium text-sm text-info-muted-foreground">Repuestos</h3>
-                <Badge variant="secondary" className="text-[10px]">Opcional</Badge>
+                <Badge variant="secondary" className="text-xs">Opcional</Badge>
               </div>
               
               <FormField

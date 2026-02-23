@@ -110,7 +110,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: any; color: string 
   MEJORA_EQUIPO: { label: 'Mejora de Equipo', icon: Sparkles, color: 'bg-purple-500' },
   SEGURIDAD: { label: 'Seguridad', icon: Shield, color: 'bg-warning' },
   AHORRO_COSTOS: { label: 'Ahorro de Costos', icon: DollarSign, color: 'bg-success' },
-  CALIDAD: { label: 'Calidad', icon: CheckCircle, color: 'bg-cyan-500' },
+  CALIDAD: { label: 'Calidad', icon: CheckCircle, color: 'bg-accent-cyan' },
   OTRO: { label: 'Otro', icon: Lightbulb, color: 'bg-muted-foreground' },
 };
 
@@ -120,7 +120,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   UNDER_REVIEW: { label: 'En Revisión', color: 'bg-warning' },
   APPROVED: { label: 'Aprobada', color: 'bg-success' },
   IN_PROGRESS: { label: 'En Progreso', color: 'bg-purple-500' },
-  IMPLEMENTED: { label: 'Implementada', color: 'bg-emerald-600' },
+  IMPLEMENTED: { label: 'Implementada', color: 'bg-success' },
   REJECTED: { label: 'Rechazada', color: 'bg-destructive' },
   ARCHIVED: { label: 'Archivada', color: 'bg-muted-foreground' },
 };
@@ -199,23 +199,26 @@ export default function IdeasPage() {
   });
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Lightbulb className="h-8 w-8 text-warning-muted-foreground" />
-            Libro de Ideas
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Propuestas de mejoras y soluciones del equipo
-          </p>
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Libro de Ideas</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Propuestas de mejoras y soluciones del equipo
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Idea
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Idea
-        </Button>
       </div>
+
+      <div className="px-4 md:px-6 space-y-6">
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -345,6 +348,8 @@ export default function IdeasPage() {
             </Button>
           </div>
         )}
+      </div>
+
       </div>
 
       {/* Create Dialog */}
@@ -637,7 +642,7 @@ function IdeaDetailDialog({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
-          <div className="text-center py-8">Cargando...</div>
+          <div className="text-center py-8">Cargando ideas...</div>
         </DialogContent>
       </Dialog>
     );

@@ -26,7 +26,7 @@ import {
   Plus, Trash2, Package, Scale, BookOpen, Loader2, Factory, Layers, Boxes, ShoppingCart,
   ChevronDown, Search, Tag, X
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { toast } from 'sonner';
 
 
@@ -751,7 +751,7 @@ export default function RecetaFormV2({
                                             )}
                                             {tieneStock && (
                                               <span className="text-success font-medium">
-                                                · Stock: {Number(s.stockCantidad).toFixed(2)} {s.unitMeasure}
+                                                · Stock: {formatNumber(Number(s.stockCantidad), 2)} {s.unitMeasure}
                                               </span>
                                             )}
                                             {!tieneStock && pasoPorCompras && (
@@ -812,7 +812,7 @@ export default function RecetaFormV2({
 
                     {inputMode === 'pulsos' && pulsos && kgPorPulso && (
                       <div className="text-sm text-muted-foreground">
-                        Total calculado: <strong>{(parseFloat(pulsos) * parseFloat(kgPorPulso)).toFixed(2)} kg</strong>
+                        Total calculado: <strong>{formatNumber(parseFloat(pulsos) * parseFloat(kgPorPulso), 2)} kg</strong>
                       </div>
                     )}
                   </div>
@@ -846,7 +846,7 @@ export default function RecetaFormV2({
                                 <p className="font-medium">{ing.supplyName}</p>
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                {cantidadUsada.toFixed(2)} {ing.unitMeasure}
+                                {formatNumber(cantidadUsada, 2)} {ing.unitMeasure}
                                 {ing.pulsos && ` (${ing.pulsos} pulsos × ${ing.kgPorPulso} kg)`}
                               </p>
                               {tieneStock && (
@@ -854,7 +854,7 @@ export default function RecetaFormV2({
                                   "text-xs mt-0.5",
                                   stockInsuficiente ? "text-warning font-medium" : "text-success"
                                 )}>
-                                  Stock: {Number(stockCantidad).toFixed(2)} {ing.unitMeasure}
+                                  Stock: {formatNumber(Number(stockCantidad), 2)} {ing.unitMeasure}
                                   {stockInsuficiente && " · Insuficiente"}
                                 </p>
                               )}
@@ -959,7 +959,7 @@ export default function RecetaFormV2({
                                 <div>
                                   <p className="font-medium">{ing.supplyName}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    {Number(ing.quantity || 0).toFixed(2)} {ing.unitMeasure}
+                                    {formatNumber(Number(ing.quantity || 0), 2)} {ing.unitMeasure}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-4">

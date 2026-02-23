@@ -5,8 +5,40 @@ import * as SelectPrimitive from '@radix-ui/react-select';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { focusNextFormField } from '@/lib/form-navigation';
 
-const Select = SelectPrimitive.Root;
+interface SelectProps extends React.ComponentProps<typeof SelectPrimitive.Root> {
+  autoAdvance?: boolean;
+}
+
+const Select: React.FC<SelectProps> = ({
+  onValueChange,
+  autoAdvance = true,
+  children,
+  ...props
+}) => {
+  const handleValueChange = React.useCallback(
+    (value: string) => {
+      onValueChange?.(value);
+      if (autoAdvance) {
+        // Radix devuelve foco al trigger después de cerrar el dropdown
+        requestAnimationFrame(() => {
+          const trigger = document.activeElement;
+          if (trigger) {
+            focusNextFormField(trigger as HTMLElement);
+          }
+        });
+      }
+    },
+    [onValueChange, autoAdvance]
+  );
+
+  return (
+    <SelectPrimitive.Root onValueChange={handleValueChange} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  );
+};
 
 const SelectGroup = SelectPrimitive.Group;
 

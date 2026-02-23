@@ -78,7 +78,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                     {step.label}
                   </p>
                   {step.description && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                       {step.description}
                     </p>
                   )}

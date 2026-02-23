@@ -137,7 +137,7 @@ const getEstadoBadge = (estado: string) => {
     aprobada: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Pendiente de Pago', icon: <CreditCard className="w-3 h-3" /> },
     rechazada: { color: 'bg-destructive/10 text-destructive border-destructive/30', label: 'Rechazada', icon: <XCircle className="w-3 h-3" /> },
     convertida: { color: 'bg-info-muted text-info-muted-foreground border-info-muted', label: 'Convertida', icon: <DollarSign className="w-3 h-3" /> },
-    pagada: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Pagada', icon: <CheckCircle className="w-3 h-3" /> },
+    pagada: { color: 'bg-success-muted text-success-muted-foreground border-success-muted', label: 'Pagada', icon: <CheckCircle className="w-3 h-3" /> },
     cancelada: { color: 'bg-muted text-foreground border-border', label: 'Cancelada', icon: <XCircle className="w-3 h-3" /> }
   };
   return estados[estado] || estados.pendiente;
@@ -469,7 +469,7 @@ export default function SolicitudDetallePage() {
                     {solicitud.comprobantes.map((comp) => (
                       <TableRow key={comp.id}>
                         <TableCell className="text-xs">
-                          <Badge variant="outline" className="text-[10px] px-1.5">
+                          <Badge variant="outline" className="text-xs px-1.5">
                             {comp.receipt?.tipo || 'N/A'}
                           </Badge>
                         </TableCell>

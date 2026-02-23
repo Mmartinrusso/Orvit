@@ -534,7 +534,7 @@ export default function MaintenanceScreenView({
  <button
  key={p}
  onClick={() => setPriorityFilter(priorityFilter === p ? null : p)}
- className={cn('px-2 py-1 rounded text-[10px] font-medium border transition-colors', priorityFilter === p ? getPriorityStyles(p) : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted')}
+ className={cn('px-2 py-1 rounded text-xs font-medium border transition-colors', priorityFilter === p ? getPriorityStyles(p) : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted')}
  >
  {formatPriority(p)}
  </button>
@@ -565,7 +565,7 @@ export default function MaintenanceScreenView({
  <span>Filtrar por componentes</span>
  {showComponentFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
  {(componentFilter || subcomponentFilter) && (
- <Badge variant="secondary" className="text-[10px] ml-1">
+ <Badge variant="secondary" className="text-xs ml-1">
  {[componentFilter, subcomponentFilter].filter(Boolean).length} activo
  </Badge>
  )}
@@ -578,14 +578,14 @@ export default function MaintenanceScreenView({
  <div>
  <div className="flex items-center gap-1.5 mb-1.5">
  <Cog className="h-3 w-3 text-muted-foreground" />
- <span className="text-[10px] font-medium text-muted-foreground">Componentes</span>
+ <span className="text-xs font-medium text-muted-foreground">Componentes</span>
  </div>
  <div className="flex flex-wrap gap-1">
  {uniqueComponents.map((comp) => (
  <button
  key={comp}
  onClick={() => setComponentFilter(componentFilter === comp ? null : comp)}
- className={cn('px-2 py-1 rounded text-[10px] font-medium border transition-colors', componentFilter === comp ? 'bg-info-muted text-info-muted-foreground border-info-muted' : 'bg-background text-muted-foreground border-border hover:bg-muted')}
+ className={cn('px-2 py-1 rounded text-xs font-medium border transition-colors', componentFilter === comp ? 'bg-info-muted text-info-muted-foreground border-info-muted' : 'bg-background text-muted-foreground border-border hover:bg-muted')}
  >
  {comp}
  </button>
@@ -599,14 +599,14 @@ export default function MaintenanceScreenView({
  <div>
  <div className="flex items-center gap-1.5 mb-1.5">
  <Settings2 className="h-3 w-3 text-muted-foreground" />
- <span className="text-[10px] font-medium text-muted-foreground">Subcomponentes</span>
+ <span className="text-xs font-medium text-muted-foreground">Subcomponentes</span>
  </div>
  <div className="flex flex-wrap gap-1">
  {uniqueSubcomponents.map((subcomp) => (
  <button
  key={subcomp}
  onClick={() => setSubcomponentFilter(subcomponentFilter === subcomp ? null : subcomp)}
- className={cn('px-2 py-1 rounded text-[10px] font-medium border transition-colors', subcomponentFilter === subcomp ? 'bg-violet-100 text-violet-700 border-violet-200' : 'bg-background text-muted-foreground border-border hover:bg-muted')}
+ className={cn('px-2 py-1 rounded text-xs font-medium border transition-colors', subcomponentFilter === subcomp ? 'bg-violet-100 text-violet-700 border-violet-200' : 'bg-background text-muted-foreground border-border hover:bg-muted')}
  >
  {subcomp}
  </button>
@@ -620,7 +620,7 @@ export default function MaintenanceScreenView({
  variant="ghost"
  size="sm"
  onClick={clearFilters}
- className="h-6 text-[10px] self-start mt-1"
+ className="h-6 text-xs self-start mt-1"
  >
  <X className="h-3 w-3 mr-1" />
  Limpiar filtros
@@ -676,7 +676,7 @@ export default function MaintenanceScreenView({
  </div>
  </div>
  <div className="flex items-center gap-2">
- <Badge variant="secondary" className="text-[10px]">
+ <Badge variant="secondary" className="text-xs">
  {group.preventive.length + group.corrective.length} total
  </Badge>
  <span className="print-hide">
@@ -711,7 +711,7 @@ export default function MaintenanceScreenView({
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 mb-1 flex-wrap">
  <span className="font-medium text-sm">{maint.title}</span>
- <Badge variant="outline" className={cn('text-[10px]', getPriorityStyles(maint.priority))}>
+ <Badge variant="outline" className={cn('text-xs', getPriorityStyles(maint.priority))}>
  {formatPriority(maint.priority)}
  </Badge>
  </div>
@@ -746,7 +746,7 @@ export default function MaintenanceScreenView({
  ))}
  </div>
  )}
- <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+ <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
  <span className="flex items-center gap-1">
  <Calendar className="h-3 w-3" />
  {formatFrequency(maint.frequency, maint.frequencyUnit)}
@@ -764,7 +764,7 @@ export default function MaintenanceScreenView({
  )}
  </div>
  </div>
- <span className="text-[10px] text-muted-foreground">#{maint.id}</span>
+ <span className="text-xs text-muted-foreground">#{maint.id}</span>
  </div>
  </div>
  ))}
@@ -791,7 +791,7 @@ export default function MaintenanceScreenView({
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 mb-1 flex-wrap">
  <span className="font-medium text-sm">{maint.title}</span>
- <Badge variant="outline" className={cn('text-[10px]', getPriorityStyles(maint.priority))}>
+ <Badge variant="outline" className={cn('text-xs', getPriorityStyles(maint.priority))}>
  {formatPriority(maint.priority)}
  </Badge>
  </div>
@@ -812,14 +812,14 @@ export default function MaintenanceScreenView({
  )}
  </div>
  )}
- <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+ <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
  <span>Estado: {maint.status}</span>
  {maint.estimatedCost && (
  <span>${maint.estimatedCost}</span>
  )}
  </div>
  </div>
- <span className="text-[10px] text-muted-foreground">#{maint.id}</span>
+ <span className="text-xs text-muted-foreground">#{maint.id}</span>
  </div>
  </div>
  ))}

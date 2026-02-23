@@ -26,15 +26,15 @@ export function AdminKpisWidget({ data, isLoading }: WidgetComponentProps) {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <p className="text-xs text-muted-foreground">Usuarios activos</p>
-              <p className="text-2xl font-semibold">{admin.activeUsers}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{admin.activeUsers}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Roles</p>
-              <p className="text-2xl font-semibold">{admin.roles}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{admin.roles}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Permisos</p>
-              <p className="text-2xl font-semibold">{admin.permissions}</p>
+              <p data-slot="kpi-value" className="text-2xl font-semibold">{admin.permissions}</p>
             </div>
           </div>
         )}

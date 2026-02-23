@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isBotReady, makeCategoryPrivate, listGuilds } from '@/lib/discord';
+import { manageBotChannels } from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,19 +41,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Verificar que el bot esté conectado
-    if (!isBotReady()) {
-      return NextResponse.json(
-        { error: 'Bot no está conectado. Conéctalo primero.' },
-        { status: 400 }
-      );
-    }
-
-    // 4. Obtener datos del body
+    // 3. Obtener datos del body
     const body = await request.json();
     const { sectorId, categoryId } = body;
 
-    // 5. Obtener guildId
+    // 4. Obtener guildId
     const company = await prisma.company.findUnique({
       where: { id: payload.companyId as number },
       select: { discordGuildId: true }
@@ -62,9 +54,9 @@ export async function POST(request: NextRequest) {
     let guildId = company?.discordGuildId;
 
     if (!guildId) {
-      const guilds = listGuilds();
-      if (guilds.length > 0) {
-        guildId = guilds[0].id;
+      const guildsResult = await manageBotChannels('getGuilds', {});
+      if (guildsResult.success && guildsResult.guilds?.length > 0) {
+        guildId = guildsResult.guilds[0].id;
         // Guardar para futuras operaciones
         await prisma.company.update({
           where: { id: payload.companyId as number },
@@ -80,7 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Si se proporciona sectorId, obtener la categoría del sector
+    // 5. Si se proporciona sectorId, obtener la categoría del sector
     let targetCategoryId = categoryId;
 
     if (sectorId && !categoryId) {
@@ -106,8 +98,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Hacer privada la categoría
-    const result = await makeCategoryPrivate(guildId, targetCategoryId);
+    // 6. Hacer privada la categoría
+    const result = await manageBotChannels('makeCategoryPrivate', { guildId, categoryId: targetCategoryId });
 
     if (!result.success) {
       return NextResponse.json(

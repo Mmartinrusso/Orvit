@@ -85,7 +85,7 @@ export function EntregasAdvancedFilters({
           <Filter className="w-3.5 h-3.5 mr-2" />
           Filtros Avanzados
           {hasActiveFilters && (
-            <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-[10px]">
+            <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
               !
             </span>
           )}

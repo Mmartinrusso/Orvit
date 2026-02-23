@@ -73,7 +73,7 @@ import {
  Copy,
  Menu
 } from 'lucide-react';
-import { cn, stripHtmlTags } from '@/lib/utils';
+import { cn, stripHtmlTags, formatNumber } from '@/lib/utils';
 // Lazy-loaded dialogs: solo se cargan cuando el usuario los abre
 const PreventiveMaintenanceDialog = lazy(() => import('../work-orders/PreventiveMaintenanceDialog'));
 const CorrectiveMaintenanceDialog = lazy(() => import('../work-orders/CorrectiveMaintenanceDialog'));
@@ -86,7 +86,7 @@ import MaintenanceTypeSelector from './MaintenanceTypeSelector';
 import AssetTypeSelector from './AssetTypeSelector';
 import { MaintenanceDashboardProvider, useMaintenanceDashboardContext } from '@/contexts/MaintenanceDashboardContext'; // ✨ OPTIMIZACIÓN v2
 import { useSectors } from '@/hooks/use-sectors'; // ✨ OPTIMIZACIÓN: Sectores centralizados
-import { useMaintenanceCompleted, useChecklists } from '@/hooks/maintenance'; // ✨ OPTIMIZACIÓN: Hooks centralizados
+import { useMaintenanceCompleted, useChecklists } from '@/hooks/mantenimiento'; // ✨ OPTIMIZACIÓN: Hooks centralizados
 const ChecklistExecutionDialog = lazy(() => import('./ChecklistExecutionDialog'));
 const ChecklistExecutionTableDialog = lazy(() => import('./ChecklistExecutionTableDialog'));
 const MaintenanceDetailDialog = lazy(() => import('./MaintenanceDetailDialog'));
@@ -107,8 +107,7 @@ import {
  TimeUnit,
  ChecklistFrequency
 } from '@/lib/types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { toast } from '@/hooks/use-toast';
 import { 
  shouldResetChecklist, 
@@ -4180,7 +4179,7 @@ function EnhancedMaintenancePanelContent({
  case 'IN_PROGRESS': return 'bg-info-muted text-info-muted-foreground';
  case 'COMPLETED': return 'bg-success-muted text-success-muted-foreground';
  case 'CANCELLED': return 'bg-muted text-foreground';
- case 'ON_HOLD': return 'bg-purple-100 text-purple-800';
+ case 'ON_HOLD': return 'bg-accent-purple-muted text-accent-purple-muted-foreground';
  default: return 'bg-muted text-foreground';
  }
  };
@@ -4275,7 +4274,7 @@ function EnhancedMaintenancePanelContent({
  if (days >= 2 && days <= 7) return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
  if (days >= 8 && days <= 15) return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
  if (days >= 16 && days <= 30) return 'bg-info-muted text-info-muted-foreground border-info-muted';
- if (days >= 31 && days <= 90) return 'bg-purple-100 text-purple-800 border-purple-200';
+ if (days >= 31 && days <= 90) return 'bg-accent-purple-muted text-accent-purple-muted-foreground border-accent-purple-muted';
  if (days >= 91 && days <= 180) return 'bg-indigo-100 text-indigo-800 border-indigo-200';
  if (days >= 181 && days <= 365) return 'bg-success-muted text-success-muted-foreground border-success-muted';
  return 'bg-muted text-foreground border-border';
@@ -4515,21 +4514,7 @@ function EnhancedMaintenancePanelContent({
  }
  };
 
- const formatDate = (date: Date | string) => {
- try {
- return format(new Date(date), "dd/MM/yyyy", { locale: es });
- } catch {
- return 'Fecha inválida';
- }
- };
-
- const formatDateTime = (date: Date | string) => {
- try {
- return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: es });
- } catch {
- return 'Fecha inválida';
- }
- };
+ // formatDate and formatDateTime are now imported from @/lib/date-utils
 
  const getExecutionWindowLabel = (window: ExecutionWindow) => {
  const labels = {
@@ -4802,7 +4787,7 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-muted-foreground">Completados a Tiempo</p>
- <p className="text-sm font-medium text-success">{kpis.completionRate.toFixed(1)}%</p>
+ <p className="text-sm font-medium text-success">{formatNumber(kpis.completionRate, 1)}%</p>
  </div>
  <CheckCircle className="h-4 w-4 text-success" />
  </div>
@@ -4817,7 +4802,7 @@ function EnhancedMaintenancePanelContent({
  <p className="text-xs text-muted-foreground">MTTR Promedio</p>
  <p className="text-xs text-muted-foreground">Tiempo promedio de reparación</p>
  </div>
- <p className="text-sm font-medium text-info-muted-foreground">{kpis.avgMTTR.toFixed(1)}h</p>
+ <p className="text-sm font-medium text-info-muted-foreground">{formatNumber(kpis.avgMTTR, 1)}h</p>
  </div>
  <Timer className="h-4 w-4 text-info-muted-foreground" />
  </div>
@@ -4832,9 +4817,9 @@ function EnhancedMaintenancePanelContent({
  <p className="text-xs text-muted-foreground">MTBF Promedio</p>
  <p className="text-xs text-muted-foreground">Tiempo promedio entre fallas</p>
  </div>
- <p className="text-sm font-medium text-purple-600">{kpis.avgMTBF.toFixed(1)}h</p>
+ <p className="text-sm font-medium text-accent-purple-muted-foreground">{formatNumber(kpis.avgMTBF, 1)}h</p>
  </div>
- <Activity className="h-4 w-4 text-purple-600" />
+ <Activity className="h-4 w-4 text-accent-purple-muted-foreground" />
  </div>
  </CardContent>
  </Card>
@@ -4844,7 +4829,7 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-muted-foreground">Disponibilidad</p>
- <p className="text-sm font-medium text-indigo-600">{kpis.uptime.toFixed(1)}%</p>
+ <p className="text-sm font-medium text-indigo-600">{formatNumber(kpis.uptime, 1)}%</p>
  </div>
  <Target className="h-4 w-4 text-indigo-600" />
  </div>
@@ -5436,7 +5421,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Completados a Tiempo</p>
  <p className="text-sm font-medium text-success">
- {kpis ? `${kpis.completionRate.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.completionRate, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-8 w-8 bg-success-muted rounded-full flex items-center justify-center">
@@ -5453,7 +5438,7 @@ function EnhancedMaintenancePanelContent({
  <p className="text-xs text-muted-foreground">MTTR Promedio</p>
  <p className="text-xs text-muted-foreground mb-1">Tiempo promedio de reparación</p>
  <p className="text-sm font-medium text-info-muted-foreground">
- {kpis ? `${kpis.avgMTTR.toFixed(1)}h` : '--'}
+ {kpis ? `${formatNumber(kpis.avgMTTR, 1)}h` : '--'}
  </p>
  </div>
  <div className="h-8 w-8 bg-info-muted rounded-full flex items-center justify-center">
@@ -5469,12 +5454,12 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">MTBF Promedio</p>
  <p className="text-xs text-muted-foreground mb-1">Tiempo promedio entre fallas</p>
- <p className="text-sm font-medium text-purple-600">
- {kpis ? `${kpis.avgMTBF.toFixed(1)}h` : '--'}
+ <p className="text-sm font-medium text-accent-purple-muted-foreground">
+ {kpis ? `${formatNumber(kpis.avgMTBF, 1)}h` : '--'}
  </p>
  </div>
- <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
- <Activity className="h-4 w-4 text-purple-600" />
+ <div className="h-8 w-8 bg-accent-purple-muted rounded-full flex items-center justify-center">
+ <Activity className="h-4 w-4 text-accent-purple-muted-foreground" />
  </div>
  </div>
  </CardContent>
@@ -5486,7 +5471,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Disponibilidad</p>
  <p className="text-sm font-medium text-indigo-600">
- {kpis ? `${kpis.uptime.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.uptime, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -5601,7 +5586,7 @@ function EnhancedMaintenancePanelContent({
  <span className="text-xs text-muted-foreground">Calidad Promedio</span>
  <div className="flex items-center gap-2">
  <div className="w-16 bg-muted rounded-full h-2">
- <div className="bg-purple-500 h-2 rounded-full" style={{width: '75%'}}></div>
+ <div className="bg-accent-purple-muted-foreground h-2 rounded-full" style={{width: '75%'}}></div>
  </div>
  <span className="text-sm font-medium">7.5/10</span>
  </div>
@@ -5644,7 +5629,7 @@ function EnhancedMaintenancePanelContent({
  const sla = getSLAStatus(maintenance);
  if (!sla) return null;
  return (
- <span className={cn("inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold", sla.className)} role="status" aria-label={`SLA: ${sla.label}`}>
+ <span className={cn("inline-flex items-center rounded-full border px-1.5 py-0.5 text-xs font-semibold", sla.className)} role="status" aria-label={`SLA: ${sla.label}`}>
  {sla.label}
  </span>
  );
@@ -5749,7 +5734,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Completados a Tiempo</p>
  <p className="text-sm font-medium text-success">
- {kpis ? `${kpis.completionRate.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.completionRate, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-success-muted rounded-full flex items-center justify-center">
@@ -5764,7 +5749,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">MTTR Promedio</p>
  <p className="text-sm font-medium text-info-muted-foreground">
- {kpis ? `${kpis.avgMTTR.toFixed(1)}h` : '--'}
+ {kpis ? `${formatNumber(kpis.avgMTTR, 1)}h` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-info-muted rounded-full flex items-center justify-center">
@@ -5778,12 +5763,12 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-muted-foreground">MTBF Promedio</p>
- <p className="text-sm font-medium text-purple-600">
- {kpis ? `${kpis.avgMTBF.toFixed(1)}h` : '--'}
+ <p className="text-sm font-medium text-accent-purple-muted-foreground">
+ {kpis ? `${formatNumber(kpis.avgMTBF, 1)}h` : '--'}
  </p>
  </div>
- <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
- <Activity className="h-5 w-5 text-purple-600" />
+ <div className="h-10 w-10 bg-accent-purple-muted rounded-full flex items-center justify-center">
+ <Activity className="h-5 w-5 text-accent-purple-muted-foreground" />
  </div>
  </div>
  </CardContent>
@@ -5794,7 +5779,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Disponibilidad</p>
  <p className="text-sm font-medium text-indigo-600">
- {kpis ? `${kpis.uptime.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.uptime, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -5941,7 +5926,7 @@ function EnhancedMaintenancePanelContent({
  const subcomponentIds = maintenance.subcomponentIds || (maintenance.subcomponents?.map((s: any) => s.id)) || [];
  const allSubcomponents = subcomponentNames.length > 0 ? subcomponentNames : subcomponentIds.map((id: number) => `Subcomponente ${id}`);
  return allSubcomponents.map((name: string, idx: number) => (
- <div key={`subcomponent-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-purple-50 text-purple-700">
+ <div key={`subcomponent-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-accent-purple-muted text-accent-purple-muted-foreground">
  <Settings className="h-3 w-3 mr-1" />
  {name}
  </div>
@@ -6106,7 +6091,7 @@ function EnhancedMaintenancePanelContent({
  title="Realizar mantenimiento"
  aria-label={`Realizar ${maintenance.title}`}
  >
- <PlayCircle className="h-3.5 w-3.5" />
+ <Check className="h-4 w-4" />
  </Button>
  )}
  {canDeleteMaintenance && (
@@ -6160,7 +6145,7 @@ function EnhancedMaintenancePanelContent({
  {pendingMaintenances.length === 0
  ? 'Sin mantenimientos pendientes'
  : pendingLoadingMore
- ? 'Cargando...'
+ ? 'Cargando mantenimientos...'
  : 'Seguí desplazando...'}
  </div>
  {pendingTailHeight > 0 && (
@@ -6210,7 +6195,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Completados a Tiempo</p>
  <p className="text-sm font-medium text-success">
- {kpis ? `${kpis.completionRate.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.completionRate, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-success-muted rounded-full flex items-center justify-center">
@@ -6225,7 +6210,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">MTTR Promedio</p>
  <p className="text-sm font-medium text-info-muted-foreground">
- {kpis ? `${kpis.avgMTTR.toFixed(1)}h` : '--'}
+ {kpis ? `${formatNumber(kpis.avgMTTR, 1)}h` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-info-muted rounded-full flex items-center justify-center">
@@ -6239,12 +6224,12 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-muted-foreground">MTBF Promedio</p>
- <p className="text-sm font-medium text-purple-600">
- {kpis ? `${kpis.avgMTBF.toFixed(1)}h` : '--'}
+ <p className="text-sm font-medium text-accent-purple-muted-foreground">
+ {kpis ? `${formatNumber(kpis.avgMTBF, 1)}h` : '--'}
  </p>
  </div>
- <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
- <Activity className="h-5 w-5 text-purple-600" />
+ <div className="h-10 w-10 bg-accent-purple-muted rounded-full flex items-center justify-center">
+ <Activity className="h-5 w-5 text-accent-purple-muted-foreground" />
  </div>
  </div>
  </CardContent>
@@ -6255,7 +6240,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Disponibilidad</p>
  <p className="text-sm font-medium text-indigo-600">
- {kpis ? `${kpis.uptime.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.uptime, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -6470,7 +6455,7 @@ function EnhancedMaintenancePanelContent({
  )}
  {maintenance.workPerformedNotes && (
  <div className="text-xs">
- <span className="font-medium text-emerald-700">Solución:</span>{' '}
+ <span className="font-medium text-success-muted-foreground">Solución:</span>{' '}
  <span className="text-muted-foreground">
  {maintenance.workPerformedNotes.length > 100 ? maintenance.workPerformedNotes.substring(0, 100) + '...' : maintenance.workPerformedNotes}
  </span>
@@ -6570,7 +6555,7 @@ function EnhancedMaintenancePanelContent({
  {completedTodayMaintenances.length === 0
  ? 'Sin mantenimientos completados en el período'
  : completedLoadingMore
- ? 'Cargando...'
+ ? 'Cargando mantenimientos...'
  : 'Seguí desplazando...'}
  </div>
  {completedTailHeight > 0 && (
@@ -6622,7 +6607,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Completados a Tiempo</p>
  <p className="text-sm font-medium text-success">
- {kpis ? `${kpis.completionRate.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.completionRate, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-success-muted rounded-full flex items-center justify-center">
@@ -6637,7 +6622,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">MTTR Promedio</p>
  <p className="text-sm font-medium text-info-muted-foreground">
- {kpis ? `${kpis.avgMTTR.toFixed(1)}h` : '--'}
+ {kpis ? `${formatNumber(kpis.avgMTTR, 1)}h` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-info-muted rounded-full flex items-center justify-center">
@@ -6651,12 +6636,12 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-muted-foreground">MTBF Promedio</p>
- <p className="text-sm font-medium text-purple-600">
- {kpis ? `${kpis.avgMTBF.toFixed(1)}h` : '--'}
+ <p className="text-sm font-medium text-accent-purple-muted-foreground">
+ {kpis ? `${formatNumber(kpis.avgMTBF, 1)}h` : '--'}
  </p>
  </div>
- <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
- <Activity className="h-5 w-5 text-purple-600" />
+ <div className="h-10 w-10 bg-accent-purple-muted rounded-full flex items-center justify-center">
+ <Activity className="h-5 w-5 text-accent-purple-muted-foreground" />
  </div>
  </div>
  </CardContent>
@@ -6667,7 +6652,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Disponibilidad</p>
  <p className="text-sm font-medium text-indigo-600">
- {kpis ? `${kpis.uptime.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.uptime, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -6756,7 +6741,7 @@ function EnhancedMaintenancePanelContent({
  const subcomponentIds = maintenance.subcomponentIds || (maintenance.subcomponents?.map((s: any) => s.id)) || [];
  const allSubcomponents = subcomponentNames.length > 0 ? subcomponentNames : subcomponentIds.map((id: number) => `Subcomponente ${id}`);
  return allSubcomponents.map((name: string, idx: number) => (
- <div key={`subcomponent-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-purple-50 text-purple-700">
+ <div key={`subcomponent-${idx}`} className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs bg-accent-purple-muted text-accent-purple-muted-foreground">
  <Settings className="h-3 w-3 mr-1" />
  {name}
  </div>
@@ -6928,7 +6913,7 @@ function EnhancedMaintenancePanelContent({
  title="Realizar mantenimiento"
  className="shrink-0 h-8 w-8 p-0"
  >
- <PlayCircle className="h-3.5 w-3.5" />
+ <Check className="h-4 w-4" />
  </Button>
  )}
  {canDeleteMaintenance && (
@@ -6980,7 +6965,7 @@ function EnhancedMaintenancePanelContent({
  {allMaintenances.length === 0
  ? 'Sin mantenimientos disponibles'
  : allLoadingMore
- ? 'Cargando...'
+ ? 'Cargando mantenimientos...'
  : 'Seguí desplazando...'}
  </div>
  {allTailHeight > 0 && (
@@ -7047,7 +7032,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Completados a Tiempo</p>
  <p className="text-sm font-medium text-success">
- {kpis ? `${kpis.completionRate.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.completionRate, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-success-muted rounded-full flex items-center justify-center">
@@ -7062,7 +7047,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">MTTR Promedio</p>
  <p className="text-sm font-medium text-info-muted-foreground">
- {kpis ? `${kpis.avgMTTR.toFixed(1)}h` : '--'}
+ {kpis ? `${formatNumber(kpis.avgMTTR, 1)}h` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-info-muted rounded-full flex items-center justify-center">
@@ -7076,12 +7061,12 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center justify-between">
  <div>
  <p className="text-xs text-muted-foreground">MTBF Promedio</p>
- <p className="text-sm font-medium text-purple-600">
- {kpis ? `${kpis.avgMTBF.toFixed(1)}h` : '--'}
+ <p className="text-sm font-medium text-accent-purple-muted-foreground">
+ {kpis ? `${formatNumber(kpis.avgMTBF, 1)}h` : '--'}
  </p>
  </div>
- <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
- <Activity className="h-5 w-5 text-purple-600" />
+ <div className="h-10 w-10 bg-accent-purple-muted rounded-full flex items-center justify-center">
+ <Activity className="h-5 w-5 text-accent-purple-muted-foreground" />
  </div>
  </div>
  </CardContent>
@@ -7092,7 +7077,7 @@ function EnhancedMaintenancePanelContent({
  <div>
  <p className="text-xs text-muted-foreground">Disponibilidad</p>
  <p className="text-sm font-medium text-indigo-600">
- {kpis ? `${kpis.uptime.toFixed(1)}%` : '--'}
+ {kpis ? `${formatNumber(kpis.uptime, 1)}%` : '--'}
  </p>
  </div>
  <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -7267,7 +7252,7 @@ function EnhancedMaintenancePanelContent({
  {historyList.length === 0
  ? 'Sin ejecuciones registradas'
  : historyLoadingMore
- ? 'Cargando...'
+ ? 'Cargando historial...'
  : 'Seguí desplazando...'}
  </div>
  {historyTailHeight > 0 && (
@@ -7656,7 +7641,7 @@ function EnhancedMaintenancePanelContent({
  }, 0);
  
  const averageHours = totalHours / completedMaintenances.length;
- return averageHours > 0 ? `${averageHours.toFixed(1)}h` : '0h';
+ return averageHours > 0 ? `${formatNumber(averageHours, 1)}h` : '0h';
  })()}
  </p>
  </div>
@@ -7693,8 +7678,8 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center gap-2">
  <span className="text-xs text-muted-foreground">{allMaintenances.filter(m => m.type === 'PREVENTIVE').length}</span>
  <span className="text-xs font-medium">
- {allMaintenances.length > 0 ? 
- ((allMaintenances.filter(m => m.type === 'PREVENTIVE').length / allMaintenances.length) * 100).toFixed(1) : 0}%
+ {allMaintenances.length > 0 ?
+ formatNumber((allMaintenances.filter(m => m.type === 'PREVENTIVE').length / allMaintenances.length) * 100, 1) : 0}%
  </span>
  </div>
  </div>
@@ -7706,8 +7691,8 @@ function EnhancedMaintenancePanelContent({
  <div className="flex items-center gap-2">
  <span className="text-xs text-muted-foreground">{allMaintenances.filter(m => m.type === 'CORRECTIVE').length}</span>
  <span className="text-xs font-medium">
- {allMaintenances.length > 0 ? 
- ((allMaintenances.filter(m => m.type === 'CORRECTIVE').length / allMaintenances.length) * 100).toFixed(1) : 0}%
+ {allMaintenances.length > 0 ?
+ formatNumber((allMaintenances.filter(m => m.type === 'CORRECTIVE').length / allMaintenances.length) * 100, 1) : 0}%
  </span>
  </div>
  </div>
@@ -7754,7 +7739,7 @@ function EnhancedMaintenancePanelContent({
  <span className="text-xs text-muted-foreground">{allMaintenances.filter(m => m.priority === 'LOW').length}</span>
  <span className="text-xs font-medium">
  {allMaintenances.length > 0 ? 
- ((allMaintenances.filter(m => m.priority === 'LOW').length / allMaintenances.length) * 100).toFixed(1) : 0}%
+ formatNumber((allMaintenances.filter(m => m.priority === 'LOW').length / allMaintenances.length) * 100, 1) : 0}%
  </span>
  </div>
  </div>
@@ -7767,7 +7752,7 @@ function EnhancedMaintenancePanelContent({
  <span className="text-xs text-muted-foreground">{allMaintenances.filter(m => m.priority === 'MEDIUM').length}</span>
  <span className="text-xs font-medium">
  {allMaintenances.length > 0 ? 
- ((allMaintenances.filter(m => m.priority === 'MEDIUM').length / allMaintenances.length) * 100).toFixed(1) : 0}%
+ formatNumber((allMaintenances.filter(m => m.priority === 'MEDIUM').length / allMaintenances.length) * 100, 1) : 0}%
  </span>
  </div>
  </div>
@@ -7780,7 +7765,7 @@ function EnhancedMaintenancePanelContent({
  <span className="text-xs text-muted-foreground">{allMaintenances.filter(m => m.priority === 'HIGH').length}</span>
  <span className="text-xs font-medium">
  {allMaintenances.length > 0 ? 
- ((allMaintenances.filter(m => m.priority === 'HIGH').length / allMaintenances.length) * 100).toFixed(1) : 0}%
+ formatNumber((allMaintenances.filter(m => m.priority === 'HIGH').length / allMaintenances.length) * 100, 1) : 0}%
  </span>
  </div>
  </div>
@@ -7793,7 +7778,7 @@ function EnhancedMaintenancePanelContent({
  <span className="text-xs text-muted-foreground">{allMaintenances.filter(m => m.priority === 'CRITICAL').length}</span>
  <span className="text-xs font-medium">
  {allMaintenances.length > 0 ? 
- ((allMaintenances.filter(m => m.priority === 'CRITICAL').length / allMaintenances.length) * 100).toFixed(1) : 0}%
+ formatNumber((allMaintenances.filter(m => m.priority === 'CRITICAL').length / allMaintenances.length) * 100, 1) : 0}%
  </span>
  </div>
  </div>

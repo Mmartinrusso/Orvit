@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -210,7 +211,7 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-purple-600">
-                    {stats ? `${stats.percentageIncrease.toFixed(1)}%` : '0%'}
+                    {stats ? `${formatNumber(stats.percentageIncrease, 1)}%` : '0%'}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Desde el inicio
@@ -294,13 +295,13 @@ export default function EmployeeDetail({ employee, isOpen, onClose, companyId }:
                               {increase > 0 && (
                                 <div className="flex items-center gap-1 text-success text-sm">
                                   <TrendingUp className="h-3 w-3" />
-                                  <span>+{formatCurrency(increase)} ({percentageIncrease.toFixed(1)}%)</span>
+                                  <span>+{formatCurrency(increase)} ({formatNumber(percentageIncrease, 1)}%)</span>
                                 </div>
                               )}
                               {increase < 0 && (
                                 <div className="flex items-center gap-1 text-destructive text-sm">
                                   <TrendingDown className="h-3 w-3" />
-                                  <span>{formatCurrency(increase)} ({percentageIncrease.toFixed(1)}%)</span>
+                                  <span>{formatCurrency(increase)} ({formatNumber(percentageIncrease, 1)}%)</span>
                                 </div>
                               )}
                             </div>

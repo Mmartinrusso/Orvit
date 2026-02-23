@@ -187,7 +187,7 @@ export function FailuresSavedViewsBar({ failures = [], className }: FailuresSave
               <Badge
                 variant={isActive ? 'secondary' : 'outline'}
                 className={cn(
-                  'ml-1 h-4 min-w-[1rem] px-1 text-[10px] font-semibold',
+                  'ml-1 h-5 min-w-[1rem] px-1 text-xs font-semibold',
                   isActive && 'bg-primary-foreground/20 text-primary-foreground'
                 )}
               >

@@ -131,7 +131,7 @@ export default function ComponentSelectionModal({
 
         <DialogBody className="space-y-4">
           {/* Tarjetas de estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-lg border text-card-foreground shadow-sm bg-background border-border">
               <div className="p-3">
                 <div className="flex items-center justify-between">
@@ -221,7 +221,7 @@ export default function ComponentSelectionModal({
                         <Cog className="h-3.5 w-3.5 text-primary" />
                         <h3 className="font-semibold text-xs">{machineName || 'Máquina'}</h3>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Máquina Principal</p>
+                      <p className="text-xs text-muted-foreground">Máquina Principal</p>
                     </div>
                   </div>
                 </div>
@@ -255,7 +255,7 @@ export default function ComponentSelectionModal({
                               <Cog className="h-3.5 w-3.5 text-foreground" />
                               <h4 className="font-medium text-xs line-clamp-2">{component.name}</h4>
                             </div>
-                            <p className="text-[10px] text-muted-foreground">Componente</p>
+                            <p className="text-xs text-muted-foreground">Componente</p>
                           </div>
                         </div>
                       ))
@@ -281,8 +281,8 @@ export default function ComponentSelectionModal({
                               <Wrench className="h-3 w-3 text-foreground" />
                               <h4 className="font-medium text-xs line-clamp-2">{subcomponent.name}</h4>
                             </div>
-                            <p className="text-[10px] text-muted-foreground">Subcomponente</p>
-                            <p className="text-[10px] text-muted-foreground/70">de {component.name}</p>
+                            <p className="text-xs text-muted-foreground">Subcomponente</p>
+                            <p className="text-xs text-muted-foreground/70">de {component.name}</p>
                           </div>
                         </div>
                       )) || []

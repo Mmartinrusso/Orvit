@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import RecetasV2 from '@/components/recetas/RecetasV2';
 import { IndirectViewV2 } from '@/components/costos/v2/IndirectViewV2';
 import { PurchasesViewV2 } from '@/components/costos/v2/PurchasesViewV2';
@@ -180,7 +180,7 @@ const formatCurrency = (value: number): string => {
   return (value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
-const formatPercent = (value: number): string => (value ?? 0).toFixed(1) + '%';
+const formatPercent = (value: number): string => formatNumber(value ?? 0, 1) + '%';
 
 const STATUS_STYLES = {
   active: { bg: 'bg-success-muted', text: 'text-success', label: 'Activo' },
@@ -552,8 +552,8 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
               <div>
                 <h1 className="text-base font-bold">Centro de Costos</h1>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-[10px] h-4">V2</Badge>
-                  <span className="text-[10px] text-muted-foreground">Consolidación automática</span>
+                  <Badge variant="secondary" className="text-xs h-5">V2</Badge>
+                  <span className="text-xs text-muted-foreground">Consolidación automática</span>
                 </div>
               </div>
             </div>
@@ -561,7 +561,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
 
           {/* Período */}
           <div className="p-4 border-b">
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 block">Período Activo</Label>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Período Activo</Label>
             <Select value={currentMonth} onValueChange={handleMonthChange}>
               <SelectTrigger className="h-9 bg-background">
                 <Calendar className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
@@ -583,7 +583,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
               ))}
 
               <div>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Módulos de Costos</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Módulos de Costos</p>
                 <div className="space-y-1">
                   {groupedSections.costos.map((section) => (
                     <SidebarButton key={section.id} section={section} isActive={activeSection === section.id} onClick={() => setActiveSection(section.id)} />
@@ -592,7 +592,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
               </div>
 
               <div>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Herramientas</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Herramientas</p>
                 <div className="space-y-1">
                   {groupedSections.herramientas.map((section) => (
                     <SidebarButton key={section.id} section={section} isActive={activeSection === section.id} onClick={() => setActiveSection(section.id)} />
@@ -601,7 +601,7 @@ export function ExecutiveDashboardV2({ selectedMonth, companyId, onMonthChange }
               </div>
 
               <div>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Sistema</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Sistema</p>
                 <div className="space-y-1">
                   {groupedSections.sistema.map((section) => (
                     <SidebarButton key={section.id} section={section} isActive={activeSection === section.id} onClick={() => setActiveSection(section.id)} />
@@ -841,19 +841,19 @@ function OverviewSection({ month, layout, theme, colors }: {
                     <div className="w-full flex items-end gap-1 h-48">
                       <div className="flex-1 rounded-t relative group" style={{ height: `${(data.ingresos / 2500000) * 100}%`, backgroundColor: `${colors.chart1}20` }}>
                         <div className="absolute inset-x-0 bottom-0 rounded-t transition-all" style={{ height: '100%', backgroundColor: colors.chart1 }} />
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
                           ${formatCurrency(data.ingresos)}
                         </div>
                       </div>
                       <div className="flex-1 rounded-t relative group" style={{ height: `${(data.costos / 2500000) * 100}%`, backgroundColor: `${colors.chart2}20` }}>
                         <div className="absolute inset-x-0 bottom-0 rounded-t" style={{ height: '100%', backgroundColor: colors.chart2 }} />
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
                           ${formatCurrency(data.costos)}
                         </div>
                       </div>
                       <div className="flex-1 rounded-t relative group" style={{ height: `${(data.margen / 2500000) * 100}%`, backgroundColor: `${colors.chart3}20` }}>
                         <div className="absolute inset-x-0 bottom-0 rounded-t" style={{ height: '100%', backgroundColor: colors.chart3 }} />
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
                           ${formatCurrency(data.margen)}
                         </div>
                       </div>
@@ -888,7 +888,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-medium">${formatCurrency(item.value)}</span>
-                        <Badge variant={item.trend > 0 ? 'default' : 'secondary'} className="text-[10px] h-5">
+                        <Badge variant={item.trend > 0 ? 'default' : 'secondary'} className="text-xs h-5">
                           {item.trend > 0 ? '+' : ''}{item.trend}%
                         </Badge>
                       </div>
@@ -903,7 +903,7 @@ function OverviewSection({ month, layout, theme, colors }: {
 
       {/* Segunda fila - Métricas detalladas */}
       {layout.showTopLists && (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Top Proveedores */}
           <Card>
             <CardHeader className="pb-2">
@@ -976,7 +976,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                 <span className="truncate">{p.name}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">${formatCurrency(p.value)}</span>
-                  <Badge variant={p.margin > 25 ? 'default' : 'secondary'} className="text-[10px]">{p.margin}%</Badge>
+                  <Badge variant={p.margin > 25 ? 'default' : 'secondary'} className="text-xs">{p.margin}%</Badge>
                 </div>
               </div>
             ))}
@@ -1041,7 +1041,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                           <TableCell className="text-right text-muted-foreground">${formatCurrency(row.prev)}</TableCell>
                           <TableCell className="text-right font-medium">${formatCurrency(row.curr)}</TableCell>
                           <TableCell className={cn('text-right font-medium', isPositive ? 'text-success' : 'text-destructive')}>
-                            {change > 0 ? '+' : ''}{change.toFixed(1)}%
+                            {change > 0 ? '+' : ''}{formatNumber(change, 1)}%
                           </TableCell>
                           <TableCell>
                             <MiniSparkline values={[row.prev * 0.95, row.prev * 0.98, row.prev, row.curr * 0.98, row.curr]} color={isPositive ? 'green' : 'red'} />
@@ -1110,7 +1110,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+              <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span>Feb 25</span>
                 <span>Ene 26</span>
               </div>
@@ -1182,7 +1182,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                 height={180}
                 colors={[colors.chart1, colors.chart2, colors.chart3]}
               />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-2 px-2">
+              <div className="flex justify-between text-xs text-muted-foreground mt-2 px-2">
                 {['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'].map((m, i) => <span key={i}>{m}</span>)}
               </div>
             </CardContent>
@@ -1236,7 +1236,7 @@ function OverviewSection({ month, layout, theme, colors }: {
                 height={160}
                 color={colors.chart1}
               />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+              <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span>Feb 25</span>
                 <span>Ene 26</span>
               </div>
@@ -1272,7 +1272,7 @@ function OverviewSection({ month, layout, theme, colors }: {
 
       {/* NUEVA SECCIÓN: Comparativas y Gauges */}
       {layout.showComparison && (
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {/* Gauges de KPIs críticos */}
           <Card>
             <CardHeader className="pb-2">
@@ -1443,7 +1443,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
               <Timer className="w-4 h-4 text-warning-muted-foreground" />
             </div>
             <p className="text-xl font-bold">{stats.horasExtras}</p>
-            <p className="text-xs text-muted-foreground">{((stats.horasExtras / stats.horasNormales) * 100).toFixed(1)}% del total</p>
+            <p className="text-xs text-muted-foreground">{formatNumber((stats.horasExtras / stats.horasNormales) * 100, 1)}% del total</p>
           </CardContent>
         </Card>
         <Card className="bg-muted/30">
@@ -1508,7 +1508,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
                     <div className="flex items-center gap-2">
                       <div className={cn('w-3 h-3 rounded', cat.color)} />
                       <span>{cat.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{cat.employees} emp.</Badge>
+                      <Badge variant="outline" className="text-xs">{cat.employees} emp.</Badge>
                     </div>
                     <span className="font-medium">${formatCurrency(cat.value)}</span>
                   </div>
@@ -1531,7 +1531,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
               {[720000, 735000, 726000, 741000, 755000, 780000].map((val, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div className="w-full bg-info rounded-t transition-all hover:bg-info/90" style={{ height: `${(val / 800000) * 100}%` }} />
-                  <span className="text-[10px] text-muted-foreground">{['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'][i]}</span>
+                  <span className="text-xs text-muted-foreground">{['Ago', 'Sep', 'Oct', 'Nov', 'Dic', 'Ene'][i]}</span>
                 </div>
               ))}
             </div>
@@ -1661,7 +1661,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                   <div className={cn('w-full rounded-t transition-all hover:opacity-80', theme.primary === 'slate' ? ['bg-slate-600', 'bg-gray-500', 'bg-zinc-400', 'bg-stone-500'][i] : ['bg-indigo-600', 'bg-indigo-500', 'bg-indigo-400', 'bg-indigo-300'][i])} style={{ height: `${(rango.cost / 280000) * 100}%` }} />
                   <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">{rango.range}</p>
+                    <p className="text-xs text-muted-foreground">{rango.range}</p>
                     <p className="text-xs font-medium">{rango.count} emp.</p>
                   </div>
                 </div>
@@ -1701,7 +1701,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
               height={160}
               colors={[colors.chart1, colors.chart4, colors.chart5]}
             />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
               <span>Feb 25</span>
               <span>Ene 26</span>
             </div>
@@ -1728,7 +1728,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
               height={160}
               color={colors.chart1}
             />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
               <span>Feb 25</span>
               <span>Ene 26</span>
             </div>
@@ -1737,7 +1737,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
       </div>
 
       {/* Gauges de KPIs Laborales */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Costo vs Presupuesto</CardTitle>
@@ -1808,7 +1808,7 @@ function NominasSection({ month, theme, colors }: { month: string; theme: ThemeC
           <CardTitle className="text-base">Configuración de Importación</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <ToggleOption title="Solo cerradas" description="PAID o APPROVED" defaultChecked />
             <ToggleOption title="Incluir cargas" description="Contrib. patronales" defaultChecked />
             <ToggleOption title="Por categoría" description="Agrupar empleados" />
@@ -1863,7 +1863,7 @@ function ComprasSection({ month, companyId, theme, colors }: { month: string; co
       </div>
 
       {/* Segunda fila - KPIs adicionales */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-muted/30">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
@@ -1921,7 +1921,7 @@ function ComprasSection({ month, companyId, theme, colors }: { month: string; co
                     className="w-full bg-success rounded-t transition-all hover:opacity-80"
                     style={{ height: `${(val / Math.max(...stats.porDia)) * 100}%` }}
                   />
-                  <span className="text-[10px] text-muted-foreground">{['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</span>
+                  <span className="text-xs text-muted-foreground">{['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</span>
                 </div>
               ))}
             </div>
@@ -2016,7 +2016,7 @@ function ComprasSection({ month, companyId, theme, colors }: { month: string; co
                       ${formatCurrency(s.total)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {summary.totalPurchases > 0 ? ((s.total / summary.totalPurchases) * 100).toFixed(1) + '%' : '0%'}
+                      {summary.totalPurchases > 0 ? formatNumber((s.total / summary.totalPurchases) * 100, 1) + '%' : '0%'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -2061,7 +2061,7 @@ function ComprasSection({ month, companyId, theme, colors }: { month: string; co
                         ${formatCurrency(item.neto)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {summary.totalPurchases > 0 ? ((item.neto / summary.totalPurchases) * 100).toFixed(1) + '%' : '0%'}
+                        {summary.totalPurchases > 0 ? formatNumber((item.neto / summary.totalPurchases) * 100, 1) + '%' : '0%'}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -2456,13 +2456,13 @@ function DistribucionSection({ colors, month }: { colors: UserColorPreferences; 
                       <span className="text-xs font-medium truncate">{warning.costType}</span>
                       <Badge
                         variant="outline"
-                        className="ml-2 text-[10px]"
+                        className="ml-2 text-xs"
                         style={{
                           color: warning.totalPercent > 100 ? colors.kpiNegative : colors.progressWarning,
                           borderColor: warning.totalPercent > 100 ? colors.kpiNegative : colors.progressWarning,
                         }}
                       >
-                        {warning.totalPercent.toFixed(1)}%
+                        {formatNumber(warning.totalPercent, 1)}%
                       </Badge>
                     </div>
                   ))}
@@ -2658,11 +2658,11 @@ function DistribucionSection({ colors, month }: { colors: UserColorPreferences; 
                           key={cat.id}
                           className="transition-all duration-500 relative group"
                           style={{ width: `${pct}%`, backgroundColor: cat.color }}
-                          title={`${cat.name}: ${pct.toFixed(1)}%`}
+                          title={`${cat.name}: ${formatNumber(pct, 1)}%`}
                         >
                           {pct > 8 && (
-                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
-                              {pct.toFixed(0)}%
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                              {formatNumber(pct, 0)}%
                             </span>
                           )}
                         </div>
@@ -2698,10 +2698,10 @@ function DistribucionSection({ colors, month }: { colors: UserColorPreferences; 
                           <h3 className="font-semibold text-sm">{cat.name}</h3>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Badge variant="outline" className="text-[10px]">{cat.configCount} configs</Badge>
+                          <Badge variant="outline" className="text-xs">{cat.configCount} configs</Badge>
                           {pct > 0 && (
-                            <Badge className="text-[10px] text-white" style={{ backgroundColor: cat.color }}>
-                              {pct.toFixed(1)}%
+                            <Badge className="text-xs text-white" style={{ backgroundColor: cat.color }}>
+                              {formatNumber(pct, 1)}%
                             </Badge>
                           )}
                         </div>
@@ -2838,7 +2838,7 @@ function DistribucionSection({ colors, month }: { colors: UserColorPreferences; 
                               borderColor: isValid ? colors.kpiPositive : totalPercent > 100 ? colors.kpiNegative : colors.progressWarning,
                             }}
                           >
-                            {totalPercent.toFixed(1)}%
+                            {formatNumber(totalPercent, 1)}%
                           </Badge>
                         </div>
                       </div>
@@ -3128,7 +3128,7 @@ function DistribucionSection({ colors, month }: { colors: UserColorPreferences; 
                                 className="text-xs"
                                 style={{ backgroundColor: groupColor, color: 'white' }}
                               >
-                                {totalPercent.toFixed(1)}%
+                                {formatNumber(totalPercent, 1)}%
                               </Badge>
                             </div>
                           </div>
@@ -3148,7 +3148,7 @@ function DistribucionSection({ colors, month }: { colors: UserColorPreferences; 
                                     <Users className="w-3 h-3 text-muted-foreground" />
                                     <span>{emp.employeeName || 'Empleado sin nombre'}</span>
                                     {emp.role && (
-                                      <Badge variant="secondary" className="text-[10px]">{emp.role}</Badge>
+                                      <Badge variant="secondary" className="text-xs">{emp.role}</Badge>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-3">
@@ -3328,7 +3328,7 @@ function CalculadoraSection({ colors, month: initialMonth }: { colors: UserColor
           </text>
         )}
         {centerSubLabel && (
-          <text x="0" y="8" textAnchor="middle" className="text-[10px] fill-gray-500">
+          <text x="0" y="8" textAnchor="middle" className="text-xs fill-gray-500">
             {centerSubLabel}
           </text>
         )}
@@ -3477,7 +3477,7 @@ function CalculadoraSection({ colors, month: initialMonth }: { colors: UserColor
 
       {/* KPIs reales */}
       {loading ? (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
             <Card key={i} className="border-l-4 animate-pulse" style={{ borderLeftColor: [colors.chart1, colors.chart2, colors.chart4, colors.kpiPositive][i] }}>
               <CardContent className="p-4">
@@ -3488,7 +3488,7 @@ function CalculadoraSection({ colors, month: initialMonth }: { colors: UserColor
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="border-l-4" style={{ borderLeftColor: colors.chart1 }}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1">Costo Prom/Unidad</p>
@@ -3625,13 +3625,13 @@ function CalculadoraSection({ colors, month: initialMonth }: { colors: UserColor
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                     <div>
                       <p className="text-xs font-medium">{sim.escenario}</p>
-                      <p className="text-[10px] text-muted-foreground">Costo: ${sim.costoUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-muted-foreground">Costo: ${sim.costoUnit.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold">{formatPercent(sim.margen)}</p>
                       <Badge
                         variant="outline"
-                        className="text-[10px]"
+                        className="text-xs"
                         style={{
                           color: sim.impacto === 'positivo' ? colors.kpiPositive : sim.impacto === 'negativo' ? colors.kpiNegative : colors.kpiNeutral,
                           borderColor: sim.impacto === 'positivo' ? colors.kpiPositive : sim.impacto === 'negativo' ? colors.kpiNegative : colors.kpiNeutral,
@@ -3693,8 +3693,8 @@ function CalculadoraSection({ colors, month: initialMonth }: { colors: UserColor
                         <span className="font-bold" style={{ color: sugerido > 0 ? colors.chart1 : colors.kpiNeutral }}>
                           {sugerido > 0 ? `$${sugerido.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                           {diff !== null && (
-                            <span className="ml-1 text-[10px]" style={{ color: diff > 0 ? colors.kpiNegative : colors.kpiPositive }}>
-                              ({diff > 0 ? '+' : ''}{diff.toFixed(1)}%)
+                            <span className="ml-1 text-xs" style={{ color: diff > 0 ? colors.kpiNegative : colors.kpiPositive }}>
+                              ({diff > 0 ? '+' : ''}{formatNumber(diff, 1)}%)
                             </span>
                           )}
                         </span>
@@ -4171,7 +4171,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
               <div className="p-4 rounded-lg" style={{ backgroundColor: colors.chart2 + '10' }}>
                 <p className="text-xs text-muted-foreground mb-1">Margen de Ganancia</p>
                 <p className="text-2xl font-bold" style={{ color: margin && margin > 0 ? colors.kpiPositive : colors.kpiNegative }}>
-                  {margin !== null ? `${margin.toFixed(1)}%` : 'N/A'}
+                  {margin !== null ? `${formatNumber(margin, 1)}%` : 'N/A'}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Ganancia por unidad: ${formatCurrency((product.salePrice || 0) - (product.cost || 0))}
@@ -4195,7 +4195,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                 Desglose de Costos
               </h4>
               {product.costBreakdown && Object.values(product.costBreakdown).some((v: any) => v > 0) ? (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {[
                     { label: 'Materia Prima', key: 'mp', color: colors.donut1, icon: '📦' },
                     { label: 'Mano de Obra', key: 'mo', color: colors.donut2, icon: '👷' },
@@ -4206,9 +4206,9 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                     const pct = product.cost > 0 ? (value / product.cost) * 100 : 0;
                     return (
                       <div key={item.key} className="p-3 rounded-lg border" style={{ borderLeftWidth: '4px', borderLeftColor: item.color }}>
-                        <p className="text-[10px] text-muted-foreground">{item.icon} {item.label}</p>
+                        <p className="text-xs text-muted-foreground">{item.icon} {item.label}</p>
                         <p className="font-bold">${formatCurrency(value)}</p>
-                        <p className="text-xs" style={{ color: item.color }}>{pct.toFixed(1)}%</p>
+                        <p className="text-xs" style={{ color: item.color }}>{formatNumber(pct, 1)}%</p>
                       </div>
                     );
                   })}
@@ -4380,17 +4380,17 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
           { label: 'Productos', value: kpis.total, sub: `${kpis.withRecipe} con receta`, color: colors.chart1, icon: Package },
           { label: 'Sin Receta', value: kpis.withoutRecipe, sub: 'Requieren config', color: colors.progressWarning, icon: AlertTriangle },
           { label: 'Costo Prom.', value: `$${formatCurrency(kpis.avgCost)}`, sub: 'Por unidad', color: colors.chart2, icon: DollarSign },
-          { label: 'Margen Prom.', value: `${kpis.avgMargin.toFixed(1)}%`, sub: 'Global', color: kpis.avgMargin > 20 ? colors.kpiPositive : colors.progressWarning, icon: Percent },
-          { label: 'Eficiencia', value: `${kpis.avgEfficiency.toFixed(1)}%`, sub: 'Producción', color: colors.chart4, icon: Gauge },
+          { label: 'Margen Prom.', value: `${formatNumber(kpis.avgMargin, 1)}%`, sub: 'Global', color: kpis.avgMargin > 20 ? colors.kpiPositive : colors.progressWarning, icon: Percent },
+          { label: 'Eficiencia', value: `${formatNumber(kpis.avgEfficiency, 1)}%`, sub: 'Producción', color: colors.chart4, icon: Gauge },
           { label: 'Valor Inv.', value: `$${formatCurrency(kpis.totalValue)}`, sub: 'Valorizado', color: colors.chart3, icon: BarChart2 },
         ].map((kpi, i) => (
           <Card key={i} className="border-l-4" style={{ borderLeftColor: kpi.color }}>
             <CardContent className="p-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] text-muted-foreground">{kpi.label}</p>
+                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
                   <p className="text-lg font-bold">{kpi.value}</p>
-                  <p className="text-[10px]" style={{ color: kpi.color }}>{kpi.sub}</p>
+                  <p className="text-xs" style={{ color: kpi.color }}>{kpi.sub}</p>
                 </div>
                 <kpi.icon className="w-4 h-4 opacity-50" style={{ color: kpi.color }} />
               </div>
@@ -4439,7 +4439,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                   <div key={cat.id} className="p-3 rounded-lg border-l-4" style={{ borderLeftColor: cat.color, backgroundColor: cat.color + '08' }}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold" style={{ color: cat.color }}>{cat.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{cat.productCount} prod.</Badge>
+                      <Badge variant="outline" className="text-xs">{cat.productCount} prod.</Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
@@ -4457,7 +4457,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                       <div>
                         <p className="text-muted-foreground">Margen</p>
                         <p className="font-semibold" style={{ color: cat.margin > 20 ? colors.kpiPositive : colors.progressWarning }}>
-                          {cat.margin.toFixed(1)}%
+                          {formatNumber(cat.margin, 1)}%
                         </p>
                       </div>
                     </div>
@@ -4508,8 +4508,8 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                           <td className="text-right p-2">{(units || 0).toLocaleString()}</td>
                           <td className="text-right p-2 font-medium">${formatCurrency(totalCost)}</td>
                           <td className="text-right p-2">
-                            <Badge className="text-[10px]" style={{ backgroundColor: status.bg, color: status.color }}>
-                              {margin !== null ? `${margin.toFixed(1)}%` : 'N/A'}
+                            <Badge className="text-xs" style={{ backgroundColor: status.bg, color: status.color }}>
+                              {margin !== null ? `${formatNumber(margin, 1)}%` : 'N/A'}
                             </Badge>
                           </td>
                           <td className="text-center p-2">
@@ -4592,7 +4592,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                       <h4 className="font-semibold text-sm">Simulación por Producción</h4>
                       <p className="text-xs text-muted-foreground">Calcula unidades según días × bancos/placas/m²</p>
                     </div>
-                    <Badge variant="outline" className="text-[10px] ml-2" style={{ borderColor: colors.kpiPositive, color: colors.kpiPositive }}>
+                    <Badge variant="outline" className="text-xs ml-2" style={{ borderColor: colors.kpiPositive, color: colors.kpiPositive }}>
                       Habilitado por Admin
                     </Badge>
                   </div>
@@ -4616,10 +4616,10 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                           <div className="w-3 h-3 rounded" style={{ backgroundColor: colors.donut1 }} />
                           <span className="font-medium text-sm">Viguetas</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">días × bancos × {pretensadosParams.metrosUtilesPorBanco}m</p>
+                        <p className="text-xs text-muted-foreground">días × bancos × {pretensadosParams.metrosUtilesPorBanco}m</p>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground">Días</label>
+                            <label className="text-xs text-muted-foreground">Días</label>
                             <Input
                               type="number"
                               min="0"
@@ -4630,7 +4630,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground">Bancos</label>
+                            <label className="text-xs text-muted-foreground">Bancos</label>
                             <Input
                               type="number"
                               min="0"
@@ -4656,10 +4656,10 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                           <div className="w-3 h-3 rounded" style={{ backgroundColor: colors.donut2 }} />
                           <span className="font-medium text-sm">Bloques</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">días × placas × {pretensadosParams.unidadesPorPlaca}u</p>
+                        <p className="text-xs text-muted-foreground">días × placas × {pretensadosParams.unidadesPorPlaca}u</p>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground">Días</label>
+                            <label className="text-xs text-muted-foreground">Días</label>
                             <Input
                               type="number"
                               min="0"
@@ -4670,7 +4670,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground">Placas</label>
+                            <label className="text-xs text-muted-foreground">Placas</label>
                             <Input
                               type="number"
                               min="0"
@@ -4696,10 +4696,10 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                           <div className="w-3 h-3 rounded" style={{ backgroundColor: colors.donut3 }} />
                           <span className="font-medium text-sm">Adoquines</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">días × m²/día × {pretensadosParams.adoquinesUnidadesPorM2}u/m²</p>
+                        <p className="text-xs text-muted-foreground">días × m²/día × {pretensadosParams.adoquinesUnidadesPorM2}u/m²</p>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground">Días</label>
+                            <label className="text-xs text-muted-foreground">Días</label>
                             <Input
                               type="number"
                               min="0"
@@ -4710,7 +4710,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground">m²/día</label>
+                            <label className="text-xs text-muted-foreground">m²/día</label>
                             <Input
                               type="number"
                               min="0"
@@ -4727,7 +4727,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                               {Math.round(pretensadosParams.adoquinesDias * pretensadosParams.adoquinesM2PorDia * pretensadosParams.adoquinesUnidadesPorM2).toLocaleString()} u
                             </span>
                           </div>
-                          <div className="flex justify-between text-[10px] mt-1">
+                          <div className="flex justify-between text-xs mt-1">
                             <span className="text-muted-foreground">m² totales:</span>
                             <span>{(pretensadosParams.adoquinesDias * pretensadosParams.adoquinesM2PorDia).toLocaleString()} m²</span>
                           </div>
@@ -4767,7 +4767,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
             )}
 
             {/* Simulation Results Summary */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(() => {
                 const totalOrigCost = products.reduce((s, p) => s + (p.cost || 0) * (p.producedUnits || 0), 0);
                 const totalSimCost = simulatedProducts.reduce((s, p) => s + (p.simCost || p.cost || 0) * (p.simUnits || p.producedUnits || 0), 0);
@@ -4778,16 +4778,16 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                 return [
                   { label: 'Costo Original', value: `$${formatCurrency(totalOrigCost)}`, color: colors.chart1 },
                   { label: 'Costo Simulado', value: `$${formatCurrency(totalSimCost)}`, color: colors.chart4, diff: costDiff },
-                  { label: 'Margen Original', value: `${avgOrigMargin.toFixed(1)}%`, color: colors.chart2 },
-                  { label: 'Margen Simulado', value: `${avgSimMargin.toFixed(1)}%`, color: colors.chart3, diff: marginDiff },
+                  { label: 'Margen Original', value: `${formatNumber(avgOrigMargin, 1)}%`, color: colors.chart2 },
+                  { label: 'Margen Simulado', value: `${formatNumber(avgSimMargin, 1)}%`, color: colors.chart3, diff: marginDiff },
                 ].map((item, i) => (
                   <Card key={i} className="border-l-4" style={{ borderLeftColor: item.color }}>
                     <CardContent className="p-3">
-                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.label}</p>
                       <p className="text-lg font-bold">{item.value}</p>
                       {item.diff !== undefined && (
                         <p className="text-xs" style={{ color: item.diff > 0 && i < 2 ? colors.kpiNegative : item.diff < 0 && i < 2 ? colors.kpiPositive : item.diff > 0 ? colors.kpiPositive : colors.kpiNegative }}>
-                          {item.diff > 0 ? '+' : ''}{i < 2 ? `$${formatCurrency(item.diff)}` : `${item.diff.toFixed(1)}%`}
+                          {item.diff > 0 ? '+' : ''}{i < 2 ? `$${formatCurrency(item.diff)}` : `${formatNumber(item.diff, 1)}%`}
                         </p>
                       )}
                     </CardContent>
@@ -4823,12 +4823,12 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                         <td className="text-right p-2 font-medium">${formatCurrency(product.simCost)}</td>
                         <td className="text-right p-2">
                           <span style={{ color: product.costDiff > 0 ? colors.kpiNegative : product.costDiff < 0 ? colors.kpiPositive : colors.kpiNeutral }}>
-                            {product.costDiff > 0 ? '+' : ''}{product.costDiff.toFixed(2)}
+                            {product.costDiff > 0 ? '+' : ''}{formatNumber(product.costDiff, 2)}
                           </span>
                         </td>
-                        <td className="text-right p-2">{origMargin !== null ? `${origMargin.toFixed(1)}%` : 'N/A'}</td>
+                        <td className="text-right p-2">{origMargin !== null ? `${formatNumber(origMargin, 1)}%` : 'N/A'}</td>
                         <td className="text-right p-2 font-medium" style={{ color: product.simMargin > (origMargin || 0) ? colors.kpiPositive : colors.kpiNegative }}>
-                          {product.simMargin.toFixed(1)}%
+                          {formatNumber(product.simMargin, 1)}%
                         </td>
                         <td className="text-right p-2">{(product.simUnits || 0).toLocaleString()}</td>
                       </tr>
@@ -4881,7 +4881,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                       return (
                         <div key={p.id} className="flex items-center justify-between text-sm">
                           <span className="truncate flex-1">{i + 1}. {p.name}</span>
-                          <Badge className="ml-2" style={{ backgroundColor: colors.kpiPositive, color: 'white' }}>{m.toFixed(1)}%</Badge>
+                          <Badge className="ml-2" style={{ backgroundColor: colors.kpiPositive, color: 'white' }}>{formatNumber(m, 1)}%</Badge>
                         </div>
                       );
                     })}
@@ -4901,7 +4901,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                       return (
                         <div key={p.id} className="flex items-center justify-between text-sm">
                           <span className="truncate flex-1">{i + 1}. {p.name}</span>
-                          <Badge className="ml-2" style={{ backgroundColor: m < 10 ? colors.kpiNegative : colors.progressWarning, color: 'white' }}>{m.toFixed(1)}%</Badge>
+                          <Badge className="ml-2" style={{ backgroundColor: m < 10 ? colors.kpiNegative : colors.progressWarning, color: 'white' }}>{formatNumber(m, 1)}%</Badge>
                         </div>
                       );
                     })}
@@ -4925,7 +4925,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                 };
                 const total = avgBreakdown.mp + avgBreakdown.mo + avgBreakdown.ci + avgBreakdown.pkg;
                 return (
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[
                       { label: 'Materia Prima', value: avgBreakdown.mp, pct: (avgBreakdown.mp / total) * 100, color: colors.donut1 },
                       { label: 'Mano de Obra', value: avgBreakdown.mo, pct: (avgBreakdown.mo / total) * 100, color: colors.donut2 },
@@ -4937,7 +4937,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                           <div className="h-full rounded-full" style={{ width: `${item.pct}%`, backgroundColor: item.color }} />
                         </div>
                         <p className="text-xs text-muted-foreground">{item.label}</p>
-                        <p className="font-bold">{item.pct.toFixed(1)}%</p>
+                        <p className="font-bold">{formatNumber(item.pct, 1)}%</p>
                         <p className="text-xs">${formatCurrency(item.value)}</p>
                       </div>
                     ))}
@@ -4959,7 +4959,7 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                       <span className="font-medium">{cat.name}</span>
                       <div className="flex items-center gap-3">
                         <span className="text-muted-foreground">{cat.productCount} productos</span>
-                        <span>Margen: <strong style={{ color: cat.margin > 20 ? colors.kpiPositive : colors.progressWarning }}>{cat.margin.toFixed(1)}%</strong></span>
+                        <span>Margen: <strong style={{ color: cat.margin > 20 ? colors.kpiPositive : colors.progressWarning }}>{formatNumber(cat.margin, 1)}%</strong></span>
                         <span>Ingresos: <strong>${formatCurrency(cat.totalRevenue)}</strong></span>
                       </div>
                     </div>
@@ -4982,10 +4982,10 @@ function CalculadoraCompletaV2({ colors, selectedMonth }: { colors: UserColorPre
                   <li>• <strong style={{ color: colors.progressWarning }}>Configurar recetas:</strong> {kpis.withoutRecipe} productos sin receta impiden cálculos precisos</li>
                 )}
                 {kpis.avgMargin < 20 && (
-                  <li>• <strong style={{ color: colors.kpiNegative }}>Revisar precios:</strong> El margen promedio ({kpis.avgMargin.toFixed(1)}%) está por debajo del objetivo (20%)</li>
+                  <li>• <strong style={{ color: colors.kpiNegative }}>Revisar precios:</strong> El margen promedio ({formatNumber(kpis.avgMargin, 1)}%) está por debajo del objetivo (20%)</li>
                 )}
                 {kpis.avgEfficiency < 95 && (
-                  <li>• <strong style={{ color: colors.chart4 }}>Mejorar eficiencia:</strong> La eficiencia promedio ({kpis.avgEfficiency.toFixed(1)}%) puede optimizarse</li>
+                  <li>• <strong style={{ color: colors.chart4 }}>Mejorar eficiencia:</strong> La eficiencia promedio ({formatNumber(kpis.avgEfficiency, 1)}%) puede optimizarse</li>
                 )}
                 <li>• <strong style={{ color: colors.kpiPositive }}>Productos estrella:</strong> Enfocarse en productos con margen {'>'}25% para maximizar rentabilidad</li>
               </ul>
@@ -5174,7 +5174,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
                       ))}
                     </div>
                     {customColors.themeName === preset.name && (
-                      <Badge variant="default" className="mt-2 text-[10px]">Activo</Badge>
+                      <Badge variant="default" className="mt-2 text-xs">Activo</Badge>
                     )}
                   </button>
                 ))}
@@ -5289,7 +5289,7 @@ function ConfigSection({ companyId, colors: customColors, setColors: setCustomCo
               <CardDescription>Personaliza los colores de las barras de progreso y métricas</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { key: 'progressPrimary', label: 'Primario' },
                   { key: 'progressSecondary', label: 'Secundario' },
@@ -5569,7 +5569,7 @@ function MiniKPIEnhanced({ title, value, trend, subtitle, icon: Icon, color }: {
         <div className="flex items-center gap-2">
           {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
           {trend !== undefined && (
-            <Badge variant={trend > 0 ? 'default' : 'secondary'} className="text-[10px] h-4">
+            <Badge variant={trend > 0 ? 'default' : 'secondary'} className="text-xs h-5">
               {trend > 0 ? '+' : ''}{trend}%
             </Badge>
           )}
@@ -5639,7 +5639,7 @@ function DonutChart({ data, theme }: { data: typeof COST_BREAKDOWN; theme?: Them
         })}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center flex-col">
-        <span className="text-2xl font-bold">${(total / 1000000).toFixed(1)}M</span>
+        <span className="text-2xl font-bold">${formatNumber(total / 1000000, 1)}M</span>
         <span className="text-xs text-muted-foreground">Total</span>
       </div>
     </div>
@@ -5672,7 +5672,7 @@ function MetricRow({ icon: Icon, label, value, detail }: { icon: any; label: str
       </div>
       <div className="text-right">
         <span className="text-sm font-medium">{value}</span>
-        <span className="text-[10px] text-muted-foreground ml-1">{detail}</span>
+        <span className="text-xs text-muted-foreground ml-1">{detail}</span>
       </div>
     </div>
   );
@@ -5713,9 +5713,9 @@ function PerformanceCard({ title, value, target, unit, icon: Icon, color, invert
           {isGood ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <AlertCircle className="w-3.5 h-3.5 text-warning-muted-foreground" />}
         </div>
         <p className={cn('text-xl font-bold', colors[color])}>{value}{unit}</p>
-        <p className="text-[10px] text-muted-foreground mb-2">{title}</p>
+        <p className="text-xs text-muted-foreground mb-2">{title}</p>
         <Progress value={percent} className="h-1" />
-        <p className="text-[10px] text-muted-foreground mt-1">Meta: {target}{unit}</p>
+        <p className="text-xs text-muted-foreground mt-1">Meta: {target}{unit}</p>
       </CardContent>
     </Card>
   );
@@ -5729,7 +5729,7 @@ function ComparisonRow({ label, current, previous, inverted }: { label: string; 
       <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
         <span className={cn('text-sm font-medium', isPositive ? 'text-success' : 'text-destructive')}>
-          {change > 0 ? '+' : ''}{change.toFixed(1)}%
+          {change > 0 ? '+' : ''}{formatNumber(change, 1)}%
         </span>
         {isPositive ? <ArrowUpRight className="w-3.5 h-3.5 text-success" /> : <ArrowDownRight className="w-3.5 h-3.5 text-destructive" />}
       </div>
@@ -5922,7 +5922,7 @@ function StackedBarChart({ data, height = 200, colors }: {
                 />
               ))}
             </div>
-            <span className="text-[10px] text-muted-foreground">{item.label}</span>
+            <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         );
       })}
@@ -5971,7 +5971,7 @@ function GaugeChart({ value, max = 100, label, color = 'blue', size = 120 }: {
         />
       </svg>
       <div className="text-center -mt-4">
-        <p className="text-xl font-bold">{value.toFixed(1)}%</p>
+        <p className="text-xl font-bold">{formatNumber(value, 1)}%</p>
         {label && <p className="text-xs text-muted-foreground">{label}</p>}
       </div>
     </div>
@@ -5995,7 +5995,7 @@ function ComparisonBarChart({ data, height = 180, color1 = 'bg-blue-500', color2
             <div className={cn('w-1/3 rounded-t', color2)} style={{ height: `${(item.previous / maxVal) * 100}%` }} />
             <div className={cn('w-1/3 rounded-t', color1)} style={{ height: `${(item.current / maxVal) * 100}%` }} />
           </div>
-          <span className="text-[10px] text-muted-foreground">{item.label}</span>
+          <span className="text-xs text-muted-foreground">{item.label}</span>
         </div>
       ))}
     </div>

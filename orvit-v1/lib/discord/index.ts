@@ -79,36 +79,17 @@ export {
   sendTechnicianDM,
 } from './notifications';
 
-// Bot de Discord (DMs y gestión de canales)
+// Bot Service Client (bot corre como servicio separado en Railway)
 export {
-  // Conexión del bot
-  getDiscordClient,
-  connectBot,
-  disconnectBot,
-  isBotReady,
-  getBotInfo,
+  callBotService,
+  sendDMViaBotService,
+  sendDMByDiscordIdViaBotService,
+  sendToChannelViaBotService,
+  sendNotificationViaBotService,
+  getBotServiceStatus,
+  manageBotChannels,
+  syncBotPermissions,
+} from './bot-service-client';
 
-  // Mensajes directos
-  sendDM,
-  sendBulkDM,
-  type DMMessageOptions,
-
-  // Gestión de canales
-  getGuild,
-  listGuilds,
-  createCategory,
-  makeCategoryPrivate,
-  createTextChannel,
-  sendToChannel,
-  deleteChannel,
-  type CreateCategoryOptions,
-  type CreateChannelOptions,
-
-  // Estructura por sector
-  createSectorChannels,
-  type SectorChannelsConfig,
-  type SectorChannelsResult,
-
-  // Utilidades
-  getGuildMembers,
-} from './bot';
+// Re-export DMMessageOptions type from notifications
+export type { DMMessageOptions } from './notifications';

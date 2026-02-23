@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, AlertTriangle, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
-import { useMaintenancePending } from '@/hooks/maintenance';
+import { useMaintenancePending } from '@/hooks/mantenimiento';
 import MaintenanceCalendar from '../MaintenanceCalendar';
 
 interface PreventivoCalendarioViewProps {

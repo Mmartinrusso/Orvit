@@ -1,3 +1,4 @@
+import { formatNumber } from '@/lib/utils';
 /**
  * T1 - Basic List Template
  * Simple table with search and basic actions
@@ -162,7 +163,7 @@ export function T1ListBasic() {
                       {product.nombre}
                     </TableCell>
                     <TableCell className="text-right">
-                      ${product.precio.toFixed(2)}
+                      ${formatNumber(product.precio, 2)}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={product.stock === 0 ? 'destructive' : product.stock < 10 ? 'secondary' : 'outline'}>

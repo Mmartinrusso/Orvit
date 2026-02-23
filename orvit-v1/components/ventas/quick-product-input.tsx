@@ -142,7 +142,7 @@ export function QuickProductInput({ onAddItem, products = [] }: QuickProductInpu
     <Card>
       <CardContent className="p-4">
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Campo Código */}
             <div>
               <label className="text-sm font-medium mb-1 block">

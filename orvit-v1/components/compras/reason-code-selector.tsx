@@ -173,7 +173,7 @@ export function ReasonCodeSelector({
  <div className="flex items-center gap-2">
  <Badge
  variant="secondary"
- className={cn("text-[10px] px-1.5 py-0", colors.bg, colors.text)}
+ className={cn("text-xs px-1.5 py-0", colors.bg, colors.text)}
  >
  {rc.category.slice(0, 3)}
  </Badge>

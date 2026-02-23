@@ -145,7 +145,7 @@ export default function AIComponentImportDialog({
 
             {/* Prompt preview + copy */}
             <div className="relative">
-              <pre className="bg-muted p-3 rounded-lg text-[11px] overflow-auto max-h-56 whitespace-pre-wrap font-mono">
+              <pre className="bg-muted p-3 rounded-lg text-xs overflow-auto max-h-56 whitespace-pre-wrap font-mono">
                 {COMPONENT_ONLY_PROMPTS[language]}
               </pre>
               <Button
@@ -220,7 +220,7 @@ export default function AIComponentImportDialog({
               <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-warning-muted-foreground text-xs">Cómo funciona</p>
-                <ol className="mt-1 space-y-0.5 text-[11px] text-warning list-decimal list-inside">
+                <ol className="mt-1 space-y-0.5 text-xs text-warning list-decimal list-inside">
                   <li>Copiá el prompt de arriba</li>
                   <li>Abrí ChatGPT, Gemini o Claude</li>
                   <li>Subí tus documentos técnicos (PDF, imágenes)</li>

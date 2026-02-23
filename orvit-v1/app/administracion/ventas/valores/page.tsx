@@ -12,13 +12,13 @@
 
 import { useState, useEffect } from 'react';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditCard, FileText, TrendingUp, Wallet, CheckCircle2, Clock, XCircle, ArrowRightLeft } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
 
 interface Cheque {
   id: number;
@@ -85,7 +85,7 @@ export default function ValoresPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -186,13 +186,13 @@ export default function ValoresPage() {
                               <div>
                                 <div className="text-xs text-muted-foreground">Emisión</div>
                                 <div className="font-medium">
-                                  {format(new Date(cheque.fechaEmision), 'dd/MM/yyyy')}
+                                  {formatDate(cheque.fechaEmision)}
                                 </div>
                               </div>
                               <div>
                                 <div className="text-xs text-muted-foreground">Vencimiento</div>
                                 <div className="font-medium">
-                                  {format(new Date(cheque.fechaVencimiento), 'dd/MM/yyyy')}
+                                  {formatDate(cheque.fechaVencimiento)}
                                 </div>
                               </div>
                               <div>

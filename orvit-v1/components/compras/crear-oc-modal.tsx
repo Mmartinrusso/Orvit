@@ -541,7 +541,7 @@ export function CrearOCModal({ open, onClose, pedidoId, onSuccess }: CrearOCModa
  />
  <CommandList>
  <CommandEmpty>
- {loadingItems ? 'Cargando...' : 'No se encontraron items'}
+ {loadingItems ? 'Cargando artículos...' : 'No se encontraron items'}
  </CommandEmpty>
  <CommandGroup>
  {filteredItems.slice(0, 20).map((item) => (

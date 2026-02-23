@@ -310,7 +310,7 @@ const MaintenanceCalendar: React.FC<MaintenanceCalendarProps> = ({
  <h2 className="text-sm font-medium">Calendario de Mantenimientos</h2>
 
  {/* Leyenda de colores */}
- <div className="flex flex-wrap items-center gap-3 text-[10px]">
+ <div className="flex flex-wrap items-center gap-3 text-xs">
  <div className="flex items-center gap-1">
  <div className="w-3 h-3 rounded bg-info-muted0" />
  <span className="text-muted-foreground">Preventivo</span>

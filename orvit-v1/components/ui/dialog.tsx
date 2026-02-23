@@ -50,6 +50,7 @@ const dialogContentVariants = cva(
         md: 'sm:max-w-2xl',
         lg: 'sm:max-w-4xl',
         xl: 'sm:max-w-6xl',
+        '2xl': 'sm:max-w-[90vw]',
         full: 'sm:max-w-[70vw] max-h-[85dvh]',
       },
     },
@@ -94,9 +95,8 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      {/* X button only visible on mobile */}
       {!hideCloseButton && (
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground sm:hidden">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

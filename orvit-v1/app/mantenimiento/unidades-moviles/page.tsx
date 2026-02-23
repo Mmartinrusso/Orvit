@@ -32,9 +32,10 @@ import { UnitsEmptyState } from '@/components/unidades-moviles/UnitsEmptyState';
 import { UnitsDashboard } from '@/components/unidades-moviles/UnitsDashboard';
 import { UnitsCalendar } from '@/components/unidades-moviles/UnitsCalendar';
 import { UnitsBulkActions } from '@/components/unidades-moviles/UnitsBulkActions';
+import { KilometrajeMasivoDialog } from '@/components/unidades-moviles/KilometrajeMasivoDialog';
 import { UnidadMovil } from '@/components/unidades-moviles/UnitCard';
 import { useUnitsFilters, UnitsFilters } from '@/components/unidades-moviles/useUnitsFilters';
-import { AlertCircle, Loader2, LayoutGrid, List, CalendarDays, CheckSquare } from 'lucide-react';
+import { AlertCircle, Loader2, LayoutGrid, List, CalendarDays, CheckSquare, Gauge } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface Sector {
@@ -71,6 +72,10 @@ export default function UnidadesMovilesPage() {
   const [workOrdersByUnit, setWorkOrdersByUnit] = useState<Record<number, any[]>>({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [unidadToDelete, setUnidadToDelete] = useState<UnidadMovil | null>(null);
+  const [detailDefaultTab, setDetailDefaultTab] = useState('resumen');
+
+  // Kilometraje masivo
+  const [showKilometrajeMasivo, setShowKilometrajeMasivo] = useState(false);
 
   // Selection mode for bulk actions
   const [selectionMode, setSelectionMode] = useState(false);
@@ -100,7 +105,8 @@ export default function UnidadesMovilesPage() {
     garantiaHasta: '',
     combustible: '',
     capacidadCombustible: 0,
-    consumoPromedio: 0
+    consumoPromedio: 0,
+    kmUpdateFrequencyDays: null as number | null
   });
 
   // Form validation errors
@@ -435,7 +441,8 @@ export default function UnidadesMovilesPage() {
       garantiaHasta: '',
       combustible: '',
       capacidadCombustible: 0,
-      consumoPromedio: 0
+      consumoPromedio: 0,
+      kmUpdateFrequencyDays: null
     });
     setFormErrors({});
   };
@@ -461,7 +468,8 @@ export default function UnidadesMovilesPage() {
       garantiaHasta: unidad.garantiaHasta || '',
       combustible: unidad.combustible || '',
       capacidadCombustible: unidad.capacidadCombustible || 0,
-      consumoPromedio: unidad.consumoPromedio || 0
+      consumoPromedio: unidad.consumoPromedio || 0,
+      kmUpdateFrequencyDays: (unidad as any).kmUpdateFrequencyDays ?? null
     });
     setIsDialogOpen(true);
   };
@@ -500,7 +508,8 @@ export default function UnidadesMovilesPage() {
       garantiaHasta: unidad.garantiaHasta || '',
       combustible: unidad.combustible || '',
       capacidadCombustible: unidad.capacidadCombustible || 0,
-      consumoPromedio: unidad.consumoPromedio || 0
+      consumoPromedio: unidad.consumoPromedio || 0,
+      kmUpdateFrequencyDays: (unidad as any).kmUpdateFrequencyDays ?? null
     });
     setIsDialogOpen(true);
   };
@@ -531,12 +540,16 @@ export default function UnidadesMovilesPage() {
   };
 
   const handleScheduleService = (unidad: UnidadMovil) => {
-    // Crear OT preventiva para la unidad móvil
-    toast({
-      title: 'Programar Service',
-      description: `Creando OT preventiva para "${unidad.nombre}"...`
-    });
-    window.location.href = `/mantenimiento/ordenes?newOT=true&type=PREVENTIVE&unidadMovilId=${unidad.id}&unidadMovilName=${encodeURIComponent(unidad.nombre)}`;
+    setSelectedUnidad(unidad);
+    setDetailDefaultTab('mantenimientos');
+    setIsDetailSheetOpen(true);
+    fetchWorkOrdersForUnit(unidad.id);
+  };
+
+  const handleLoadKilometraje = (unidad: UnidadMovil) => {
+    setSelectedUnidad(unidad);
+    setDetailDefaultTab('km');
+    setIsDetailSheetOpen(true);
   };
 
   // Filter handlers for dashboard
@@ -770,6 +783,17 @@ export default function UnidadesMovilesPage() {
                 {selectionMode ? 'Cancelar selección' : 'Seleccionar'}
               </Button>
 
+              {/* Carga masiva de km */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowKilometrajeMasivo(true)}
+                className="h-8 text-xs"
+              >
+                <Gauge className="h-3.5 w-3.5 mr-1.5" />
+                Cargar Km
+              </Button>
+
               {/* Dashboard toggle */}
               <Button
                 variant="ghost"
@@ -839,6 +863,7 @@ export default function UnidadesMovilesPage() {
             onCreateWorkOrder={handleCreateWorkOrder}
             onReportFailure={handleReportFailure}
             onScheduleService={handleScheduleService}
+            onLoadKilometraje={handleLoadKilometraje}
             canEdit={canEditUnidadMovil}
             canDelete={canDeleteUnidadMovil}
             canReportFailure={true}
@@ -856,6 +881,7 @@ export default function UnidadesMovilesPage() {
             onDelete={canDeleteUnidadMovil ? handleDeleteClick : undefined}
             onDuplicate={handleDuplicate}
             onCreateWorkOrder={handleCreateWorkOrder}
+            onLoadKilometraje={handleLoadKilometraje}
             canEdit={canEditUnidadMovil}
             canDelete={canDeleteUnidadMovil}
             sortBy={filters.sortBy}
@@ -882,6 +908,14 @@ export default function UnidadesMovilesPage() {
         onBulkDelete={canDeleteUnidadMovil ? handleBulkDelete : undefined}
         canEdit={canEditUnidadMovil}
         canDelete={canDeleteUnidadMovil}
+      />
+
+      {/* Carga masiva de km */}
+      <KilometrajeMasivoDialog
+        open={showKilometrajeMasivo}
+        onOpenChange={setShowKilometrajeMasivo}
+        unidades={unidades}
+        onKilometrajesGuardados={fetchUnidades}
       />
 
       {/* Modal de Creación/Edición */}
@@ -920,7 +954,7 @@ export default function UnidadesMovilesPage() {
                     placeholder="Ej: Camión 01, Auto Gerencia"
                     className={`h-9 text-xs ${formErrors.nombre ? 'border-destructive' : ''}`}
                   />
-                  {formErrors.nombre && <p className="text-[10px] text-destructive mt-1">{formErrors.nombre}</p>}
+                  {formErrors.nombre && <p className="text-xs text-destructive mt-1">{formErrors.nombre}</p>}
                 </div>
                 <div>
                   <Label htmlFor="tipo" className={formErrors.tipo ? 'text-destructive' : ''}>Tipo *</Label>
@@ -937,7 +971,7 @@ export default function UnidadesMovilesPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {formErrors.tipo && <p className="text-[10px] text-destructive mt-1">{formErrors.tipo}</p>}
+                  {formErrors.tipo && <p className="text-xs text-destructive mt-1">{formErrors.tipo}</p>}
                 </div>
                 <div>
                   <Label htmlFor="marca" className={formErrors.marca ? 'text-destructive' : ''}>Marca *</Label>
@@ -951,7 +985,7 @@ export default function UnidadesMovilesPage() {
                     placeholder="Ej: Toyota, Ford, Mercedes"
                     className={`h-9 text-xs ${formErrors.marca ? 'border-destructive' : ''}`}
                   />
-                  {formErrors.marca && <p className="text-[10px] text-destructive mt-1">{formErrors.marca}</p>}
+                  {formErrors.marca && <p className="text-xs text-destructive mt-1">{formErrors.marca}</p>}
                 </div>
                 <div>
                   <Label htmlFor="modelo" className={formErrors.modelo ? 'text-destructive' : ''}>Modelo *</Label>
@@ -965,7 +999,7 @@ export default function UnidadesMovilesPage() {
                     placeholder="Ej: Hilux, Ranger, Sprinter"
                     className={`h-9 text-xs ${formErrors.modelo ? 'border-destructive' : ''}`}
                   />
-                  {formErrors.modelo && <p className="text-[10px] text-destructive mt-1">{formErrors.modelo}</p>}
+                  {formErrors.modelo && <p className="text-xs text-destructive mt-1">{formErrors.modelo}</p>}
                 </div>
                 <div>
                   <Label htmlFor="año" className={formErrors.año ? 'text-destructive' : ''}>Año *</Label>
@@ -978,7 +1012,7 @@ export default function UnidadesMovilesPage() {
                     max={new Date().getFullYear() + 1}
                     className={`h-9 text-xs ${formErrors.año ? 'border-destructive' : ''}`}
                   />
-                  {formErrors.año && <p className="text-[10px] text-destructive mt-1">{formErrors.año}</p>}
+                  {formErrors.año && <p className="text-xs text-destructive mt-1">{formErrors.año}</p>}
                 </div>
                 <div>
                   <Label htmlFor="patente" className={formErrors.patente ? 'text-destructive' : ''}>Patente *</Label>
@@ -992,7 +1026,7 @@ export default function UnidadesMovilesPage() {
                     placeholder="Ej: ABC123"
                     className={`h-9 text-xs ${formErrors.patente ? 'border-destructive' : ''}`}
                   />
-                  {formErrors.patente && <p className="text-[10px] text-destructive mt-1">{formErrors.patente}</p>}
+                  {formErrors.patente && <p className="text-xs text-destructive mt-1">{formErrors.patente}</p>}
                 </div>
                 <div>
                   <Label htmlFor="estado">Estado *</Label>
@@ -1109,6 +1143,22 @@ export default function UnidadesMovilesPage() {
                     className="h-9 text-xs"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="kmUpdateFrequencyDays">Cargar km cada (días)</Label>
+                  <Input
+                    id="kmUpdateFrequencyDays"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={formData.kmUpdateFrequencyDays ?? ''}
+                    onChange={(e) => setFormData({...formData, kmUpdateFrequencyDays: parseInt(e.target.value) || null})}
+                    placeholder="Ej: 7 (sin límite si vacío)"
+                    className="h-9 text-xs"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Configura con qué frecuencia se debe registrar el km. Útil para anticipar mantenimientos por km.
+                  </p>
+                </div>
               </div>
             </TabsContent>
 
@@ -1181,9 +1231,11 @@ export default function UnidadesMovilesPage() {
       <UnitDetailSheet
         unidad={selectedUnidad}
         isOpen={isDetailSheetOpen}
+        defaultTab={detailDefaultTab}
         onClose={() => {
           setIsDetailSheetOpen(false);
           setSelectedUnidad(null);
+          setDetailDefaultTab('resumen');
         }}
         onEdit={canEditUnidadMovil ? openEditDialog : undefined}
         onDelete={canDeleteUnidadMovil ? handleDeleteClick : undefined}

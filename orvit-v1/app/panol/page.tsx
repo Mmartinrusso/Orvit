@@ -61,13 +61,14 @@ import {
   MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 const ITEM_TYPE_CONFIG = {
   TOOL: { label: 'Herramienta', icon: Wrench, color: 'bg-info', iconBg: 'bg-info-muted', iconColor: 'text-info-muted-foreground' },
   SUPPLY: { label: 'Insumo', icon: Box, color: 'bg-success', iconBg: 'bg-success-muted', iconColor: 'text-success' },
-  SPARE_PART: { label: 'Repuesto', icon: Cog, color: 'bg-purple-500', iconBg: 'bg-purple-100 dark:bg-purple-900/30', iconColor: 'text-purple-600' },
+  SPARE_PART: { label: 'Repuesto', icon: Cog, color: 'bg-accent-purple', iconBg: 'bg-accent-purple-muted', iconColor: 'text-accent-purple-muted-foreground' },
   HAND_TOOL: { label: 'Herramienta Manual', icon: Wrench, color: 'bg-warning', iconBg: 'bg-warning-muted', iconColor: 'text-warning-muted-foreground' },
 };
 
@@ -92,6 +93,37 @@ export default function PanolPage() {
 
   const tools: ToolType[] = (data?.tools || []) as ToolType[];
   const categories = data?.categories || [];
+
+  // Mutations
+  const deleteTool = useApiMutation<unknown, { id: number }>({
+    mutationFn: createFetchMutation({
+      url: (vars) => `/api/tools/${vars.id}`,
+      method: 'DELETE',
+    }),
+    successMessage: 'Producto eliminado',
+    errorMessage: 'Error al eliminar',
+    onSuccess: () => refetch(),
+  });
+
+  const stockInMutation = useApiMutation<unknown, { toolId: number; type: string; quantity: number; reason: string; companyId: number | null }>({
+    mutationFn: createFetchMutation({
+      url: '/api/tools/movements',
+      method: 'POST',
+    }),
+    successMessage: 'Entrada registrada',
+    errorMessage: 'Error al registrar entrada',
+    onSuccess: () => refetch(),
+  });
+
+  const stockOutMutation = useApiMutation<unknown, { toolId: number; type: string; quantity: number; reason: string; companyId: number | null }>({
+    mutationFn: createFetchMutation({
+      url: '/api/tools/movements',
+      method: 'POST',
+    }),
+    successMessage: 'Salida registrada',
+    errorMessage: 'Error al registrar salida',
+    onSuccess: () => refetch(),
+  });
 
   // Stats
   const stats = useMemo(() => {
@@ -153,18 +185,10 @@ export default function PanolPage() {
     });
     if (!ok) return;
 
-    try {
-      toast.loading('Eliminando...', { id: 'delete' });
-      const response = await fetch(`/api/tools/${tool.id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Error al eliminar');
-      toast.success('Producto eliminado', { id: 'delete' });
-      refetch();
-    } catch {
-      toast.error('Error al eliminar', { id: 'delete' });
-    }
+    deleteTool.mutate({ id: tool.id });
   };
 
-  const handleStockIn = async (tool: ToolType) => {
+  const handleStockIn = (tool: ToolType) => {
     if (!permissions.canRegisterMovement) {
       toast.error('No tienes permisos para registrar movimientos');
       return;
@@ -172,28 +196,16 @@ export default function PanolPage() {
     const quantity = prompt(`Cantidad a agregar al stock de "${tool.name}":`, '1');
     if (!quantity || isNaN(parseInt(quantity))) return;
 
-    try {
-      toast.loading('Registrando entrada...', { id: 'stock' });
-      const response = await fetch('/api/tools/movements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          toolId: tool.id,
-          type: 'STOCK_IN',
-          quantity: parseInt(quantity),
-          reason: 'Entrada de stock',
-          companyId
-        })
-      });
-      if (!response.ok) throw new Error('Error al registrar');
-      toast.success('Entrada registrada', { id: 'stock' });
-      refetch();
-    } catch {
-      toast.error('Error al registrar entrada', { id: 'stock' });
-    }
+    stockInMutation.mutate({
+      toolId: tool.id,
+      type: 'STOCK_IN',
+      quantity: parseInt(quantity),
+      reason: 'Entrada de stock',
+      companyId,
+    });
   };
 
-  const handleStockOut = async (tool: ToolType) => {
+  const handleStockOut = (tool: ToolType) => {
     if (!permissions.canRegisterMovement) {
       toast.error('No tienes permisos para registrar movimientos');
       return;
@@ -205,25 +217,13 @@ export default function PanolPage() {
       return;
     }
 
-    try {
-      toast.loading('Registrando salida...', { id: 'stock' });
-      const response = await fetch('/api/tools/movements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          toolId: tool.id,
-          type: 'STOCK_OUT',
-          quantity: parseInt(quantity),
-          reason: 'Salida de stock',
-          companyId
-        })
-      });
-      if (!response.ok) throw new Error('Error al registrar');
-      toast.success('Salida registrada', { id: 'stock' });
-      refetch();
-    } catch {
-      toast.error('Error al registrar salida', { id: 'stock' });
-    }
+    stockOutMutation.mutate({
+      toolId: tool.id,
+      type: 'STOCK_OUT',
+      quantity: parseInt(quantity),
+      reason: 'Salida de stock',
+      companyId,
+    });
   };
 
   const handleCreateTool = () => {

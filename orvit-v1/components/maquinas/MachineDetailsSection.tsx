@@ -102,7 +102,7 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
     <div className="flex items-start gap-3 py-2">
       {Icon && <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{label}</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium truncate">{value || <span className="text-muted-foreground font-normal">No especificado</span>}</p>
           {copyable && value && (

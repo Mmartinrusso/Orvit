@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +69,7 @@ const MEASUREMENT_TYPES: Record<string, { label: string; icon: React.ElementType
   TEMPERATURE: { label: 'Temperatura', icon: Thermometer, color: 'text-destructive' },
   VIBRATION: { label: 'Vibración', icon: Activity, color: 'text-purple-500' },
   PRESSURE: { label: 'Presión', icon: Gauge, color: 'text-info-muted-foreground' },
-  LEVEL: { label: 'Nivel', icon: Droplet, color: 'text-cyan-500' },
+  LEVEL: { label: 'Nivel', icon: Droplet, color: 'text-accent-cyan' },
   CURRENT: { label: 'Corriente', icon: Zap, color: 'text-warning-muted-foreground' },
   OTHER: { label: 'Otro', icon: Gauge, color: 'text-muted-foreground' },
 };
@@ -127,31 +128,32 @@ export default function PuntosMedicionPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Gauge className="h-6 w-6" />
-            Puntos de Medición
-          </h1>
-          <p className="text-muted-foreground">
-            Monitoreo manual de variables y rondas de inspección
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualizar
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Punto
-          </Button>
+    <div className="space-y-6">
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Puntos de Medición</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Monitoreo manual de variables y rondas de inspección
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleRefresh} variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualizar
+            </Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Punto
+            </Button>
+          </div>
         </div>
       </div>
 
+      <div className="px-4 md:px-6 space-y-6">
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -267,7 +269,7 @@ export default function PuntosMedicionPage() {
                   {loadingPoints ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
-                        Cargando...
+                        Cargando puntos de medición...
                       </TableCell>
                     </TableRow>
                   ) : filteredPoints.length === 0 ? (
@@ -379,7 +381,7 @@ export default function PuntosMedicionPage() {
                       <p>Ejecuciones: {round.executionCount}</p>
                       {round.lastExecutedAt && (
                         <p className="text-xs text-muted-foreground">
-                          Última: {new Date(round.lastExecutedAt).toLocaleDateString()}
+                          Última: {formatDate(round.lastExecutedAt)}
                         </p>
                       )}
                     </div>
@@ -393,6 +395,7 @@ export default function PuntosMedicionPage() {
           </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

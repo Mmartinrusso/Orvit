@@ -70,9 +70,9 @@ const tipoConfig: Record<string, { label: string; icon: React.ReactNode; bgColor
  OP: {
  label: 'Orden de Pago',
  icon: <Banknote className="w-4 h-4" />,
- bgColor: 'bg-purple-50 dark:bg-purple-950/30',
- textColor: 'text-purple-600 dark:text-purple-400',
- borderColor: 'border-purple-200 dark:border-purple-800',
+ bgColor: 'bg-accent-purple-muted',
+ textColor: 'text-accent-purple-muted-foreground',
+ borderColor: 'border-accent-purple-muted',
  },
  NCA: {
  label: 'Nota de Crédito',
@@ -84,9 +84,9 @@ const tipoConfig: Record<string, { label: string; icon: React.ReactNode; bgColor
  NC: {
  label: 'Nota de Crédito',
  icon: <Receipt className="w-4 h-4" />,
- bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
- textColor: 'text-emerald-600 dark:text-emerald-400',
- borderColor: 'border-emerald-200 dark:border-emerald-800',
+ bgColor: 'bg-success-muted',
+ textColor: 'text-success-muted-foreground',
+ borderColor: 'border-success-muted',
  },
  ANT: {
  label: 'Anticipo',
@@ -297,7 +297,7 @@ export function RelacionesDocumentoModal({
  {loading ? (
  <div className="flex flex-col items-center justify-center py-12">
  <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
- <p className="text-sm text-muted-foreground">Cargando...</p>
+ <p className="text-sm text-muted-foreground">Cargando documentos relacionados...</p>
  </div>
  ) : relacionados.length === 0 ? (
  <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -341,7 +341,7 @@ export function RelacionesDocumentoModal({
  </div>
  <div>
  <div className="flex items-center gap-2">
- <Badge variant="outline" className={cn('text-[10px] px-1.5 border-current', config.textColor)}>
+ <Badge variant="outline" className={cn('text-xs px-1.5 border-current', config.textColor)}>
  {doc.tipo}
  </Badge>
  <span className="font-medium text-sm">{doc.numero}</span>

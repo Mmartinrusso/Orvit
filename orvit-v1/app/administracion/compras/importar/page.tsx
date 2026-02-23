@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -297,7 +298,7 @@ export default function ImportarPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{file.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024).toFixed(1)} KB
+                      {formatNumber(file.size / 1024, 1)} KB
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={resetForm}>

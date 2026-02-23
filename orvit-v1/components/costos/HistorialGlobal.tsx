@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, TrendingUp, TrendingDown, Filter, Plus, Calendar, DollarSign, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -73,7 +73,7 @@ export function HistorialGlobal({ companyId }: HistorialGlobalProps) {
 
   const calculatePercentage = (oldSalary: number, newSalary: number) => {
     const change = ((newSalary - oldSalary) / oldSalary) * 100;
-    return change.toFixed(1);
+    return formatNumber(change, 1);
   };
 
   const handleAddEntry = async () => {

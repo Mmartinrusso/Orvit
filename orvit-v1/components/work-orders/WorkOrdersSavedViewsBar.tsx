@@ -1,7 +1,6 @@
 'use client';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallback, useMemo } from 'react';
@@ -110,20 +109,20 @@ export function WorkOrdersSavedViewsBar({ workOrders = [], className }: WorkOrde
   }, [workOrders, user?.id]);
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+    <div className={cn('flex flex-wrap items-center gap-1 bg-muted/50 p-1 rounded-lg', className)}>
       {PRESETS.map((preset) => {
         const isActive = currentPreset === preset.key;
         const count = counts[preset.key];
 
         return (
-          <Button
+          <button
             key={preset.key}
-            variant={isActive ? 'default' : 'outline'}
-            size="sm"
             onClick={() => handlePresetChange(preset.key)}
             className={cn(
-              'h-7 text-xs font-normal',
-              isActive && 'font-medium'
+              'inline-flex items-center justify-center rounded-md px-3 h-7 text-xs transition-all',
+              isActive
+                ? 'bg-background text-foreground shadow-sm font-medium'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
             )}
           >
             {preset.label}
@@ -131,14 +130,16 @@ export function WorkOrdersSavedViewsBar({ workOrders = [], className }: WorkOrde
               <Badge
                 variant={isActive ? 'secondary' : 'outline'}
                 className={cn(
-                  'ml-1.5 h-4 px-1.5 text-[10px] font-normal',
-                  isActive && 'bg-primary-foreground/20 text-primary-foreground'
+                  'ml-1.5 h-5 px-1.5 text-xs font-normal',
+                  isActive
+                    ? 'bg-foreground/10 text-foreground border-transparent'
+                    : 'bg-transparent border-border/50'
                 )}
               >
                 {count}
               </Badge>
             )}
-          </Button>
+          </button>
         );
       })}
     </div>

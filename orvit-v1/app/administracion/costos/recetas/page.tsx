@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -327,11 +328,11 @@ export default function RecetasPage() {
 
   const getMargenBadge = (margen: number) => {
     if (margen >= 25) {
-      return <Badge className="bg-success-muted text-success hover:bg-success-muted">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-success-muted text-success hover:bg-success-muted">{formatNumber(margen, 1)}%</Badge>;
     } else if (margen >= 15) {
-      return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted">{formatNumber(margen, 1)}%</Badge>;
     } else {
-      return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">{margen.toFixed(1)}%</Badge>;
+      return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10">{formatNumber(margen, 1)}%</Badge>;
     }
   };
 
@@ -655,7 +656,7 @@ export default function RecetasPage() {
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getVariacionIcon(receta.variacion)}
                             <span className={receta.variacion > 0 ? 'text-destructive' : 'text-success'}>
-                              {receta.variacion > 0 ? '+' : ''}{receta.variacion.toFixed(1)}%
+                              {receta.variacion > 0 ? '+' : ''}{formatNumber(receta.variacion, 1)}%
                             </span>
                           </div>
                         </div>
@@ -741,7 +742,7 @@ export default function RecetasPage() {
                         <div className="text-sm text-muted-foreground">Costo promedio</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{categoria.variacion > 0 ? '+' : ''}{categoria.variacion.toFixed(1)}%</div>
+                        <div className="font-medium">{categoria.variacion > 0 ? '+' : ''}{formatNumber(categoria.variacion, 1)}%</div>
                         <div className="text-sm text-muted-foreground">Variación</div>
                       </div>
                       <Button
@@ -814,7 +815,7 @@ export default function RecetasPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium">{formatCurrency(categoria.costoPromedio)}</div>
-                          <div className="text-xs text-muted-foreground">{porcentaje.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground">{formatNumber(porcentaje, 1)}%</div>
                         </div>
                       </div>
                     );
@@ -1414,7 +1415,7 @@ export default function RecetasPage() {
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Nueva Versión</Label>
                 <div className="text-lg font-semibold text-info-muted-foreground">
-                  v{(parseFloat(selectedRecetaForVersion.version.replace('v', '')) + 0.1).toFixed(1)}
+                  v{formatNumber(parseFloat(selectedRecetaForVersion.version.replace('v', '')) + 0.1, 1)}
                 </div>
               </div>
               <div>

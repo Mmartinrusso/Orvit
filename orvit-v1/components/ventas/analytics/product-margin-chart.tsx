@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, TooltipProps } from 'recharts';
 import { Card } from '@/components/ui/card';
 
@@ -22,7 +23,7 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
   return (
     <Card className="p-3 shadow-lg border">
       <p className="text-xs font-medium text-muted-foreground mb-1">{data.date}</p>
-      <p className="text-sm font-semibold text-success">{Number(data.margin).toFixed(1)}%</p>
+      <p className="text-sm font-semibold text-success">{formatNumber(Number(data.margin), 1)}%</p>
       <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
         <p>Precio: ${Number(data.salePrice).toLocaleString('es-AR')}</p>
         <p>Costo: ${Number(data.cost).toLocaleString('es-AR')}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { formatNumber } from '@/lib/utils';
 
 interface CostBreakdownChartProps {
   data: {
@@ -27,17 +28,17 @@ export function CostBreakdownChart({ data }: CostBreakdownChartProps) {
     {
       name: 'Materiales',
       value: data.materials,
-      percentage: ((data.materials / total) * 100).toFixed(1)
+      percentage: formatNumber((data.materials / total) * 100, 1)
     },
     {
       name: 'Costos Indirectos',
       value: data.indirect_costs,
-      percentage: ((data.indirect_costs / total) * 100).toFixed(1)
+      percentage: formatNumber((data.indirect_costs / total) * 100, 1)
     },
     {
       name: 'Costos Empleados',
       value: data.employee_costs,
-      percentage: ((data.employee_costs / total) * 100).toFixed(1)
+      percentage: formatNumber((data.employee_costs / total) * 100, 1)
     }
   ].filter(item => item.value > 0);
 

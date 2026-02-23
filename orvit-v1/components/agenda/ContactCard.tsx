@@ -44,7 +44,7 @@ export function ContactCard({
     const colors = {
       'Cliente': 'bg-info-muted text-info-muted-foreground border-info-muted',
       'Proveedor': 'bg-success-muted text-success border-success-muted',
-      'Interno': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400',
+      'Interno': 'bg-accent-purple-muted text-accent-purple-muted-foreground border-accent-purple-muted',
       'Personal': 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
     };
     return colors[category as keyof typeof colors] || 'bg-muted text-foreground border-border';

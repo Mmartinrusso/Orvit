@@ -3,7 +3,7 @@ import { Separator } from '@/components/ui/separator';
 import { AreaTrend } from '@/components/administracion/dashboard/charts/AreaTrend';
 import { BarBreakdown } from '@/components/administracion/dashboard/charts/BarBreakdown';
 import { PieBreakdown } from '@/components/administracion/dashboard/charts/PieBreakdown';
-import type { DashboardSummary, RangeKey } from '@/hooks/useAdminDashboardSummary';
+import type { DashboardSummary, RangeKey } from '@/hooks/use-admin-dashboard-summary';
 
 function formatCurrencyARS(value: number) {
   try {

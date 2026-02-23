@@ -23,11 +23,21 @@ import {
  SelectTrigger,
  SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+ Command,
+ CommandEmpty,
+ CommandGroup,
+ CommandInput,
+ CommandItem,
+ CommandList,
+} from '@/components/ui/command';
 import {
  Clock,
  CheckCircle,
  AlertCircle,
  User,
+ Users,
  Calendar,
  Building,
  Wrench,
@@ -44,10 +54,32 @@ import {
  Camera,
  X,
  Image as ImageIcon,
- Loader2
+ Loader2,
+ Check,
+ ChevronsUpDown,
+ Package,
+ Plus,
+ Search,
+ Minus,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
+import { useCompany } from '@/contexts/CompanyContext';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
+
+type ResourceConfirmation = {
+ reservationId: number | null;
+ toolId: number | null;
+ toolName: string;
+ toolItemType: string;
+ toolUnit: string;
+ pickedQuantity: number;
+ usedQuantity: number;
+ returnedDamaged: boolean;
+ isAdHoc: boolean;
+};
+
+const CONSUMABLE_TYPES = ['SPARE_PART', 'CONSUMABLE', 'MATERIAL'];
+const TOOL_TYPES = ['TOOL', 'HAND_TOOL'];
 
 interface ExecuteMaintenanceDialogProps {
  isOpen: boolean;
@@ -64,6 +96,16 @@ export default function ExecuteMaintenanceDialog({
  onExecute,
  isLoading = false
 }: ExecuteMaintenanceDialogProps) {
+ const { currentCompany } = useCompany();
+ const [employees, setEmployees] = useState<any[]>([]);
+ const [loadingEmployees, setLoadingEmployees] = useState(false);
+ const [selectedOperators, setSelectedOperators] = useState<{id: string, name: string}[]>([]);
+ const [operatorPopoverOpen, setOperatorPopoverOpen] = useState(false);
+ const [executionDate, setExecutionDate] = useState<Date>(() => {
+   const now = new Date();
+   now.setSeconds(0, 0);
+   return now;
+ });
  const [executionData, setExecutionData] = useState({
  actualDuration: '',
  actualDurationUnit: 'HOURS', // Unidad por defecto para tiempo de ejecución
@@ -79,6 +121,14 @@ export default function ExecuteMaintenanceDialog({
 
  const [errors, setErrors] = useState<Record<string, string>>({});
  const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
+
+ // Recursos utilizados
+ const [resources, setResources] = useState<ResourceConfirmation[]>([]);
+ const [loadingResources, setLoadingResources] = useState(false);
+ const [showAdHocSearch, setShowAdHocSearch] = useState(false);
+ const [adHocSearch, setAdHocSearch] = useState('');
+ const [adHocResults, setAdHocResults] = useState<any[]>([]);
+ const [searchingAdHoc, setSearchingAdHoc] = useState(false);
 
  useEffect(() => {
  if (isOpen && maintenance) {
@@ -96,9 +146,73 @@ export default function ExecuteMaintenanceDialog({
  excludeQuantity: false // Inicializar como no excluido
  });
  setErrors({});
+ setSelectedOperators([]);
+ setExecutionDate(() => { const now = new Date(); now.setSeconds(0, 0); return now; });
  // Limpiar fotos previas
  photos.forEach(photo => URL.revokeObjectURL(photo.preview));
  setPhotos([]);
+ // Reset recursos
+ setResources([]);
+ setShowAdHocSearch(false);
+ setAdHocSearch('');
+ setAdHocResults([]);
+ }
+ }, [isOpen, maintenance]);
+
+ // Cargar empleados activos de la empresa
+ useEffect(() => {
+ if (!isOpen || !currentCompany?.id) return;
+ setLoadingEmployees(true);
+ fetch(`/api/costos/empleados?companyId=${currentCompany.id}&limit=200`)
+   .then(res => res.ok ? res.json() : { items: [] })
+   .then(data => setEmployees(Array.isArray(data.items) ? data.items : []))
+   .catch(() => setEmployees([]))
+   .finally(() => setLoadingEmployees(false));
+ }, [isOpen, currentCompany?.id]);
+
+ // Cargar recursos (reservaciones o toolsRequired)
+ useEffect(() => {
+ if (!isOpen || !maintenance) return;
+
+ const isPreventive = maintenance.isPreventive || maintenance.type === 'PREVENTIVE';
+
+ if (!isPreventive && maintenance.id) {
+   // CORRECTIVO: cargar reservaciones del pañol
+   setLoadingResources(true);
+   fetch(`/api/tools/reservations?workOrderId=${maintenance.id}`)
+     .then(res => res.ok ? res.json() : { data: [] })
+     .then(data => {
+       const reservations = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+       const picked = reservations.filter((r: any) => r.status === 'PICKED' || r.status === 'PENDING');
+       setResources(picked.map((r: any) => ({
+         reservationId: r.id,
+         toolId: r.tool?.id || r.toolId,
+         toolName: r.tool?.name || r.toolName || 'Sin nombre',
+         toolItemType: r.tool?.itemType || 'UNKNOWN',
+         toolUnit: r.tool?.unit || 'unidad',
+         pickedQuantity: r.quantity,
+         usedQuantity: r.quantity,
+         returnedDamaged: false,
+         isAdHoc: false,
+       })));
+     })
+     .catch(() => setResources([]))
+     .finally(() => setLoadingResources(false));
+ } else if (maintenance.toolsRequired?.length > 0) {
+   // PREVENTIVO: mostrar herramientas requeridas como checklist
+   setResources(maintenance.toolsRequired.map((t: any) => ({
+     reservationId: null,
+     toolId: null,
+     toolName: t.name,
+     toolItemType: 'UNKNOWN',
+     toolUnit: 'unidad',
+     pickedQuantity: t.quantity || 1,
+     usedQuantity: t.quantity || 1,
+     returnedDamaged: false,
+     isAdHoc: false,
+   })));
+ } else {
+   setResources([]);
  }
  }, [isOpen, maintenance]);
 
@@ -122,6 +236,47 @@ export default function ExecuteMaintenanceDialog({
  updated.splice(index, 1);
  return updated;
  });
+ };
+
+ // Helpers para recursos
+ const updateResource = (index: number, updates: Partial<ResourceConfirmation>) => {
+   setResources(prev => prev.map((r, i) => i === index ? { ...r, ...updates } : r));
+ };
+
+ const removeResource = (index: number) => {
+   setResources(prev => prev.filter((_, i) => i !== index));
+ };
+
+ const searchAdHocTool = async (query: string) => {
+   if (!query || query.length < 2 || !currentCompany?.id) return;
+   setSearchingAdHoc(true);
+   try {
+     const res = await fetch(`/api/tools?companyId=${currentCompany.id}&search=${encodeURIComponent(query)}&limit=10`);
+     if (res.ok) {
+       const data = await res.json();
+       setAdHocResults(Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+     }
+   } catch { setAdHocResults([]); }
+   finally { setSearchingAdHoc(false); }
+ };
+
+ const addAdHocResource = (tool: any) => {
+   // Evitar duplicados
+   if (resources.some(r => r.toolId === tool.id)) return;
+   setResources(prev => [...prev, {
+     reservationId: null,
+     toolId: tool.id,
+     toolName: tool.name,
+     toolItemType: tool.itemType || 'UNKNOWN',
+     toolUnit: tool.unit || 'unidad',
+     pickedQuantity: 1,
+     usedQuantity: 1,
+     returnedDamaged: false,
+     isAdHoc: true,
+   }]);
+   setShowAdHocSearch(false);
+   setAdHocSearch('');
+   setAdHocResults([]);
  };
 
  // Forzar re-render cuando cambie la unidad de tiempo para actualizar el tiempo estimado
@@ -223,7 +378,10 @@ export default function ExecuteMaintenanceDialog({
  }
  }
 
- // Validación de calidad removida - será asignada por supervisor
+ // Validar que se haya seleccionado al menos un operador
+ if (selectedOperators.length === 0) {
+ newErrors.operators = 'Debe seleccionar al menos un operador';
+ }
 
  // Validar razón de re-ejecución si ya fue completado hoy
  if (wasCompletedToday && !executionData.reExecutionReason.trim()) {
@@ -259,7 +417,17 @@ export default function ExecuteMaintenanceDialog({
  // qualityScore: null, // Removido - será asignado por supervisor
  completionStatus: executionData.completionStatus,
  reExecutionReason: wasCompletedToday ? executionData.reExecutionReason : null,
- executedAt: new Date().toISOString(),
+ executedAt: executionDate ? executionDate.toISOString() : new Date().toISOString(),
+ operators: selectedOperators,
+ resources: resources.length > 0 ? resources.map(r => ({
+   reservationId: r.reservationId,
+   toolId: r.toolId,
+   toolName: r.toolName,
+   toolItemType: r.toolItemType,
+   usedQuantity: r.usedQuantity,
+   returnedDamaged: r.returnedDamaged,
+   isAdHoc: r.isAdHoc,
+ })) : undefined,
  machineId: maintenance.machineId,
  machineName: typeof maintenance.machine?.name === 'string' ? maintenance.machine.name : (maintenance.machine?.name?.name || ''),
  unidadMovilId: (maintenance as any).unidadMovilId,
@@ -267,7 +435,7 @@ export default function ExecuteMaintenanceDialog({
  title: maintenance.title,
  description: maintenance.description,
  assignedToId: maintenance.assignedToId,
- assignedToName: maintenance.assignedTo?.name || maintenance.assignedWorker?.name,
+ assignedToName: maintenance.assignedTo?.name || maintenance.assignedWorker?.name || maintenance.assignedToName,
  componentIds: maintenance.componentIds || [],
  subcomponentIds: maintenance.subcomponentIds || [],
  estimatedDuration: maintenance.estimatedHours,
@@ -345,7 +513,7 @@ export default function ExecuteMaintenanceDialog({
  <div className="flex-1 min-w-0">
  <p className="text-xs text-muted-foreground">Asignado a</p>
  <p className="text-sm font-semibold mt-0.5">
- {maintenance.assignedTo?.name || maintenance.assignedWorker?.name || 'Sin asignar'}
+ {maintenance.assignedTo?.name || maintenance.assignedWorker?.name || maintenance.assignedToName || 'Sin asignar'}
  </p>
  </div>
  </div>
@@ -355,8 +523,8 @@ export default function ExecuteMaintenanceDialog({
  <div className="flex-1 min-w-0">
  <p className="text-xs text-muted-foreground">Programado</p>
  <p className="text-sm font-semibold mt-0.5">
- {maintenance.scheduledDate ? 
- format(new Date(maintenance.scheduledDate), 'dd/MM/yyyy', { locale: es }) : 
+ {maintenance.scheduledDate ?
+ formatDate(maintenance.scheduledDate) :
  'N/A'
  }
  </p>
@@ -431,6 +599,21 @@ export default function ExecuteMaintenanceDialog({
  </CardTitle>
  </CardHeader>
  <CardContent className="space-y-3 pt-0">
+ {/* Fecha y hora de ejecución */}
+ <div className="space-y-1.5">
+ <Label className="text-xs flex items-center gap-1.5">
+ <Calendar className="h-3 w-3" />
+ Fecha y hora de ejecución <span className="text-destructive">*</span>
+ </Label>
+ <DateTimePicker
+ value={executionDate}
+ onChange={(date) => date && setExecutionDate(date)}
+ maxDate={new Date()}
+ placeholder="Seleccionar fecha y hora"
+ />
+ <p className="text-xs text-muted-foreground">Podés registrar una fecha pasada si el mantenimiento ya fue realizado</p>
+ </div>
+
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {/* Tiempo que tomó hacer el mantenimiento */}
  <div className="space-y-2">
@@ -576,6 +759,290 @@ export default function ExecuteMaintenanceDialog({
  </Select>
  </div>
  </div>
+
+ {/* Operadores */}
+ <div className="space-y-2">
+ <Label className="text-xs flex items-center gap-1.5">
+ <Users className="h-3 w-3" />
+ Operadores <span className="text-destructive">*</span>
+ </Label>
+ {loadingEmployees ? (
+ <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+ <Loader2 className="h-3 w-3 animate-spin" />
+ Cargando empleados...
+ </div>
+ ) : (
+ <Popover open={operatorPopoverOpen} onOpenChange={setOperatorPopoverOpen}>
+ <PopoverTrigger asChild>
+ <Button
+ variant="outline"
+ role="combobox"
+ aria-expanded={operatorPopoverOpen}
+ className={cn(
+ 'h-8 w-full justify-between text-sm font-normal',
+ errors.operators && 'border-destructive'
+ )}
+ >
+ {selectedOperators.length > 0
+ ? `${selectedOperators.length} operador${selectedOperators.length > 1 ? 'es' : ''} seleccionado${selectedOperators.length > 1 ? 's' : ''}`
+ : 'Buscar y seleccionar operadores...'}
+ <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+ </Button>
+ </PopoverTrigger>
+ <PopoverContent className="w-full p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+ <Command>
+ <CommandInput placeholder="Buscar por nombre..." className="h-8 text-sm" />
+ <CommandList>
+ <CommandEmpty className="py-3 text-xs text-center text-muted-foreground">
+ No se encontraron empleados
+ </CommandEmpty>
+ <CommandGroup>
+ {employees.map((employee: any) => {
+ const isSelected = selectedOperators.some(op => op.id === employee.id);
+ return (
+ <CommandItem
+ key={employee.id}
+ value={employee.name}
+ onSelect={() => {
+ if (isSelected) {
+ setSelectedOperators(prev => prev.filter(op => op.id !== employee.id));
+ } else {
+ setSelectedOperators(prev => [...prev, { id: employee.id, name: employee.name }]);
+ }
+ }}
+ className="text-sm"
+ >
+ <Check className={cn('mr-2 h-3.5 w-3.5', isSelected ? 'opacity-100 text-primary' : 'opacity-0')} />
+ {employee.name}
+ </CommandItem>
+ );
+ })}
+ </CommandGroup>
+ </CommandList>
+ </Command>
+ </PopoverContent>
+ </Popover>
+ )}
+ {selectedOperators.length > 0 && (
+ <div className="flex flex-wrap gap-1.5">
+ {selectedOperators.map((operator) => (
+ <div key={operator.id} className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1 text-xs">
+ <User className="h-3 w-3" />
+ <span>{operator.name}</span>
+ <button
+ type="button"
+ onClick={() => setSelectedOperators(prev => prev.filter(op => op.id !== operator.id))}
+ className="ml-0.5 hover:text-destructive transition-colors"
+ >
+ <X className="h-3 w-3" />
+ </button>
+ </div>
+ ))}
+ </div>
+ )}
+ {errors.operators && (
+ <p className="text-xs text-destructive">{errors.operators}</p>
+ )}
+ {!errors.operators && <p className="text-xs text-muted-foreground">Empleados que realizaron el mantenimiento</p>}
+ </div>
+
+ {/* Recursos Utilizados */}
+ {(resources.length > 0 || loadingResources) && (
+ <div className="space-y-3 pt-3 border-t">
+ <Label className="text-xs flex items-center gap-1.5">
+   <Package className="h-3 w-3" />
+   Recursos Utilizados
+ </Label>
+
+ {loadingResources ? (
+   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+     <Loader2 className="h-3 w-3 animate-spin" />
+     Cargando recursos...
+   </div>
+ ) : (
+   <>
+     {/* Herramientas */}
+     {resources.filter(r => TOOL_TYPES.includes(r.toolItemType) || (r.toolItemType === 'UNKNOWN' && !CONSUMABLE_TYPES.includes(r.toolItemType))).length > 0 && (
+       <div className="space-y-1.5">
+         <p className="text-xs text-muted-foreground font-medium">Herramientas</p>
+         {resources.map((r, idx) => {
+           if (!TOOL_TYPES.includes(r.toolItemType) && r.toolItemType !== 'UNKNOWN') return null;
+           if (r.toolItemType === 'UNKNOWN' && CONSUMABLE_TYPES.includes(r.toolItemType)) return null;
+           return (
+             <div key={`tool-${idx}`} className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg">
+               <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+               <span className="text-xs flex-1 min-w-0 truncate">{r.toolName}</span>
+               <span className="text-xs text-muted-foreground shrink-0">x{r.pickedQuantity}</span>
+               <div className="flex items-center gap-1.5 shrink-0">
+                 <Checkbox
+                   id={`damaged-${idx}`}
+                   checked={r.returnedDamaged}
+                   onCheckedChange={(checked) => updateResource(idx, { returnedDamaged: checked as boolean })}
+                   className="h-3.5 w-3.5"
+                 />
+                 <Label htmlFor={`damaged-${idx}`} className="text-xs text-muted-foreground cursor-pointer">
+                   Dañada
+                 </Label>
+               </div>
+               {r.isAdHoc && (
+                 <button type="button" onClick={() => removeResource(idx)} className="text-muted-foreground hover:text-destructive">
+                   <X className="h-3 w-3" />
+                 </button>
+               )}
+             </div>
+           );
+         })}
+       </div>
+     )}
+
+     {/* Repuestos / Insumos */}
+     {resources.filter(r => CONSUMABLE_TYPES.includes(r.toolItemType)).length > 0 && (
+       <div className="space-y-1.5">
+         <p className="text-xs text-muted-foreground font-medium">Repuestos / Insumos</p>
+         {resources.map((r, idx) => {
+           if (!CONSUMABLE_TYPES.includes(r.toolItemType)) return null;
+           const toReturn = r.pickedQuantity - r.usedQuantity;
+           return (
+             <div key={`part-${idx}`} className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg flex-wrap">
+               <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+               <span className="text-xs flex-1 min-w-0 truncate">{r.toolName}</span>
+               {!r.isAdHoc && (
+                 <span className="text-xs text-muted-foreground shrink-0">Sacado: {r.pickedQuantity}</span>
+               )}
+               <div className="flex items-center gap-1 shrink-0">
+                 <span className="text-xs text-muted-foreground">Usado:</span>
+                 <div className="flex items-center border rounded-md">
+                   <button
+                     type="button"
+                     onClick={() => updateResource(idx, { usedQuantity: Math.max(0, r.usedQuantity - 1) })}
+                     className="h-6 w-6 flex items-center justify-center hover:bg-muted transition-colors"
+                     disabled={r.usedQuantity <= 0}
+                   >
+                     <Minus className="h-3 w-3" />
+                   </button>
+                   <Input
+                     type="number"
+                     min={0}
+                     max={r.isAdHoc ? 9999 : r.pickedQuantity}
+                     value={r.usedQuantity}
+                     onChange={(e) => {
+                       const val = Math.max(0, Math.min(r.isAdHoc ? 9999 : r.pickedQuantity, Number(e.target.value) || 0));
+                       updateResource(idx, { usedQuantity: val });
+                     }}
+                     className="h-6 w-12 text-center text-xs border-0 px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                   />
+                   <button
+                     type="button"
+                     onClick={() => updateResource(idx, { usedQuantity: Math.min(r.isAdHoc ? 9999 : r.pickedQuantity, r.usedQuantity + 1) })}
+                     className="h-6 w-6 flex items-center justify-center hover:bg-muted transition-colors"
+                     disabled={!r.isAdHoc && r.usedQuantity >= r.pickedQuantity}
+                   >
+                     <Plus className="h-3 w-3" />
+                   </button>
+                 </div>
+               </div>
+               {!r.isAdHoc && toReturn > 0 && (
+                 <Badge variant="secondary" className="text-xs h-5 shrink-0">
+                   Devolver: {toReturn}
+                 </Badge>
+               )}
+               {r.isAdHoc && (
+                 <button type="button" onClick={() => removeResource(idx)} className="text-muted-foreground hover:text-destructive shrink-0">
+                   <X className="h-3 w-3" />
+                 </button>
+               )}
+             </div>
+           );
+         })}
+       </div>
+     )}
+
+     {/* Botón agregar recurso no planificado (solo correctivos) */}
+     {!(maintenance.isPreventive || maintenance.type === 'PREVENTIVE') && (
+       <div className="space-y-2">
+         {!showAdHocSearch ? (
+           <Button
+             type="button"
+             variant="outline"
+             size="sm"
+             className="h-7 text-xs"
+             onClick={() => setShowAdHocSearch(true)}
+           >
+             <Plus className="h-3 w-3 mr-1" />
+             Agregar recurso no planificado
+           </Button>
+         ) : (
+           <div className="p-2 border rounded-lg space-y-2 bg-muted/20">
+             <div className="flex items-center gap-2">
+               <div className="relative flex-1">
+                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                 <Input
+                   placeholder="Buscar en pañol..."
+                   value={adHocSearch}
+                   onChange={(e) => {
+                     setAdHocSearch(e.target.value);
+                     searchAdHocTool(e.target.value);
+                   }}
+                   className="h-7 text-xs pl-7"
+                   autoFocus
+                 />
+               </div>
+               <Button
+                 type="button"
+                 variant="ghost"
+                 size="sm"
+                 className="h-7 w-7 p-0"
+                 onClick={() => { setShowAdHocSearch(false); setAdHocSearch(''); setAdHocResults([]); }}
+               >
+                 <X className="h-3 w-3" />
+               </Button>
+             </div>
+             {searchingAdHoc && (
+               <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+                 <Loader2 className="h-3 w-3 animate-spin" />
+                 Buscando...
+               </div>
+             )}
+             {adHocResults.length > 0 && (
+               <div className="max-h-32 overflow-y-auto space-y-1">
+                 {adHocResults.map((tool: any) => (
+                   <button
+                     key={tool.id}
+                     type="button"
+                     className="w-full flex items-center gap-2 p-1.5 hover:bg-muted rounded text-left transition-colors"
+                     onClick={() => addAdHocResource(tool)}
+                   >
+                     {TOOL_TYPES.includes(tool.itemType) ? (
+                       <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />
+                     ) : (
+                       <Package className="h-3 w-3 text-muted-foreground shrink-0" />
+                     )}
+                     <span className="text-xs flex-1 truncate">{tool.name}</span>
+                     <Badge variant="outline" className="text-[10px] h-4 shrink-0">
+                       {tool.itemType === 'TOOL' ? 'Herramienta' :
+                        tool.itemType === 'HAND_TOOL' ? 'Herr. manual' :
+                        tool.itemType === 'SPARE_PART' ? 'Repuesto' :
+                        tool.itemType === 'CONSUMABLE' ? 'Consumible' :
+                        tool.itemType === 'MATERIAL' ? 'Material' : tool.itemType}
+                     </Badge>
+                     {tool.stockQuantity != null && (
+                       <span className="text-[10px] text-muted-foreground shrink-0">Stock: {tool.stockQuantity}</span>
+                     )}
+                   </button>
+                 ))}
+               </div>
+             )}
+             {adHocSearch.length >= 2 && !searchingAdHoc && adHocResults.length === 0 && (
+               <p className="text-xs text-muted-foreground py-1">No se encontraron resultados</p>
+             )}
+           </div>
+         )}
+       </div>
+     )}
+   </>
+ )}
+ </div>
+ )}
 
  {/* Notas */}
  <div className="space-y-2">

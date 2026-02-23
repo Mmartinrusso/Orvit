@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { formatDate } from "@/lib/date-utils";
 import { Search, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,10 +101,7 @@ export function HistorialTab() {
 
   // ─── Helpers de formato ───────────────────────────────────────────────────────
 
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
+  // formatDate is now imported from @/lib/date-utils
 
   const getPriorityText = (priority: string) => {
     switch (priority.toLowerCase()) {

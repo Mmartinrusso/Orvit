@@ -387,6 +387,28 @@ export async function DELETE(
       });
     }
 
+    // Buscar en PreventiveTemplate (sistema actual)
+    const preventiveTemplate = await prisma.preventiveTemplate.findUnique({
+      where: { id: maintenanceId },
+      select: { id: true, title: true }
+    });
+
+    if (preventiveTemplate) {
+      // Las PreventiveInstances se borran en cascada por FK
+      await prisma.preventiveTemplate.delete({
+        where: { id: maintenanceId }
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Mantenimiento eliminado correctamente',
+        deletedMaintenance: {
+          id: preventiveTemplate.id,
+          title: preventiveTemplate.title
+        }
+      });
+    }
+
     return NextResponse.json(
       { error: 'Mantenimiento no encontrado' },
       { status: 404 }

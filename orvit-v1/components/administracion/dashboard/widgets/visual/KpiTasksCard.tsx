@@ -1,5 +1,5 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
-import type { DashboardSummary, RangeKey } from '@/hooks/useAdminDashboardSummary';
+import type { DashboardSummary, RangeKey } from '@/hooks/use-admin-dashboard-summary';
 import { Sparkline } from '@/components/administracion/dashboard/charts/Sparkline';
 import { KpiCardFrame, KpiPill } from './KpiCardFrame';
 
@@ -31,12 +31,12 @@ export function KpiTasksCard({ data }: { data: DashboardSummary; range: RangeKey
         </KpiPill>
       }
     >
-      <div className="text-3xl font-normal leading-none tabular-nums mb-0.5">{k.myPending}</div>
+      <div data-slot="kpi-value" className="text-3xl font-normal leading-none tabular-nums mb-0.5">{k.myPending}</div>
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5 leading-tight">
         <DeltaIcon className="h-3 w-3" />
         <span className="font-medium">Pendientes en el rango seleccionado</span>
       </div>
-      <p className="text-[11px] text-muted-foreground leading-tight">
+      <p className="text-xs text-muted-foreground leading-tight">
         Hoy {k.dueToday} · Atrasadas {k.overdue} · Completadas (7d) {k.completed7d}
       </p>
       <div className="mt-1.5">

@@ -79,7 +79,7 @@ export default function LoadStatusBadge({
         'gap-1 font-medium transition-colors',
         config.bgColor,
         config.color,
-        size === 'sm' ? 'text-[10px] px-1.5 py-0' : 'text-xs px-2 py-0.5',
+        size === 'sm' ? 'text-xs px-1.5 py-0' : 'text-xs px-2 py-0.5',
         canEdit && showDropdown && allowedTransitions.length > 0 && 'cursor-pointer hover:opacity-80'
       )}
     >
@@ -165,7 +165,7 @@ export function LoadStatusBadgeInline({
         'gap-1 font-medium',
         config.bgColor,
         config.color,
-        size === 'sm' ? 'text-[10px] px-1.5 py-0' : 'text-xs px-2 py-0.5'
+        size === 'sm' ? 'text-xs px-1.5 py-0' : 'text-xs px-2 py-0.5'
       )}
     >
       <Icon className={size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} />

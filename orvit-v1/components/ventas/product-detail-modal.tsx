@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -198,7 +199,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
               <div className="text-center p-2 rounded-lg bg-muted/50">
                 <p className="text-xs text-muted-foreground">Margen</p>
                 <p className={cn('text-lg font-bold', margin && margin > 0 ? 'text-success' : margin && margin < 0 ? 'text-destructive' : '')}>
-                  {margin ? `${margin.toFixed(1)}%` : '-'}
+                  {margin ? `${formatNumber(margin, 1)}%` : '-'}
                 </p>
               </div>
               <div className={cn('text-center p-2 rounded-lg', stockStatus.bg)}>
@@ -355,7 +356,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onEdit }: Product
                     {product.lastCostUpdate && (
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        Actualizado: {new Date(product.lastCostUpdate).toLocaleDateString('es-AR')}
+                        Actualizado: {formatDate(product.lastCostUpdate)}
                       </p>
                     )}
                   </div>

@@ -280,11 +280,11 @@ export function useUpsertTaxRecord() {
 }
 
 /**
- * ✨ MUTATION: Actualizar status de tax record
+ * ✨ MUTATION: Actualizar status de tax record (optimistic update)
  */
 export function useUpdateTaxRecordStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, status, companyId, month }: { id: number; status: string; companyId: number; month?: string }) => {
       const response = await fetch(`/api/tax-record/${id}`, {
@@ -292,81 +292,113 @@ export function useUpdateTaxRecordStatus() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to update tax record status');
       }
-      
+
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: taxQueryKeys.records(variables.companyId, variables.month) 
+    onMutate: async ({ id, status, companyId }) => {
+      const queryKeyPrefix = ['tax', 'records', companyId];
+      await queryClient.cancelQueries({ queryKey: queryKeyPrefix });
+      const queries = queryClient.getQueriesData<TaxRecord[]>({ queryKey: queryKeyPrefix });
+      queryClient.setQueriesData<TaxRecord[]>(
+        { queryKey: queryKeyPrefix },
+        (old) => old?.map(r => r.id === id ? { ...r, status } : r) ?? []
+      );
+      return { queries };
+    },
+    onError: (_err, _vars, context) => {
+      context?.queries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
       });
-      queryClient.invalidateQueries({ 
-        queryKey: taxQueryKeys.alerts(variables.companyId) 
-      });
+    },
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: taxQueryKeys.records(variables.companyId, variables.month) });
+      queryClient.invalidateQueries({ queryKey: taxQueryKeys.alerts(variables.companyId) });
     },
   });
 }
 
 /**
- * ✨ MUTATION: Eliminar tax record
+ * ✨ MUTATION: Eliminar tax record (optimistic update)
  */
 export function useDeleteTaxRecord() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, companyId, month }: { id: number; companyId: number; month?: string }) => {
       const response = await fetch(`/api/tax-record/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to delete tax record');
       }
-      
+
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: taxQueryKeys.records(variables.companyId, variables.month) 
+    onMutate: async ({ id, companyId }) => {
+      const queryKeyPrefix = ['tax', 'records', companyId];
+      await queryClient.cancelQueries({ queryKey: queryKeyPrefix });
+      const queries = queryClient.getQueriesData<TaxRecord[]>({ queryKey: queryKeyPrefix });
+      queryClient.setQueriesData<TaxRecord[]>(
+        { queryKey: queryKeyPrefix },
+        (old) => old?.filter(r => r.id !== id) ?? []
+      );
+      return { queries };
+    },
+    onError: (_err, _vars, context) => {
+      context?.queries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
       });
-      queryClient.invalidateQueries({ 
-        queryKey: taxQueryKeys.alerts(variables.companyId) 
-      });
+    },
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: taxQueryKeys.records(variables.companyId, variables.month) });
+      queryClient.invalidateQueries({ queryKey: taxQueryKeys.alerts(variables.companyId) });
     },
   });
 }
 
 /**
- * ✨ MUTATION: Eliminar tax base
+ * ✨ MUTATION: Eliminar tax base (optimistic update)
  */
 export function useDeleteTaxBase() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, companyId }: { id: number; companyId: number }) => {
       const response = await fetch(`/api/tax-base?id=${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to delete tax base');
       }
-      
+
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: taxQueryKeys.bases(variables.companyId) 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: taxQueryKeys.records(variables.companyId) 
-      });
+    onMutate: async ({ id, companyId }) => {
+      await queryClient.cancelQueries({ queryKey: taxQueryKeys.bases(companyId) });
+      const previousBases = queryClient.getQueryData<TaxBase[]>(taxQueryKeys.bases(companyId));
+      queryClient.setQueryData<TaxBase[]>(
+        taxQueryKeys.bases(companyId),
+        (old) => old?.filter(b => b.id !== id) ?? []
+      );
+      return { previousBases };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousBases) {
+        queryClient.setQueryData(taxQueryKeys.bases(_vars.companyId), context.previousBases);
+      }
+    },
+    onSettled: (_, __, variables) => {
+      queryClient.invalidateQueries({ queryKey: taxQueryKeys.bases(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: taxQueryKeys.records(variables.companyId) });
     },
   });
 }

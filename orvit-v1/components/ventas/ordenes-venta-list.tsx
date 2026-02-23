@@ -65,6 +65,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { format, differenceInDays } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useViewMode } from '@/hooks/use-view-mode';
@@ -284,7 +285,7 @@ export function OrdenesVentaList({
     const config = ESTADOS_CONFIG[estado as EstadoOV] || ESTADOS_CONFIG.BORRADOR;
     const Icon = config.icon;
     return (
-      <Badge className={cn(config.color, 'border text-[10px] px-1.5 py-0.5 font-medium')}>
+      <Badge className={cn(config.color, 'border text-xs px-1.5 py-0.5 font-medium')}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
@@ -339,8 +340,8 @@ export function OrdenesVentaList({
       ...ordenes.map(o => [
         o.numero,
         o.client?.legalName || o.client?.name || '',
-        o.fechaEmision ? format(new Date(o.fechaEmision), 'dd/MM/yyyy') : '',
-        o.fechaEntregaEstimada ? format(new Date(o.fechaEntregaEstimada), 'dd/MM/yyyy') : '',
+        o.fechaEmision ? formatDate(o.fechaEmision) : '',
+        o.fechaEntregaEstimada ? formatDate(o.fechaEntregaEstimada) : '',
         ESTADOS_CONFIG[o.estado as EstadoOV]?.label || o.estado,
         (o._count?.items || 0).toString(),
         o.total.toString(),
@@ -421,7 +422,7 @@ export function OrdenesVentaList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.borradores}</p>
-                  <p className="text-[10px] text-muted-foreground">Borradores</p>
+                  <p className="text-xs text-muted-foreground">Borradores</p>
                 </div>
               </div>
             </CardContent>
@@ -438,7 +439,7 @@ export function OrdenesVentaList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.confirmadas}</p>
-                  <p className="text-[10px] text-muted-foreground">Confirmadas</p>
+                  <p className="text-xs text-muted-foreground">Confirmadas</p>
                 </div>
               </div>
             </CardContent>
@@ -455,7 +456,7 @@ export function OrdenesVentaList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.enPreparacion}</p>
-                  <p className="text-[10px] text-muted-foreground">Preparación</p>
+                  <p className="text-xs text-muted-foreground">Preparación</p>
                 </div>
               </div>
             </CardContent>
@@ -472,7 +473,7 @@ export function OrdenesVentaList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.entregadas}</p>
-                  <p className="text-[10px] text-muted-foreground">Entregadas</p>
+                  <p className="text-xs text-muted-foreground">Entregadas</p>
                 </div>
               </div>
             </CardContent>
@@ -489,7 +490,7 @@ export function OrdenesVentaList({
                 </div>
                 <div>
                   <p className="text-xl font-bold">{kpis.facturadas}</p>
-                  <p className="text-[10px] text-muted-foreground">Facturadas</p>
+                  <p className="text-xs text-muted-foreground">Facturadas</p>
                 </div>
               </div>
             </CardContent>
@@ -600,7 +601,7 @@ export function OrdenesVentaList({
                       <div>
                         <span className="font-medium">{orden.numero}</span>
                         {!clienteId && (
-                          <div className="text-[10px] text-muted-foreground sm:hidden truncate max-w-[100px]">
+                          <div className="text-xs text-muted-foreground sm:hidden truncate max-w-[100px]">
                             {orden.client?.legalName || orden.client?.name || '-'}
                           </div>
                         )}

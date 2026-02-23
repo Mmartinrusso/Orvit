@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -95,7 +95,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                     variant="secondary" 
                     className={cn('text-xs', getPerformanceColor(category.performance))}
                   >
-                    {category.performance === 'positivo' ? '↗' : category.performance === 'negativo' ? '↘' : '→'} {Math.abs(category.changePct).toFixed(1)}%
+                    {category.performance === 'positivo' ? '↗' : category.performance === 'negativo' ? '↘' : '→'} {formatNumber(Math.abs(category.changePct), 1)}%
                   </Badge>
                 </div>
               </div>
@@ -134,12 +134,12 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
                     Share:
                   </span>
                   <span className={cn('text-foreground', compact ? 'text-xs' : 'text-sm')}>
-                    {category.sharePct.toFixed(1)}%
+                    {formatNumber(category.sharePct, 1)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className={cn('text-xs', category.shareDeltaPct >= 0 ? 'text-success' : 'text-destructive')}>
-                    {category.shareDeltaPct >= 0 ? '+' : ''}{category.shareDeltaPct.toFixed(1)}%
+                    {category.shareDeltaPct >= 0 ? '+' : ''}{formatNumber(category.shareDeltaPct, 1)}%
                   </span>
                 </div>
               </div>
@@ -148,7 +148,7 @@ export function CategoryGrid({ categories, onCategoryClick, compact = false }: C
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Progreso del cambio</span>
-                  <span>{Math.abs(category.changePct).toFixed(1)}%</span>
+                  <span>{formatNumber(Math.abs(category.changePct), 1)}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div

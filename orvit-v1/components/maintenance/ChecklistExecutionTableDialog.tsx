@@ -56,6 +56,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { format, differenceInDays, addDays } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1652,7 +1653,7 @@ export default function ChecklistExecutionTableDialog({
  variant="outline"
  onClick={() => {
  // Abrir modal de impresión o redirigir a página de impresión
- window.open(`/maintenance/checklist-print/${result.executionId}`, '_blank');
+ window.open(`/mantenimiento/checklist-print/${result.executionId}`, '_blank');
  }}
  >
  Imprimir
@@ -2303,7 +2304,7 @@ export default function ChecklistExecutionTableDialog({
  {item.supervisors && item.supervisors.length > 0 && (
  <div className="flex flex-wrap gap-1 mt-1">
  {item.supervisors.map((name, i) => (
- <Badge key={i} variant="outline" className="text-[10px] gap-1 pr-1">
+ <Badge key={i} variant="outline" className="text-xs gap-1 pr-1">
  {name}
  <button onClick={() => setMaintenanceItems(prev => prev.map(mi => {
  if (mi.id !== item.id) return mi;
@@ -2389,7 +2390,7 @@ export default function ChecklistExecutionTableDialog({
  {item.executors && item.executors.length > 0 && (
  <div className="flex flex-wrap gap-1 mt-1">
  {item.executors.map((name, i) => (
- <Badge key={i} variant="secondary" className="text-[10px] gap-1 pr-1">
+ <Badge key={i} variant="secondary" className="text-xs gap-1 pr-1">
  {name}
  <button onClick={() => setMaintenanceItems(prev => prev.map(mi => {
  if (mi.id !== item.id) return mi;
@@ -2485,7 +2486,7 @@ export default function ChecklistExecutionTableDialog({
  key={resp}
  variant="outline"
  size="sm"
- className="h-6 text-[10px] px-2"
+ className="h-6 text-xs px-2"
  onClick={() => setMaintenanceItems(prev => prev.map(mi => mi.id !== item.id ? mi : { ...mi, notes: resp }))}
  >
  {resp}
@@ -2509,7 +2510,7 @@ export default function ChecklistExecutionTableDialog({
  key={resp}
  variant="outline"
  size="sm"
- className="h-6 text-[10px] px-2 border-warning-muted text-warning-muted-foreground"
+ className="h-6 text-xs px-2 border-warning-muted text-warning-muted-foreground"
  onClick={() => setMaintenanceItems(prev => prev.map(mi => mi.id !== item.id ? mi : { ...mi, issues: (mi.issues ? mi.issues + ', ' : '') + resp }))}
  >
  {resp}
@@ -2932,7 +2933,7 @@ export default function ChecklistExecutionTableDialog({
  <h4 className="font-semibold text-sm leading-tight md:text-lg break-words min-w-0">{item.maintenanceData.title}</h4>
  <div className="flex flex-wrap items-center gap-2 text-xs text-foreground">
  {item.maintenanceData?.nextMaintenanceDate && (
- <span className="whitespace-nowrap">Próx: {format(new Date(item.maintenanceData.nextMaintenanceDate), 'dd/MM/yyyy')}</span>
+ <span className="whitespace-nowrap">Próx: {formatDate(item.maintenanceData.nextMaintenanceDate)}</span>
  )}
  <div className="flex items-center gap-1">
  <Badge variant="outline" className="text-xxs shrink-0">ID: {item.maintenanceId}</Badge>
@@ -3116,13 +3117,13 @@ export default function ChecklistExecutionTableDialog({
  {item.maintenanceData?.lastMaintenanceDate && (
  <div className="flex items-center gap-1">
  <CheckCircle className="h-3 w-3 text-success" />
- <span>Último: {format(new Date(item.maintenanceData.lastMaintenanceDate), 'dd/MM/yyyy')}</span>
+ <span>Último: {formatDate(item.maintenanceData.lastMaintenanceDate)}</span>
  </div>
  )}
  {item.maintenanceData?.nextMaintenanceDate && (
  <div className="flex items-center gap-1">
  <Calendar className="h-3 w-3 text-info-muted-foreground" />
- <span>Próximo: {format(new Date(item.maintenanceData.nextMaintenanceDate), 'dd/MM/yyyy')}</span>
+ <span>Próximo: {formatDate(item.maintenanceData.nextMaintenanceDate)}</span>
  </div>
  )}
  </div>
@@ -4254,7 +4255,7 @@ export default function ChecklistExecutionTableDialog({
  if (sinResponsable) faltanArr.push('Responsable');
  if (sinSupervisor) faltanArr.push('Supervisor');
  return (
- <div key={mi.id} className="text-[10px] p-1.5 bg-muted/50 rounded">
+ <div key={mi.id} className="text-xs p-1.5 bg-muted/50 rounded">
  <p className="font-medium truncate">{mi.maintenanceData?.title || `Item ${idx + 1}`}</p>
  <p className="text-destructive">Falta: {faltanArr.join(', ')}</p>
  </div>
@@ -4287,7 +4288,7 @@ export default function ChecklistExecutionTableDialog({
  value={massResultOption}
  onValueChange={(v: MassResultOption) => setMassResultOption(v)}
  >
- <SelectTrigger className="h-6 text-[10px] flex-1">
+ <SelectTrigger className="h-6 text-xs flex-1">
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
@@ -4311,7 +4312,7 @@ export default function ChecklistExecutionTableDialog({
  value={massExecutionDate}
  onChange={(date) => setMassExecutionDate(date)}
  placeholder="Fecha"
- className="h-6 text-[10px] w-28 px-1.5"
+ className="h-6 text-xs w-28 px-1.5"
  clearable={false}
  />
  </div>
@@ -4319,9 +4320,9 @@ export default function ChecklistExecutionTableDialog({
  {/* Fila 3: Supervisores (PRIMERO) */}
  <div className="px-2 pb-1">
  <div className="flex items-center gap-1 flex-wrap">
- <span className="text-[10px] text-muted-foreground">Supervisores:</span>
+ <span className="text-xs text-muted-foreground">Supervisores:</span>
  {massSupervisors.map(emp => (
- <Badge key={emp.id} variant="default" className="text-[10px] h-5 gap-1 pr-1 bg-info-muted text-info-muted-foreground hover:bg-info-muted">
+ <Badge key={emp.id} variant="default" className="text-xs h-5 gap-1 pr-1 bg-info-muted text-info-muted-foreground hover:bg-info-muted">
  {emp.name}
  <button
  onClick={() => setMassSupervisors(prev => prev.filter(e => e.id !== emp.id))}
@@ -4370,9 +4371,9 @@ export default function ChecklistExecutionTableDialog({
  {/* Fila 4: Responsables (SEGUNDO) */}
  <div className="px-2 pb-2">
  <div className="flex items-center gap-1 flex-wrap">
- <span className="text-[10px] text-muted-foreground">Responsables:</span>
+ <span className="text-xs text-muted-foreground">Responsables:</span>
  {massResponsables.map(emp => (
- <Badge key={emp.id} variant="outline" className="text-[10px] h-5 gap-1 pr-1 bg-success-muted text-success hover:bg-success-muted">
+ <Badge key={emp.id} variant="outline" className="text-xs h-5 gap-1 pr-1 bg-success-muted text-success hover:bg-success-muted">
  {emp.name}
  <button
  onClick={() => setMassResponsables(prev => prev.filter(e => e.id !== emp.id))}
@@ -4422,7 +4423,7 @@ export default function ChecklistExecutionTableDialog({
  <div className="px-2 pb-1">
  <Button
  size="sm"
- className="w-full h-6 bg-success hover:bg-success/90 text-[10px] font-medium"
+ className="w-full h-6 bg-success hover:bg-success/90 text-xs font-medium"
  disabled={massItemsToProcess.length === 0 || (massResultOption === 'realizado' && (massResponsables.length === 0 || massSupervisors.length === 0)) || (massResultOption === 'reprogramar' && massSupervisors.length === 0)}
  onClick={() => {
  // Validación: para "realizado" se requiere responsable Y supervisor
@@ -4600,7 +4601,7 @@ export default function ChecklistExecutionTableDialog({
 
  <div className="flex-1 min-w-0">
  {/* Título con número - texto más chico y wrap */}
- <p className={cn('text-[11px] leading-tight', isCompleted && 'line-through text-muted-foreground')}>
+ <p className={cn('text-xs leading-tight', isCompleted && 'line-through text-muted-foreground')}>
  <span className={cn('inline-flex items-center justify-center w-4 h-4 mr-1 rounded text-[9px] font-medium',
  isCompleted ? 'bg-success-muted text-success' :
  isRescheduled ? 'bg-warning-muted text-warning-muted-foreground' :
@@ -4881,7 +4882,7 @@ export default function ChecklistExecutionTableDialog({
  <Camera className="h-5 w-5" />
  </label>
  {(itemPhotos[mi.id] || []).length > 0 && (
- <span className="text-[10px] text-info-muted-foreground font-medium bg-info-muted rounded-full px-1.5">
+ <span className="text-xs text-info-muted-foreground font-medium bg-info-muted rounded-full px-1.5">
  {(itemPhotos[mi.id] || []).length}
  </span>
  )}
@@ -4894,7 +4895,7 @@ export default function ChecklistExecutionTableDialog({
  e.stopPropagation();
  setEditDateItemId(mi.id);
  }}
- className="flex items-center gap-1 text-[10px] text-success hover:bg-success-muted px-1.5 py-0.5 rounded"
+ className="flex items-center gap-1 text-xs text-success hover:bg-success-muted px-1.5 py-0.5 rounded"
  >
  <CheckCircle className="h-3.5 w-3.5" />
  {mi.completedDate}
@@ -4943,7 +4944,7 @@ export default function ChecklistExecutionTableDialog({
  </Popover>
  )}
  {isRescheduled && (
- <span className="flex items-center gap-1 text-[10px] text-warning-muted-foreground">
+ <span className="flex items-center gap-1 text-xs text-warning-muted-foreground">
  <Clock className="h-3.5 w-3.5" />
  {mi.rescheduleDate}
  </span>
@@ -5773,12 +5774,12 @@ export default function ChecklistExecutionTableDialog({
  </Popover>
  </div>
  </div>
- <div className="text-[10px] text-muted-foreground mt-0.5 md:hidden">ID {mi.maintenanceId}</div>
+ <div className="text-xs text-muted-foreground mt-0.5 md:hidden">ID {mi.maintenanceId}</div>
  
  {/* Mostrar asignaciones acumuladas (guardadas pero no tildadas) */}
  {accumulatedAssignments[mi.id] && accumulatedAssignments[mi.id].length > 0 && (
  <div className="mt-1 space-y-1">
- <div className="text-[10px] font-medium text-info-muted-foreground">Asignaciones guardadas:</div>
+ <div className="text-xs font-medium text-info-muted-foreground">Asignaciones guardadas:</div>
  <div className="flex flex-wrap gap-1">
  {accumulatedAssignments[mi.id].map((acc, idx) => (
  <Badge 
@@ -6139,7 +6140,7 @@ export default function ChecklistExecutionTableDialog({
  const isCompleted = mi.completedDate && mi.completedDate.length > 0;
  return (
  <div key={mi.id || mi.itemId} className="flex items-start gap-2 text-xs">
- <span className={cn('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0', isCompleted ? 'bg-success-muted text-success' : 'bg-warning-muted text-warning-muted-foreground')}>
+ <span className={cn('w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0', isCompleted ? 'bg-success-muted text-success' : 'bg-warning-muted text-warning-muted-foreground')}>
  {idx + 1}
  </span>
  <span className="flex-1">{taskName}</span>

@@ -70,11 +70,11 @@ const categoryColors: Record<string, string> = {
   VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
   COMPRAS: 'bg-success/10 text-success border-success-muted/20',
   MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
-  COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  COSTOS: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
   USUARIOS: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
-  REPORTES: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
+  REPORTES: 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20',
 };
 
 // Datos de ejemplo
@@ -232,7 +232,7 @@ export default function PermissionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -249,8 +249,8 @@ export default function PermissionsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-lg bg-accent-purple/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-accent-purple" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalRoles}</p>
@@ -343,7 +343,7 @@ export default function PermissionsPage() {
                           <p className="text-xs text-muted-foreground mt-1">
                             {perm.description}
                           </p>
-                          <Badge variant="outline" className="text-[10px] mt-2 font-mono">
+                          <Badge variant="outline" className="text-xs mt-2 font-mono">
                             {perm.key}
                           </Badge>
                         </div>
@@ -373,18 +373,18 @@ export default function PermissionsPage() {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center",
-                        role.isSystem ? "bg-purple-500/10" : "bg-info/10"
+                        role.isSystem ? "bg-accent-purple/10" : "bg-info/10"
                       )}>
                         <Shield className={cn(
                           "h-5 w-5",
-                          role.isSystem ? "text-purple-500" : "text-info-muted-foreground"
+                          role.isSystem ? "text-accent-purple" : "text-info-muted-foreground"
                         )} />
                       </div>
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           {role.name}
                           {role.isSystem && (
-                            <Badge className="text-[10px] bg-purple-500/10 text-purple-500 border-purple-500/20">
+                            <Badge className="text-xs bg-accent-purple/10 text-accent-purple border-accent-purple/20">
                               Sistema
                             </Badge>
                           )}
@@ -438,7 +438,7 @@ export default function PermissionsPage() {
                               <Badge
                                 key={category}
                                 variant="outline"
-                                className={cn("text-[10px]", categoryColors[category])}
+                                className={cn("text-xs", categoryColors[category])}
                               >
                                 {category}: {enabledPerms.length}/{catPerms.length}
                               </Badge>

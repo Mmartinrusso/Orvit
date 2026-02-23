@@ -92,6 +92,10 @@ import {
   AlertCircle,
   MessageSquarePlus,
   Loader2,
+  FileSpreadsheet,
+  FileDown,
+  Pencil,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -110,6 +114,10 @@ import { ModeIndicator } from '@/components/view-mode';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useModules, SIDEBAR_MODULE_MAP } from '@/contexts/ModulesContext';
+import { useCompanySidebarConfig } from '@/hooks/use-company-sidebar-config';
+import { SidebarEditMode } from '@/components/layout/sidebar-edit-mode';
+import { getEffectiveConfig, getModuleByKey, getAdminModuleOrder, getModuleItemById, ALL_MODULE_KEYS, getAllLeafItems, type SidebarNode as ConfigSidebarNode, type SidebarModuleKey } from '@/lib/sidebar/company-sidebar-config';
+import { useSidebarFavorites } from '@/hooks/use-sidebar-favorites';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,11 +141,83 @@ interface SidebarItem {
   children?: SidebarItem[];
   badge?: number | string; // Contador o texto para badge
   badgeVariant?: 'default' | 'destructive' | 'warning'; // Variante visual del badge
+  moduleId?: string; // ID del módulo para favoritos (solo items hoja de buildModuleNodes)
 }
 
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+}
+
+// Items hardcodeados del sidebar que no están en el registro de módulos
+// Se usan para resolver favoritos de items que no pasan por buildModuleNodes()
+const HARDCODED_ITEMS: Array<{ moduleId: string; name: string; path: string; icon: string }> = [
+  { moduleId: 'sys.agenda',          name: 'Agenda',              path: '/administracion/agenda',           icon: 'CalendarClock'  },
+  { moduleId: 'sys.dashboard',       name: 'Dashboard',           path: '/administracion/dashboard',        icon: 'LayoutDashboard' },
+  { moduleId: 'sys.automatizaciones',name: 'Automatizaciones',    path: '/administracion/automatizaciones', icon: 'Zap'            },
+  { moduleId: 'sys.controles',       name: 'Controles',           path: '/administracion/controles',        icon: 'Shield'         },
+  { moduleId: 'sys.cargas',          name: 'Cargas',              path: '/administracion/cargas',           icon: 'Package'        },
+  { moduleId: 'sys.permisos',        name: 'Permisos & Roles',    path: '/administracion/permisos',         icon: 'Shield'         },
+  { moduleId: 'sys.usuarios',        name: 'Gestión de Usuarios', path: '/administracion/usuarios',         icon: 'Users'          },
+  { moduleId: 'sys.costos',          name: 'Módulo de Costos',    path: '/administracion/costos',           icon: 'Calculator'     },
+];
+
+// Mapa de nombres de íconos (string) → componente Lucide para todos los módulos
+const SIDEBAR_ICON_MAP: Record<string, React.ComponentType<any>> = {
+  LayoutDashboard, Database, Users, Package, DollarSign, MapPin, Calendar,
+  Settings, User, Receipt, RefreshCw, FileText, ClipboardList, ShoppingBag,
+  Boxes, Truck, Route: RouteIcon, CalendarClock, FileCheck, Wallet,
+  ClipboardCheck, CreditCard, BookOpen, AlertTriangle, BarChart3, AlertCircle,
+  FileSpreadsheet, FileDown, Target, BarChart: BarChart3,
+  // Mantenimiento
+  Lightbulb, Building2, ArrowRightLeft, ScanLine, TrendingUp, TrendingDown,
+  HeartPulse, Activity, Shield, Lock, Clock, Gauge, Droplet, HardHat,
+  GraduationCap, ShieldCheck, ShieldAlert, Construction, QrCode, Thermometer,
+  // Producción
+  Factory, CheckCircle2, Pause, CheckSquare, Tags, ListChecks,
+  // Compras / Admin
+  ShoppingCart, History, UserPlus, Calculator, Cog, Zap,
+  // Almacén
+  PackageSearch, PackageCheck, PackageX, Warehouse,
+};
+
+function resolveSidebarIcon(iconName: string): React.ComponentType<any> {
+  return SIDEBAR_ICON_MAP[iconName] ?? FileText;
+}
+
+function buildModuleNodes(
+  nodes: ConfigSidebarNode[],
+  permissionsMap: Record<string, boolean>,
+  moduleKey: SidebarModuleKey
+): SidebarItem[] {
+  const items: SidebarItem[] = [];
+  for (const node of nodes) {
+    if (node.type === 'item') {
+      const mod = getModuleByKey(moduleKey, node.moduleId);
+      if (!mod || !permissionsMap[node.moduleId]) continue;
+      items.push({
+        name: mod.name,
+        href: mod.path,
+        icon: resolveSidebarIcon(mod.icon),
+        description: mod.description ?? '',
+        moduleId: mod.id,
+      });
+    } else {
+      const children = buildModuleNodes(node.children, permissionsMap, moduleKey);
+      if (children.length === 0) continue;
+      if (node.name === '__flat__') {
+        items.push(...children);
+      } else {
+        items.push({
+          name: node.name,
+          icon: resolveSidebarIcon(node.icon),
+          description: '',
+          children,
+        });
+      }
+    }
+  }
+  return items;
 }
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
@@ -150,6 +230,27 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { canAccessAdministration, canAccessMaintenance, canAccessProduction } = useAreaPermissions();
   const [overlayClickable, setOverlayClickable] = React.useState(false);
   const [showFeedback, setShowFeedback] = React.useState(false);
+  const [isSidebarEditMode, setIsSidebarEditMode] = React.useState(false);
+
+  // Admins de empresa (rol contiene 'ADMIN') pueden editar el sidebar
+  // Cubre: ADMINISTRADOR, ADMIN, ADMIN_ENTERPRISE, SUPERADMIN, ADMINISTRATOR, ADMIN EMPRESA
+  const canModifySidebar = (user?.role ?? '').toUpperCase().includes('ADMIN');
+
+  // Favoritos — por usuario, visibles en todos los módulos
+  const { favorites, isFavorite, toggleFavorite } = useSidebarFavorites();
+  const allLeafItems = useMemo(() => [...getAllLeafItems(), ...HARDCODED_ITEMS], []);
+  const favoriteItems = useMemo(
+    () => allLeafItems.filter((i) => favorites.includes(i.moduleId)),
+    [allLeafItems, favorites]
+  );
+
+  // Áreas que soportan edición de sidebar
+  const areaName = currentArea?.name;
+  const isEditableArea = areaName === 'Administración' || areaName === 'Mantenimiento' || areaName === 'Producción';
+  const editModeModuleOnly: SidebarModuleKey | undefined =
+    areaName === 'Mantenimiento' ? 'mantenimiento' :
+    areaName === 'Producción' ? 'produccion' :
+    undefined;
   
   // Permitir que el overlay sea clickeable solo después de que el sidebar esté completamente abierto (solo móvil)
   React.useEffect(() => {
@@ -308,6 +409,69 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     canAccessAlmacenReservas,
     isLoading: permissionsLoading
   } = useNavigationPermissions();
+
+  // Config dinámica del sidebar de Ventas por empresa
+  const { data: companySidebarConfig } = useCompanySidebarConfig();
+
+  // ─── Permission maps por módulo ─────────────────────────────────────────────
+
+  const ventasPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'ventas.dashboard': canAccessSalesDashboard,
+    'ventas.clientes': canAccessClients,
+    'ventas.productos': canAccessProducts,
+    'ventas.listas-precios': canAccessSalesModule,
+    'ventas.zonas': canAccessSalesModule,
+    'ventas.condiciones-pago': canAccessSalesModule,
+    'ventas.configuracion': canAccessSalesModule,
+    'ventas.vendedores': canAccessSalesModule,
+    'ventas.liquidaciones': canAccessSalesModule,
+    'ventas.cotizaciones': canAccessQuotes,
+    'ventas.notas-pedido': canAccessQuotes,
+    'ventas.ordenes': canAccessSalesModule,
+    'ventas.ordenes-carga': canAccessSalesModule,
+    'ventas.entregas': canAccessSalesModule,
+    'ventas.entregas-rutas': canAccessSalesModule,
+    'ventas.turnos': canAccessSalesModule,
+    'ventas.comprobantes': canAccessSalesModule,
+    'ventas.cobranzas': canAccessSalesModule,
+    'ventas.aprobacion-pagos': canAccessSalesModule,
+    'ventas.valores': canAccessSalesModule,
+    'ventas.cuenta-corriente': canAccessSalesModule,
+    'ventas.disputas': canAccessSalesModule,
+    'ventas.alertas': canAccessSalesModule,
+    'ventas.reportes': canAccessSalesModule,
+  }), [canAccessSalesDashboard, canAccessClients, canAccessProducts, canAccessQuotes, canAccessSalesModule]);
+
+  const comprasPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'compras.dashboard': true, 'compras.torre-control': true, 'compras.pedidos': true,
+    'compras.ordenes': true, 'compras.proveedores': true, 'compras.cuentas-corrientes': true,
+    'compras.comprobantes': true, 'compras.stock': true, 'compras.stock-kardex': true,
+    'compras.stock-ajustes': true, 'compras.stock-transferencias': true,
+    'compras.stock-reposicion': true, 'compras.solicitudes': true,
+    'compras.devoluciones': true, 'compras.historial': true,
+  }), []);
+
+  const tesoreriaPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'tesoreria.posicion': true, 'tesoreria.cajas': true, 'tesoreria.bancos': true,
+    'tesoreria.cheques': true, 'tesoreria.transferencias': true, 'tesoreria.flujo-caja': true,
+  }), []);
+
+  const nominasPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'nominas.dashboard': true, 'nominas.empleados': true, 'nominas.gremios': true,
+    'nominas.sectores': true, 'nominas.configuracion': true, 'nominas.componentes': true,
+    'nominas.adelantos': true, 'nominas.liquidaciones': true,
+  }), []);
+
+  const almacenPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'almacen.dashboard': canAccessAlmacenDashboard,
+    'almacen.inventario': canAccessAlmacenInventario,
+    'almacen.solicitudes': canAccessAlmacenSolicitudes,
+    'almacen.despachos': canAccessAlmacenDespachos,
+    'almacen.devoluciones': canAccessAlmacenDevoluciones,
+    'almacen.reservas': canAccessAlmacenReservas,
+    'almacen.movimientos': true,
+  }), [canAccessAlmacenDashboard, canAccessAlmacenInventario, canAccessAlmacenSolicitudes, canAccessAlmacenDespachos, canAccessAlmacenDevoluciones, canAccessAlmacenReservas]);
+
 
   // Estado para controlar el grupo desplegable
   const [openGroups, setOpenGroups] = useState<{[key:string]:boolean}>({});
@@ -486,322 +650,50 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }
   }, [pathname]); // Solo ejecutar cuando cambia pathname, no cuando cambia isOpen
   
-  // ========== NUEVA ESTRUCTURA SIDEBAR V2 ==========
+  // ========== SIDEBAR MANTENIMIENTO — configurable por empresa ==========
 
-  // V2: Órdenes ahora es item único con vista unificada (Lista/Bandeja/Calendario)
-  // Las rutas viejas (/dispatcher, /mis-ots, /calendario) redirigen a ?view= params
-  // const ordenesItems - REMOVIDO - ya no se usa grupo colapsable
+  // Todos los items de mantenimiento son visibles (el filtro de área ya garantiza acceso)
+  const mantenimientoPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'mant.dashboard': true,
+    'mant.fallas': true,
+    'mant.ordenes': true,
+    'mant.soluciones': true,
+    'mant.preventivo': true,
+    'mant.maquinas': canAccessMaintenanceMachines,
+    'mant.unidades-moviles': canAccessMobileUnits,
+    'mant.puestos-trabajo': canAccessWorkStations,
+    'mant.panol': canAccessPanol,
+    'mant.panol-repuestos': canAccessPanol,
+    'mant.panol-movimientos': canAccessPanol,
+    'mant.panol-dashboard': canAccessPanol,
+    'mant.panol-conteo': canAccessPanol,
+    'mant.panol-rapido': canAccessPanol,
+    'mant.ideas': true,
+    'mant.costos': true,
+    'mant.health-score': true,
+    'mant.fmea': true,
+    'mant.criticidad': true,
+    'mant.monitoreo': true,
+    'mant.ptw': true,
+    'mant.loto': true,
+    'mant.moc': true,
+    'mant.skills': true,
+    'mant.contadores': true,
+    'mant.calibracion': true,
+    'mant.lubricacion': true,
+    'mant.contratistas': true,
+    'mant.conocimiento': true,
+    'mant.lecciones': true,
+    'mant.garantias': true,
+    'mant.paradas': true,
+    'mant.qr': true,
+    'mant.puntos-medicion': true,
+  }), [canAccessMaintenanceMachines, canAccessMobileUnits, canAccessWorkStations, canAccessPanol]);
 
-  // ========== V2: ESTRUCTURA SIDEBAR MANTENIMIENTO ==========
-
-  // Grupo CORRECTIVO - contiene Fallas y Órdenes
-  // Fallas: vista unificada con tabs (Reportes | Reincidencias | Duplicados)
-  const fallasItems: SidebarItem[] = [
-    {
-      name: 'Reportes',
-      href: '/mantenimiento/fallas',
-      icon: AlertTriangle,
-      description: 'Registro y gestión de fallas reportadas'
-    },
-    {
-      name: 'Reincidencias',
-      href: '/mantenimiento/fallas?view=reincidencias',
-      icon: RefreshCw,
-      description: 'Análisis de fallas recurrentes'
-    },
-    {
-      name: 'Duplicados',
-      href: '/mantenimiento/fallas?view=duplicados',
-      icon: Link2,
-      description: 'Gestión de reportes duplicados'
-    },
-  ];
-
-  // Items del grupo CORRECTIVO (Fallas + Órdenes + Soluciones) - siempre visibles
-  const correctivoItems: SidebarItem[] = [
-    {
-      name: 'Fallas',
-      href: '/mantenimiento/fallas',
-      icon: AlertTriangle,
-      description: 'Reportes e incidentes'
-    },
-    {
-      name: 'Órdenes de trabajo',
-      href: '/mantenimiento/ordenes',
-      icon: ClipboardList,
-      description: 'Gestión de órdenes de trabajo (Lista/Bandeja/Calendario)'
-    },
-    {
-      name: 'Soluciones',
-      href: '/mantenimiento/soluciones',
-      icon: Lightbulb,
-      description: 'Base de conocimiento de soluciones'
-    },
-  ];
-
-  // PREVENTIVO - Item único con tabs internos (?view=)
-  // Tabs: Hoy | Calendario | Planes | Checklists | Métricas
-  // NO tiene children en sidebar - los tabs están dentro de la página
-
-  // Items del grupo "Activos" - siempre visibles en Mantenimiento
-  const activosItems: SidebarItem[] = [
-    {
-      name: 'Máquinas',
-      href: '/mantenimiento/maquinas',
-      icon: Cog,
-      description: 'Lista completa de máquinas'
-    },
-    {
-      name: 'Unidades Móviles',
-      href: '/mantenimiento/unidades-moviles',
-      icon: Truck,
-      description: 'Vehículos y equipos móviles'
-    },
-    {
-      name: 'Puestos de trabajo',
-      href: '/mantenimiento/puestos-trabajo',
-      icon: Building2,
-      description: 'Puestos de trabajo e instructivos'
-    },
-  ];
-
-  // Items del grupo PAÑOL - Inventario de herramientas y repuestos
-  const panolItems: SidebarItem[] = [
-    {
-      name: 'Inventario',
-      href: '/panol',
-      icon: Package,
-      description: 'Ver todos los items del pañol'
-    },
-    {
-      name: 'Repuestos',
-      href: '/panol/repuestos',
-      icon: Cog,
-      description: 'Gestión de repuestos'
-    },
-    {
-      name: 'Movimientos',
-      href: '/panol/movimientos',
-      icon: ArrowRightLeft,
-      description: 'Historial de entradas y salidas'
-    },
-    {
-      name: 'Dashboard',
-      href: '/panol/dashboard',
-      icon: BarChart3,
-      description: 'Métricas y analytics'
-    },
-    {
-      name: 'Conteo Físico',
-      href: '/panol/conteo',
-      icon: ClipboardCheck,
-      description: 'Auditoría de inventario'
-    },
-    {
-      name: 'Acciones Rápidas',
-      href: '/panol/rapido',
-      icon: ScanLine,
-      description: 'Escaneo QR y operaciones rápidas'
-    },
-  ];
-
-  // ========== GRUPOS CMMS AVANZADOS ==========
-
-  // Grupo CONFIABILIDAD: Health Score, FMEA, Criticidad, Monitoreo
-  const confiabilidadItems: SidebarItem[] = [
-    {
-      name: 'Health Score',
-      href: '/mantenimiento/health-score',
-      icon: HeartPulse,
-      description: 'Indicador de salud de máquinas'
-    },
-    {
-      name: 'FMEA',
-      href: '/mantenimiento/fmea',
-      icon: TrendingDown,
-      description: 'Análisis de modos de falla y efectos'
-    },
-    {
-      name: 'Criticidad',
-      href: '/mantenimiento/criticidad',
-      icon: Target,
-      description: 'Matriz de criticidad de activos'
-    },
-    {
-      name: 'Monitoreo',
-      href: '/mantenimiento/monitoreo',
-      icon: Activity,
-      description: 'Monitoreo de condición y sensores'
-    },
-  ];
-
-  // Grupo SEGURIDAD: PTW, LOTO, MOC
-  const seguridadItems: SidebarItem[] = [
-    {
-      name: 'PTW',
-      href: '/mantenimiento/ptw',
-      icon: Shield,
-      description: 'Permisos de trabajo (Permit to Work)'
-    },
-    {
-      name: 'LOTO',
-      href: '/mantenimiento/loto',
-      icon: Lock,
-      description: 'Bloqueo y etiquetado (Lockout-Tagout)'
-    },
-    {
-      name: 'MOC',
-      href: '/mantenimiento/moc',
-      icon: RefreshCw,
-      description: 'Gestión del cambio (Management of Change)'
-    },
-  ];
-
-  // Grupo GESTIÓN: Skills, Contadores, Calibración, Lubricación, Contratistas
-  const gestionItems: SidebarItem[] = [
-    {
-      name: 'Skills',
-      href: '/mantenimiento/skills',
-      icon: Target,
-      description: 'Matriz de habilidades y certificaciones'
-    },
-    {
-      name: 'Contadores',
-      href: '/mantenimiento/contadores',
-      icon: Clock,
-      description: 'Contadores de uso y mantenimiento'
-    },
-    {
-      name: 'Calibración',
-      href: '/mantenimiento/calibracion',
-      icon: Gauge,
-      description: 'Gestión de calibraciones de equipos'
-    },
-    {
-      name: 'Lubricación',
-      href: '/mantenimiento/lubricacion',
-      icon: Droplet,
-      description: 'Puntos y rutas de lubricación'
-    },
-    {
-      name: 'Contratistas',
-      href: '/mantenimiento/contratistas',
-      icon: HardHat,
-      description: 'Gestión de contratistas externos'
-    },
-  ];
-
-  // Grupo DOCUMENTACIÓN: Conocimiento, Lecciones, Garantías, Paradas, QR, Puntos Medición
-  const documentacionItems: SidebarItem[] = [
-    {
-      name: 'Conocimiento',
-      href: '/mantenimiento/conocimiento',
-      icon: BookOpen,
-      description: 'Base de conocimiento y documentación'
-    },
-    {
-      name: 'Lecciones',
-      href: '/mantenimiento/lecciones',
-      icon: GraduationCap,
-      description: 'Base de lecciones aprendidas'
-    },
-    {
-      name: 'Garantías',
-      href: '/mantenimiento/garantias',
-      icon: ShieldCheck,
-      description: 'Gestión de garantías y reclamos'
-    },
-    {
-      name: 'Paradas',
-      href: '/mantenimiento/paradas',
-      icon: Construction,
-      description: 'Gestión de paradas y turnarounds'
-    },
-    {
-      name: 'QR Codes',
-      href: '/mantenimiento/qr',
-      icon: QrCode,
-      description: 'Generación y gestión de códigos QR'
-    },
-    {
-      name: 'Puntos Medición',
-      href: '/mantenimiento/puntos-medicion',
-      icon: Thermometer,
-      description: 'Puntos de medición y rondas de inspección'
-    },
-  ];
-
-  // ========== ESTRUCTURA PRINCIPAL MANTENIMIENTO ==========
-  const mantenimientoItems: SidebarItem[] = [
-    // ===== CORE - Siempre visible =====
-    {
-      name: 'Dashboard',
-      href: '/mantenimiento/dashboard',
-      icon: LayoutDashboard,
-      description: 'KPIs, tareas urgentes, alertas del sector'
-    },
-    {
-      name: 'Correctivo',
-      icon: Zap,
-      description: 'Fallas, órdenes y soluciones',
-      children: correctivoItems
-    },
-    {
-      name: 'Preventivo',
-      href: '/mantenimiento/preventivo',
-      icon: CalendarClock,
-      description: 'Mantenimiento preventivo y programado'
-    },
-    {
-      name: 'Activos',
-      icon: Cog,
-      description: 'Máquinas, vehículos y puestos de trabajo',
-      children: activosItems
-    },
-    {
-      name: 'Pañol',
-      icon: Package,
-      description: 'Inventario de repuestos y herramientas',
-      children: panolItems
-    },
-    {
-      name: 'Ideas',
-      href: '/mantenimiento/ideas',
-      icon: Lightbulb,
-      description: 'Libro de ideas y sugerencias de mejora'
-    },
-    {
-      name: 'Costos',
-      href: '/mantenimiento/costos',
-      icon: DollarSign,
-      description: 'Análisis de costos de mantenimiento'
-    },
-    // ===== CMMS AVANZADO - Grupos colapsables =====
-    {
-      name: 'Confiabilidad',
-      icon: TrendingUp,
-      description: 'Health Score, FMEA, Criticidad, Monitoreo',
-      children: confiabilidadItems
-    },
-    {
-      name: 'Seguridad',
-      icon: ShieldAlert,
-      description: 'PTW, LOTO, MOC',
-      children: seguridadItems
-    },
-    {
-      name: 'Gestión',
-      icon: Users,
-      description: 'Skills, Contadores, Calibración, Lubricación',
-      children: gestionItems
-    },
-    {
-      name: 'Documentación',
-      icon: FileText,
-      description: 'Conocimiento, Lecciones, Garantías, QR',
-      children: documentacionItems
-    },
-  ];
+  const mantenimientoItems = useMemo(() => {
+    const config = getEffectiveConfig('mantenimiento', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, mantenimientoPermissionsMap, 'mantenimiento');
+  }, [companySidebarConfig, mantenimientoPermissionsMap]);
 
   // Grupo Personal desplegable para administración
   // Tareas was moved into the unified Agenda page
@@ -810,207 +702,77 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       name: 'Permisos & Roles',
       href: '/administracion/permisos',
       icon: Shield,
-      description: 'Configurar roles de usuario y permisos del sistema'
+      description: 'Configurar roles de usuario y permisos del sistema',
+      moduleId: 'sys.permisos',
     }] : []),
     ...(canAccessUsers ? [{
       name: 'Gestión de Usuarios',
       href: '/administracion/usuarios',
       icon: Users,
-      description: 'Administrar usuarios, roles y permisos'
+      description: 'Administrar usuarios, roles y permisos',
+      moduleId: 'sys.usuarios',
     }] : []),
   ];
 
-  // Grupo Ventas desplegable para administración
-  // Reorganizado con 4 subgrupos anidados para mejor UX:
-  // 1. Dashboard (Overview)
-  // 2. Maestros (Master Data) - GRUPO ANIDADO
-  // 3. Ciclo de Ventas (O2C Process) - GRUPO ANIDADO
-  // 4. Facturación (Billing & Collections) - GRUPO ANIDADO
-  // 5. Análisis (Analytics & Reports) - GRUPO ANIDADO
-  const ventasItems: SidebarItem[] = [
-    // Dashboard - siempre al inicio
-    ...(canAccessSalesDashboard ? [{
-      name: 'Resumen',
-      href: '/administracion/ventas',
-      icon: LayoutDashboard,
-      description: 'Panel de control y KPIs'
-    }] : []),
+  // Grupos Ventas, Compras, Tesorería, Nóminas, Almacén — configurables por empresa
+  const ventasItems = useMemo(() => {
+    const config = getEffectiveConfig('ventas', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, ventasPermissionsMap, 'ventas');
+  }, [companySidebarConfig, ventasPermissionsMap]);
 
-    // 🗂️ GRUPO 1: MAESTROS (Master Data)
-    ...(canAccessClients || canAccessProducts || canAccessSalesModule ? [{
-      name: 'Maestros',
-      icon: Database,
-      description: 'Datos maestros del módulo',
-      children: [
-        ...(canAccessClients ? [{
-          name: 'Clientes',
-          href: '/administracion/ventas/clientes',
-          icon: Users,
-          description: 'Maestro de clientes'
-        }] : []),
-        ...(canAccessProducts ? [{
-          name: 'Productos',
-          href: '/administracion/ventas/productos',
-          icon: Package,
-          description: 'Catálogo de productos'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Listas de Precios',
-          href: '/administracion/ventas/listas-precios',
-          icon: DollarSign,
-          description: 'Gestión de precios'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Vendedores',
-          href: '/administracion/ventas/vendedores',
-          icon: User,
-          description: 'Equipo de ventas'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Zonas de Venta',
-          href: '/administracion/ventas/zonas',
-          icon: MapPin,
-          description: 'Territorios y zonas'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Condiciones de Pago',
-          href: '/administracion/ventas/condiciones-pago',
-          icon: Calendar,
-          description: 'Términos de pago'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Configuración',
-          href: '/administracion/ventas/configuracion',
-          icon: Settings,
-          description: 'Configuración del módulo'
-        }] : [])
-      ].filter(item => item !== undefined)
-    }] : []),
+  const comprasItems = useMemo(() => {
+    const config = getEffectiveConfig('compras', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, comprasPermissionsMap, 'compras');
+  }, [companySidebarConfig, comprasPermissionsMap]);
 
-    // 🔄 GRUPO 2: CICLO DE VENTAS (Order-to-Cash)
-    ...(canAccessQuotes || canAccessSalesModule ? [{
-      name: 'Ciclo de Ventas',
-      icon: RefreshCw,
-      description: 'Proceso Order-to-Cash completo',
-      children: [
-        ...(canAccessQuotes ? [{
-          name: 'Cotizaciones',
-          href: '/administracion/ventas/cotizaciones',
-          icon: FileText,
-          description: 'Cotizaciones y presupuestos'
-        }] : []),
-        ...(canAccessQuotes ? [{
-          name: 'Notas de Pedido',
-          href: '/administracion/ventas/cotizaciones?tipo=nota_pedido',
-          icon: ClipboardList,
-          description: 'Pedidos de clientes'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Órdenes de Venta',
-          href: '/administracion/ventas/ordenes',
-          icon: ShoppingBag,
-          description: 'Órdenes confirmadas'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Órdenes de Carga',
-          href: '/administracion/ventas/ordenes-carga',
-          icon: Boxes,
-          description: 'Preparación para despacho'
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Entregas',
-          icon: Truck,
-          description: 'Gestión de entregas',
-          children: [
-            {
-              name: 'Lista de Entregas',
-              href: '/administracion/ventas/entregas',
-              icon: Truck,
-              description: 'Ver todas las entregas'
-            },
-            {
-              name: 'Planificación de Rutas',
-              href: '/administracion/ventas/entregas/rutas',
-              icon: RouteIcon,
-              description: 'Optimizar rutas de entrega'
-            }
-          ]
-        }] : []),
-        ...(canAccessSalesModule ? [{
-          name: 'Turnos de Retiro',
-          href: '/administracion/ventas/turnos',
-          icon: CalendarClock,
-          description: 'Gestión de turnos pickup'
-        }] : [])
-      ].filter(item => item !== undefined)
-    }] : []),
+  const tesoreriaItems = useMemo(() => {
+    const config = getEffectiveConfig('tesoreria', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, tesoreriaPermissionsMap, 'tesoreria');
+  }, [companySidebarConfig, tesoreriaPermissionsMap]);
 
-    // 💰 GRUPO 3: FACTURACIÓN (Billing & Collections)
-    ...(canAccessSalesModule ? [{
-      name: 'Facturación',
-      icon: Receipt,
-      description: 'Comprobantes y cobranzas',
-      children: [
-        {
-          name: 'Comprobantes',
-          href: '/administracion/ventas/comprobantes',
-          icon: FileCheck,
-          description: 'Facturas, NC, ND unificados'
-        },
-        {
-          name: 'Cobranzas',
-          href: '/administracion/ventas/cobranzas',
-          icon: Wallet,
-          description: 'Gestión de cobros'
-        },
-        {
-          name: 'Aprobación de Pagos',
-          href: '/administracion/ventas/aprobacion-pagos',
-          icon: ClipboardCheck,
-          description: 'Aprobación de cobros'
-        },
-        {
-          name: 'Gestión de Valores',
-          href: '/administracion/ventas/valores',
-          icon: CreditCard,
-          description: 'Cheques y echeqs'
-        },
-        {
-          name: 'Cuenta Corriente',
-          href: '/administracion/ventas/cuenta-corriente',
-          icon: BookOpen,
-          description: 'Estado de cuenta'
-        },
-        {
-          name: 'Disputas',
-          href: '/administracion/ventas/disputas',
-          icon: AlertTriangle,
-          description: 'Reclamos de clientes'
-        }
-      ]
-    }] : []),
+  const nominasItems = useMemo(() => {
+    const config = getEffectiveConfig('nominas', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, nominasPermissionsMap, 'nominas');
+  }, [companySidebarConfig, nominasPermissionsMap]);
 
-    // 📈 GRUPO 4: ANÁLISIS (Analytics & Reports)
-    ...(canAccessSalesModule ? [{
-      name: 'Análisis',
-      icon: BarChart3,
-      description: 'Reportes y análisis',
-      children: [
-        {
-          name: 'Alertas de Riesgo',
-          href: '/administracion/ventas/alertas',
-          icon: AlertCircle,
-          description: 'Alertas crediticias'
-        },
-        {
-          name: 'Reportes',
-          href: '/administracion/ventas/reportes',
-          icon: FileText,
-          description: 'Reportes de ventas'
-        }
-      ]
-    }] : [])
-  ];
+  const almacenItems = useMemo(() => {
+    const config = getEffectiveConfig('almacen', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, almacenPermissionsMap, 'almacen');
+  }, [companySidebarConfig, almacenPermissionsMap]);
+
+  const produccionPermissionsMap = useMemo((): Record<string, boolean> => ({
+    'prod.dashboard': canAccessProductionDashboard,
+    'prod.ordenes': canAccessProductionOrders,
+    'prod.registro-diario': canAccessProductionPartes,
+    'prod.paradas': canAccessProductionParadas,
+    'prod.rutinas': canAccessProductionRutinas,
+    'prod.calidad': canAccessProductionCalidad,
+    'prod.centros-trabajo': canAccessWorkCenters,
+    'prod.turnos': canAccessShifts,
+    'prod.codigos-motivo': canAccessReasonCodes,
+    'prod.plantillas-rutinas': canAccessProductionRutinas,
+    'prod.recursos': canAccessProductionConfig,
+    'prod.reportes': canAccessProductionReports,
+    'prod.maquinas': canAccessProductionMachines,
+    'prod.vehiculos': canAccessVehicles,
+  }), [canAccessProductionDashboard, canAccessProductionOrders, canAccessProductionPartes, canAccessProductionParadas, canAccessProductionRutinas, canAccessProductionCalidad, canAccessWorkCenters, canAccessShifts, canAccessReasonCodes, canAccessProductionConfig, canAccessProductionReports, canAccessProductionMachines, canAccessVehicles]);
+
+  const produccionItems = useMemo(() => {
+    const config = getEffectiveConfig('produccion', companySidebarConfig ?? null);
+    return buildModuleNodes(config.groups, produccionPermissionsMap, 'produccion');
+  }, [companySidebarConfig, produccionPermissionsMap]);
+
+  // Mapa unificado de todos los permisos (para custom groups que mezclan módulos)
+  // IMPORTANTE: debe definirse DESPUÉS de todos los permissionsMap individuales
+  const allPermissionsMap = useMemo(() => ({
+    ...ventasPermissionsMap,
+    ...comprasPermissionsMap,
+    ...tesoreriaPermissionsMap,
+    ...nominasPermissionsMap,
+    ...almacenPermissionsMap,
+    ...mantenimientoPermissionsMap,
+    ...produccionPermissionsMap,
+  }), [ventasPermissionsMap, comprasPermissionsMap, tesoreriaPermissionsMap, nominasPermissionsMap, almacenPermissionsMap, mantenimientoPermissionsMap, produccionPermissionsMap]);
 
   // Módulo de Costos integrado - requiere T2 (modo Extendido)
   const costosItems: SidebarItem[] = [
@@ -1018,443 +780,123 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       name: 'Módulo de Costos',
       href: '/administracion/costos',
       icon: Calculator,
-      description: 'Sistema completo de gestión, análisis y proyección de costos de fabricación'
+      description: 'Sistema completo de gestión, análisis y proyección de costos de fabricación',
+      moduleId: 'sys.costos',
     }] : [])
   ];
 
-  // Grupo Tesorería desplegable para administración
-  // Siempre visible - el filtrado T1/T2 se hace en las APIs según ViewMode
-  const tesoreriaItems: SidebarItem[] = [
-    {
-      name: 'Posición',
-      href: '/administracion/tesoreria',
-      icon: LayoutDashboard,
-      description: 'Posición consolidada de fondos'
-    },
-    {
-      name: 'Cajas',
-      href: '/administracion/tesoreria/cajas',
-      icon: DollarSign,
-      description: 'Gestión de cajas de efectivo'
-    },
-    {
-      name: 'Bancos',
-      href: '/administracion/tesoreria/bancos',
-      icon: Building2,
-      description: 'Cuentas bancarias y movimientos'
-    },
-    {
-      name: 'Cheques',
-      href: '/administracion/tesoreria/cheques',
-      icon: FileCheck,
-      description: 'Cartera de cheques'
-    },
-    {
-      name: 'Transferencias',
-      href: '/administracion/tesoreria/transferencias',
-      icon: ArrowRightLeft,
-      description: 'Transferencias internas'
-    },
-    {
-      name: 'Flujo de Caja',
-      href: '/administracion/tesoreria/flujo-caja',
-      icon: TrendingUp,
-      description: 'Proyección de flujo de caja'
-    },
-  ];
+  // Helper: obtiene el label de una sección (usa override si existe)
+  const getSL = (key: string, defaultLabel: string) =>
+    companySidebarConfig?.sectionLabels?.[key] ?? defaultLabel;
 
-  // Grupo Nóminas desplegable para administración
-  const nominasItems: SidebarItem[] = [
-    {
-      name: 'Dashboard',
-      href: '/administracion/nominas',
-      icon: LayoutDashboard,
-      description: 'Panel de control de nóminas y proyecciones'
-    },
-    {
-      name: 'Empleados',
-      href: '/administracion/nominas/empleados',
-      icon: UserPlus,
-      description: 'Gestión de empleados'
-    },
-    {
-      name: 'Gremios',
-      href: '/administracion/nominas/gremios',
-      icon: Users,
-      description: 'Gremios, categorías y tasas de convenio'
-    },
-    {
-      name: 'Sectores',
-      href: '/administracion/nominas/sectores',
-      icon: MapPin,
-      description: 'Sectores de trabajo'
-    },
-    {
-      name: 'Configuración',
-      href: '/administracion/nominas/configuracion',
-      icon: Settings,
-      description: 'Configuración de nóminas y feriados'
-    },
-    {
-      name: 'Componentes',
-      href: '/administracion/nominas/componentes',
-      icon: Calculator,
-      description: 'Fórmulas y componentes salariales'
-    },
-    {
-      name: 'Adelantos',
-      href: '/administracion/nominas/adelantos',
-      icon: DollarSign,
-      description: 'Adelantos de sueldo'
-    },
-    {
-      name: 'Liquidaciones',
-      href: '/administracion/nominas/liquidaciones',
-      icon: Receipt,
-      description: 'Liquidaciones de sueldos'
-    },
-  ];
-
-  // Grupo Almacén - Sistema de despachos, solicitudes y control de inventario operativo
-  const almacenItems: SidebarItem[] = [
-    ...(canAccessAlmacenDashboard ? [{
-      name: 'Dashboard',
-      href: '/almacen',
-      icon: LayoutDashboard,
-      description: 'Panel de control de almacén'
-    }] : []),
-    ...(canAccessAlmacenInventario ? [{
-      name: 'Inventario',
-      href: '/almacen/inventario',
-      icon: PackageSearch,
-      description: 'Vista unificada de inventario (suministros + herramientas)'
-    }] : []),
-    ...(canAccessAlmacenSolicitudes ? [{
-      name: 'Solicitudes',
-      href: '/almacen/solicitudes',
-      icon: ClipboardPen,
-      description: 'Solicitudes de material de OT, OP y áreas'
-    }] : []),
-    ...(canAccessAlmacenDespachos ? [{
-      name: 'Despachos',
-      href: '/almacen/despachos',
-      icon: PackageCheck,
-      description: 'Despachos y entregas de material'
-    }] : []),
-    ...(canAccessAlmacenDevoluciones ? [{
-      name: 'Devoluciones',
-      href: '/almacen/devoluciones',
-      icon: PackageX,
-      description: 'Devoluciones de material no utilizado'
-    }] : []),
-    ...(canAccessAlmacenReservas ? [{
-      name: 'Reservas',
-      href: '/almacen/reservas',
-      icon: Boxes,
-      description: 'Reservas activas de stock'
-    }] : []),
-    {
-      name: 'Movimientos',
-      href: '/almacen/movimientos',
-      icon: ArrowRightLeft,
-      description: 'Kardex y historial de movimientos'
-    },
-  ];
-
-  // Grupo Compras desplegable para administración
-  // Siempre visible - el filtrado T1/T2 se hace en las APIs según ViewMode
-  const comprasItems: SidebarItem[] = [
-    {
-      name: 'Dashboard',
-      href: '/administracion/compras',
-      icon: LayoutDashboard,
-      description: 'Panel de control de compras'
-    },
-    {
-      name: 'Torre de Control',
-      href: '/administracion/compras/torre-control',
-      icon: Gauge,
-      description: 'Control centralizado de compras y entregas'
-    },
-    {
-      name: 'Pedidos de Compra',
-      href: '/administracion/compras/pedidos',
-      icon: ClipboardList,
-      description: 'Solicitudes internas con cotizaciones'
-    },
-    {
-      name: 'Órdenes de Compra',
-      href: '/administracion/compras/ordenes',
-      icon: ShoppingCart,
-      description: 'Gestión de órdenes de compra'
-    },
-    {
-      name: 'Proveedores',
-      href: '/administracion/compras/proveedores',
-      icon: Building2,
-      description: 'Gestión de proveedores y contactos'
-    },
-    {
-      name: 'Cuentas Corrientes',
-      href: '/administracion/compras/cuentas-corrientes',
-      icon: Wallet,
-      description: 'Estados de cuenta y saldos de proveedores'
-    },
-    {
-      name: 'Comprobantes',
-      href: '/administracion/compras/comprobantes',
-      icon: Receipt,
-      description: 'Cargar comprobantes de compra'
-    },
-    {
-      name: 'Stock',
-      icon: Boxes,
-      description: 'Gestión de stock e inventario',
-      children: [
-        {
-          name: 'Inventario',
-          href: '/administracion/compras/stock',
-          icon: Package,
-          description: 'Stock por depósito y alertas'
-        },
-        {
-          name: 'Kardex',
-          href: '/administracion/compras/stock/kardex',
-          icon: FileText,
-          description: 'Historial de movimientos'
-        },
-        {
-          name: 'Ajustes',
-          href: '/administracion/compras/stock/ajustes',
-          icon: ClipboardCheck,
-          description: 'Ajustes de inventario'
-        },
-        {
-          name: 'Transferencias',
-          href: '/administracion/compras/stock/transferencias',
-          icon: ArrowRightLeft,
-          description: 'Transferencias entre depósitos'
-        },
-        {
-          name: 'Reposición',
-          href: '/administracion/compras/stock/reposicion',
-          icon: Lightbulb,
-          description: 'Sugerencias de reposición'
-        }
-      ]
-    },
-    {
-      name: 'Solicitudes',
-      href: '/administracion/compras/solicitudes',
-      icon: FileCheck,
-      description: 'Solicitudes de compra y aprobaciones'
-    },
-    {
-      name: 'Devoluciones',
-      href: '/administracion/compras/devoluciones',
-      icon: RefreshCw,
-      description: 'Gestión de devoluciones a proveedores'
-    },
-    {
-      name: 'Historial',
-      href: '/administracion/compras/historial',
-      icon: History,
-      description: 'Historial de compras realizadas'
+  // Secciones custom creadas por el admin (mezclan items de cualquier módulo)
+  const customGroupSections = useMemo((): Record<string, SidebarItem | null> => {
+    const groups = companySidebarConfig?.customGroups ?? {};
+    const result: Record<string, SidebarItem | null> = {};
+    for (const [id, group] of Object.entries(groups)) {
+      const items = group.items
+        .map(moduleId => {
+          if (allPermissionsMap[moduleId] === false) return null;
+          const mod = getModuleItemById(moduleId);
+          if (!mod) return null;
+          return { name: mod.name, href: mod.path, icon: resolveSidebarIcon(mod.icon), description: mod.description ?? '' };
+        })
+        .filter((item): item is SidebarItem => item !== null);
+      result[id] = items.length > 0 ? {
+        name: group.name,
+        icon: resolveSidebarIcon(group.icon),
+        description: '',
+        children: items,
+      } : null;
     }
-  ];
+    return result;
+  }, [companySidebarConfig, allPermissionsMap]);
+
+  // Mapa de secciones top-level reordenables (null = sin acceso o sin items)
+  const adminModuleSectionsMap: Record<string, SidebarItem | null> = {
+    ...customGroupSections,
+    personal: canAccessPersonalGroup && personalItems.length > 0 ? {
+      name: getSL('personal', 'Personal'), icon: User,
+      description: 'Gestión de tareas, permisos y usuarios',
+      children: personalItems,
+    } : null,
+    ventas: canAccessVentasGroup && ventasItems.length > 0 ? {
+      name: getSL('ventas', 'Ventas'), icon: DollarSign,
+      description: 'Sistema completo de gestión de ventas',
+      children: ventasItems,
+    } : null,
+    costos: canAccessCostosGroup && costosItems.length > 0 ? {
+      name: getSL('costos', 'Costos'), icon: Calculator,
+      description: 'Sistema completo de gestión y análisis de costos',
+      children: costosItems,
+    } : null,
+    compras: comprasItems.length > 0 ? {
+      name: getSL('compras', 'Compras'), icon: ShoppingCart,
+      description: 'Sistema completo de gestión de compras y proveedores',
+      children: comprasItems,
+    } : null,
+    tesoreria: tesoreriaItems.length > 0 ? {
+      name: getSL('tesoreria', 'Tesorería'), icon: Wallet,
+      description: 'Gestión de cajas, bancos y cheques',
+      children: tesoreriaItems,
+    } : null,
+    nominas: nominasItems.length > 0 ? {
+      name: getSL('nominas', 'Nóminas'), icon: Users,
+      description: 'Gestión de sueldos, liquidaciones y adelantos',
+      children: nominasItems,
+    } : null,
+    almacen: canAccessAlmacen && almacenItems.length > 0 ? {
+      name: getSL('almacen', 'Almacén'), icon: Warehouse,
+      description: 'Despachos, solicitudes y control de inventario',
+      children: almacenItems,
+    } : null,
+    automatizaciones: {
+      name: getSL('automatizaciones', 'Automatizaciones'),
+      href: '/administracion/automatizaciones',
+      icon: Zap,
+      description: 'Reglas y acciones automáticas del sistema',
+      moduleId: 'sys.automatizaciones',
+    },
+    controles: canAccessControls ? {
+      name: getSL('controles', 'Controles'),
+      href: '/administracion/controles',
+      icon: Shield,
+      description: 'Dashboard de sistemas de control y gestión fiscal',
+      moduleId: 'sys.controles',
+    } : null,
+    cargas: canAccessCargas ? {
+      name: getSL('cargas', 'Cargas'),
+      href: '/administracion/cargas',
+      icon: Package,
+      description: 'Gestión de camiones y cargas de viguetas',
+      moduleId: 'sys.cargas',
+    } : null,
+  };
+
+  const adminTopModuleOrder = getAdminModuleOrder(companySidebarConfig ?? null);
+  const orderedModuleSections = adminTopModuleOrder
+    .map(key => adminModuleSectionsMap[key] ?? null)
+    .filter((s): s is SidebarItem => s !== null);
 
   const administracionItems: SidebarItem[] = [
     ...(canAccessAdminDashboard ? [{
       name: 'Dashboard',
       href: '/administracion/dashboard',
       icon: LayoutDashboard,
-      description: 'Panel de control con estadísticas generales de la empresa'
+      description: 'Panel de control con estadísticas generales de la empresa',
+      moduleId: 'sys.dashboard',
     }] : []),
-    // Agenda - Unifica agenda personal y gestión de tareas
     {
       name: 'Agenda',
       href: '/administracion/agenda',
       icon: CalendarClock,
-      description: 'Agenda personal, tareas, tareas fijas y seguimiento'
+      description: 'Agenda personal, tareas, tareas fijas y seguimiento',
+      moduleId: 'sys.agenda',
     },
-    ...(canAccessPersonalGroup && personalItems.length > 0 ? [{
-      name: 'Personal',
-      icon: User,
-      description: 'Gestión de tareas, permisos y usuarios',
-      children: personalItems
-    }] : []),
-    ...(canAccessVentasGroup && ventasItems.length > 0 ? [{
-      name: 'Ventas',
-      icon: DollarSign,
-      description: 'Sistema completo de gestión de ventas',
-      children: ventasItems
-    }] : []),
-    ...(canAccessCostosGroup && costosItems.length > 0 ? [{
-      name: 'Costos',
-      icon: Calculator,
-      description: 'Sistema completo de gestión y análisis de costos',
-      children: costosItems
-    }] : []),
-    // Compras - siempre visible, el filtrado T1/T2 se hace en las APIs
-    ...(comprasItems.length > 0 ? [{
-      name: 'Compras',
-      icon: ShoppingCart,
-      description: 'Sistema completo de gestión de compras y proveedores',
-      children: comprasItems
-    }] : []),
-    // Tesorería - Gestión de cajas, bancos y cheques
-    ...(tesoreriaItems.length > 0 ? [{
-      name: 'Tesorería',
-      icon: Wallet,
-      description: 'Gestión de cajas, bancos y cheques',
-      children: tesoreriaItems
-    }] : []),
-    // Nóminas - Gestión de sueldos y liquidaciones
-    ...(nominasItems.length > 0 ? [{
-      name: 'Nóminas',
-      icon: Users,
-      description: 'Gestión de sueldos, liquidaciones y adelantos',
-      children: nominasItems
-    }] : []),
-    // Almacén - Sistema de despachos y control de inventario operativo
-    ...(canAccessAlmacen && almacenItems.length > 0 ? [{
-      name: 'Almacén',
-      icon: Warehouse,
-      description: 'Despachos, solicitudes y control de inventario',
-      children: almacenItems
-    }] : []),
-    // Automatizaciones - Motor de reglas y acciones automáticas
-    {
-      name: 'Automatizaciones',
-      href: '/administracion/automatizaciones',
-      icon: Zap,
-      description: 'Reglas y acciones automáticas del sistema'
-    },
-    ...(canAccessControls ? [{
-      name: 'Controles',
-      href: '/administracion/controles',
-      icon: Shield,
-      description: 'Dashboard de sistemas de control y gestión fiscal'
-    }] : []),
-    ...(canAccessCargas ? [{
-      name: 'Cargas',
-      href: '/administracion/cargas',
-      icon: Package,
-      description: 'Gestión de camiones y cargas de viguetas'
-    }] : []),
+    // Todo lo demás es reordenable por el admin de empresa
+    ...orderedModuleSections,
   ];
 
-  const produccionItems: SidebarItem[] = [
-    // Dashboard siempre visible para quien tenga acceso a Producción
-    ...(canAccessProductionDashboard ? [{
-      name: 'Dashboard',
-      href: '/produccion/dashboard',
-      icon: LayoutDashboard,
-      description: 'KPIs, alertas y resumen de producción'
-    }] : []),
-
-    // Grupo Operaciones
-    ...((canAccessProductionOrders || canAccessProductionPartes || canAccessProductionParadas || canAccessProductionRutinas) ? [{
-      name: 'Operaciones',
-      icon: Factory,
-      description: 'Gestión operativa de producción',
-      children: [
-        ...(canAccessProductionOrders ? [{
-          name: 'Órdenes',
-          href: '/produccion/ordenes',
-          icon: ClipboardList,
-          description: 'Órdenes de producción'
-        }] : []),
-        ...(canAccessProductionPartes ? [{
-          name: 'Producción del Día',
-          href: '/produccion/registro-diario',
-          icon: Package,
-          description: 'Cargar producción diaria por sector'
-        }] : []),
-        ...(canAccessProductionParadas ? [{
-          name: 'Paradas',
-          href: '/produccion/paradas',
-          icon: Pause,
-          description: 'Registro y análisis de paradas'
-        }] : []),
-        ...(canAccessProductionRutinas ? [{
-          name: 'Rutinas',
-          href: '/produccion/rutinas',
-          icon: CheckSquare,
-          description: 'Checklists operativos'
-        }] : []),
-      ].filter(item => item !== undefined)
-    }] : []),
-
-    // Calidad
-    ...(canAccessProductionCalidad ? [{
-      name: 'Calidad',
-      href: '/produccion/calidad',
-      icon: CheckCircle2,
-      description: 'Control de calidad y lotes'
-    }] : []),
-
-    // Grupo Configuración
-    ...(canAccessProductionConfig ? [{
-      name: 'Configuración',
-      icon: Settings,
-      description: 'Maestros y configuración',
-      children: [
-        ...(canAccessWorkCenters ? [{
-          name: 'Centros de Trabajo',
-          href: '/produccion/configuracion/centros-trabajo',
-          icon: Building2,
-          description: 'Líneas, máquinas y estaciones'
-        }] : []),
-        ...(canAccessShifts ? [{
-          name: 'Turnos',
-          href: '/produccion/configuracion/turnos',
-          icon: Clock,
-          description: 'Configuración de turnos'
-        }] : []),
-        ...(canAccessReasonCodes ? [{
-          name: 'Códigos de Motivo',
-          href: '/produccion/configuracion/codigos-motivo',
-          icon: Tags,
-          description: 'Paradas, scrap y retrabajo'
-        }] : []),
-        ...(canAccessProductionRutinas ? [{
-          name: 'Plantillas Rutinas',
-          href: '/produccion/configuracion/rutinas',
-          icon: ListChecks,
-          description: 'Plantillas de checklists'
-        }] : []),
-        ...(canAccessProductionConfig ? [{
-          name: 'Recursos',
-          href: '/produccion/configuracion/recursos',
-          icon: Boxes,
-          description: 'Bancos, silos y recursos de producción'
-        }] : []),
-      ].filter(item => item !== undefined)
-    }] : []),
-
-    // Reportes
-    ...(canAccessProductionReports ? [{
-      name: 'Reportes',
-      href: '/produccion/reportes',
-      icon: BarChart3,
-      description: 'Reportes y tendencias'
-    }] : []),
-
-    // Items legacy (Máquinas y Vehículos)
-    ...(canAccessProductionMachines ? [{
-      name: 'Máquinas',
-      href: '/maquinas',
-      icon: Cog,
-      description: 'Gestión de máquinas de producción'
-    }] : []),
-    ...(canAccessVehicles ? [{
-      name: 'Vehículos',
-      href: '/vehicles',
-      icon: Truck,
-      description: 'Gestión de vehículos y transporte'
-    }] : []),
-  ];
 
   // Memoizar los items de navegación para evitar recálculos innecesarios
   const navItems = useMemo(() => {
@@ -1519,6 +961,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       
       {/* Sidebar */}
       <aside
+        data-sidebar
         ref={sidebarRef}
         className={cn(
           "transition-all duration-100 ease-out flex-shrink-0",
@@ -1713,7 +1156,62 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
                 {/* Nav items - Después del selector de administración */}
                 <div className="relative flex w-full min-w-0 flex-col mt-2">
+    {/* Edit mode */}
+                  {isSidebarEditMode && isEditableArea ? (
+                    <SidebarEditMode
+                      config={companySidebarConfig}
+                      onExitEditMode={() => setIsSidebarEditMode(false)}
+                      moduleOnly={editModeModuleOnly}
+                    />
+                  ) : (
                   <div className="w-full text-sm">
+                    {/* ─── Favoritos ─── */}
+                    {isOpen && favoriteItems.length > 0 && (
+                      <div className="mb-1">
+                        <div className="flex items-center gap-2 px-2 py-1 text-xs text-sidebar-foreground/50 font-medium">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span>Favoritos</span>
+                        </div>
+                        <ul className="flex flex-col gap-0.5">
+                          {favoriteItems.map((favItem) => {
+                            const FavIcon = resolveSidebarIcon(favItem.icon);
+                            const favActive = (() => {
+                              const href = favItem.path;
+                              if (pathname === href) return true;
+                              if (pathname.startsWith(href)) {
+                                const nc = pathname[href.length];
+                                return !nc || nc === '/' || nc === '?';
+                              }
+                              return false;
+                            })();
+                            return (
+                              <li key={favItem.moduleId} className="group/fav flex items-center">
+                                <Link
+                                  href={favItem.path}
+                                  prefetch={true}
+                                  className={cn(
+                                    'flex items-center gap-2 px-2 py-1.5 pl-4 rounded-md text-sm flex-1 transition-colors',
+                                    'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                    favActive && 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+                                  )}
+                                >
+                                  <FavIcon className="h-4 w-4 shrink-0" />
+                                  <span className="flex-1">{favItem.name}</span>
+                                </Link>
+                                <button
+                                  className="opacity-0 group-hover/fav:opacity-100 p-1 mr-1 rounded hover:bg-sidebar-accent transition-opacity"
+                                  onClick={(e) => { e.preventDefault(); toggleFavorite(favItem.moduleId); }}
+                                  title="Quitar de favoritos"
+                                >
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <div className="h-px mx-2 bg-sidebar-ring/20 mt-1 mb-2" />
+                      </div>
+                    )}
                     <ul className="flex w-full min-w-0 flex-col gap-0.5">
               {navItems.map((item) => {
                 // Función helper para determinar si un item está activo de forma precisa
@@ -1890,14 +1388,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                       {child.children.map((subchild: SidebarItem, subchildIdx: number) => {
                                         const isSubchildActive = checkIsActive(subchild.href);
                                         return (
-                                          <li key={`${child.name}-subchild-${subchild.href || subchildIdx}`}>
+                                          <li key={`${child.name}-subchild-${subchild.href || subchildIdx}`} className="group/item flex items-center">
                                             <Link
                                               href={subchild.href || '#'}
                                               prefetch={true}
                                               onMouseEnter={() => handleLinkHover(subchild.href || '')}
                                               onClick={(e) => handleLinkClick(subchild.href, e)}
                                               className={cn(
-                                                "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                                                "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors flex-1",
                                                 "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                                                 isSubchildActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
                                                 isSubchildActive && "border-l-2 border-l-sidebar-primary-foreground"
@@ -1907,7 +1405,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                               <span className="flex-1">{subchild.name}</span>
                                               {subchild.badge !== undefined && subchild.badge !== 0 && (
                                                 <span className={cn(
-                                                  "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
+                                                  "ml-auto px-1.5 py-0.5 text-xs font-medium rounded-full min-w-[18px] text-center",
                                                   subchild.badgeVariant === 'destructive' && "bg-destructive text-destructive-foreground",
                                                   subchild.badgeVariant === 'warning' && "bg-warning-muted text-warning-muted-foreground",
                                                   (!subchild.badgeVariant || subchild.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
@@ -1916,6 +1414,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                                 </span>
                                               )}
                                             </Link>
+                                            {subchild.moduleId && (
+                                              <button
+                                                className={cn(
+                                                  'p-1 mr-0.5 rounded hover:bg-sidebar-accent transition-opacity shrink-0',
+                                                  isFavorite(subchild.moduleId) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'
+                                                )}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(subchild.moduleId!); }}
+                                                title={isFavorite(subchild.moduleId) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                                              >
+                                                <Star className={cn('h-3 w-3', isFavorite(subchild.moduleId) ? 'fill-yellow-400 text-yellow-400' : 'text-sidebar-foreground/40')} />
+                                              </button>
+                                            )}
                                           </li>
                                         );
                                       })}
@@ -1928,14 +1438,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             // Si no tiene children, renderizar como link normal
                             const isActive = checkIsActive(child.href);
                             return (
-                              <li key={`${item.name}-child-${child.href || childIdx}`}>
+                              <li key={`${item.name}-child-${child.href || childIdx}`} className="group/item flex items-center">
                                 <Link
                                   href={child.href || '#'}
                                   prefetch={true}
                                   onMouseEnter={() => handleLinkHover(child.href || '')}
                                   onClick={(e) => handleLinkClick(child.href, e)}
                                       className={cn(
-                                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors flex-1",
                                         "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                                         isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
                                         isActive && "border-l-2 border-l-sidebar-primary-foreground"
@@ -1945,7 +1455,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                       <span className="flex-1">{child.name}</span>
                                       {child.badge !== undefined && child.badge !== 0 && (
                                         <span className={cn(
-                                          "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
+                                          "ml-auto px-1.5 py-0.5 text-xs font-medium rounded-full min-w-[18px] text-center",
                                           child.badgeVariant === 'destructive' && "bg-destructive text-destructive-foreground",
                                           child.badgeVariant === 'warning' && "bg-warning-muted text-warning-muted-foreground",
                                           (!child.badgeVariant || child.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
@@ -1954,6 +1464,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                         </span>
                                       )}
                                 </Link>
+                                {child.moduleId && (
+                                  <button
+                                    className={cn(
+                                      'p-1 mr-0.5 rounded hover:bg-sidebar-accent transition-opacity shrink-0',
+                                      isFavorite(child.moduleId) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'
+                                    )}
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(child.moduleId!); }}
+                                    title={isFavorite(child.moduleId) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                                  >
+                                    <Star className={cn('h-3 w-3', isFavorite(child.moduleId) ? 'fill-yellow-400 text-yellow-400' : 'text-sidebar-foreground/40')} />
+                                  </button>
+                                )}
                               </li>
                             );
                           })}
@@ -1994,14 +1516,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 }
 
                 return (
-                  <li key={item.href}>
+                  <li key={item.href} className="group/item flex items-center">
                     <Link
                       href={item.href || '#'}
                       prefetch={true}
                       onMouseEnter={() => handleLinkHover(item.href || '')}
                       onClick={(e) => handleLinkClick(item.href, e)}
                           className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors flex-1",
                             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                             isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
                             isActive && "border-l-2 border-l-sidebar-primary-foreground"
@@ -2011,7 +1533,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                           <span className="flex-1">{item.name}</span>
                           {item.badge !== undefined && item.badge !== 0 && (
                             <span className={cn(
-                              "ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-full min-w-[18px] text-center",
+                              "ml-auto px-1.5 py-0.5 text-xs font-medium rounded-full min-w-[18px] text-center",
                               item.badgeVariant === 'destructive' && "bg-destructive text-destructive-foreground",
                               item.badgeVariant === 'warning' && "bg-warning-muted text-warning-muted-foreground",
                               (!item.badgeVariant || item.badgeVariant === 'default') && "bg-sidebar-primary/20 text-sidebar-primary-foreground"
@@ -2020,11 +1542,24 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             </span>
                           )}
                     </Link>
+                    {item.moduleId && (
+                      <button
+                        className={cn(
+                          'p-1 mr-0.5 rounded hover:bg-sidebar-accent transition-opacity shrink-0',
+                          isFavorite(item.moduleId) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'
+                        )}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(item.moduleId!); }}
+                        title={isFavorite(item.moduleId) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                      >
+                        <Star className={cn('h-3 w-3', isFavorite(item.moduleId) ? 'fill-yellow-400 text-yellow-400' : 'text-sidebar-foreground/40')} />
+                      </button>
+                    )}
                   </li>
                 );
               })}
             </ul>
                   </div>
+                  )} {/* end edit mode conditional */}
                 </div>
               </div>
             ) : (
@@ -2143,24 +1678,40 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     : currentArea?.name === 'Mantenimiento'
                     ? '/mantenimiento/configuracion'
                     : '/configuracion';
-                  
-                  const isConfigActive = pathname === configHref || 
+
+                  const isConfigActive = pathname === configHref ||
                     (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
-                      
+
                   return (
-                    <Link 
-                      href={configHref}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                        "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm",
-                        isConfigActive && "border-l-2 border-l-sidebar-primary-foreground"
+                    <div className="flex items-center gap-0.5">
+                      <Link
+                        href={configHref}
+                        className={cn(
+                          "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors flex-1",
+                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm",
+                          isConfigActive && "border-l-2 border-l-sidebar-primary-foreground"
+                        )}
+                      >
+                        <Settings className="h-4 w-4 shrink-0" />
+                        <span>Configuración</span>
+                      </Link>
+                      {isEditableArea && canModifySidebar && !isSidebarEditMode && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => setIsSidebarEditMode(true)}
+                              className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-muted-foreground hover:bg-sidebar-accent transition-colors shrink-0"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">Editar sidebar</TooltipContent>
+                        </Tooltip>
                       )}
-                    >
-                      <Settings className="h-4 w-4 shrink-0" />
-                      <span>Configuración</span>
-                    </Link>
-                      );
+                    </div>
+                  );
                     })()}
                 
                 {/* Buscar */}
@@ -2175,7 +1726,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 >
                   <Search className="h-4 w-4 shrink-0" />
                   <span>Buscar</span>
-                  <kbd className="ml-auto text-[10px] text-sidebar-foreground/60 bg-sidebar-accent/50 border border-sidebar-ring/30 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+                  <kbd className="ml-auto text-xs text-sidebar-foreground/60 bg-sidebar-accent/50 border border-sidebar-ring/30 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
                 </button>
 
                 {/* Notificaciones */}
@@ -2221,23 +1772,41 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
 
                   return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={configHref}
-                          className={cn(
-                            "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
-                            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground"
-                          )}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={8}>
-                        Configuración
-                      </TooltipContent>
-                    </Tooltip>
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link
+                            href={configHref}
+                            className={cn(
+                              "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
+                              "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground"
+                            )}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={8}>
+                          Configuración
+                        </TooltipContent>
+                      </Tooltip>
+                      {isEditableArea && canModifySidebar && !isSidebarEditMode && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => setIsSidebarEditMode(true)}
+                              className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-sidebar-accent transition-colors"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8}>
+                            Editar sidebar
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </>
                   );
                 })()}
                 <Tooltip>

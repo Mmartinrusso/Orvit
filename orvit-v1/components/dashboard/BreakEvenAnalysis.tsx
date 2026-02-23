@@ -102,7 +102,7 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
                   ? "text-success"
                   : "text-warning-muted-foreground"
               )}>
-                {progressPercentage.toFixed(0)}%
+                {formatNumber(progressPercentage, 0)}%
               </span>
             </div>
 
@@ -154,7 +154,7 @@ export const BreakEvenAnalysis = memo(function BreakEvenAnalysis({
                 safetyMargin >= 0 ? "text-warning-muted-foreground" :
                 "text-destructive"
               )}>
-                {safetyMargin.toFixed(1)}%
+                {formatNumber(safetyMargin, 1)}%
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">

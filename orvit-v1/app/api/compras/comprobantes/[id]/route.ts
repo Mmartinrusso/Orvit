@@ -547,10 +547,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
         where: { facturaId: id },
       });
 
-      // 4c) Desvincular NCAs (creditDebitNotes) que referencien esta factura
-      await tx.creditDebitNote.updateMany({
+      // 4c) Eliminar NCAs vinculadas a esta factura (cascades items y credit allocations)
+      //     SupplierAccountMovement.notaCreditoDebitoId → SET NULL por cascade de DB
+      await tx.creditDebitNote.deleteMany({
         where: { facturaId: id },
-        data: { facturaId: null },
       });
 
       // 4d) Desvincular solicitudes de NCA
@@ -559,22 +559,52 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
         data: { facturaId: null },
       });
 
-      // 4e) Desvincular imputaciones de crédito
+      // 4e) Desvincular imputaciones de crédito directas a esta factura
       await tx.supplierCreditAllocation.deleteMany({
         where: { receiptId: id },
       });
 
-      // 4f) Desvincular recepciones (goodsReceipts) vinculadas a esta factura
-      await tx.goodsReceipt.updateMany({
+      // 4f) Eliminar remitos (goodsReceipts) vinculados a esta factura
+      //     Primero nulificar refs en PurchaseReturnItems para evitar FK violation
+      const linkedGRs = await tx.goodsReceipt.findMany({
         where: { facturaId: id },
-        data: { facturaId: null, tieneFactura: false },
+        select: { id: true },
       });
+      const linkedGRIds = linkedGRs.map((g) => g.id);
+      if (linkedGRIds.length > 0) {
+        const grItemIds = (
+          await tx.goodsReceiptItem.findMany({
+            where: { goodsReceiptId: { in: linkedGRIds } },
+            select: { id: true },
+          })
+        ).map((i) => i.id);
+        if (grItemIds.length > 0) {
+          await tx.purchaseReturnItem.updateMany({
+            where: { goodsReceiptItemId: { in: grItemIds } },
+            data: { goodsReceiptItemId: null },
+          });
+        }
+        await tx.goodsReceipt.deleteMany({ where: { id: { in: linkedGRIds } } });
+      }
 
-      // 4g) Desvincular devoluciones vinculadas a esta factura
-      await tx.purchaseReturn.updateMany({
+      // 4g) Eliminar devoluciones (purchaseReturns) vinculadas a esta factura
+      //     Nulificar refs en StockMovements y NCAs para evitar FK violations
+      const linkedPRs = await tx.purchaseReturn.findMany({
         where: { facturaId: id },
-        data: { facturaId: null },
+        select: { id: true },
       });
+      const linkedPRIds = linkedPRs.map((r) => r.id);
+      if (linkedPRIds.length > 0) {
+        await tx.stockMovement.updateMany({
+          where: { purchaseReturnId: { in: linkedPRIds } },
+          data: { purchaseReturnId: null },
+        });
+        await tx.creditDebitNote.updateMany({
+          where: { purchaseReturnId: { in: linkedPRIds } },
+          data: { purchaseReturnId: null },
+        });
+        await tx.purchaseReturn.deleteMany({ where: { id: { in: linkedPRIds } } });
+      }
 
       // 5) Buscar OCs vinculadas y revertir su estado si estaban COMPLETADA
       const matchResults = await tx.matchResult.findMany({

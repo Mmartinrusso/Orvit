@@ -121,7 +121,7 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className={cn("text-lg font-bold", efficiencyLevel.color)}>
-                  {costEfficiency.toFixed(0)}%
+                  {formatNumber(costEfficiency, 0)}%
                 </span>
               </div>
             </div>
@@ -179,7 +179,7 @@ export const EfficiencyMetrics = memo(function EfficiencyMetrics({
                 100 - costEfficiency <= 80 ? "text-warning-muted-foreground" :
                 "text-destructive"
               )}>
-                {(100 - costEfficiency).toFixed(1)}%
+                {formatNumber(100 - costEfficiency, 1)}%
               </span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">

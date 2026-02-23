@@ -15,6 +15,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,8 +60,6 @@ import {
   Hash,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { toast } from 'sonner';
 
@@ -450,7 +449,7 @@ export default function ComprobantesPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-mono">{comp.numero}</TableCell>
-                          <TableCell>{format(new Date(comp.fecha), 'dd/MM/yyyy')}</TableCell>
+                          <TableCell>{formatDate(comp.fecha)}</TableCell>
                           <TableCell>{comp.clientName}</TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(comp.total)}

@@ -19,7 +19,7 @@ import {
   ReferenceLine
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useDashboardStore } from './useDashboardStore';
 import { ChartData } from './types';
 import { formatCurrency, formatPercentage, formatMonth } from './utils/metrics';
@@ -437,7 +437,7 @@ export function MainChart({ data, comparisonMode, chartType }: MainChartProps) {
                           <div key={index} className="flex items-center justify-between">
                             <span className="text-sm text-foreground">{entry.dataKey}</span>
                             <span className="text-sm font-bold text-foreground">
-                              {entry.value.toFixed(1)} (base 100)
+                              {formatNumber(entry.value, 1)} (base 100)
                             </span>
                           </div>
                         ))}

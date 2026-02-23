@@ -35,8 +35,8 @@ import {
   TrendingDown,
   Printer,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
+
 import { cn, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -191,7 +191,7 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fechaDesde">Desde</Label>
               <Input
@@ -233,7 +233,7 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -338,7 +338,7 @@ export function CurrentAccountStatement({ clientId }: CurrentAccountStatementPro
                   {data.transactions.map((txn) => (
                     <TableRow key={`${txn.tipo}-${txn.id}`}>
                       <TableCell className="whitespace-nowrap">
-                        {format(new Date(txn.fecha), 'dd/MM/yyyy', { locale: es })}
+                        {formatDate(txn.fecha)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

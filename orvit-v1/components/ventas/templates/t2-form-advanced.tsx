@@ -1,3 +1,4 @@
+import { formatNumber } from '@/lib/utils';
 /**
  * T2 - Advanced Form Template
  * Full-featured form with Enter navigation, real-time validation, unsaved changes indicator
@@ -325,7 +326,7 @@ export function T2FormAdvanced({
                   <AlertDescription className="text-xs">
                     <span className="font-medium">Margen de ganancia:</span>{' '}
                     <span className={margen > 20 ? 'text-success font-semibold' : 'text-warning-muted-foreground font-semibold'}>
-                      {margen.toFixed(1)}%
+                      {formatNumber(margen, 1)}%
                     </span>
                     {margen < 10 && (
                       <span className="text-warning-muted-foreground ml-2">(Margen bajo)</span>

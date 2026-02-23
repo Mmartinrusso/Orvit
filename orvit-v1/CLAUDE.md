@@ -28,10 +28,14 @@ npm run create-superadmin # Create a superadmin user (interactive script)
 
 ### Utility Commands
 ```bash
-npm run clean            # Clean Next.js cache (PowerShell script)
-npm run migrate:checklists         # Migrate checklists to table format
-npm run migrate:checklists:dry-run # Dry run of checklist migration
-npm run sentry:slow      # Analyze Sentry slow transactions
+npm run clean                      # Limpiar caché de Next.js (PowerShell)
+npm run migrate:checklists         # ⚠️ SCRIPT FALTANTE — no ejecutar
+npm run migrate:failures           # Migrar failure records (scripts/migration/)
+npm run sentry:slow                # Analizar transacciones lentas (scripts/testing/)
+npm run smoke:corrective           # Smoke tests de correctivo (scripts/testing/)
+npm run audit:routes               # Auditar rutas API (scripts/testing/)
+npm run prisma:model               # Visor de modelos Prisma (scripts/prisma/)
+npm run prisma:docs                # Generar docs de schema (scripts/prisma/)
 ```
 
 ## Architecture Overview
@@ -86,7 +90,8 @@ contexts/
 
 hooks/
 ├── use-*.ts             # Custom React hooks for data fetching
-└── maintenance/         # Maintenance-specific hooks
+├── mantenimiento/       # Maintenance-specific hooks
+└── produccion/          # Production-specific hooks
 
 lib/
 ├── prisma.ts            # Prisma Client singleton
@@ -271,11 +276,77 @@ Checklists are stored as JSON in `MaintenanceChecklist.checklistData`:
 - Run tests: `npm test` or `npm run test:watch`
 - Test files should be colocated with source files or in `__tests__` directories
 
+## Daily Logs
+
+Los logs de sesión de Claude Code se mantienen en:
+```
+/Users/martinrusso10/Orvit/Orvit/.claude/daily-logs/YYYY-MM-DD.md
+```
+Cada log registra qué se hizo, archivos modificados, decisiones tomadas y próximos pasos.
+Ver `.claude/rules/workflow-rules.md` para el protocolo de logging.
+
+Para ver el contexto de una sesión anterior:
+```bash
+ls /Users/martinrusso10/Orvit/Orvit/.claude/daily-logs/
+```
+
 ## Debugging
-- Many debug API routes exist (prefixed with `/api/debug-*`)
-- Sentry integration for production error tracking
-- Console logging extensively used (search for `console.log`)
-- Performance monitoring available via custom hooks in `hooks/use-performance-monitor.ts`
+- **Sentry**: Tracking principal de errores en producción (`sentry.server.config.ts`, `sentry.edge.config.ts`)
+- **Structured Logging**: Logger Pino en `lib/logger.ts` para logs server-side
+- **Console logging**: Usado extensamente en desarrollo (buscar `console.log` para limpiar)
+- **Performance monitoring**: Custom hooks en `hooks/use-performance-monitor.ts`
+- **Nota**: Las rutas `/api/debug-*` fueron eliminadas el 2026-02-20. Usar Sentry y logging estructurado en su lugar.
+
+## Skills y Workflow de Claude Code
+
+**IMPORTANTE**: Antes de cualquier tarea no trivial, invocar el skill correspondiente usando el Skill tool.
+
+| Tarea | Skill |
+|-------|-------|
+| Componentes UI, páginas, modales, tablas, KPIs | `orvit-frontend` |
+| API routes, TanStack Query, Prisma queries | `orvit-api` |
+| Schema Prisma, migraciones, modelos | `orvit-prisma` |
+| Formularios (react-hook-form + Zod + Dialog) | `orvit-forms` |
+| Tablas de datos con filtros, sorting, paginación | `orvit-tables` |
+| Mantenimiento, checklists, work orders, health score | `orvit-maintenance` |
+| Permisos, roles, guards | `orvit-permissions` |
+| Gráficos, dashboards, Chart.js, Recharts | `orvit-charts` |
+| Tests con Vitest | `orvit-test` |
+| Discord bot, notificaciones | `orvit-discord` |
+| Pipeline AGX | `orvit-agx` |
+| Diseño visual distintivo, estética, polish | `frontend-design` |
+| Integración shadcn/ui, bloques, customización | `shadcn-ui` |
+| Mejorar prompts de diseño UI | `enhance-prompt` |
+| Git commit | `commit` |
+| Pull request | `pr` |
+
+**Skills location**: `/Users/martinrusso10/Orvit/Orvit/.claude/skills/`
+**Rules location**: `/Users/martinrusso10/Orvit/Orvit/.claude/rules/`
+**Daily logs**: `/Users/martinrusso10/Orvit/Orvit/.claude/daily-logs/YYYY-MM-DD.md`
+
+El log diario se actualiza automáticamente al terminar cada tarea significativa. Ver `workflow-rules.md` para el protocolo.
+
+## Discord Bot — Servicio Standalone
+
+El bot de Discord corre como proceso Node.js independiente (no dentro de Next.js):
+
+```
+discord-bot/               # Proyecto standalone (Railway)
+├── src/bot/               # Discord.js client + listeners
+├── src/handlers/          # Task, voice, failure handlers
+├── src/services/          # Notifications, agenda, permissions
+├── src/http-server.ts     # Express API (11 endpoints)
+└── src/index.ts           # Entry point
+
+orvit-v1/lib/discord/
+├── bot-service-client.ts  # HTTP client al bot service (usar esto)
+├── notifications.ts       # Funciones de notificación (usan bot-service-client)
+├── agenda-notifications.ts
+└── index.ts               # Re-exports
+```
+
+**Clave**: ORVIT se comunica con el bot vía HTTP API. No importar nada de `discord.js` directamente.
+Usar `lib/discord/bot-service-client.ts` para toda comunicación con el bot.
 
 ## Important Notes
 
@@ -284,6 +355,8 @@ Checklists are stored as JSON in `MaintenanceChecklist.checklistData`:
 3. **Permission Checks**: Never rely solely on frontend permission checks; always verify on backend
 4. **Caching**: CompanyContext implements aggressive caching; be aware of stale data
 5. **Mobile Support**: Mobile-specific components exist (e.g., `MobileBottomBar`, `MobileMachineNavbar`)
-6. **Print Layouts**: Special print layouts for checklists (see `app/maintenance/checklist-print/`)
-7. **Legacy Code**: Multiple permission systems exist (centralized, optimized, ultra-optimized); prefer `permissions-helpers.ts`
+6. **Print Layouts**: Special print layouts for checklists (see `app/mantenimiento/checklist-print/`)
+7. **Legacy Code**: The single active permission system is `permissions-helpers.ts`; legacy versions were removed 2026-02-20
 8. **Cost Recalculation**: Heavy operation; use with caution in production
+9. **Auth role mismatch**: `getUserFromToken()` retorna el nombre del rol de empresa (puede ser custom). `isAdminRole()` solo acepta roles de sistema (SUPERADMIN, ADMIN, ADMIN_ENTERPRISE). Si necesitás verificar admin, consultar `User.role` directamente.
+10. **Discord bot**: No usar `discord.js` ni importar `bot.ts` desde orvit-v1. Usar `bot-service-client.ts`.

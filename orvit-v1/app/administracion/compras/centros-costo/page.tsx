@@ -247,7 +247,7 @@ export default function CentrosCostoPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Cargando...</p>
+              <p className="text-muted-foreground">Cargando centros de costo...</p>
             </div>
           ) : filteredCentros.length === 0 ? (
             <div className="text-center py-12">

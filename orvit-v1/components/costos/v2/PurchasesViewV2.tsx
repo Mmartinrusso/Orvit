@@ -55,7 +55,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { SemiGauge } from './SemiGauge';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface PurchasesViewV2Props {
   companyId: string;
@@ -549,7 +549,7 @@ export function PurchasesViewV2({ companyId, selectedMonth, userColors = DEFAULT
                               ${formatCurrency(supplier.total)}
                             </span>
                             <span className="text-xs text-muted-foreground shrink-0 w-10 text-right">
-                              {pct.toFixed(1)}%
+                              {formatNumber(pct, 1)}%
                             </span>
                           </div>
                         );
@@ -639,7 +639,7 @@ export function PurchasesViewV2({ companyId, selectedMonth, userColors = DEFAULT
                     pct={gaugeData.avgFactPct}
                     label="Facturas/Proveedor"
                     color={userColors.chart3}
-                    displayValue={gaugeData.avgFact.toFixed(1)}
+                    displayValue={formatNumber(gaugeData.avgFact, 1)}
                   />
                   <SemiGauge
                     pct={gaugeData.avgTicketPct}
@@ -657,8 +657,8 @@ export function PurchasesViewV2({ companyId, selectedMonth, userColors = DEFAULT
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { key: 'total', label: 'Total Compras', formatted: `$${formatCurrency(trendMetrics.total.value)}`, color: userColors.chart1, history: trendMetrics.total.history, delta: trendMetrics.total.delta },
-                  { key: 'receiptCount', label: 'Facturas', formatted: trendMetrics.receiptCount.value.toFixed(0), color: userColors.chart2, history: trendMetrics.receiptCount.history, delta: trendMetrics.receiptCount.delta },
-                  { key: 'supplierCount', label: 'Proveedores', formatted: trendMetrics.supplierCount.value.toFixed(0), color: userColors.chart3, history: trendMetrics.supplierCount.history, delta: trendMetrics.supplierCount.delta },
+                  { key: 'receiptCount', label: 'Facturas', formatted: formatNumber(trendMetrics.receiptCount.value, 0), color: userColors.chart2, history: trendMetrics.receiptCount.history, delta: trendMetrics.receiptCount.delta },
+                  { key: 'supplierCount', label: 'Proveedores', formatted: formatNumber(trendMetrics.supplierCount.value, 0), color: userColors.chart3, history: trendMetrics.supplierCount.history, delta: trendMetrics.supplierCount.delta },
                   { key: 'avgTicket', label: 'Ticket Prom.', formatted: `$${formatCurrency(trendMetrics.avgTicket.value)}`, color: userColors.chart4, history: trendMetrics.avgTicket.history, delta: trendMetrics.avgTicket.delta },
                 ].map(t => (
                   <Card key={t.key}>
@@ -675,7 +675,7 @@ export function PurchasesViewV2({ companyId, selectedMonth, userColors = DEFAULT
                           className="text-xs"
                           style={{ color: t.delta >= 0 ? userColors.kpiPositive : userColors.kpiNegative }}
                         >
-                          {t.delta >= 0 ? '+' : ''}{t.delta.toFixed(1)}% vs anterior
+                          {t.delta >= 0 ? '+' : ''}{formatNumber(t.delta, 1)}% vs anterior
                         </p>
                       </div>
                     </CardContent>
@@ -730,7 +730,7 @@ export function PurchasesViewV2({ companyId, selectedMonth, userColors = DEFAULT
                                     />
                                   </div>
                                   <span className="text-muted-foreground text-xs w-10 text-right">
-                                    {pct.toFixed(1)}%
+                                    {formatNumber(pct, 1)}%
                                   </span>
                                 </div>
                               </TableCell>
@@ -789,7 +789,7 @@ export function PurchasesViewV2({ companyId, selectedMonth, userColors = DEFAULT
                             </TableCell>
                             <TableCell className="text-right text-muted-foreground">
                               {summary.totalPurchases > 0
-                                ? ((item.neto / summary.totalPurchases) * 100).toFixed(1) + '%'
+                                ? formatNumber((item.neto / summary.totalPurchases) * 100, 1) + '%'
                                 : '0%'}
                             </TableCell>
                           </TableRow>

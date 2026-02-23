@@ -376,10 +376,10 @@ export function RecurringOrdersModal({ open, onClose, onSuccess }: RecurringOrde
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 mb-1">
  <h4 className="font-medium text-sm truncate">{order.nombre}</h4>
- <Badge variant={order.isActive ? 'default' : 'secondary'} className="text-[10px]">
+ <Badge variant={order.isActive ? 'default' : 'secondary'} className="text-xs">
  {order.isActive ? 'Activo' : 'Inactivo'}
  </Badge>
- <Badge variant="outline" className="text-[10px]">
+ <Badge variant="outline" className="text-xs">
  {FRECUENCIAS.find(f => f.value === order.frecuencia)?.label}
  </Badge>
  </div>
@@ -557,7 +557,7 @@ export function RecurringOrdersModal({ open, onClose, onSuccess }: RecurringOrde
  onChange={(e) => setDiasParaNecesidad(parseInt(e.target.value) || 7)}
  className="mt-1"
  />
- <p className="text-[10px] text-muted-foreground mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  Fecha necesidad = ejecución + N días
  </p>
  </div>

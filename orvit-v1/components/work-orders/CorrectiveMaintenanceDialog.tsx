@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Machine, MachineComponent, Priority } from '@/lib/types';
 import {
@@ -884,7 +885,7 @@ export default function CorrectiveMaintenanceDialog({
                              <div className="flex items-center gap-2">
                                <FileText className="h-4 w-4 text-destructive" />
                                <span className="text-sm truncate font-medium">{file.name}</span>
-                               <span className="text-xs text-muted-foreground">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
+                               <span className="text-xs text-muted-foreground">({formatNumber(file.size / 1024 / 1024, 1)} MB)</span>
                              </div>
                              <Button
                                type="button"

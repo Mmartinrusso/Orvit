@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { Button } from '@/components/ui/button';
@@ -95,12 +96,12 @@ const TIPO_MOVIMIENTO_CONFIG: Record<string, { label: string; color: string; ico
   ENTRADA_RECEPCION: { label: 'Recepción', color: 'bg-success-muted text-success', icon: ArrowDownCircle, signo: '+' },
   SALIDA_DEVOLUCION: { label: 'Devolución', color: 'bg-destructive/10 text-destructive', icon: ArrowUpCircle, signo: '-' },
   TRANSFERENCIA_ENTRADA: { label: 'Transfer IN', color: 'bg-info-muted text-info-muted-foreground', icon: ArrowRightLeft, signo: '+' },
-  TRANSFERENCIA_SALIDA: { label: 'Transfer OUT', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300', icon: ArrowRightLeft, signo: '-' },
+  TRANSFERENCIA_SALIDA: { label: 'Transfer OUT', color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground', icon: ArrowRightLeft, signo: '-' },
   AJUSTE_POSITIVO: { label: 'Ajuste +', color: 'bg-success-muted text-success', icon: ArrowDownCircle, signo: '+' },
   AJUSTE_NEGATIVO: { label: 'Ajuste -', color: 'bg-destructive/10 text-destructive', icon: ArrowUpCircle, signo: '-' },
   CONSUMO_PRODUCCION: { label: 'Consumo', color: 'bg-warning-muted text-warning-muted-foreground', icon: Package, signo: '-' },
-  RESERVA: { label: 'Reservado', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300', icon: Package, signo: '-' },
-  LIBERACION_RESERVA: { label: 'Liberado', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300', icon: Package, signo: '+' },
+  RESERVA: { label: 'Reservado', color: 'bg-accent-purple-muted text-accent-purple-muted-foreground', icon: Package, signo: '-' },
+  LIBERACION_RESERVA: { label: 'Liberado', color: 'bg-accent-purple-muted text-accent-purple-muted-foreground', icon: Package, signo: '+' },
 };
 
 export default function KardexPage() {
@@ -426,7 +427,7 @@ export default function KardexPage() {
                               <Calendar className="h-4 w-4 text-muted-foreground" />
                               <div>
                                 <div className="text-sm">
-                                  {new Date(mov.createdAt).toLocaleDateString('es-AR')}
+                                  {formatDate(mov.createdAt)}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {formatDistanceToNow(new Date(mov.createdAt), { addSuffix: true, locale: es })}

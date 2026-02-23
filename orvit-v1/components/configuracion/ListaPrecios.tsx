@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCompany } from '@/contexts/CompanyContext';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { DollarSign, Package, Calculator, TrendingUp, Info, Calendar, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -236,9 +236,7 @@ export default function ListaPrecios() {
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-AR').format(num);
-  };
+  // formatNumber imported from @/lib/utils
 
   // Función para calcular la simulación de precios
   const calculateSimulation = async () => {
@@ -492,7 +490,7 @@ export default function ListaPrecios() {
                       </div>
                       <div className="text-sm text-muted-foreground">Materiales</div>
                       <div className="text-xs text-muted-foreground">
-                        {((simulationResult.costBreakdown.materials / simulationResult.totalCost) * 100).toFixed(1)}% del total
+                        {formatNumber((simulationResult.costBreakdown.materials / simulationResult.totalCost) * 100, 1)}% del total
                       </div>
                     </div>
                     <div className="text-center">
@@ -501,7 +499,7 @@ export default function ListaPrecios() {
                       </div>
                       <div className="text-sm text-muted-foreground">Costos Indirectos</div>
                       <div className="text-xs text-muted-foreground">
-                        {((simulationResult.costBreakdown.indirect / simulationResult.totalCost) * 100).toFixed(1)}% del total
+                        {formatNumber((simulationResult.costBreakdown.indirect / simulationResult.totalCost) * 100, 1)}% del total
                       </div>
                     </div>
                     <div className="text-center">
@@ -510,7 +508,7 @@ export default function ListaPrecios() {
                       </div>
                       <div className="text-sm text-muted-foreground">Costos de Empleados</div>
                       <div className="text-xs text-muted-foreground">
-                        {((simulationResult.costBreakdown.employees / simulationResult.totalCost) * 100).toFixed(1)}% del total
+                        {formatNumber((simulationResult.costBreakdown.employees / simulationResult.totalCost) * 100, 1)}% del total
                       </div>
                     </div>
                   </div>
@@ -615,7 +613,7 @@ export default function ListaPrecios() {
                                   {difference < 0 ? 'Ahorro: ' : 'Costo extra: '}{formatCurrency(Math.abs(difference))}
                                 </span>
                                 <span className="text-xs opacity-75">
-                                  {difference < 0 ? '-' : '+'}{Math.abs(percentageDifference).toFixed(1)}%
+                                  {difference < 0 ? '-' : '+'}{formatNumber(Math.abs(percentageDifference), 1)}%
                                 </span>
                               </div>
                             </td>
@@ -682,7 +680,7 @@ export default function ListaPrecios() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 border rounded-lg">
               <div className="text-2xl font-bold text-info-muted-foreground">
                 {productPrices.length}
@@ -894,7 +892,7 @@ export default function ListaPrecios() {
                                       : 'text-destructive'
                                   )}>
                                     {product.production_info.actual_production > product.production_info.planned_production ? '+' : ''}
-                                    {((product.production_info.actual_production - product.production_info.planned_production) / product.production_info.planned_production * 100).toFixed(1)}%
+                                    {formatNumber((product.production_info.actual_production - product.production_info.planned_production) / product.production_info.planned_production * 100, 1)}%
                                   </span>
                                 </div>
                               )}

@@ -31,7 +31,7 @@ import {
   type MovementType,
 } from '@/lib/almacen/types';
 import { EmptyState } from '../shared/EmptyState';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface KardexTabProps {
   initialSupplierItemId?: number;
@@ -188,14 +188,14 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
                         )}
                       >
                         {isPositiveMovement(mov.tipo) ? '+' : '-'}
-                        {Math.abs(mov.cantidad).toFixed(2)}
+                        {formatNumber(Math.abs(mov.cantidad), 2)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {mov.stockAnterior?.toFixed(2) || '-'}
+                      {mov.stockAnterior != null ? formatNumber(mov.stockAnterior, 2) : '-'}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {mov.stockPosterior?.toFixed(2) || '-'}
+                      {mov.stockPosterior != null ? formatNumber(mov.stockPosterior, 2) : '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-[150px] truncate">
                       {mov.referencia || '-'}

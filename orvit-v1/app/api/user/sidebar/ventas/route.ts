@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getDefaultUserPreferences } from '@/lib/sidebar/ventas-modules';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * GET - Get user's Ventas sidebar preferences
+ * GET - Get user's Ventas sidebar collapsed groups
+ * Since Paso 7, the company admin controls structure (visible/order/pinned).
+ * Only the user's collapsed state is personal.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,13 +25,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    // If user has no preferences yet, return defaults
     const preferences = user.sidebarPreferences as any;
-    const ventasPreferences = preferences?.ventas || getDefaultUserPreferences().ventas;
+    const collapsed: string[] = preferences?.ventas?.collapsed ?? [];
 
-    return NextResponse.json({
-      preferences: ventasPreferences,
-    });
+    return NextResponse.json({ collapsed });
   } catch (error) {
     console.error('Error fetching sidebar preferences:', error);
     return NextResponse.json(
@@ -41,15 +39,8 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * PUT - Update user's Ventas sidebar preferences
- *
- * Body:
- * {
- *   visible: string[],  // Array of module IDs that should be visible
- *   pinned: string[],   // Array of module IDs that should be pinned
- *   order: string[],    // Array of module IDs in custom order
- *   collapsed: string[] // Array of section IDs that should be collapsed
- * }
+ * PUT - Update user's Ventas collapsed groups
+ * Body: { collapsed: string[] }
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -59,17 +50,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { visible, pinned, order, collapsed } = body;
+    const { collapsed } = body;
 
-    // Validate input
-    if (!Array.isArray(visible) || !Array.isArray(pinned) || !Array.isArray(order)) {
+    if (!Array.isArray(collapsed)) {
       return NextResponse.json(
-        { error: 'Formato de preferencias inválido' },
+        { error: 'collapsed debe ser un array' },
         { status: 400 }
       );
     }
 
-    // Fetch current preferences
     const user = await prisma.user.findUnique({
       where: { id: token.userId },
       select: { sidebarPreferences: true },
@@ -79,29 +68,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    const currentPreferences = (user.sidebarPreferences as any) || {};
-
-    // Update only Ventas preferences
-    const updatedPreferences = {
-      ...currentPreferences,
-      ventas: {
-        visible,
-        pinned,
-        order,
-        collapsed: collapsed || [],
-      },
+    const current = (user.sidebarPreferences as any) || {};
+    const updated = {
+      ...current,
+      ventas: { collapsed },
     };
 
-    // Save to database
     await prisma.user.update({
       where: { id: token.userId },
-      data: { sidebarPreferences: updatedPreferences },
+      data: { sidebarPreferences: updated },
     });
 
-    return NextResponse.json({
-      success: true,
-      preferences: updatedPreferences.ventas,
-    });
+    return NextResponse.json({ success: true, collapsed });
   } catch (error) {
     console.error('Error updating sidebar preferences:', error);
     return NextResponse.json(

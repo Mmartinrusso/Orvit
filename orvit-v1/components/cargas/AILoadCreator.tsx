@@ -67,7 +67,7 @@ import {
   ChevronsUpDown,
   Check,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { toast } from 'sonner';
 import { TruckData, LoadItem, AIOptimizationResult } from '@/lib/cargas/types';
 
@@ -611,7 +611,7 @@ export default function AILoadCreator({
                           <span className="text-sm">Peso total</span>
                         </div>
                         <span className="font-bold">
-                          {(aiResult.stats.totalWeight / 1000).toFixed(2)} Tn
+                          {formatNumber(aiResult.stats.totalWeight / 1000, 2)} Tn
                         </span>
                       </div>
 
@@ -627,7 +627,7 @@ export default function AILoadCreator({
                                   height: `${Math.max(20, (weight / Math.max(...aiResult.stats.weightPerFloor)) * 60)}px`
                                 }}
                               />
-                              <div className="text-[10px] text-muted-foreground mt-1">P{floor + 1}</div>
+                              <div className="text-xs text-muted-foreground mt-1">P{floor + 1}</div>
                               <div className="text-xs font-medium">{weight}kg</div>
                             </div>
                           ))}
@@ -703,7 +703,7 @@ export default function AILoadCreator({
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-success">
-                          {totals.totalWeight.toFixed(1)}
+                          {formatNumber(totals.totalWeight, 1)}
                         </div>
                         <div className="text-xs text-muted-foreground">toneladas</div>
                       </div>

@@ -214,28 +214,30 @@ export default function ProductionReportsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-purple-600" />
-            Reportes de Producción
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Análisis y tendencias del módulo de producción
-          </p>
+      <div className="px-4 md:px-6 pt-4 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">Reportes de Producción</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Análisis y tendencias del módulo de producción
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={exportToCSV} disabled={exporting || !reportData}>
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Exportar CSV
+            </Button>
+          </div>
         </div>
-
-        <Button onClick={exportToCSV} disabled={exporting || !reportData}>
-          {exporting ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-2" />
-          )}
-          Exportar CSV
-        </Button>
       </div>
+
+      <div className="px-4 md:px-6 space-y-6">
 
       {/* Filters */}
       <Card>
@@ -533,6 +535,7 @@ export default function ProductionReportsPage() {
           No se pudieron cargar los datos del reporte
         </div>
       )}
+      </div>
     </div>
   );
 }

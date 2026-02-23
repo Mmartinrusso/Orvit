@@ -80,13 +80,13 @@ export function SolutionCard({
   const getPriorityBadge = (priority?: string) => {
     switch (priority?.toUpperCase()) {
       case 'CRITICAL':
-        return <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Crítica</Badge>;
+        return <Badge variant="destructive" className="text-xs px-1.5 py-0">Crítica</Badge>;
       case 'HIGH':
-        return <Badge className="bg-warning-muted-foreground text-[10px] px-1.5 py-0">Alta</Badge>;
+        return <Badge className="bg-warning-muted-foreground text-xs px-1.5 py-0">Alta</Badge>;
       case 'MEDIUM':
-        return <Badge className="bg-warning-muted-foreground text-[10px] px-1.5 py-0">Media</Badge>;
+        return <Badge className="bg-warning-muted-foreground text-xs px-1.5 py-0">Media</Badge>;
       case 'LOW':
-        return <Badge className="bg-success text-[10px] px-1.5 py-0">Baja</Badge>;
+        return <Badge className="bg-success text-xs px-1.5 py-0">Baja</Badge>;
       default:
         return null;
     }
@@ -179,11 +179,11 @@ export function SolutionCard({
                       {executor.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-[11px] text-muted-foreground truncate max-w-[100px]">{executor.name}</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[100px]">{executor.name}</span>
                 </div>
               )}
               {solution.completedDate && (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(solution.completedDate), { addSuffix: true, locale: es })}
                 </span>
               )}
@@ -240,7 +240,7 @@ export function SolutionCard({
         {/* Root Cause */}
         {solution.rootCause && (
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-destructive flex items-center gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-destructive flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
               Causa Raíz
             </span>
@@ -251,7 +251,7 @@ export function SolutionCard({
         {/* Solution */}
         {(solution.solution || solution.correctiveActions) && (
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-success flex items-center gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-success flex items-center gap-1">
               <Wrench className="h-3 w-3" />
               Solución
             </span>

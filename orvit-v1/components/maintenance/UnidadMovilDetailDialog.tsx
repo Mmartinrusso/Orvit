@@ -22,8 +22,7 @@ import {
  X,
  Plus
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 import UnidadMovilMaintenances from './UnidadMovilMaintenances';
 
 interface UnidadMovil {
@@ -104,9 +103,7 @@ export default function UnidadMovilDetailDialog({
  }).format(amount);
  };
 
- const formatDate = (dateString: string) => {
- return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
- };
+ // formatDate imported from @/lib/date-utils
 
  return (
  <Dialog open={isOpen} onOpenChange={onClose}>

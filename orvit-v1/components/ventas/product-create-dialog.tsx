@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -1297,7 +1297,7 @@ export function ProductCreateDialog({
                                           <span>{product.name}</span>
                                           {product.currentPrice && (
                                             <span className="text-muted-foreground ml-3 font-mono text-sm">
-                                              ${Number(product.currentPrice).toFixed(2)}
+                                              ${formatNumber(Number(product.currentPrice), 2)}
                                             </span>
                                           )}
                                         </div>
@@ -1408,9 +1408,9 @@ export function ProductCreateDialog({
                 <TabsContent value="pricing" className="space-y-5 mt-0">
                   {/* Precio de Venta - Sección Principal */}
                   {isFeatureEnabled('salePrice') && (
-                    <div className="bg-gradient-to-br from-emerald-50/50 to-muted/30 border-2 border-emerald-200/50 rounded-lg p-5">
+                    <div className="bg-gradient-to-br from-success-muted/50 to-muted/30 border-2 border-success-muted/50 rounded-lg p-5">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold flex items-center gap-2 text-emerald-900">
+                        <h3 className="text-sm font-semibold flex items-center gap-2 text-success-muted-foreground">
                           <DollarSign className="w-4 h-4" />
                           Precio de Venta al Cliente
                         </h3>
@@ -1471,7 +1471,7 @@ export function ProductCreateDialog({
                           <Label className="text-sm font-medium mb-2 block">
                             Margen de Ganancia
                           </Label>
-                          <div className="bg-background border-2 border-emerald-200 rounded-lg p-3">
+                          <div className="bg-background border-2 border-success-muted rounded-lg p-3">
                             {watchCostPrice && watchCostPrice > 0 && watch('salePrice') && (watch('salePrice') as number) > 0 ? (
                               <MarginIndicator
                                 costPrice={watchCostPrice}
@@ -1870,7 +1870,7 @@ export function ProductCreateDialog({
                       </div>
 
                       {/* Volumen */}
-                      <div className="bg-gradient-to-br from-cyan-50/50 to-background border border-cyan-200/50 rounded-lg p-3">
+                      <div className="bg-gradient-to-br from-accent-cyan-muted/50 to-background border border-accent-cyan-muted/50 rounded-lg p-3">
                         <Label htmlFor="volume" className="text-sm font-medium mb-2 block flex items-center gap-2">
                           <Box className="w-3.5 h-3.5 text-muted-foreground" />
                           Volumen por Unidad

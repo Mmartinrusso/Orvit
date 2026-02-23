@@ -152,7 +152,7 @@ export default function CuentasCorrientesPage() {
           </Button>
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2 min-w-0">
-            <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <Building2 className="w-4 h-4 text-success-muted-foreground shrink-0" />
             <span className="font-medium truncate">{selectedProveedor.name}</span>
             {selectedProveedor.cuit && (
               <span className="text-xs text-muted-foreground shrink-0">• {selectedProveedor.cuit}</span>
@@ -219,8 +219,8 @@ export default function CuentasCorrientesPage() {
                       : "border-border hover:border-primary/50"
                   )}
                 >
-                  <div className="w-8 h-8 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                    <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-8 h-8 rounded-md bg-success-muted flex items-center justify-center shrink-0">
+                    <Building2 className="w-4 h-4 text-success-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{proveedor.name}</p>
@@ -259,8 +259,8 @@ export default function CuentasCorrientesPage() {
                           : "border-border hover:border-primary/50"
                       )}
                     >
-                      <div className="w-8 h-8 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                        <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-8 h-8 rounded-md bg-success-muted flex items-center justify-center shrink-0">
+                        <Building2 className="w-4 h-4 text-success-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{proveedor.name}</p>

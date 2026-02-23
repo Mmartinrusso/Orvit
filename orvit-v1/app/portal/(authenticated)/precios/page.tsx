@@ -29,7 +29,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DollarSign, Search, Package, Loader2, X, Tag, Layers, Download } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { toast } from 'sonner';
 
 // Color preferences interface
@@ -163,7 +163,7 @@ export default function PortalPreciosPage() {
       p.nombre,
       p.categoria?.name || '-',
       p.unidad,
-      p.precio !== null ? p.precio.toFixed(2) : '-',
+      p.precio !== null ? formatNumber(p.precio, 2) : '-',
       p.moneda
     ]);
 

@@ -70,7 +70,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Solution } from './SolutionCard';
 import { toast } from 'sonner';
 
@@ -311,7 +311,7 @@ export function SolutionDetailDialog({
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs text-muted-foreground">Solución #{solution.id}</span>
                       {priorityLabels[priority] && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
                           {priorityLabels[priority]}
                         </Badge>
                       )}
@@ -370,15 +370,15 @@ export function SolutionDetailDialog({
                 <Card className="p-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Máquina</p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">Máquina</p>
                       <p className="text-sm font-medium">{solution.machineName || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Componente</p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">Componente</p>
                       <p className="text-sm font-medium">{solution.componentName || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Subcomponente</p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">Subcomponente</p>
                       <p className="text-sm text-muted-foreground">{solution.subcomponentNames || '-'}</p>
                     </div>
                   </div>
@@ -396,7 +396,7 @@ export function SolutionDetailDialog({
                           <Zap className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Falla Asociada</p>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Falla Asociada</p>
                           <p className="text-sm font-medium">#{relatedFailureId} - {workOrder?.title || solution.title}</p>
                         </div>
                       </div>
@@ -452,7 +452,7 @@ export function SolutionDetailDialog({
                 <div className="grid grid-cols-2 gap-2">
                   {executor && (
                     <Card className="p-2.5">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Ejecutado por</p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Ejecutado por</p>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
                           <AvatarImage src={executor.avatar} />
@@ -464,7 +464,7 @@ export function SolutionDetailDialog({
                   )}
                   {solution.completedDate && (
                     <Card className="p-2.5">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Completada</p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Completada</p>
                       <p className="text-xs font-medium flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {format(new Date(solution.completedDate), "dd/MM/yyyy HH:mm", { locale: es })}
@@ -509,7 +509,7 @@ export function SolutionDetailDialog({
                 {/* Images */}
                 {images.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Imágenes ({images.length})</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Imágenes ({images.length})</p>
                     <div className="grid grid-cols-4 gap-2">
                       {images.map((img, idx) => (
                         <div
@@ -528,7 +528,7 @@ export function SolutionDetailDialog({
                 {/* Videos */}
                 {videos.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Videos ({videos.length})</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Videos ({videos.length})</p>
                     <div className="space-y-1.5">
                       {videos.map((vid, idx) => (
                         <Card key={vid.id || idx} className="overflow-hidden">
@@ -544,7 +544,7 @@ export function SolutionDetailDialog({
                               </div>
                               <div>
                                 <p className="text-xs font-medium">{vid.filename}</p>
-                                <p className="text-[10px] text-muted-foreground">Click para reproducir</p>
+                                <p className="text-xs text-muted-foreground">Click para reproducir</p>
                               </div>
                             </div>
                           )}
@@ -588,7 +588,7 @@ export function SolutionDetailDialog({
                 {/* Instructivos */}
                 {instructives.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Instructivos ({instructives.length})</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Instructivos ({instructives.length})</p>
                     <div className="space-y-1.5">
                       {instructives.map((inst: any, idx: number) => (
                         <Card key={idx} className="p-2 flex items-center justify-between">
@@ -598,7 +598,7 @@ export function SolutionDetailDialog({
                             </div>
                             <div className="min-w-0">
                               <p className="text-xs font-medium truncate">{inst.title || 'Instructivo'}</p>
-                              {inst.content && <p className="text-[10px] text-muted-foreground truncate">{inst.content}</p>}
+                              {inst.content && <p className="text-xs text-muted-foreground truncate">{inst.content}</p>}
                             </div>
                           </div>
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0" asChild>
@@ -615,7 +615,7 @@ export function SolutionDetailDialog({
                 {/* Documents */}
                 {documents.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Archivos ({documents.length})</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Archivos ({documents.length})</p>
                     <div className="space-y-1.5">
                       {documents.map((doc, idx) => (
                         <Card key={doc.id || idx} className="p-2 flex items-center justify-between">
@@ -625,7 +625,7 @@ export function SolutionDetailDialog({
                             </div>
                             <div className="min-w-0">
                               <p className="text-xs font-medium truncate">{doc.filename}</p>
-                              {doc.fileSize && <p className="text-[10px] text-muted-foreground">{(doc.fileSize / 1024 / 1024).toFixed(2)} MB</p>}
+                              {doc.fileSize && <p className="text-xs text-muted-foreground">{formatNumber(doc.fileSize / 1024 / 1024, 2)} MB</p>}
                             </div>
                           </div>
                           <div className="flex gap-0.5">
@@ -664,7 +664,7 @@ export function SolutionDetailDialog({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">Aplicada {mockExecutions.length} veces</p>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
                     <History className="h-3 w-3 mr-1" />
                     {mockExecutions.length}
                   </Badge>
@@ -688,7 +688,7 @@ export function SolutionDetailDialog({
                           </div>
                           <div>
                             <p className="text-sm font-medium">#{exec.id} - {exec.title}</p>
-                            <p className="text-[10px] text-muted-foreground">{exec.date}</p>
+                            <p className="text-xs text-muted-foreground">{exec.date}</p>
                           </div>
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />

@@ -4,6 +4,7 @@
 const DEBUG = false;
 const log = DEBUG ? (...args: unknown[]) => { /* debug */ } : () => {};
 
+import { formatNumber } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -371,9 +372,7 @@ export default function ProduccionMensual() {
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-AR').format(num);
-  };
+  // formatNumber imported from @/lib/utils
 
   // Funciones para carga masiva
   const downloadTemplate = () => {
@@ -693,7 +692,7 @@ export default function ProduccionMensual() {
                   {record.total_units > 0 && (
                     <div className="text-center p-3 border rounded-lg">
                       <div className="text-lg font-bold text-primary">
-                        {((record.good_units / record.total_units) * 100).toFixed(1)}%
+                        {formatNumber((record.good_units / record.total_units) * 100, 1)}%
                       </div>
                       <div className="text-sm text-muted-foreground">Eficiencia</div>
                     </div>

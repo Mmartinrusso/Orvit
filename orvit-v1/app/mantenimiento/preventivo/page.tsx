@@ -3,8 +3,14 @@
 import { Suspense, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, CheckCircle, FileText, Bell, AlertTriangle } from 'lucide-react';
+import { Plus, CheckCircle, FileText, Bell, AlertTriangle, ChevronDown, Truck, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Popover,
   PopoverContent,
@@ -23,6 +29,7 @@ import {
   PreventivoMetricasView,
 } from '@/components/maintenance/preventive';
 import PreventiveMaintenanceDialog from '@/components/work-orders/PreventiveMaintenanceDialog';
+import UnidadMovilMaintenanceDialog from '@/components/maintenance/UnidadMovilMaintenanceDialog';
 import ChecklistManagementDialog from '@/components/maintenance/ChecklistManagementDialog';
 import ChecklistDetailDialog from '@/components/maintenance/ChecklistDetailDialog';
 import ChecklistExecutionTableDialog from '@/components/maintenance/ChecklistExecutionTableDialog';
@@ -64,6 +71,7 @@ function PreventivoPageContent() {
 
   // Estados de diálogos
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isUnidadMovilDialogOpen, setIsUnidadMovilDialogOpen] = useState(false);
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false);
   const [isChecklistDetailOpen, setIsChecklistDetailOpen] = useState(false);
   const [isChecklistExecuteOpen, setIsChecklistExecuteOpen] = useState(false);
@@ -443,14 +451,25 @@ function PreventivoPageContent() {
             )}
 
             {(currentView === 'hoy' || currentView === 'calendario' || currentView === 'planes') && (
-              <Button
-                size="sm"
-                className="bg-black hover:bg-muted-foreground text-white"
-                onClick={handleCreatePlan}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Nuevo</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="bg-black hover:bg-muted-foreground text-white">
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-2">Nuevo</span>
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleCreatePlan}>
+                    <Wrench className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Para máquina
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsUnidadMovilDialogOpen(true)}>
+                    <Truck className="h-4 w-4 mr-2 text-muted-foreground" />
+                    Para unidad móvil
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             {currentView === 'checklists' && (
@@ -518,12 +537,25 @@ function PreventivoPageContent() {
       {/* Diálogos */}
       {companyId && (
         <>
-          {/* Diálogo de crear/editar mantenimiento preventivo */}
+          {/* Diálogo de crear/editar mantenimiento preventivo (máquinas) */}
           <PreventiveMaintenanceDialog
             isOpen={isCreateDialogOpen}
             onClose={handleDialogClose}
             editingMaintenance={maintenanceToEdit}
             mode={maintenanceToEdit?.id ? 'edit' : 'create'}
+          />
+
+          {/* Diálogo de crear mantenimiento preventivo (unidades móviles) */}
+          <UnidadMovilMaintenanceDialog
+            isOpen={isUnidadMovilDialogOpen}
+            onClose={() => setIsUnidadMovilDialogOpen(false)}
+            onSave={() => {
+              setIsUnidadMovilDialogOpen(false);
+              queryClient.invalidateQueries({ queryKey: ['preventive-maintenance'] });
+            }}
+            companyId={companyId!}
+            sectorId={sectorId || undefined}
+            mode="create"
           />
 
           {/* Diálogo de gestión de checklists */}

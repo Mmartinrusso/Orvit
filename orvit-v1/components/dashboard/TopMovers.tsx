@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -204,7 +204,7 @@ export function TopMovers({ movers, title = "Top Movers", maxItems = 5 }: TopMov
                   <div className="text-right">
                     <div className="text-xs text-muted-foreground">Contribución</div>
                     <div className="text-sm font-medium text-foreground">
-                      {mover.contributionPct.toFixed(1)}%
+                      {formatNumber(mover.contributionPct, 1)}%
                     </div>
                   </div>
                 </div>

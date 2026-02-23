@@ -325,7 +325,7 @@ export default function ImportarMaquinaPage() {
                   <TabsTrigger value="upload" disabled className="flex items-center gap-2 opacity-50 cursor-not-allowed">
                     <Upload className="h-4 w-4" />
                     Subir Archivos
-                    <Badge variant="outline" className="ml-1 text-[10px] px-1">Próximamente</Badge>
+                    <Badge variant="outline" className="ml-1 text-xs px-1">Próximamente</Badge>
                   </TabsTrigger>
                   <TabsTrigger value="external-ai" className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />

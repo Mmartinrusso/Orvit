@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { WIDGETS_REGISTRY, canSeeWidget } from './registry';
-import { useAdminDashboardSummary, type RangeKey } from '@/hooks/useAdminDashboardSummary';
+import { useAdminDashboardSummary, type RangeKey } from '@/hooks/use-admin-dashboard-summary';
 import { RefreshCcw } from 'lucide-react';
 
 const RANGE_OPTIONS: { value: RangeKey; label: string }[] = [
@@ -88,7 +88,7 @@ export function DashboardShell() {
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                       'disabled:pointer-events-none disabled:opacity-50',
                       'data-[state=on]:text-accent-foreground data-[state=on]:bg-background data-[state=on]:shadow-sm',
-                      'gap-2 min-w-10 border-0 bg-transparent px-2 py-0.5 text-[11px] h-full font-normal',
+                      'gap-2 min-w-10 border-0 bg-transparent px-2 py-0.5 text-xs h-full font-normal',
                       isFirst ? 'rounded-l-md rounded-r-none' : isLast ? 'rounded-r-md rounded-l-none' : 'rounded-none'
                     )}
                   >
@@ -103,7 +103,7 @@ export function DashboardShell() {
               disabled={query.isFetching}
               className={cn(
                 'inline-flex items-center justify-center border border-border rounded-md p-0.5 bg-muted/40 h-6',
-                'px-2 text-[11px] font-normal gap-1.5',
+                'px-2 text-xs font-normal gap-1.5',
                 'hover:bg-muted hover:text-muted-foreground',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 'disabled:pointer-events-none disabled:opacity-50',

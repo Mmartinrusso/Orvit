@@ -18,6 +18,7 @@ interface DateTimePickerProps {
   value?: Date | string;
   onChange?: (date: Date | undefined) => void;
   minDate?: Date;
+  maxDate?: Date;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -27,6 +28,7 @@ export function DateTimePicker({
   value,
   onChange,
   minDate,
+  maxDate,
   placeholder = 'Seleccionar fecha y hora',
   disabled = false,
   className,
@@ -117,7 +119,7 @@ export function DateTimePicker({
           mode="single"
           selected={selectedDate}
           onSelect={handleDateSelect}
-          disabled={(date) => minDate ? date < minDate : false}
+          disabled={(date) => (minDate ? date < minDate : false) || (maxDate ? date > maxDate : false)}
           locale={es}
           initialFocus
         />

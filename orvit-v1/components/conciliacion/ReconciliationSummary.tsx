@@ -10,7 +10,7 @@ import {
   ArrowRightLeft,
   Target,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 
 
 
@@ -147,7 +147,7 @@ export default function ReconciliationSummary({
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {porcentajeConciliado.toFixed(0)}%
+                  {formatNumber(porcentajeConciliado, 0)}%
                 </p>
               </div>
             </div>

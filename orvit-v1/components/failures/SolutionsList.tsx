@@ -25,7 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { useFailureSolutions, FailureSolution } from '@/hooks/maintenance/use-failure-solutions';
+import { useFailureSolutions, FailureSolution } from '@/hooks/mantenimiento/use-failure-solutions';
 
 interface SolutionsListProps {
   occurrenceId: number | null;

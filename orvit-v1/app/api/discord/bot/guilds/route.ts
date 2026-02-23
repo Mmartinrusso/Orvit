@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { isBotReady, listGuilds } from '@/lib/discord';
+import { manageBotChannels } from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,16 +26,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
-    // 2. Verificar que el bot esté conectado
-    if (!isBotReady()) {
+    // 2. Obtener lista de servidores vía bot-service
+    const result = await manageBotChannels('getGuilds', {});
+
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Bot no está conectado' },
+        { error: result.error || 'Error al obtener servidores' },
         { status: 400 }
       );
     }
 
-    // 3. Obtener lista de servidores
-    const guilds = listGuilds();
+    const guilds = result.guilds || [];
 
     return NextResponse.json({
       connected: true,
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Error en GET /api/discord/bot/guilds:', error);
+    console.error('Error en GET /api/discord/bot/guilds:', error);
     return NextResponse.json(
       { error: 'Error al obtener servidores', detail: error.message },
       { status: 500 }

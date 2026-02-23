@@ -286,9 +286,11 @@ export function GoogleDrivePicker({
   const importFiles = async (files: GoogleDriveFile[], token: string) => {
     setIsImporting(true);
     const importedFiles: { url: string; name: string; size: number; type: string }[] = [];
+    let currentFile: GoogleDriveFile | null = null;
 
     try {
       for (const file of files) {
+        currentFile = file;
         toast.loading(`Importando ${file.name}...`, { id: `import-${file.id}` });
 
         const response = await fetch(importEndpoint, {
@@ -322,7 +324,7 @@ export function GoogleDrivePicker({
 
       onImportComplete?.(importedFiles);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error importando archivos');
+      toast.error(error instanceof Error ? error.message : 'Error importando archivos', currentFile ? { id: `import-${currentFile.id}` } : undefined);
     } finally {
       setIsImporting(false);
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -515,7 +515,7 @@ export function ProductImportDialog({
               {/* Data Table */}
               <ScrollArea className="h-[400px] border rounded-lg">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-background">
+                  <TableHeader>
                     <TableRow>
                       <TableHead className="w-[60px]">Fila</TableHead>
                       <TableHead className="w-[80px]">Estado</TableHead>
@@ -564,7 +564,7 @@ export function ProductImportDialog({
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          ${(row.costPrice || 0).toFixed(2)}
+                          ${formatNumber(row.costPrice || 0, 2)}
                         </TableCell>
                         <TableCell className="text-right">
                           {row.currentStock || 0}

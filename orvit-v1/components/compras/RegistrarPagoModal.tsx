@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import {
  Dialog,
  DialogContent,
@@ -1781,7 +1781,7 @@ export function RegistrarPagoModal({
  <TableCell className="text-xs text-right" onClick={(e) => e.stopPropagation()}>
  {isSelected ? (
  <div className="flex items-center justify-end gap-1">
- <span className="text-muted-foreground text-[10px]">$</span>
+ <span className="text-muted-foreground text-xs">$</span>
  <Input
  type="text"
  inputMode="numeric"
@@ -1869,7 +1869,7 @@ export function RegistrarPagoModal({
  </div>
 
  {/* Summary */}
- <div className="mt-2 inline-flex flex-wrap items-center gap-3 rounded-md bg-muted px-3 py-1.5 text-[11px] text-muted-foreground">
+ <div className="mt-2 inline-flex flex-wrap items-center gap-3 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground">
  <span>
  Facturas seleccionadas:{' '}
  <span className="font-semibold">{selectedFacturas.length}</span>
@@ -1966,7 +1966,7 @@ export function RegistrarPagoModal({
  type="button"
  variant="ghost"
  size="sm"
- className="h-5 px-2 text-[10px] mt-1.5"
+ className="h-5 px-2 text-xs mt-1.5"
  onClick={() => setIsChequesModalOpen(true)}
  >
  Modificar selección
@@ -2042,7 +2042,7 @@ export function RegistrarPagoModal({
  <div key={pago.id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
  <div className="flex items-center gap-2">
  <span className="text-muted-foreground">{formatDate(pago.fecha)}</span>
- <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+ <Badge variant="outline" className="text-xs px-1.5 py-0">
  {pago.metodoPrincipal}
  </Badge>
  </div>
@@ -2075,9 +2075,9 @@ export function RegistrarPagoModal({
  <Label className="text-xs font-medium flex items-center gap-1.5 text-info-muted-foreground">
  <Paperclip className="w-3.5 h-3.5" />
  Comprobantes de pago
- <span className="text-[10px] font-normal text-info-muted-foreground">(opcional)</span>
+ <span className="text-xs font-normal text-info-muted-foreground">(opcional)</span>
  </Label>
- <p className="text-[10px] text-info-muted-foreground mt-0.5 mb-2">
+ <p className="text-xs text-info-muted-foreground mt-0.5 mb-2">
  Adjuntá comprobantes de transferencia o echeq para tener respaldo de la operación
  </p>
 
@@ -2091,8 +2091,8 @@ export function RegistrarPagoModal({
  >
  <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
  <span className="flex-1 truncate">{comp.file.name}</span>
- <span className="text-[10px] text-muted-foreground">
- {(comp.file.size / 1024).toFixed(0)} KB
+ <span className="text-xs text-muted-foreground">
+ {formatNumber(comp.file.size / 1024, 0)} KB
  </span>
  <Button
  type="button"
@@ -2144,7 +2144,7 @@ export function RegistrarPagoModal({
  <CreditCard className="w-3 h-3" />
  Datos bancarios
  </span>
- <span className="text-[10px] text-muted-foreground">
+ <span className="text-xs text-muted-foreground">
  {showBankData ? '▲ Ocultar' : '▼ Mostrar'}
  </span>
  </button>
@@ -2171,7 +2171,7 @@ export function RegistrarPagoModal({
  <div className="flex items-center justify-between">
  <span className="text-muted-foreground">CBU:</span>
  <div className="flex items-center gap-1">
- <span className="font-medium text-[10px]">{bankData.cbu}</span>
+ <span className="font-medium text-xs">{bankData.cbu}</span>
  <Button
  type="button"
  variant="ghost"
@@ -2207,7 +2207,7 @@ export function RegistrarPagoModal({
  <div key={item.id} className="space-y-1">
  <Label htmlFor={item.id} className={cn('text-xs', isBlocked && 'text-muted-foreground line-through')}>
  {item.label}
- {isBlocked && <span className="ml-1 text-[10px]">(no disponible)</span>}
+ {isBlocked && <span className="ml-1 text-xs">(no disponible)</span>}
  </Label>
  <div className="flex gap-1">
  <Input
@@ -2266,7 +2266,7 @@ export function RegistrarPagoModal({
  onMouseLeave={() => setShowAutocompletarMenu(false)}
  >
  <div className="py-1 text-xs">
- <div className="px-2 py-1 text-[10px] text-muted-foreground border-b">
+ <div className="px-2 py-1 text-xs text-muted-foreground border-b">
  Seleccionar método (↑↓ Enter)
  </div>
  {autocompletarOptions.map((option, index) => (
@@ -2291,34 +2291,34 @@ export function RegistrarPagoModal({
  {/* Summary cards */}
  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
  <div className="rounded-md border px-3 py-2 bg-muted/40">
- <p className="text-[11px] text-muted-foreground">Saldo facturas</p>
+ <p className="text-xs text-muted-foreground">Saldo facturas</p>
  <p className="text-sm font-semibold">{formatCurrency(totalSeleccionado)}</p>
  </div>
  <div className="rounded-md border px-3 py-2 bg-muted/40">
- <p className="text-[11px] text-muted-foreground">Total pago</p>
+ <p className="text-xs text-muted-foreground">Total pago</p>
  <p className="text-sm font-semibold">{formatCurrency(totalPagoCalc)}</p>
  </div>
  {totalNotasCreditoSeleccionadas > 0 && (
  <div className="rounded-md border px-3 py-2 bg-success-muted border-success-muted">
- <p className="text-[11px] text-success">NC aplicadas</p>
+ <p className="text-xs text-success">NC aplicadas</p>
  <p className="text-sm font-semibold text-success">-{formatCurrency(totalNotasCreditoSeleccionadas)}</p>
  </div>
  )}
  {totalAnticiposSeleccionados > 0 && (
  <div className="rounded-md border px-3 py-2 bg-success-muted border-success-muted">
- <p className="text-[11px] text-success">Anticipos</p>
+ <p className="text-xs text-success">Anticipos</p>
  <p className="text-sm font-semibold text-success">-{formatCurrency(totalAnticiposSeleccionados)}</p>
  </div>
  )}
  {anticipo > 0 && (
  <div className="rounded-md border px-3 py-2 bg-muted/40">
- <p className="text-[11px] text-muted-foreground">Anticipo generado</p>
+ <p className="text-xs text-muted-foreground">Anticipo generado</p>
  <p className="text-sm font-semibold">{formatCurrency(anticipo)}</p>
  </div>
  )}
  {diferencia !== 0 && anticipo === 0 && (
  <div className="rounded-md border px-3 py-2 bg-warning-muted border-warning-muted">
- <p className="text-[11px] text-warning-muted-foreground">Diferencia</p>
+ <p className="text-xs text-warning-muted-foreground">Diferencia</p>
  <p className="text-sm font-semibold text-warning-muted-foreground">{formatCurrency(diferencia)}</p>
  </div>
  )}
@@ -2389,7 +2389,7 @@ export function RegistrarPagoModal({
  {bankData?.cuit && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
  <div>
- <p className="text-[11px] text-muted-foreground">CUIT</p>
+ <p className="text-xs text-muted-foreground">CUIT</p>
  <p className="font-medium">{bankData.cuit}</p>
  </div>
  <Button
@@ -2404,20 +2404,20 @@ export function RegistrarPagoModal({
  )}
  {bankData?.banco && (
  <div className="p-2 rounded-md border bg-muted/30">
- <p className="text-[11px] text-muted-foreground">Banco</p>
+ <p className="text-xs text-muted-foreground">Banco</p>
  <p className="font-medium">{bankData.banco}</p>
  </div>
  )}
  {bankData?.tipoCuenta && (
  <div className="p-2 rounded-md border bg-muted/30">
- <p className="text-[11px] text-muted-foreground">Tipo de cuenta</p>
+ <p className="text-xs text-muted-foreground">Tipo de cuenta</p>
  <p className="font-medium">{bankData.tipoCuenta}</p>
  </div>
  )}
  {bankData?.numeroCuenta && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
  <div>
- <p className="text-[11px] text-muted-foreground">Número de cuenta</p>
+ <p className="text-xs text-muted-foreground">Número de cuenta</p>
  <p className="font-medium">{bankData.numeroCuenta}</p>
  </div>
  <Button
@@ -2433,7 +2433,7 @@ export function RegistrarPagoModal({
  {bankData?.cbu && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
  <div>
- <p className="text-[11px] text-muted-foreground">CBU</p>
+ <p className="text-xs text-muted-foreground">CBU</p>
  <p className="font-medium text-xs">{bankData.cbu}</p>
  </div>
  <Button
@@ -2449,7 +2449,7 @@ export function RegistrarPagoModal({
  {bankData?.aliasCbu && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
  <div>
- <p className="text-[11px] text-muted-foreground">Alias CBU</p>
+ <p className="text-xs text-muted-foreground">Alias CBU</p>
  <p className="font-medium">{bankData.aliasCbu}</p>
  </div>
  <Button
@@ -2486,7 +2486,7 @@ export function RegistrarPagoModal({
  <span className="h-3 w-px bg-border" />
  <span>Seleccionado: <span className="font-semibold text-success">{formatCurrency(totalChequesSeleccionados)}</span></span>
  {totalChequesSeleccionados > 0 && totalChequesSeleccionados < saldoSeleccionadoConAnticipos && (
- <Badge className="bg-warning-muted text-warning-muted-foreground text-[10px]">
+ <Badge className="bg-warning-muted text-warning-muted-foreground text-xs">
  Faltan {formatCurrency(saldoSeleccionadoConAnticipos - totalChequesSeleccionados)}
  </Badge>
  )}
@@ -2495,7 +2495,7 @@ export function RegistrarPagoModal({
  type="button"
  variant="outline"
  size="sm"
- className="h-6 px-2 text-[10px]"
+ className="h-6 px-2 text-xs"
  onClick={autoSelectCheques}
  >
  <Zap className="w-3 h-3 mr-1" />
@@ -2595,7 +2595,7 @@ export function RegistrarPagoModal({
  Limpiar filtros
  </Button>
  )}
- <span className="text-[10px] text-muted-foreground ml-auto">
+ <span className="text-xs text-muted-foreground ml-auto">
  Mostrando {filteredCheques.length} de {chequesCartera.length}
  </span>
  </div>
@@ -2659,7 +2659,7 @@ export function RegistrarPagoModal({
  return (
  <TableRow
  key={ch.id}
- className={cn('cursor-pointer hover:bg-muted/30', estaMarcado && 'bg-emerald-50 dark:bg-emerald-900/20')}
+ className={cn('cursor-pointer hover:bg-muted/30', estaMarcado && 'bg-success-muted')}
  onClick={() => toggleChequeSeleccionado(ch.id)}
  >
  <TableCell onClick={(e) => e.stopPropagation()}>
@@ -2673,7 +2673,7 @@ export function RegistrarPagoModal({
  <TableCell className="text-xs">{ch.banco}</TableCell>
  <TableCell className="text-xs max-w-[120px] truncate">{ch.titular}</TableCell>
  <TableCell className="text-xs">
- <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+ <Badge variant="outline" className="text-xs px-1.5 py-0">
  {ch.tipo === 'ECHEQ' ? 'eCheq' : 'Cheque'}
  </Badge>
  </TableCell>
@@ -2836,7 +2836,7 @@ export function RegistrarPagoModal({
  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
  <CreditCard className="w-3.5 h-3.5" />
  Cheques a Entregar
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{selectedCheques.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{selectedCheques.length}</Badge>
  </p>
  <div className="border rounded-md overflow-hidden">
  <Table>
@@ -2883,19 +2883,19 @@ export function RegistrarPagoModal({
  <div className="grid grid-cols-3 gap-2">
  {parseMonto(pagoForm.retIVA) > 0 && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
- <span className="text-[10px] text-muted-foreground">IVA</span>
+ <span className="text-xs text-muted-foreground">IVA</span>
  <span className="text-xs font-semibold">{formatCurrency(parseMonto(pagoForm.retIVA))}</span>
  </div>
  )}
  {parseMonto(pagoForm.retGanancias) > 0 && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
- <span className="text-[10px] text-muted-foreground">Ganancias</span>
+ <span className="text-xs text-muted-foreground">Ganancias</span>
  <span className="text-xs font-semibold">{formatCurrency(parseMonto(pagoForm.retGanancias))}</span>
  </div>
  )}
  {parseMonto(pagoForm.retIngBrutos) > 0 && (
  <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
- <span className="text-[10px] text-muted-foreground">IIBB</span>
+ <span className="text-xs text-muted-foreground">IIBB</span>
  <span className="text-xs font-semibold">{formatCurrency(parseMonto(pagoForm.retIngBrutos))}</span>
  </div>
  )}
@@ -2908,7 +2908,7 @@ export function RegistrarPagoModal({
  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
  <FileText className="w-3.5 h-3.5" />
  Facturas a Pagar
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{selectedFacturas.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{selectedFacturas.length}</Badge>
  </p>
  <div className="border rounded-md overflow-hidden">
  <Table>
@@ -3089,7 +3089,7 @@ export function RegistrarPagoModal({
  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
  <CreditCard className="w-3.5 h-3.5" />
  Cheques Entregados
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{savedPaymentData.cheques.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{savedPaymentData.cheques.length}</Badge>
  </p>
  <div className="border rounded-md overflow-hidden">
  <Table>
@@ -3132,7 +3132,7 @@ export function RegistrarPagoModal({
  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
  <Paperclip className="w-3.5 h-3.5" />
  Comprobantes adjuntos
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{savedPaymentData.comprobantes.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{savedPaymentData.comprobantes.length}</Badge>
  </p>
  <div className="space-y-1">
  {savedPaymentData.comprobantes.map((comp, idx) => (
@@ -3145,7 +3145,7 @@ export function RegistrarPagoModal({
  >
  <FileText className="w-3.5 h-3.5 text-info-muted-foreground" />
  <span className="flex-1 truncate text-info-muted-foreground">{comp.fileName}</span>
- <span className="text-[10px] text-info-muted-foreground">Ver</span>
+ <span className="text-xs text-info-muted-foreground">Ver</span>
  </a>
  ))}
  </div>
@@ -3162,7 +3162,7 @@ export function RegistrarPagoModal({
  <div className="grid grid-cols-3 gap-2">
  {savedPaymentData.retenciones.map((ret, idx) => (
  <div key={idx} className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
- <span className="text-[10px] text-muted-foreground">{ret.tipo}</span>
+ <span className="text-xs text-muted-foreground">{ret.tipo}</span>
  <span className="text-xs font-semibold">{formatCurrency(ret.monto)}</span>
  </div>
  ))}
@@ -3176,7 +3176,7 @@ export function RegistrarPagoModal({
  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
  <FileText className="w-3.5 h-3.5" />
  Facturas Aplicadas
- <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{savedPaymentData.facturas.length}</Badge>
+ <Badge variant="secondary" className="text-xs h-5 px-1.5">{savedPaymentData.facturas.length}</Badge>
  </p>
  <div className="border rounded-md overflow-hidden">
  <Table>

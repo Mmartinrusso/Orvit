@@ -25,7 +25,7 @@ import {
  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface VoicePurchaseModalProps {
  open: boolean;
@@ -233,7 +233,7 @@ export function VoicePurchaseModal({ open, onClose, onSuccess }: VoicePurchaseMo
  <li><strong>Urgencia:</strong> Si es urgente, dilo (ej: &ldquo;es urgente&rdquo;, &ldquo;lo necesito ya&rdquo;)</li>
  <li><strong>Fecha:</strong> Si tiene fecha límite (ej: &ldquo;para el lunes&rdquo;, &ldquo;esta semana&rdquo;)</li>
  </ul>
- <p className="text-[10px] text-muted-foreground/70 mt-2 italic">
+ <p className="text-xs text-muted-foreground/70 mt-2 italic">
  Ejemplo: &ldquo;Necesito 20 litros de aceite hidráulico y 50 kilos de tornillos M8 para la CNC, es urgente para mañana&rdquo;
  </p>
  </div>
@@ -305,7 +305,7 @@ export function VoicePurchaseModal({ open, onClose, onSuccess }: VoicePurchaseMo
  <p className="text-xs font-medium text-center text-muted-foreground mb-2">
  Menciona en tu audio:
  </p>
- <div className="flex flex-wrap justify-center gap-2 text-[10px]">
+ <div className="flex flex-wrap justify-center gap-2 text-xs">
  <span className="px-2 py-1 bg-background rounded-full border">📦 Qué necesitas</span>
  <span className="px-2 py-1 bg-background rounded-full border">🔢 Cantidad</span>
  <span className="px-2 py-1 bg-background rounded-full border">⚡ Si es urgente</span>
@@ -327,7 +327,7 @@ export function VoicePurchaseModal({ open, onClose, onSuccess }: VoicePurchaseMo
  <div className="flex-1">
  <p className="font-medium">Audio listo</p>
  <p className="text-sm text-muted-foreground">
- {audioBlob && `${(audioBlob.size / 1024).toFixed(1)} KB`}
+ {audioBlob && `${formatNumber(audioBlob.size / 1024, 1)} KB`}
  </p>
  </div>
  <Button

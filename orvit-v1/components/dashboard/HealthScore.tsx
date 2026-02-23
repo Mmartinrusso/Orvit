@@ -2,7 +2,7 @@
 
 import React, { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -149,7 +149,7 @@ export const HealthScore = memo(function HealthScore({
                   "text-xs font-medium",
                   marginChange > 0 ? "text-success" : "text-destructive"
                 )}>
-                  {marginChange > 0 ? '+' : ''}{marginChange.toFixed(1)}% margen
+                  {marginChange > 0 ? '+' : ''}{formatNumber(marginChange, 1)}% margen
                 </span>
               </div>
             )}

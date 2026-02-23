@@ -565,12 +565,12 @@ function DispatcherCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-1 mb-1">
         <div className="flex items-center gap-1 flex-wrap">
-          <Badge className={cn('text-[10px] font-bold px-1 py-0', priority.bgColor, priority.color)}>
+          <Badge className={cn('text-xs font-bold px-1 py-0', priority.bgColor, priority.color)}>
             {priority.label}
           </Badge>
-          <span className="text-[10px] text-muted-foreground">#{workOrder.id}</span>
+          <span className="text-xs text-muted-foreground">#{workOrder.id}</span>
           {slaConfig && (
-            <Badge variant="outline" className={cn('text-[10px] gap-0.5 px-1 py-0', slaConfig.bgColor, slaConfig.color)}>
+            <Badge variant="outline" className={cn('text-xs gap-0.5 px-1 py-0', slaConfig.bgColor, slaConfig.color)}>
               <Clock className="h-2.5 w-2.5" />
               {workOrder.slaHoursRemaining !== null && workOrder.slaHoursRemaining !== undefined
                 ? workOrder.slaHoursRemaining > 0
@@ -649,13 +649,13 @@ function DispatcherCard({
       {(failure?.causedDowntime || failure?.isSafetyRelated) && (
         <div className="flex flex-wrap gap-1 mt-1">
           {failure?.causedDowntime && (
-            <Badge variant="destructive" className="text-[10px] gap-0.5 px-1 py-0">
+            <Badge variant="destructive" className="text-xs gap-0.5 px-1 py-0">
               <Zap className="h-2.5 w-2.5" />
               Parada
             </Badge>
           )}
           {failure?.isSafetyRelated && (
-            <Badge variant="destructive" className="text-[10px] gap-0.5 px-1 py-0">
+            <Badge variant="destructive" className="text-xs gap-0.5 px-1 py-0">
               <Shield className="h-2.5 w-2.5" />
               Seguridad
             </Badge>
@@ -666,7 +666,7 @@ function DispatcherCard({
       {/* Waiting info */}
       {showWaiting && workOrder.waitingReason && (
         <div className={cn(
-          'mt-1.5 p-1.5 rounded text-[10px]',
+          'mt-1.5 p-1.5 rounded text-xs',
           workOrder.etaOverdue ? 'bg-destructive/10 text-destructive' : 'bg-warning-muted text-warning-muted-foreground'
         )}>
           <div className="flex items-center gap-1 font-medium">
@@ -691,7 +691,7 @@ function DispatcherCard({
         <Button
           size="sm"
           variant="outline"
-          className="w-full mt-2 h-6 text-[10px]"
+          className="w-full mt-2 h-6 text-xs"
           onClick={(e) => { e.stopPropagation(); onAssign(); }}
         >
           <UserPlus className="h-2.5 w-2.5 mr-1" />
@@ -702,7 +702,7 @@ function DispatcherCard({
       {(laneId === 'listas') && onStart && workOrder.assignedTo && (
         <Button
           size="sm"
-          className="w-full mt-2 h-6 text-[10px] bg-success hover:bg-success/90"
+          className="w-full mt-2 h-6 text-xs bg-success hover:bg-success/90"
           onClick={(e) => { e.stopPropagation(); onStart(); }}
         >
           <Play className="h-2.5 w-2.5 mr-1" />

@@ -42,6 +42,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { useRouter } from 'next/navigation';
 
 interface RecepcionItem {
@@ -197,7 +198,7 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
  <Package className="w-5 h-5 text-primary" />
  </div>
- {loading ? 'Cargando...' : `Recepción ${recepcion?.numero || ''}`}
+ {loading ? 'Cargando recepción...' : `Recepción ${recepcion?.numero || ''}`}
  </DialogTitle>
  </DialogHeader>
 
@@ -283,7 +284,7 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  <div className="space-y-2">
  <p className="font-semibold text-base">{recepcion.purchaseOrder.numero}</p>
  <p className="text-sm text-muted-foreground">
- {format(new Date(recepcion.purchaseOrder.fechaEmision), 'dd/MM/yyyy', { locale: es })}
+ {formatDate(recepcion.purchaseOrder.fechaEmision)}
  </p>
  <p className="text-sm font-medium">Total: {formatCurrency(recepcion.purchaseOrder.total)}</p>
  <Badge variant="outline" className="mt-1">
@@ -298,8 +299,8 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  {/* Info de Recepcion */}
  <div className="border rounded-xl p-5 bg-card shadow-sm">
  <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4">
- <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
- <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+ <div className="h-7 w-7 rounded-full bg-success-muted flex items-center justify-center">
+ <Truck className="w-4 h-4 text-success-muted-foreground" />
  </div>
  Info Recepción
  </h3>
@@ -307,7 +308,7 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  <div className="flex items-center gap-2 text-sm">
  <Calendar className="w-4 h-4 text-muted-foreground" />
  <span className="font-medium">
- {format(new Date(recepcion.fechaRecepcion), 'dd/MM/yyyy HH:mm', { locale: es })}
+ {formatDateTime(recepcion.fechaRecepcion)}
  </span>
  </div>
  {recepcion.warehouse && (
@@ -411,7 +412,7 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  <TableCell className="text-center font-semibold text-sm">
  {item.cantidadRecibida}
  </TableCell>
- <TableCell className="text-center font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+ <TableCell className="text-center font-semibold text-sm text-success-muted-foreground">
  {item.cantidadAceptada ?? item.cantidadRecibida}
  </TableCell>
  <TableCell className="text-center text-sm text-muted-foreground">
@@ -439,8 +440,8 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  {recepcion.stockMovements && recepcion.stockMovements.length > 0 && (
  <div className="border rounded-xl p-5 bg-card shadow-sm">
  <h3 className="text-sm font-semibold text-muted-foreground mb-4 flex items-center gap-2">
- <div className="h-7 w-7 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
- <Package className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+ <div className="h-7 w-7 rounded-full bg-accent-cyan-muted flex items-center justify-center">
+ <Package className="w-4 h-4 text-accent-cyan-muted-foreground" />
  </div>
  Movimientos de Stock ({recepcion.stockMovements.length})
  </h3>
@@ -467,8 +468,8 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  <DialogContent size="lg" className="p-0">
  <DialogHeader className="px-8 pt-8 pb-6 border-b">
  <DialogTitle className="flex items-center gap-3 text-xl">
- <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
- <Image className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+ <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+ <Image className="w-5 h-5 text-success-muted-foreground" />
  </div>
  Evidencia de Recepción
  {recepcion && (
@@ -543,7 +544,7 @@ export function RecepcionDetalleModal({ open, onOpenChange, recepcionId }: Recep
  <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t">
  <div className="flex items-center gap-2">
  <Calendar className="w-4 h-4" />
- <span>Fecha de recepción: {format(new Date(recepcion.fechaRecepcion), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+ <span>Fecha de recepción: {formatDateTime(recepcion.fechaRecepcion)}</span>
  </div>
  {recepcion.createdByUser && (
  <div className="flex items-center gap-2">

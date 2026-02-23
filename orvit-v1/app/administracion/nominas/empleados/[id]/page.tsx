@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -145,9 +146,7 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-AR');
-}
+// formatDate imported from @/lib/date-utils
 
 // ========== COMPONENT ==========
 
@@ -700,11 +699,11 @@ export default function EmpleadoDetallePage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{concept.componentName}</span>
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge variant="outline" className="text-xs">
                               {concept.componentCode}
                             </Badge>
                             {concept.isRemunerative && (
-                              <Badge variant="secondary" className="text-[10px]">
+                              <Badge variant="secondary" className="text-xs">
                                 REM
                               </Badge>
                             )}
@@ -804,7 +803,7 @@ export default function EmpleadoDetallePage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{concept.componentName}</span>
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge variant="outline" className="text-xs">
                               {concept.componentCode}
                             </Badge>
                           </div>
@@ -876,7 +875,7 @@ export default function EmpleadoDetallePage() {
             <p className="text-sm text-muted-foreground">
               <strong>Nota:</strong> Los conceptos fijos se aplican automáticamente en cada liquidación.
               Al agregar un nuevo valor para un concepto existente, el anterior se cierra automáticamente.
-              Los conceptos marcados con <Badge variant="secondary" className="text-[10px] mx-1">REM</Badge>
+              Los conceptos marcados con <Badge variant="secondary" className="text-xs mx-1">REM</Badge>
               son remunerativos y afectan el cálculo de aportes.
             </p>
           </CardContent>

@@ -28,7 +28,7 @@ import { Task } from "@/hooks/use-task-store";
 import { toZonedTime } from "date-fns-tz";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatNumber } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -328,10 +328,10 @@ export function TaskDetailPanel({
                           >
                             <div className={cn('max-w-[75%] px-3 py-2 rounded-lg', isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-card border border-border')}>
                               <div className="flex items-center gap-2 mb-0.5">
-                                <span className={cn('text-[11px] font-medium', isOwnMessage ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                                <span className={cn('text-xs font-medium', isOwnMessage ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
                                   {message.userName}
                                 </span>
-                                <span className={cn('text-[11px]', isOwnMessage ? 'text-primary-foreground/60' : 'text-muted-foreground/60')}>
+                                <span className={cn('text-xs', isOwnMessage ? 'text-primary-foreground/60' : 'text-muted-foreground/60')}>
                                   {format(new Date(message.createdAt), "HH:mm", { locale: es })}
                                 </span>
                               </div>
@@ -491,7 +491,7 @@ export function TaskDetailPanel({
                               <div className="text-sm font-medium truncate">{file.name}</div>
                               {file.size && (
                                 <div className="text-xs text-muted-foreground">
-                                  {(file.size / 1024).toFixed(1)} KB
+                                  {formatNumber(file.size / 1024, 1)} KB
                                 </div>
                               )}
                             </div>

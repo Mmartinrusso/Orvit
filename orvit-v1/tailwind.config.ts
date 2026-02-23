@@ -69,6 +69,18 @@ const config: Config = {
           muted: 'hsl(var(--info-muted))',
           'muted-foreground': 'hsl(var(--info-muted-foreground))',
         },
+        'accent-purple': {
+          DEFAULT: 'hsl(var(--accent-purple))',
+          foreground: 'hsl(var(--accent-purple-foreground))',
+          muted: 'hsl(var(--accent-purple-muted))',
+          'muted-foreground': 'hsl(var(--accent-purple-muted-foreground))',
+        },
+        'accent-cyan': {
+          DEFAULT: 'hsl(var(--accent-cyan))',
+          foreground: 'hsl(var(--accent-cyan-foreground))',
+          muted: 'hsl(var(--accent-cyan-muted))',
+          'muted-foreground': 'hsl(var(--accent-cyan-muted-foreground))',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

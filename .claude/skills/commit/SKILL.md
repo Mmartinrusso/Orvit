@@ -36,7 +36,7 @@ Crear un commit siguiendo el proceso estándar del proyecto.
 
    Descripción opcional de contexto adicional si es necesario.
 
-   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+   Co-Authored-By: Claude <noreply@anthropic.com>
    EOF
    )"
    ```

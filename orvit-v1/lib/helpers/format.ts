@@ -1,5 +1,7 @@
 /**
- * Formatting Helpers
+ * @deprecated — NO USAR. Canónico: `@/lib/utils` (formatCurrency, formatNumber).
+ * Para fechas: `@/lib/date-utils` (formatDate, formatDateTime).
+ * Este archivo no tiene importadores activos y será eliminado.
  */
 
 export function formatCurrency(amount: number, currency: string = 'ARS'): string {

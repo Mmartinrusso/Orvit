@@ -404,9 +404,9 @@ export function ToolGrid({
                   <div className="min-w-0 flex-1">
                     <h3 className="font-semibold truncate pr-2">{tool.name}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px] h-5">{typeConfig.label}</Badge>
+                      <Badge variant="outline" className="text-xs h-5">{typeConfig.label}</Badge>
                       {tool.isCritical && (
-                        <Badge variant="destructive" className="text-[10px] h-5">
+                        <Badge variant="destructive" className="text-xs h-5">
                           <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
                           Crítico
                         </Badge>

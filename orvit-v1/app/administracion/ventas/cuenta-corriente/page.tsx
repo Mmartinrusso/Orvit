@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 /**
  * CUENTAS CORRIENTES - 10X IMPROVED VERSION
  *
@@ -582,10 +583,10 @@ export default function CuentaCorrientePage() {
                   <Clock className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <p className="text-2xl font-bold text-foreground">
-                  {accountData.summary.dso.toFixed(0)}
+                  {formatNumber(accountData.summary.dso, 0)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Promedio: {accountData.summary.promedioVencimiento.toFixed(0)} días
+                  Promedio: {formatNumber(accountData.summary.promedioVencimiento, 0)} días
                 </p>
               </CardContent>
             </Card>
@@ -615,7 +616,7 @@ export default function CuentaCorrientePage() {
                       />
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {accountData.summary.utilizacionCredito.toFixed(0)}%
+                      {formatNumber(accountData.summary.utilizacionCredito, 0)}%
                     </span>
                   </div>
                 </CardContent>
@@ -630,7 +631,7 @@ export default function CuentaCorrientePage() {
                   <Target className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <p className="text-2xl font-bold text-foreground">
-                  {accountData.paymentBehavior.onTimePaymentRate.toFixed(0)}%
+                  {formatNumber(accountData.paymentBehavior.onTimePaymentRate, 0)}%
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Pagos a tiempo ({accountData.paymentBehavior.paidInvoices}/{accountData.paymentBehavior.totalInvoices})
@@ -653,7 +654,7 @@ export default function CuentaCorrientePage() {
                 )}
                 {selectedClient.churnRisk && selectedClient.churnRisk > 0.5 && (
                   <span className="ml-2">
-                    Riesgo de abandono detectado ({(selectedClient.churnRisk * 100).toFixed(0)}%). Programar seguimiento.
+                    Riesgo de abandono detectado ({formatNumber(selectedClient.churnRisk * 100, 0)}%). Programar seguimiento.
                   </span>
                 )}
               </AlertDescription>
@@ -815,7 +816,7 @@ export default function CuentaCorrientePage() {
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead className="bg-muted border-b">
+                        <thead className="bg-muted border-b sticky top-0 z-10">
                           <tr>
                             <th className="text-left p-3 font-medium text-foreground">Fecha</th>
                             <th className="text-left p-3 font-medium text-foreground">Tipo</th>
@@ -969,14 +970,14 @@ export default function CuentaCorrientePage() {
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Promedio de Retraso</p>
                       <p className="text-3xl font-bold text-foreground">
-                        {accountData.paymentBehavior.avgDaysLate.toFixed(0)} días
+                        {formatNumber(accountData.paymentBehavior.avgDaysLate, 0)} días
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Tasa de Pago a Tiempo</p>
                       <div className="flex items-center gap-2">
                         <p className="text-3xl font-bold text-foreground">
-                          {accountData.paymentBehavior.onTimePaymentRate.toFixed(0)}%
+                          {formatNumber(accountData.paymentBehavior.onTimePaymentRate, 0)}%
                         </p>
                         {accountData.paymentBehavior.onTimePaymentRate >= 80 ? (
                           <CheckCircle2 className="w-6 h-6 text-success" />
@@ -1031,7 +1032,7 @@ export default function CuentaCorrientePage() {
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">{percentage.toFixed(1)}% del total</p>
+                          <p className="text-xs text-muted-foreground mt-1">{formatNumber(percentage, 1)}% del total</p>
                         </div>
                       );
                     })}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
 import {
   Dialog,
   DialogContent,
@@ -141,9 +142,7 @@ export function CreditValidationDialog({
     }).format(numValue);
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-AR');
-  };
+  // formatDate is now imported from @/lib/date-utils
 
   const canOverride = !canProceed && hasOverridePermission;
 
@@ -250,7 +249,7 @@ export function CreditValidationDialog({
                 <div>
                   <p className="text-xs text-muted-foreground">Utilizacion</p>
                   <p className={cn('font-semibold', creditStatus.utilizationPercent >= 80 && 'text-warning-muted-foreground', creditStatus.utilizationPercent >= 100 && 'text-destructive')}>
-                    {creditStatus.utilizationPercent.toFixed(1)}%
+                    {formatNumber(creditStatus.utilizationPercent, 1)}%
                   </p>
                 </div>
               </div>

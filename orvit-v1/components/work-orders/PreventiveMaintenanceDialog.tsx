@@ -900,17 +900,6 @@ export default function PreventiveMaintenanceDialog({
       if (!firstErrorTab) firstErrorTab = 'schedule';
     }
 
-    // Validar que la fecha de inicio no sea pasada (solo para nuevos mantenimientos)
-    if (mode === 'create' && formData.startDate) {
-      const startDate = new Date(formData.startDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (startDate < today) {
-        errors.startDate = 'La fecha de inicio no puede ser anterior a hoy';
-        if (!firstErrorTab) firstErrorTab = 'schedule';
-      }
-    }
-
     // Validar alertas (tab: schedule)
     if (!Array.isArray(formData.alertDaysBefore) || formData.alertDaysBefore.length === 0) {
       errors.alertDaysBefore = 'Debe seleccionar al menos un día de alerta';
@@ -1466,7 +1455,7 @@ export default function PreventiveMaintenanceDialog({
                       ) : loadingComponents ? (
                             <div className="flex items-center justify-center py-8 border rounded-lg">
                               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                              <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
+                              <span className="ml-2 text-sm text-muted-foreground">Cargando componentes...</span>
                             </div>
                           ) : (
                             <MultiSelect
@@ -1495,7 +1484,7 @@ export default function PreventiveMaintenanceDialog({
                       ) : loadingSubcomponents ? (
                             <div className="flex items-center justify-center py-8 border rounded-lg">
                               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                              <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
+                              <span className="ml-2 text-sm text-muted-foreground">Cargando subcomponentes...</span>
                             </div>
                           ) : (
                             <MultiSelect
@@ -1768,7 +1757,7 @@ export default function PreventiveMaintenanceDialog({
                         {loadingTools ? (
                           <div className="flex items-center justify-center py-12">
                                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                  <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
+                                  <span className="ml-2 text-sm text-muted-foreground">Cargando herramientas...</span>
                           </div>
                         ) : filteredTools.length === 0 ? (
                                 <EmptyState
@@ -1847,7 +1836,7 @@ export default function PreventiveMaintenanceDialog({
                         ) : loadingSpares ? (
                           <div className="flex items-center justify-center py-12">
                                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                  <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
+                                  <span className="ml-2 text-sm text-muted-foreground">Cargando repuestos...</span>
                           </div>
                         ) : filteredSpares.length === 0 ? (
                                 <EmptyState
@@ -2090,7 +2079,7 @@ export default function PreventiveMaintenanceDialog({
                               <p className="text-xs text-destructive font-medium">{validationErrors.startDate}</p>
                             ) : (
                             <p className="text-xs text-muted-foreground">
-                              Primera ejecución {mode === 'create' ? '(no puede ser fecha pasada)' : '(puede ser fecha pasada al editar)'}
+                              Primera ejecución {mode === 'create' ? '(puede ser una fecha pasada si el mantenimiento ya fue realizado)' : '(puede ser fecha pasada al editar)'}
                             </p>
                             )}
                   </div>
@@ -2168,7 +2157,7 @@ export default function PreventiveMaintenanceDialog({
                                         : "bg-background text-foreground border-border hover:border-primary/50 hover:bg-muted/50"
                                     )}
                                   >
-                                    {isSelected && <span className="text-[10px]">✓</span>}
+                                    {isSelected && <span className="text-xs">✓</span>}
                                     <span>{option.label}</span>
                                   </button>
                                 );

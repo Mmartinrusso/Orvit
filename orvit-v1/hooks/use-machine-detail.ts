@@ -285,7 +285,7 @@ export function useMachineWorkOrders(
     queryKey: ['preventive-maintenance', 'machine', machineId, companyId],
     queryFn: async () => {
       if (!machineId || !companyId) return [];
-      const response = await fetch(`/api/maintenance/preventive?companyId=${companyId}&machineId=${machineId}`);
+      const response = await fetch(`/api/maintenance/preventive?companyId=${companyId}&machineId=${machineId}`, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }

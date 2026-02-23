@@ -89,7 +89,7 @@ export function HistorialComprasList() {
  </div>
  <div>
  <p className="text-xl font-bold">{stats.hoy}</p>
- <p className="text-[10px] text-muted-foreground">Hoy</p>
+ <p className="text-xs text-muted-foreground">Hoy</p>
  </div>
  </div>
  </CardContent>
@@ -112,7 +112,7 @@ export function HistorialComprasList() {
  </div>
  <div>
  <p className="text-xl font-bold text-success">{stats.aprobaciones}</p>
- <p className="text-[10px] text-muted-foreground">Aprob. hoy</p>
+ <p className="text-xs text-muted-foreground">Aprob. hoy</p>
  </div>
  </div>
  </CardContent>
@@ -135,7 +135,7 @@ export function HistorialComprasList() {
  </div>
  <div>
  <p className="text-xl font-bold text-destructive">{stats.rechazos}</p>
- <p className="text-[10px] text-muted-foreground">Rech. hoy</p>
+ <p className="text-xs text-muted-foreground">Rech. hoy</p>
  </div>
  </div>
  </CardContent>
@@ -149,7 +149,7 @@ export function HistorialComprasList() {
  </div>
  <div>
  <p className="text-xl font-bold">{total}</p>
- <p className="text-[10px] text-muted-foreground">Total</p>
+ <p className="text-xs text-muted-foreground">Total</p>
  </div>
  </div>
  </CardContent>

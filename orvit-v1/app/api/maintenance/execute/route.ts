@@ -5,6 +5,125 @@ import type { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
+// Clasificación de tipos de ítems de pañol
+const CONSUMABLE_TYPES = ['SPARE_PART', 'CONSUMABLE', 'MATERIAL'];
+const TOOL_TYPES = ['TOOL', 'HAND_TOOL'];
+const isConsumableType = (type: string) => CONSUMABLE_TYPES.includes(type);
+const isToolItemType = (type: string) => TOOL_TYPES.includes(type);
+
+type ResourceInput = {
+  reservationId: number | null;
+  toolId: number | null;
+  toolName: string;
+  toolItemType: string;
+  usedQuantity: number;
+  returnedDamaged: boolean;
+  isAdHoc: boolean;
+};
+
+/**
+ * Procesa confirmaciones de recursos utilizados en la ejecución.
+ * Maneja 3 casos: reservación existente, ad-hoc con toolId, preventivo sin toolId.
+ */
+async function processResources(
+  tx: Prisma.TransactionClient,
+  resources: ResourceInput[],
+  maintenanceId: number | string,
+  assignedToId?: number | string | null,
+) {
+  if (!resources?.length) return;
+
+  for (const r of resources) {
+    if (r.reservationId != null) {
+      // CASO A: Recurso con reservación existente (Work Order)
+      const reservation = await tx.sparePartReservation.findUnique({
+        where: { id: r.reservationId },
+        include: { tool: { select: { itemType: true } } }
+      });
+
+      if (!reservation) continue;
+
+      // Actualizar con cantidades confirmadas
+      await tx.sparePartReservation.update({
+        where: { id: r.reservationId },
+        data: {
+          usedQuantity: r.usedQuantity ?? reservation.quantity,
+          returnedDamaged: r.returnedDamaged ?? false,
+        }
+      });
+
+      // Repuesto con sobrante → devolver al stock
+      const itemType = reservation.tool.itemType;
+      if (isConsumableType(itemType) && r.usedQuantity < reservation.quantity) {
+        const toReturn = reservation.quantity - r.usedQuantity;
+        await tx.tool.update({
+          where: { id: reservation.toolId },
+          data: { stockQuantity: { increment: toReturn } }
+        });
+        await tx.toolMovement.create({
+          data: {
+            toolId: reservation.toolId,
+            type: 'IN',
+            quantity: toReturn,
+            reason: `Devolución post-mantenimiento OT#${maintenanceId}`,
+            userId: assignedToId ? Number(assignedToId) : null,
+          }
+        });
+      }
+
+      // Herramienta dañada → marcar como DAMAGED
+      if (isToolItemType(itemType) && r.returnedDamaged) {
+        await tx.tool.update({
+          where: { id: reservation.toolId },
+          data: { status: 'DAMAGED' }
+        });
+        await tx.toolMovement.create({
+          data: {
+            toolId: reservation.toolId,
+            type: 'ADJUSTMENT',
+            quantity: 0,
+            reason: `Dañada durante mantenimiento OT#${maintenanceId}`,
+            userId: assignedToId ? Number(assignedToId) : null,
+          }
+        });
+      }
+    } else if (r.isAdHoc && r.toolId != null) {
+      // CASO B: Recurso ad-hoc con toolId (no planificado)
+      if (isConsumableType(r.toolItemType) && r.usedQuantity > 0) {
+        await tx.tool.update({
+          where: { id: r.toolId },
+          data: { stockQuantity: { decrement: r.usedQuantity } }
+        });
+        await tx.toolMovement.create({
+          data: {
+            toolId: r.toolId,
+            type: 'OUT',
+            quantity: r.usedQuantity,
+            reason: `Consumido en mantenimiento OT#${maintenanceId} (no planificado)`,
+            userId: assignedToId ? Number(assignedToId) : null,
+          }
+        });
+      }
+      if (isToolItemType(r.toolItemType) && r.returnedDamaged) {
+        await tx.tool.update({
+          where: { id: r.toolId },
+          data: { status: 'DAMAGED' }
+        });
+        await tx.toolMovement.create({
+          data: {
+            toolId: r.toolId,
+            type: 'ADJUSTMENT',
+            quantity: 0,
+            reason: `Dañada durante mantenimiento OT#${maintenanceId} (no planificada)`,
+            userId: assignedToId ? Number(assignedToId) : null,
+          }
+        });
+      }
+    }
+    // CASO C: Preventivo sin toolId → solo se guarda en historial (nada que hacer aquí)
+  }
+}
+
 /**
  * Resuelve la tarifa horaria del técnico asignado.
  * Prioridad: TechnicianCostRate → env MAINTENANCE_HOURLY_RATE_DEFAULT → 25
@@ -57,6 +176,7 @@ export const POST = withGuards(async (request, ctx) => {
       qualityScore,
       completionStatus,
       executedAt,
+      operators = [],
       machineId,
       machineName,
       unidadMovilId,
@@ -70,7 +190,8 @@ export const POST = withGuards(async (request, ctx) => {
       estimatedDuration,
       estimatedValue,
       reExecutionReason,
-      companyId
+      companyId,
+      resources
     } = body;
 
     // Validaciones básicas
@@ -171,6 +292,13 @@ export const POST = withGuards(async (request, ctx) => {
         qualityScore: null,
         completionStatus: completionStatus || 'COMPLETED',
         reExecutionReason: reExecutionReason || null,
+        operators: Array.isArray(operators) ? operators : [],
+        assignedToId: assignedToId || null,
+        assignedToName: assignedToName || null,
+        resourcesUsed: Array.isArray(resources) ? resources.map((r: any) => ({
+          toolId: r.toolId, toolName: r.toolName, toolItemType: r.toolItemType,
+          usedQuantity: r.usedQuantity, returnedDamaged: r.returnedDamaged, isAdHoc: r.isAdHoc,
+        })) : [],
       };
 
       // Transacción atómica
@@ -219,25 +347,38 @@ export const POST = withGuards(async (request, ctx) => {
         );
       }
 
-      updatedRecord = await prisma.workOrder.update({
-        where: { id: Number(maintenanceId) },
-        data: {
-          status: completionStatus === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS',
-          completedDate: completionStatus === 'COMPLETED' ? new Date(executedAt) : null,
-          actualHours: actualDuration,
-          notes: `${notes || ''}\n\n${excludeQuantity ? 'Cantidad excluida de este mantenimiento' : `Cantidad ejecutada: ${actualValue} ${actualUnit}`}\nProblemas encontrados: ${issues || 'Ninguno'}`,
-          cost: estimatedCost,
-          updatedAt: new Date()
-        }
-      });
+      // Transacción atómica para WorkOrder + recursos
+      const woResult = await prisma.$transaction(async (tx) => {
+        const updated = await tx.workOrder.update({
+          where: { id: Number(maintenanceId) },
+          data: {
+            status: completionStatus === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS',
+            completedDate: completionStatus === 'COMPLETED' ? new Date(executedAt) : null,
+            actualHours: actualDuration,
+            notes: `${notes || ''}\n\n${excludeQuantity ? 'Cantidad excluida de este mantenimiento' : `Cantidad ejecutada: ${actualValue} ${actualUnit}`}\nProblemas encontrados: ${issues || 'Ninguno'}`,
+            cost: estimatedCost,
+            updatedAt: new Date()
+          }
+        });
 
-      // maintenance_history para WorkOrders
-      try {
+        // Procesar recursos (devolución de stock, herramientas dañadas, ad-hoc)
+        if (Array.isArray(resources) && resources.length > 0) {
+          await processResources(tx, resources, maintenanceId, assignedToId);
+        }
+
+        // maintenance_history para WorkOrders
         const historyMachineId = machineId ? Number(machineId) : null;
         const historyComponentId = componentIds?.length > 0 ? Number(componentIds[0]) : null;
 
         if (historyMachineId) {
-          await prisma.maintenance_history.create({
+          const sparePartsJson = Array.isArray(resources) && resources.length > 0
+            ? resources.map((r: any) => ({
+                toolId: r.toolId, toolName: r.toolName, toolItemType: r.toolItemType,
+                usedQuantity: r.usedQuantity, returnedDamaged: r.returnedDamaged, isAdHoc: r.isAdHoc,
+              }))
+            : null;
+
+          await tx.maintenance_history.create({
             data: {
               workOrderId: Number(maintenanceId),
               machineId: historyMachineId,
@@ -250,7 +391,7 @@ export const POST = withGuards(async (request, ctx) => {
               rootCause: issues || null,
               correctiveActions: null,
               preventiveActions: null,
-              spareParts: null,
+              spareParts: sparePartsJson,
               nextMaintenanceDate: null,
               mttr,
               mtbf: null,
@@ -260,9 +401,11 @@ export const POST = withGuards(async (request, ctx) => {
             },
           });
         }
-      } catch (historyError) {
-        console.error('Error guardando maintenance_history para WorkOrder:', historyError);
-      }
+
+        return updated;
+      });
+
+      updatedRecord = woResult;
     }
 
     // Respuesta exitosa

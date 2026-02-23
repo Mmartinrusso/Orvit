@@ -14,8 +14,7 @@ import {
  Wrench,
  Loader2
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 
 interface Maintenance {
  id: number;
@@ -117,9 +116,7 @@ export default function UnidadMovilMaintenances({
  }
  };
 
- const formatDate = (dateString: string) => {
- return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
- };
+ // formatDate imported from @/lib/date-utils
 
  const formatFrequency = (frequency?: string, frequencyUnit?: string) => {
  if (!frequency || !frequencyUnit) return 'No especificada';
@@ -189,7 +186,7 @@ export default function UnidadMovilMaintenances({
  {maintenance.scheduledDate && (
  <>
  <Calendar className="h-4 w-4 ml-4" />
- <span>Próximo: {new Date(maintenance.scheduledDate).toLocaleDateString('es-ES')}</span>
+ <span>Próximo: {formatDate(maintenance.scheduledDate)}</span>
  </>
  )}
  </div>

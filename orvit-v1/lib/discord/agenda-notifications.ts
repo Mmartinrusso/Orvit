@@ -4,9 +4,17 @@
  * Envía recordatorios de tareas de agenda vía Discord DM
  */
 
-import { sendDM, isBotReady, DMButtonOption } from './bot';
+import { sendDMByDiscordIdViaBotService } from './bot-service-client';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+// Tipo local para botones de DM
+interface DMButtonOption {
+  customId: string;
+  label: string;
+  style: 'primary' | 'secondary' | 'success' | 'danger';
+  emoji?: string;
+}
 
 // Colores para embeds
 const COLORS = {
@@ -40,10 +48,6 @@ export async function sendTaskReminder(
   discordUserId: string,
   data: ReminderNotificationData
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
-
   const { task } = data;
 
   // Determinar color según prioridad
@@ -93,7 +97,7 @@ export async function sendTaskReminder(
     });
   }
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: `🔔 Recordatorio: ${task.title}`,
       description: task.description || undefined,
@@ -114,10 +118,6 @@ export async function notifyTaskCreated(
   discordUserId: string,
   task: TaskReminderData
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
-
   const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
 
   if (task.assignedToName) {
@@ -150,7 +150,7 @@ export async function notifyTaskCreated(
     inline: true,
   });
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: `✅ Tarea creada: ${task.title}`,
       description: task.description || undefined,
@@ -172,10 +172,6 @@ export async function notifyTaskOverdue(
   task: TaskReminderData,
   daysOverdue: number
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
-
   const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
 
   if (task.assignedToName) {
@@ -201,7 +197,7 @@ export async function notifyTaskOverdue(
     });
   }
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: `⚠️ Tarea vencida: ${task.title}`,
       description: task.description || 'Esta tarea requiere atención inmediata.',
@@ -223,10 +219,6 @@ export async function notifyTaskCompleted(
   task: TaskReminderData,
   completedNote?: string | null
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
-
   const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
 
   if (task.assignedToName) {
@@ -245,7 +237,7 @@ export async function notifyTaskCompleted(
     });
   }
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: `🎉 Tarea completada: ${task.title}`,
       description: task.description || undefined,
@@ -268,9 +260,6 @@ export async function notifyTaskDueSoon(
   task: TaskReminderData,
   minutesUntilDue: number
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
 
   // Determinar color según prioridad
   let color = 0xf59e0b; // Ámbar por defecto (advertencia)
@@ -332,7 +321,7 @@ export async function notifyTaskDueSoon(
     },
   ];
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: `⏰ ¡Tarea en ${minutesUntilDue} min!`,
       description: `**${task.title}**${task.description ? `\n\n${task.description}` : ''}`,
@@ -355,9 +344,6 @@ export async function notifyTaskDueDate(
   task: TaskReminderData,
   type: 'tomorrow' | 'today'
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
 
   const isTomorrow = type === 'tomorrow';
   const color = isTomorrow ? 0xf59e0b : 0xef4444; // Ámbar para mañana, Rojo para hoy
@@ -405,7 +391,7 @@ export async function notifyTaskDueDate(
     });
   }
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: isTomorrow
         ? `⏰ Tarea vence MAÑANA: ${task.title}`
@@ -433,9 +419,6 @@ export async function sendDailySummary(
     dueTomorrow?: TaskReminderData[];
   }
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isBotReady()) {
-    return { success: false, error: 'Bot no está conectado' };
-  }
 
   const totalPending = tasks.pending.length;
   const totalOverdue = tasks.overdue.length;
@@ -504,7 +487,7 @@ export async function sendDailySummary(
     description = `Tienes **${totalDueTomorrow}** tarea${totalDueTomorrow !== 1 ? 's' : ''} para mañana.`;
   }
 
-  const result = await sendDM(discordUserId, {
+  const result = await sendDMByDiscordIdViaBotService(discordUserId, {
     embed: {
       title: '📅 Resumen de Tareas',
       description,

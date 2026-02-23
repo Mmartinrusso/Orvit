@@ -216,7 +216,7 @@ function OrderTimeline({ pedido, colors }: { pedido: Pedido; colors: UserColorPr
               {step.label}
             </span>
             {step.date && (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {format(new Date(step.date), 'dd/MM HH:mm')}
               </span>
             )}

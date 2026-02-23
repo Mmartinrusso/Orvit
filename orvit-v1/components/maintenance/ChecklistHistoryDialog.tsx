@@ -14,8 +14,7 @@ import {
  User,
  FileText
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface ChecklistExecutionHistory {
  id: number;
@@ -142,7 +141,7 @@ export default function ChecklistHistoryDialog({
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-foreground mb-3">
  <div className="flex items-center gap-1">
  <Calendar className="h-4 w-4" />
- <span>{format(new Date(execution.executedAt), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+ <span>{formatDateTime(execution.executedAt)}</span>
  </div>
  <div className="flex items-center gap-1">
  <User className="h-4 w-4" />
@@ -218,7 +217,7 @@ export default function ChecklistHistoryDialog({
  </div>
 
  <div className="text-xs text-muted-foreground">
- Saltado el: {format(new Date(justification.skippedAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+ Saltado el: {formatDateTime(justification.skippedAt)}
  </div>
  </div>
  </CardContent>

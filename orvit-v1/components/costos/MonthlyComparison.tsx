@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -733,7 +734,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                         <div className="flex items-center gap-2">
                           <div className={cn('w-3 h-3 rounded-full', growthMetrics.metrics.variacionIngresosPct >= 5 ? 'bg-success' : growthMetrics.metrics.variacionIngresosPct >= 0 ? 'bg-warning' : 'bg-destructive')}></div>
                           <Badge variant={growthMetrics.metrics.variacionIngresosPct >= 0 ? 'default' : 'destructive'} className="text-xs">
-                            {growthMetrics.metrics.variacionIngresosPct >= 0 ? '+' : ''}{growthMetrics.metrics.variacionIngresosPct.toFixed(1)}%
+                            {growthMetrics.metrics.variacionIngresosPct >= 0 ? '+' : ''}{formatNumber(growthMetrics.metrics.variacionIngresosPct, 1)}%
                           </Badge>
                         </div>
                       </div>
@@ -758,7 +759,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                         <div className="flex items-center gap-2">
                           <div className={cn('w-3 h-3 rounded-full', growthMetrics.metrics.variacionCostosPct <= 0 ? 'bg-success' : growthMetrics.metrics.variacionCostosPct <= 5 ? 'bg-warning' : 'bg-destructive')}></div>
                           <Badge variant={growthMetrics.metrics.variacionCostosPct <= 0 ? 'default' : 'destructive'} className="text-xs">
-                            {growthMetrics.metrics.variacionCostosPct >= 0 ? '+' : ''}{growthMetrics.metrics.variacionCostosPct.toFixed(1)}%
+                            {growthMetrics.metrics.variacionCostosPct >= 0 ? '+' : ''}{formatNumber(growthMetrics.metrics.variacionCostosPct, 1)}%
                           </Badge>
                         </div>
                       </div>
@@ -781,13 +782,13 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold text-[#666666] mb-2">Promedio de Crecimiento</h3>
                       <p className="text-2xl font-bold text-[#333333]">
-                        {growthMetrics.avgGrowth.toFixed(1)}%
+                        {formatNumber(growthMetrics.avgGrowth, 1)}%
                       </p>
                     </Card>
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold text-[#666666] mb-2">Volatilidad</h3>
                       <p className="text-2xl font-bold text-[#333333]">
-                        {growthMetrics.volatility.toFixed(1)}%
+                        {formatNumber(growthMetrics.volatility, 1)}%
                       </p>
                     </Card>
                     <Card className="p-4">
@@ -812,13 +813,13 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold text-[#666666] mb-2">Índice Actual</h3>
                       <p className="text-2xl font-bold text-[#333333]">
-                        {growthMetrics.data[growthMetrics.data.length - 1]?.index.toFixed(1) || 100}
+                        {growthMetrics.data[growthMetrics.data.length - 1]?.formatNumber(index, 1) || 100}
                       </p>
                     </Card>
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold text-[#666666] mb-2">Variación Total</h3>
                       <p className="text-2xl font-bold text-[#333333]">
-                        {((growthMetrics.data[growthMetrics.data.length - 1]?.index || 100) - 100).toFixed(1)}%
+                        {formatNumber((growthMetrics.data[growthMetrics.data.length - 1]?.index || 100) - 100, 1)}%
                       </p>
                     </Card>
                   </div>
@@ -1123,7 +1124,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                           variant={categoryStat.change >= 0 ? 'default' : 'destructive'} 
                           className="text-xs"
                         >
-                          {categoryStat.change >= 0 ? '↗' : '↘'} {Math.abs(categoryStat.change / categoryStat.avg * 100).toFixed(1)}%
+                          {categoryStat.change >= 0 ? '↗' : '↘'} {formatNumber(Math.abs(categoryStat.change / categoryStat.avg * 100), 1)}%
                         </Badge>
                       </div>
                       
@@ -1160,7 +1161,7 @@ export function MonthlyComparison({ data, selectedMonth }: MonthlyComparisonProp
                               ></div>
                             </div>
                             <span className="text-xs text-[#666666]">
-                              {Math.abs(categoryStat.change / categoryStat.avg * 100).toFixed(1)}%
+                              {formatNumber(Math.abs(categoryStat.change / categoryStat.avg * 100), 1)}%
                             </span>
                           </div>
                         </div>

@@ -66,7 +66,7 @@ const categoryColors: Record<string, string> = {
   VENTAS: 'bg-info/10 text-info-muted-foreground border-info-muted/20',
   COMPRAS: 'bg-success/10 text-success border-success-muted/20',
   MANTENIMIENTO: 'bg-warning/10 text-warning-muted-foreground border-warning-muted/20',
-  COSTOS: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  COSTOS: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
   ADMINISTRACION: 'bg-muted text-muted-foreground border-border',
   GENERAL: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
 };
@@ -319,11 +319,11 @@ export default function ModulesPage() {
                               {module.name}
                             </span>
                             {module.isActive ? (
-                              <Badge className="text-[10px] bg-success/10 text-success border-success-muted/20">
+                              <Badge className="text-xs bg-success/10 text-success border-success-muted/20">
                                 Activo
                               </Badge>
                             ) : (
-                              <Badge className="text-[10px] bg-muted text-muted-foreground border-border">
+                              <Badge className="text-xs bg-muted text-muted-foreground border-border">
                                 Inactivo
                               </Badge>
                             )}
@@ -337,7 +337,7 @@ export default function ModulesPage() {
                                 <Badge
                                   key={dep}
                                   variant="outline"
-                                  className="text-[10px]"
+                                  className="text-xs"
                                 >
                                   {dep}
                                 </Badge>
@@ -471,7 +471,7 @@ export default function ModulesPage() {
                                     {module.name}
                                   </span>
                                   {module.dependencies.length > 0 && (
-                                    <Badge variant="outline" className="text-[10px]">
+                                    <Badge variant="outline" className="text-xs">
                                       Requiere: {module.dependencies.join(', ')}
                                     </Badge>
                                   )}

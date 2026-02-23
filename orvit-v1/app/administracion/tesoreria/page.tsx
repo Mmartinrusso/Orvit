@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -156,7 +157,7 @@ export default function TesoreriaPage() {
               disabled={isFetching}
               className={cn(
                 "inline-flex items-center border border-border rounded-md p-0.5 bg-muted/40 h-7",
-                "px-2 text-[11px] font-normal gap-1.5",
+                "px-2 text-xs font-normal gap-1.5",
                 "hover:bg-muted disabled:opacity-50",
                 isFetching && "bg-background shadow-sm"
               )}
@@ -447,7 +448,7 @@ export default function TesoreriaPage() {
                       <div className="text-right">
                         <p className="text-sm font-bold">{formatCurrency(Number(cheque.importe))}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(cheque.fechaVencimiento).toLocaleDateString('es-AR')}
+                          {formatDate(cheque.fechaVencimiento)}
                         </p>
                       </div>
                     </div>
@@ -482,7 +483,7 @@ export default function TesoreriaPage() {
                         <p className="text-sm font-bold text-warning-muted-foreground">{formatCurrency(Number(factura.total))}</p>
                         <p className="text-xs text-muted-foreground">
                           {factura.fechaVencimiento
-                            ? new Date(factura.fechaVencimiento).toLocaleDateString('es-AR')
+                            ? formatDate(factura.fechaVencimiento)
                             : 'Sin fecha'}
                         </p>
                       </div>

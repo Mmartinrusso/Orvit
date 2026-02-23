@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatNumber } from '@/lib/utils';
 import { 
   BarChart3, 
   PieChart, 
@@ -38,7 +39,7 @@ export function EstadisticasCostos({ companyId }: EstadisticasCostosProps) {
   };
 
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+    return `${formatNumber(value, 1)}%`;
   };
 
   if (loading) {

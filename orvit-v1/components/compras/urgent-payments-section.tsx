@@ -119,7 +119,7 @@ export function UrgentPaymentsSection() {
  </CardTitle>
  </CardHeader>
  <CardContent>
- <p className="text-sm text-muted-foreground">Cargando...</p>
+ <p className="text-sm text-muted-foreground">Cargando pagos urgentes...</p>
  </CardContent>
  </Card>
  );

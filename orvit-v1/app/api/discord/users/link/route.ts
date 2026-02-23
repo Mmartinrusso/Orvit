@@ -10,7 +10,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { sendDM, getDiscordClient, isBotReady } from '@/lib/discord/bot';
+import {
+  sendDMByDiscordIdViaBotService,
+  guildOperationsViaBotService,
+  getBotServiceStatus,
+} from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,67 +106,63 @@ export async function POST(request: NextRequest) {
     let inviteError: string | undefined;
 
     const company = updatedUser.companies?.[0]?.company;
-    if (company?.discordGuildId && isBotReady()) {
+    if (company?.discordGuildId) {
       try {
-        const discordClient = await getDiscordClient();
-        if (discordClient) {
-          const guild = await discordClient.guilds.fetch(company.discordGuildId);
+        const botStatus = await getBotServiceStatus();
 
-          if (guild) {
-            // Verificar si el usuario ya está en el servidor
-            try {
-              await guild.members.fetch(discordUserId);
-              // Si llegamos aquí, el usuario ya está en el servidor
-              console.log(`[Discord Link] Usuario ${discordUserId} ya está en el servidor ${guild.name}`);
-            } catch {
-              // Usuario no está en el servidor, crear invitación
-              // Buscar el canal de sistema o el primer canal de texto disponible
-              const inviteChannel = guild.systemChannel ||
-                guild.channels.cache.find(ch => ch.isTextBased() && !ch.isThread() && !ch.isVoiceBased());
+        if (botStatus.success && botStatus.connected) {
+          // Check if user is already in the server
+          const memberCheck = await guildOperationsViaBotService(
+            'checkMember',
+            company.discordGuildId,
+            discordUserId
+          );
 
-              if (inviteChannel && 'createInvite' in inviteChannel) {
-                const invite = await (inviteChannel as any).createInvite({
-                  maxAge: 604800, // 7 días
-                  maxUses: 1, // Un solo uso
-                  unique: true,
-                  reason: `Invitación automática para ${updatedUser.name} al vincular Discord`,
-                });
+          if (memberCheck.success && !memberCheck.isMember) {
+            // User not in server, create invite
+            const inviteResult = await guildOperationsViaBotService(
+              'createInvite',
+              company.discordGuildId,
+              undefined,
+              `Invitación automática para ${updatedUser.name} al vincular Discord`
+            );
 
-                // Enviar DM con la invitación
-                const dmResult = await sendDM(discordUserId, {
-                  embed: {
-                    title: '🎉 ¡Cuenta vinculada exitosamente!',
-                    description: `Tu cuenta de Discord ha sido vinculada a ORVIT.\n\nPara recibir notificaciones y usar todas las funciones, únete al servidor de **${company.name}**:`,
-                    color: 0x5865f2,
-                    fields: [
-                      {
-                        name: '🔗 Link de invitación',
-                        value: `[Unirte al servidor](${invite.url})`,
-                        inline: false,
-                      },
-                      {
-                        name: '⏰ Válido por',
-                        value: '7 días (un solo uso)',
-                        inline: true,
-                      },
-                    ],
-                    footer: 'ORVIT - Sistema de Gestión',
-                    timestamp: true,
-                  },
-                });
+            if (inviteResult.success && inviteResult.inviteUrl) {
+              // Send DM with the invitation
+              const dmResult = await sendDMByDiscordIdViaBotService(discordUserId, {
+                embed: {
+                  title: '🎉 ¡Cuenta vinculada exitosamente!',
+                  description: `Tu cuenta de Discord ha sido vinculada a ORVIT.\n\nPara recibir notificaciones y usar todas las funciones, únete al servidor de **${company.name}**:`,
+                  color: 0x5865f2,
+                  fields: [
+                    {
+                      name: '🔗 Link de invitación',
+                      value: `[Unirte al servidor](${inviteResult.inviteUrl})`,
+                      inline: false,
+                    },
+                    {
+                      name: '⏰ Válido por',
+                      value: '7 días (un solo uso)',
+                      inline: true,
+                    },
+                  ],
+                  footer: 'ORVIT - Sistema de Gestión',
+                  timestamp: true,
+                },
+              });
 
-                inviteSent = dmResult.success;
-                if (!dmResult.success) {
-                  inviteError = dmResult.error;
-                  console.warn(`[Discord Link] No se pudo enviar DM con invitación: ${dmResult.error}`);
-                } else {
-                  console.log(`[Discord Link] Invitación enviada a ${discordUserId} para servidor ${guild.name}`);
-                }
+              inviteSent = dmResult.success;
+              if (!dmResult.success) {
+                inviteError = dmResult.error;
+                console.warn(`[Discord Link] No se pudo enviar DM con invitación: ${dmResult.error}`);
               } else {
-                console.warn('[Discord Link] No se encontró canal válido para crear invitación');
-                inviteError = 'No se encontró canal para crear invitación';
+                console.log(`[Discord Link] Invitación enviada a ${discordUserId}`);
               }
+            } else {
+              inviteError = inviteResult.error || 'No se pudo crear invitación';
             }
+          } else if (memberCheck.success && memberCheck.isMember) {
+            console.log(`[Discord Link] Usuario ${discordUserId} ya está en el servidor`);
           }
         }
       } catch (error: any) {
@@ -186,7 +186,6 @@ export async function POST(request: NextRequest) {
         error: inviteError,
       },
     });
-
   } catch (error: any) {
     console.error('❌ Error en POST /api/discord/users/link:', error);
     return NextResponse.json(
@@ -243,7 +242,6 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Cuenta de Discord desvinculada',
     });
-
   } catch (error: any) {
     console.error('❌ Error en DELETE /api/discord/users/link:', error);
     return NextResponse.json(
@@ -297,7 +295,6 @@ export async function GET(request: NextRequest) {
       linked: !!user.discordUserId,
       discordUserId: user.discordUserId,
     });
-
   } catch (error: any) {
     console.error('❌ Error en GET /api/discord/users/link:', error);
     return NextResponse.json(

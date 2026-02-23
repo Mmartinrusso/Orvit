@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -282,9 +283,7 @@ export default function NotasCreditoDebitoPage() {
     }).format(value);
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-AR');
-  };
+  // formatDate imported from @/lib/date-utils
 
   const filteredNotas = notas.filter(n =>
     n.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -396,7 +395,7 @@ export default function NotasCreditoDebitoPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Cargando...</p>
+              <p className="text-muted-foreground">Cargando notas de crédito/débito...</p>
             </div>
           ) : filteredNotas.length === 0 ? (
             <div className="text-center py-12">

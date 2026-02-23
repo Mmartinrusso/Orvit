@@ -5,8 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/auth';
 import OpenAI from 'openai';
 import { AIExtractionSchema, mapTipoComprobante, detectDocType } from '@/lib/schemas/ai-extraction';
-import { validateAccounting, calculateConfidenceScore, validateRequiredFields, detectCrossedData, tryCorrectCuit, tryCorrectCae, correctOcrErrors } from '@/lib/validation/accounting';
-import { checkDuplicate, findSupplierByCuit } from '@/lib/validation/duplicates';
+import { validateAccounting, calculateConfidenceScore, validateRequiredFields, detectCrossedData, tryCorrectCuit, tryCorrectCae, correctOcrErrors } from '@/lib/validations/accounting';
+import { checkDuplicate, findSupplierByCuit } from '@/lib/validations/duplicates';
 
 // Normalizar texto para mejor matching
 function normalizeText(text: string): string {

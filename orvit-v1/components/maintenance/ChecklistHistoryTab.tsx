@@ -18,8 +18,7 @@ import {
  FileText,
  X
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface ChecklistExecutionHistory {
  id: number;
@@ -223,7 +222,7 @@ export default function ChecklistHistoryTab({
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-foreground mb-3">
  <div className="flex items-center gap-1">
  <Calendar className="h-4 w-4" />
- <span>{format(new Date(execution.executedAt), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+ <span>{formatDateTime(execution.executedAt)}</span>
  </div>
  <div className="flex items-center gap-1">
  <User className="h-4 w-4" />
@@ -261,7 +260,7 @@ export default function ChecklistHistoryTab({
  className="h-10 flex items-center justify-center text-xs text-muted-foreground"
  >
  {loading || isLoadingMore
- ? 'Cargando...'
+ ? 'Cargando historial...'
  : hasMore
  ? 'Desplazá para cargar más...'
  : history.length > 0
@@ -390,7 +389,7 @@ export default function ChecklistHistoryTab({
  <div className="flex items-center gap-2 text-xs text-muted-foreground">
  <Calendar className="h-3 w-3" />
  <span>
- Saltado el: {format(new Date(justification.skippedAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+ Saltado el: {formatDateTime(justification.skippedAt)}
  </span>
  </div>
  </div>
@@ -430,7 +429,7 @@ export default function ChecklistHistoryTab({
  <div className="flex items-center gap-2 text-xs text-success mt-1">
  <Calendar className="h-3 w-3" />
  <span>
- Completado el: {format(new Date(item.completedAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+ Completado el: {formatDateTime(item.completedAt)}
  </span>
  </div>
  </div>
@@ -469,7 +468,7 @@ export default function ChecklistHistoryTab({
  <div className="flex items-center gap-2 text-xs text-destructive">
  <Calendar className="h-3 w-3" />
  <span>
- Saltado el: {format(new Date(item.skippedAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+ Saltado el: {formatDateTime(item.skippedAt)}
  </span>
  </div>
  </div>
@@ -503,7 +502,7 @@ export default function ChecklistHistoryTab({
  className="px-4 text-xs"
  onClick={() => {
  // Abrir página dedicada de impresión de ejecuciones
- window.open(`/maintenance/checklist-print/${selectedExecution.id}`, '_blank');
+ window.open(`/mantenimiento/checklist-print/${selectedExecution.id}`, '_blank');
  }}
  >
  Imprimir ejecución

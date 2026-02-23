@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -246,7 +246,7 @@ export default function PartialDeliverySelector({
               Productos seleccionados: <strong>{selectedCount}</strong> de {items.length}
             </span>
             <span>
-              Cantidad total: <strong>{totalSelectedQuantity.toFixed(2)}</strong>
+              Cantidad total: <strong>{formatNumber(totalSelectedQuantity, 2)}</strong>
             </span>
           </div>
         </CardHeader>
@@ -385,7 +385,7 @@ export default function PartialDeliverySelector({
                         {selection.selected && selection.cantidad > 0 && (
                           <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                             <span>
-                              Valor: ${(item.precioUnitario * selection.cantidad).toFixed(2)}
+                              Valor: ${formatNumber(item.precioUnitario * selection.cantidad, 2)}
                             </span>
                             {suggestion && suggestion.urgencyScore >= 7 && (
                               <span className="flex items-center gap-1 text-orange-600">
@@ -409,7 +409,7 @@ export default function PartialDeliverySelector({
               <CheckCircle2 className="w-4 h-4" />
               <AlertDescription>
                 Se creará una entrega parcial con {selectedCount} producto(s) y un total de{' '}
-                {totalSelectedQuantity.toFixed(2)} unidades.
+                {formatNumber(totalSelectedQuantity, 2)} unidades.
               </AlertDescription>
             </Alert>
           )}

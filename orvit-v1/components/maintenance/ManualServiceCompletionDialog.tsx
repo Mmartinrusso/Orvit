@@ -49,6 +49,7 @@ import {
  Filter,
 } from 'lucide-react';
 import { format, isToday, isPast, isFuture, differenceInDays, parseISO } from 'date-fns';
+import { formatDate } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -569,7 +570,7 @@ export default function ManualMaintenanceCompletionDialog({
  >
  {filter.label}
  <span className={cn(
- "px-1.5 py-0.5 rounded-full text-[10px]",
+ "px-1.5 py-0.5 rounded-full text-xs",
  statusFilter === filter.id ? 'bg-primary-foreground/20' : 'bg-background'
  )}>
  {filter.count}
@@ -602,7 +603,7 @@ export default function ManualMaintenanceCompletionDialog({
  <div className="flex items-center justify-center h-48">
  <div className="text-center">
  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
- <p className="text-sm text-muted-foreground">Cargando...</p>
+ <p className="text-sm text-muted-foreground">Cargando servicio...</p>
  </div>
  </div>
  ) : filteredMaintenances.length === 0 ? (
@@ -645,7 +646,7 @@ export default function ManualMaintenanceCompletionDialog({
  <h4 className="font-medium text-sm leading-tight">{maintenance.title}</h4>
  <Badge
  variant="outline"
- className={cn("text-[10px] px-1.5 py-0 flex-shrink-0", getStatusColor(maintenance.dateStatus))}
+ className={cn("text-xs px-1.5 py-0 flex-shrink-0", getStatusColor(maintenance.dateStatus))}
  >
  {getStatusLabel(maintenance.dateStatus)}
  </Badge>
@@ -671,7 +672,7 @@ export default function ManualMaintenanceCompletionDialog({
  maintenance.dateStatus === 'overdue' && 'text-destructive font-medium',
  maintenance.dateStatus === 'today' && 'text-warning-muted-foreground font-medium'
  )}>
- {format(parseISO(maintenance.nextMaintenanceDate), 'dd/MM/yyyy', { locale: es })}
+ {formatDate(maintenance.nextMaintenanceDate)}
  </span>
  </div>
  )}
@@ -899,7 +900,7 @@ export default function ManualMaintenanceCompletionDialog({
  ))}
  <label className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
  <Camera className="h-5 w-5 text-muted-foreground" />
- <span className="text-[10px] text-muted-foreground">Agregar</span>
+ <span className="text-xs text-muted-foreground">Agregar</span>
  <input
  type="file"
  accept="image/*"

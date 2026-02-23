@@ -63,7 +63,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { SemiGauge } from './SemiGauge';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface PayrollViewV2Props {
   companyId: string;
@@ -75,7 +75,7 @@ interface PayrollViewV2Props {
 const formatCurrency = (value: number): string =>
   value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-const formatPercent = (value: number): string => value.toFixed(1) + '%';
+const formatPercent = (value: number): string => formatNumber(value, 1) + '%';
 
 const PayrollCustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
@@ -646,7 +646,7 @@ export function PayrollViewV2({
                     pct={50}
                     label="Empleados / Nómina"
                     color={userColors.chart3}
-                    displayValue={gaugeData.empPerPayroll.toFixed(1)}
+                    displayValue={formatNumber(gaugeData.empPerPayroll, 1)}
                   />
                   <SemiGauge
                     pct={50}
@@ -667,7 +667,7 @@ export function PayrollViewV2({
                   { label: 'Empleados', metric: trendMetrics.employees, color: userColors.chart2, formatted: String(trendMetrics.employees.value), costMetric: false },
                   { label: 'Liquidaciones', metric: trendMetrics.payrolls, color: userColors.chart3, formatted: String(trendMetrics.payrolls.value), costMetric: false },
                   { label: 'Costo / Empleado', metric: trendMetrics.costPerEmployee, color: userColors.chart4, formatted: `$${formatCurrency(trendMetrics.costPerEmployee.value)}`, costMetric: true },
-                  { label: '% Cargas', metric: trendMetrics.cargasPct, color: userColors.chart6, formatted: `${trendMetrics.cargasPct.value.toFixed(1)}%`, costMetric: true },
+                  { label: '% Cargas', metric: trendMetrics.cargasPct, color: userColors.chart6, formatted: `${formatNumber(trendMetrics.cargasPct.value, 1)}%`, costMetric: true },
                 ].map(t => {
                   const isPositiveDelta = t.metric.delta >= 0;
                   const deltaColor = t.costMetric
@@ -683,7 +683,7 @@ export function PayrollViewV2({
                           {isPositiveDelta
                             ? <TrendingUp className="h-3 w-3" />
                             : <TrendingDown className="h-3 w-3" />}
-                          {isPositiveDelta ? '+' : ''}{t.metric.delta.toFixed(1)}%
+                          {isPositiveDelta ? '+' : ''}{formatNumber(t.metric.delta, 1)}%
                         </p>
                       </CardContent>
                     </Card>

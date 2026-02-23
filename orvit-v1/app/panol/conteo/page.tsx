@@ -54,7 +54,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { QRScanner } from '@/components/panol';
 
 interface Tool {
@@ -523,7 +523,7 @@ export default function ConteoPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Progreso del Conteo</span>
-                    <span className="text-sm text-muted-foreground">{stats.progress.toFixed(0)}%</span>
+                    <span className="text-sm text-muted-foreground">{formatNumber(stats.progress, 0)}%</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div

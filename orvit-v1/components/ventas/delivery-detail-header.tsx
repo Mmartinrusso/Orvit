@@ -18,8 +18,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { WhatsAppDropdown } from '@/components/ventas/whatsapp-button';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 import { toast } from 'sonner';
 
 type DeliveryStatus =
@@ -38,7 +37,7 @@ const ESTADOS_CONFIG: Record<DeliveryStatus, { label: string; color: string; ico
   EN_PREPARACION: { label: 'Preparación', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
   LISTA_PARA_DESPACHO: { label: 'Lista', color: 'bg-info-muted text-info-muted-foreground border-info-muted', icon: CheckCircle2 },
   EN_TRANSITO: { label: 'En Tránsito', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: Truck },
-  RETIRADA: { label: 'Retirada', color: 'bg-cyan-100 text-cyan-700 border-cyan-200', icon: Package },
+  RETIRADA: { label: 'Retirada', color: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground border-accent-cyan-muted', icon: Package },
   ENTREGADA: { label: 'Entregada', color: 'bg-success-muted text-success border-success-muted', icon: CheckCircle2 },
   ENTREGA_FALLIDA: { label: 'Fallida', color: 'bg-destructive/10 text-destructive border-destructive/30', icon: X },
   PARCIAL: { label: 'Parcial', color: 'bg-warning-muted text-warning-muted-foreground border-warning-muted', icon: Package },
@@ -222,7 +221,7 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
                 <p className="text-xs text-muted-foreground">Fecha Programada</p>
                 <p className="text-sm font-medium">
                   {delivery.fechaProgramada
-                    ? format(new Date(delivery.fechaProgramada), 'dd/MM/yyyy HH:mm', { locale: es })
+                    ? formatDateTime(delivery.fechaProgramada)
                     : 'No programada'}
                 </p>
               </div>
@@ -240,7 +239,7 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
                 <p className="text-xs text-muted-foreground">Fecha Entrega</p>
                 <p className="text-sm font-medium">
                   {delivery.fechaEntrega
-                    ? format(new Date(delivery.fechaEntrega), 'dd/MM/yyyy HH:mm', { locale: es })
+                    ? formatDateTime(delivery.fechaEntrega)
                     : 'Pendiente'}
                 </p>
               </div>

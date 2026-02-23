@@ -9,6 +9,7 @@ import MachineDetailDialog from '@/components/maquinas/MachineDetailDialog';
 import ComponentDetailsModal from '@/components/maquinas/ComponentDetailsModal';
 import PlantZoneDialog from '@/components/maquinas/PlantZoneDialog';
 import ZoneSchemaView from '@/components/maquinas/ZoneSchemaView';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +93,7 @@ import {
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { useApiMutation } from '@/hooks/use-api-mutation';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useTheme } from '@/components/providers/ThemeProvider';
@@ -101,6 +103,7 @@ export default function MaquinasPage() {
   const { currentArea, currentSector, isLoading: companyLoading } = useCompany();
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -816,28 +819,34 @@ export default function MaquinasPage() {
   };
 
   // Bulk delete handler
+  const bulkDeleteMutation = useApiMutation<unknown, { ids: number[] }>({
+    mutationFn: async ({ ids }) => {
+      const deletePromises = ids.map(id =>
+        fetch(`/api/maquinas/${id}`, { method: 'DELETE' })
+      );
+      await Promise.all(deletePromises);
+      return { count: ids.length };
+    },
+    successMessage: null,
+    errorMessage: 'No se pudieron eliminar algunas máquinas',
+    onSuccess: (_data, vars) => {
+      toast({ title: 'Máquinas eliminadas', description: `Se eliminaron ${vars.ids.length} máquina${vars.ids.length > 1 ? 's' : ''} correctamente.` });
+      clearSelection();
+      refetchMachines();
+    },
+  });
+
   const handleBulkDelete = async () => {
     if (selectedMachineIds.size === 0) return;
 
-    const confirmDelete = window.confirm(
-      `¿Estás seguro de eliminar ${selectedMachineIds.size} máquina${selectedMachineIds.size > 1 ? 's' : ''}? Esta acción no se puede deshacer.`
-    );
+    const confirmDelete = await confirm({
+      title: '¿Estás seguro?',
+      description: `¿Estás seguro de eliminar ${selectedMachineIds.size} máquina${selectedMachineIds.size > 1 ? 's' : ''}? Esta acción no se puede deshacer.`,
+      variant: 'destructive',
+    });
 
     if (!confirmDelete) return;
-
-    try {
-      const deletePromises = Array.from(selectedMachineIds).map(id =>
-        fetch(`/api/maquinas/${id}`, { method: 'DELETE' })
-      );
-
-      await Promise.all(deletePromises);
-
-      toast({ title: 'Máquinas eliminadas', description: `Se eliminaron ${selectedMachineIds.size} máquina${selectedMachineIds.size > 1 ? 's' : ''} correctamente.` });
-      clearSelection();
-      refetchMachines();
-    } catch (error) {
-      toast({ title: 'Error', description: 'No se pudieron eliminar algunas máquinas', variant: 'destructive' });
-    }
+    bulkDeleteMutation.mutate({ ids: Array.from(selectedMachineIds) });
   };
 
   const handleAddMachine = async (machine: any) => {
@@ -961,7 +970,12 @@ export default function MaquinasPage() {
   };
 
   const handleDeleteZone = async (zone: any) => {
-    if (!window.confirm(`¿Eliminar la zona "${zone.name}"? Esta acción no se puede deshacer.`)) {
+    const confirmed = await confirm({
+      title: '¿Estás seguro?',
+      description: `¿Eliminar la zona "${zone.name}"? Esta acción no se puede deshacer.`,
+      variant: 'destructive',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -1162,10 +1176,10 @@ export default function MaquinasPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
-          <div className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center gap-2 sm:gap-4 justify-between">
+          <div className="px-4 md:px-6 pt-4 pb-3 flex items-center gap-2 sm:gap-4 justify-between">
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">Máquinas</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">
+              <h1 className="text-xl font-semibold text-foreground">Máquinas</h1>
+              <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
                 Gestión de máquinas{currentSector ? ` en ${currentSector.name}` : ''}
               </p>
             </div>
@@ -1515,7 +1529,7 @@ export default function MaquinasPage() {
                     <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
                     <span className="text-xs">Filtros</span>
                     {activeAdvancedFiltersCount > 0 && (
-                      <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary">
+                      <Badge className="absolute -top-1.5 -right-1.5 h-5 w-5 p-0 flex items-center justify-center text-xs bg-primary">
                         {activeAdvancedFiltersCount}
                       </Badge>
                     )}
@@ -1602,7 +1616,7 @@ export default function MaquinasPage() {
                         }))}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Crítico</span>
                         <span>Malo</span>
                         <span>Regular</span>
@@ -1753,7 +1767,7 @@ export default function MaquinasPage() {
                       <div className="rounded-lg border p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <Label className="flex items-center gap-2 text-sm font-medium">
-                            <GitBranch className="h-4 w-4 text-emerald-500" />
+                            <GitBranch className="h-4 w-4 text-success-muted-foreground" />
                             Línea de Producción
                           </Label>
                           {advancedFilters.productionLines.length > 0 && (
@@ -1776,8 +1790,8 @@ export default function MaquinasPage() {
                                 variant={isSelected ? 'default' : 'outline'}
                                 className={`cursor-pointer transition-all ${
                                   isSelected
-                                    ? 'bg-emerald-600 hover:bg-emerald-700'
-                                    : 'hover:bg-emerald-50 hover:border-emerald-300 dark:hover:bg-emerald-950/50'
+                                    ? 'bg-success hover:bg-success/90'
+                                    : 'hover:bg-success-muted hover:border-success-muted'
                                 }`}
                                 onClick={() => setAdvancedFilters(prev => ({
                                   ...prev,

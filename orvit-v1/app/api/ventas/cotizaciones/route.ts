@@ -187,17 +187,22 @@ export async function POST(request: NextRequest) {
           // Obtener costo del producto si existe (SOLO para cálculos server-side)
           let costoUnitario = 0;
           let margenItem = 0;
+          let productAplicaComision = true;
           if (item.productId) {
             const product = await prisma.product.findUnique({
               where: { id: item.productId },
-              select: { cost: true, sku: true }
+              select: { cost: true, sku: true, aplicaComision: true }
             });
             if (product?.cost) {
               costoUnitario = Number(product.cost);
               margenItem = precio > 0 ? ((precio - costoUnitario) / precio) * 100 : 0;
               costoTotalCalc += costoUnitario * cantidad;
             }
+            // Heredar flag de comisión del producto
+            productAplicaComision = product?.aplicaComision ?? true;
           }
+          // El valor del body tiene prioridad (permite override por ítem)
+          const aplicaComision = item.aplicaComision !== undefined ? item.aplicaComision : productAplicaComision;
 
           return {
             productId: item.productId || null,
@@ -212,6 +217,8 @@ export async function POST(request: NextRequest) {
             margenItem,
             notas: item.notas || null,
             orden: index,
+            costBreakdown: item.costBreakdown || [],
+            aplicaComision,
           };
         }));
 
@@ -224,7 +231,8 @@ export async function POST(request: NextRequest) {
         const tasaIva = salesConfig?.tasaIvaDefault
           ? parseFloat(salesConfig.tasaIvaDefault.toString())
           : 21;
-        const impuestos = subtotalConDescuento * (tasaIva / 100);
+        const discriminarIva = data.discriminarIva ?? false;
+        const impuestos = discriminarIva ? subtotalConDescuento * (tasaIva / 100) : 0;
         const total = subtotalConDescuento + impuestos;
 
         // Calcular margen
@@ -265,9 +273,11 @@ export async function POST(request: NextRequest) {
               tasaIva,
               impuestos,
               total,
+              discriminarIva,
               condicionesPago: data.condicionesPago || null,
               diasPlazo: data.diasPlazo ? data.diasPlazo : null,
               condicionesEntrega: data.condicionesEntrega || null,
+              incluyeFlete: data.incluyeFlete ?? false,
               tiempoEntrega: data.tiempoEntrega || null,
               lugarEntrega: data.lugarEntrega || null,
               notas: data.notas || null,
@@ -275,29 +285,53 @@ export async function POST(request: NextRequest) {
               costoTotal: costoTotalCalc,
               margenBruto,
               margenPorcentaje,
+              templateId: data.templateId ?? null,
               companyId,
               createdBy: user!.id,
             }
           });
 
-          // Crear items
-          await tx.quoteItem.createMany({
-            data: itemsConCalculos.map((item) => ({
-              quoteId: cotizacion.id,
-              productId: item.productId,
-              codigo: item.codigo,
-              descripcion: item.descripcion,
-              cantidad: item.cantidad,
-              unidad: item.unidad,
-              precioUnitario: item.precioUnitario,
-              descuento: item.descuento,
-              subtotal: item.subtotal,
-              costoUnitario: item.costoUnitario,
-              margenItem: item.margenItem,
-              notas: item.notas,
-              orden: item.orden,
-            }))
-          });
+          // Crear items con desglose de costos
+          for (const item of itemsConCalculos) {
+            const createdItem = await tx.quoteItem.create({
+              data: {
+                quoteId: cotizacion.id,
+                productId: item.productId,
+                codigo: item.codigo,
+                descripcion: item.descripcion,
+                cantidad: item.cantidad,
+                unidad: item.unidad,
+                precioUnitario: item.precioUnitario,
+                descuento: item.descuento,
+                subtotal: item.subtotal,
+                costoUnitario: item.costoUnitario,
+                margenItem: item.margenItem,
+                notas: item.notas,
+                orden: item.orden,
+                aplicaComision: item.aplicaComision,
+              }
+            });
+
+            // Crear desglose de costos si existe
+            if (item.costBreakdown && item.costBreakdown.length > 0) {
+              const sumaDesglose = item.costBreakdown.reduce(
+                (sum: number, cb: any) => sum + parseFloat(String(cb.monto)), 0
+              );
+              if (Math.abs(sumaDesglose - item.precioUnitario) > 0.01) {
+                throw new Error(
+                  `BREAKDOWN_MISMATCH:La suma del desglose ($${sumaDesglose.toFixed(2)}) no coincide con el precio unitario ($${item.precioUnitario.toFixed(2)}) del item "${item.descripcion}"`
+                );
+              }
+              await tx.quoteItemCostBreakdown.createMany({
+                data: item.costBreakdown.map((cb: any, idx: number) => ({
+                  quoteItemId: createdItem.id,
+                  concepto: cb.concepto,
+                  monto: parseFloat(String(cb.monto)),
+                  orden: idx,
+                }))
+              });
+            }
+          }
 
           // Crear versión inicial
           await tx.quoteVersion.create({
@@ -357,7 +391,11 @@ export async function POST(request: NextRequest) {
                 orden: true,
                 product: {
                   select: { id: true, name: true, sku: true }
-                }
+                },
+                costBreakdown: {
+                  select: { id: true, concepto: true, monto: true, orden: true },
+                  orderBy: { orden: 'asc' as const },
+                },
               },
               orderBy: { orden: 'asc' }
             }
@@ -403,6 +441,12 @@ export async function POST(request: NextRequest) {
 
     // Handle custom errors
     if (error instanceof Error) {
+      if (error.message.startsWith('BREAKDOWN_MISMATCH:')) {
+        return NextResponse.json(
+          { error: error.message.split(':').slice(1).join(':') },
+          { status: 400 }
+        );
+      }
       if (error.message.startsWith('MARGIN_TOO_LOW:')) {
         const parts = error.message.split(':');
         const margenActual = parseFloat(parts[1]);

@@ -27,8 +27,7 @@ import {
   Calendar,
   FileText,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface StockMovement {
   id: string;
@@ -392,9 +391,7 @@ export function ProductStockHistory({
                       <div className="text-xs text-right text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(movement.createdAt), 'dd/MM/yyyy HH:mm', {
-                            locale: es,
-                          })}
+                          {formatDateTime(movement.createdAt)}
                         </div>
                         {movement.user && (
                           <div className="flex items-center gap-1 mt-1">

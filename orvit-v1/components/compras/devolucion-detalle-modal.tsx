@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import {
  Dialog,
@@ -31,8 +32,7 @@ import {
  AlertTriangle,
  ArrowRight
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
@@ -60,7 +60,7 @@ const estadoColors: Record<string, string> = {
  SOLICITADA: 'bg-info-muted text-info-muted-foreground',
  APROBADA_PROVEEDOR: 'bg-purple-100 text-purple-800',
  ENVIADA: 'bg-warning-muted text-warning-muted-foreground',
- RECIBIDA_PROVEEDOR: 'bg-cyan-100 text-cyan-800',
+ RECIBIDA_PROVEEDOR: 'bg-accent-cyan-muted text-accent-cyan-muted-foreground',
  EN_EVALUACION: 'bg-warning-muted text-warning-muted-foreground',
  RESUELTA: 'bg-success-muted text-success-muted-foreground',
  RECHAZADA: 'bg-destructive/10 text-destructive',
@@ -282,7 +282,7 @@ export function DevolucionDetalleModal({
  <div>
  <p className="text-muted-foreground">Fecha Solicitud</p>
  <p className="font-medium">
- {format(new Date(devolucion.fechaSolicitud), 'dd/MM/yyyy', { locale: es })}
+ {formatDate(devolucion.fechaSolicitud)}
  </p>
  </div>
  {devolucion.warehouse && (
@@ -297,7 +297,7 @@ export function DevolucionDetalleModal({
  <div>
  <p className="text-muted-foreground">Fecha Envío</p>
  <p className="font-medium">
- {format(new Date(devolucion.fechaEnvio), 'dd/MM/yyyy', { locale: es })}
+ {formatDate(devolucion.fechaEnvio)}
  </p>
  </div>
  )}
@@ -346,7 +346,7 @@ export function DevolucionDetalleModal({
  <p className="font-medium">{item.descripcion || item.supplierItem?.nombre}</p>
  </TableCell>
  <TableCell className="text-right font-mono">
- {parseFloat(item.cantidad).toFixed(2)}
+ {parseFloatformatNumber(item.cantidad, 2)}
  </TableCell>
  <TableCell>{item.unidad}</TableCell>
  <TableCell className="text-right font-mono">
@@ -375,9 +375,9 @@ export function DevolucionDetalleModal({
  <div key={mov.id} className="flex items-center gap-3 text-sm bg-warning-muted p-3 rounded">
  <Package className="h-4 w-4 text-warning-muted-foreground flex-shrink-0" />
  <span className="font-medium">{stockMovementLabels[mov.tipo] || mov.tipo}</span>
- <span className="font-mono">-{parseFloat(mov.cantidad).toFixed(2)}</span>
+ <span className="font-mono">-{parseFloatformatNumber(mov.cantidad, 2)}</span>
  <span className="text-muted-foreground">
- ({parseFloat(mov.cantidadAnterior).toFixed(0)} → {parseFloat(mov.cantidadPosterior).toFixed(0)})
+ ({parseFloatformatNumber(mov.cantidadAnterior, 0)} → {parseFloatformatNumber(mov.cantidadPosterior, 0)})
  </span>
  </div>
  ))}
@@ -430,7 +430,7 @@ export function DevolucionDetalleModal({
  <p className="text-sm mt-1">{devolucion.resolucion}</p>
  {devolucion.fechaResolucion && (
  <p className="text-xs text-muted-foreground mt-2">
- {format(new Date(devolucion.fechaResolucion), 'dd/MM/yyyy HH:mm', { locale: es })}
+ {formatDateTime(devolucion.fechaResolucion)}
  </p>
  )}
  </div>

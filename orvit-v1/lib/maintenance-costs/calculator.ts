@@ -137,7 +137,8 @@ async function calculateSparePartsCost(workOrderId: number, companyId: number): 
         select: {
           id: true,
           name: true,
-          cost: true
+          cost: true,
+          itemType: true
         }
       }
     }
@@ -148,12 +149,14 @@ async function calculateSparePartsCost(workOrderId: number, companyId: number): 
 
   for (const reservation of reservations) {
     const unitCost = reservation.tool.cost ? Number(reservation.tool.cost) : 0;
-    const cost = reservation.quantity * unitCost;
+    // Usar cantidad confirmada (usedQuantity), fallback a cantidad picked
+    const consumed = reservation.usedQuantity ?? reservation.quantity;
+    const cost = consumed * unitCost;
 
     details.push({
       toolId: reservation.tool.id,
       toolName: reservation.tool.name,
-      quantity: reservation.quantity,
+      quantity: consumed,
       unitCost,
       cost
     });
@@ -216,12 +219,26 @@ export async function calculateWorkOrderCost(workOrderId: number, companyId: num
     calculateThirdPartyCost(workOrderId)
   ]);
 
+  // Herramientas dañadas → costo de reposición va a extrasCost
+  let extrasCost = 0;
+  try {
+    const damagedReservations = await prisma.sparePartReservation.findMany({
+      where: { workOrderId, companyId, returnedDamaged: true },
+      include: { tool: { select: { cost: true } } }
+    });
+    extrasCost = damagedReservations.reduce(
+      (sum, r) => sum + (r.tool.cost ? Number(r.tool.cost) : 0), 0
+    );
+  } catch {
+    // Si falla (e.g. campo no existe aún), ignorar
+  }
+
   const breakdown: CostBreakdown = {
     laborCost: laborResult.total,
     sparePartsCost: partsResult.total,
     thirdPartyCost: thirdPartyResult.total,
-    extrasCost: 0, // Por ahora no hay costos extra
-    totalCost: laborResult.total + partsResult.total + thirdPartyResult.total,
+    extrasCost,
+    totalCost: laborResult.total + partsResult.total + thirdPartyResult.total + extrasCost,
     details: {
       laborDetails: laborResult.details,
       partsDetails: partsResult.details,

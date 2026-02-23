@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useIndirectCostsNew } from '@/hooks/use-indirect-costs-new';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -469,7 +470,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
       </div>
 
       {/* Métricas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Costos Base</CardTitle>
@@ -780,7 +781,7 @@ export function CostosIndirectosNew({ companyId }: CostosIndirectosNewProps) {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">{formatCurrency(cat.totalAmount)}</p>
-                          <p className="text-sm text-muted-foreground">{cat.porcentaje.toFixed(1)}%</p>
+                          <p className="text-sm text-muted-foreground">{formatNumber(cat.porcentaje, 1)}%</p>
                         </div>
                       </div>
                     ))}

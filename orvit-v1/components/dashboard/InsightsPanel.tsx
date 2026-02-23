@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -112,7 +112,7 @@ export function InsightsPanel({ data, movers, insights = [] }: InsightsPanelProp
       generatedInsights.push({
         type: 'positive',
         title: 'Top Contribuyente Positivo',
-        description: `${topPositiveMover.name} contribuyó +${formatCurrency(topPositiveMover.delta)} (${formatPercentage(topPositiveMover.deltaPct)}) al crecimiento total. Representa ${topPositiveMover.contributionPct.toFixed(1)}% del cambio.`,
+        description: `${topPositiveMover.name} contribuyó +${formatCurrency(topPositiveMover.delta)} (${formatPercentage(topPositiveMover.deltaPct)}) al crecimiento total. Representa ${formatNumber(topPositiveMover.contributionPct, 1)}% del cambio.`,
         actions: [
           { label: 'Analizar estrategia', onClick: () => {} },
           { label: 'Replicar modelo', onClick: () => {} },
