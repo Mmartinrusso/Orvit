@@ -145,7 +145,23 @@ export function QRCodeGenerator({ machineId, machineName, assetCode }: QRCodeGen
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
+      {/* Mobile: solo ícono */}
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => setIsOpen(true)}
+        className="sm:hidden h-8 w-8"
+        aria-label="Ver código QR"
+      >
+        <QrCode className="h-4 w-4" />
+      </Button>
+      {/* Desktop: botón completo con texto */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="hidden sm:inline-flex"
+      >
         <QrCode className="h-4 w-4 mr-2" />
         Código QR
       </Button>

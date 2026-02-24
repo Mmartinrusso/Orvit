@@ -2274,27 +2274,13 @@ export interface PermissionContext {
 
 // Función principal para verificar permisos
 export function hasPermission(permission: Permission, context: PermissionContext): boolean {
-  const rolePermissions = ROLE_PERMISSIONS[context.userRole];
-  
-  console.log('🔍 DEBUG hasPermission:', {
-    permission,
-    userRole: context.userRole,
-    rolePermissions,
-    hasBasicPermission: rolePermissions.includes(permission),
-    context
-  });
-  
-  // Si el rol no tiene el permiso base, denegar
+  const rolePermissions = ROLE_PERMISSIONS[context.userRole] ?? [];
+
   if (!rolePermissions.includes(permission)) {
-    console.log('❌ No tiene permiso básico');
     return false;
   }
 
-  // Aplicar lógica contextual específica
-  const contextualResult = applyContextualRules(permission, context);
-  console.log('🔍 Resultado contextual:', contextualResult);
-  
-  return contextualResult;
+  return applyContextualRules(permission, context);
 }
 
 // Función para aplicar reglas contextuales específicas

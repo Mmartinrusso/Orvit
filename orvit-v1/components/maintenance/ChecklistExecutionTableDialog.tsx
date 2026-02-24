@@ -2225,7 +2225,7 @@ export default function ChecklistExecutionTableDialog({
  </p>
  )}
  </div>
- <Badge className={isCompleted ? 'bg-success' : isRescheduled ? 'bg-warning' : 'bg-muted0'}>
+ <Badge className={isCompleted ? 'bg-success' : isRescheduled ? 'bg-warning' : 'bg-muted text-muted-foreground'}>
  {isCompleted ? 'Realizado' : isRescheduled ? 'Reprogramado' : 'Pendiente'}
  </Badge>
  </div>

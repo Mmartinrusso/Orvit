@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -718,15 +717,15 @@ export default function MachineMaintenanceTab({
   const renderKPIs = () => {
     if (activeSubTab === 'preventive') {
       return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3">
+        <div className="grid grid-cols-4 gap-1 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-3">
           <Card className="overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total planes</p>
-                  <p className="text-2xl font-bold text-primary">{preventiveStats.total}</p>
+            <CardContent className="p-1.5 sm:p-4">
+              <div className="flex items-start sm:items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">Total planes</p>
+                  <p className="text-sm sm:text-2xl font-bold text-primary">{preventiveStats.total}</p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="hidden sm:flex h-10 w-10 rounded-full bg-primary/10 items-center justify-center shrink-0">
                   <CalendarDays className="h-5 w-5 text-primary" />
                 </div>
               </div>
@@ -734,18 +733,18 @@ export default function MachineMaintenanceTab({
           </Card>
 
           <Card className={cn('overflow-hidden', preventiveStats.pending + preventiveStats.inProgress > 0 && 'border-warning-muted/60')}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Pendientes</p>
-                  <p className={cn('text-2xl font-bold', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
+            <CardContent className="p-1.5 sm:p-4">
+              <div className="flex items-start sm:items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">Pendientes</p>
+                  <p className={cn('text-sm sm:text-2xl font-bold', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
                     {preventiveStats.pending + preventiveStats.inProgress}
                   </p>
                   {preventiveStats.overdue > 0 && (
-                    <p className="text-xs text-destructive font-medium mt-0.5">{preventiveStats.overdue} vencidas</p>
+                    <p className="hidden sm:block text-xs text-destructive font-medium mt-0.5">{preventiveStats.overdue} vencidas</p>
                   )}
                 </div>
-                <div className={cn('h-10 w-10 rounded-full flex items-center justify-center', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'bg-warning-muted/50' : 'bg-muted')}>
+                <div className={cn('hidden sm:flex h-10 w-10 rounded-full items-center justify-center shrink-0', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'bg-warning-muted/50' : 'bg-muted')}>
                   <Clock className={cn('h-5 w-5', preventiveStats.pending + preventiveStats.inProgress > 0 ? 'text-warning-muted-foreground' : 'text-muted-foreground')} />
                 </div>
               </div>
@@ -753,14 +752,14 @@ export default function MachineMaintenanceTab({
           </Card>
 
           <Card className="overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completados</p>
-                  <p className="text-2xl font-bold text-success">{preventiveStats.completed}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
+            <CardContent className="p-1.5 sm:p-4">
+              <div className="flex items-start sm:items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">Completados</p>
+                  <p className="text-sm sm:text-2xl font-bold text-success">{preventiveStats.completed}</p>
+                  <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+                <div className="hidden sm:flex h-10 w-10 rounded-full bg-success-muted items-center justify-center shrink-0">
                   <CheckCircle2 className="h-5 w-5 text-success" />
                 </div>
               </div>
@@ -768,16 +767,16 @@ export default function MachineMaintenanceTab({
           </Card>
 
           <Card className={cn('overflow-hidden', preventiveStats.complianceRate < 70 && 'border-destructive/30')}>
-            <CardContent className="p-4">
+            <CardContent className="p-1.5 sm:p-4">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Cumplimiento</p>
-                  <Target className={cn('h-4 w-4', preventiveStats.complianceRate >= 80 ? 'text-success' : 'text-warning-muted-foreground')} />
+                <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+                  <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate">Cumplimiento</p>
+                  <Target className={cn('h-3 w-3 sm:h-4 sm:w-4 shrink-0', preventiveStats.complianceRate >= 80 ? 'text-success' : 'text-warning-muted-foreground')} />
                 </div>
-                <p className={cn('text-2xl font-bold mb-2', preventiveStats.complianceRate >= 80 ? 'text-success' : preventiveStats.complianceRate >= 50 ? 'text-warning-muted-foreground' : 'text-destructive')}>
+                <p className={cn('text-sm sm:text-2xl font-bold sm:mb-2', preventiveStats.complianceRate >= 80 ? 'text-success' : preventiveStats.complianceRate >= 50 ? 'text-warning-muted-foreground' : 'text-destructive')}>
                   {preventiveStats.complianceRate}%
                 </p>
-                <Progress value={preventiveStats.complianceRate} className="h-1.5" />
+                <Progress value={preventiveStats.complianceRate} className="h-1 sm:h-1.5 mt-1 sm:mt-0" />
               </div>
             </CardContent>
           </Card>
@@ -786,15 +785,15 @@ export default function MachineMaintenanceTab({
     }
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3">
+      <div className="grid grid-cols-4 gap-1 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-3">
         <Card className="overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total OTs</p>
-                <p className="text-2xl font-bold text-warning-muted-foreground">{correctiveStats.total}</p>
+          <CardContent className="p-1.5 sm:p-4">
+            <div className="flex items-start sm:items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">Total OTs</p>
+                <p className="text-sm sm:text-2xl font-bold text-warning-muted-foreground">{correctiveStats.total}</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-warning-muted/50 flex items-center justify-center">
+              <div className="hidden sm:flex h-10 w-10 rounded-full bg-warning-muted/50 items-center justify-center shrink-0">
                 <Wrench className="h-5 w-5 text-warning-muted-foreground" />
               </div>
             </div>
@@ -802,18 +801,15 @@ export default function MachineMaintenanceTab({
         </Card>
 
         <Card className={cn('overflow-hidden', correctiveStats.pending > 0 && 'border-warning-muted/60')}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Pendientes</p>
-                <p className={cn('text-2xl font-bold', correctiveStats.pending > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
+          <CardContent className="p-1.5 sm:p-4">
+            <div className="flex items-start sm:items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">Pendientes</p>
+                <p className={cn('text-sm sm:text-2xl font-bold', correctiveStats.pending > 0 ? 'text-warning-muted-foreground' : 'text-foreground')}>
                   {correctiveStats.pending}
                 </p>
-                {correctiveStats.overdue > 0 && (
-                  <p className="text-xs text-destructive font-medium mt-0.5">{correctiveStats.overdue} vencidas</p>
-                )}
               </div>
-              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+              <div className="hidden sm:flex h-10 w-10 rounded-full bg-muted items-center justify-center shrink-0">
                 <Clock className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
@@ -821,13 +817,13 @@ export default function MachineMaintenanceTab({
         </Card>
 
         <Card className="overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">En progreso</p>
-                <p className="text-2xl font-bold text-info-muted-foreground">{correctiveStats.inProgress}</p>
+          <CardContent className="p-1.5 sm:p-4">
+            <div className="flex items-start sm:items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">En progreso</p>
+                <p className="text-sm sm:text-2xl font-bold text-info-muted-foreground">{correctiveStats.inProgress}</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-info-muted flex items-center justify-center">
+              <div className="hidden sm:flex h-10 w-10 rounded-full bg-info-muted items-center justify-center shrink-0">
                 <PlayCircle className="h-5 w-5 text-info-muted-foreground" />
               </div>
             </div>
@@ -835,14 +831,14 @@ export default function MachineMaintenanceTab({
         </Card>
 
         <Card className="overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Completados</p>
-                <p className="text-2xl font-bold text-success">{correctiveStats.completed}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
+          <CardContent className="p-1.5 sm:p-4">
+            <div className="flex items-start sm:items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[9px] sm:text-xs text-muted-foreground uppercase tracking-wider leading-tight truncate mb-0.5 sm:mb-1">Completados</p>
+                <p className="text-sm sm:text-2xl font-bold text-success">{correctiveStats.completed}</p>
+                <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">{filteredHistory.length} ejecuciones</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-success-muted flex items-center justify-center">
+              <div className="hidden sm:flex h-10 w-10 rounded-full bg-success-muted items-center justify-center shrink-0">
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
             </div>
@@ -880,15 +876,15 @@ export default function MachineMaintenanceTab({
         {renderKPIs()}
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-b bg-muted/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 px-3 sm:px-4 py-2 border-t border-b bg-muted/20">
           {/* Sub-filtros */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center sm:justify-start gap-1 overflow-x-auto">
             {subFilters.map(f => (
               <button
                 key={f.key}
                 onClick={() => { setSubFilter(f.key); setSearchTerm(''); }}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
                   subFilter === f.key
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -908,7 +904,7 @@ export default function MachineMaintenanceTab({
           </div>
 
           {/* Controles derecha */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:ml-auto">
             {/* Filtro componente */}
             {!componentId && components.length > 0 && (
               <Select value={componentFilter} onValueChange={setComponentFilter}>
@@ -994,8 +990,8 @@ export default function MachineMaintenanceTab({
         )}
 
         {/* Contenido */}
-        <ScrollArea className="flex-1">
-          <div className="px-4 py-3">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="px-3 sm:px-4 py-3">
             {subFilter === 'history' ? (
               renderHistoryTimeline()
             ) : filteredData.length === 0 ? (
@@ -1017,7 +1013,7 @@ export default function MachineMaintenanceTab({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </>
     );
   }
@@ -1031,11 +1027,11 @@ export default function MachineMaintenanceTab({
           className="flex flex-col h-full"
         >
           {/* Sub-tabs */}
-          <div className="px-4 pt-3 pb-2 flex-shrink-0">
-            <TabsList className="w-full h-8 bg-muted/50 border rounded-lg p-0.5">
+          <div className="px-4 pt-3 pb-2 flex-shrink-0 flex justify-center">
+            <TabsList className="w-fit h-7 bg-muted/50 border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden hide-scrollbar">
               <TabsTrigger
                 value="preventive"
-                className="flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                className="flex items-center justify-center gap-1.5 h-6 px-3 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
               >
                 <div className="h-4 w-4 rounded bg-primary/10 flex items-center justify-center shrink-0">
                   <CalendarDays className="h-3 w-3 text-primary" />
@@ -1054,7 +1050,7 @@ export default function MachineMaintenanceTab({
               </TabsTrigger>
               <TabsTrigger
                 value="corrective"
-                className="flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                className="flex items-center justify-center gap-1.5 h-6 px-3 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
               >
                 <div className="h-4 w-4 rounded bg-amber-500/10 flex items-center justify-center shrink-0">
                   <Wrench className="h-3 w-3 text-amber-600 dark:text-amber-400" />

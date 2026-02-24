@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -8,15 +9,23 @@ export const dynamic = 'force-dynamic';
  * GET - Obtener los favoritos del sidebar del usuario
  * Returns: { favorites: string[] }  — array de moduleIds
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const token = await getToken(request);
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
     if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    const userId = payload.userId as number;
+
     const user = await prisma.user.findUnique({
-      where: { id: token.userId },
+      where: { id: userId },
       select: { sidebarPreferences: true },
     });
 
@@ -43,10 +52,18 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const token = await getToken(request);
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
     if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
+
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    const userId = payload.userId as number;
 
     const body = await request.json();
     const { favorites } = body;
@@ -59,7 +76,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: token.userId },
+      where: { id: userId },
       select: { sidebarPreferences: true },
     });
 
@@ -68,13 +85,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const current = (user.sidebarPreferences as any) || {};
-    const updated = {
-      ...current,
-      favorites,
-    };
+    const updated = { ...current, favorites };
 
     await prisma.user.update({
-      where: { id: token.userId },
+      where: { id: userId },
       data: { sidebarPreferences: updated },
     });
 

@@ -25,10 +25,13 @@ import {
   RefreshCw,
   LayoutGrid,
   List,
+  CalendarDays,
   Plus,
   X,
   SlidersHorizontal,
   Download,
+  CheckSquare,
+  Gauge,
 } from 'lucide-react';
 import { UnitsFilters, SortOption } from './useUnitsFilters';
 import { cn } from '@/lib/utils';
@@ -41,12 +44,19 @@ interface UnitsToolbarProps {
   onRefresh: () => void;
   onCreateUnit: () => void;
   onExport?: () => void;
-  viewMode: 'grid' | 'table';
-  onViewModeChange: (mode: 'grid' | 'table') => void;
+  viewMode: 'grid' | 'table' | 'calendar';
+  onViewModeChange: (mode: 'grid' | 'table' | 'calendar') => void;
   canCreate: boolean;
   refreshing?: boolean;
   availableSectores: Array<{ id: number; name: string }>;
   tiposUnidad: string[];
+  // Action bar (shown when there are units)
+  hasUnidades?: boolean;
+  selectionMode?: boolean;
+  onToggleSelectionMode?: () => void;
+  showDashboard?: boolean;
+  onToggleDashboard?: () => void;
+  onLoadKilometrajeMasivo?: () => void;
   className?: string;
 }
 
@@ -64,6 +74,12 @@ export function UnitsToolbar({
   refreshing = false,
   availableSectores,
   tiposUnidad,
+  hasUnidades = false,
+  selectionMode = false,
+  onToggleSelectionMode,
+  showDashboard = true,
+  onToggleDashboard,
+  onLoadKilometrajeMasivo,
   className,
 }: UnitsToolbarProps) {
   const hasFilters = filteredCount !== totalCount;
@@ -128,7 +144,7 @@ export function UnitsToolbar({
       <div className="sticky top-0 z-20 border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-4">
           {/* Lado izquierdo: Título y contador */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="min-w-0">
               <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground truncate">
                 Unidades Móviles
@@ -137,8 +153,8 @@ export function UnitsToolbar({
                 Gestión de vehículos, equipos móviles y unidades de transporte
               </p>
             </div>
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className="text-xs font-medium tabular-nums shrink-0"
             >
               {hasFilters ? (
@@ -154,13 +170,14 @@ export function UnitsToolbar({
           </div>
 
           {/* Lado derecho: Acciones */}
-          <div className="flex gap-2 flex-wrap sm:flex-nowrap items-center">
+          <div className="flex gap-2 flex-nowrap items-center shrink-0">
+            {/* Refresh + Export — solo desktop */}
             <Button
               variant="ghost"
               size="sm"
               onClick={onRefresh}
               disabled={refreshing}
-              className="h-9 w-9 p-0"
+              className="hidden sm:flex h-9 w-9 p-0"
               aria-label="Actualizar"
             >
               <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
@@ -170,7 +187,7 @@ export function UnitsToolbar({
                 variant="ghost"
                 size="sm"
                 onClick={onExport}
-                className="h-9 w-9 p-0"
+                className="hidden sm:flex h-9 w-9 p-0"
                 aria-label="Exportar CSV"
               >
                 <Download className="h-4 w-4" />
@@ -190,20 +207,29 @@ export function UnitsToolbar({
                 variant={viewMode === 'table' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => onViewModeChange('table')}
-                className="h-9 w-9 p-0 rounded-l-none border-l"
+                className="h-9 w-9 p-0 rounded-none border-x"
                 aria-label="Vista de tabla"
               >
                 <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onViewModeChange('calendar')}
+                className="h-9 w-9 p-0 rounded-l-none"
+                aria-label="Vista de calendario"
+              >
+                <CalendarDays className="h-4 w-4" />
               </Button>
             </div>
             {canCreate && (
               <Button
                 onClick={onCreateUnit}
-                size="lg"
-                className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:inline-flex text-xs"
+                size="sm"
+                className="h-9 px-3 text-xs"
               >
-                <Plus className="h-3 w-3 mr-2" />
-                Nueva Unidad
+                <Plus className="h-3 w-3 sm:mr-1.5" />
+                <span className="hidden sm:inline">Nueva Unidad</span>
               </Button>
             )}
           </div>
@@ -212,8 +238,8 @@ export function UnitsToolbar({
 
       {/* Filter Bar */}
       <div className="px-4 md:px-6">
-        <div className="flex flex-wrap items-center gap-2 h-10">
-          <div className="relative flex-1 min-w-[200px]">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+          <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
               placeholder="Buscar por nombre, patente, marca..."
@@ -222,42 +248,50 @@ export function UnitsToolbar({
               className="pl-9 h-9 text-xs"
             />
           </div>
-          <Select value={filters.tipo} onValueChange={(v) => handleFilterChange('tipo', v)}>
-            <SelectTrigger className="h-9 w-[140px] text-xs">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los tipos</SelectItem>
-              {tiposUnidad.map(tipo => (
-                <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filters.estado} onValueChange={(v) => handleFilterChange('estado', v)}>
-            <SelectTrigger className="h-9 w-[140px] text-xs">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los estados</SelectItem>
-              <SelectItem value="ACTIVO">Activo</SelectItem>
-              <SelectItem value="MANTENIMIENTO">En mantenimiento</SelectItem>
-              <SelectItem value="FUERA_SERVICIO">Fuera de servicio</SelectItem>
-              <SelectItem value="DESHABILITADO">Deshabilitado</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filters.sortBy} onValueChange={(v) => handleFilterChange('sortBy', v as SortOption)}>
-            <SelectTrigger className="h-9 w-[180px] text-xs">
-              <SelectValue placeholder="Ordenar" />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 sm:contents">
+            <div className="flex-1 sm:flex-none sm:w-[140px]">
+              <Select value={filters.tipo} onValueChange={(v) => handleFilterChange('tipo', v)}>
+                <SelectTrigger className="w-full h-9 text-xs">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  {tiposUnidad.map(tipo => (
+                    <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 sm:flex-none sm:w-[140px]">
+              <Select value={filters.estado} onValueChange={(v) => handleFilterChange('estado', v)}>
+                <SelectTrigger className="w-full h-9 text-xs">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="ACTIVO">Activo</SelectItem>
+                  <SelectItem value="MANTENIMIENTO">En mantenimiento</SelectItem>
+                  <SelectItem value="FUERA_SERVICIO">Fuera de servicio</SelectItem>
+                  <SelectItem value="DESHABILITADO">Deshabilitado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="hidden sm:flex sm:flex-none sm:w-[180px]">
+            <Select value={filters.sortBy} onValueChange={(v) => handleFilterChange('sortBy', v as SortOption)}>
+              <SelectTrigger className="w-full h-9 text-xs">
+                <SelectValue placeholder="Ordenar" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="lg" className="text-xs">
+              <Button variant="outline" size="sm" className="text-xs h-9 sm:inline-flex hidden">
                 <SlidersHorizontal className="h-3 w-3 mr-2" />
                 Filtros avanzados
               </Button>
@@ -349,6 +383,46 @@ export function UnitsToolbar({
           </p>
         )}
       </div>
+
+      {/* Action bar — secondary actions, only shown when there are units */}
+      {hasUnidades && (
+        <div className="flex items-center justify-between px-4 md:px-6 py-2 border-t border-border/40 bg-muted/30">
+          <div className="flex items-center gap-2">
+            {onToggleSelectionMode && (
+              <Button
+                variant={selectionMode ? 'default' : 'ghost'}
+                size="sm"
+                onClick={onToggleSelectionMode}
+                className="h-7 text-xs px-2"
+              >
+                <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+                {selectionMode ? 'Cancelar' : 'Seleccionar'}
+              </Button>
+            )}
+            {onLoadKilometrajeMasivo && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLoadKilometrajeMasivo}
+                className="h-7 text-xs px-2"
+              >
+                <Gauge className="h-3.5 w-3.5 mr-1.5" />
+                Cargar Km
+              </Button>
+            )}
+            {onToggleDashboard && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleDashboard}
+                className="h-7 text-xs px-2 text-muted-foreground"
+              >
+                {showDashboard ? 'Ocultar resumen' : 'Mostrar resumen'}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

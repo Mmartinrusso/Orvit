@@ -27,7 +27,7 @@ export function SectionCard({ title, icon: Icon, description, children, classNam
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 pt-0">{children}</CardContent>
     </Card>
   );
 }

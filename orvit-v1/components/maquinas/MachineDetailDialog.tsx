@@ -2215,6 +2215,15 @@ export default function MachineDetailDialog({
   const { hasPermission: canRegisterFailure } = usePermissionRobust('registrar_falla');
   const { hasPermission: canCreateMaintenance } = usePermissionRobust('crear_mantenimiento');
 
+  // 📱 Android back button: interceptar para cerrar el modal en vez de navegar
+  useEffect(() => {
+    if (!isOpen) return;
+    window.history.pushState({ machineDialog: true }, '');
+    const handlePopState = () => { onClose(); };
+    window.addEventListener('popstate', handlePopState);
+    return () => { window.removeEventListener('popstate', handlePopState); };
+  }, [isOpen, onClose]);
+
   // ✨ Hook para obtener workOrders para el header
   const { data: headerWorkOrders = [] } = useMachineWorkOrders({
     machineId: machine?.id,
@@ -2862,7 +2871,7 @@ export default function MachineDetailDialog({
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <CustomDialogContent noScroll={activeTab === 'schema'}>
           <div className="flex flex-col h-full overflow-x-hidden">
-            <DialogHeader className="p-2 px-4 flex-shrink-0 border-b space-y-0 overflow-hidden">
+            <DialogHeader className="p-2 px-4 flex-shrink-0 space-y-0 overflow-hidden border-none">
               <DialogTitle className="sr-only">{machine.name}</DialogTitle>
               <DialogDescription className="sr-only">
                 Detalle de la máquina {machine.name}
@@ -2905,7 +2914,7 @@ export default function MachineDetailDialog({
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col flex-1 overflow-x-hidden">
               <div className="mb-2 flex-shrink-0 px-1 sm:flex sm:justify-center">
-                <TabsList className="relative items-center justify-start text-muted-foreground w-full sm:w-fit gap-0.5 inline-flex h-9 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden">
+                <TabsList className="relative items-center justify-start text-muted-foreground w-full sm:w-fit gap-0.5 inline-flex h-9 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden hide-scrollbar">
                   <TabsTrigger value="overview" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
                     <BarChart3 className="h-3.5 w-3.5 shrink-0" />
                     <span>Resumen</span>

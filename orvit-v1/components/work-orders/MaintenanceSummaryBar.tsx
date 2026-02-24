@@ -80,7 +80,7 @@ export function MaintenanceSummaryBar({
             {machineName}
           </Badge>
         ) : (
-          <Badge variant="outline" className="text-xs text-muted-foreground border-dashed">
+          <Badge variant="outline" className="hidden sm:inline-flex text-xs text-muted-foreground border-dashed">
             <Wrench className="h-3 w-3 mr-1" />
             Sin máquina
           </Badge>

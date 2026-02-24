@@ -1344,10 +1344,22 @@ export default function PreventiveMaintenanceDialog({
         {/* Header Sticky - Unificado con Summary */}
         <div className="flex-shrink-0 bg-background border-b">
           {/* Título y badges de resumen */}
-          <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
+          <div className="px-4 py-2.5 sm:px-6 sm:py-4 relative flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3">
+            {/* Botón cerrar — absoluto top-right en mobile */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 sm:hidden h-8 w-8 rounded-full hover:bg-accent"
+              onClick={handleClose}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Cerrar</span>
+            </Button>
+
+            {/* Título centrado en mobile */}
+            <div className="w-full sm:w-auto text-center sm:text-left">
               <DialogHeader className="p-0 border-0">
-                <DialogTitle className="text-lg font-semibold">
+                <DialogTitle className="text-base sm:text-lg font-semibold">
                   {mode === 'edit' ? 'Editar Mantenimiento Preventivo' : 'Nuevo Mantenimiento Preventivo'}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
@@ -1355,8 +1367,9 @@ export default function PreventiveMaintenanceDialog({
                 </DialogDescription>
               </DialogHeader>
             </div>
-            {/* Summary badges inline + close button */}
-            <div className="flex flex-wrap items-center gap-2">
+
+            {/* Badges centrados en mobile */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <MaintenanceSummaryBar
                 machineName={selectedMachine?.name}
                 priority={formData.priority}
@@ -1366,11 +1379,11 @@ export default function PreventiveMaintenanceDialog({
                 onActiveChange={(active) => handleInputChange('isActive', active)}
                 compact={true}
               />
-              {/* Botón cerrar */}
+              {/* Botón cerrar desktop */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 ml-2 rounded-full hover:bg-accent"
+                className="hidden sm:inline-flex h-8 w-8 ml-2 rounded-full hover:bg-accent"
                 onClick={handleClose}
               >
                 <X className="h-4 w-4" />
@@ -1380,7 +1393,7 @@ export default function PreventiveMaintenanceDialog({
           </div>
 
           {/* Stepper */}
-          <div className="flex justify-center px-6 pb-4 pt-1">
+          <div className="flex justify-center px-3 pb-3 pt-0.5 sm:px-6 sm:pb-4 sm:pt-1">
             <Stepper
               steps={wizardSteps}
               currentStep={activeTab}
@@ -1395,9 +1408,8 @@ export default function PreventiveMaintenanceDialog({
         </div>
 
         {/* Content Area - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="px-6 py-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="px-4 py-4 sm:px-6 sm:py-6">
               <div className="max-w-6xl mx-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsContent value="equipment" className="space-y-6 mt-0">
@@ -2487,21 +2499,20 @@ export default function PreventiveMaintenanceDialog({
                       </div>
                     </SectionCard>
                   </TabsContent>
-        </Tabs>
+                </Tabs>
               </div>
             </div>
-          </ScrollArea>
         </div>
 
         {/* Footer Sticky - Mejorado */}
-        <div className="flex-shrink-0 bg-muted/30 border-t px-6 py-3">
-          <div className="flex items-center justify-between gap-4">
+        <div className="flex-shrink-0 bg-muted/30 border-t px-4 py-2 sm:px-6 sm:py-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             {/* Lado izquierdo: Progreso y estado */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Indicador de paso */}
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
                 <span className="font-medium text-muted-foreground">
-                  Paso {wizardSteps.findIndex(s => s.id === activeTab) + 1} de {wizardSteps.length}
+                  Paso {wizardSteps.findIndex(s => s.id === activeTab) + 1}/{wizardSteps.length}
                 </span>
                 <span className="text-muted-foreground">•</span>
                 <span className="font-medium">
@@ -2543,12 +2554,14 @@ export default function PreventiveMaintenanceDialog({
                 </Button>
               )}
 
-              <div className="h-6 w-px bg-border mx-1" />
+              <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
 
               <Button
                 variant="ghost"
+                size="sm"
                 onClick={handleClose}
                 disabled={loading}
+                className="hidden sm:inline-flex"
               >
                 Cancelar
               </Button>
@@ -2556,6 +2569,7 @@ export default function PreventiveMaintenanceDialog({
               {activeTab !== 'equipment' && (
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={handlePreviousTab}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
@@ -2564,15 +2578,16 @@ export default function PreventiveMaintenanceDialog({
               )}
 
               {!isLastTab() ? (
-                <Button onClick={handleNextTab}>
+                <Button size="sm" onClick={handleNextTab}>
                   Siguiente
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               ) : (
                 <Button
+                  size="sm"
                   onClick={handleSave}
                   disabled={loading || !formData.title.trim() || !formData.machineId || !formData.startDate || formData.frequencyDays <= 0}
-                  className="min-w-[160px]"
+                  className="sm:min-w-[160px]"
                 >
                   {loading ? (
                     <>

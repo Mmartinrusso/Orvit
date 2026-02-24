@@ -8,9 +8,10 @@ interface User {
   name: string;
   email: string;
   role: string;
+  systemRole?: string;
   sectorId?: number | null;
   avatar?: string | null;
-  permissions: string[]; // ✨ NUEVO: Lista de permisos del usuario
+  permissions: string[];
 }
 
 interface AuthContextType {
@@ -80,9 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: userData.name,
             email: userData.email,
             role: userData.role,
+            systemRole: userData.systemRole || userData.role,
             sectorId: userData.sectorId || null,
             avatar: userData.avatar || null,
-            permissions: userData.permissions || []
+            permissions: userData.permissions || [],
           };
           setUser(realUser);
           // Sincronizar localStorage
@@ -175,9 +177,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: data.user.name,
           email: data.user.email,
           role: data.user.role,
+          systemRole: data.user.systemRole || data.user.role,
           sectorId: data.user.sectorId || null,
           avatar: data.user.avatar || null,
-          permissions: data.user.permissions || [] // ✨ NUEVO: Cargar permisos al login
+          permissions: data.user.permissions || [],
         };
         
         setUser(realUser);
@@ -290,9 +293,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: userData.name,
           email: userData.email,
           role: userData.role,
+          systemRole: userData.systemRole || userData.role,
           sectorId: userData.sectorId || null,
           avatar: userData.avatar || null,
-          permissions: userData.permissions || []
+          permissions: userData.permissions || [],
         };
         setUser(realUser);
       }

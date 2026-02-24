@@ -284,9 +284,8 @@ export function PreventivoChecklistsView({
  return (
  <div className={cn('space-y-4', className)}>
  {/* Header con búsqueda */}
- <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
- <div className="flex items-center gap-2 flex-1">
- <div className="relative flex-1 max-w-sm">
+ <div className="flex items-center justify-center gap-2">
+ <div className="relative w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input
  placeholder="Buscar checklists..."
@@ -297,7 +296,7 @@ export function PreventivoChecklistsView({
  </div>
  <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
  <PopoverTrigger asChild>
- <Button variant="outline" size="icon" className={cn("relative", hasActiveFilters && "border-primary text-primary")}>
+ <Button variant="outline" size="icon" className={cn("h-7 w-7 relative shrink-0", hasActiveFilters && "border-primary text-primary")}>
  <Filter className="h-4 w-4" />
  {hasActiveFilters && (
  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center">
@@ -368,11 +367,9 @@ export function PreventivoChecklistsView({
  </div>
  </PopoverContent>
  </Popover>
- </div>
  {!hideCreateButton && onCreateChecklist && (
- <Button onClick={onCreateChecklist}>
- <Plus className="h-4 w-4 mr-2" />
- Nueva Checklist
+ <Button size="icon" className="h-7 w-7 shrink-0" onClick={onCreateChecklist}>
+ <Plus className="h-3.5 w-3.5" />
  </Button>
  )}
  </div>

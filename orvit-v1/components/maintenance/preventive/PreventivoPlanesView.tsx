@@ -349,9 +349,7 @@ export function PreventivoPlanesView({
  return (
  <div className={cn('space-y-4', className)}>
  {/* Header con búsqueda y acciones */}
- <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
- <div />
- <div className="flex items-center gap-2">
+ <div className="flex items-center justify-center gap-2">
  <div className="relative w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input
@@ -363,10 +361,10 @@ export function PreventivoPlanesView({
  </div>
  <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
  <PopoverTrigger asChild>
- <Button variant="outline" size="icon" className={cn("relative", hasActiveFilters && "border-primary text-primary")}>
- <Filter className="h-4 w-4" />
+ <Button variant="outline" size="icon" className={cn("h-7 w-7 relative shrink-0", hasActiveFilters && "border-primary text-primary")}>
+ <Filter className="h-3.5 w-3.5" />
  {hasActiveFilters && (
- <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-xs text-white flex items-center justify-center">
+ <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-xs text-white flex items-center justify-center">
  {activeFiltersCount}
  </span>
  )}
@@ -498,43 +496,17 @@ export function PreventivoPlanesView({
  </PopoverContent>
  </Popover>
  {/* Toggle de agrupación */}
- <div className="flex items-center border rounded-md">
- <Button
- variant={groupBy === 'none' ? 'secondary' : 'ghost'}
- size="sm"
- className="rounded-r-none border-r"
- onClick={() => setGroupBy('none')}
- >
- Lista
- </Button>
- <Button
- variant={groupBy === 'machine' ? 'secondary' : 'ghost'}
- size="sm"
- className="rounded-none border-r"
- onClick={() => setGroupBy('machine')}
- >
- <Wrench className="h-3 w-3 mr-1" />
- Máquina
- </Button>
- <Button
- variant={groupBy === 'date' ? 'secondary' : 'ghost'}
- size="sm"
- className="rounded-l-none"
- onClick={() => setGroupBy('date')}
- >
- <CalendarIcon className="h-3 w-3 mr-1" />
- Fecha
- </Button>
+ <div className="flex items-center border rounded-md shrink-0">
+ <Button variant={groupBy === 'none' ? 'secondary' : 'ghost'} className="h-7 px-2.5 text-xs rounded-md rounded-r-none border-r" onClick={() => setGroupBy('none')}>Lista</Button>
+ <Button variant={groupBy === 'machine' ? 'secondary' : 'ghost'} className="h-7 px-2.5 text-xs rounded-none border-r" onClick={() => setGroupBy('machine')}><Wrench className="h-3 w-3 mr-1" />Máquina</Button>
+ <Button variant={groupBy === 'date' ? 'secondary' : 'ghost'} className="h-7 px-2.5 text-xs rounded-md rounded-l-none" onClick={() => setGroupBy('date')}><CalendarIcon className="h-3 w-3 mr-1" />Fecha</Button>
  </div>
- </div>
- <div className="flex justify-end">
+ {/* Nuevo Plan */}
  {!hideCreateButton && onCreatePlan && (
- <Button onClick={onCreatePlan}>
- <Plus className="h-4 w-4 mr-2" />
- Nuevo Plan
+ <Button size="icon" className="h-7 w-7 shrink-0" onClick={onCreatePlan}>
+ <Plus className="h-3.5 w-3.5" />
  </Button>
  )}
- </div>
  </div>
 
  {/* Stats rápidas */}

@@ -1165,53 +1165,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     />
                   ) : (
                   <div className="w-full text-sm">
-                    {/* ─── Favoritos ─── */}
-                    {isOpen && favoriteItems.length > 0 && (
-                      <div className="mb-1">
-                        <div className="flex items-center gap-2 px-2 py-1 text-xs text-sidebar-foreground/50 font-medium">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          <span>Favoritos</span>
-                        </div>
-                        <ul className="flex flex-col gap-0.5">
-                          {favoriteItems.map((favItem) => {
-                            const FavIcon = resolveSidebarIcon(favItem.icon);
-                            const favActive = (() => {
-                              const href = favItem.path;
-                              if (pathname === href) return true;
-                              if (pathname.startsWith(href)) {
-                                const nc = pathname[href.length];
-                                return !nc || nc === '/' || nc === '?';
-                              }
-                              return false;
-                            })();
-                            return (
-                              <li key={favItem.moduleId} className="group/fav flex items-center">
-                                <Link
-                                  href={favItem.path}
-                                  prefetch={true}
-                                  className={cn(
-                                    'flex items-center gap-2 px-2 py-1.5 pl-4 rounded-md text-sm flex-1 transition-colors',
-                                    'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                                    favActive && 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                                  )}
-                                >
-                                  <FavIcon className="h-4 w-4 shrink-0" />
-                                  <span className="flex-1">{favItem.name}</span>
-                                </Link>
-                                <button
-                                  className="opacity-0 group-hover/fav:opacity-100 p-1 mr-1 rounded hover:bg-sidebar-accent transition-opacity"
-                                  onClick={(e) => { e.preventDefault(); toggleFavorite(favItem.moduleId); }}
-                                  title="Quitar de favoritos"
-                                >
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        <div className="h-px mx-2 bg-sidebar-ring/20 mt-1 mb-2" />
-                      </div>
-                    )}
                     <ul className="flex w-full min-w-0 flex-col gap-0.5">
               {navItems.map((item) => {
                 // Función helper para determinar si un item está activo de forma precisa
@@ -1661,6 +1614,55 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             )}>
                 {isOpen ? (
               <div className="flex flex-col gap-1">
+                {/* ─── Favoritos (bottom) ─── */}
+                {favoriteItems.length > 0 && (
+                  <div className="mb-0.5">
+                    <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-sidebar-foreground/50 font-medium">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      <span>Favoritos</span>
+                    </div>
+                    <ul className="flex flex-col gap-0.5">
+                      {favoriteItems.map((favItem) => {
+                        const FavIcon = resolveSidebarIcon(favItem.icon);
+                        const favActive = (() => {
+                          const href = favItem.path;
+                          if (pathname === href) return true;
+                          if (pathname.startsWith(href)) {
+                            const nc = pathname[href.length];
+                            return !nc || nc === '/' || nc === '?';
+                          }
+                          return false;
+                        })();
+                        return (
+                          <li key={favItem.moduleId} className="group/fav flex items-center">
+                            <Link
+                              href={favItem.path}
+                              prefetch={true}
+                              className={cn(
+                                'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm flex-1 transition-colors',
+                                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                favActive && 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+                              )}
+                            >
+                              <FavIcon className="h-4 w-4 shrink-0" />
+                              <span className="flex-1 truncate">{favItem.name}</span>
+                            </Link>
+                            <button
+                              type="button"
+                              className="opacity-0 group-hover/fav:opacity-100 p-1 mr-1 rounded hover:bg-sidebar-accent transition-opacity shrink-0"
+                              onClick={(e) => { e.preventDefault(); toggleFavorite(favItem.moduleId); }}
+                              title="Quitar de favoritos"
+                            >
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="h-px mx-2 bg-sidebar-ring/20 mt-1 mb-1" />
+                  </div>
+                )}
+
                 {/* Feedback */}
                 <button
                   type="button"
@@ -1714,20 +1716,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   );
                     })()}
                 
-                {/* Buscar */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('orvit:search:open'));
-                    }
-                  }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-                >
-                  <Search className="h-4 w-4 shrink-0" />
-                  <span>Buscar</span>
-                  <kbd className="ml-auto text-xs text-sidebar-foreground/60 bg-sidebar-accent/50 border border-sidebar-ring/30 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
-                </button>
 
                 {/* Notificaciones */}
                 <button
@@ -1745,6 +1733,39 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1">
+                {/* ─── Favoritos colapsado ─── */}
+                {favoriteItems.map((favItem) => {
+                  const FavIcon = resolveSidebarIcon(favItem.icon);
+                  const favActive = (() => {
+                    const href = favItem.path;
+                    if (pathname === href) return true;
+                    if (pathname.startsWith(href)) {
+                      const nc = pathname[href.length];
+                      return !nc || nc === '/' || nc === '?';
+                    }
+                    return false;
+                  })();
+                  return (
+                    <Tooltip key={favItem.moduleId}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={favItem.path}
+                          prefetch={true}
+                          className={cn(
+                            'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                            'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                            favActive && 'bg-sidebar-primary text-sidebar-primary-foreground'
+                          )}
+                        >
+                          <FavIcon className="h-4 w-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={8}>{favItem.name}</TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+                {favoriteItems.length > 0 && <div className="w-5 h-px bg-sidebar-ring/20 my-0.5" />}
+
                 {/* Feedback (collapsed) */}
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1809,25 +1830,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     </>
                   );
                 })()}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          window.dispatchEvent(new CustomEvent('orvit:search:open'));
-                        }
-                      }}
-                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                    >
-                      <Search className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={12}>
-                    Buscar (⌘K)
-                  </TooltipContent>
-                </Tooltip>
-
                 {/* Notificaciones (collapsed) */}
                 <Tooltip>
                   <TooltipTrigger asChild>

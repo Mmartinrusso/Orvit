@@ -157,6 +157,7 @@ export async function GET(request: NextRequest) {
           name: user.name,
           email: user.email,
           role: userRoleInCompany,
+          systemRole: user.role,
           sectorId: userSectorId,
           avatar: user.avatar,
           permissions: permissions

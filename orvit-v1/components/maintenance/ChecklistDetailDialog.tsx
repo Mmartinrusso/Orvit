@@ -42,6 +42,7 @@ import { format } from 'date-fns';
 import { formatDateTime } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { useCompany } from '@/contexts/CompanyContext';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Input } from '@/components/ui/input';
@@ -2022,48 +2023,30 @@ export default function ChecklistDetailDialog({
 
  <DialogBody className="p-0">
  <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col min-h-0">
- <div className="flex-shrink-0 bg-background px-4 sm:px-6">
+ <div className="flex-shrink-0 bg-background px-4 sm:px-6 border-b py-2 sm:py-3 overflow-hidden">
  <div className="w-full">
- <TabsList className="w-full h-9 bg-muted/40 border border-border rounded-md p-1 overflow-x-auto">
- <TabsTrigger
- value="overview"
- className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors duration-150 ease-in-out data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=inactive]:hover:bg-muted/70 data-[state=inactive]:hover:text-foreground before:absolute before:inset-0 before:z-[-1] before:rounded-md before:shadow-md before:transition-transform before:duration-300 before:ease-in-out before:scale-x-0 before:origin-left before:bg-primary data-[state=active]:before:scale-x-100 relative z-10 justify-center whitespace-nowrap rounded-md py-1.5 text-xs font-normal h-7 px-2 sm:px-3 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1"
- >
+ <TabsList className="w-full overflow-y-hidden">
+ <TabsTrigger value="overview" className="flex-1">
  <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Resumen
  </TabsTrigger>
- <TabsTrigger
- value="items"
- className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors duration-150 ease-in-out data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=inactive]:hover:bg-muted/70 data-[state=inactive]:hover:text-foreground before:absolute before:inset-0 before:z-[-1] before:rounded-md before:shadow-md before:transition-transform before:duration-300 before:ease-in-out before:scale-x-0 before:origin-left before:bg-primary data-[state=active]:before:scale-x-100 relative z-10 justify-center whitespace-nowrap rounded-md py-1.5 text-xs font-normal h-7 px-2 sm:px-3 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1"
- >
+ <TabsTrigger value="items" className="flex-1">
  <CheckSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Items
  </TabsTrigger>
- <TabsTrigger
- value="instructives"
- className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors duration-150 ease-in-out data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=inactive]:hover:bg-muted/70 data-[state=inactive]:hover:text-foreground before:absolute before:inset-0 before:z-[-1] before:rounded-md before:shadow-md before:transition-transform before:duration-300 before:ease-in-out before:scale-x-0 before:origin-left before:bg-primary data-[state=active]:before:scale-x-100 relative z-10 justify-center whitespace-nowrap rounded-md py-1.5 text-xs font-normal h-7 px-2 sm:px-3 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm group flex items-center gap-1"
- >
+ <TabsTrigger value="instructives" className="flex-1">
  <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Instructivos
  </TabsTrigger>
- <TabsTrigger
- value="details"
- className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors duration-150 ease-in-out data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=inactive]:hover:bg-muted/70 data-[state=inactive]:hover:text-foreground before:absolute before:inset-0 before:z-[-1] before:rounded-md before:shadow-md before:transition-transform before:duration-300 before:ease-in-out before:scale-x-0 before:origin-left before:bg-primary data-[state=active]:before:scale-x-100 relative z-10 justify-center whitespace-nowrap rounded-md py-1.5 text-xs font-normal h-7 px-2 sm:px-3 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1"
- >
+ <TabsTrigger value="details" className="flex-1">
  <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Detalles
  </TabsTrigger>
- <TabsTrigger
- value="execution"
- className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors duration-150 ease-in-out data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=inactive]:hover:bg-muted/70 data-[state=inactive]:hover:text-foreground before:absolute before:inset-0 before:z-[-1] before:rounded-md before:shadow-md before:transition-transform before:duration-300 before:ease-in-out before:scale-x-0 before:origin-left before:bg-primary data-[state=active]:before:scale-x-100 relative z-10 justify-center whitespace-nowrap rounded-md py-1.5 text-xs font-normal h-7 px-2 sm:px-3 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1"
- >
+ <TabsTrigger value="execution" className="flex-1">
  <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Ejecución
  </TabsTrigger>
- <TabsTrigger
- value="history"
- className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-colors duration-150 ease-in-out data-[state=active]:text-primary-foreground data-[state=active]:font-semibold data-[state=inactive]:hover:bg-muted/70 data-[state=inactive]:hover:text-foreground before:absolute before:inset-0 before:z-[-1] before:rounded-md before:shadow-md before:transition-transform before:duration-300 before:ease-in-out before:scale-x-0 before:origin-left before:bg-primary data-[state=active]:before:scale-x-100 relative z-10 justify-center whitespace-nowrap rounded-md py-1.5 text-xs font-normal h-7 px-2 sm:px-3 flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm group flex items-center gap-1"
- >
+ <TabsTrigger value="history" className="flex-1">
  <History className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
  Historial
  </TabsTrigger>
@@ -2074,7 +2057,7 @@ export default function ChecklistDetailDialog({
  <div className="flex-1 min-h-0 overflow-y-auto">
  <div className="p-4 sm:p-6">
  {/* Tab de Resumen */}
- <TabsContent value="overview" className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-1 data-[state=active]:duration-300 data-[state=active]:ease-out space-y-4 sm:space-y-6 mt-0">
+ <TabsContent value="overview" className="space-y-4 sm:space-y-6 mt-0">
  {checklist?.id ? (
  <ChecklistOverviewTab checklistId={checklist.id} />
  ) : (
@@ -2088,7 +2071,7 @@ export default function ChecklistDetailDialog({
  </TabsContent>
 
  {/* Tab de Items */}
- <TabsContent value="items" className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-1 data-[state=active]:duration-300 data-[state=active]:ease-out space-y-4 sm:space-y-6 mt-0">
+ <TabsContent value="items" className="space-y-4 sm:space-y-6 mt-0">
  {checklist?.id ? (
  <ChecklistItemsTab checklistId={checklist.id} />
  ) : (
@@ -2102,7 +2085,7 @@ export default function ChecklistDetailDialog({
  </TabsContent>
 
  {/* Tab de Instructivos */}
- <TabsContent value="instructives" className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-1 data-[state=active]:duration-300 data-[state=active]:ease-out space-y-4 sm:space-y-6 mt-0">
+ <TabsContent value="instructives" className="space-y-4 sm:space-y-6 mt-0">
  {checklist?.id ? (
  <ChecklistInstructivesTab checklistId={checklist.id} />
  ) : (
@@ -2116,12 +2099,12 @@ export default function ChecklistDetailDialog({
  </TabsContent>
 
  {/* Tab de Detalles */}
- <TabsContent value="details" className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-1 data-[state=active]:duration-300 data-[state=active]:ease-out space-y-4 sm:space-y-6 mt-0">
+ <TabsContent value="details" className="space-y-4 sm:space-y-6 mt-0">
  <ChecklistDetailsTab checklist={checklist} />
  </TabsContent>
 
  {/* Tab de Ejecución */}
- <TabsContent value="execution" className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-1 data-[state=active]:duration-300 data-[state=active]:ease-out space-y-4 sm:space-y-6 mt-0">
+ <TabsContent value="execution" className="space-y-4 sm:space-y-6 mt-0">
  <ChecklistExecutionTab
  checklist={checklist}
  onExecute={() => onExecute && onExecute(checklist)}
@@ -2134,7 +2117,7 @@ export default function ChecklistDetailDialog({
  </TabsContent>
 
  {/* Tab de Historial */}
- <TabsContent value="history" className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-1 data-[state=active]:duration-300 data-[state=active]:ease-out space-y-4 sm:space-y-6 mt-0">
+ <TabsContent value="history" className="space-y-4 sm:space-y-6 mt-0">
  <ChecklistHistoryContent checklistId={checklist?.id} companyId={checklist?.companyId} checklist={checklist} onPrintChecklist={handlePrintChecklist} />
  </TabsContent>
  </div>

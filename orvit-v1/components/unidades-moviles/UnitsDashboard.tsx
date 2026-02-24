@@ -37,42 +37,42 @@ function KpiCard({ title, value, subtitle, icon, onClick, progress, highlight }:
   return (
     <Card
       className={cn(
-        'p-4 border transition-all duration-200 bg-card',
+        'p-2.5 sm:p-4 border transition-all duration-200 bg-card',
         onClick && 'cursor-pointer hover:shadow-md hover:border-primary/30',
         highlight && 'border-destructive/30'
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{title}</p>
+          <p className="text-[10px] sm:text-xs uppercase tracking-wide text-muted-foreground mb-0.5 sm:mb-1 leading-tight">{title}</p>
           <p className={cn(
-            'text-2xl font-bold tabular-nums',
+            'text-xl sm:text-2xl font-bold tabular-nums leading-tight',
             highlight ? 'text-destructive' : 'text-foreground'
           )}>
             {value}
           </p>
           {subtitle && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
           )}
           {progress && (
-            <div className="mt-2">
+            <div className="mt-1.5 sm:mt-2">
               <Progress value={(progress.value / progress.max) * 100} className="h-1.5" />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                 {progress.value} de {progress.max}
               </p>
             </div>
           )}
         </div>
         <div className={cn(
-          'p-2.5 rounded-lg shrink-0',
+          'p-1.5 sm:p-2.5 rounded-lg shrink-0',
           highlight ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'
         )}>
-          {icon}
+          <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-5 sm:[&>svg]:w-5 block">{icon}</span>
         </div>
       </div>
       {onClick && (
-        <div className="flex items-center justify-end mt-2 pt-2 border-t border-border/50">
+        <div className="hidden sm:flex items-center justify-end mt-2 pt-2 border-t border-border/50">
           <span className="text-xs text-muted-foreground flex items-center gap-0.5">
             Ver detalle <ChevronRight className="h-3 w-3" />
           </span>

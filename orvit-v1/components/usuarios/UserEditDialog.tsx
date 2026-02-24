@@ -280,7 +280,7 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
     // Verificar permisos
     if (isCreateMode) {
       const context = createPermissionContext(
-        { id: parseInt(currentUser.id), role: currentUser.role as UserRole }
+        { id: parseInt(currentUser.id), role: (currentUser.systemRole || currentUser.role) as UserRole }
       );
 
       if (!hasPermission('users.create', context)) {
@@ -294,7 +294,7 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
     } else {
       // Modo editar
       const context = createPermissionContext(
-        { id: parseInt(currentUser.id), role: currentUser.role as UserRole },
+        { id: parseInt(currentUser.id), role: (currentUser.systemRole || currentUser.role) as UserRole },
         {
           targetUserId: userId,
           companyId: userData?.companies?.[0]?.id,

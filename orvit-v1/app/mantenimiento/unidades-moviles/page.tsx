@@ -35,7 +35,7 @@ import { UnitsBulkActions } from '@/components/unidades-moviles/UnitsBulkActions
 import { KilometrajeMasivoDialog } from '@/components/unidades-moviles/KilometrajeMasivoDialog';
 import { UnidadMovil } from '@/components/unidades-moviles/UnitCard';
 import { useUnitsFilters, UnitsFilters } from '@/components/unidades-moviles/useUnitsFilters';
-import { AlertCircle, Loader2, LayoutGrid, List, CalendarDays, CheckSquare, Gauge } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface Sector {
@@ -751,6 +751,15 @@ export default function UnidadesMovilesPage() {
         refreshing={refreshing}
         availableSectores={sectores}
         tiposUnidad={tiposUnidad}
+        hasUnidades={!loading && unidades.length > 0}
+        selectionMode={selectionMode}
+        onToggleSelectionMode={() => {
+          setSelectionMode(!selectionMode);
+          if (selectionMode) setSelectedUnitIds([]);
+        }}
+        showDashboard={showDashboard}
+        onToggleDashboard={() => setShowDashboard(!showDashboard)}
+        onLoadKilometrajeMasivo={() => setShowKilometrajeMasivo(true)}
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4">
@@ -762,76 +771,6 @@ export default function UnidadesMovilesPage() {
               onFilterByStatus={handleFilterByStatus}
               onFilterByUrgency={handleFilterByUrgency}
             />
-          </div>
-        )}
-
-        {/* View mode toggle */}
-        {!loading && unidades.length > 0 && (
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              {/* Selection mode toggle */}
-              <Button
-                variant={selectionMode ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => {
-                  setSelectionMode(!selectionMode);
-                  if (selectionMode) setSelectedUnitIds([]);
-                }}
-                className="h-8 text-xs"
-              >
-                <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
-                {selectionMode ? 'Cancelar selección' : 'Seleccionar'}
-              </Button>
-
-              {/* Carga masiva de km */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowKilometrajeMasivo(true)}
-                className="h-8 text-xs"
-              >
-                <Gauge className="h-3.5 w-3.5 mr-1.5" />
-                Cargar Km
-              </Button>
-
-              {/* Dashboard toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDashboard(!showDashboard)}
-                className="h-8 text-xs text-muted-foreground"
-              >
-                {showDashboard ? 'Ocultar resumen' : 'Mostrar resumen'}
-              </Button>
-            </div>
-
-            {/* View mode buttons */}
-            <div className="flex items-center border rounded-md">
-              <Button
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="h-8 w-8 p-0 rounded-r-none"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-                className="h-8 w-8 p-0 rounded-none border-x"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-                className="h-8 w-8 p-0 rounded-l-none"
-              >
-                <CalendarDays className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         )}
 

@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useMaintenanceAlerts } from '@/hooks/use-maintenance-alerts';
+import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import {
@@ -59,6 +60,8 @@ function PreventivoPageContent() {
 
   const companyId = currentCompany?.id ? parseInt(currentCompany.id.toString()) : null;
   const sectorId = currentSector?.id ? parseInt(currentSector.id.toString()) : null;
+
+  const { hasPermission: canEditChecklist } = usePermissionRobust('editar_checklist');
 
   // Alertas de mantenimiento
   const { data: alertsData } = useMaintenanceAlerts({
@@ -487,7 +490,7 @@ function PreventivoPageContent() {
 
         {/* Mobile view selector */}
         <div className="md:hidden px-4 pb-3">
-          <PreventivoViewSelector className="w-full justify-center" />
+          <PreventivoViewSelector className="w-full" />
         </div>
       </div>
 
@@ -582,6 +585,7 @@ function PreventivoPageContent() {
               }}
               checklist={selectedChecklist}
               companyId={companyId}
+              canEdit={canEditChecklist}
               onEdit={() => {
                 setIsChecklistDetailOpen(false);
                 handleEditChecklist(selectedChecklist);

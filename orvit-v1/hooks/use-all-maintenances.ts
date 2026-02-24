@@ -160,9 +160,12 @@ export function useAllMaintenances(
  */
 export async function fetchAllMaintenancesCached(
   companyId: number,
-  sectorId?: number | null
+  sectorId?: number | null,
+  specificIds?: number[]
 ): Promise<MaintenanceItem[]> {
-  const cacheKey = `all-maintenances-${companyId}-${sectorId || 'all'}`;
+  const cacheKey = specificIds && specificIds.length > 0
+    ? `maintenances-by-ids-${companyId}-${specificIds.sort().join(',')}`
+    : `all-maintenances-${companyId}-${sectorId || 'all'}`;
 
   // Verificar cache
   const cached = maintenancesCache.get(cacheKey);
@@ -178,7 +181,9 @@ export async function fetchAllMaintenancesCached(
   const fetchPromise = (async () => {
     try {
       let url = `/api/maintenance/all?companyId=${companyId}`;
-      if (sectorId) {
+      if (specificIds && specificIds.length > 0) {
+        url += `&ids=${specificIds.join(',')}`;
+      } else if (sectorId) {
         url += `&sectorId=${sectorId}`;
       }
 

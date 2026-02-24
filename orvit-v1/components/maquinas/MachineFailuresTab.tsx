@@ -29,7 +29,8 @@ import {
   Timer,
   RefreshCw,
   Filter,
-  X
+  X,
+  BarChart2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -82,6 +83,7 @@ export default function MachineFailuresTab({
   const [quickReportOpen, setQuickReportOpen] = useState(false);
   const [selectedFailure, setSelectedFailure] = useState<number | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [showKpis, setShowKpis] = useState(false);
 
   const { hasPermission: canCreateFailure } = usePermissionRobust('failures.create');
   const { hasPermission: canEditFailure } = usePermissionRobust('failures.edit');
@@ -195,82 +197,83 @@ export default function MachineFailuresTab({
   return (
     <div className="flex flex-col h-full overflow-x-hidden p-4 gap-3">
       {/* KPIs compactos - colores solo cuando hay valores que requieren atención */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+      <div className={cn('grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2', !showKpis && 'hidden sm:grid')}>
         {/* Total - siempre neutral */}
-        <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50" onClick={() => setStatusFilter('all')}>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+        <Card className="p-1.5 sm:p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50" onClick={() => setStatusFilter('all')}>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-lg font-bold">{stats.total}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">Total</p>
+              <p className="text-base sm:text-lg font-bold leading-tight">{stats.total}</p>
             </div>
           </div>
         </Card>
         {/* Abiertas - rojo solo si > 0 */}
         <Card
-          className={cn('p-2 cursor-pointer hover:shadow-md transition-shadow',
+          className={cn('p-1.5 sm:p-2 cursor-pointer hover:shadow-md transition-shadow',
             stats.open > 0 ? 'bg-destructive/5 border-destructive/20' : 'border-border/50'
           )}
           onClick={() => setStatusFilter('OPEN')}
         >
-          <div className="flex items-center gap-2">
-            <AlertCircle className={cn('h-4 w-4', stats.open > 0 ? 'text-destructive' : 'text-muted-foreground')} />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <AlertCircle className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0', stats.open > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
-              <p className="text-xs text-muted-foreground">Abiertas</p>
-              <p className={cn('text-lg font-bold', stats.open > 0 && 'text-destructive')}>{stats.open}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">Abiertas</p>
+              <p className={cn('text-base sm:text-lg font-bold leading-tight', stats.open > 0 && 'text-destructive')}>{stats.open}</p>
             </div>
           </div>
         </Card>
         {/* En Progreso - amber solo si > 0 */}
         <Card
-          className={cn('p-2 cursor-pointer hover:shadow-md transition-shadow',
+          className={cn('p-1.5 sm:p-2 cursor-pointer hover:shadow-md transition-shadow',
             stats.inProgress > 0 ? 'bg-warning-muted border-warning/20' : 'border-border/50'
           )}
           onClick={() => setStatusFilter('IN_PROGRESS')}
         >
-          <div className="flex items-center gap-2">
-            <Clock className={cn('h-4 w-4', stats.inProgress > 0 ? 'text-warning' : 'text-muted-foreground')} />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Clock className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0', stats.inProgress > 0 ? 'text-warning' : 'text-muted-foreground')} />
             <div>
-              <p className="text-xs text-muted-foreground">En Progreso</p>
-              <p className={cn('text-lg font-bold', stats.inProgress > 0 && 'text-warning')}>{stats.inProgress}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">En Progreso</p>
+              <p className={cn('text-base sm:text-lg font-bold leading-tight', stats.inProgress > 0 && 'text-warning')}>{stats.inProgress}</p>
             </div>
           </div>
         </Card>
         {/* Resueltas - siempre neutral (positivo, no requiere atención) */}
-        <Card className="p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50" onClick={() => setStatusFilter('RESOLVED')}>
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+        <Card className="p-1.5 sm:p-2 cursor-pointer hover:shadow-md transition-shadow border-border/50" onClick={() => setStatusFilter('RESOLVED')}>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">Resueltas</p>
-              <p className="text-lg font-bold">{stats.resolved}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">Resueltas</p>
+              <p className="text-base sm:text-lg font-bold leading-tight">{stats.resolved}</p>
             </div>
           </div>
         </Card>
         {/* Con Parada - destacar solo si > 0 (importante) */}
-        <Card className={cn('p-2 border-border/50', stats.withDowntime > 0 && 'bg-primary/5 border-primary/20')}>
-          <div className="flex items-center gap-2">
-            <Timer className={cn('h-4 w-4', stats.withDowntime > 0 ? 'text-primary' : 'text-muted-foreground')} />
+        <Card className={cn('p-1.5 sm:p-2 border-border/50', stats.withDowntime > 0 && 'bg-primary/5 border-primary/20')}>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Timer className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0', stats.withDowntime > 0 ? 'text-primary' : 'text-muted-foreground')} />
             <div>
-              <p className="text-xs text-muted-foreground">Con Parada</p>
-              <p className={cn('text-lg font-bold', stats.withDowntime > 0 && 'text-primary')}>{stats.withDowntime}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">Con Parada</p>
+              <p className={cn('text-base sm:text-lg font-bold leading-tight', stats.withDowntime > 0 && 'text-primary')}>{stats.withDowntime}</p>
             </div>
           </div>
         </Card>
         {/* Críticas - destacar solo si > 0 */}
-        <Card className={cn('p-2 border-border/50', stats.critical > 0 && 'bg-destructive/5 border-destructive/20')}>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className={cn('h-4 w-4', stats.critical > 0 ? 'text-destructive' : 'text-muted-foreground')} />
+        <Card className={cn('p-1.5 sm:p-2 border-border/50', stats.critical > 0 && 'bg-destructive/5 border-destructive/20')}>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <AlertTriangle className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0', stats.critical > 0 ? 'text-destructive' : 'text-muted-foreground')} />
             <div>
-              <p className="text-xs text-muted-foreground">Críticas</p>
-              <p className={cn('text-lg font-bold', stats.critical > 0 && 'text-destructive')}>{stats.critical}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">Críticas</p>
+              <p className={cn('text-base sm:text-lg font-bold leading-tight', stats.critical > 0 && 'text-destructive')}>{stats.critical}</p>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Filtros */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        {/* Búsqueda — fila completa en mobile */}
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar fallas..."
@@ -279,58 +282,77 @@ export default function MachineFailuresTab({
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-xs">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="OPEN">Abiertas</SelectItem>
-            <SelectItem value="IN_PROGRESS">En Progreso</SelectItem>
-            <SelectItem value="RESOLVED">Resueltas</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-xs">
-            <SelectValue placeholder="Prioridad" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="CRITICAL">Crítica</SelectItem>
-            <SelectItem value="HIGH">Alta</SelectItem>
-            <SelectItem value="MEDIUM">Media</SelectItem>
-            <SelectItem value="LOW">Baja</SelectItem>
-          </SelectContent>
-        </Select>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2 text-xs">
-            <X className="h-3.5 w-3.5 mr-1" />
-            Limpiar
+        {/* Selects — segunda fila en mobile, inline en desktop */}
+        <div className="flex items-center gap-2 sm:contents">
+          <div className="flex-1 sm:flex-none sm:w-[120px]">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full h-8 text-xs">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="OPEN">Abiertas</SelectItem>
+                <SelectItem value="IN_PROGRESS">En Progreso</SelectItem>
+                <SelectItem value="RESOLVED">Resueltas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 sm:flex-none sm:w-[120px]">
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-full h-8 text-xs">
+                <SelectValue placeholder="Prioridad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="CRITICAL">Crítica</SelectItem>
+                <SelectItem value="HIGH">Alta</SelectItem>
+                <SelectItem value="MEDIUM">Media</SelectItem>
+                <SelectItem value="LOW">Baja</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2 text-xs shrink-0">
+              <X className="h-3.5 w-3.5 mr-1" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+        {/* Acciones — tercera fila en mobile, inline en desktop */}
+        <div className="flex items-center gap-2 sm:contents">
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(v) => v && setViewMode(v as 'grid' | 'list')}
+            className="border rounded-md h-8"
+          >
+            <ToggleGroupItem value="grid" className="h-8 w-8 p-0">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" className="h-8 w-8 p-0">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8">
+            <RefreshCw className="h-4 w-4" />
           </Button>
-        )}
-        <div className="flex-1" />
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={(v) => v && setViewMode(v as 'grid' | 'list')}
-          className="border rounded-md h-8"
-        >
-          <ToggleGroupItem value="grid" className="h-8 w-8 p-0">
-            <LayoutGrid className="h-4 w-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="list" className="h-8 w-8 p-0">
-            <List className="h-4 w-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-        {(canCreateFailure || isAdmin) && (
-          <Button size="sm" onClick={() => setQuickReportOpen(true)} className="h-8 text-xs">
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Reportar
+          <div className="flex-1 sm:hidden" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowKpis(!showKpis)}
+            className="sm:hidden h-8 px-2 text-xs gap-1"
+          >
+            <BarChart2 className="h-3.5 w-3.5" />
+            KPIs
           </Button>
-        )}
+          {(canCreateFailure || isAdmin) && (
+            <Button size="sm" onClick={() => setQuickReportOpen(true)} className="h-8 text-xs">
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Reportar
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Lista de Fallas */}

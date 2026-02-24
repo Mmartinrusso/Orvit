@@ -828,6 +828,26 @@ export default function ComprobanteFormModal({
  calculateTotal(updatedFormData);
  };
 
+ const handleCodigoProveedorChange = (itemId: string, value: string) => {
+   updateItem(itemId, 'codigoProveedor', value);
+ };
+
+ const buscarItemPorCodigo = (itemId: string, value: string) => {
+   if (!value.trim()) return;
+   const match = proveedorItems.find(pi => {
+     const cod = pi.stockLocations?.[0]?.codigoProveedor || pi.codigoProveedor;
+     return cod?.toLowerCase() === value.trim().toLowerCase();
+   });
+   if (match) {
+     selectItemForComprobante(itemId, match);
+   }
+   setTimeout(() => {
+     const cantidadInput = document.querySelector<HTMLInputElement>(`[data-item-cantidad="${itemId}"]`);
+     cantidadInput?.focus();
+     cantidadInput?.select();
+   }, 30);
+ };
+
  const updateItem = (itemId: string, field: string, value: string) => {
  const updatedItems = formData.items.map(item => {
  if (item.id === itemId) {
@@ -858,19 +878,19 @@ export default function ComprobanteFormModal({
  const neto = subtotalItems;
  
  const iva21 = shouldUseManualIva
- ? (parseFloat(normalizeMoneyInput(String(data.iva21 || '0'))) || 0)
+ ? (parseFloat(String(data.iva21 || '0')) || 0)
  : neto > 0
  ? Math.round(neto * 0.21 * 100) / 100
  : 0;
- const noGravado = parseFloat(normalizeMoneyInput(String(data.noGravado || '0'))) || 0;
- const impInter = parseFloat(normalizeMoneyInput(String(data.impInter || '0'))) || 0;
- const percepcionIVA = parseFloat(normalizeMoneyInput(String(data.percepcionIVA || '0'))) || 0;
- const percepcionIIBB = parseFloat(normalizeMoneyInput(String(data.percepcionIIBB || '0'))) || 0;
- const otrosConceptos = parseFloat(normalizeMoneyInput(String(data.otrosConceptos || '0'))) || 0;
- const iva105 = parseFloat(normalizeMoneyInput(String(data.iva105 || '0'))) || 0;
- const iva27 = parseFloat(normalizeMoneyInput(String(data.iva27 || '0'))) || 0;
- const exento = parseFloat(normalizeMoneyInput(String(data.exento || '0'))) || 0;
- const iibb = parseFloat(normalizeMoneyInput(String(data.iibb || '0'))) || 0;
+ const noGravado = parseFloat(String(data.noGravado || '0')) || 0;
+ const impInter = parseFloat(String(data.impInter || '0')) || 0;
+ const percepcionIVA = parseFloat(String(data.percepcionIVA || '0')) || 0;
+ const percepcionIIBB = parseFloat(String(data.percepcionIIBB || '0')) || 0;
+ const otrosConceptos = parseFloat(String(data.otrosConceptos || '0')) || 0;
+ const iva105 = parseFloat(String(data.iva105 || '0')) || 0;
+ const iva27 = parseFloat(String(data.iva27 || '0')) || 0;
+ const exento = parseFloat(String(data.exento || '0')) || 0;
+ const iibb = parseFloat(String(data.iibb || '0')) || 0;
 
  const total = neto + iva21 + iva105 + iva27 + noGravado + impInter + percepcionIVA + percepcionIIBB + otrosConceptos + exento + iibb;
 
@@ -1985,9 +2005,13 @@ export default function ComprobanteFormModal({
  <TableCell>
  <Input
  value={item.codigoProveedor || ''}
- onChange={(e) =>
- updateItem(item.id, 'codigoProveedor', e.target.value)
+ onChange={(e) => handleCodigoProveedorChange(item.id, e.target.value)}
+ onKeyDown={(e) => {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ buscarItemPorCodigo(item.id, item.codigoProveedor || '');
  }
+ }}
  placeholder="Código del proveedor"
  />
  </TableCell>
@@ -2125,6 +2149,7 @@ export default function ComprobanteFormModal({
  <TableCell>
  <Input
  type="text"
+ data-item-cantidad={item.id}
  value={rawInputs[`qty-${item.id}`] !== undefined ? rawInputs[`qty-${item.id}`] : (item.cantidad ? formatMoney(item.cantidad) : '')}
  onFocus={(e) => { startRawEdit(`qty-${item.id}`, e.target.value); e.target.select(); }}
  onChange={(e) => {
@@ -2133,12 +2158,23 @@ export default function ComprobanteFormModal({
  }}
  onBlur={() => stopRawEdit(`qty-${item.id}`)}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs[`qty-${item.id}`] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit(`qty-${item.id}`, newValue);
+ updateItem(item.id, 'cantidad', normalizeMoneyInput(newValue));
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
- const unidadSelect = (e.currentTarget
- .closest('tr')
- ?.querySelector('[data-field=\"unidad-select\"]') ?? null) as HTMLElement | null;
- unidadSelect?.focus();
+ const row = e.currentTarget.closest('tr');
+ const precioInput = row?.querySelector<HTMLInputElement>('[data-field=\"precio-unitario\"]') ?? null;
+ if (precioInput) { precioInput.focus(); precioInput.select(); }
  }
  }}
  placeholder="0"
@@ -2191,6 +2227,19 @@ export default function ComprobanteFormModal({
  updateItem(item.id, 'precioUnitario', normalizeMoneyInput(e.target.value));
  }}
  onBlur={() => stopRawEdit(`precio-${item.id}`)}
+ onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs[`precio-${item.id}`] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit(`precio-${item.id}`, newValue);
+ updateItem(item.id, 'precioUnitario', normalizeMoneyInput(newValue));
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ }
+ }}
  data-field="precio-unitario"
  placeholder="0,00"
  />
@@ -2269,6 +2318,17 @@ export default function ComprobanteFormModal({
  }
  }}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['iva21'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('iva21', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('iva21');
@@ -2287,6 +2347,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('noGravado', e.target.value); handleFieldChange('noGravado', e.target.value); }}
  onBlur={() => stopRawEdit('noGravado')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['noGravado'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('noGravado', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('noGravado');
@@ -2308,6 +2379,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('impInter', e.target.value); handleFieldChange('impInter', e.target.value); }}
  onBlur={() => stopRawEdit('impInter')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['impInter'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('impInter', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('impInter');
@@ -2326,6 +2408,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('percepcionIVA', e.target.value); handleFieldChange('percepcionIVA', e.target.value); }}
  onBlur={() => stopRawEdit('percepcionIVA')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['percepcionIVA'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('percepcionIVA', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('percepcionIVA');
@@ -2344,6 +2437,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('percepcionIIBB', e.target.value); handleFieldChange('percepcionIIBB', e.target.value); }}
  onBlur={() => stopRawEdit('percepcionIIBB')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['percepcionIIBB'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('percepcionIIBB', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('percepcionIIBB');
@@ -2365,6 +2469,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('otrosConceptos', e.target.value); handleFieldChange('otrosConceptos', e.target.value); }}
  onBlur={() => stopRawEdit('otrosConceptos')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['otrosConceptos'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('otrosConceptos', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('otrosConceptos');
@@ -2383,6 +2498,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('iva105', e.target.value); handleFieldChange('iva105', e.target.value); }}
  onBlur={() => stopRawEdit('iva105')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['iva105'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('iva105', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('iva105');
@@ -2401,6 +2527,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('iva27', e.target.value); handleFieldChange('iva27', e.target.value); }}
  onBlur={() => stopRawEdit('iva27')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['iva27'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('iva27', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('iva27');
@@ -2422,6 +2559,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('exento', e.target.value); handleFieldChange('exento', e.target.value); }}
  onBlur={() => stopRawEdit('exento')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['exento'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('exento', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('exento');
@@ -2440,6 +2588,17 @@ export default function ComprobanteFormModal({
  onChange={(e) => { startRawEdit('iibb', e.target.value); handleFieldChange('iibb', e.target.value); }}
  onBlur={() => stopRawEdit('iibb')}
  onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['iibb'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('iibb', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
  if (e.key === 'Enter') {
  e.preventDefault();
  moveToNextField('iibb');

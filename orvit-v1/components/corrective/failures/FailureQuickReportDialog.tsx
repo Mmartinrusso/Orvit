@@ -429,6 +429,7 @@ export function FailureQuickReportDialog({
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
               id="quick-report-form"
+              className="flex flex-col flex-1 min-h-0"
             >
             <DialogBody className="space-y-4">
               {/* === SECCIÓN RÁPIDA (3 campos) === */}

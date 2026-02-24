@@ -24,20 +24,20 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
     <div className={cn('w-full', className)}>
       <div className="relative flex items-center justify-between">
         {/* Línea de conexión */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-border">
-          <div 
+        <div className="absolute top-4 sm:top-5 left-0 right-0 h-0.5 bg-border">
+          <div
             className="h-full bg-primary transition-all duration-300 ease-in-out"
             style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
           />
         </div>
-        
+
         {/* Steps */}
         <div className="relative flex w-full justify-between">
           {steps.map((step, index) => {
             const isCompleted = index < currentIndex;
             const isCurrent = index === currentIndex;
             const isClickable = !!onStepClick;
-            
+
             return (
               <div
                 key={step.id}
@@ -50,7 +50,7 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                 {/* Icono del step */}
                 <div
                   className={cn(
-                    'relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200',
+                    'relative z-10 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all duration-200',
                     isCompleted && 'bg-primary border-primary text-primary-foreground',
                     isCurrent && 'bg-primary border-primary text-primary-foreground ring-4 ring-primary/20',
                     !isCompleted && !isCurrent && 'bg-background border-border text-muted-foreground',
@@ -58,27 +58,28 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                   )}
                 >
                   <span className={cn(
-                    'text-sm font-semibold',
+                    'text-xs sm:text-sm font-semibold',
                     isCompleted || isCurrent ? 'text-primary-foreground' : 'text-muted-foreground'
                   )}>
                     {index + 1}
                   </span>
                 </div>
-                
-                {/* Label */}
-                <div className="mt-2 text-center max-w-[120px]">
+
+                {/* Label - en mobile solo se muestra el label del paso actual */}
+                <div className="mt-1.5 sm:mt-2 text-center max-w-[120px]">
                   <p
                     className={cn(
                       'text-xs font-medium transition-colors',
                       isCurrent && 'text-primary',
                       isCompleted && 'text-foreground',
-                      !isCompleted && !isCurrent && 'text-muted-foreground'
+                      !isCompleted && !isCurrent && 'text-muted-foreground',
+                      !isCurrent && 'hidden sm:block'
                     )}
                   >
                     {step.label}
                   </p>
                   {step.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                    <p className="hidden sm:block text-xs text-muted-foreground mt-0.5 line-clamp-1">
                       {step.description}
                     </p>
                   )}

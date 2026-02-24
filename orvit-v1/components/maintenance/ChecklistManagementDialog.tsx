@@ -1557,9 +1557,9 @@ export default function ChecklistManagementDialog({
  return (
  <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
  {/* p-0: custom layout with manual header/stepper/footer spacing */}
- <DialogContent size="xl" className="p-0">
+ <DialogContent size="xl" className="p-0" hideCloseButton>
  {/* HEADER STICKY */}
- <div className="flex-shrink-0 bg-background border-b border-border/60 px-6 py-4 relative">
+ <div className="flex-shrink-0 bg-background border-b border-border/60 px-4 py-3 sm:px-6 sm:py-4 relative">
  <DialogHeader>
  <DialogTitle className="flex items-center gap-2 text-base font-semibold">
  <CheckSquare className="h-4 w-4" />
@@ -1582,7 +1582,7 @@ export default function ChecklistManagementDialog({
  </div>
 
  {/* STEPPER STICKY */}
- <div className="flex-shrink-0 bg-muted/40 border-b border-border/60 px-6 py-4">
+ <div className="flex-shrink-0 bg-muted/40 border-b border-border/60 px-4 py-2 sm:px-6 sm:py-3">
  <Stepper 
  steps={wizardSteps} 
  currentStep={activeTab}
@@ -1591,7 +1591,7 @@ export default function ChecklistManagementDialog({
  </div>
 
  {/* BODY SCROLLEABLE */}
- <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+ <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6">
  <Tabs value={activeTab} onValueChange={handleStepChange} className="w-full">
 
  <TabsContent value="basic" className="mt-0">
@@ -1599,10 +1599,10 @@ export default function ChecklistManagementDialog({
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Card A - Identidad */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">Identidad</CardTitle>
  </CardHeader>
- <CardContent className="space-y-4">
+ <CardContent className="px-4 pt-0 pb-4 space-y-4 sm:px-6 sm:pb-6">
  <div className="space-y-1.5">
  <Label htmlFor="title" className="text-xs font-medium">Título del Checklist *</Label>
  <Input
@@ -1651,10 +1651,10 @@ export default function ChecklistManagementDialog({
 
  {/* Card B - Configuración */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">Configuración</CardTitle>
  </CardHeader>
- <CardContent className="space-y-4">
+ <CardContent className="px-4 pt-0 pb-4 space-y-4 sm:px-6 sm:pb-6">
  <div className="space-y-1.5">
  <Label htmlFor="frequency" className="text-xs font-medium">Frecuencia</Label>
  <Select value={formData.frequency || 'MONTHLY'} onValueChange={(value) => setFormData(prev => ({ ...prev, frequency: value }))}>
@@ -1747,7 +1747,7 @@ export default function ChecklistManagementDialog({
  <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4">
  {/* IZQUIERDA - Disponibles (60%) */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold flex items-center gap-2">
  Disponibles
  <Badge variant="secondary" className="text-xs font-normal">
@@ -1760,7 +1760,7 @@ export default function ChecklistManagementDialog({
  )}
  </CardTitle>
  </CardHeader>
- <CardContent className="space-y-3">
+ <CardContent className="px-4 pt-0 pb-4 space-y-3 sm:px-6 sm:pb-6">
  {/* Filtros */}
  <div className="space-y-2 flex-shrink-0">
  <div className="grid grid-cols-2 gap-2">
@@ -2055,7 +2055,7 @@ export default function ChecklistManagementDialog({
 
  {/* DERECHA - Seleccionados (40%) */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <div className="flex items-center justify-between">
  <CardTitle className="text-sm font-semibold">
  Seleccionados ({selectedMaintenances.length})
@@ -2076,7 +2076,7 @@ export default function ChecklistManagementDialog({
  )}
  </div>
  </CardHeader>
- <CardContent>
+ <CardContent className="px-4 pt-0 pb-4 sm:px-6 sm:pb-6">
  <div className="border rounded-lg">
  {selectedMaintenances.length === 0 ? (
  <div className="text-center py-12 text-muted-foreground">
@@ -2171,12 +2171,12 @@ export default function ChecklistManagementDialog({
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
  {/* IZQUIERDA - Lista de instructivos */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">
  Instructivos ({instructives.length})
  </CardTitle>
  </CardHeader>
- <CardContent>
+ <CardContent className="px-4 pt-0 pb-4 sm:px-6 sm:pb-6">
  {instructives.length === 0 ? (
  <div className="text-center py-12 text-muted-foreground">
  <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-50" />
@@ -2227,7 +2227,7 @@ export default function ChecklistManagementDialog({
 
  {/* DERECHA - Editor de instructivo */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">
  {instructives.length > 0 && currentInstructive.title ? 'Editar Instructivo' : 'Crear Instructivo'}
  </CardTitle>
@@ -2235,7 +2235,7 @@ export default function ChecklistManagementDialog({
  Puedes pegar imágenes con Ctrl+V o Cmd+V
  </p>
  </CardHeader>
- <CardContent className="space-y-4">
+ <CardContent className="px-4 pt-0 pb-4 space-y-4 sm:px-6 sm:pb-6">
  <div className="space-y-1.5">
  <Label htmlFor="instructiveTitle" className="text-xs font-medium">Título del instructivo *</Label>
  <Input
@@ -2330,10 +2330,10 @@ export default function ChecklistManagementDialog({
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Card Datos Básicos */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">Datos Básicos</CardTitle>
  </CardHeader>
- <CardContent className="space-y-2 text-xs">
+ <CardContent className="px-4 pt-0 pb-4 space-y-2 text-xs sm:px-6 sm:pb-6">
  <div className="flex justify-between">
  <span className="text-muted-foreground">Título:</span>
  <span className="font-medium">{formData.title || 'Sin título'}</span>
@@ -2365,10 +2365,10 @@ export default function ChecklistManagementDialog({
 
  {/* Card Elementos Seleccionados */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">Elementos Seleccionados</CardTitle>
  </CardHeader>
- <CardContent className="space-y-2">
+ <CardContent className="px-4 pt-0 pb-4 space-y-2 sm:px-6 sm:pb-6">
  <div className="flex items-center justify-between">
  <span className="text-xs text-muted-foreground">Mantenimientos:</span>
  <Badge variant="outline" className="text-xs">
@@ -2420,10 +2420,10 @@ export default function ChecklistManagementDialog({
 
  {/* Card Instructivos */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">Instructivos</CardTitle>
  </CardHeader>
- <CardContent>
+ <CardContent className="px-4 pt-0 pb-4 sm:px-6 sm:pb-6">
  <div className="flex items-center justify-between">
  <span className="text-xs text-muted-foreground">Total:</span>
  <Badge variant="outline" className="text-xs">
@@ -2435,10 +2435,10 @@ export default function ChecklistManagementDialog({
 
  {/* Card Resumen Final */}
  <Card>
- <CardHeader className="pb-3">
+ <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
  <CardTitle className="text-sm font-semibold">Resumen</CardTitle>
  </CardHeader>
- <CardContent className="space-y-2 text-xs">
+ <CardContent className="px-4 pt-0 pb-4 space-y-2 text-xs sm:px-6 sm:pb-6">
  <div className="flex justify-between">
  <span className="text-muted-foreground">Mantenimientos seleccionados:</span>
  <span className="font-medium">{selectedMaintenances.length}</span>
@@ -2460,9 +2460,9 @@ export default function ChecklistManagementDialog({
  </div>
 
  {/* FOOTER STICKY */}
- <div className="flex-shrink-0 bg-background border-t border-border/60 px-6 py-3">
+ <div className="flex-shrink-0 bg-background border-t border-border/60 px-4 py-2 sm:px-6 sm:py-3">
  <div className="flex justify-between items-center gap-4">
- <Button variant="outline" size="lg" onClick={onClose} className="text-xs shrink-0">
+ <Button variant="ghost" onClick={onClose} className="text-xs shrink-0 text-muted-foreground hover:text-foreground">
  Cancelar
  </Button>
  

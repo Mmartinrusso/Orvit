@@ -373,31 +373,6 @@ export function ChecklistExecutionTab({
         </Card>
       )}
 
-      {/* Acciones secundarias */}
-      <div className="flex flex-wrap gap-2">
-        {canViewHistory && onViewHistory && (
-          <Button
-            variant="outline"
-            onClick={onViewHistory}
-            size="sm"
-            className="text-xs"
-          >
-            <History className="h-3.5 w-3.5 mr-1.5" />
-            Ver Historial
-          </Button>
-        )}
-        {canEdit && onEdit && (
-          <Button
-            variant="outline"
-            onClick={onEdit}
-            size="sm"
-            className="text-xs"
-          >
-            <PenLine className="h-3.5 w-3.5 mr-1.5" />
-            Editar
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

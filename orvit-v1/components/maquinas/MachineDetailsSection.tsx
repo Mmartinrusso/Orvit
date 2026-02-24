@@ -26,7 +26,9 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { differenceInDays, isPast, format as formatDate } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +51,7 @@ interface MachineDetailsSectionProps {
 export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectionProps) {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showQRSection, setShowQRSection] = useState(false);
 
   const getMachineTypeLabel = (type: string) => {
     const normalizedType = type?.toLowerCase();
@@ -214,7 +217,23 @@ export function MachineDetailsSection({ machine, sectors }: MachineDetailsSectio
             <Separator />
 
             {/* QR Code */}
-            <div className="text-center space-y-2">
+            {/* Toggle button - solo en mobile */}
+            <div className="sm:hidden">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs flex items-center justify-between"
+                onClick={() => setShowQRSection(!showQRSection)}
+              >
+                <span className="flex items-center gap-1.5">
+                  <QrCode className="h-3.5 w-3.5" />
+                  {showQRSection ? 'Ocultar QR' : 'Ver código QR'}
+                </span>
+                {showQRSection ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+            {/* QR content: colapsable en mobile, siempre visible en desktop */}
+            <div className={cn('text-center space-y-2', showQRSection ? 'block' : 'hidden sm:block')}>
               <p className="text-xs text-muted-foreground">Código QR para acceso móvil</p>
               <div
                 className="mx-auto w-24 h-24 bg-background rounded-lg p-2 border cursor-pointer hover:shadow-md transition-shadow"

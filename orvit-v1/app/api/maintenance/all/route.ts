@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const maxFrequencyDays = searchParams.get('maxFrequencyDays');
     const machineIds = searchParams.get('machineIds');
     const unidadMovilIds = searchParams.get('unidadMovilIds');
+    const specificIds = searchParams.get('ids'); // IDs específicos para lookup sin límite
 
     if (!companyId) {
       return NextResponse.json({ error: 'companyId es requerido' }, { status: 400 });
@@ -82,6 +83,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Si se piden IDs específicos, añadirlos al filtro y omitir el take
+    const specificIdsArray = specificIds
+      ? specificIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+      : null;
+    if (specificIdsArray && specificIdsArray.length > 0) {
+      workOrderWhere.id = { in: specificIdsArray };
+    }
+
     const [allWorkOrders, preventiveTemplates] = await Promise.all([
       prisma.workOrder.findMany({
         where: workOrderWhere,
@@ -95,18 +104,20 @@ export async function GET(request: NextRequest) {
           attachments: { select: { id: true, url: true, fileName: true, fileType: true, fileSize: true, uploadedAt: true } }
         },
         orderBy: [{ createdAt: 'desc' }],
-        take: 200
+        ...(specificIdsArray ? {} : { take: 200 })
       }),
 
       (!type || type === 'PREVENTIVE') ? prisma.preventiveTemplate.findMany({
-        where: templateWhere,
+        where: specificIdsArray && specificIdsArray.length > 0
+          ? { companyId: companyIdNum, id: { in: specificIdsArray } }
+          : templateWhere,
         include: {
           machine: { select: { id: true, name: true, type: true, status: true, sectorId: true } },
           unidadMovil: { select: { id: true, nombre: true, tipo: true, estado: true } },
           sector: { select: { id: true, name: true } },
         },
         orderBy: { updatedAt: 'desc' },
-        take: 300
+        ...(specificIdsArray ? {} : { take: 300 })
       }) : Promise.resolve([])
     ]);
 
