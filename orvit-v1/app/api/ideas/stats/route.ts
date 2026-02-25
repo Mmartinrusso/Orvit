@@ -39,8 +39,6 @@ export async function GET(request: NextRequest) {
       byPriority,
       thisMonth,
       implemented,
-      topVoted,
-      recentIdeas
     ] = await Promise.all([
       // Total ideas
       prisma.idea.count({ where: { companyId } }),
@@ -86,28 +84,6 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-
-      // Top voted ideas
-      prisma.idea.findMany({
-        where: { companyId, status: { not: 'ARCHIVED' } },
-        include: {
-          _count: { select: { votes: true } },
-          createdBy: { select: { id: true, name: true } }
-        },
-        orderBy: { votes: { _count: 'desc' } },
-        take: 5
-      }),
-
-      // Recent ideas
-      prisma.idea.findMany({
-        where: { companyId },
-        include: {
-          createdBy: { select: { id: true, name: true } },
-          _count: { select: { votes: true, comments: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      })
     ]);
 
     // Transform grouped data to maps
@@ -146,25 +122,6 @@ export async function GET(request: NextRequest) {
       byStatus: statusMap,
       byCategory: categoryMap,
       byPriority: priorityMap,
-      topVoted: topVoted.map(idea => ({
-        id: idea.id,
-        title: idea.title,
-        category: idea.category,
-        status: idea.status,
-        voteCount: idea._count.votes,
-        createdBy: idea.createdBy
-      })),
-      recentIdeas: recentIdeas.map(idea => ({
-        id: idea.id,
-        title: idea.title,
-        category: idea.category,
-        status: idea.status,
-        priority: idea.priority,
-        voteCount: idea._count.votes,
-        commentCount: idea._count.comments,
-        createdBy: idea.createdBy,
-        createdAt: idea.createdAt
-      }))
     });
   } catch (error) {
     console.error('Error en GET /api/ideas/stats:', error);

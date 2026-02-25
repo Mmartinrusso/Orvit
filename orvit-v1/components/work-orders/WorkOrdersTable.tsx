@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Eye,
   Edit,
@@ -52,6 +53,10 @@ interface WorkOrdersTableProps {
   onStatusChange?: (workOrder: WorkOrder, newStatus: WorkOrderStatus) => Promise<void>;
   onAssign?: (workOrder: WorkOrder) => void;
   onDuplicate?: (workOrder: WorkOrder) => void;
+  selectionMode?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number) => void;
+  onSelectAll?: () => void;
   className?: string;
 }
 
@@ -63,6 +68,10 @@ export function WorkOrdersTable({
   onStatusChange,
   onAssign,
   onDuplicate,
+  selectionMode,
+  selectedIds = [],
+  onToggleSelect,
+  onSelectAll,
   className,
 }: WorkOrdersTableProps) {
   const getQuickAction = (order: WorkOrder) => {
@@ -95,6 +104,14 @@ export function WorkOrdersTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30 hover:bg-muted/30">
+            {selectionMode && (
+              <TableHead className="w-[40px] px-3">
+                <Checkbox
+                  checked={selectedIds.length === workOrders.length && workOrders.length > 0}
+                  onCheckedChange={() => onSelectAll?.()}
+                />
+              </TableHead>
+            )}
             <TableHead className="font-semibold text-xs w-[280px]">Orden de Trabajo</TableHead>
             <TableHead className="font-semibold text-xs w-[150px]">Máquina</TableHead>
             <TableHead className="font-semibold text-xs w-[100px]">Estado</TableHead>
@@ -111,14 +128,23 @@ export function WorkOrdersTable({
             const quickAction = getQuickAction(order);
 
             return (
-              <TableRow 
+              <TableRow
                 key={order.id}
                 className={cn(
                   'group cursor-pointer',
-                  orderIsOverdue && 'bg-destructive/5'
+                  orderIsOverdue && 'bg-destructive/5',
+                  selectionMode && selectedIds.includes(order.id) && 'bg-primary/5'
                 )}
-                onClick={() => onViewDetails?.(order)}
+                onClick={() => selectionMode ? onToggleSelect?.(order.id) : onViewDetails?.(order)}
               >
+                {selectionMode && (
+                  <TableCell className="px-3" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedIds.includes(order.id)}
+                      onCheckedChange={() => onToggleSelect?.(order.id)}
+                    />
+                  </TableCell>
+                )}
                 {/* Orden de Trabajo */}
                 <TableCell className="py-3">
                   <div className="flex flex-col gap-0.5">

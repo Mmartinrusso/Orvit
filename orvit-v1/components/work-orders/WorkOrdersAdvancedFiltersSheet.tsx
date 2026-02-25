@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { MaintenanceType } from '@/lib/types';
+import { MaintenanceType, WorkOrderStatus, Priority } from '@/lib/types';
 import {
   type WorkOrderFilters,
   filterMaintenanceTypeLabels,
@@ -37,6 +37,7 @@ interface WorkOrdersAdvancedFiltersSheetProps {
   filters: WorkOrderFilters;
   onFiltersChange: (filters: WorkOrderFilters) => void;
   availableMachines: Array<{ id: number; name: string }>;
+  availableUsers?: Array<{ id: number; name: string; type: 'user' | 'worker' }>;
   children?: React.ReactNode;
 }
 
@@ -46,6 +47,7 @@ export function WorkOrdersAdvancedFiltersSheet({
   filters,
   onFiltersChange,
   availableMachines,
+  availableUsers = [],
   children,
 }: WorkOrdersAdvancedFiltersSheetProps) {
   const [localFilters, setLocalFilters] = useState<WorkOrderFilters>(filters);
@@ -65,6 +67,9 @@ export function WorkOrdersAdvancedFiltersSheet({
   const handleReset = () => {
     const resetFilters: WorkOrderFilters = {
       ...filters,
+      status: null,
+      priority: null,
+      assignee: 'all',
       machineId: null,
       maintenanceType: null,
       dateRange: {},
@@ -97,6 +102,79 @@ export function WorkOrdersAdvancedFiltersSheet({
         </SheetHeader>
 
         <SheetBody className="space-y-6">
+          {/* Estado, Prioridad, Responsable — solo en mobile (ocultos en desktop por estar en la barra) */}
+          <div className="sm:hidden space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Estado</Label>
+              <Select
+                value={localFilters.status || 'ALL'}
+                onValueChange={(value) =>
+                  setLocalFilters({ ...localFilters, status: value === 'ALL' ? null : value as WorkOrderStatus })
+                }
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos</SelectItem>
+                  <SelectItem value={WorkOrderStatus.PENDING}>Pendiente</SelectItem>
+                  <SelectItem value={WorkOrderStatus.IN_PROGRESS}>En proceso</SelectItem>
+                  <SelectItem value={WorkOrderStatus.COMPLETED}>Completada</SelectItem>
+                  <SelectItem value={WorkOrderStatus.CANCELLED}>Cancelada</SelectItem>
+                  <SelectItem value={WorkOrderStatus.ON_HOLD}>En espera</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Prioridad</Label>
+              <Select
+                value={localFilters.priority || 'ALL'}
+                onValueChange={(value) =>
+                  setLocalFilters({ ...localFilters, priority: value === 'ALL' ? null : value as Priority })
+                }
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas</SelectItem>
+                  <SelectItem value={Priority.LOW}>Baja</SelectItem>
+                  <SelectItem value={Priority.MEDIUM}>Media</SelectItem>
+                  <SelectItem value={Priority.HIGH}>Alta</SelectItem>
+                  <SelectItem value={Priority.URGENT}>Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {availableUsers.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Responsable</Label>
+                <Select
+                  value={localFilters.assignee || 'all'}
+                  onValueChange={(value) =>
+                    setLocalFilters({ ...localFilters, assignee: value })
+                  }
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="unassigned">Sin asignar</SelectItem>
+                    {availableUsers.map((user) => (
+                      <SelectItem key={`${user.type}-${user.id}`} value={`${user.type}-${user.id}`}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Separator />
+          </div>
+
           {/* Máquina */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Máquina</Label>

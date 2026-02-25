@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 import { deleteEntityFiles, deleteMultipleEntityFiles, deleteS3File } from '@/lib/s3-utils';
 
 // ============================================
@@ -109,9 +110,23 @@ async function getAllChildrenFlat(parentId: number): Promise<{
 
 // GET: Detalle de un componente (incluye hijos, breadcrumb, depth y repuestos)
 // OPTIMIZADO: Usa CTEs y queries paralelas en vez de N+1
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const { id } = context.params;
   const componentId = Number(id);
+
+  // Verificar company boundary a través de la máquina
+  const componentCheck = await prisma.component.findUnique({
+    where: { id: componentId },
+    select: { id: true, machine: { select: { companyId: true } } }
+  });
+  if (!componentCheck || componentCheck.machine.companyId !== auth.companyId) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
 
   // Ejecutar queries en paralelo para máximo performance
   const [component, breadcrumb, allChildrenFlat] = await Promise.all([
@@ -207,14 +222,28 @@ export async function GET(request: Request, context: { params: { id: string } })
 }
 
 // PUT: Editar un componente (alias de PATCH para compatibilidad)
-export async function PUT(request: Request, context: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   return PATCH(request, context);
 }
 
 // PATCH: Editar un componente
-export async function PATCH(request: Request, context: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const { id } = context.params;
-  
+
+  // Verificar company boundary a través de la máquina
+  const componentCheck = await prisma.component.findUnique({
+    where: { id: Number(id) },
+    select: { id: true, machine: { select: { companyId: true } } }
+  });
+  if (!componentCheck || componentCheck.machine.companyId !== auth.companyId) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
   try {
     console.log(`🔄 Iniciando actualización de componente ${id}`);
     const body = await request.json();
@@ -470,9 +499,23 @@ export async function PATCH(request: Request, context: { params: { id: string } 
 
 // DELETE: Eliminar un componente y sus hijos recursivamente
 // OPTIMIZADO: Usa CTE para obtener descendientes en 1 query
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const { id } = context.params;
   const componentId = Number(id);
+
+  // Verificar company boundary a través de la máquina
+  const componentCheck = await prisma.component.findUnique({
+    where: { id: componentId },
+    select: { id: true, machine: { select: { companyId: true } } }
+  });
+  if (!componentCheck || componentCheck.machine.companyId !== auth.companyId) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
 
   try {
     // OPTIMIZADO: Usar CTE recursivo (1 query en vez de N)

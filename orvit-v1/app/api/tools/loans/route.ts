@@ -196,12 +196,10 @@ export async function POST(request: NextRequest) {
     // Crear préstamo
     const loanData: any = {
       toolId: parseInt(toolId),
-      borrowedById: currentUser.id,
       quantity: parseInt(quantity),
       expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate) : null,
       notes: notes || null,
       status: 'BORROWED',
-      borrowerType: borrowerType
     };
 
     // Agregar el ID correspondiente según el tipo
@@ -211,7 +209,7 @@ export async function POST(request: NextRequest) {
       loanData.workerId = parseInt(userId);
     }
 
-    // Crear el include base
+    // Configurar include según tipo de prestatario
     const includeConfig: any = {
       tool: {
         select: {
@@ -221,26 +219,17 @@ export async function POST(request: NextRequest) {
           category: true
         }
       },
-      borrowedBy: {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
-      }
     };
 
-    // Agregar la relación correspondiente según el tipo (sin worker por ahora hasta regenerar Prisma)
     if (borrowerType === 'USER') {
       includeConfig.user = {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
+        select: { id: true, name: true, email: true }
+      };
+    } else {
+      includeConfig.worker = {
+        select: { id: true, name: true, phone: true, specialty: true }
       };
     }
-    // Nota: worker se agregará cuando se regenere Prisma correctamente
 
     const loan = await prisma.toolLoan.create({
       data: loanData,

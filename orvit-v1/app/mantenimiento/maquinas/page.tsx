@@ -849,6 +849,32 @@ export default function MaquinasPage() {
     bulkDeleteMutation.mutate({ ids: Array.from(selectedMachineIds) });
   };
 
+  const handleBulkStatusChange = async (newStatus: 'ACTIVE' | 'OUT_OF_SERVICE') => {
+    if (selectedMachineIds.size === 0) return;
+    const label = newStatus === 'ACTIVE' ? 'activar' : 'desactivar';
+    const confirmed = await confirm({
+      title: `¿${newStatus === 'ACTIVE' ? 'Activar' : 'Desactivar'} máquinas?`,
+      description: `Se ${label}án ${selectedMachineIds.size} máquina${selectedMachineIds.size > 1 ? 's' : ''}.`,
+    });
+    if (!confirmed) return;
+    try {
+      await Promise.all(
+        Array.from(selectedMachineIds).map(id =>
+          fetch(`/api/maquinas/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+          })
+        )
+      );
+      toast({ title: `${selectedMachineIds.size} máquina${selectedMachineIds.size > 1 ? 's' : ''} ${newStatus === 'ACTIVE' ? 'activada' : 'desactivada'}${selectedMachineIds.size > 1 ? 's' : ''} correctamente.` });
+      clearSelection();
+      refetchMachines();
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo actualizar el estado de algunas máquinas', variant: 'destructive' });
+    }
+  };
+
   const handleAddMachine = async (machine: any) => {
     try {
       const payload = {
@@ -1874,6 +1900,26 @@ export default function MaquinasPage() {
               >
                 <Star className="h-3.5 w-3.5 mr-1.5" />
                 Favoritos
+              </Button>
+              {/* Activar selección */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkStatusChange('ACTIVE')}
+                className="h-8"
+              >
+                <Check className="h-3.5 w-3.5 mr-1.5" />
+                Activar
+              </Button>
+              {/* Desactivar selección */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkStatusChange('OUT_OF_SERVICE')}
+                className="h-8"
+              >
+                <X className="h-3.5 w-3.5 mr-1.5" />
+                Desactivar
               </Button>
               {/* Eliminar selección */}
               {canDeleteMachine && (

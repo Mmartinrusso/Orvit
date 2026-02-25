@@ -1,34 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/machines/export - Exportar máquinas a CSV/JSON
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
+    const auth = await verifyAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
     const format = searchParams.get('format') || 'csv'; // csv, json
     const sectorId = searchParams.get('sectorId');
-    const companyId = searchParams.get('companyId');
     const status = searchParams.get('status');
     const type = searchParams.get('type');
     const includeComponents = searchParams.get('includeComponents') === 'true';
 
-    // Construir filtros
-    const where: any = {};
+    // Construir filtros — siempre filtrar por companyId del usuario autenticado
+    const where: any = {
+      companyId: auth.companyId
+    };
     if (sectorId) where.sectorId = parseInt(sectorId);
-    if (companyId) where.companyId = parseInt(companyId);
     if (status && status !== 'all') where.status = status;
     if (type && type !== 'all') where.type = type;
 

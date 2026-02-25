@@ -100,7 +100,7 @@ export async function POST(
       }
 
       // 4. Validaciones de negocio
-      if (workOrder.status === 'completed' || workOrder.status === 'cancelled') {
+      if (workOrder.status === 'COMPLETED' || workOrder.status === 'CANCELLED') {
         throw new Error(`No se puede poner en espera una orden ${workOrder.status}`);
       }
 

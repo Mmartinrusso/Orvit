@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
     const outcome = searchParams.get('outcome') as 'FUNCIONÓ' | 'PARCIAL' | 'NO_FUNCIONÓ' | undefined;
 
     const title = searchParams.get('title') || undefined;
+    const search = searchParams.get('search') || undefined;
 
     // 3. Ejecutar según modo
     switch (mode) {
@@ -153,7 +154,8 @@ export async function GET(request: NextRequest) {
           startDate,
           endDate,
           outcome,
-          minEffectiveness
+          minEffectiveness,
+          search
         });
 
         return NextResponse.json({

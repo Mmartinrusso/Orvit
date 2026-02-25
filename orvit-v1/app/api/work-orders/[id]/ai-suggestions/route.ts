@@ -270,8 +270,8 @@ export async function GET(
       });
 
       const currentPriority = workOrder.priority;
-      const shouldEscalate = priorityResult.priority < currentPriority
-        .replace('URGENT', 'P1').replace('HIGH', 'P2').replace('MEDIUM', 'P3').replace('LOW', 'P4');
+      const PRIORITY_RANK: Record<string, number> = { LOW: 1, MEDIUM: 2, HIGH: 3, URGENT: 4 };
+      const shouldEscalate = (PRIORITY_RANK[priorityResult.priority] ?? 0) > (PRIORITY_RANK[currentPriority] ?? 0);
 
       prioritySuggestion = {
         suggested: priorityResult.priority,

@@ -1457,3 +1457,59 @@ export async function notifyTaskAssignedDiscord(data: TaskAssignedData): Promise
     console.warn(`[notifyTaskAssignedDiscord] No se pudo enviar DM al usuario ${data.assigneeUserId}: ${result.error}`);
   }
 }
+
+// ============================================================================
+// NOTIFICACIÓN DE CAMBIO DE ESTADO DE MÁQUINA
+// ============================================================================
+
+export interface MachineStatusChangeData {
+  machineId: number;
+  machineName: string;
+  oldStatus: string;
+  newStatus: string;
+  sectorId: number;
+  sectorName?: string;
+  changedByName?: string;
+}
+
+/**
+ * Traduce un estado de máquina a su label en español
+ */
+function getMachineStatusLabel(status: string): string {
+  switch (status) {
+    case 'ACTIVE': return 'Activa';
+    case 'OUT_OF_SERVICE': return 'Fuera de servicio';
+    case 'MAINTENANCE': return 'En mantenimiento';
+    case 'DECOMMISSIONED': return 'Dada de baja';
+    default: return status;
+  }
+}
+
+/**
+ * Notifica un cambio de estado de máquina a OUT_OF_SERVICE o MAINTENANCE
+ * Canal: #fallas (el más relevante para cambios de disponibilidad)
+ */
+export async function notifyMachineStatusChange(data: MachineStatusChangeData): Promise<void> {
+  const isOutOfService = data.newStatus === 'OUT_OF_SERVICE';
+  const color = isOutOfService ? DISCORD_COLORS.ERROR : DISCORD_COLORS.WARNING;
+  const emoji = isOutOfService ? '🔴' : '🟡';
+
+  const embed: DiscordEmbed = {
+    title: `${emoji} Cambio de Estado — ${data.machineName}`,
+    description: `La máquina **${data.machineName}** cambió de estado`,
+    color,
+    fields: [
+      { name: '📌 Estado anterior', value: getMachineStatusLabel(data.oldStatus), inline: true },
+      { name: '➡️ Estado nuevo', value: getMachineStatusLabel(data.newStatus), inline: true },
+      { name: `${DISCORD_EMOJIS.MAQUINA} Máquina`, value: data.machineName, inline: true },
+    ],
+    footer: { text: `Máquina #${data.machineId}` },
+    timestamp: new Date().toISOString(),
+  };
+
+  if (data.changedByName) {
+    embed.fields?.push({ name: '👤 Modificado por', value: data.changedByName, inline: true });
+  }
+
+  await sendNotification(data.sectorId, 'FALLA_NUEVA', embed, 'ORVIT - Máquinas');
+}

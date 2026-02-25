@@ -131,7 +131,7 @@ export function calculateMaintenanceMetrics(
   cost: number;
   variance: number | null;
 } {
-  const averageHourlyRate = 25; // USD/hour - could be from config
+  const averageHourlyRate = parseFloat(process.env.MAINTENANCE_HOURLY_RATE_DEFAULT || '25');
 
   return {
     mttr: actualDuration,

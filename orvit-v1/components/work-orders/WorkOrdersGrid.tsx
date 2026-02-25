@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Wrench,
   Calendar,
@@ -52,6 +53,9 @@ interface WorkOrdersGridProps {
   onStatusChange?: (workOrder: WorkOrder, newStatus: WorkOrderStatus) => Promise<void>;
   onAssign?: (workOrder: WorkOrder) => void;
   onDuplicate?: (workOrder: WorkOrder) => void;
+  selectionMode?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number) => void;
   className?: string;
 }
 
@@ -63,6 +67,9 @@ export function WorkOrdersGrid({
   onStatusChange,
   onAssign,
   onDuplicate,
+  selectionMode,
+  selectedIds = [],
+  onToggleSelect,
   className,
 }: WorkOrdersGridProps) {
   const getPrimaryAction = (order: WorkOrder) => {
@@ -128,14 +135,18 @@ export function WorkOrdersGrid({
         const primaryAction = getPrimaryAction(order);
         const dueText = getDueText(order.scheduledDate, order.status);
 
+        const isSelected = selectedIds.includes(order.id);
+
         return (
           <Card
             key={order.id}
             className={cn(
               'group relative transition-all duration-200 border-border bg-card rounded-xl overflow-hidden',
               'hover:shadow-md hover:border-border/80',
-              orderIsOverdue && 'border-l-[3px] border-l-rose-500'
+              orderIsOverdue && 'border-l-[3px] border-l-rose-500',
+              selectionMode && isSelected && 'ring-2 ring-primary bg-primary/5'
             )}
+            onClick={selectionMode ? () => onToggleSelect?.(order.id) : undefined}
           >
             {/* Indicador de estado (barra superior sutil) */}
             <div className={cn(
@@ -146,9 +157,20 @@ export function WorkOrdersGrid({
             <CardContent className="p-4 pt-5">
               {/* Header: Título + Dropdown */}
               <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 
+                {selectionMode && (
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect?.(order.id)}
+                    className="mt-0.5 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
+                <h3
                   className="font-semibold text-sm text-foreground line-clamp-2 flex-1 cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => onViewDetails?.(order)}
+                  onClick={(e) => {
+                    if (selectionMode) { e.stopPropagation(); onToggleSelect?.(order.id); return; }
+                    onViewDetails?.(order);
+                  }}
                 >
                   {order.title}
                 </h3>

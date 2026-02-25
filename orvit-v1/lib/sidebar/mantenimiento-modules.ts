@@ -24,10 +24,15 @@ export const MANTENIMIENTO_MODULES: SidebarModule[] = [
   { id: 'mant.panol-dashboard', name: 'Dashboard Pañol', icon: 'BarChart3', path: '/panol/dashboard', isCore: false, category: 'optional', description: 'Métricas y analytics del pañol', order: 43 },
   { id: 'mant.panol-conteo', name: 'Conteo Físico', icon: 'ClipboardCheck', path: '/panol/conteo', isCore: false, category: 'optional', description: 'Auditoría de inventario', order: 44 },
   { id: 'mant.panol-rapido', name: 'Acciones Rápidas', icon: 'ScanLine', path: '/panol/rapido', isCore: false, category: 'optional', description: 'Escaneo QR y operaciones rápidas', order: 45 },
+  { id: 'mant.panol-lotes', name: 'Lotes', icon: 'Layers', path: '/panol/lotes', isCore: false, category: 'optional', description: 'Trazabilidad de lotes y vencimientos', order: 46 },
+  { id: 'mant.panol-reservas', name: 'Reservas', icon: 'CalendarCheck', path: '/panol/reservas', isCore: false, category: 'optional', description: 'Reservas de repuestos por OT', order: 47 },
+  { id: 'mant.panol-consumo', name: 'Consumo', icon: 'TrendingDown', path: '/panol/consumo', isCore: false, category: 'optional', description: 'Análisis de consumo de repuestos', order: 48 },
+  { id: 'mant.panol-forecast', name: 'Forecast', icon: 'LineChart', path: '/panol/forecast', isCore: false, category: 'optional', description: 'Proyección de necesidades de stock', order: 49 },
+  { id: 'mant.panol-prestamos', name: 'Préstamos', icon: 'HandMetal', path: '/panol/prestamos', isCore: false, category: 'optional', description: 'Control de préstamos de herramientas', order: 50 },
 
   // ─── GENERAL ───
-  { id: 'mant.ideas', name: 'Ideas', icon: 'Lightbulb', path: '/mantenimiento/ideas', isCore: false, category: 'optional', description: 'Libro de ideas y sugerencias de mejora', order: 50 },
-  { id: 'mant.costos', name: 'Costos', icon: 'DollarSign', path: '/mantenimiento/costos', isCore: false, category: 'optional', description: 'Análisis de costos de mantenimiento', order: 51 },
+  { id: 'mant.ideas', name: 'Ideas', icon: 'Lightbulb', path: '/mantenimiento/ideas', isCore: false, category: 'optional', description: 'Libro de ideas y sugerencias de mejora', order: 55 },
+  { id: 'mant.costos', name: 'Costos', icon: 'DollarSign', path: '/mantenimiento/costos', isCore: false, category: 'optional', description: 'Análisis de costos de mantenimiento', order: 56 },
 
   // ─── CONFIABILIDAD ───
   { id: 'mant.health-score', name: 'Health Score', icon: 'HeartPulse', path: '/mantenimiento/health-score', isCore: false, category: 'advanced', description: 'Indicador de salud de máquinas', order: 60 },

@@ -36,7 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ToolDialog } from '@/components/panol';
+import { ToolDialog, ToolQRLabel } from '@/components/panol';
 import type { ToolType } from '@/components/panol';
 import {
   Plus,
@@ -597,9 +597,15 @@ export default function PanolPage() {
                                     <Edit className="h-4 w-4 mr-2" /> Editar
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem onClick={() => toast.info('QR próximamente')}>
-                                  <QrCode className="h-4 w-4 mr-2" /> Código QR
-                                </DropdownMenuItem>
+                                <ToolQRLabel
+                                  toolId={tool.id}
+                                  toolName={tool.name}
+                                  trigger={
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <QrCode className="h-4 w-4 mr-2" /> Código QR
+                                    </DropdownMenuItem>
+                                  }
+                                />
                                 {permissions.canDeleteProduct && (
                                   <>
                                     <DropdownMenuSeparator />
@@ -672,9 +678,15 @@ export default function PanolPage() {
                                 <Edit className="h-4 w-4 mr-2" /> Editar
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => toast.info('QR próximamente')}>
-                              <QrCode className="h-4 w-4 mr-2" /> Código QR
-                            </DropdownMenuItem>
+                            <ToolQRLabel
+                              toolId={tool.id}
+                              toolName={tool.name}
+                              trigger={
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <QrCode className="h-4 w-4 mr-2" /> Código QR
+                                </DropdownMenuItem>
+                              }
+                            />
                             {permissions.canDeleteProduct && (
                               <>
                                 <DropdownMenuSeparator />

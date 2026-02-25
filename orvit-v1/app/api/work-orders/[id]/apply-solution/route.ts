@@ -71,6 +71,14 @@ export async function POST(
       return NextResponse.json({ error: 'Orden de trabajo no encontrada' }, { status: 404 });
     }
 
+    // Verificar que el usuario tiene acceso a esta empresa
+    const userCompany = await prisma.companyUser.findFirst({
+      where: { userId: user.id, companyId: workOrder.companyId }
+    });
+    if (!userCompany) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
+    }
+
     // Verificar que sea CORRECTIVE y PENDING
     if (workOrder.type !== 'CORRECTIVE') {
       return NextResponse.json(
@@ -102,7 +110,7 @@ export async function POST(
           console.log('⚠️ Error parseando notes del WorkOrder');
         }
 
-        occurrence = await (prisma as any).failureOccurrence.create({
+        occurrence = await prisma.failureOccurrence.create({
           data: {
             failureId: workOrderId, // ID del WorkOrder
             failureTypeId: null, // No tenemos el tipo de falla
@@ -163,7 +171,7 @@ export async function POST(
         console.log(`🔍 Verificando solución existente con ID ${solutionId}`);
 
         // Verificar que la solución existe
-        const solution = await (prisma as any).failureSolution.findUnique({
+        const solution = await prisma.failureSolution.findUnique({
           where: { id: solutionId }
         });
 

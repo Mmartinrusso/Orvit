@@ -352,39 +352,45 @@ export default function FallasPage() {
     <div className="h-screen sidebar-shell flex flex-col min-h-0">
       {/* V2: Header sticky con selector de vista */}
       <div className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="px-4 md:px-6 pt-4 pb-3 flex items-center justify-between gap-4">
-          {/* Lado izquierdo: Título */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold text-foreground truncate">
-                Fallas
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
-                Sistema de Mantenimiento Correctivo
-              </p>
+        <div className="px-4 md:px-6 pt-4 pb-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Lado izquierdo: Título */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="min-w-0">
+                <h1 className="text-xl font-semibold text-foreground truncate">
+                  Fallas
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
+                  Sistema de Mantenimiento Correctivo
+                </p>
+              </div>
+            </div>
+
+            {/* Centro: View selector — solo desktop */}
+            <div className="hidden md:flex flex-1 justify-center">
+              <FailuresViewSelector />
+            </div>
+
+            {/* Lado derecho: Acciones */}
+            <div className="flex gap-2 items-center">
+              {canCreate && (
+                <Button onClick={() => setQuickReportOpen(true)} size="sm" className="bg-black hover:bg-muted-foreground text-white">
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Nueva Falla</span>
+                  <span className="sm:hidden">Nueva</span>
+                </Button>
+              )}
             </div>
           </div>
-
-          {/* Centro: View selector */}
-          <div className="hidden md:flex flex-1 justify-center">
-            <FailuresViewSelector />
-          </div>
-
-          {/* Lado derecho: Acciones */}
-          <div className="flex gap-2 items-center">
-            {canCreate && (
-              <Button onClick={() => setQuickReportOpen(true)} size="sm" className="bg-black hover:bg-muted-foreground text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Nueva Falla</span>
-                <span className="sm:hidden">Nueva</span>
-              </Button>
-            )}
+          {/* View selector móvil — debajo del título */}
+          <div className="mt-3 md:hidden">
+            <FailuresViewSelector className="w-full" />
           </div>
         </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-4 md:px-6 py-4 space-y-4">
+        <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
           {/* V2: Barra de vistas guardadas (presets) - siempre visible */}
           <FailuresSavedViewsBar failures={gridData || []} />
 
@@ -401,22 +407,15 @@ export default function FallasPage() {
 
               <div className="border-t border-border" />
 
-              {/* Filtros */}
-              <FailureFiltersBar
-                filters={effectiveFilters}
-                onFiltersChange={handleFiltersChange}
-                onAdvancedFiltersOpen={() => setAdvancedFiltersOpen(true)}
-              />
-
-              {/* Chips de filtros activos + Toggle vista */}
-              <div className="flex items-center justify-between gap-4">
-                <FilterChips
-                  filters={effectiveFilters}
-                  onRemoveFilter={handleRemoveFilter}
-                  onClearAll={handleClearAll}
-                  machineName={machineName}
-                />
-                <div className="h-6 w-px bg-border" />
+              {/* Filtros + Toggle vista en la misma fila */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <FailureFiltersBar
+                    filters={effectiveFilters}
+                    onFiltersChange={handleFiltersChange}
+                    onAdvancedFiltersOpen={() => setAdvancedFiltersOpen(true)}
+                  />
+                </div>
                 <ToggleGroup
                   type="single"
                   value={viewMode}
@@ -439,6 +438,14 @@ export default function FallasPage() {
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
+
+              {/* Chips de filtros activos */}
+              <FilterChips
+                filters={effectiveFilters}
+                onRemoveFilter={handleRemoveFilter}
+                onClearAll={handleClearAll}
+                machineName={machineName}
+              />
 
               {/* Vista Grid o Tabla */}
               {viewMode === 'grid' ? (

@@ -61,12 +61,15 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow, differenceInDays, isBefore, addDays, formatDistance } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMachineMaintenanceHistory, useMachineWorkOrders, useMachineComponents } from '@/hooks/use-machine-detail';
 import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 import PreventiveMaintenanceDialog from '../work-orders/PreventiveMaintenanceDialog';
 import WorkOrderWizard from '../work-orders/WorkOrderWizard';
 import { WorkOrderDetailDialog } from '../work-orders/WorkOrderDetailDialog';
 import MaintenanceDetailDialog from './MaintenanceDetailDialog';
+import ExecuteMaintenanceDialog from './ExecuteMaintenanceDialog';
+import { useToast } from '@/components/ui/use-toast';
 
 interface MachineMaintenanceTabProps {
   machineId: number;
@@ -107,6 +110,12 @@ export default function MachineMaintenanceTab({
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const [selectedPreventive, setSelectedPreventive] = useState<any>(null);
   const [hideDuplicates, setHideDuplicates] = useState(true);
+  const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
+  const [executingMaintenance, setExecutingMaintenance] = useState<any>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { maintenanceHistory, isLoading: historyLoading, refetch } = useMachineMaintenanceHistory(
     machineId, true, companyId, sectorId
@@ -116,6 +125,55 @@ export default function MachineMaintenanceTab({
   );
   const { components } = useMachineComponents(machineId, true);
   const { hasPermission: canCreateMaintenance } = usePermissionRobust('crear_mantenimiento');
+
+  const handleExecuteClick = (wo: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Build the maintenance object expected by ExecuteMaintenanceDialog
+    setExecutingMaintenance({
+      id: wo._templateId,
+      type: 'PREVENTIVE',
+      isPreventive: true,
+      title: wo.title,
+      description: wo.description,
+      machineId: wo.machineId,
+      machine: { name: machineName },
+      estimatedHours: wo.estimatedHours,
+      timeValue: wo._timeValue,
+      toolsRequired: wo._toolsRequired || [],
+      assignedToId: wo._assignedToId,
+      assignedTo: wo.assignedTo,
+      assignedToName: wo.assignedTo?.name,
+      componentIds: wo.componentIds || [],
+      subcomponentIds: wo.subcomponentIds || [],
+      lastMaintenanceDate: wo._lastCompletedDate,
+    });
+    setExecuteDialogOpen(true);
+  };
+
+  const handleExecutionSubmit = async (executionData: any) => {
+    setIsExecuting(true);
+    try {
+      const response = await fetch('/api/maintenance/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(executionData),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Error al ejecutar el mantenimiento');
+      }
+      const result = await response.json();
+      toast({ title: 'Mantenimiento ejecutado', description: result.message, duration: 3000 });
+      setExecuteDialogOpen(false);
+      setExecutingMaintenance(null);
+      queryClient.invalidateQueries({ queryKey: ['preventive-maintenance', 'machine', machineId] });
+      refetchWorkOrders();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsExecuting(false);
+    }
+  };
 
   const filteredByComponent = useMemo(() => {
     let data = workOrders;
@@ -200,13 +258,18 @@ export default function MachineMaintenanceTab({
       );
     }
     if (activeSubTab === 'preventive') {
-      history = history.filter((item: any) => item.work_orders?.type === 'PREVENTIVE');
+      history = history.filter((item: any) =>
+        item.maintenanceType === 'PREVENTIVE' || item.work_orders?.type === 'PREVENTIVE'
+      );
     } else {
-      history = history.filter((item: any) => item.work_orders?.type !== 'PREVENTIVE');
+      history = history.filter((item: any) =>
+        item.maintenanceType !== 'PREVENTIVE' && item.work_orders?.type !== 'PREVENTIVE'
+      );
     }
     if (!searchTerm) return history;
     const term = searchTerm.toLowerCase();
     return history.filter((item: any) =>
+      item.title?.toLowerCase().includes(term) ||
       item.work_orders?.title?.toLowerCase().includes(term) ||
       item.notes?.toLowerCase().includes(term) ||
       item.rootCause?.toLowerCase().includes(term)
@@ -295,8 +358,19 @@ export default function MachineMaintenanceTab({
 
   const renderPreventiveCard = (wo: any) => {
     const statusCfg = getStatusConfig(wo.status);
-    const isOverdue = wo.status === 'PENDING' && wo.scheduledDate && isBefore(new Date(wo.scheduledDate), new Date());
-    const daysUntil = wo.scheduledDate ? differenceInDays(new Date(wo.scheduledDate), new Date()) : null;
+    // Si el último mantenimiento fue realizado dentro del período de frecuencia actual,
+    // la instancia PENDING quedó stale. Calcular la fecha real de próxima ejecución.
+    const isCoveredByLastExecution = !!(
+      wo._lastCompletedDate &&
+      wo._frequencyDays &&
+      differenceInDays(new Date(wo.scheduledDate), new Date(wo._lastCompletedDate)) <= wo._frequencyDays
+    );
+    // Próxima fecha real: si está cubierto, recalcular desde lastCompletedDate + frequencyDays
+    const nextScheduledDate = (isCoveredByLastExecution && wo._lastCompletedDate && wo._frequencyDays)
+      ? addDays(new Date(wo._lastCompletedDate), wo._frequencyDays).toISOString()
+      : wo.scheduledDate;
+    const isOverdue = wo.status === 'PENDING' && nextScheduledDate && isBefore(new Date(nextScheduledDate), new Date());
+    const daysUntil = nextScheduledDate ? differenceInDays(new Date(nextScheduledDate), new Date()) : null;
 
     if (viewMode === 'list') {
       return (
@@ -304,39 +378,64 @@ export default function MachineMaintenanceTab({
           key={wo.id}
           onClick={() => handleItemClick(wo)}
           className={cn(
-            'group relative flex items-center gap-4 p-4 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-primary/30',
+            'group relative flex items-start gap-3 p-3 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-primary/30',
             isOverdue && 'border-destructive/30 bg-destructive/5'
           )}
         >
           {/* Borde izquierdo de color */}
           <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', isOverdue ? 'bg-destructive' : 'bg-primary/60')} />
 
-          <div className="ml-2 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <CalendarDays className="h-5 w-5 text-primary" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="font-semibold text-sm truncate">{wo.title}</p>
+          <div className="ml-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+              <p className="font-semibold text-sm">{wo.title}</p>
               {isOverdue && <Badge variant="destructive" className="text-xs h-5 px-1 shrink-0">Vencida</Badge>}
               {getPriorityBadge(wo.priority)}
+              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                {wo.status === 'PENDING' && canCreateMaintenance && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 text-xs px-2 gap-1"
+                    onClick={(e) => handleExecuteClick(wo, e)}
+                  >
+                    <PlayCircle className="h-3 w-3" />
+                    Ejecutar
+                  </Button>
+                )}
+                <Badge className={cn(statusCfg.className, 'text-xs border gap-1')}>
+                  {statusCfg.icon}
+                  {statusCfg.label}
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
               {wo._frequencyDays && (
                 <span className="flex items-center gap-1">
                   <RefreshCw className="h-3 w-3" />
                   Cada {wo._frequencyDays}d
                 </span>
               )}
-              {wo.scheduledDate && (
-                <span className={cn('flex items-center gap-1 font-medium',
-                  isOverdue ? 'text-destructive' : daysUntil !== null && daysUntil <= 7 ? 'text-warning-muted-foreground' : ''
-                )}>
-                  <Calendar className="h-3 w-3" />
-                  {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
-                  {daysUntil !== null && wo.status === 'PENDING' && (
-                    <span className="ml-1">
-                      ({daysUntil < 0 ? `${Math.abs(daysUntil)}d vencido` : daysUntil === 0 ? 'hoy' : `en ${daysUntil}d`})
+              {(wo._lastCompletedDate || nextScheduledDate) && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3 shrink-0" />
+                  {wo._lastCompletedDate && (
+                    <span className="text-muted-foreground">
+                      Ult vez {format(new Date(wo._lastCompletedDate), 'EEE dd/MM/yyyy', { locale: es })}
+                    </span>
+                  )}
+                  {wo._lastCompletedDate && nextScheduledDate && (
+                    <span className="text-muted-foreground/50">·</span>
+                  )}
+                  {nextScheduledDate && (
+                    <span className={cn('font-medium',
+                      isOverdue ? 'text-destructive' : daysUntil !== null && daysUntil <= 7 ? 'text-warning-muted-foreground' : ''
+                    )}>
+                      Próx {format(new Date(nextScheduledDate), 'dd/MM/yyyy', { locale: es })}
+                      {daysUntil !== null && wo.status === 'PENDING' && (
+                        <span className="ml-1 font-normal">
+                          ({daysUntil < 0 ? `${Math.abs(daysUntil)}d vencido` : daysUntil === 0 ? 'hoy' : `en ${daysUntil}d`})
+                        </span>
+                      )}
                     </span>
                   )}
                 </span>
@@ -354,14 +453,6 @@ export default function MachineMaintenanceTab({
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge className={cn(statusCfg.className, 'text-xs border gap-1')}>
-              {statusCfg.icon}
-              {statusCfg.label}
-            </Badge>
-            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </div>
       );
@@ -401,13 +492,19 @@ export default function MachineMaintenanceTab({
                 <span>Cada {wo._frequencyDays} días</span>
               </div>
             )}
-            {wo.scheduledDate && (
+            {wo._lastCompletedDate && (
+              <div className="flex items-center gap-1.5">
+                <CheckCircle className="h-3 w-3 shrink-0 text-success" />
+                <span>Ult vez {format(new Date(wo._lastCompletedDate), 'EEE dd/MM/yyyy', { locale: es })}</span>
+              </div>
+            )}
+            {nextScheduledDate && (
               <div className={cn('flex items-center justify-between',
                 isOverdue ? 'text-destructive' : daysUntil !== null && daysUntil <= 7 ? 'text-warning-muted-foreground' : ''
               )}>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3 w-3 shrink-0" />
-                  {format(new Date(wo.scheduledDate), 'dd MMM yyyy', { locale: es })}
+                  Próx {format(new Date(nextScheduledDate), 'dd/MM/yyyy', { locale: es })}
                 </span>
                 {daysUntil !== null && wo.status === 'PENDING' && (
                   <span className="font-semibold text-xs">
@@ -430,6 +527,19 @@ export default function MachineMaintenanceTab({
               {wo.component.name}
             </div>
           )}
+
+          {wo.status === 'PENDING' && canCreateMaintenance && (
+            <div className="mt-3 pt-2.5 border-t">
+              <Button
+                size="sm"
+                className="w-full h-7 text-xs gap-1.5"
+                onClick={(e) => handleExecuteClick(wo, e)}
+              >
+                <PlayCircle className="h-3.5 w-3.5" />
+                Ejecutar
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -449,23 +559,23 @@ export default function MachineMaintenanceTab({
           key={wo.id}
           onClick={() => handleItemClick(wo)}
           className={cn(
-            'group relative flex items-center gap-4 p-4 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-warning-muted/50',
+            'group relative flex items-start gap-3 p-3 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-warning-muted/50',
             isOverdue && 'border-destructive/30 bg-destructive/5'
           )}
         >
           <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', accentColor)} />
 
-          <div className="ml-2 h-10 w-10 rounded-full bg-warning-muted/50 flex items-center justify-center shrink-0">
-            <Wrench className="h-5 w-5 text-warning-muted-foreground" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="font-semibold text-sm truncate">{wo.title}</p>
+          <div className="ml-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+              <p className="font-semibold text-sm">{wo.title}</p>
               {isOverdue && <Badge variant="destructive" className="text-xs h-5 px-1 shrink-0">Vencida</Badge>}
               {getPriorityBadge(wo.priority)}
+              <Badge className={cn(statusCfg.className, 'text-xs border gap-1 ml-auto shrink-0')}>
+                {statusCfg.icon}
+                {statusCfg.label}
+              </Badge>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
               {wo.scheduledDate && (
                 <span className={cn('flex items-center gap-1', isOverdue && 'text-destructive font-medium')}>
                   <Calendar className="h-3 w-3" />
@@ -494,14 +604,6 @@ export default function MachineMaintenanceTab({
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge className={cn(statusCfg.className, 'text-xs border gap-1')}>
-              {statusCfg.icon}
-              {statusCfg.label}
-            </Badge>
-            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </div>
       );
@@ -582,9 +684,12 @@ export default function MachineMaintenanceTab({
         <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-border" />
 
         {filteredHistory.map((item: any, index: number) => {
-          const isPreventive = item.work_orders?.type === 'PREVENTIVE';
+          const isPreventive = item.maintenanceType === 'PREVENTIVE' || item.work_orders?.type === 'PREVENTIVE';
           const hasIssues = item.rootCause || item.issues;
           const qualityScore = item.qualityScore;
+          // actualDuration viene en minutos desde la API
+          const durationMinutes = item.actualDuration ?? (item.duration ? item.duration * 60 : null);
+          const executedByName = item.assignedToName || item.User?.name;
 
           return (
             <div key={item.id} className="relative flex gap-4 pb-4 last:pb-0">
@@ -608,7 +713,7 @@ export default function MachineMaintenanceTab({
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">
-                      {item.work_orders?.title || 'Mantenimiento ejecutado'}
+                      {item.title || item.work_orders?.title || 'Mantenimiento ejecutado'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {format(new Date(item.executedAt), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
@@ -638,25 +743,25 @@ export default function MachineMaintenanceTab({
 
                 {/* Métricas */}
                 <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 flex-wrap">
-                  {item.duration && (
+                  {durationMinutes != null && durationMinutes > 0 && (
                     <span className="flex items-center gap-1.5 font-medium">
                       <Timer className="h-3.5 w-3.5 text-primary" />
-                      {item.duration < 1 ? `${Math.round(item.duration * 60)} min` : `${item.duration}h`}
+                      {durationMinutes < 60 ? `${Math.round(durationMinutes)} min` : `${(durationMinutes / 60).toFixed(1)}h`}
                     </span>
                   )}
-                  {item.User && (
+                  {executedByName && (
                     <span className="flex items-center gap-1.5">
                       <User className="h-3.5 w-3.5" />
-                      {item.User.name}
+                      {executedByName}
                     </span>
                   )}
-                  {item.Component && (
+                  {(item.Component?.name || item.componentName) && (
                     <span className="flex items-center gap-1.5">
                       <Box className="h-3.5 w-3.5" />
-                      {item.Component.name}
+                      {item.Component?.name || item.componentName}
                     </span>
                   )}
-                  {item.cost !== null && item.cost !== undefined && (
+                  {item.cost != null && (
                     <span className="flex items-center gap-1.5">
                       <span className="text-muted-foreground">Costo:</span>
                       <span className="font-medium">${formatNumber(Number(item.cost), 0)}</span>
@@ -1042,11 +1147,6 @@ export default function MachineMaintenanceTab({
                     {preventiveOrders.length}
                   </Badge>
                 )}
-                {preventiveStats.overdue > 0 && (
-                  <Badge variant="destructive" className="h-5 px-1 text-xs">
-                    {preventiveStats.overdue}v
-                  </Badge>
-                )}
               </TabsTrigger>
               <TabsTrigger
                 value="corrective"
@@ -1059,11 +1159,6 @@ export default function MachineMaintenanceTab({
                 {correctiveOrders.length > 0 && (
                   <Badge className="ml-0.5 h-5 px-1 text-xs bg-amber-500 text-white border-0">
                     {correctiveOrders.length}
-                  </Badge>
-                )}
-                {correctiveStats.overdue > 0 && (
-                  <Badge variant="destructive" className="h-5 px-1 text-xs">
-                    {correctiveStats.overdue}v
                   </Badge>
                 )}
               </TabsTrigger>
@@ -1119,6 +1214,14 @@ export default function MachineMaintenanceTab({
             companyId={companyId}
           />
         )}
+
+        <ExecuteMaintenanceDialog
+          isOpen={executeDialogOpen}
+          onClose={() => { setExecuteDialogOpen(false); setExecutingMaintenance(null); }}
+          maintenance={executingMaintenance}
+          onExecute={handleExecutionSubmit}
+          isLoading={isExecuting}
+        />
       </div>
     </TooltipProvider>
   );

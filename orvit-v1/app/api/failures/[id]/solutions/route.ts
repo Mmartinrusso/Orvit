@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/failures/[id]/solutions - Obtener soluciones de una falla específica
 // Busca primero en la tabla FailureSolution (nuevo sistema), luego en notes (legacy)
@@ -8,6 +10,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    const authPayload = await verifyToken(token);
+    if (!authPayload) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
     const failureId = parseInt(params.id);
 
     if (!failureId || isNaN(failureId)) {
@@ -50,7 +62,7 @@ export async function GET(
     try {
       // ✅ Buscar por AMBOS: failureId (WorkOrders directos) Y failureTypeId (del catálogo)
       // Esto asegura que encontremos soluciones de ocurrencias registradas desde el catálogo
-      const occurrenceResults = await (prisma as any).failureOccurrence?.findMany({
+      const occurrenceResults = await prisma.failureOccurrence.findMany({
         where: {
           OR: [
             { failureId: failureId },       // WorkOrders directos de esta falla

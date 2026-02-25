@@ -26,6 +26,12 @@ import {
   DevolucionStatusLabels,
   ReservaStatuses,
   ReservaStatusLabels,
+  TransferStatuses,
+  TransferStatusLabels,
+  AdjustmentStatuses,
+  AdjustmentStatusLabels,
+  AdjustmentTypes,
+  AdjustmentTypeLabels,
   Priorities,
   PriorityLabels,
 } from '@/lib/almacen/types';
@@ -62,7 +68,7 @@ interface AlmacenFiltersProps {
   // Opciones personalizadas (o usar defaults)
   estadoOptions?: FilterOption[];
   tipoOptions?: FilterOption[];
-  filterType?: 'solicitudes' | 'despachos' | 'devoluciones' | 'reservas';
+  filterType?: 'solicitudes' | 'despachos' | 'devoluciones' | 'reservas' | 'transferencias' | 'ajustes';
 
   // Indicador de carga
   isLoading?: boolean;
@@ -290,6 +296,16 @@ function getDefaultEstadoOptions(type: string): FilterOption[] {
         value: s,
         label: ReservaStatusLabels[s],
       }));
+    case 'transferencias':
+      return TransferStatuses.map((s) => ({
+        value: s,
+        label: TransferStatusLabels[s],
+      }));
+    case 'ajustes':
+      return AdjustmentStatuses.map((s) => ({
+        value: s,
+        label: AdjustmentStatusLabels[s],
+      }));
     default:
       return [];
   }
@@ -306,6 +322,11 @@ function getDefaultTipoOptions(type: string): FilterOption[] {
       return DespachoTypes.map((t) => ({
         value: t,
         label: DespachoTypeLabels[t],
+      }));
+    case 'ajustes':
+      return AdjustmentTypes.map((t) => ({
+        value: t,
+        label: AdjustmentTypeLabels[t],
       }));
     default:
       return [];

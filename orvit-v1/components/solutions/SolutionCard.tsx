@@ -179,7 +179,7 @@ export function SolutionCard({
                       {executor.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-xs text-muted-foreground truncate max-w-[100px]">{executor.name}</span>
+                  <span className="text-xs text-muted-foreground truncate">{executor.name}</span>
                 </div>
               )}
               {solution.completedDate && (

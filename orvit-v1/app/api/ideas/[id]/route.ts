@@ -77,14 +77,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               select: { id: true, name: true, avatar: true }
             }
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'asc' }
         },
         votes: {
-          include: {
-            user: {
-              select: { id: true, name: true }
-            }
-          }
+          select: { userId: true }
         }
       }
     });
@@ -96,11 +92,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Add computed fields
+    // Strip raw votes array; expose computed fields only
+    const { votes, ...ideaWithoutVotes } = idea;
     const response = {
-      ...idea,
-      voteCount: idea.votes.length,
-      hasVoted: idea.votes.some(v => v.userId === userId)
+      ...ideaWithoutVotes,
+      voteCount: votes.length,
+      hasVoted: votes.some(v => v.userId === userId),
+      commentCount: idea.comments.length,
     };
 
     return NextResponse.json(response);
@@ -152,9 +150,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Only creator or admin can edit (simple check)
+    // Only creator can edit
     if (existingIdea.createdById !== userId) {
-      // TODO: Add admin role check
+      return NextResponse.json(
+        { error: 'No tienes permisos para editar esta idea' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -166,6 +167,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       tags,
       attachments
     } = body;
+
+    // Validate enums if provided
+    const validCategories = ['SOLUCION_FALLA', 'MEJORA_PROCESO', 'MEJORA_EQUIPO', 'SEGURIDAD', 'AHORRO_COSTOS', 'CALIDAD', 'OTRO'];
+    if (category !== undefined && !validCategories.includes(category)) {
+      return NextResponse.json(
+        { error: `Categoría inválida. Válidas: ${validCategories.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    const validPriorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    if (priority !== undefined && !validPriorities.includes(priority)) {
+      return NextResponse.json(
+        { error: `Prioridad inválida. Válidas: ${validPriorities.join(', ')}` },
+        { status: 400 }
+      );
+    }
 
     // Build update data
     const updateData: any = {};
@@ -240,11 +258,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Only creator or admin can delete
     if (existingIdea.createdById !== userId) {
-      // TODO: Add admin role check
-      return NextResponse.json(
-        { error: 'No tienes permisos para eliminar esta idea' },
-        { status: 403 }
-      );
+      const actor = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { systemRole: true },
+      });
+      const adminRoles = ['ADMIN', 'SUPERADMIN', 'ADMIN_ENTERPRISE'];
+      if (!actor || !adminRoles.includes(actor.systemRole ?? '')) {
+        return NextResponse.json(
+          { error: 'No tienes permisos para eliminar esta idea' },
+          { status: 403 }
+        );
+      }
     }
 
     await prisma.idea.delete({

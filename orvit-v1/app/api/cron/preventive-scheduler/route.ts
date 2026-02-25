@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { markOverdueInstances } from '@/lib/maintenance/preventive-template.repository';
+import { notifyPreventiveReminder } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,13 @@ function adjustToWeekday(date: Date): Date {
 }
 
 export async function POST(request: NextRequest) {
+  // Verificar CRON_SECRET
+  const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const startTime = Date.now();
   const results = {
     templatesProcessed: 0,
@@ -111,13 +119,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 4. Enviar recordatorios Discord para preventivos próximos
+    let remindersSent = 0;
+    for (const template of templates) {
+      if (!template.sectorId || !template.nextMaintenanceDate) continue;
+
+      const nextDate = new Date(template.nextMaintenanceDate);
+      nextDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Enviar si cae dentro de los días de alerta configurados
+      const alertDays = (template.alertDaysBefore as number[])?.length > 0
+        ? (template.alertDaysBefore as number[])
+        : [3];
+      if (alertDays.includes(diffDays) || diffDays === 0) {
+        notifyPreventiveReminder({
+          title: template.title,
+          machineName: template.machineName || 'Sin equipo',
+          sectorId: template.sectorId,
+          scheduledDate: nextDate.toLocaleDateString('es-AR'),
+          daysUntil: diffDays,
+          assignedTo: template.assignedToName || undefined,
+        }).then(() => { remindersSent++; })
+          .catch(err => console.warn(`Discord reminder failed for template ${template.id}:`, err.message));
+      }
+    }
+
     const duration = Date.now() - startTime;
 
     return NextResponse.json({
       success: true,
       message: 'Scheduler de preventivos ejecutado correctamente',
       duration: `${duration}ms`,
-      results
+      results: { ...results, remindersSent }
     });
 
   } catch (error: any) {
@@ -134,7 +168,14 @@ export async function POST(request: NextRequest) {
 }
 
 // GET para verificar estado (health check)
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Verificar CRON_SECRET
+  const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

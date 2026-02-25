@@ -124,7 +124,7 @@ export function FailureFiltersBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Búsqueda */}
-      <div className="relative flex-1 min-w-[200px]">
+      <div className="relative flex-1 min-w-0">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
           placeholder="Buscar por título, notas..."
@@ -147,14 +147,14 @@ export function FailureFiltersBar({
         )}
       </div>
 
-      {/* Estado */}
+      {/* Estado — oculto en móvil, disponible en AdvancedFiltersSheet */}
       <Select
         value={currentStatus}
         onValueChange={(value) =>
           updateFilter('status', value === 'ALL' ? undefined : [value])
         }
       >
-        <SelectTrigger className="h-9 w-[120px] text-xs bg-background">
+        <SelectTrigger className="hidden sm:flex h-9 w-[120px] text-xs bg-background">
           <SelectValue placeholder="Estado" />
         </SelectTrigger>
         <SelectContent>
@@ -166,14 +166,14 @@ export function FailureFiltersBar({
         </SelectContent>
       </Select>
 
-      {/* Máquina */}
+      {/* Máquina — oculto en móvil */}
       <Select
         value={filters.machineId?.toString() || 'ALL'}
         onValueChange={(value) =>
           updateFilter('machineId', value === 'ALL' ? undefined : parseInt(value))
         }
       >
-        <SelectTrigger className="h-9 w-[140px] text-xs bg-background">
+        <SelectTrigger className="hidden sm:flex h-9 w-[140px] text-xs bg-background">
           <SelectValue placeholder="Máquina" />
         </SelectTrigger>
         <SelectContent>
@@ -186,14 +186,14 @@ export function FailureFiltersBar({
         </SelectContent>
       </Select>
 
-      {/* Prioridad */}
+      {/* Prioridad — oculto en móvil */}
       <Select
         value={currentPriority}
         onValueChange={(value) =>
           updateFilter('priority', value === 'ALL' ? undefined : [value])
         }
       >
-        <SelectTrigger className="h-9 w-[120px] text-xs bg-background">
+        <SelectTrigger className="hidden sm:flex h-9 w-[120px] text-xs bg-background">
           <SelectValue placeholder="Prioridad" />
         </SelectTrigger>
         <SelectContent>
@@ -205,35 +205,36 @@ export function FailureFiltersBar({
         </SelectContent>
       </Select>
 
-      {/* Toggle Downtime */}
+      {/* Toggle Downtime — oculto en móvil */}
       <Button
         variant={filters.causedDowntime ? 'default' : 'outline'}
         size="sm"
-        className="h-9 text-xs"
+        className="hidden sm:inline-flex h-9 text-xs"
         onClick={() => toggleBooleanFilter('causedDowntime')}
       >
         Downtime
       </Button>
 
-      {/* Toggle Intermitente */}
+      {/* Toggle Intermitente — oculto en móvil */}
       <Button
         variant={filters.isIntermittent ? 'default' : 'outline'}
         size="sm"
-        className="h-9 text-xs"
+        className="hidden sm:inline-flex h-9 text-xs"
         onClick={() => toggleBooleanFilter('isIntermittent')}
       >
         Intermitente
       </Button>
 
-      {/* Botón Filtros Avanzados */}
+      {/* Botón Filtros Avanzados — siempre visible */}
       <Button
         variant="outline"
         size="sm"
-        className="h-9 text-xs gap-1"
+        className="h-9 text-xs gap-1 sm:px-3 px-2.5"
         onClick={onAdvancedFiltersOpen}
+        aria-label="Filtros avanzados"
       >
         <SlidersHorizontal className="h-3.5 w-3.5" />
-        Avanzados
+        <span className="hidden sm:inline">Avanzados</span>
       </Button>
     </div>
   );

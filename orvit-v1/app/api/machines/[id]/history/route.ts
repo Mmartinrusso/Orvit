@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 // GET /api/machines/[id]/history
 export async function GET(
@@ -7,6 +8,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const machineId = params.id;
     const { searchParams } = new URL(request.url);
     const componentId = searchParams.get('componentId');
@@ -28,6 +34,10 @@ export async function GET(
         { error: 'Máquina no encontrada' },
         { status: 404 }
       );
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Construir la consulta de historial

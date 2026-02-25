@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 import { getUserName } from '@/lib/maintenance-helpers';
 import {
   createTemplate,
@@ -9,9 +11,23 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+// Helper: verificar autenticación y obtener payload
+async function getAuth() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
+
 // POST /api/maintenance/preventive - Crear mantenimiento preventivo
 export async function POST(request: NextRequest) {
   try {
+    // Autenticación
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
 
     const {
@@ -38,6 +54,12 @@ export async function POST(request: NextRequest) {
       timeUnit,
       timeValue
     } = body;
+
+    // Company boundary check: el companyId del body debe coincidir con el del token
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && companyId && Number(companyId) !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
+    }
 
     // Validaciones
     if (!title || (!machineId && !unidadMovilId) || !frequencyDays || !startDate) {
@@ -215,6 +237,12 @@ export async function POST(request: NextRequest) {
 // GET /api/maintenance/preventive - Obtener mantenimientos preventivos
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const machineId = searchParams.get('machineId');
@@ -224,6 +252,12 @@ export async function GET(request: NextRequest) {
         { error: 'companyId es requerido' },
         { status: 400 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && Number(companyId) !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     const templates = await listTemplates({

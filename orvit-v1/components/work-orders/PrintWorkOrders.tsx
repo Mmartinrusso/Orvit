@@ -164,8 +164,40 @@ export default function PrintWorkOrders({
     setTimeout(() => document.body.removeChild(iframe), 1000);
   };
 
-  const handleDownloadPDF = () => {
-    // TODO: Implementar descarga PDF con jsPDF o puppeteer
+  const handleDownloadPDF = async () => {
+    if (!printRef.current) return;
+
+    const { default: html2canvas } = await import('html2canvas');
+    const { default: jsPDF } = await import('jspdf');
+
+    const canvas = await html2canvas(printRef.current, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pdfWidth - 20; // 10mm margin each side
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 10;
+
+    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight - 20;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight + 10;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight - 20;
+    }
+
+    const userName = getSelectedUserName().replace(/[^a-zA-Z0-9]/g, '_');
+    pdf.save(`OTs_${userName}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const filteredOrders = getFilteredOrders();

@@ -6,8 +6,21 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useModalBack } from '@/hooks/use-modal-back';
 
-const Dialog = DialogPrimitive.Root;
+function Dialog({
+  open,
+  onOpenChange,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  useModalBack(open ?? false, () => onOpenChange?.(false))
+  return (
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange} {...props}>
+      {children}
+    </DialogPrimitive.Root>
+  )
+}
 
 const DialogTrigger = DialogPrimitive.Trigger;
 

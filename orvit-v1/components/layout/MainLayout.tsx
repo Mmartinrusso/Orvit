@@ -103,7 +103,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {/* Bottom Bar - Solo visible en móviles cuando sidebar está cerrado (solo para ciertas rutas) */}
         <div className={cn(
           "md:hidden",
-          pathname === '/maquinas' || pathname.startsWith('/mantenimiento') ? "block" : "hidden"
+          pathname === '/maquinas' || pathname.startsWith('/mantenimiento') || pathname.startsWith('/produccion') || pathname.startsWith('/administracion') ? "block" : "hidden"
         )}>
           {!isSidebarOpen && (
             <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
@@ -125,15 +125,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
           )}
         </div>
         
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-0 h-screen bg-sidebar">
-          <div className="p-2 md:p-3 bg-sidebar">
-            <div className="rounded-xl border border-border/50 bg-card text-card-foreground shadow-sm min-h-[calc(100vh-1rem)]">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-0 h-screen bg-background">
           <NavigationLoader />
-              <PageHeader />
-              <div className="flex flex-col h-full">
-          {children}
-              </div>
-            </div>
+          <PageHeader />
+          <div className={cn(
+            "flex flex-col",
+            (pathname === '/maquinas' || pathname.startsWith('/mantenimiento') || pathname.startsWith('/produccion') || pathname.startsWith('/administracion')) && "pb-16 md:pb-0"
+          )}>
+            {children}
           </div>
         </main>
       </div>

@@ -15,6 +15,12 @@ import {
   ReservaStatus,
   ReservaStatusLabels,
   ReservaStatusColors,
+  TransferStatus,
+  TransferStatusLabels,
+  TransferStatusColors,
+  AdjustmentStatus,
+  AdjustmentStatusLabels,
+  AdjustmentStatusColors,
   Priority,
   PriorityLabels,
   PriorityColors,
@@ -25,6 +31,8 @@ type StatusType =
   | 'despacho'
   | 'devolucion'
   | 'reserva'
+  | 'transferencia'
+  | 'ajuste'
   | 'priority';
 
 interface StatusBadgeProps {
@@ -83,6 +91,18 @@ function getStatusInfo(type: StatusType, status: string): { label: string; color
       return {
         label: ReservaStatusLabels[status as ReservaStatus] || status,
         colorClass: ReservaStatusColors[status as ReservaStatus] || 'bg-muted text-foreground',
+      };
+
+    case 'transferencia':
+      return {
+        label: TransferStatusLabels[status as TransferStatus] || status,
+        colorClass: TransferStatusColors[status as TransferStatus] || 'bg-muted text-foreground',
+      };
+
+    case 'ajuste':
+      return {
+        label: AdjustmentStatusLabels[status as AdjustmentStatus] || status,
+        colorClass: AdjustmentStatusColors[status as AdjustmentStatus] || 'bg-muted text-foreground',
       };
 
     case 'priority':
@@ -172,4 +192,34 @@ export function PriorityBadge({
   size?: 'sm' | 'default';
 }) {
   return <StatusBadge type="priority" status={priority} className={className} size={size} />;
+}
+
+/**
+ * Badge específico para estado de transferencia
+ */
+export function TransferenciaStatusBadge({
+  status,
+  className,
+  size,
+}: {
+  status: TransferStatus;
+  className?: string;
+  size?: 'sm' | 'default';
+}) {
+  return <StatusBadge type="transferencia" status={status} className={className} size={size} />;
+}
+
+/**
+ * Badge específico para estado de ajuste
+ */
+export function AjusteStatusBadge({
+  status,
+  className,
+  size,
+}: {
+  status: AdjustmentStatus;
+  className?: string;
+  size?: 'sm' | 'default';
+}) {
+  return <StatusBadge type="ajuste" status={status} className={className} size={size} />;
 }

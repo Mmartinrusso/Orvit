@@ -8,6 +8,8 @@ export const ALMACEN_MODULES: SidebarModule[] = [
   { id: 'almacen.devoluciones', name: 'Devoluciones', icon: 'PackageX', path: '/almacen/devoluciones', isCore: false, category: 'optional', description: 'Devoluciones de material no utilizado', order: 40 },
   { id: 'almacen.reservas', name: 'Reservas', icon: 'Boxes', path: '/almacen/reservas', isCore: false, category: 'optional', description: 'Reservas activas de stock', order: 50 },
   { id: 'almacen.movimientos', name: 'Movimientos', icon: 'ArrowRightLeft', path: '/almacen/movimientos', isCore: true, category: 'core', description: 'Kardex y historial de movimientos', order: 60 },
+  { id: 'almacen.transferencias', name: 'Transferencias', icon: 'ArrowLeftRight', path: '/almacen/transferencias', isCore: false, category: 'optional', description: 'Transferencias entre depósitos', order: 55 },
+  { id: 'almacen.ajustes', name: 'Ajustes', icon: 'ClipboardMinus', path: '/almacen/ajustes', isCore: false, category: 'optional', description: 'Ajustes de inventario con aprobación', order: 56 },
 ];
 
 export function getAlmacenModuleById(id: string): SidebarModule | undefined {

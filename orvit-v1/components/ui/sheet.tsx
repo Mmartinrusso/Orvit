@@ -6,8 +6,21 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useModalBack } from '@/hooks/use-modal-back';
 
-const Sheet = SheetPrimitive.Root;
+function Sheet({
+  open,
+  onOpenChange,
+  children,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  useModalBack(open ?? false, () => onOpenChange?.(false))
+  return (
+    <SheetPrimitive.Root open={open} onOpenChange={onOpenChange} {...props}>
+      {children}
+    </SheetPrimitive.Root>
+  )
+}
 
 const SheetTrigger = SheetPrimitive.Trigger;
 

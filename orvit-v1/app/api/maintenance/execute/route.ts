@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withGuards } from '@/lib/middleware/withGuards';
 import type { Prisma } from '@prisma/client';
+import { notifyPreventiveCompleted } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -426,6 +427,22 @@ export const POST = withGuards(async (request, ctx) => {
     if (isPreventive) {
       responseData.data.nextMaintenanceDate = updatedRecord.nextMaintenanceDate?.toISOString();
       responseData.data.maintenanceCount = updatedRecord.maintenanceCount;
+
+      // Discord: notificar preventivo completado (fire-and-forget)
+      if (updatedRecord.sectorId) {
+        const nextDateStr = updatedRecord.nextMaintenanceDate
+          ? new Date(updatedRecord.nextMaintenanceDate).toLocaleDateString('es-AR')
+          : 'Sin programar';
+        notifyPreventiveCompleted({
+          templateId: updatedRecord.id,
+          title: title || updatedRecord.title || 'Preventivo',
+          machineName: machineName || updatedRecord.machineName || 'Sin equipo',
+          sectorId: updatedRecord.sectorId,
+          completedBy: assignedToName || 'Sin asignar',
+          nextDate: nextDateStr,
+          notes: notes || undefined,
+        }).catch(err => console.warn('Discord notification failed (preventive completed):', err.message));
+      }
     } else {
       responseData.data.status = updatedRecord.status;
     }

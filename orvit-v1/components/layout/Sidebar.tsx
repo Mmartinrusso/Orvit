@@ -231,6 +231,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const [overlayClickable, setOverlayClickable] = React.useState(false);
   const [showFeedback, setShowFeedback] = React.useState(false);
   const [isSidebarEditMode, setIsSidebarEditMode] = React.useState(false);
+  const [favoritesOpen, setFavoritesOpen] = React.useState(true);
 
   // Admins de empresa (rol contiene 'ADMIN') pueden editar el sidebar
   // Cubre: ADMINISTRADOR, ADMIN, ADMIN_ENTERPRISE, SUPERADMIN, ADMINISTRATOR, ADMIN EMPRESA
@@ -1011,43 +1012,112 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             {/* Buscador de páginas global */}
             <PageSearch />
 
-            {/* Header con información de la empresa */}
-            {currentCompany && (
-              <div className="flex items-center gap-1 px-2 pt-0 pb-2 -mt-1 md:px-3 md:pt-0 md:pb-2">
-                <a
-                  href="/dashboard"
-                  className="flex flex-1 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left outline-none ring-sidebar-ring transition-colors focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  {(() => {
-                    const company = currentCompany as any;
-                    const isDark = theme === 'dark';
-                    const logoUrl = isDark
-                      ? (company?.logoDark || company?.logo)
-                      : (company?.logoLight || company?.logo);
-
-                    return logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt={`Logo de ${currentCompany.name}`}
-                        className="h-6 w-6 shrink-0 object-contain rounded-md"
-                      />
-                    ) : (
-                      <Building2 className="h-6 w-6 shrink-0 text-sidebar-foreground" />
-                    );
-                  })()}
-                  {isOpen && (
-                    <span className="flex-1 min-w-0 text-sm font-semibold text-sidebar-foreground truncate">
-                      {currentCompany.name}
+            {/* Header: User Profile */}
+            <div className="flex flex-col px-2 py-1.5 md:px-3 border-b border-sidebar-ring/20">
+              <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    data-sidebar="menu-button"
+                    data-size="lg"
+                    className={cn(
+                      "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm",
+                      isOpen ? "h-8" : "h-8 w-8 justify-center p-0"
+                    )}
+                  >
+                    <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
+                        <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+                          {user?.name?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
                     </span>
-                  )}
-                </a>
-              </div>
-            )}
-                
+                    {isOpen && (
+                      <>
+                        <div className="grid flex-1 text-left text-sm leading-tight">
+                          <span className="truncate font-medium text-sidebar-foreground">{user?.name || 'Usuario'}</span>
+                          <span className="text-sidebar-foreground/70 truncate text-xs">{user?.email || 'user@example.com'}</span>
+                        </div>
+                        <ModeIndicator className="shrink-0" />
+                        <EllipsisVertical className="ml-auto h-4 w-4 text-sidebar-foreground/70 shrink-0" />
+                      </>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56">
+                  <div className="text-sm p-0 font-normal">
+                    <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                      <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
+                          <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+                            {user?.name?.charAt(0).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </span>
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">{user?.name || 'Usuario'}</span>
+                        <span className="text-muted-foreground truncate text-xs">{user?.email || 'user@example.com'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div role="group">
+                    <DropdownMenuItem onClick={() => {
+                      const configHref = currentArea?.name === 'Administración'
+                        ? '/administracion/configuracion'
+                        : currentArea?.name === 'Mantenimiento'
+                        ? '/mantenimiento/configuracion'
+                        : '/configuracion';
+                      router.push(`${configHref}?tab=profile`);
+                    }}>
+                      <CircleUser className="h-4 w-4" />
+                      <span>Cuenta</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
+                        return;
+                      }
+                      const configHref = currentArea?.name === 'Administración'
+                        ? '/administracion/configuracion'
+                        : currentArea?.name === 'Mantenimiento'
+                        ? '/mantenimiento/configuracion'
+                        : '/configuracion';
+                      router.push(`${configHref}?tab=notifications`);
+                    }}>
+                      <Bell className="h-4 w-4" />
+                      <span>Notificaciones</span>
+                    </DropdownMenuItem>
+                    {canModifySidebar && (
+                      <DropdownMenuItem onClick={() => setIsSidebarEditMode(true)}>
+                        <Settings className="h-4 w-4" />
+                        <span>Configurar sidebar</span>
+                      </DropdownMenuItem>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      try {
+                        await logout();
+                      } catch (error) {
+                        console.error('Error al cerrar sesión:', error);
+                      }
+                    }}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             {/* Content area */}
             <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
             {isOpen ? (
-              <div className="space-y-2 px-2 md:px-3">
+              <div className="space-y-2 px-2 md:px-3 pt-2">
                 {/* Selector de Sector Rápido - Integrado en el header */}
                 {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && (
                   <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
@@ -1614,54 +1684,63 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             )}>
                 {isOpen ? (
               <div className="flex flex-col gap-1">
-                {/* ─── Favoritos (bottom) ─── */}
+                {/* ─── Favoritos (bottom, colapsable) ─── */}
                 {favoriteItems.length > 0 && (
                   <div className="mb-0.5">
-                    <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-sidebar-foreground/50 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setFavoritesOpen(o => !o)}
+                      className="flex items-center gap-1.5 px-2 py-1 w-full text-xs text-sidebar-foreground/50 font-medium hover:text-sidebar-foreground transition-colors rounded-md hover:bg-sidebar-accent group/favhdr"
+                    >
                       <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      <span>Favoritos</span>
-                    </div>
-                    <ul className="flex flex-col gap-0.5">
-                      {favoriteItems.map((favItem) => {
-                        const FavIcon = resolveSidebarIcon(favItem.icon);
-                        const favActive = (() => {
-                          const href = favItem.path;
-                          if (pathname === href) return true;
-                          if (pathname.startsWith(href)) {
-                            const nc = pathname[href.length];
-                            return !nc || nc === '/' || nc === '?';
-                          }
-                          return false;
-                        })();
-                        return (
-                          <li key={favItem.moduleId} className="group/fav flex items-center">
-                            <Link
-                              href={favItem.path}
-                              prefetch={true}
-                              className={cn(
-                                'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm flex-1 transition-colors',
-                                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                                favActive && 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                              )}
-                            >
-                              <FavIcon className="h-4 w-4 shrink-0" />
-                              <span className="flex-1 truncate">{favItem.name}</span>
-                            </Link>
-                            <button
-                              type="button"
-                              className="opacity-0 group-hover/fav:opacity-100 p-1 mr-1 rounded hover:bg-sidebar-accent transition-opacity shrink-0"
-                              onClick={(e) => { e.preventDefault(); toggleFavorite(favItem.moduleId); }}
-                              title="Quitar de favoritos"
-                            >
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    <div className="h-px mx-2 bg-sidebar-ring/20 mt-1 mb-1" />
+                      <span className="flex-1 text-left">Favoritos</span>
+                      <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", !favoritesOpen && "-rotate-90")} />
+                    </button>
+                    {favoritesOpen && (
+                      <ul className="flex flex-col gap-0.5 mt-0.5">
+                        {favoriteItems.map((favItem) => {
+                          const FavIcon = resolveSidebarIcon(favItem.icon);
+                          const favActive = (() => {
+                            const href = favItem.path;
+                            if (pathname === href) return true;
+                            if (pathname.startsWith(href)) {
+                              const nc = pathname[href.length];
+                              return !nc || nc === '/' || nc === '?';
+                            }
+                            return false;
+                          })();
+                          return (
+                            <li key={favItem.moduleId} className="group/fav flex items-center">
+                              <Link
+                                href={favItem.path}
+                                prefetch={true}
+                                className={cn(
+                                  'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm flex-1 transition-colors',
+                                  'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                  favActive && 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+                                )}
+                              >
+                                <FavIcon className="h-4 w-4 shrink-0" />
+                                <span className="flex-1 truncate">{favItem.name}</span>
+                              </Link>
+                              <button
+                                type="button"
+                                className="opacity-0 group-hover/fav:opacity-100 p-1 mr-1 rounded hover:bg-sidebar-accent transition-opacity shrink-0"
+                                onClick={(e) => { e.preventDefault(); toggleFavorite(favItem.moduleId); }}
+                                title="Quitar de favoritos"
+                              >
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 )}
+
+                {/* Divisor antes de Feedback */}
+                <div className="h-[1.5px] bg-sidebar-ring/40 mx-1 my-1.5" />
 
                 {/* Feedback */}
                 <button
@@ -1673,63 +1752,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   <span>Feedback</span>
                 </button>
 
-                {/* Configuración */}
-                    {(() => {
-                  const configHref = currentArea?.name === 'Administración'
-                    ? '/administracion/configuracion'
-                    : currentArea?.name === 'Mantenimiento'
-                    ? '/mantenimiento/configuracion'
-                    : '/configuracion';
-
-                  const isConfigActive = pathname === configHref ||
-                    (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
-
-                  return (
-                    <div className="flex items-center gap-0.5">
-                      <Link
-                        href={configHref}
-                        className={cn(
-                          "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors flex-1",
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm",
-                          isConfigActive && "border-l-2 border-l-sidebar-primary-foreground"
-                        )}
-                      >
-                        <Settings className="h-4 w-4 shrink-0" />
-                        <span>Configuración</span>
-                      </Link>
-                      {isEditableArea && canModifySidebar && !isSidebarEditMode && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => setIsSidebarEditMode(true)}
-                              className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-muted-foreground hover:bg-sidebar-accent transition-colors shrink-0"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">Editar sidebar</TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                  );
-                    })()}
-                
-
-                {/* Notificaciones */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
-                    }
-                  }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-                >
-                  <Bell className="h-4 w-4 shrink-0" />
-                  <span>Notificaciones</span>
-                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1">
@@ -1782,176 +1804,43 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   </TooltipContent>
                 </Tooltip>
 
-                {(() => {
-                  const configHref = currentArea?.name === 'Administración'
-                    ? '/administracion/configuracion'
-                    : currentArea?.name === 'Mantenimiento'
-                    ? '/mantenimiento/configuracion'
-                    : '/configuracion';
-
-                  const isConfigActive = pathname === configHref ||
-                    (pathname.startsWith(configHref) && (!pathname[configHref.length] || pathname[configHref.length] === '/' || pathname[configHref.length] === '?'));
-
-                  return (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link
-                            href={configHref}
-                            className={cn(
-                              "flex items-center justify-center w-8 h-8 rounded-md transition-colors",
-                              "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                              isConfigActive && "bg-sidebar-primary text-sidebar-primary-foreground"
-                            )}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={8}>
-                          Configuración
-                        </TooltipContent>
-                      </Tooltip>
-                      {isEditableArea && canModifySidebar && !isSidebarEditMode && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => setIsSidebarEditMode(true)}
-                              className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-sidebar-accent transition-colors"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" sideOffset={8}>
-                            Editar sidebar
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </>
-                  );
-                })()}
-                {/* Notificaciones (collapsed) */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
-                        }
-                      }}
-                      className="flex items-center justify-center w-8 h-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                    >
-                      <Bell className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={12}>
-                    Notificaciones
-                  </TooltipContent>
-                </Tooltip>
                   </div>
                 )}
               </div>
 
-          {/* Footer: User Profile */}
-          <div className="flex flex-col gap-2 p-2 md:p-3">
-            <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  data-sidebar="menu-button"
-                  data-size="lg"
-                  className={cn(
-                    "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm",
-                    isOpen ? "h-12" : "h-12 w-12 justify-center p-0"
-                  )}
+            {/* Company - very bottom */}
+            {currentCompany && (
+              <div className="flex items-center gap-1 px-2 pb-2 pt-1 md:px-3 border-t border-sidebar-ring/20">
+                <a
+                  href="/dashboard"
+                  className="flex flex-1 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left outline-none ring-sidebar-ring transition-colors focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
-                  <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
-                      <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                        {user?.name?.charAt(0).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </span>
-                  {isOpen && (
-                    <>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-medium text-sidebar-foreground">{user?.name || 'Usuario'}</span>
-                        <span className="text-sidebar-foreground/70 truncate text-xs">{user?.email || 'user@example.com'}</span>
-            </div>
-                      <ModeIndicator className="shrink-0" />
-                      <EllipsisVertical className="ml-auto h-4 w-4 text-sidebar-foreground/70 shrink-0" />
-                    </>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56">
-                <div className="text-sm p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'Usuario'} />
-                        <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                          {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </span>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{user?.name || 'Usuario'}</span>
-                      <span className="text-muted-foreground truncate text-xs">{user?.email || 'user@example.com'}</span>
-                    </div>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <div role="group">
-                  <DropdownMenuItem onClick={() => {
-                    const configHref = currentArea?.name === 'Administración' 
-                      ? '/administracion/configuracion' 
-                      : currentArea?.name === 'Mantenimiento'
-                      ? '/mantenimiento/configuracion'
-                      : '/configuracion';
-                    router.push(`${configHref}?tab=profile`);
-                  }}>
-                    <CircleUser className="h-4 w-4" />
-                    <span>Cuenta</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    // Abrir el modal/panel de notificaciones (global)
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('orvit:notifications:open'));
-                    return;
-                  }
+                  {(() => {
+                    const company = currentCompany as any;
+                    const isDark = theme === 'dark';
+                    const logoUrl = isDark
+                      ? (company?.logoDark || company?.logo)
+                      : (company?.logoLight || company?.logo);
 
-                    // Fallback (SSR): ir a configuración -> notificaciones
-                    const configHref = currentArea?.name === 'Administración' 
-                      ? '/administracion/configuracion' 
-                      : currentArea?.name === 'Mantenimiento'
-                      ? '/mantenimiento/configuracion'
-                      : '/configuracion';
-                    router.push(`${configHref}?tab=notifications`);
-                  }}>
-                    <Bell className="h-4 w-4" />
-                    <span>Notificaciones</span>
-                  </DropdownMenuItem>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                    onClick={async () => {
-                      try {
-                        await logout();
-                      } catch (error) {
-                        console.error('Error al cerrar sesión:', error);
-                      }
-                    }}
-                  className="text-destructive focus:text-destructive"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Cerrar sesión</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    return logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt={`Logo de ${currentCompany.name}`}
+                        className="h-6 w-6 shrink-0 object-contain rounded-md"
+                      />
+                    ) : (
+                      <Building2 className="h-6 w-6 shrink-0 text-sidebar-foreground" />
+                    );
+                  })()}
+                  {isOpen && (
+                    <span className="flex-1 min-w-0 text-sm font-semibold text-sidebar-foreground truncate">
+                      {currentCompany.name}
+                    </span>
+                  )}
+                </a>
               </div>
+            )}
+
         </div>
         </div>
       </aside>

@@ -192,13 +192,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate priority
+    const validPriorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    const resolvedPriority = priority || 'MEDIUM';
+    if (!validPriorities.includes(resolvedPriority)) {
+      return NextResponse.json(
+        { error: `Prioridad inválida. Válidas: ${validPriorities.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
     const idea = await prisma.idea.create({
       data: {
         companyId,
         title,
         description,
         category,
-        priority: priority || 'MEDIUM',
+        priority: resolvedPriority,
         machineId: machineId ? parseInt(machineId) : null,
         componentId: componentId ? parseInt(componentId) : null,
         failureOccurrenceId: failureOccurrenceId ? parseInt(failureOccurrenceId) : null,

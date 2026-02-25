@@ -87,6 +87,29 @@ export async function POST(
       console.warn('QA update failed (ignoring):', qaError);
     }
 
+    // Notificaciones in-app (fire-and-forget)
+    const notifTargets = new Set<number>();
+    if (workOrder.assignedToId) notifTargets.add(workOrder.assignedToId);
+    if (workOrder.createdById && workOrder.createdById !== userId) notifTargets.add(workOrder.createdById);
+
+    if (notifTargets.size > 0) {
+      Promise.all(
+        Array.from(notifTargets).map(targetUserId =>
+          prisma.notification.create({
+            data: {
+              type: 'system_alert',
+              title: 'Retorno a producción confirmado',
+              message: `La OT #${workOrderId} fue confirmada como lista para retornar a producción.`,
+              userId: targetUserId,
+              companyId,
+              priority: 'MEDIUM',
+              metadata: { workOrderId, confirmedById: userId },
+            }
+          })
+        )
+      ).catch(() => {});
+    }
+
     return NextResponse.json({
       success: true,
       workOrder: updatedWorkOrder,

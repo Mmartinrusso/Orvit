@@ -88,7 +88,7 @@ const TabsList = React.forwardRef<
     className={cn(
       // Estándar: h-9, responsive, scroll horizontal en mobile
       'relative inline-flex h-9 items-center justify-start rounded-md border border-border bg-muted/40 p-1 text-muted-foreground',
-      'w-full sm:w-fit overflow-x-auto gap-0.5',
+      'w-full sm:w-fit overflow-x-auto overflow-y-hidden hide-scrollbar gap-0.5',
       className
     )}
     {...props}

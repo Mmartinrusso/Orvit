@@ -10,19 +10,16 @@ export const dynamic = 'force-dynamic';
 export const GET = withGuards(async (request: NextRequest, { user }) => {
   try {
     const { searchParams } = new URL(request.url);
-    let companyId: string | null = searchParams.get('companyId');
     const sectorId = searchParams.get('sectorId');
     const search = searchParams.get('search');
     const limit = searchParams.get('limit');
 
-    // Si no se proporciona companyId, usar el de la empresa del usuario autenticado
-    if (!companyId || companyId === 'undefined') {
-      companyId = user.companyId.toString();
-    }
+    // Siempre usar companyId del usuario autenticado (no confiar en query param)
+    const companyId = user.companyId;
 
     // Construir filtro dinámico
     const where: any = {
-      companyId: parseInt(companyId)
+      companyId
     };
 
     // Filtrar por sectorId si se proporciona

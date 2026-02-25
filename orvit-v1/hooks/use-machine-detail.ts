@@ -299,6 +299,9 @@ export function useMachineWorkOrders(
 
         // Add pending instances as work orders
         if (template.instances && Array.isArray(template.instances)) {
+          // Use template-level lastMaintenanceDate as the ground truth for last execution
+          const lastCompletedDate = template.lastMaintenanceDate || null;
+
           for (const instance of template.instances) {
             preventiveOrders.push({
               id: `prev-${template.id}-${instance.scheduledDate}`,
@@ -315,11 +318,17 @@ export function useMachineWorkOrders(
               assignedTo: template.assignedToName ? { id: template.assignedToId, name: template.assignedToName } : null,
               component: template.componentNames?.[0] ? { id: template.componentIds?.[0], name: template.componentNames[0] } : null,
               componentId: template.componentIds?.[0],
-              componentIds: template.componentIds || [], // todos los componentes del plan
+              componentIds: template.componentIds || [],
+              subcomponentIds: template.subcomponentIds || [],
               createdAt: template.createdAt,
               _isPreventiveTemplate: true,
               _templateId: template.id,
-              _frequencyDays: template.frequencyDays
+              _instanceId: instance.id,
+              _frequencyDays: template.frequencyDays,
+              _lastCompletedDate: lastCompletedDate,
+              _toolsRequired: template.toolsRequired || [],
+              _timeValue: template.timeValue,
+              _assignedToId: template.assignedToId,
             });
           }
         }

@@ -349,6 +349,9 @@ model Company {
   // Feature Flags
   featureFlags FeatureFlag[]
 
+  // Conteo Físico de Pañol
+  stockCountSessions StockCountSession[]
+
   @@index([subscriptionId])
   @@index([primaryAdminId])
   @@index([templateId])
@@ -734,6 +737,9 @@ model User {
   preventiveTemplatesCreated   PreventiveTemplate[]  @relation("PreventiveTemplateCreator")
   preventiveInstancesCompleted PreventiveInstance[]   @relation("PreventiveInstanceCompletedBy")
 
+  // Conteo Físico de Pañol
+  stockCountSessionsCreated StockCountSession[] @relation("StockCountCreatedBy")
+
   @@index([role, isActive])
   @@index([isActive])
   @@map("User")
@@ -1088,6 +1094,9 @@ model Machine {
   // === Mantenimiento Preventivo ===
   preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateMachine")
 
+  // Solicitudes de compra vinculadas a esta máquina
+  purchaseRequestItems PurchaseRequestItem[] @relation("RequestItemMachine")
+
   // === Performance Indexes ===
   @@index([companyId])
   @@index([sectorId])
@@ -1274,6 +1283,9 @@ model Component {
   // === CMMS: Management of Change (MOC) ===
   managementOfChanges ManagementOfChange[]
 
+  // Solicitudes de compra vinculadas a este componente
+  purchaseRequestItems PurchaseRequestItem[] @relation("RequestItemComponent")
+
   // === Performance Indexes ===
   @@index([machineId])
   @@index([parentId])
@@ -1345,6 +1357,12 @@ model Tool {
   materialRequestItems MaterialRequestItem[]
   despachoItems        DespachoItem[]
   devolucionItems      DevolucionMaterialItem[]
+  // Puente Compras ↔ Pañol: qué SupplierItems representan este Tool
+  supplierItems        SupplierItem[]             @relation("SupplierItemTool")
+  // Solicitudes de compra vinculadas a este repuesto
+  purchaseRequestItems PurchaseRequestItem[]      @relation("RequestItemTool")
+  // Conteo Físico
+  stockCountItems StockCountItem[]
 
   @@map("Tool")
 }
@@ -4895,6 +4913,9 @@ model SupplierItem {
   companyId                Int
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
+  // Puente Compras ↔ Pañol: link opcional al Tool del pañol
+  toolId                   Int?
+  tool                     Tool?                     @relation("SupplierItemTool", fields: [toolId], references: [id])
   priceHistory             PriceHistory[]
   receiptItems             PurchaseReceiptItem[]
   stock                    Stock?
@@ -4931,6 +4952,7 @@ model SupplierItem {
   @@index([supplyId])
   @@index([companyId])
   @@index([activo])
+  @@index([toolId])
   @@map("SupplierItem")
 }
 
@@ -5292,6 +5314,12 @@ enum LoanStatus {
   BORROWED
   RETURNED
   OVERDUE
+}
+
+enum StockCountStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 enum ReservationStatus {
@@ -7896,14 +7924,22 @@ model PurchaseRequestItem {
   descripcion      String  @db.VarChar(500)
   cantidad         Decimal @db.Decimal(15, 4)
   unidad           String  @db.VarChar(50)
-  supplierItemId   Int? // Opcional: si ya sabe qué item
+  supplierItemId   Int? // Opcional: si ya sabe qué item del proveedor
   especificaciones String? // Detalles técnicos
+  // Contexto: "para qué compro esto"
+  toolId           Int? // Repuesto del pañol que se está reponiendo
+  componentId      Int? // Componente de máquina que lo necesita
+  machineId        Int? // Máquina que lo necesita
 
   request        PurchaseRequest         @relation(fields: [requestId], references: [id], onDelete: Cascade)
   supplierItem   SupplierItem?           @relation("RequestItemSupplierItem", fields: [supplierItemId], references: [id])
+  tool           Tool?                   @relation("RequestItemTool", fields: [toolId], references: [id])
+  component      Component?              @relation("RequestItemComponent", fields: [componentId], references: [id])
+  machine        Machine?                @relation("RequestItemMachine", fields: [machineId], references: [id])
   quotationItems PurchaseQuotationItem[]
 
   @@index([requestId])
+  @@index([toolId])
   @@map("purchase_request_items")
 }
 
@@ -16104,4 +16140,47 @@ model TaskGroup {
 
   @@index([companyId])
   @@map("task_groups")
+}
+
+// ─── Conteo Físico de Pañol ──────────────────────────────────────────
+
+model StockCountSession {
+  id             Int              @id @default(autoincrement())
+  companyId      Int
+  status         StockCountStatus @default(IN_PROGRESS)
+  categoryFilter String?
+  locationFilter String?
+  totalItems     Int              @default(0)
+  countedItems   Int              @default(0)
+  adjustedItems  Int              @default(0)
+  startedAt      DateTime         @default(now())
+  completedAt    DateTime?
+  createdById    Int
+
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User             @relation("StockCountCreatedBy", fields: [createdById], references: [id])
+  items     StockCountItem[]
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@map("stock_count_sessions")
+}
+
+model StockCountItem {
+  id         Int      @id @default(autoincrement())
+  sessionId  Int
+  toolId     Int
+  systemQty  Int
+  countedQty Int?
+  difference Int      @default(0)
+  notes      String?
+  status     String   @default("pending") // pending | counted | adjusted
+  adjustedAt DateTime?
+
+  session StockCountSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tool    Tool              @relation(fields: [toolId], references: [id])
+
+  @@unique([sessionId, toolId])
+  @@index([sessionId])
+  @@map("stock_count_items")
 }

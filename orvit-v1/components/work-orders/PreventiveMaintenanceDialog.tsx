@@ -2,6 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Machine, MachineComponent, Priority, ExecutionWindow, TimeUnit } from '@/lib/types';
+import { EquipmentStep } from './preventive-steps/EquipmentStep';
+import { GeneralStep } from './preventive-steps/GeneralStep';
+import { ToolsStep } from './preventive-steps/ToolsStep';
+import { InstructivesStep } from './preventive-steps/InstructivesStep';
+import { ScheduleStep } from './preventive-steps/ScheduleStep';
+import { SummaryStep } from './preventive-steps/SummaryStep';
+import type { ToolRequest } from './preventive-steps/types';
 import {
   Dialog,
   DialogContent,
@@ -9,47 +16,21 @@ import {
   DialogTitle,
   DialogDescription,
   DialogBody,
-  DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
   Calendar,
   Clock,
   Wrench,
   Settings,
   User,
-  AlertTriangle,
-  Hammer,
-  Plus,
   X,
   Search,
-  Info,
-  Package,
   Cog,
-  FileText,
-  Upload,
-  Eye,
-  Trash2,
   History,
   ChevronLeft,
   ChevronRight,
@@ -62,15 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMachinesInitial } from '@/hooks/use-machines-initial';
 import { Step, Stepper } from '@/components/ui/stepper';
 import { MaintenanceSummaryBar } from './MaintenanceSummaryBar';
-import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import ComponentDialog from '@/components/maquinas/ComponentDialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { SectionCard } from './SectionCard';
-import { EmptyState } from './EmptyState';
-import { SelectionSummaryChips } from './SelectionSummaryChips';
-import { Switch } from '@/components/ui/switch';
-import { cn } from '@/lib/utils';
 
 interface PreventiveMaintenanceDialogProps {
   isOpen: boolean;
@@ -82,14 +55,6 @@ interface PreventiveMaintenanceDialogProps {
   preselectedComponentId?: string | number; // ID del componente (nivel 1) preseleccionado
   preselectedParentComponentId?: string; // ID del componente padre preseleccionado
   preselectedSubcomponentId?: string | number; // ID del subcomponente preseleccionado
-}
-
-interface ToolRequest {
-  id: string;
-  name: string;
-  quantity: number;
-  category?: string;
-  location?: string;
 }
 
 // ✅ OPTIMIZACIÓN: Desactivar logs en producción
@@ -1413,1091 +1378,100 @@ export default function PreventiveMaintenanceDialog({
               <div className="max-w-6xl mx-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsContent value="equipment" className="space-y-6 mt-0">
-                    <SectionCard
-                      title="Selección de Equipamiento"
-                      icon={Wrench}
-                      description="Seleccione la máquina, componente y subcomponente específico"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Máquina */}
-                        <div className="space-y-2">
-                          <Label htmlFor="machine" className="text-xs font-medium">
-                            Máquina <span className="text-destructive">*</span>
-                          </Label>
-                    <Select
-                      value={formData.machineId}
-                      onValueChange={(value) => {
-                        handleInputChange('machineId', value);
-                        clearFieldError('machineId');
-                      }}
-                    >
-                      <SelectTrigger className={cn(
-                        validationErrors.machineId ? 'border-destructive ring-destructive/20 ring-2' : ''
-                      )}>
-                        <SelectValue placeholder="Seleccionar máquina" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {machines.length === 0 ? (
-                          <SelectItem value="no-machines" disabled>No hay máquinas disponibles</SelectItem>
-                        ) : (
-                          machines.map((machine) => (
-                            <SelectItem key={machine.id} value={machine.id.toString()}>
-                                    {machine.name} {machine.nickname && `(${machine.nickname})`}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {validationErrors.machineId && (
-                      <p className="text-xs text-destructive font-medium">{validationErrors.machineId}</p>
-                    )}
-                  </div>
-
-                        {/* Componentes */}
-                        <div className="space-y-2">
-                          <Label htmlFor="components" className="text-xs font-medium">
-                            Componentes (selección múltiple)
-                          </Label>
-                      {!formData.machineId ? (
-                            <EmptyState
-                              icon={Wrench}
-                              title="Selecciona una máquina primero"
-                              subtitle="Para cargar los componentes disponibles"
-                            />
-                      ) : loadingComponents ? (
-                            <div className="flex items-center justify-center py-8 border rounded-lg">
-                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                              <span className="ml-2 text-sm text-muted-foreground">Cargando componentes...</span>
-                            </div>
-                          ) : (
-                            <MultiSelect
-                              options={components.map(c => ({ value: c.id.toString(), label: c.name }))}
-                              selected={formData.componentIds}
-                              onChange={(selected) => setFormData(prev => ({ ...prev, componentIds: selected }))}
-                              placeholder="Seleccionar o crear componente..."
-                              emptyMessage="No hay componentes. Escribí un nombre para crear uno."
-                              searchPlaceholder="Buscar componentes..."
-                              onCreateNew={handleCreateComponent}
-                            />
-                          )}
-                  </div>
-
-                        {/* Subcomponentes */}
-                        <div className="space-y-2">
-                          <Label htmlFor="subcomponents" className="text-xs font-medium">
-                            Subcomponentes (selección múltiple)
-                          </Label>
-                      {formData.componentIds.length === 0 ? (
-                            <EmptyState
-                              icon={Cog}
-                              title="Selecciona componentes primero"
-                              subtitle="Para cargar los subcomponentes disponibles"
-                            />
-                      ) : loadingSubcomponents ? (
-                            <div className="flex items-center justify-center py-8 border rounded-lg">
-                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                              <span className="ml-2 text-sm text-muted-foreground">Cargando subcomponentes...</span>
-                            </div>
-                          ) : (
-                            <MultiSelect
-                              options={subcomponents.map(s => ({ value: s.id.toString(), label: s.name }))}
-                              selected={formData.subcomponentIds}
-                              onChange={(selected) => setFormData(prev => ({ ...prev, subcomponentIds: selected }))}
-                              placeholder="Seleccionar o crear subcomponente..."
-                              emptyMessage="No hay subcomponentes. Escribí un nombre para crear uno."
-                              searchPlaceholder="Buscar subcomponentes..."
-                              disabled={formData.componentIds.length === 0}
-                              onCreateNew={handleCreateSubcomponent}
-                            />
-                          )}
-                  </div>
-                </div>
-
-                {/* Resumen de selección */}
-                      <SelectionSummaryChips
-                        machineName={selectedMachine?.name}
-                        componentNames={selectedComponents.map(c => c.name)}
-                        subcomponentNames={selectedSubcomponents.map(s => s.name)}
-                        onClear={() => {
-                          setFormData(prev => ({ ...prev, componentIds: [], subcomponentIds: [] }));
-                        }}
-                        className="mt-6"
-                      />
-                    </SectionCard>
-          </TabsContent>
+                    <EquipmentStep
+                      formData={formData}
+                      setFormData={setFormData}
+                      validationErrors={validationErrors}
+                      clearFieldError={clearFieldError}
+                      handleInputChange={handleInputChange}
+                      machines={machines}
+                      components={components}
+                      subcomponents={subcomponents}
+                      loadingComponents={loadingComponents}
+                      loadingSubcomponents={loadingSubcomponents}
+                      selectedMachine={selectedMachine}
+                      selectedComponents={selectedComponents}
+                      selectedSubcomponents={selectedSubcomponents}
+                      handleCreateComponent={handleCreateComponent}
+                      handleCreateSubcomponent={handleCreateSubcomponent}
+                    />
+                  </TabsContent>
 
                   <TabsContent value="general" className="space-y-6 mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Información General */}
-                      <SectionCard
-                        title="Información General"
-                        icon={Info}
-                        description="Datos básicos del mantenimiento preventivo"
-                      >
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="title" className="text-xs font-medium">
-                              Título <span className="text-destructive">*</span>
-                            </Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => {
-                        handleInputChange('title', e.target.value);
-                        clearFieldError('title');
-                      }}
-                      placeholder="Ej: Lubricación de rodamientos"
-                              className={cn(
-                                validationErrors.title ? 'border-destructive ring-destructive/20 ring-2' : '',
-                                !formData.title.trim() && !validationErrors.title ? 'border-destructive/50' : ''
-                              )}
+                    <GeneralStep
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                      clearFieldError={clearFieldError}
+                      validationErrors={validationErrors}
+                      users={users}
                     />
-                            {validationErrors.title ? (
-                              <p className="text-xs text-destructive font-medium">{validationErrors.title}</p>
-                            ) : (
-                            <p className="text-xs text-muted-foreground">
-                              Nombre descriptivo del mantenimiento
-                            </p>
-                            )}
-                  </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="description" className="text-xs font-medium">
-                              Descripción
-                            </Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder="Describa el procedimiento de mantenimiento..."
-                      rows={4}
-                              className="resize-none"
-                    />
-                            <p className="text-xs text-muted-foreground">
-                              Detalles del procedimiento a realizar
-                            </p>
-                  </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="priority" className="text-xs font-medium">
-                              Prioridad <span className="text-destructive">*</span>
-                            </Label>
-                    <Select
-                      value={formData.priority}
-                      onValueChange={(value) => handleInputChange('priority', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={Priority.LOW}>
-                          <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-muted-foreground rounded-full"></div>
-                            Baja
-                          </div>
-                        </SelectItem>
-                        <SelectItem value={Priority.MEDIUM}>
-                          <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-warning rounded-full"></div>
-                            Media
-                          </div>
-                        </SelectItem>
-                        <SelectItem value={Priority.HIGH}>
-                          <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-warning rounded-full"></div>
-                            Alta
-                          </div>
-                        </SelectItem>
-                        <SelectItem value={Priority.URGENT}>
-                          <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 bg-destructive rounded-full"></div>
-                            Urgente
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                            <p className="text-xs text-muted-foreground">
-                              Nivel de urgencia del mantenimiento
-                            </p>
-                  </div>
-                        </div>
-                      </SectionCard>
-
-                      {/* Asignación */}
-                      <SectionCard
-                        title="Asignación"
-                        icon={User}
-                        description="Técnico responsable y configuración"
-                      >
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="assignedTo" className="text-xs font-medium">
-                              Técnico Asignado
-                            </Label>
-                    <Select
-                      value={formData.assignedToId}
-                      onValueChange={(value) => handleInputChange('assignedToId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar técnico" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Sin asignar</SelectItem>
-                        
-                        {/* Usuarios del Sistema */}
-                        {users.filter(user => user.type === 'USER').length > 0 && (
-                          <>
-                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50 border-b">
-                              Usuarios del Sistema
-                            </div>
-                            {users.filter(user => user.type === 'USER').map((user) => (
-                              <SelectItem key={user.id} value={user.id.toString()}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{user.name}</span>
-                                          <Badge variant="secondary" className="bg-info-muted text-info-muted-foreground text-xs ml-2">
-                                    {user.role === 'ADMIN' || user.role === 'SUPERADMIN' ? 'Admin' : 'Usuario'}
-                                  </Badge>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </>
-                        )}
-
-                        {/* Operarios */}
-                        {users.filter(user => user.type === 'WORKER').length > 0 && (
-                          <>
-                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50 border-b">
-                              Operarios
-                            </div>
-                            {users.filter(user => user.type === 'WORKER').map((user) => (
-                              <SelectItem key={user.id} value={user.id.toString()}>
-                                <div className="flex items-center justify-between w-full">
-                                  <div className="flex flex-col items-start">
-                                    <span>{user.name}</span>
-                                    {user.specialty && (
-                                      <span className="text-xs text-muted-foreground">
-                                        {user.specialty}
-                                      </span>
-                                    )}
-                                  </div>
-                                          <Badge variant="secondary" className="bg-success-muted text-success text-xs ml-2">
-                                    Operario
-                                  </Badge>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                            <p className="text-xs text-muted-foreground">
-                              Persona responsable de ejecutar el mantenimiento
-                            </p>
-                  </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="notes" className="text-xs font-medium">
-                              Notas Adicionales
-                            </Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange('notes', e.target.value)}
-                      placeholder="Instrucciones especiales, precauciones..."
-                      rows={3}
-                              className="resize-none"
-                    />
-                            <p className="text-xs text-muted-foreground">
-                              Información adicional para el técnico
-                            </p>
-                  </div>
-
-                          <Separator />
-
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="isActive" className="text-xs font-medium">
-                                Mantenimiento activo
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                El mantenimiento se ejecutará según la programación
-                              </p>
-                            </div>
-                            <Switch
-                      id="isActive"
-                      checked={formData.isActive}
-                      onCheckedChange={(checked) => handleInputChange('isActive', checked)}
-                    />
-                  </div>
-                        </div>
-                      </SectionCard>
-            </div>
-          </TabsContent>
+                  </TabsContent>
 
                   <TabsContent value="tools" className="space-y-6 mt-0">
-              {/* Sección de herramientas generales y repuestos específicos */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Herramientas Generales */}
-                      <SectionCard
-                        title="Herramientas Generales"
-                        icon={Hammer}
-                        description="Herramientas del pañol de uso general"
-                      >
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar herramientas..."
-                          value={toolSearchTerm}
-                          onChange={(e) => setToolSearchTerm(e.target.value)}
-                          className="pl-10 pr-10"
-                        />
-                        {toolSearchTerm && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                            onClick={() => setToolSearchTerm('')}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-
-                          <ScrollArea className="h-[320px]">
-                            <div className="space-y-2 pr-4">
-                        {loadingTools ? (
-                          <div className="flex items-center justify-center py-12">
-                                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                  <span className="ml-2 text-sm text-muted-foreground">Cargando herramientas...</span>
-                          </div>
-                        ) : filteredTools.length === 0 ? (
-                                <EmptyState
-                                  icon={Hammer}
-                                  title={toolSearchTerm ? 'No se encontraron herramientas' : 'No hay herramientas disponibles'}
-                                  subtitle={toolSearchTerm ? 'Intente con otro término de búsqueda' : 'Las herramientas se cargarán desde el pañol'}
-                                />
-                        ) : (
-                          filteredTools.map((tool) => (
-                            <div
-                              key={tool.id}
-                                    className="flex items-center justify-between p-2.5 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                              onClick={() => addTool(tool)}
-                            >
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-xs truncate">{tool.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {tool.category?.name || 'Sin categoría'} • {tool.location?.name || 'Sin ubicación'}
-                                </p>
-                                {tool.stockQuantity !== undefined && (
-                                        <Badge variant="outline" className="text-xs mt-1 bg-info-muted text-info-muted-foreground border-info-muted">
-                                          Stock: {tool.stockQuantity}
-                                        </Badge>
-                                )}
-                              </div>
-                                    <Button variant="outline" size="sm" className="ml-2 shrink-0">
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                          </ScrollArea>
-                    </div>
-                      </SectionCard>
-
-                {/* Repuestos Específicos */}
-                      <SectionCard
-                        title="Repuestos Específicos"
-                        icon={Cog}
-                        description={selectedMachine 
-                          ? `Repuestos asociados a ${selectedMachine.name}${selectedComponents.length > 0 ? ` - ${selectedComponents.map(c => c.name).join(', ')}` : ''}`
-                          : 'Repuestos asociados a la máquina seleccionada'
-                        }
-                      >
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar repuestos..."
-                          value={spareSearchTerm}
-                          onChange={(e) => setSpareSearchTerm(e.target.value)}
-                          className="pl-10 pr-10"
-                          disabled={!formData.machineId}
-                        />
-                        {spareSearchTerm && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                            onClick={() => setSpareSearchTerm('')}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-
-                          <ScrollArea className="h-[320px]">
-                            <div className="space-y-2 pr-4">
-                        {!formData.machineId ? (
-                                <EmptyState
-                                  icon={Cog}
-                                  title="Seleccione una máquina"
-                                  subtitle="Para ver sus repuestos específicos"
-                                />
-                        ) : loadingSpares ? (
-                          <div className="flex items-center justify-center py-12">
-                                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                  <span className="ml-2 text-sm text-muted-foreground">Cargando repuestos...</span>
-                          </div>
-                        ) : filteredSpares.length === 0 ? (
-                                <EmptyState
-                                  icon={Cog}
-                                  title={spareSearchTerm ? 'No se encontraron repuestos' : 'No hay repuestos específicos'}
-                                  subtitle={spareSearchTerm ? 'Intente con otro término' : 'Esta máquina no tiene repuestos asociados'}
-                                />
-                        ) : (
-                          filteredSpares.map((spare) => (
-                            <div
-                              key={spare.tool.id}
-                                    className="flex items-center justify-between p-2.5 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                              onClick={() => addSpare(spare)}
-                            >
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-xs truncate">{spare.tool.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                        {spare.tool.category || 'Sin categoría'}
-                                        {spare.tool.stockQuantity !== undefined && ` • Stock: ${spare.tool.stockQuantity}`}
-                                </p>
-                                      {spare.components.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-1.5">
-                                          {spare.components.slice(0, 2).map((comp: any) => (
-                                    <Badge key={comp.id} variant="secondary" className="text-xs">
-                                      {comp.name} ({comp.quantityNeeded})
-                                    </Badge>
-                                  ))}
-                                          {spare.components.length > 2 && (
-                                            <Badge variant="secondary" className="text-xs">
-                                              +{spare.components.length - 2}
-                                            </Badge>
-                                          )}
-                                </div>
-                                      )}
-                              </div>
-                                    <Button variant="outline" size="sm" className="ml-2 shrink-0">
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                          </ScrollArea>
-                    </div>
-                      </SectionCard>
-              </div>
-
-              {/* Productos Seleccionados */}
-                    {selectedTools.length > 0 && (
-                      <SectionCard
-                        title={`Seleccionados (${selectedTools.length})`}
-                        icon={Package}
-                        description="Productos agregados a este mantenimiento"
-                      >
-                        <div className="space-y-2">
-                          <div className="flex justify-end mb-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedTools([])}
-                              className="h-7 text-xs"
-                            >
-                              <X className="h-3 w-3 mr-1" />
-                              Quitar todo
-                            </Button>
-                          </div>
-                          <ScrollArea className="h-[200px]">
-                            <div className="space-y-2 pr-4">
-                              {selectedTools.map((tool) => (
-                        <div
-                          key={tool.id}
-                                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30"
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-xs truncate">{tool.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                              {tool.category} • {tool.location}
-                            </p>
-                          </div>
-                                  <div className="flex items-center gap-2 ml-4">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={tool.quantity}
-                              onChange={(e) => updateToolQuantity(tool.id, Number(e.target.value))}
-                                      className="w-20 h-8 text-sm"
-                            />
-                            <Button
-                                      variant="ghost"
-                              size="sm"
-                              onClick={() => removeTool(tool.id)}
-                                      className="h-8 w-8 p-0"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                              ))}
-                  </div>
-                          </ScrollArea>
-            </div>
-                      </SectionCard>
-                    )}
-          </TabsContent>
+                    <ToolsStep
+                      formData={formData}
+                      selectedTools={selectedTools}
+                      setSelectedTools={setSelectedTools}
+                      toolSearchTerm={toolSearchTerm}
+                      setToolSearchTerm={setToolSearchTerm}
+                      spareSearchTerm={spareSearchTerm}
+                      setSpareSearchTerm={setSpareSearchTerm}
+                      filteredTools={filteredTools}
+                      filteredSpares={filteredSpares}
+                      loadingTools={loadingTools}
+                      loadingSpares={loadingSpares}
+                      selectedMachine={selectedMachine}
+                      selectedComponents={selectedComponents}
+                      addTool={addTool}
+                      addSpare={addSpare}
+                      removeTool={removeTool}
+                      updateToolQuantity={updateToolQuantity}
+                    />
+                  </TabsContent>
 
                   <TabsContent value="instructives" className="space-y-6 mt-0">
-                    {/* Subir Instructivo */}
-                    <SectionCard
-                      title="Subir Instructivo"
-                      icon={Upload}
-                      description="Archivos con las instrucciones detalladas para realizar este mantenimiento"
-                    >
-                <div className="space-y-4">
-                        {/* Dropzone */}
-                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/40 transition-colors">
-                          <div className="text-center space-y-4">
-                            <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                            <div>
-                              <h4 className="text-sm font-semibold mb-1">Seleccionar archivo</h4>
-                              <p className="text-xs text-muted-foreground">
-                                Máx 10MB
-                              </p>
-                            </div>
-                      
-                      {/* Campo de descripción */}
-                            <div className="text-left max-w-md mx-auto">
-                        <Label htmlFor="instructiveDescription" className="text-xs font-medium">
-                                Descripción del instructivo
-                        </Label>
-                        <Textarea
-                          id="instructiveDescription"
-                                placeholder="Describe brevemente el contenido..."
-                          value={instructiveDescription}
-                          onChange={(e) => setInstructiveDescription(e.target.value)}
-                                className="mt-1.5 resize-none"
-                          rows={3}
-                        />
-                      </div>
-                      
-                            <label className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors text-sm">
-                        <Upload className="h-4 w-4" />
-                        {uploadingInstructive ? 'Subiendo...' : 'Seleccionar archivo'}
-                        <input
-                          type="file"
-                          onChange={handleInstructiveUpload}
-                          className="hidden"
-                          disabled={uploadingInstructive}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                      </div>
-                    </SectionCard>
-
-                    {/* Lista de instructivos */}
-                    <SectionCard
-                      title={`Instructivos subidos (${instructives.length})`}
-                      icon={FileText}
-                      description={instructives.length === 0 ? 'Los instructivos ayudarán a los técnicos a realizar el mantenimiento correctamente' : undefined}
-                    >
-                      {instructives.length === 0 ? (
-                        <EmptyState
-                          icon={FileText}
-                          title="No hay instructivos subidos"
-                          subtitle="Sube archivos con las instrucciones para este mantenimiento"
-                        />
-                      ) : (
-                    <div className="space-y-3">
-                      {instructives.map((instructive) => (
-                        <div
-                          key={instructive.id}
-                              className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 transition-colors"
-                            >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <FileText className="h-5 w-5 text-primary shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-xs truncate">
-                                    {instructive.originalName || instructive.fileName}
-                                  </p>
-                              {instructive.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                  {instructive.description}
-                                </p>
-                              )}
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                Subido el {new Date(instructive.uploadedAt).toLocaleDateString('es-ES')}
-                              </p>
-                            </div>
-                          </div>
-                              <div className="flex items-center gap-2 shrink-0 ml-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewInstructive(instructive.url)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteInstructive(instructive.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                    </SectionCard>
-          </TabsContent>
+                    <InstructivesStep
+                      instructives={instructives}
+                      instructiveDescription={instructiveDescription}
+                      setInstructiveDescription={setInstructiveDescription}
+                      uploadingInstructive={uploadingInstructive}
+                      handleInstructiveUpload={handleInstructiveUpload}
+                      handleDeleteInstructive={handleDeleteInstructive}
+                      handleViewInstructive={handleViewInstructive}
+                    />
+                  </TabsContent>
 
                   <TabsContent value="schedule" className="space-y-6 mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Configuración */}
-                      <SectionCard
-                        title="Configuración"
-                        icon={Calendar}
-                        description="Fecha, frecuencia y alertas del mantenimiento"
-                      >
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="startDate" className="text-xs font-medium">
-                              Fecha de inicio <span className="text-destructive">*</span>
-                            </Label>
-                    <DatePicker
-                      value={formData.startDate}
-                      onChange={(date) => {
-                        handleInputChange('startDate', date);
-                        clearFieldError('startDate');
-                      }}
-                      placeholder="Seleccionar fecha"
-                      className={cn(
-                        validationErrors.startDate ? 'border-destructive ring-destructive/20 ring-2' : ''
-                      )}
+                    <ScheduleStep
+                      formData={formData}
+                      setFormData={setFormData}
+                      handleInputChange={handleInputChange}
+                      clearFieldError={clearFieldError}
+                      validationErrors={validationErrors}
+                      mode={mode}
+                      getExecutionWindowText={getExecutionWindowText}
+                      getTimeUnitText={getTimeUnitText}
                     />
-                            {validationErrors.startDate ? (
-                              <p className="text-xs text-destructive font-medium">{validationErrors.startDate}</p>
-                            ) : (
-                            <p className="text-xs text-muted-foreground">
-                              Primera ejecución {mode === 'create' ? '(puede ser una fecha pasada si el mantenimiento ya fue realizado)' : '(puede ser fecha pasada al editar)'}
-                            </p>
-                            )}
-                  </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="frequencyDays" className="text-xs font-medium">
-                              Frecuencia <span className="text-destructive">*</span>
-                            </Label>
-                            <div className="flex items-center gap-2">
-                    <Input
-                      id="frequencyDays"
-                      type="number"
-                      min="1"
-                      max="365"
-                      value={formData.frequencyDays}
-                      onChange={(e) => {
-                        handleInputChange('frequencyDays', Number(e.target.value));
-                        clearFieldError('frequencyDays');
-                      }}
-                                className={cn(
-                                  "flex-1",
-                                  validationErrors.frequencyDays ? 'border-destructive ring-destructive/20 ring-2' : ''
-                                )}
-                    />
-                              <span className="text-sm text-muted-foreground whitespace-nowrap">días</span>
-                            </div>
-                            {validationErrors.frequencyDays ? (
-                              <p className="text-xs text-destructive font-medium">{validationErrors.frequencyDays}</p>
-                            ) : (
-                            <p className="text-xs text-muted-foreground">
-                      El mantenimiento se repetirá cada {formData.frequencyDays} días
-                    </p>
-                            )}
-                  </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs font-medium">
-                              Días de alerta <span className="text-destructive">*</span>
-                            </Label>
-                            <div className={cn(
-                              "flex flex-wrap gap-2 p-2 rounded-md",
-                              validationErrors.alertDaysBefore ? 'bg-destructive/10 ring-2 ring-destructive/20' : ''
-                            )}>
-                              {[
-                                { value: 0, label: 'El mismo día', icon: '🔔' },
-                                { value: 1, label: '1 día antes', icon: '📅' },
-                                { value: 2, label: '2 días antes', icon: '📅' },
-                                { value: 3, label: '3 días antes', icon: '📅' }
-                              ].map(option => {
-                                const alertDays = Array.isArray(formData.alertDaysBefore) ? formData.alertDaysBefore : [3, 2, 1, 0];
-                                const isSelected = alertDays.includes(option.value);
-                                return (
-                                  <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => {
-                                      if (isSelected) {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          alertDaysBefore: alertDays.filter(day => day !== option.value)
-                                        }));
-                                      } else {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          alertDaysBefore: [...alertDays, option.value].sort((a, b) => a - b)
-                                        }));
-                                      }
-                                      clearFieldError('alertDaysBefore');
-                                    }}
-                                    className={cn(
-                                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                                      "border-2 cursor-pointer",
-                                      isSelected
-                                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                        : "bg-background text-foreground border-border hover:border-primary/50 hover:bg-muted/50"
-                                    )}
-                                  >
-                                    {isSelected && <span className="text-xs">✓</span>}
-                                    <span>{option.label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {validationErrors.alertDaysBefore ? (
-                              <p className="text-xs text-destructive font-medium">{validationErrors.alertDaysBefore}</p>
-                            ) : (
-                            <p className="text-xs text-muted-foreground">
-                              Se enviarán alertas en los días seleccionados
-                            </p>
-                            )}
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="executionWindow" className="text-xs font-medium">
-                              Ventana de ejecución
-                            </Label>
-                    <Select
-                      value={formData.executionWindow}
-                      onValueChange={(value) => handleInputChange('executionWindow', value)}
-                    >
-                      <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar ventana" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="NONE">Sin especificar</SelectItem>
-                          <SelectItem value="ANY_TIME">Cualquier momento</SelectItem>
-                          <SelectItem value="BEFORE_START">Antes del inicio</SelectItem>
-                          <SelectItem value="MID_SHIFT">Mitad de turno</SelectItem>
-                          <SelectItem value="END_SHIFT">Fin de turno</SelectItem>
-                          <SelectItem value="WEEKEND">Fin de semana</SelectItem>
-                      </SelectContent>
-                    </Select>
-                            <p className="text-xs text-muted-foreground">
-                      Cuándo se debe ejecutar el mantenimiento
-                    </p>
-                  </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="timeValue" className="text-xs font-medium">
-                              Tiempo estimado
-                            </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        min="0.5"
-                        max="24"
-                        step="0.5"
-                        value={formData.timeValue}
-                        onChange={(e) => handleInputChange('timeValue', Number(e.target.value))}
-                        className="flex-1"
-                        placeholder="1"
-                      />
-                      <Select
-                        value={formData.timeUnit}
-                        onValueChange={(value) => handleInputChange('timeUnit', value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="HOURS">Horas</SelectItem>
-                          <SelectItem value="MINUTES">Minutos</SelectItem>
-                          <SelectItem value="DAYS">Días</SelectItem>
-                          <SelectItem value="CYCLES">Ciclos</SelectItem>
-                          <SelectItem value="KILOMETERS">Kilómetros</SelectItem>
-                          <SelectItem value="SHIFTS">Turnos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                            <p className="text-xs text-muted-foreground">
-                      Duración estimada del mantenimiento
-                    </p>
-                  </div>
-                        </div>
-                      </SectionCard>
-
-                      {/* Próximas Fechas */}
-                      <SectionCard
-                        title="Próximas fechas"
-                        icon={Clock}
-                        description="Previsualización de las próximas ejecuciones programadas"
-                      >
-                  {formData.startDate && formData.frequencyDays && formData.frequencyDays > 0 ? (
-                    <div className="space-y-3">
-                            <ScrollArea className="h-[400px]">
-                              <div className="space-y-2 pr-4">
-                      {Array.from({ length: 5 }, (_, i) => {
-                        const date = new Date(formData.startDate);
-                        date.setDate(date.getDate() + (i * formData.frequencyDays));
-                        
-                        const adjustToWeekday = (dateToAdjust: Date) => {
-                                    const dayOfWeek = dateToAdjust.getDay();
-                                    if (dayOfWeek === 0) dateToAdjust.setDate(dateToAdjust.getDate() + 1);
-                                    else if (dayOfWeek === 6) dateToAdjust.setDate(dateToAdjust.getDate() + 2);
-                          return dateToAdjust;
-                        };
-                        
-                        adjustToWeekday(date);
-                        const alertDays = Array.isArray(formData.alertDaysBefore) ? formData.alertDaysBefore : [3, 2, 1, 0];
-                        
-                        const isToday = date.toDateString() === new Date().toDateString();
-                                  const isPast = date < new Date() && !isToday;
-                        
-                        return (
-                                    <div
-                                      key={i}
-                                      className={cn('flex items-center justify-between p-3 rounded-md border',
-                                        isToday ? 'bg-info-muted border-info-muted' :
-                                        isPast ? 'bg-muted border-border' : 'bg-success-muted border-success-muted'
-                                      )}
-                                    >
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-xs font-medium text-muted-foreground">#{i + 1}</span>
-                                          <span className={cn('text-xs font-semibold',
-                                isToday ? 'text-info-muted-foreground' :
-                                            isPast ? 'text-muted-foreground' : 'text-success'
-                              )}>
-                                {date.toLocaleDateString('es-ES', {
-                                  weekday: 'short',
-                                  day: 'numeric',
-                                              month: 'short',
-                                              year: 'numeric'
-                                })}
-                              </span>
-                              {isToday && (
-                                            <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted">
-                                              HOY
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                          Alertas: {alertDays.map(d => d === 0 ? 'el mismo día' : `${d} día${d > 1 ? 's' : ''} antes`).join(', ')}
-                                        </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                              </div>
-                            </ScrollArea>
-
-                            {/* Resumen Automático */}
-                            <div className="mt-4 p-4 bg-muted/50 border rounded-lg">
-                        <div className="flex items-center gap-2 mb-3">
-                                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                <p className="text-xs font-semibold">
-                                  Reglas activas
-                          </p>
-                        </div>
-                              <ul className="space-y-1.5 text-xs text-muted-foreground">
-                                <li>• Se repetirá automáticamente cada <strong className="text-foreground">{formData.frequencyDays} días</strong></li>
-                                <li>• Alertas: <strong className="text-foreground">
-                    {Array.isArray(formData.alertDaysBefore) ? 
-                      formData.alertDaysBefore.map(days => 
-                        days === 0 ? 'el mismo día' : `${days} día${days > 1 ? 's' : ''} antes`
-                      ).join(', ') : 
-                      '3, 2, 1 días antes y el mismo día'
-                    }
-                                </strong></li>
-                                <li>• <strong className="text-foreground">Solo días laborables</strong> (lunes a viernes)</li>
-                                <li>• Ventana: <strong className="text-foreground">{getExecutionWindowText(formData.executionWindow)}</strong></li>
-                                <li>• Duración: <strong className="text-foreground">{formData.timeValue} {getTimeUnitText(formData.timeUnit).toLowerCase()}</strong></li>
-                              </ul>
-                      </div>
-                    </div>
-                  ) : (
-                          <EmptyState
-                            icon={Calendar}
-                            title="Configure fecha y frecuencia"
-                            subtitle="Para ver las próximas fechas programadas"
-                          />
-                        )}
-                      </SectionCard>
-                    </div>
                   </TabsContent>
 
                   {/* Paso: Resumen */}
                   <TabsContent value="summary" className="space-y-6 mt-0">
-                    <SectionCard
-                      title="Resumen del Mantenimiento Preventivo"
-                      icon={Info}
-                      description="Revise la información antes de crear el mantenimiento preventivo"
-                    >
-                      <div className="space-y-6">
-                        {/* Información General */}
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground">Información General</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Título</p>
-                              <p className="text-sm font-medium">{formData.title || 'Sin título'}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Prioridad</p>
-                              <Badge className={getPriorityColor(formData.priority)}>
-                                {getPriorityText(formData.priority)}
-                              </Badge>
-                            </div>
-                            {formData.description && (
-                              <div className="md:col-span-2">
-                                <p className="text-xs text-muted-foreground mb-1.5">Descripción</p>
-                                <p className="text-sm">{formData.description}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Equipamiento */}
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground">Equipamiento</h4>
-                          <div className="space-y-2">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Máquina</p>
-                              <p className="text-sm font-medium">{selectedMachine?.name || 'No seleccionada'}</p>
-                            </div>
-                            {selectedComponents.length > 0 && (
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1.5">Componentes ({selectedComponents.length})</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {selectedComponents.map(c => (
-                                    <Badge key={c.id} variant="outline">{c.name}</Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {selectedSubcomponents.length > 0 && (
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1.5">Subcomponentes ({selectedSubcomponents.length})</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {selectedSubcomponents.map(s => (
-                                    <Badge key={s.id} variant="outline">{s.name}</Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Asignación */}
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground">Asignación</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Técnico</p>
-                              <p className="text-sm font-medium">
-                                {formData.assignedToId === 'none' 
-                                  ? 'Sin asignar' 
-                                  : users.find(u => u.id.toString() === formData.assignedToId)?.name || 'No encontrado'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Estado</p>
-                              <Badge variant={formData.isActive ? 'default' : 'secondary'}>
-                                {formData.isActive ? 'Activo' : 'Inactivo'}
-                              </Badge>
-                            </div>
-                            {formData.notes && (
-                              <div className="md:col-span-2">
-                                <p className="text-xs text-muted-foreground mb-1.5">Notas</p>
-                                <p className="text-sm">{formData.notes}</p>
-                              </div>
-                            )}
-                          </div>
-            </div>
-
-                        <Separator />
-
-                        {/* Programación */}
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground">Programación</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Fecha de inicio</p>
-                              <p className="text-sm font-medium">{formatDateForDisplay(formData.startDate) || 'No definida'}</p>
-                  </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Frecuencia</p>
-                              <p className="text-sm font-medium">Cada {formData.frequencyDays} día{formData.frequencyDays !== 1 ? 's' : ''}</p>
-                  </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Próxima ejecución</p>
-                              <p className="text-sm font-medium">{formatDateForDisplay(calculateNextExecutionDate() || '') || 'No calculada'}</p>
-                  </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Ventana de ejecución</p>
-                              <p className="text-sm font-medium">{getExecutionWindowText(formData.executionWindow)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Tiempo estimado</p>
-                              <p className="text-sm font-medium">{formData.timeValue} {getTimeUnitText(formData.timeUnit).toLowerCase()}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Alertas</p>
-                              <div className="flex flex-wrap gap-1">
-                                {Array.isArray(formData.alertDaysBefore) && formData.alertDaysBefore.map(days => (
-                                  <Badge key={days} variant="outline" className="text-xs">
-                                    {days === 0 ? 'El mismo día' : `${days} día${days > 1 ? 's' : ''} antes`}
-                    </Badge>
-                                ))}
-                    </div>
-                  </div>
-                </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Recursos */}
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-foreground">Recursos</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Herramientas seleccionadas</p>
-                              <p className="text-sm font-medium">{selectedTools.length} herramienta{selectedTools.length !== 1 ? 's' : ''}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5">Instructivos</p>
-                              <p className="text-sm font-medium">{instructives.length} archivo{instructives.length !== 1 ? 's' : ''}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </SectionCard>
+                    <SummaryStep
+                      formData={formData}
+                      selectedMachine={selectedMachine}
+                      selectedComponents={selectedComponents}
+                      selectedSubcomponents={selectedSubcomponents}
+                      users={users}
+                      selectedTools={selectedTools}
+                      instructives={instructives}
+                      formatDateForDisplay={formatDateForDisplay}
+                      calculateNextExecutionDate={calculateNextExecutionDate}
+                      getPriorityColor={getPriorityColor}
+                      getPriorityText={getPriorityText}
+                      getExecutionWindowText={getExecutionWindowText}
+                      getTimeUnitText={getTimeUnitText}
+                      mode={mode}
+                    />
                   </TabsContent>
                 </Tabs>
               </div>

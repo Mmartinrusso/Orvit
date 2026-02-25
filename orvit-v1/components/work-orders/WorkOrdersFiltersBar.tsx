@@ -209,9 +209,9 @@ export function WorkOrdersFiltersBar({
   return (
     <div className={className}>
       {/* Barra de filtros principal */}
-      <div className="flex flex-wrap items-center gap-2 w-full">
+      <div className="flex items-center gap-2 w-full">
         {/* Búsqueda */}
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Buscar órdenes..."
@@ -234,97 +234,107 @@ export function WorkOrdersFiltersBar({
           )}
         </div>
 
-        {/* Estado */}
-        <Select
-          value={filters.status || 'ALL'}
-          onValueChange={(value) => handleFilterChange('status', value === 'ALL' ? null : value)}
-        >
-          <SelectTrigger className="h-8 w-[130px] text-xs bg-background">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todos</SelectItem>
-            <SelectItem value={WorkOrderStatus.PENDING}>Pendiente</SelectItem>
-            <SelectItem value={WorkOrderStatus.IN_PROGRESS}>En proceso</SelectItem>
-            <SelectItem value={WorkOrderStatus.COMPLETED}>Completada</SelectItem>
-            <SelectItem value={WorkOrderStatus.CANCELLED}>Cancelada</SelectItem>
-            <SelectItem value={WorkOrderStatus.ON_HOLD}>En espera</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Prioridad */}
-        <Select
-          value={filters.priority || 'ALL'}
-          onValueChange={(value) => handleFilterChange('priority', value === 'ALL' ? null : value)}
-        >
-          <SelectTrigger className="h-8 w-[120px] text-xs bg-background">
-            <SelectValue placeholder="Prioridad" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todas</SelectItem>
-            <SelectItem value={Priority.LOW}>Baja</SelectItem>
-            <SelectItem value={Priority.MEDIUM}>Media</SelectItem>
-            <SelectItem value={Priority.HIGH}>Alta</SelectItem>
-            <SelectItem value={Priority.URGENT}>Urgente</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Responsable */}
-        <Select
-          value={filters.assignee || 'all'}
-          onValueChange={(value) => handleFilterChange('assignee', value)}
-        >
-          <SelectTrigger className="h-8 w-[150px] text-xs bg-background">
-            <SelectValue placeholder="Responsable" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="unassigned">Sin asignar</SelectItem>
-            {availableUsers.map((user) => (
-              <SelectItem key={`${user.type}-${user.id}`} value={`${user.type}-${user.id}`}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Máquina */}
-        {availableMachines.length > 0 && (
+        {/* Estado — oculto en mobile */}
+        <div className="hidden sm:block">
           <Select
-            value={filters.machineId?.toString() || 'all'}
-            onValueChange={(value) => handleFilterChange('machineId', value === 'all' ? null : parseInt(value))}
+            value={filters.status || 'ALL'}
+            onValueChange={(value) => handleFilterChange('status', value === 'ALL' ? null : value)}
           >
-            <SelectTrigger className="h-8 w-[150px] text-xs bg-background">
-              <SelectValue placeholder="Máquina" />
+            <SelectTrigger className="h-8 w-[130px] text-xs bg-background">
+              <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              {availableMachines.map((machine) => (
-                <SelectItem key={machine.id} value={machine.id.toString()}>
-                  {machine.name}
+              <SelectItem value="ALL">Todos</SelectItem>
+              <SelectItem value={WorkOrderStatus.PENDING}>Pendiente</SelectItem>
+              <SelectItem value={WorkOrderStatus.IN_PROGRESS}>En proceso</SelectItem>
+              <SelectItem value={WorkOrderStatus.COMPLETED}>Completada</SelectItem>
+              <SelectItem value={WorkOrderStatus.CANCELLED}>Cancelada</SelectItem>
+              <SelectItem value={WorkOrderStatus.ON_HOLD}>En espera</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Prioridad — oculto en mobile */}
+        <div className="hidden sm:block">
+          <Select
+            value={filters.priority || 'ALL'}
+            onValueChange={(value) => handleFilterChange('priority', value === 'ALL' ? null : value)}
+          >
+            <SelectTrigger className="h-8 w-[120px] text-xs bg-background">
+              <SelectValue placeholder="Prioridad" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas</SelectItem>
+              <SelectItem value={Priority.LOW}>Baja</SelectItem>
+              <SelectItem value={Priority.MEDIUM}>Media</SelectItem>
+              <SelectItem value={Priority.HIGH}>Alta</SelectItem>
+              <SelectItem value={Priority.URGENT}>Urgente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Responsable — oculto en mobile */}
+        <div className="hidden sm:block">
+          <Select
+            value={filters.assignee || 'all'}
+            onValueChange={(value) => handleFilterChange('assignee', value)}
+          >
+            <SelectTrigger className="h-8 w-[150px] text-xs bg-background">
+              <SelectValue placeholder="Responsable" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="unassigned">Sin asignar</SelectItem>
+              {availableUsers.map((user) => (
+                <SelectItem key={`${user.type}-${user.id}`} value={`${user.type}-${user.id}`}>
+                  {user.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Máquina — oculto en mobile */}
+        {availableMachines.length > 0 && (
+          <div className="hidden sm:block">
+            <Select
+              value={filters.machineId?.toString() || 'all'}
+              onValueChange={(value) => handleFilterChange('machineId', value === 'all' ? null : parseInt(value))}
+            >
+              <SelectTrigger className="h-8 w-[150px] text-xs bg-background">
+                <SelectValue placeholder="Máquina" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {availableMachines.map((machine) => (
+                  <SelectItem key={machine.id} value={machine.id.toString()}>
+                    {machine.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
 
-        {/* Ordenar por */}
-        <Select
-          value={filters.sortBy || 'none'}
-          onValueChange={(value) => handleFilterChange('sortBy', value === 'none' ? undefined : value)}
-        >
-          <SelectTrigger className="h-8 w-[140px] text-xs bg-background">
-            <ArrowUpDown className="h-3 w-3 mr-1.5" />
-            <SelectValue placeholder="Ordenar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Sin ordenar</SelectItem>
-            <SelectItem value="dueDate">Vence primero</SelectItem>
-            <SelectItem value="priority">Mayor prioridad</SelectItem>
-            <SelectItem value="recent">Más reciente</SelectItem>
-            <SelectItem value="created">Fecha creación</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Ordenar por — oculto en mobile */}
+        <div className="hidden sm:block">
+          <Select
+            value={filters.sortBy || 'none'}
+            onValueChange={(value) => handleFilterChange('sortBy', value === 'none' ? undefined : value)}
+          >
+            <SelectTrigger className="h-8 w-[140px] text-xs bg-background">
+              <ArrowUpDown className="h-3 w-3 mr-1.5" />
+              <SelectValue placeholder="Ordenar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sin ordenar</SelectItem>
+              <SelectItem value="dueDate">Vence primero</SelectItem>
+              <SelectItem value="priority">Mayor prioridad</SelectItem>
+              <SelectItem value="recent">Más reciente</SelectItem>
+              <SelectItem value="created">Fecha creación</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Filtros avanzados */}
         <WorkOrdersAdvancedFiltersSheet
@@ -333,9 +343,10 @@ export function WorkOrdersFiltersBar({
           filters={filters}
           onFiltersChange={onFiltersChange}
           availableMachines={availableMachines}
+          availableUsers={availableUsers}
         >
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-8 text-xs"
           >
             <SlidersHorizontal className="h-3 w-3 mr-1.5" />
@@ -343,8 +354,8 @@ export function WorkOrdersFiltersBar({
           </Button>
         </WorkOrdersAdvancedFiltersSheet>
 
-        {/* Separador vertical */}
-        <div className="h-6 w-px bg-border mx-1" />
+        {/* Separador vertical — oculto en mobile */}
+        <div className="hidden sm:block h-6 w-px bg-border mx-1" />
 
         {/* Toggle vista */}
         <ToggleGroup

@@ -483,31 +483,31 @@ export function AgendaPage() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-[calc(100vh-120px)] gap-4 px-6 py-4">
+      <div className="flex flex-col h-[calc(100vh-120px)] gap-4 px-3 sm:px-6 py-4">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start sm:items-center gap-2">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Calendar className="h-6 w-6" style={{ color: userColors.chart1 }} />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: userColors.chart1 }} />
               Agenda
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground hidden sm:block">
               Todas tus tareas en un solo lugar
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" onClick={() => setShowDiscordHelp(true)}>
+                <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => setShowDiscordHelp(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Discord
                 </Button>
               </TooltipTrigger>
               <TooltipContent>¿Cómo usar desde Discord?</TooltipContent>
             </Tooltip>
-            <Button onClick={handleCreateTask}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Tarea
+            <Button onClick={handleCreateTask} size="sm">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nueva Tarea</span>
             </Button>
           </div>
         </div>
@@ -524,19 +524,21 @@ export function AgendaPage() {
 
         {/* Main Layout: Sidebars + Content */}
         <div className="flex flex-1 gap-3 min-h-0">
-          {/* Sidebar de Grupos */}
+          {/* Sidebar de Grupos — oculto en mobile */}
           {currentCompany?.id && (
-            <TaskGroupsSidebar
-              groups={agendaGroups}
-              selectedGroupId={selectedGroupId}
-              onGroupSelect={setSelectedGroupId}
-              companyId={currentCompany.id}
-              onGroupsChange={refetchAgendaGroups}
-            />
+            <div className="hidden sm:block flex-shrink-0">
+              <TaskGroupsSidebar
+                groups={agendaGroups}
+                selectedGroupId={selectedGroupId}
+                onGroupSelect={setSelectedGroupId}
+                companyId={currentCompany.id}
+                onGroupsChange={refetchAgendaGroups}
+              />
+            </div>
           )}
 
-          {/* Sidebar de Personas */}
-          <Card className="w-72 flex-shrink-0 flex flex-col">
+          {/* Sidebar de Personas — oculto en mobile */}
+          <Card className="hidden sm:flex w-72 flex-shrink-0 flex-col">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -664,9 +666,9 @@ export function AgendaPage() {
           {/* Content Area */}
           <div className="flex-1 flex flex-col min-w-0 gap-4">
             {/* Toolbar */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Search */}
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar tareas..."
@@ -687,70 +689,78 @@ export function AgendaPage() {
                 )}
               </div>
 
-              {/* Origin Filter */}
-              <Select
-                value={originFilter}
-                onValueChange={(v) => setOriginFilter(v as OriginFilter)}
-              >
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Origen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    Todas ({stats.total})
-                  </SelectItem>
-                  <SelectItem value="agenda">
-                    Agenda ({stats.agendaCount})
-                  </SelectItem>
-                  <SelectItem value="regular">
-                    Tareas ({stats.regularCount})
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Origin Filter — oculto en mobile */}
+              <div className="hidden sm:block">
+                <Select
+                  value={originFilter}
+                  onValueChange={(v) => setOriginFilter(v as OriginFilter)}
+                >
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Origen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      Todas ({stats.total})
+                    </SelectItem>
+                    <SelectItem value="agenda">
+                      Agenda ({stats.agendaCount})
+                    </SelectItem>
+                    <SelectItem value="regular">
+                      Tareas ({stats.regularCount})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {/* Status Filter */}
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as UnifiedTaskStatus | 'all')}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendientes</SelectItem>
-                  <SelectItem value="in_progress">En progreso</SelectItem>
-                  <SelectItem value="waiting">Esperando</SelectItem>
-                  <SelectItem value="completed">Completadas</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Status Filter — oculto en mobile */}
+              <div className="hidden sm:block">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(v) => setStatusFilter(v as UnifiedTaskStatus | 'all')}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="pending">Pendientes</SelectItem>
+                    <SelectItem value="in_progress">En progreso</SelectItem>
+                    <SelectItem value="waiting">Esperando</SelectItem>
+                    <SelectItem value="completed">Completadas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {/* Priority Filter */}
-              <Select
-                value={priorityFilter}
-                onValueChange={(v) => setPriorityFilter(v as UnifiedTaskPriority | 'all')}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Media</SelectItem>
-                  <SelectItem value="low">Baja</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Priority Filter — oculto en mobile */}
+              <div className="hidden sm:block">
+                <Select
+                  value={priorityFilter}
+                  onValueChange={(v) => setPriorityFilter(v as UnifiedTaskPriority | 'all')}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Prioridad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Media</SelectItem>
+                    <SelectItem value="low">Baja</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {/* Refresh */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" aria-label="Actualizar tareas" onClick={refetch} disabled={isLoading}>
-                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Actualizar</TooltipContent>
-              </Tooltip>
+              {/* Refresh — oculto en mobile */}
+              <div className="hidden sm:block">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" aria-label="Actualizar tareas" onClick={refetch} disabled={isLoading}>
+                      <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Actualizar</TooltipContent>
+                </Tooltip>
+              </div>
 
               {/* View Toggle */}
               <div className="flex border rounded-lg p-1 gap-1 ml-auto">
@@ -800,6 +810,40 @@ export function AgendaPage() {
                   <TooltipContent>Calendario</TooltipContent>
                 </Tooltip>
               </div>
+            </div>
+
+            {/* Mobile: Grupo + Persona quickfilters */}
+            <div className="flex sm:hidden items-center gap-2">
+              {agendaGroups.length > 0 && (
+                <Select
+                  value={selectedGroupId?.toString() ?? 'all'}
+                  onValueChange={(v) => setSelectedGroupId(v === 'all' ? null : parseInt(v))}
+                >
+                  <SelectTrigger className="flex-1 h-8 text-xs bg-background">
+                    <SelectValue placeholder="Grupo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los grupos</SelectItem>
+                    {agendaGroups.map((g) => (
+                      <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Select
+                value={selectedPerson ?? 'all'}
+                onValueChange={(v) => setSelectedPerson(v === 'all' ? null : v)}
+              >
+                <SelectTrigger className={cn('h-8 text-xs bg-background', agendaGroups.length > 0 ? 'flex-1' : 'w-full')}>
+                  <SelectValue placeholder="Persona" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las personas</SelectItem>
+                  {personStats.map((p) => (
+                    <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Quick Task Input */}
@@ -885,17 +929,32 @@ export function AgendaPage() {
               )}
             </div>
           </div>
+
+          {/* Desktop: panel derecho dentro del flex row */}
+          {detailTask && (
+            <div className="hidden md:flex">
+              <UnifiedTaskDetailPanel
+                task={detailTask}
+                onClose={() => setDetailTask(null)}
+                onEdit={() => { handleUnifiedEdit(detailTask); setDetailTask(null); }}
+                onDelete={() => { handleUnifiedDelete(detailTask); setDetailTask(null); }}
+                onStatusChange={(status) => handleUnifiedStatusChange(detailTask as any, status)}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Detail Panel — se abre al hacer click en kanban */}
+        {/* Mobile: overlay full-screen */}
         {detailTask && (
-          <UnifiedTaskDetailPanel
-            task={detailTask}
-            onClose={() => setDetailTask(null)}
-            onEdit={() => { handleUnifiedEdit(detailTask); setDetailTask(null); }}
-            onDelete={() => { handleUnifiedDelete(detailTask); setDetailTask(null); }}
-            onStatusChange={(status) => handleUnifiedStatusChange(detailTask as any, status)}
-          />
+          <div className="md:hidden fixed inset-0 z-50">
+            <UnifiedTaskDetailPanel
+              task={detailTask}
+              onClose={() => setDetailTask(null)}
+              onEdit={() => { handleUnifiedEdit(detailTask); setDetailTask(null); }}
+              onDelete={() => { handleUnifiedDelete(detailTask); setDetailTask(null); }}
+              onStatusChange={(status) => handleUnifiedStatusChange(detailTask as any, status)}
+            />
+          </div>
         )}
 
         {/* Task Dialog */}

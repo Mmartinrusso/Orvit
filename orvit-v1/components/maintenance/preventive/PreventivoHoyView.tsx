@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,13 @@ import {
  ListTodo,
  Search,
  X,
+ CheckSquare2,
+ Download,
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { exportPreventivePDF } from '@/lib/pdf/preventive-pdf';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useMaintenancePending } from '@/hooks/mantenimiento';
@@ -110,6 +116,10 @@ export function PreventivoHoyView({
  const [groupBy, setGroupBy] = useState<'none' | 'machine' | 'date'>('none');
  const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'today' | 'week' | 'future'>('all');
  const [searchTerm, setSearchTerm] = useState('');
+ const [selectionMode, setSelectionMode] = useState(false);
+ const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+ const { toast } = useToast();
+ const queryClient = useQueryClient();
 
  const companyId = currentCompany?.id ? parseInt(currentCompany.id.toString()) : null;
  const sectorId = currentSector?.id ? parseInt(currentSector.id.toString()) : null;
@@ -280,6 +290,60 @@ export function PreventivoHoyView({
  return null;
  }, [filteredMaintenances, groupBy]);
 
+ // Handlers de selección
+ const toggleSelection = useCallback((id: number) => {
+   setSelectedIds(prev => {
+     const next = new Set(prev);
+     if (next.has(id)) next.delete(id); else next.add(id);
+     return next;
+   });
+ }, []);
+
+ const toggleSelectionMode = useCallback(() => {
+   setSelectionMode(prev => !prev);
+   setSelectedIds(new Set());
+ }, []);
+
+ const handleRescheduleOverdue = useCallback(async () => {
+   if (!companyId) return;
+   try {
+     const res = await fetch('/api/maintenance/preventive/reschedule-overdue', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ companyId }),
+     });
+     const data = await res.json();
+     toast({
+       title: res.ok ? 'Reprogramados' : 'Error',
+       description: data.message || (res.ok ? 'Instancias reprogramadas' : 'No se pudo reprogramar'),
+       variant: res.ok ? 'default' : 'destructive',
+     });
+     if (res.ok) queryClient.invalidateQueries({ queryKey: ['maintenance-pending'] });
+   } catch {
+     toast({ title: 'Error', description: 'No se pudo conectar con el servidor', variant: 'destructive' });
+   }
+ }, [companyId, toast, queryClient]);
+
+ const handleBulkDelete = useCallback(async () => {
+   if (selectedIds.size === 0) return;
+   const ids = Array.from(selectedIds);
+   let deleted = 0;
+   for (const id of ids) {
+     try {
+       const res = await fetch(`/api/maintenance/${id}`, { method: 'DELETE' });
+       if (res.ok) deleted++;
+     } catch {}
+   }
+   toast({
+     title: deleted > 0 ? 'Eliminados' : 'Error al eliminar',
+     description: `${deleted} de ${ids.length} mantenimiento${ids.length !== 1 ? 's' : ''} eliminado${deleted !== 1 ? 's' : ''}`,
+     variant: deleted === 0 ? 'destructive' : 'default',
+   });
+   setSelectedIds(new Set());
+   setSelectionMode(false);
+   queryClient.invalidateQueries({ queryKey: ['maintenance-pending'] });
+ }, [selectedIds, toast, queryClient]);
+
  // Loading state
  if (isLoading) {
  return (
@@ -336,7 +400,7 @@ export function PreventivoHoyView({
  <div className={cn('space-y-4', className)}>
  {/* Header con buscador, toggle y contador */}
  <div className="space-y-2">
- <div className="flex items-center justify-center gap-3">
+ <div className="flex items-center justify-center gap-3 flex-wrap">
  {/* Buscador */}
  <div className="relative w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -386,7 +450,52 @@ export function PreventivoHoyView({
  Fecha
  </Button>
  </div>
+ {/* Exportar PDF */}
+ <Button
+   variant="ghost"
+   size="sm"
+   className="shrink-0"
+   onClick={() => exportPreventivePDF(
+     filteredMaintenances,
+     currentCompany?.name || '',
+     'Mantenimientos Preventivos Pendientes'
+   )}
+   title="Exportar PDF"
+   disabled={filteredMaintenances.length === 0}
+ >
+   <Download className="h-4 w-4" />
+ </Button>
+ {/* Modo selección */}
+ <Button
+   variant={selectionMode ? 'secondary' : 'ghost'}
+   size="sm"
+   className="shrink-0"
+   onClick={toggleSelectionMode}
+   title={selectionMode ? 'Salir de selección' : 'Seleccionar para acciones masivas'}
+ >
+   <CheckSquare2 className="h-4 w-4" />
+ </Button>
  </div>
+ {/* Barra de selección */}
+ {selectionMode && (
+   <div className="flex items-center gap-2 text-xs">
+     <button
+       className="text-primary hover:underline"
+       onClick={() => setSelectedIds(new Set(filteredMaintenances.map((m: any) => m.id)))}
+     >
+       Seleccionar todos ({filteredMaintenances.length})
+     </button>
+     {selectedIds.size > 0 && (
+       <>
+         <span className="text-muted-foreground">·</span>
+         <span className="text-muted-foreground">{selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}</span>
+         <button className="text-muted-foreground hover:underline" onClick={() => setSelectedIds(new Set())}>
+           Limpiar
+         </button>
+       </>
+     )}
+   </div>
+ )}
  {/* Contador + limpiar filtros */}
  <div className="flex items-center gap-2">
  <p className="text-sm text-muted-foreground">
@@ -435,6 +544,17 @@ export function PreventivoHoyView({
  <AlertTriangle className="h-5 w-5 text-destructive" />
  </div>
  </div>
+ {kpis.overdue > 0 && (
+   <Button
+     variant="ghost"
+     size="sm"
+     className="w-full mt-2 h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+     onClick={(e) => { e.stopPropagation(); handleRescheduleOverdue(); }}
+     title="Reprogramar todas las instancias vencidas al día de hoy"
+   >
+     Reprogramar vencidos
+   </Button>
+ )}
  </CardContent>
  </Card>
 
@@ -565,6 +685,9 @@ export function PreventivoHoyView({
  onDelete={onDeleteMaintenance}
  onDuplicate={onDuplicateMaintenance}
  hideEquipo={groupBy === 'machine'}
+ isSelected={selectedIds.has(maintenance.id)}
+ onToggleSelect={toggleSelection}
+ selectionMode={selectionMode}
  />
  ))}
  </div>
@@ -583,11 +706,32 @@ export function PreventivoHoyView({
  onExecute={onExecuteMaintenance}
  onDelete={onDeleteMaintenance}
  onDuplicate={onDuplicateMaintenance}
+ isSelected={selectedIds.has(maintenance.id)}
+ onToggleSelect={toggleSelection}
+ selectionMode={selectionMode}
  />
  ))}
  </div>
  )}
  </div>
+
+ {/* Barra de acciones masivas */}
+ {selectionMode && selectedIds.size > 0 && (
+   <div className="sticky bottom-0 bg-background border border-border rounded-lg shadow-lg p-3 flex items-center justify-between gap-3">
+     <span className="text-sm font-medium">
+       {selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}
+     </span>
+     <div className="flex gap-2">
+       <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+         Limpiar
+       </Button>
+       <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+         <Trash2 className="h-4 w-4 mr-1" />
+         Eliminar ({selectedIds.size})
+       </Button>
+     </div>
+   </div>
+ )}
  </div>
  );
 }
@@ -601,6 +745,9 @@ interface MaintenanceCardProps {
  onDelete?: (m: any) => void;
  onDuplicate?: (m: any) => void;
  hideEquipo?: boolean;
+ isSelected?: boolean;
+ onToggleSelect?: (id: number) => void;
+ selectionMode?: boolean;
 }
 
 function MaintenanceCard({
@@ -611,6 +758,9 @@ function MaintenanceCard({
  onDelete,
  onDuplicate,
  hideEquipo = false,
+ isSelected = false,
+ onToggleSelect,
+ selectionMode = false,
 }: MaintenanceCardProps) {
  const maintenanceDate = maintenance.nextMaintenanceDate || maintenance.scheduledDate;
  const isPreventiveOverdue = (() => {
@@ -628,15 +778,24 @@ function MaintenanceCard({
  <Card
  className={cn(
  'cursor-pointer hover:shadow-md transition-shadow w-full overflow-hidden',
- isPreventiveOverdue && 'border-l-[3px] border-l-rose-500'
+ isPreventiveOverdue && 'border-l-[3px] border-l-rose-500',
+ selectionMode && isSelected && 'ring-2 ring-primary border-primary'
  )}
- onClick={() => onView?.(maintenance)}
+ onClick={() => selectionMode ? onToggleSelect?.(maintenance.id) : onView?.(maintenance)}
  >
  <div className="p-4">
  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
  <div className="flex-1 min-w-0">
  {/* Título, prioridad y badge SLA */}
  <div className="flex flex-wrap items-center gap-2 mb-2">
+ {selectionMode && (
+   <Checkbox
+     checked={isSelected}
+     onCheckedChange={() => onToggleSelect?.(maintenance.id)}
+     onClick={(e) => e.stopPropagation()}
+     className="shrink-0"
+   />
+ )}
  <h3 className="text-sm font-medium break-words">
  {maintenance.title || 'Sin título'}
  </h3>

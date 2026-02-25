@@ -68,6 +68,7 @@ export async function PUT(
     const {
       name,
       description,
+      code,
       itemType,
       category,
       brand,
@@ -75,6 +76,8 @@ export async function PUT(
       serialNumber,
       stockQuantity,
       minStockLevel,
+      maxStockLevel,
+      reorderPoint,
       location,
       status,
       cost,
@@ -83,7 +86,10 @@ export async function PUT(
       lastMaintenanceDate,
       nextMaintenanceDate,
       notes,
-      model3dUrl
+      model3dUrl,
+      isCritical,
+      leadTimeDays,
+      unit,
     } = body;
 
     // Validaciones básicas
@@ -110,23 +116,29 @@ export async function PUT(
     const updatedTool = await prisma.$queryRaw`
       UPDATE "Tool" SET
         name = ${name},
-        description = ${description || ''},
+        description = ${description || null},
+        code = ${code || null},
         "itemType" = ${itemType || 'TOOL'}::"ItemType",
         category = ${category},
-        brand = ${brand || ''},
-        model = ${model || ''},
-        "serialNumber" = ${serialNumber || ''},
-        "stockQuantity" = ${stockQuantity || 0},
-        "minStockLevel" = ${minStockLevel || 5},
-        location = ${location || ''},
+        brand = ${brand || null},
+        model = ${model || null},
+        "serialNumber" = ${serialNumber || null},
+        "stockQuantity" = ${stockQuantity ?? 0},
+        "minStockLevel" = ${minStockLevel ?? 0},
+        "maxStockLevel" = ${maxStockLevel ?? 100},
+        "reorderPoint" = ${reorderPoint ?? null},
+        location = ${location || null},
         status = ${status || 'AVAILABLE'}::"ToolStatus",
-        cost = ${cost || 0},
-        supplier = ${supplier || ''},
+        cost = ${cost ?? null},
+        supplier = ${supplier || null},
         "acquisitionDate" = ${acquisitionDate ? new Date(acquisitionDate) : null},
         "lastMaintenanceDate" = ${lastMaintenanceDate ? new Date(lastMaintenanceDate) : null},
         "nextMaintenanceDate" = ${nextMaintenanceDate ? new Date(nextMaintenanceDate) : null},
-        notes = ${notes || ''},
+        notes = ${notes || null},
         "model3dUrl" = ${model3dUrl || null},
+        "isCritical" = ${isCritical ?? false},
+        "leadTimeDays" = ${leadTimeDays ?? null},
+        unit = ${unit || 'unidad'},
         "updatedAt" = NOW()
       WHERE id = ${toolId}
       RETURNING *

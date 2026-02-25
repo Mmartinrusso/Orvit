@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ import {
   X,
   Send,
   Trash2,
+  Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -35,6 +37,9 @@ import { AlmacenFilters } from '../shared/AlmacenFilters';
 import { SolicitudStatusBadge, PriorityBadge } from '../shared/StatusBadge';
 import { EmptyState } from '../shared/EmptyState';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
+import { downloadCSV } from '@/lib/cargas/utils';
 
 interface SolicitudesTabProps {
   onNew: () => void;
@@ -46,6 +51,9 @@ interface SolicitudesTabProps {
  */
 export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const currentUserId = parseInt(user?.id ?? '0');
+
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filters, setFilters] = useState<SolicitudesFilters>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 });
@@ -119,7 +127,7 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
       const result = await batchAction.mutateAsync({
         ids: selectedIds,
         action: 'approve',
-        userId: 1, // TODO: Get current user
+        userId: currentUserId,
       });
       toast({
         title: 'Acción completada',
@@ -131,6 +139,21 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
     }
   };
 
+  const handleExportCSV = useCallback(() => {
+    const headers = ['Número', 'Tipo', 'Estado', 'Urgencia', 'Solicitante', 'Items', 'Fecha'];
+    const rows = requests.map((r: any) => [
+      r.numero || '',
+      r.tipo || '',
+      r.estado || '',
+      r.urgencia || '',
+      r.solicitante?.name || '',
+      r.items?.length ?? 0,
+      r.createdAt ? format(new Date(r.createdAt), 'dd/MM/yyyy', { locale: es }) : '',
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    downloadCSV(csv, `solicitudes-${format(new Date(), 'yyyy-MM-dd', { locale: es })}.csv`);
+  }, [requests]);
+
   // Handlers de filtros
   const handleFilterChange = useCallback((key: string, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -141,6 +164,50 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
     setFilters({});
     setPagination({ page: 1, pageSize: 20 });
   }, []);
+
+  const ActionsMenu = ({ request }: { request: any }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onView(request.id)}>
+          <Eye className="h-4 w-4 mr-2" />
+          Ver detalle
+        </DropdownMenuItem>
+        {request.estado === 'BORRADOR' && (
+          <DropdownMenuItem onClick={() => handleSubmit(request.id)}>
+            <Send className="h-4 w-4 mr-2" />
+            Enviar
+          </DropdownMenuItem>
+        )}
+        {request.estado === 'PENDIENTE_APROBACION' && (
+          <>
+            <DropdownMenuItem onClick={() => handleApprove(request.id, currentUserId)}>
+              <Check className="h-4 w-4 mr-2" />
+              Aprobar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleReject(request.id, currentUserId)}>
+              <X className="h-4 w-4 mr-2" />
+              Rechazar
+            </DropdownMenuItem>
+          </>
+        )}
+        <DropdownMenuSeparator />
+        {request.estado !== 'DESPACHADA' && request.estado !== 'CANCELADA' && (
+          <DropdownMenuItem
+            onClick={() => handleCancel(request.id)}
+            className="text-destructive"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Cancelar
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="space-y-4">
@@ -174,14 +241,18 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
               Aprobar ({selectedIds.length})
             </Button>
           )}
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleExportCSV} disabled={requests.length === 0} title="Exportar CSV">
+            <Download className="h-4 w-4" />
+          </Button>
           <Button onClick={onNew} size="sm">
             <Plus className="h-4 w-4 mr-1" />
-            Nueva Solicitud
+            <span className="hidden sm:inline">Nueva Solicitud</span>
+            <span className="sm:hidden">Nueva</span>
           </Button>
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Contenido */}
       {isLoading ? (
         <SkeletonTable rows={5} cols={9} />
       ) : requests.length === 0 ? (
@@ -191,7 +262,41 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
         />
       ) : (
         <>
-          <div className="rounded-md border overflow-x-auto">
+          {/* Cards mobile */}
+          <div className="space-y-2 md:hidden">
+            {requests.map((request: any) => (
+              <div
+                key={request.id}
+                className="p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => onView(request.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{request.numero}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {request.solicitante?.name || '-'} · {format(new Date(request.createdAt), 'dd/MM/yy', { locale: es })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <SolicitudStatusBadge status={request.estado} size="sm" />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionsMenu request={request} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <PriorityBadge priority={request.urgencia} size="sm" />
+                  <span className="text-xs text-muted-foreground">{request.tipo}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {request.items?.length || 0} item{(request.items?.length || 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabla desktop */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -238,47 +343,7 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
                       {format(new Date(request.createdAt), 'dd/MM/yyyy', { locale: es })}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onView(request.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver detalle
-                          </DropdownMenuItem>
-                          {request.estado === 'BORRADOR' && (
-                            <DropdownMenuItem onClick={() => handleSubmit(request.id)}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Enviar
-                            </DropdownMenuItem>
-                          )}
-                          {request.estado === 'PENDIENTE_APROBACION' && (
-                            <>
-                              <DropdownMenuItem onClick={() => handleApprove(request.id, 1)}>
-                                <Check className="h-4 w-4 mr-2" />
-                                Aprobar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleReject(request.id, 1)}>
-                                <X className="h-4 w-4 mr-2" />
-                                Rechazar
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          <DropdownMenuSeparator />
-                          {request.estado !== 'DESPACHADA' && request.estado !== 'CANCELADA' && (
-                            <DropdownMenuItem
-                              onClick={() => handleCancel(request.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Cancelar
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ActionsMenu request={request} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -289,7 +354,7 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
           {/* Paginación */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Mostrando {requests.length} de {total} solicitudes
+              {requests.length} de {total} solicitudes
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -301,7 +366,7 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
                 Anterior
               </Button>
               <span>
-                Página {pagination.page} de {totalPages}
+                {pagination.page} / {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -318,4 +383,3 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
     </div>
   );
 }
-

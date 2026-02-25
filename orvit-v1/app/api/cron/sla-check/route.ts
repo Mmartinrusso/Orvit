@@ -14,6 +14,7 @@ import { getCorrectiveSettings } from '@/lib/corrective/qa-rules';
 import {
   notifySLAAtRisk,
   notifySLABreached,
+  notifyPriorityEscalated,
   SLA_WARNING_THRESHOLDS,
 } from '@/lib/discord/notifications';
 
@@ -443,6 +444,92 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ============================================================
+    // Auto-escalation: Escalar prioridad de fallas vencidas
+    // P3 > 48h sin resolver → P2
+    // P2 > 24h sin resolver → P1
+    // ============================================================
+    let totalEscalated = 0;
+
+    for (const company of companies) {
+      try {
+        // Buscar fallas abiertas con prioridad escalable
+        const escalatableFailures = await prisma.failureOccurrence.findMany({
+          where: {
+            companyId: company.id,
+            status: { in: ['OPEN', 'IN_PROGRESS'] },
+            priority: { in: ['P2', 'P3'] },
+          },
+          include: {
+            machine: { select: { name: true, sectorId: true } },
+            workOrder: { select: { id: true, assignedToId: true, assignedTo: { select: { name: true } } } },
+          }
+        });
+
+        for (const failure of escalatableFailures) {
+          const hoursOpen = (now.getTime() - new Date(failure.reportedAt).getTime()) / (1000 * 60 * 60);
+
+          let shouldEscalate = false;
+          let newPriority: string | null = null;
+
+          if (failure.priority === 'P3' && hoursOpen > 48) {
+            shouldEscalate = true;
+            newPriority = 'P2';
+          } else if (failure.priority === 'P2' && hoursOpen > 24) {
+            shouldEscalate = true;
+            newPriority = 'P1';
+          }
+
+          if (shouldEscalate && newPriority) {
+            const oldPriority = failure.priority!;
+
+            // Actualizar prioridad de la falla
+            await prisma.failureOccurrence.update({
+              where: { id: failure.id },
+              data: { priority: newPriority }
+            });
+
+            // Actualizar prioridad de la OT asociada si existe
+            if (failure.workOrder?.id) {
+              const woPriority = newPriority === 'P1' ? 'URGENT' : newPriority === 'P2' ? 'HIGH' : 'MEDIUM';
+              await prisma.workOrder.update({
+                where: { id: failure.workOrder.id },
+                data: { priority: woPriority }
+              });
+            }
+
+            totalEscalated++;
+            console.log(`🆙 Falla #${failure.id} escalada ${oldPriority} → ${newPriority} (${Math.round(hoursOpen)}h sin resolver)`);
+
+            // Notificar por Discord
+            if (failure.machine?.sectorId) {
+              try {
+                await notifyPriorityEscalated({
+                  failureId: failure.id,
+                  title: failure.title,
+                  machineName: failure.machine.name,
+                  sectorId: failure.machine.sectorId,
+                  previousPriority: oldPriority,
+                  newPriority,
+                  reason: `Auto-escalada: ${Math.round(hoursOpen)}h sin resolver`,
+                  assignedToId: failure.workOrder?.assignedToId || undefined,
+                  assignedTo: failure.workOrder?.assignedTo?.name,
+                });
+              } catch (discordErr) {
+                console.warn('⚠️ Error notificando escalamiento:', discordErr);
+              }
+            }
+          }
+        }
+      } catch (escError) {
+        console.warn(`⚠️ Error en auto-escalation para empresa ${company.id}:`, escError);
+      }
+    }
+
+    if (totalEscalated > 0) {
+      console.log(`🆙 Auto-escalation: ${totalEscalated} fallas escaladas`);
+    }
+
     console.log(`✅ SLA check completado. ${results.reduce((sum, r) => sum + r.violations.length, 0)} violaciones encontradas.`);
 
     const totalViolations = results.reduce((sum, r) => sum + r.violations.length, 0);
@@ -458,6 +545,7 @@ export async function GET(request: NextRequest) {
       summary: {
         totalViolations,
         totalWarnings,
+        totalEscalated,
         corrective: {
           violations: totalViolations - totalPreventiveViolations,
           warnings: totalWarnings - totalPreventiveWarnings

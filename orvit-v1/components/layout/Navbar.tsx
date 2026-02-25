@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, Sun, Moon, AlertTriangle, Play, Package } from 'lucide-react';
+import { Menu, User, LogOut, Sun, Moon, AlertTriangle, Play, Package, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import AreaSelector from './AreaSelector';
@@ -131,10 +131,28 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
         {/* Notifications */}
         <NotificationPanel />
-        
+
+        {/* Settings shortcut */}
+        {currentCompany && currentArea && (
+          <Button variant="ghost" size="icon" asChild>
+            <a
+              href={
+                currentArea.name === 'Administración'
+                  ? '/administracion/configuracion'
+                  : currentArea.name === 'Mantenimiento'
+                  ? '/mantenimiento/configuracion'
+                  : '/configuracion'
+              }
+              aria-label="Configuración"
+            >
+              <Settings className="h-5 w-5" />
+            </a>
+          </Button>
+        )}
+
         {/* Theme selector */}
         <ThemeSelector />
-        
+
         <Separator orientation="vertical" className="h-8" />
         
         {/* User menu */}

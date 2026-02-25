@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
@@ -103,25 +104,12 @@ const priorityConfig = {
 export default function ForecastPage() {
   const permissions = usePanolPermissions();
 
-  const [loading, setLoading] = useState(true);
   const [days, setDays] = useState('30');
   const [includeHistory, setIncludeHistory] = useState(true);
 
-  const [needs, setNeeds] = useState<ToolNeed[]>([]);
-  const [scheduledPMs, setScheduledPMs] = useState<ScheduledPM[]>([]);
-  const [stats, setStats] = useState<ForecastStats>({
-    totalScheduledPMs: 0,
-    uniqueToolsNeeded: 0,
-    criticalItems: 0,
-    highPriorityItems: 0,
-    estimatedCost: 0,
-    stockoutRisk: 0,
-  });
-  const [forecastPeriod, setForecastPeriod] = useState({ from: new Date(), to: new Date(), days: 30 });
-
-  const fetchForecast = async () => {
-    setLoading(true);
-    try {
+  const { data: forecastData, isLoading: loading, refetch } = useQuery({
+    queryKey: ['panol', 'forecast', days, includeHistory],
+    queryFn: async () => {
       const params = new URLSearchParams();
       params.set('days', days);
       if (includeHistory) params.set('includeHistory', 'true');
@@ -130,21 +118,24 @@ export default function ForecastPage() {
       const data = await res.json();
 
       if (data.success) {
-        setNeeds(data.data.needs || []);
-        setScheduledPMs(data.data.scheduledPMs || []);
-        setStats(data.data.stats || {});
-        setForecastPeriod(data.data.forecastPeriod || {});
+        return {
+          needs: (data.data.needs || []) as ToolNeed[],
+          scheduledPMs: (data.data.scheduledPMs || []) as ScheduledPM[],
+          stats: (data.data.stats || {}) as ForecastStats,
+          forecastPeriod: data.data.forecastPeriod || { from: new Date(), to: new Date(), days: 30 },
+        };
       }
-    } catch (error) {
-      toast.error('Error al calcular pronóstico');
-    } finally {
-      setLoading(false);
-    }
-  };
+      throw new Error('Error al calcular pronóstico');
+    },
+    staleTime: 3 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchForecast();
-  }, [days, includeHistory]);
+  const needs = forecastData?.needs ?? [];
+  const scheduledPMs = forecastData?.scheduledPMs ?? [];
+  const stats = forecastData?.stats ?? {
+    totalScheduledPMs: 0, uniqueToolsNeeded: 0, criticalItems: 0,
+    highPriorityItems: 0, estimatedCost: 0, stockoutRisk: 0,
+  };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
@@ -175,9 +166,9 @@ export default function ForecastPage() {
                 Necesidades de repuestos según mantenimientos preventivos programados
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchForecast}>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Actualizar
+              <span className="hidden sm:inline">Actualizar</span>
             </Button>
           </div>
         </div>
@@ -308,81 +299,128 @@ export default function ForecastPage() {
                     <p className="text-muted-foreground">No hay necesidades proyectadas para este período</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Repuesto</TableHead>
-                        <TableHead className="text-center">Stock</TableHead>
-                        <TableHead className="text-center">Necesidad</TableHead>
-                        <TableHead className="text-center">Pedir</TableHead>
-                        <TableHead className="text-center">Prioridad</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Mobile: Cards */}
+                    <div className="space-y-2 md:hidden">
                       {needs.map((need) => {
                         const priorityInfo = priorityConfig[need.priority];
-                        const stockRatio = (need.currentStock / Math.max(need.projectedNeed, 1)) * 100;
-
                         return (
-                          <TableRow key={need.tool.id}>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium text-sm">{need.tool.name}</p>
+                          <div key={need.tool.id} className="p-3 rounded-lg border bg-card">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{need.tool.name}</p>
                                 {need.linkedMachines.length > 0 && (
-                                  <p className="text-xs text-muted-foreground">
+                                  <p className="text-xs text-muted-foreground truncate">
                                     {need.linkedMachines.slice(0, 2).map(m => m.name).join(', ')}
-                                    {need.linkedMachines.length > 2 && ` +${need.linkedMachines.length - 2}`}
                                   </p>
                                 )}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-center">
+                              <Badge className={cn('shrink-0', priorityInfo.color)}>{priorityInfo.label}</Badge>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                              <div className="p-1.5 rounded bg-muted/50">
+                                <p className="text-xs text-muted-foreground">Stock</p>
                                 <p className={cn(
-                                  'font-semibold',
+                                  'text-sm font-bold',
                                   need.currentStock <= 0 ? 'text-destructive' :
                                   need.currentStock < need.minStock ? 'text-warning-muted-foreground' : ''
-                                )}>
-                                  {need.currentStock}
-                                </p>
-                                <Progress
-                                  value={Math.min(stockRatio, 100)}
-                                  className={cn(
-                                    'h-1 mt-1 w-16 mx-auto',
-                                    stockRatio < 50 && '[&>div]:bg-destructive',
-                                    stockRatio >= 50 && stockRatio < 100 && '[&>div]:bg-warning'
-                                  )}
-                                />
+                                )}>{need.currentStock}</p>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <span className="font-medium">{need.projectedNeed}</span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Reservado PM: {need.reservedForPM}</p>
-                                  <p>Prom. mensual: {need.avgMonthlyConsumption}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {need.suggestedOrder > 0 ? (
-                                <Badge variant="outline" className="font-semibold text-info-muted-foreground border-info-muted-foreground">
-                                  +{need.suggestedOrder}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge className={priorityInfo.color}>{priorityInfo.label}</Badge>
-                            </TableCell>
-                          </TableRow>
+                              <div className="p-1.5 rounded bg-muted/50">
+                                <p className="text-xs text-muted-foreground">Necesidad</p>
+                                <p className="text-sm font-bold">{need.projectedNeed}</p>
+                              </div>
+                              <div className="p-1.5 rounded bg-muted/50">
+                                <p className="text-xs text-muted-foreground">Pedir</p>
+                                <p className="text-sm font-bold text-info-muted-foreground">
+                                  {need.suggestedOrder > 0 ? `+${need.suggestedOrder}` : '-'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         );
                       })}
-                    </TableBody>
-                  </Table>
+                    </div>
+
+                    {/* Desktop: Table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Repuesto</TableHead>
+                            <TableHead className="text-center">Stock</TableHead>
+                            <TableHead className="text-center">Necesidad</TableHead>
+                            <TableHead className="text-center">Pedir</TableHead>
+                            <TableHead className="text-center">Prioridad</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {needs.map((need) => {
+                            const priorityInfo = priorityConfig[need.priority];
+                            const stockRatio = (need.currentStock / Math.max(need.projectedNeed, 1)) * 100;
+
+                            return (
+                              <TableRow key={need.tool.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium text-sm">{need.tool.name}</p>
+                                    {need.linkedMachines.length > 0 && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {need.linkedMachines.slice(0, 2).map(m => m.name).join(', ')}
+                                        {need.linkedMachines.length > 2 && ` +${need.linkedMachines.length - 2}`}
+                                      </p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-center">
+                                    <p className={cn(
+                                      'font-semibold',
+                                      need.currentStock <= 0 ? 'text-destructive' :
+                                      need.currentStock < need.minStock ? 'text-warning-muted-foreground' : ''
+                                    )}>
+                                      {need.currentStock}
+                                    </p>
+                                    <Progress
+                                      value={Math.min(stockRatio, 100)}
+                                      className={cn(
+                                        'h-1 mt-1 w-16 mx-auto',
+                                        stockRatio < 50 && '[&>div]:bg-destructive',
+                                        stockRatio >= 50 && stockRatio < 100 && '[&>div]:bg-warning'
+                                      )}
+                                    />
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <span className="font-medium">{need.projectedNeed}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Reservado PM: {need.reservedForPM}</p>
+                                      <p>Prom. mensual: {need.avgMonthlyConsumption}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {need.suggestedOrder > 0 ? (
+                                    <Badge variant="outline" className="font-semibold text-info-muted-foreground border-info-muted-foreground">
+                                      +{need.suggestedOrder}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge className={priorityInfo.color}>{priorityInfo.label}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

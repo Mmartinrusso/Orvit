@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
@@ -97,65 +98,47 @@ const statusConfig = {
   EXPIRED: { label: 'Vencido', color: 'bg-destructive/10 text-destructive', icon: XCircle },
 };
 
+async function fetchLotsData(statusFilter: string) {
+  const params = new URLSearchParams({ withInstallations: 'false' });
+  if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
+  const res = await fetch(`/api/panol/lots?${params}`);
+  const data = await res.json();
+  if (!data.success) throw new Error('Error al cargar lotes');
+  return { lots: data.data as Lot[], stats: data.stats };
+}
+
 export default function LotesPage() {
   const permissions = usePanolPermissions();
-
-  const [lots, setLots] = useState<Lot[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [stats, setStats] = useState<any>({});
-
-  // Detail dialog
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [loadingInstallations, setLoadingInstallations] = useState(false);
 
-  const fetchLots = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter && statusFilter !== 'all') {
-        params.set('status', statusFilter);
-      }
-      params.set('withInstallations', 'false');
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['panol-lots', statusFilter],
+    queryFn: () => fetchLotsData(statusFilter),
+    staleTime: 1000 * 60 * 3,
+  });
 
-      const res = await fetch(`/api/panol/lots?${params}`);
-      const data = await res.json();
-
-      if (data.success) {
-        setLots(data.data);
-        setStats(data.stats);
-      }
-    } catch (error) {
-      toast.error('Error al cargar lotes');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const lots = data?.lots || [];
+  const stats = data?.stats || {};
 
   const fetchLotDetail = async (lot: Lot) => {
     setSelectedLot(lot);
     setLoadingInstallations(true);
-
     try {
       const res = await fetch(`/api/panol/lots?toolId=${lot.toolId}&withInstallations=true`);
-      const data = await res.json();
-
-      if (data.success) {
-        const fullLot = data.data.find((l: Lot) => l.id === lot.id);
-        if (fullLot) {
-          setSelectedLot(fullLot);
-        }
+      const lotData = await res.json();
+      if (lotData.success) {
+        const fullLot = lotData.data.find((l: Lot) => l.id === lot.id);
+        if (fullLot) setSelectedLot(fullLot);
       }
-    } catch (error) {
+    } catch {
       toast.error('Error al cargar instalaciones');
     } finally {
       setLoadingInstallations(false);
     }
   };
-
-  useEffect(() => {
-    fetchLots();
-  }, [statusFilter]);
 
   const filteredLots = useMemo(() => {
     if (!searchTerm) return lots;

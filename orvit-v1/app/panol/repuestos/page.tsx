@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import { usePanolPermissions } from '@/hooks/use-panol-permissions';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,6 +67,7 @@ import {
   X,
   Cog,
   DollarSign,
+  History,
 } from 'lucide-react';
 
 interface SparePart {
@@ -102,8 +105,22 @@ export default function RepuestosPage() {
   const { currentCompany } = useCompany();
   const { canViewProducts, canCreateProduct, canEditProduct, canDeleteProduct } = usePanolPermissions();
 
-  const [spareParts, setSpareParts] = useState<SparePart[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: spareParts = [], isLoading: loading } = useQuery({
+    queryKey: ['panol', 'repuestos', currentCompany?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/tools?companyId=${currentCompany!.id}&itemType=SPARE_PART`);
+      if (!res.ok) throw new Error('Error cargando repuestos');
+      const data = await res.json();
+      return (Array.isArray(data) ? data : (data?.tools || data?.items || [])) as SparePart[];
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 3 * 60 * 1000,
+  });
+
+  const invalidateParts = () => queryClient.invalidateQueries({ queryKey: ['panol', 'repuestos', currentCompany?.id] });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
@@ -134,29 +151,6 @@ export default function RepuestosPage() {
     unit: 'unidad',
   });
   const [submitting, setSubmitting] = useState(false);
-
-  const fetchSpareParts = useCallback(async () => {
-    if (!currentCompany?.id) return;
-
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/tools?companyId=${currentCompany.id}&itemType=SPARE_PART`);
-      if (!res.ok) throw new Error('Error cargando repuestos');
-      const data = await res.json();
-      const partsArray = Array.isArray(data) ? data : (data?.tools || data?.items || []);
-      setSpareParts(partsArray);
-    } catch (error) {
-      toast.error('Error al cargar los repuestos');
-      console.error(error);
-      setSpareParts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentCompany?.id]);
-
-  useEffect(() => {
-    fetchSpareParts();
-  }, [fetchSpareParts]);
 
   const kpis = useMemo<KPIs>(() => {
     const total = spareParts.length;
@@ -260,7 +254,7 @@ export default function RepuestosPage() {
       toast.success('Repuesto creado correctamente');
       setShowCreateDialog(false);
       resetForm();
-      fetchSpareParts();
+      invalidateParts();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -291,7 +285,7 @@ export default function RepuestosPage() {
       setShowEditDialog(false);
       setSelectedPart(null);
       resetForm();
-      fetchSpareParts();
+      invalidateParts();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -316,7 +310,7 @@ export default function RepuestosPage() {
       toast.success('Repuesto eliminado correctamente');
       setShowDeleteDialog(false);
       setSelectedPart(null);
-      fetchSpareParts();
+      invalidateParts();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -406,7 +400,7 @@ export default function RepuestosPage() {
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9" onClick={fetchSpareParts}>
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => invalidateParts()}>
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -414,7 +408,7 @@ export default function RepuestosPage() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9" onClick={exportCSV}>
+                  <Button variant="outline" size="sm" className="h-9 hidden sm:flex" onClick={exportCSV}>
                     <Download className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -541,7 +535,7 @@ export default function RepuestosPage() {
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[130px] h-9 bg-background">
+              <SelectTrigger className="w-full sm:w-[130px] h-9 bg-background hidden sm:flex">
                 <SelectValue placeholder="Ordenar" />
               </SelectTrigger>
               <SelectContent>
@@ -555,117 +549,174 @@ export default function RepuestosPage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 hidden sm:flex"
               onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
 
-          {/* Table */}
-          <div className="rounded-lg border bg-card overflow-hidden">
-            {filteredParts.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No hay repuestos que mostrar</p>
-                {canCreateProduct && (
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => { resetForm(); setShowCreateDialog(true); }}
+          {/* Content */}
+          {filteredParts.length === 0 ? (
+            <div className="text-center py-12 rounded-lg border bg-card">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No hay repuestos que mostrar</p>
+              {canCreateProduct && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => { resetForm(); setShowCreateDialog(true); }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear primer repuesto
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Mobile: Cards */}
+              <div className="space-y-2 md:hidden">
+                {filteredParts.map((part) => (
+                  <div
+                    key={part.id}
+                    className="p-3 rounded-lg border bg-card"
+                    onClick={() => { setSelectedPart(part); setShowDetailDialog(true); }}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Crear primer repuesto
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-medium">Código</TableHead>
-                    <TableHead className="font-medium">Nombre</TableHead>
-                    <TableHead className="font-medium">Categoría</TableHead>
-                    <TableHead className="text-center font-medium">Stock</TableHead>
-                    <TableHead className="font-medium">Estado</TableHead>
-                    <TableHead className="font-medium">Ubicación</TableHead>
-                    <TableHead className="text-right font-medium">Costo</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredParts.map((part) => (
-                    <TableRow key={part.id} className="group">
-                      <TableCell className="font-mono text-xs">
-                        {part.code || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{part.name}</span>
-                          {part.isCritical && (
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <ShieldAlert className="h-4 w-4 text-accent-purple-muted-foreground" />
-                              </TooltipTrigger>
-                              <TooltipContent>Repuesto crítico</TooltipContent>
-                            </Tooltip>
-                          )}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-sm truncate">{part.name}</p>
+                          {part.isCritical && <ShieldAlert className="h-3.5 w-3.5 text-accent-purple-muted-foreground shrink-0" />}
                         </div>
-                        {part.brand && (
-                          <p className="text-xs text-muted-foreground">{part.brand} {part.model}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{part.category || 'Sin categoría'}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className={`font-semibold ${part.stockQuantity <= part.minStockLevel ? 'text-destructive' : ''}`}>
+                        {part.code && <p className="text-xs font-mono text-muted-foreground">{part.code}</p>}
+                      </div>
+                      {getStockBadge(part)}
+                    </div>
+                    <div className="flex items-center justify-between mt-2 text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className={cn('font-bold', part.stockQuantity <= part.minStockLevel ? 'text-destructive' : '')}>
                           {part.stockQuantity}
                         </span>
-                        <span className="text-muted-foreground text-xs"> / {part.minStockLevel}</span>
-                      </TableCell>
-                      <TableCell>{getStockBadge(part)}</TableCell>
-                      <TableCell className="text-muted-foreground">{part.location || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        {part.cost ? `$${part.cost.toLocaleString('es-AR')}` : '-'}
-                      </TableCell>
-                      <TableCell>
+                        <span className="text-muted-foreground text-xs">mín: {part.minStockLevel}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {canEditProduct && (
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); openEditDialog(part); }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { setSelectedPart(part); setShowDetailDialog(true); }}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver detalles
+                              <Eye className="h-4 w-4 mr-2" /> Ver detalles
                             </DropdownMenuItem>
-                            {canEditProduct && (
-                              <DropdownMenuItem onClick={() => openEditDialog(part)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
                             {canDeleteProduct && (
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => { setSelectedPart(part); setShowDeleteDialog(true); }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
+                              <DropdownMenuItem className="text-destructive" onClick={() => { setSelectedPart(part); setShowDeleteDialog(true); }}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Eliminar
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: Table */}
+              <div className="hidden md:block rounded-lg border bg-card overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="font-medium">Código</TableHead>
+                      <TableHead className="font-medium">Nombre</TableHead>
+                      <TableHead className="font-medium">Categoría</TableHead>
+                      <TableHead className="text-center font-medium">Stock</TableHead>
+                      <TableHead className="font-medium">Estado</TableHead>
+                      <TableHead className="font-medium">Ubicación</TableHead>
+                      <TableHead className="text-right font-medium">Costo</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.map((part) => (
+                      <TableRow key={part.id} className="group">
+                        <TableCell className="font-mono text-xs">
+                          {part.code || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{part.name}</span>
+                            {part.isCritical && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <ShieldAlert className="h-4 w-4 text-accent-purple-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>Repuesto crítico</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                          {part.brand && (
+                            <p className="text-xs text-muted-foreground">{part.brand} {part.model}</p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{part.category || 'Sin categoría'}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className={`font-semibold ${part.stockQuantity <= part.minStockLevel ? 'text-destructive' : ''}`}>
+                            {part.stockQuantity}
+                          </span>
+                          <span className="text-muted-foreground text-xs"> / {part.minStockLevel}</span>
+                        </TableCell>
+                        <TableCell>{getStockBadge(part)}</TableCell>
+                        <TableCell className="text-muted-foreground">{part.location || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          {part.cost ? `$${part.cost.toLocaleString('es-AR')}` : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { setSelectedPart(part); setShowDetailDialog(true); }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver detalles
+                              </DropdownMenuItem>
+                              {canEditProduct && (
+                                <DropdownMenuItem onClick={() => openEditDialog(part)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              {canDeleteProduct && (
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => { setSelectedPart(part); setShowDeleteDialog(true); }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Dialog Crear */}
@@ -710,7 +761,7 @@ export default function RepuestosPage() {
 
         {/* Dialog Detalle */}
         <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
@@ -768,6 +819,12 @@ export default function RepuestosPage() {
                   )}
                   {getStockBadge(selectedPart)}
                 </div>
+
+                {/* Historial de Movimientos */}
+                <SparePartMovements
+                  toolId={selectedPart.id}
+                  companyId={currentCompany?.id}
+                />
               </div>
             )}
           </DialogContent>
@@ -1002,6 +1059,98 @@ function SparePartForm({ formData, setFormData, onSubmit, onCancel, submitting, 
           {submitLabel}
         </Button>
       </DialogFooter>
+    </div>
+  );
+}
+
+const MOVEMENT_TYPE_LABELS: Record<string, string> = {
+  IN: 'Entrada',
+  OUT: 'Salida',
+  TRANSFER: 'Transferencia',
+  MAINTENANCE: 'Mantenimiento',
+  RETURN: 'Devolución',
+  ADJUSTMENT: 'Ajuste',
+  LOAN: 'Préstamo',
+};
+
+function SparePartMovements({ toolId, companyId }: { toolId: number; companyId?: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['panol', 'movements', toolId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tools/movements?companyId=${companyId}&toolId=${toolId}&limit=10`);
+      if (!res.ok) throw new Error('Error cargando movimientos');
+      const json = await res.json();
+      return (json.movements || []) as Array<{
+        id: number;
+        type: string;
+        quantity: number;
+        reason: string | null;
+        createdAt: string;
+      }>;
+    },
+    enabled: !!companyId && !!toolId,
+    staleTime: 60 * 1000,
+  });
+
+  return (
+    <div className="border-t pt-4">
+      <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+        <History className="h-4 w-4" />
+        Últimos Movimientos
+      </h4>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+      ) : !data || data.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-2">Sin movimientos registrados</p>
+      ) : (
+        <div className="rounded-md border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Tipo</TableHead>
+                <TableHead className="text-xs">Cant.</TableHead>
+                <TableHead className="text-xs">Motivo</TableHead>
+                <TableHead className="text-xs">Fecha</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((mov) => (
+                <TableRow key={mov.id}>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-xs',
+                        mov.type === 'IN' || mov.type === 'RETURN'
+                          ? 'border-success-muted text-success'
+                          : mov.type === 'OUT' || mov.type === 'LOAN'
+                          ? 'border-destructive/30 text-destructive'
+                          : ''
+                      )}
+                    >
+                      {MOVEMENT_TYPE_LABELS[mov.type] || mov.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm font-medium">
+                    {mov.type === 'IN' || mov.type === 'RETURN' ? '+' : '-'}{mov.quantity}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                    {mov.reason || '-'}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(mov.createdAt).toLocaleDateString('es-AR', {
+                      day: '2-digit', month: '2-digit', year: '2-digit',
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   try {
     const componentId = parseInt(params.id);
 
@@ -16,6 +22,15 @@ export async function GET(
         { error: 'ID de componente inválido' },
         { status: 400 }
       );
+    }
+
+    // Verificar company boundary a través de la máquina
+    const component = await prisma.component.findUnique({
+      where: { id: componentId },
+      select: { id: true, machine: { select: { companyId: true } } }
+    });
+    if (!component || component.machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Obtener work orders que tienen este componente asignado

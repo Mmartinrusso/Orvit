@@ -14,8 +14,7 @@ import { z } from 'zod';
 import { calculatePriority } from '@/lib/corrective/priority-calculator';
 import { detectDuplicates } from '@/lib/corrective/duplicate-detector';
 import { handleDowntime } from '@/lib/corrective/downtime-manager';
-// Nota: La asignación se hace desde el frontend con AssignAndPlanDialog
-// import { suggestAssignee } from '@/lib/corrective/assignee-suggester';
+import { notifyNewFailure, notifyP1ToSectorTechnicians } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -410,7 +409,75 @@ export async function POST(request: NextRequest) {
       console.log('   - DowntimeLog Error:', downtimeError);
     }
 
-    // 12. TODO: Agregar notificación Discord cuando esté implementado
+    // 12. Notificaciones Discord (fire-and-forget)
+    const sendDiscordNotifications = async () => {
+      try {
+        const machineWithSector = await prisma.machine.findUnique({
+          where: { id: data.machineId },
+          select: { sectorId: true }
+        });
+
+        if (!machineWithSector?.sectorId) return;
+
+        // Solo notificar si no es duplicado vinculado
+        if (!isLinkingToExisting) {
+          await notifyNewFailure({
+            id: occurrence.id,
+            title: occurrence.title,
+            machineName: occurrence.machine?.name || 'Sin máquina',
+            machineId: data.machineId,
+            sectorId: machineWithSector.sectorId,
+            priority: priorityResult.priority,
+            category: data.failureCategory,
+            reportedBy: occurrence.reporter?.name || 'Usuario',
+            causedDowntime: data.causedDowntime,
+            description: data.description
+          });
+
+          // Si es P1, enviar DM a técnicos del sector
+          if (priorityResult.priority === 'P1') {
+            const sectorTechnicians = await prisma.user.findMany({
+              where: {
+                discordUserId: { not: null },
+                isActive: true,
+                companies: {
+                  some: {
+                    companyId,
+                    role: {
+                      OR: [
+                        { name: { contains: 'Técnico', mode: 'insensitive' } },
+                        { name: { contains: 'Tecnico', mode: 'insensitive' } },
+                        { name: { contains: 'Mantenimiento', mode: 'insensitive' } },
+                      ]
+                    }
+                  }
+                },
+                machinesTechnical: {
+                  some: { sectorId: machineWithSector.sectorId }
+                }
+              },
+              select: { id: true }
+            });
+
+            if (sectorTechnicians.length > 0) {
+              await notifyP1ToSectorTechnicians({
+                failureId: occurrence.id,
+                title: occurrence.title,
+                machineName: occurrence.machine?.name || 'Sin máquina',
+                sectorId: machineWithSector.sectorId,
+                category: data.failureCategory,
+                reportedBy: occurrence.reporter?.name || 'Usuario',
+                causedDowntime: data.causedDowntime,
+                description: data.description
+              }, sectorTechnicians.map(t => t.id));
+            }
+          }
+        }
+      } catch (discordError) {
+        console.warn('⚠️ Error enviando notificación Discord:', discordError);
+      }
+    };
+    sendDiscordNotifications().catch(() => {});
 
     // 13. Retornar resultado exitoso con toda la info
     return NextResponse.json({

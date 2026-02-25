@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 import { getUserName, getComponentNames } from '@/lib/maintenance-helpers';
 import {
   getTemplateById,
@@ -8,12 +10,25 @@ import {
   templateToLegacyJson,
 } from '@/lib/maintenance/preventive-template.repository';
 
+// Helper: verificar autenticación
+async function getAuth() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
+
 // GET /api/maintenance/preventive/[id] - Obtener mantenimiento preventivo por ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const id = Number(params.id);
     const template = await getTemplateById(id);
 
@@ -22,6 +37,12 @@ export async function GET(
         { error: 'Mantenimiento preventivo no encontrado' },
         { status: 404 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && template.companyId !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     const legacyData = templateToLegacyJson(template);
@@ -59,6 +80,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const id = Number(params.id);
     const body = await request.json();
 
@@ -69,6 +95,12 @@ export async function PUT(
         { error: 'Mantenimiento preventivo no encontrado' },
         { status: 404 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && existing.companyId !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     // Procesar assignedToId
@@ -189,6 +221,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const id = Number(params.id);
 
     const existing = await prisma.preventiveTemplate.findUnique({ where: { id } });
@@ -197,6 +234,12 @@ export async function DELETE(
         { error: 'Mantenimiento preventivo no encontrado' },
         { status: 404 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && existing.companyId !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     // Eliminar documentos legacy asociados si existen

@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+import { JWT_SECRET } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
+const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+
+async function getCurrentUserId(): Promise<number | null> {
+  try {
+    const token = cookies().get('token')?.value;
+    if (!token) return null;
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    return payload.userId as number;
+  } catch {
+    return null;
+  }
+}
 
 // GET - Obtener movimientos
 export async function GET(request: NextRequest) {
@@ -27,6 +41,19 @@ export async function GET(request: NextRequest) {
       whereClause.toolId = parseInt(toolId);
     }
 
+    // Filtro de rango de fechas
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+
+    if (dateFrom) {
+      whereClause.createdAt = { ...whereClause.createdAt, gte: new Date(dateFrom) };
+    }
+    if (dateTo) {
+      const endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+      whereClause.createdAt = { ...whereClause.createdAt, lte: endDate };
+    }
+
     const movements = await prisma.toolMovement.findMany({
       where: whereClause,
       take: limit,
@@ -44,9 +71,24 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Batch-lookup de usuarios (ToolMovement no tiene relación Prisma con User)
+    const userIds = [...new Set(movements.filter(m => m.userId).map(m => m.userId!))];
+    const users = userIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true }
+        })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    const movementsWithUsers = movements.map(m => ({
+      ...m,
+      user: m.userId ? userMap.get(m.userId) ?? null : null,
+    }));
+
     return NextResponse.json({
       success: true,
-      movements
+      movements: movementsWithUsers
     });
 
   } catch (error) {
@@ -65,7 +107,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       toolId,
-      type, // 'IN' | 'OUT' | 'TRANSFER' | 'MAINTENANCE' | 'RETURN'
+      type, // 'IN' | 'OUT' | 'TRANSFER' | 'ADJUSTMENT' | 'LOAN' | 'RETURN'
       quantity,
       fromLocation,
       toLocation,
@@ -82,18 +124,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['IN', 'OUT', 'TRANSFER', 'MAINTENANCE', 'RETURN'].includes(type)) {
+    if (!['IN', 'OUT', 'TRANSFER', 'ADJUSTMENT', 'LOAN', 'RETURN'].includes(type)) {
       return NextResponse.json(
         { error: 'Tipo de movimiento inválido' },
         { status: 400 }
       );
     }
 
-    if (quantity <= 0) {
+    // ADJUSTMENT puede enviar cantidad negativa (delta respecto al stock anterior)
+    if (type !== 'ADJUSTMENT' && quantity <= 0) {
       return NextResponse.json(
         { error: 'La cantidad debe ser mayor a 0' },
         { status: 400 }
       );
+    }
+
+    // Obtener usuario autenticado (antes del tool lookup para 401 temprano)
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
     }
 
     // Obtener la herramienta
@@ -110,8 +159,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verificar que el usuario tiene acceso a la empresa de la herramienta
+    const userAccess = await prisma.userOnCompany.findFirst({
+      where: { userId, companyId: tool.companyId }
+    });
+    if (!userAccess) {
+      return NextResponse.json({ error: 'Sin acceso a este recurso' }, { status: 403 });
+    }
+
     // Verificar stock para salidas
-    if (type === 'OUT' && tool.stockQuantity < quantity) {
+    if ((type === 'OUT' || type === 'LOAN') && tool.stockQuantity < quantity) {
       return NextResponse.json(
         { error: `Stock insuficiente. Disponible: ${tool.stockQuantity}` },
         { status: 400 }
@@ -128,7 +185,7 @@ export async function POST(request: NextRequest) {
           quantity: parseInt(quantity),
           reason,
           description: notes,
-          userId: 1 // Usuario por defecto temporal
+          userId: userId,
         },
         include: {
           tool: {
@@ -149,12 +206,17 @@ export async function POST(request: NextRequest) {
           newStock += quantity;
           break;
         case 'OUT':
+        case 'LOAN':
           newStock -= quantity;
           break;
         case 'RETURN':
           newStock += quantity;
           break;
-        // TRANSFER y MAINTENANCE no afectan el stock total
+        case 'ADJUSTMENT':
+          // quantity puede ser positivo o negativo según el ajuste
+          newStock += quantity;
+          break;
+        // TRANSFER no afecta el stock total del sistema
       }
 
       // 3. Actualizar el stock de la herramienta
@@ -170,9 +232,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Verificación de notificaciones de stock bajo - VERIFICACIÓN ÚNICA
-    const newStock = tool.itemType === 'SUPPLY' ? 
-      (type === 'OUT' ? tool.stockQuantity - quantity : 
-       type === 'IN' || type === 'RETURN' ? tool.stockQuantity + quantity : 
+    const newStock = tool.itemType === 'SUPPLY' ?
+      (type === 'OUT' || type === 'LOAN' ? tool.stockQuantity - quantity :
+       type === 'IN' || type === 'RETURN' || type === 'ADJUSTMENT' ? tool.stockQuantity + quantity :
        tool.stockQuantity) : tool.stockQuantity;
 
     // Solo notificar cuando llegue al stock mínimo, NO cuando esté en 0
@@ -197,29 +259,6 @@ export async function POST(request: NextRequest) {
         console.error('Error enviando notificación de stock:', notificationError);
       }
     }
-    // const newStock = tool.itemType === 'SUPPLY' ? 
-    //   (type === 'OUT' ? tool.stockQuantity - quantity : 
-    //    type === 'IN' || type === 'RETURN' ? tool.stockQuantity + quantity : 
-    //    tool.stockQuantity) : tool.stockQuantity;
-
-    // // Solo notificar cuando llegue al stock mínimo, NO cuando esté en 0
-    // if (newStock <= tool.minStockLevel && newStock > 0) {
-    //   try {
-    //     await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/stock-check`, {
-    //       method: 'POST',
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //       },
-    //       body: JSON.stringify({
-    //         companyId: tool.companyId,
-    //         toolId: tool.id
-    //       })
-    //     });
-    //   } catch (notificationError) {
-    //     console.error('Error enviando notificación de stock:', notificationError);
-    //   }
-    // }
-
     const message = getMovementMessage(type, tool.name, quantity, toLocation);
 
     return NextResponse.json({
@@ -244,15 +283,17 @@ function getMovementMessage(type: string, toolName: string, quantity: number, lo
   
   switch (type) {
     case 'IN':
-      return `✅ Entrada registrada: ${quantity} unidades de ${toolName}${locationText}`;
+      return `Entrada registrada: ${quantity} unidades de ${toolName}${locationText}`;
     case 'OUT':
-      return `📤 Salida registrada: ${quantity} unidades de ${toolName}${locationText}`;
+      return `Salida registrada: ${quantity} unidades de ${toolName}${locationText}`;
     case 'TRANSFER':
-      return `🔄 Transferencia registrada: ${quantity} unidades de ${toolName}${locationText}`;
-    case 'MAINTENANCE':
-      return `🔧 Movimiento de mantenimiento: ${quantity} unidades de ${toolName}${locationText}`;
+      return `Transferencia registrada: ${quantity} unidades de ${toolName}${locationText}`;
+    case 'LOAN':
+      return `Préstamo registrado: ${quantity} unidades de ${toolName}${locationText}`;
+    case 'ADJUSTMENT':
+      return `Ajuste registrado: ${quantity} unidades de ${toolName}${locationText}`;
     case 'RETURN':
-      return `↩️ Devolución registrada: ${quantity} unidades de ${toolName}${locationText}`;
+      return `Devolución registrada: ${quantity} unidades de ${toolName}${locationText}`;
     default:
       return `Movimiento registrado: ${quantity} unidades de ${toolName}`;
   }

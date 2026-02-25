@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
+
+// Helper: verificar autenticación
+async function getAuth() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
 
 // GET /api/maintenance/preventive/[id]/instructives - Obtener instructivos de un mantenimiento preventivo
 export async function GET(
@@ -7,6 +17,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const templateId = params.id;
 
     // Obtener instructivos asociados al template
@@ -47,6 +62,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const templateId = params.id;
     const body = await request.json();
     const { url, originalName, fileName } = body;
@@ -58,12 +78,10 @@ export async function POST(
       );
     }
 
-    // Verificar que el template existe
-    const template = await prisma.document.findFirst({
-      where: {
-        id: templateId,
-        entityType: 'PREVENTIVE_MAINTENANCE_TEMPLATE'
-      }
+    // FIX: Verificar que el PreventiveTemplate existe (antes buscaba en Document erróneamente)
+    const template = await prisma.preventiveTemplate.findUnique({
+      where: { id: Number(templateId) },
+      select: { id: true, companyId: true }
     });
 
     if (!template) {
@@ -71,6 +89,12 @@ export async function POST(
         { error: 'Mantenimiento preventivo no encontrado' },
         { status: 404 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && template.companyId !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     // Crear el instructivo
@@ -109,6 +133,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuth();
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const templateId = params.id;
     const { searchParams } = new URL(request.url);
     const instructiveId = searchParams.get('instructiveId');

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyAuth } from '@/lib/auth'
 import {
   calculateHealthScore,
   updateMachineHealthScore,
@@ -18,8 +19,13 @@ interface Params {
  * GET /api/machines/[id]/health-score
  * Obtiene el health score actual y detalles de una máquina
  */
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   try {
+    const auth = await verifyAuth(request)
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const machineId = parseInt(params.id)
 
     if (isNaN(machineId)) {
@@ -31,6 +37,7 @@ export async function GET(request: Request, { params }: Params) {
       select: {
         id: true,
         name: true,
+        companyId: true,
         healthScore: true,
         healthScoreUpdatedAt: true,
         criticalityScore: true,
@@ -43,6 +50,10 @@ export async function GET(request: Request, { params }: Params) {
 
     if (!machine) {
       return NextResponse.json({ error: 'Machine not found' }, { status: 404 })
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
     // Calcular factores del health score
@@ -82,8 +93,13 @@ export async function GET(request: Request, { params }: Params) {
  * POST /api/machines/[id]/health-score
  * Recalcula y actualiza el health score de una máquina
  */
-export async function POST(request: Request, { params }: Params) {
+export async function POST(request: NextRequest, { params }: Params) {
   try {
+    const auth = await verifyAuth(request)
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const machineId = parseInt(params.id)
 
     if (isNaN(machineId)) {
@@ -97,6 +113,10 @@ export async function POST(request: Request, { params }: Params) {
 
     if (!machine) {
       return NextResponse.json({ error: 'Machine not found' }, { status: 404 })
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
     // Recalcular y actualizar
@@ -123,13 +143,32 @@ export async function POST(request: Request, { params }: Params) {
  * PATCH /api/machines/[id]/health-score
  * Actualiza la criticidad de una máquina
  */
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: NextRequest, { params }: Params) {
   try {
+    const auth = await verifyAuth(request)
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const machineId = parseInt(params.id)
     const body = await request.json()
 
     if (isNaN(machineId)) {
       return NextResponse.json({ error: 'Invalid machine ID' }, { status: 400 })
+    }
+
+    // Verificar que la máquina pertenece a la empresa del usuario
+    const machine = await prisma.machine.findUnique({
+      where: { id: machineId },
+      select: { id: true, companyId: true }
+    })
+
+    if (!machine) {
+      return NextResponse.json({ error: 'Machine not found' }, { status: 404 })
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
     const { production, safety, quality, cost } = body

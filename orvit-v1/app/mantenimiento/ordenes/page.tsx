@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, CheckSquare } from 'lucide-react';
 import { WorkOrder, WorkOrderStatus, Priority, MaintenanceType } from '@/lib/types';
 import WorkOrderEditDialog from '@/components/work-orders/WorkOrderEditDialog';
 import { WorkOrderDetailDialog } from '@/components/work-orders/WorkOrderDetailDialog';
@@ -33,6 +33,7 @@ import { useWorkOrdersView, WorkOrderView } from '@/components/work-orders/WorkO
 import { WorkOrdersSavedViewsBar, usePresetFilters, PRESETS, PresetKey } from '@/components/work-orders/WorkOrdersSavedViewsBar';
 import { WorkOrdersDispatcherBoard } from '@/components/work-orders/WorkOrdersDispatcherBoard';
 import { WorkOrdersCalendarView } from '@/components/work-orders/WorkOrdersCalendarView';
+import { WorkOrdersBulkBar } from '@/components/work-orders/WorkOrdersBulkBar';
 
 export default function OrdenesTrabajo() {
   const { currentCompany } = useCompany();
@@ -78,6 +79,10 @@ export default function OrdenesTrabajo() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCorrectiveSheetOpen, setIsCorrectiveSheetOpen] = useState(false);
   const [correctiveSheetAction, setCorrectiveSheetAction] = useState<'close' | 'assign' | null>(null);
+
+  // Bulk selection
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   // Filtros unificados
   const [filters, setFilters] = useState<WorkOrderFilters>({
@@ -430,6 +435,30 @@ export default function OrdenesTrabajo() {
     }
   };
 
+  const handleToggleSelect = useCallback((id: number) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const activeIds = filteredOrders
+      .filter(o => o.status !== WorkOrderStatus.COMPLETED && o.status !== WorkOrderStatus.CANCELLED)
+      .map(o => o.id);
+    setSelectedIds(prev =>
+      prev.length === activeIds.length ? [] : activeIds
+    );
+  }, [filteredOrders]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds([]);
+    setSelectionMode(false);
+  }, []);
+
+  const handleBulkComplete = useCallback(() => {
+    refetchDashboard();
+  }, [refetchDashboard]);
+
   const handleStatusChange = async (order: WorkOrder, newStatus: WorkOrderStatus) => {
     try {
       // Obtener la orden actual para tener todos los datos
@@ -681,15 +710,31 @@ export default function OrdenesTrabajo() {
 
                 <div className="border-t border-border" />
 
-                <WorkOrdersFiltersBar
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onResetFilters={resetFilters}
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  availableUsers={availableUsers}
-                  availableMachines={availableMachines}
-                />
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <WorkOrdersFiltersBar
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      onResetFilters={resetFilters}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                      availableUsers={availableUsers}
+                      availableMachines={availableMachines}
+                    />
+                  </div>
+                  <Button
+                    variant={selectionMode ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-9 text-xs shrink-0"
+                    onClick={() => {
+                      setSelectionMode(!selectionMode);
+                      if (selectionMode) setSelectedIds([]);
+                    }}
+                  >
+                    <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+                    {selectionMode ? 'Cancelar selección' : 'Selección'}
+                  </Button>
+                </div>
 
                 {filteredOrders.length > 0 ? (
                   <>
@@ -700,6 +745,9 @@ export default function OrdenesTrabajo() {
                         onEdit={handleEdit}
                         onDelete={handleWorkOrderDelete}
                         onStatusChange={handleStatusChange}
+                        selectionMode={selectionMode}
+                        selectedIds={selectedIds}
+                        onToggleSelect={handleToggleSelect}
                       />
                     ) : (
                       <WorkOrdersTable
@@ -708,6 +756,10 @@ export default function OrdenesTrabajo() {
                         onEdit={handleEdit}
                         onDelete={handleWorkOrderDelete}
                         onStatusChange={handleStatusChange}
+                        selectionMode={selectionMode}
+                        selectedIds={selectedIds}
+                        onToggleSelect={handleToggleSelect}
+                        onSelectAll={handleSelectAll}
                       />
                     )}
                   </>
@@ -810,6 +862,18 @@ export default function OrdenesTrabajo() {
         )}
 
         <ExportReports workOrders={filteredOrders} filters={filters as any} />
+
+        {/* Bulk Actions Bar */}
+        {selectionMode && (
+          <WorkOrdersBulkBar
+            selectedIds={selectedIds}
+            totalCount={filteredOrders.filter(o => o.status !== WorkOrderStatus.COMPLETED && o.status !== WorkOrderStatus.CANCELLED).length}
+            onSelectAll={handleSelectAll}
+            onClearSelection={handleClearSelection}
+            availableUsers={availableUsers}
+            onComplete={handleBulkComplete}
+          />
+        )}
 
         {/* Sheet para OTs Correctivas con tabs de Logs, Chat, etc */}
         {selectedOrder && (

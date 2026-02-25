@@ -73,7 +73,7 @@ export function UnifiedTaskDetailPanel({
   })();
 
   return (
-    <Card className="w-[400px] flex flex-col h-full flex-shrink-0">
+    <Card className="w-full md:w-[400px] flex flex-col h-full flex-shrink-0 rounded-none md:rounded-lg border-0 md:border">
       {/* Header */}
       <CardHeader className="pb-3 border-b">
         <div className="flex items-start justify-between gap-2">

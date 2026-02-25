@@ -15,6 +15,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import { calculatePriority } from '@/lib/corrective/priority-calculator';
+import { notifyOTCreated, notifyOTAssigned } from '@/lib/discord/notifications';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -257,7 +258,42 @@ export async function POST(
       }
     }
 
-    // TODO: Agregar notificación Discord cuando esté implementado
+    // Notificación Discord (fire-and-forget)
+    const sendDiscordNotifications = async () => {
+      try {
+        const sectorId = result.workOrder.machine?.sectorId;
+        if (!sectorId) return;
+
+        // Notificar OT creada
+        await notifyOTCreated({
+          id: result.workOrder.id,
+          title: result.workOrder.title,
+          type: result.workOrder.type,
+          priority: result.workOrder.priority,
+          machineName: result.workOrder.machine?.name,
+          sectorId,
+          assignedTo: result.workOrder.assignedTo?.name,
+          origin: occurrence.isObservation ? 'OBSERVACIÓN' : 'FALLA',
+        });
+
+        // Si hay técnico asignado, enviar notificación + DM
+        if (result.workOrder.assignedTo) {
+          await notifyOTAssigned({
+            id: result.workOrder.id,
+            title: result.workOrder.title,
+            priority: result.workOrder.priority,
+            machineName: result.workOrder.machine?.name,
+            sectorId,
+            assignedTo: result.workOrder.assignedTo.name,
+            assignedToId: result.workOrder.assignedToId || undefined,
+            assignedBy: result.workOrder.createdBy?.name || 'Sistema',
+          });
+        }
+      } catch (discordError) {
+        console.warn('⚠️ Error enviando notificación Discord:', discordError);
+      }
+    };
+    sendDiscordNotifications().catch(() => {});
 
     return NextResponse.json({
       success: true,

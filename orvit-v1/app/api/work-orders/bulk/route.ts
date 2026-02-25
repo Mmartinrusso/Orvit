@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { notifyOTAssigned } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -146,6 +147,26 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Bulk ${data.operation}: ${result.updated} OTs actualizadas por usuario ${userId}`);
+
+    // Notificaciones Discord para bulk assign (fire-and-forget)
+    if (data.operation === 'assign' && data.assignToId) {
+      prisma.workOrder.findMany({
+        where: { id: { in: validIds } },
+        select: { id: true, title: true, priority: true, sectorId: true, machine: { select: { name: true } } },
+      }).then(workOrders => {
+        const techName = result.details.match(/asignadas a (.+)$/)?.[1] ?? String(data.assignToId);
+        return Promise.all(workOrders.map(wo => notifyOTAssigned({
+          id: wo.id,
+          title: wo.title,
+          priority: wo.priority,
+          machineName: (wo as any).machine?.name,
+          sectorId: (wo as any).sectorId ?? 0,
+          assignedTo: techName,
+          assignedToId: data.assignToId!,
+          assignedBy: String(userId),
+        })));
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

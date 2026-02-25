@@ -108,7 +108,7 @@ export async function POST(
           include: {
             purchaseOrderItem: true,
             supplierItem: {
-              select: { id: true, nombre: true, codigoProveedor: true, precioUnitario: true, supply: { select: { code: true } } }
+              select: { id: true, nombre: true, codigoProveedor: true, precioUnitario: true, toolId: true, supply: { select: { code: true } } }
             }
           }
         },
@@ -265,6 +265,53 @@ export async function POST(
         });
 
         stockMovements.push(movimiento);
+
+        // ═══ BRIDGE COMPRAS → PAÑOL ═══
+        // Si el SupplierItem está vinculado a un Tool del pañol, sincronizar stock
+        if (item.supplierItem?.toolId) {
+          const toolId = item.supplierItem.toolId;
+          const cantidadEntera = Math.round(cantidadAceptada.toNumber());
+
+          if (cantidadEntera > 0) {
+            // 1. Actualizar stock del Tool
+            await tx.tool.update({
+              where: { id: toolId },
+              data: { stockQuantity: { increment: cantidadEntera } }
+            });
+
+            // 2. Crear InventoryLot para trazabilidad
+            const lotNumber = item.lote || `REC-${recepcion.numero}-${item.id}`;
+            await tx.inventoryLot.create({
+              data: {
+                toolId,
+                lotNumber,
+                serialNumber: null,
+                quantity: cantidadEntera,
+                remainingQty: cantidadEntera,
+                supplierId: recepcion.proveedorId,
+                purchaseOrderId: recepcion.purchaseOrderId,
+                receivedAt: new Date(),
+                expiresAt: item.fechaVencimiento,
+                status: 'AVAILABLE',
+                unitCost: costoUnitario ? parseFloat(costoUnitario.toString()) : null,
+                notes: `Auto-creado desde recepción ${recepcion.numero}`,
+                companyId,
+              }
+            });
+
+            // 3. Crear ToolMovement para kardex del pañol
+            await tx.toolMovement.create({
+              data: {
+                type: 'IN',
+                quantity: cantidadEntera,
+                reason: `Recepción de compra ${recepcion.numero}`,
+                description: `Lote: ${lotNumber}. Proveedor: ${descripcionFinal || 'N/A'}. Costo: ${costoUnitario || 'N/A'}`,
+                toolId,
+                userId: user.id,
+              }
+            });
+          }
+        }
 
         // Si viene de una OC, actualizar cantidades en el item de la OC
         if (item.purchaseOrderItemId && item.purchaseOrderItem) {

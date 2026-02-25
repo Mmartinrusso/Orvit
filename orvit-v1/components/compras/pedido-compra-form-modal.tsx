@@ -21,8 +21,12 @@ import {
  SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ClipboardList, Loader2 } from 'lucide-react';
+import { ClipboardList, Loader2, Cog, ChevronDown } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
+import { cn } from '@/lib/utils';
+import { ToolSearchCombobox } from '@/components/panol/ToolSearchCombobox';
+import { MachineSearchCombobox } from '@/components/compras/MachineSearchCombobox';
+import { ComponentSearchCombobox } from '@/components/compras/ComponentSearchCombobox';
 
 interface PedidoCompraFormModalProps {
  open: boolean;
@@ -51,6 +55,12 @@ export function PedidoCompraFormModal({
 
  const [submitting, setSubmitting] = useState(false);
  const [loading, setLoading] = useState(false);
+
+ // Contexto de equipo (Bridge Compras ↔ Pañol)
+ const [showEquipoContext, setShowEquipoContext] = useState(false);
+ const [machineId, setMachineId] = useState<number | null>(null);
+ const [componentId, setComponentId] = useState<number | null>(null);
+ const [toolId, setToolId] = useState<number | null>(null);
 
  useEffect(() => {
  if (open) {
@@ -89,6 +99,10 @@ export function PedidoCompraFormModal({
  setPrioridad('NORMAL');
  setFechaNecesidad('');
  setNotas('');
+ setShowEquipoContext(false);
+ setMachineId(null);
+ setComponentId(null);
+ setToolId(null);
  };
 
  const validateForm = (): boolean => {
@@ -144,7 +158,10 @@ export function PedidoCompraFormModal({
  descripcion: titulo,
  cantidad: 1,
  unidad: 'UN',
- especificaciones: desc
+ especificaciones: desc,
+ toolId: toolId || null,
+ componentId: componentId || null,
+ machineId: machineId || null,
  }]
  };
 
@@ -239,6 +256,54 @@ export function PedidoCompraFormModal({
  className="h-9"
  />
  </div>
+ </div>
+
+ {/* Contexto de equipo (Bridge Compras ↔ Pañol) */}
+ <div className="space-y-2">
+ <Button
+ type="button"
+ variant="ghost"
+ size="sm"
+ className="text-xs text-muted-foreground gap-1 h-7 px-2"
+ onClick={() => setShowEquipoContext(!showEquipoContext)}
+ >
+ <Cog className="w-3 h-3" />
+ ¿Para qué equipo? (opcional)
+ <ChevronDown className={cn("w-3 h-3 transition-transform", showEquipoContext && "rotate-180")} />
+ </Button>
+
+ {showEquipoContext && (
+ <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+ <div className="space-y-1.5">
+ <Label className="text-xs">Máquina</Label>
+ <MachineSearchCombobox
+ value={machineId}
+ onSelect={(id) => {
+ setMachineId(id);
+ setComponentId(null);
+ }}
+ placeholder="Buscar máquina..."
+ />
+ </div>
+ <div className="space-y-1.5">
+ <Label className="text-xs">Componente</Label>
+ <ComponentSearchCombobox
+ value={componentId}
+ onSelect={setComponentId}
+ machineId={machineId}
+ placeholder="Buscar componente..."
+ />
+ </div>
+ <div className="space-y-1.5">
+ <Label className="text-xs">Repuesto / Item del pañol</Label>
+ <ToolSearchCombobox
+ value={toolId}
+ onSelect={(id) => setToolId(id)}
+ placeholder="Buscar en pañol..."
+ />
+ </div>
+ </div>
+ )}
  </div>
 
  <div className="space-y-2">

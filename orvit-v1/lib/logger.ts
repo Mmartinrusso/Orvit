@@ -61,6 +61,8 @@ const isServer = typeof window === 'undefined';
 const isDev = process.env.NODE_ENV !== 'production';
 
 // Create base Pino logger
+// NOTE: pino-pretty uses thread-stream (worker threads) which crash on Next.js HMR.
+// Never use transport in dev — plain JSON logs avoid the worker thread lifecycle issue.
 const baseLogger = pino({
   level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
   timestamp: pino.stdTimeFunctions.isoTime,
@@ -68,18 +70,6 @@ const baseLogger = pino({
     paths: REDACT_PATHS,
     censor: '[REDACTED]',
   },
-  ...(isDev && isServer
-    ? {
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss',
-            ignore: 'pid,hostname',
-          },
-        },
-      }
-    : {}),
 });
 
 // Sentry-integrated logger wrapper

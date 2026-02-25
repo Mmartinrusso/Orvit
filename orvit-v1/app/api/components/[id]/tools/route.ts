@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 // GET /api/components/[id]/tools - Obtener repuestos de un componente
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   try {
     const componentId = parseInt(params.id);
+
+    // Verificar company boundary a través de la máquina
+    const component = await prisma.component.findUnique({
+      where: { id: componentId },
+      select: { id: true, machine: { select: { companyId: true } } }
+    });
+    if (!component || component.machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
 
     const componentTools = await prisma.componentTool.findMany({
       where: {
@@ -62,10 +77,25 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   try {
     const componentId = parseInt(params.id);
+
+    // Verificar company boundary a través de la máquina
+    const component = await prisma.component.findUnique({
+      where: { id: componentId },
+      select: { id: true, name: true, machine: { select: { companyId: true } } }
+    });
+    if (!component || component.machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
     const body = await request.json();
-    
+
     const {
       toolId,
       quantityNeeded,
@@ -79,18 +109,6 @@ export async function POST(
       return NextResponse.json(
         { error: 'El ID del repuesto es requerido' },
         { status: 400 }
-      );
-    }
-
-    // Verificar que el componente existe
-    const component = await prisma.component.findUnique({
-      where: { id: componentId }
-    });
-
-    if (!component) {
-      return NextResponse.json(
-        { error: 'Componente no encontrado' },
-        { status: 404 }
       );
     }
 
@@ -182,8 +200,23 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   try {
     const componentId = parseInt(params.id);
+
+    // Verificar company boundary a través de la máquina
+    const componentCheck = await prisma.component.findUnique({
+      where: { id: componentId },
+      select: { id: true, machine: { select: { companyId: true } } }
+    });
+    if (!componentCheck || componentCheck.machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const toolId = searchParams.get('toolId');
 

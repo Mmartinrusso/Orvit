@@ -51,6 +51,11 @@ export const MANTENIMIENTO_DEFAULT_CONFIG: ModuleSidebarConfig = {
         { type: 'item', moduleId: 'mant.panol-dashboard' },
         { type: 'item', moduleId: 'mant.panol-conteo' },
         { type: 'item', moduleId: 'mant.panol-rapido' },
+        { type: 'item', moduleId: 'mant.panol-lotes' },
+        { type: 'item', moduleId: 'mant.panol-reservas' },
+        { type: 'item', moduleId: 'mant.panol-consumo' },
+        { type: 'item', moduleId: 'mant.panol-forecast' },
+        { type: 'item', moduleId: 'mant.panol-prestamos' },
       ],
     },
     {

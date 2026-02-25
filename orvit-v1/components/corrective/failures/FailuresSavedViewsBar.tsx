@@ -156,7 +156,7 @@ export function FailuresSavedViewsBar({ failures = [], className }: FailuresSave
   }, [failures]);
 
   return (
-    <div className={cn('flex flex-wrap gap-2', className)}>
+    <div className={cn('flex gap-1.5 overflow-x-auto sm:flex-wrap sm:gap-2 no-scrollbar', className)}>
       {FAILURE_PRESETS.map((preset) => {
         const Icon = preset.icon;
         const isActive = currentPreset === preset.key;
@@ -167,7 +167,7 @@ export function FailuresSavedViewsBar({ failures = [], className }: FailuresSave
             key={preset.key}
             onClick={() => setPreset(preset.key)}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+              'inline-flex shrink-0 items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium transition-all',
               'border hover:shadow-sm',
               isActive
                 ? 'bg-primary text-primary-foreground border-primary shadow-sm'
@@ -187,7 +187,7 @@ export function FailuresSavedViewsBar({ failures = [], className }: FailuresSave
               <Badge
                 variant={isActive ? 'secondary' : 'outline'}
                 className={cn(
-                  'ml-1 h-5 min-w-[1rem] px-1 text-xs font-semibold',
+                  'ml-0.5 h-4 sm:h-5 min-w-[1rem] px-1 text-xs font-semibold',
                   isActive && 'bg-primary-foreground/20 text-primary-foreground'
                 )}
               >

@@ -62,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           select: { id: true, name: true, avatar: true }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'asc' }
     });
 
     return NextResponse.json(comments);
@@ -108,6 +108,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!content || content.trim().length === 0) {
       return NextResponse.json(
         { error: 'El contenido es requerido' },
+        { status: 400 }
+      );
+    }
+
+    if (content.trim().length > 2000) {
+      return NextResponse.json(
+        { error: 'El comentario no puede superar los 2000 caracteres' },
         { status: 400 }
       );
     }

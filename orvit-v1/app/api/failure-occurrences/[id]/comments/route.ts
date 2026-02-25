@@ -211,10 +211,33 @@ export async function POST(
       },
     });
 
-    // 5. Si hay menciones, crear notificaciones (TODO: implementar)
+    // 5. Si hay menciones, crear notificaciones para cada usuario mencionado
     if (data.mentions && data.mentions.length > 0) {
-      console.log('📢 Menciones en comentario:', data.mentions);
-      // TODO: Crear notificaciones para usuarios mencionados
+      const authorName = comment.author?.name || 'Alguien';
+      const mentionNotifications = data.mentions
+        .filter((mentionedUserId: number) => mentionedUserId !== userId) // No notificar al autor
+        .map((mentionedUserId: number) =>
+          prisma.notification.create({
+            data: {
+              userId: mentionedUserId,
+              type: 'MENTION',
+              title: `${authorName} te mencionó en una falla`,
+              message: `"${data.content.substring(0, 100)}${data.content.length > 100 ? '...' : ''}" — Falla: ${occurrence.title}`,
+              data: JSON.stringify({
+                failureOccurrenceId: occurrenceId,
+                commentId: comment.id,
+                mentionedBy: userId,
+              }),
+              isRead: false,
+              companyId,
+            }
+          }).catch((err: any) => {
+            console.warn(`⚠️ Error creando notificación de mención para usuario ${mentionedUserId}:`, err.message);
+          })
+        );
+
+      // Fire-and-forget
+      Promise.all(mentionNotifications).catch(() => {});
     }
 
     console.log(`💬 Comentario creado en falla ${occurrenceId}:`, comment.id);

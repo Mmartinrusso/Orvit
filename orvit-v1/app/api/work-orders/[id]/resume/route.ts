@@ -78,7 +78,7 @@ export async function POST(
       }
 
       // 4. Validaciones de negocio
-      if (workOrder.status !== 'waiting') {
+      if (workOrder.status !== 'WAITING') {
         throw new Error(`La orden no está en espera (estado actual: ${workOrder.status})`);
       }
 
@@ -94,7 +94,7 @@ export async function POST(
       const updatedWorkOrder = await tx.workOrder.update({
         where: { id: workOrderId },
         data: {
-          status: 'in_progress', // Volver a in_progress
+          status: 'IN_PROGRESS', // Volver a in_progress
           waitingReason: null,   // Limpiar motivo
           waitingDescription: null,
           waitingETA: null,

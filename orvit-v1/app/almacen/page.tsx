@@ -13,6 +13,8 @@ import {
   History,
   Bookmark,
   LayoutDashboard,
+  ArrowLeftRight,
+  ClipboardMinus,
 } from 'lucide-react';
 
 // Hooks
@@ -26,6 +28,8 @@ import { DevolucionesTab } from '@/components/almacen/tabs/DevolucionesTab';
 import { InventarioTab } from '@/components/almacen/tabs/InventarioTab';
 import { KardexTab } from '@/components/almacen/tabs/KardexTab';
 import { ReservasTab } from '@/components/almacen/tabs/ReservasTab';
+import { TransferenciasTab } from '@/components/almacen/tabs/TransferenciasTab';
+import { AjustesTab } from '@/components/almacen/tabs/AjustesTab';
 
 // Modales
 import { SolicitudFormModal } from '@/components/almacen/modals/SolicitudFormModal';
@@ -34,6 +38,10 @@ import { DespachoFormModal } from '@/components/almacen/modals/DespachoFormModal
 import { DespachoDetailModal } from '@/components/almacen/modals/DespachoDetailModal';
 import { DevolucionFormModal } from '@/components/almacen/modals/DevolucionFormModal';
 import { DevolucionDetailModal } from '@/components/almacen/modals/DevolucionDetailModal';
+import { TransferenciaFormModal } from '@/components/almacen/modals/TransferenciaFormModal';
+import { TransferenciaDetailModal } from '@/components/almacen/modals/TransferenciaDetailModal';
+import { AjusteFormModal } from '@/components/almacen/modals/AjusteFormModal';
+import { AjusteDetailModal } from '@/components/almacen/modals/AjusteDetailModal';
 
 // Tipo para item preseleccionado
 interface PreselectedItem {
@@ -57,6 +65,10 @@ function AlmacenPageContent() {
     isViewDespacho,
     isNewDevolucion,
     isViewDevolucion,
+    isNewTransferencia,
+    isViewTransferencia,
+    isNewAjuste,
+    isViewAjuste,
     id,
   } = useAlmacenModal();
 
@@ -84,6 +96,8 @@ function AlmacenPageContent() {
     { value: 'inventario', label: 'Inventario', icon: Package },
     { value: 'kardex', label: 'Kardex', icon: History },
     { value: 'reservas', label: 'Reservas', icon: Bookmark },
+    { value: 'transferencias', label: 'Transferencias', icon: ArrowLeftRight },
+    { value: 'ajustes', label: 'Ajustes', icon: ClipboardMinus },
   ];
 
   return (
@@ -170,6 +184,20 @@ function AlmacenPageContent() {
         <TabsContent value="reservas" className="mt-4">
           <ReservasTab />
         </TabsContent>
+
+        <TabsContent value="transferencias" className="mt-4">
+          <TransferenciasTab
+            onNew={() => openModal('transferencia', { mode: 'new' })}
+            onView={(id) => openModal('transferencia', { id, mode: 'view' })}
+          />
+        </TabsContent>
+
+        <TabsContent value="ajustes" className="mt-4">
+          <AjustesTab
+            onNew={() => openModal('ajuste', { mode: 'new' })}
+            onView={(id) => openModal('ajuste', { id, mode: 'view' })}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Modales - controlados por URL params (deep linking) */}
@@ -202,6 +230,26 @@ function AlmacenPageContent() {
       <DevolucionDetailModal
         open={isViewDevolucion}
         devolucionId={id}
+        onClose={handleCloseModal}
+      />
+      <TransferenciaFormModal
+        open={isNewTransferencia}
+        onClose={handleCloseModal}
+        onSuccess={handleCloseModal}
+      />
+      <TransferenciaDetailModal
+        open={isViewTransferencia}
+        transferId={id}
+        onClose={handleCloseModal}
+      />
+      <AjusteFormModal
+        open={isNewAjuste}
+        onClose={handleCloseModal}
+        onSuccess={handleCloseModal}
+      />
+      <AjusteDetailModal
+        open={isViewAjuste}
+        ajusteId={id}
         onClose={handleCloseModal}
       />
       </div>

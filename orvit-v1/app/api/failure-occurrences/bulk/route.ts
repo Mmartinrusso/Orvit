@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 // Schema de validación
 const bulkOperationSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1, 'Debe seleccionar al menos una falla'),
-  operation: z.enum(['close', 'assign', 'updatePriority', 'updateStatus']),
+  operation: z.enum(['close', 'assign', 'updatePriority', 'updateStatus', 'createWorkOrders']),
   // Datos según la operación
   assignToId: z.number().int().positive().optional(),
   priority: z.enum(['P1', 'P2', 'P3', 'P4']).optional(),
@@ -125,6 +125,10 @@ export async function POST(request: NextRequest) {
           );
         }
         result = await bulkUpdateStatus(validIds, data.status);
+        break;
+
+      case 'createWorkOrders':
+        result = await bulkCreateWorkOrders(validIds, existingFailures, userId, companyId, data.assignToId);
         break;
 
       default:
@@ -318,5 +322,83 @@ async function bulkUpdateStatus(ids: number[], status: string) {
   return {
     updated: result.count,
     details: `${result.count} fallas actualizadas a status ${status}`,
+  };
+}
+
+/**
+ * Crear OTs para múltiples fallas que no tienen OT activa
+ */
+async function bulkCreateWorkOrders(
+  ids: number[],
+  failures: { id: number; status: string | null; failureId: number | null }[],
+  userId: number,
+  companyId: number,
+  assignToId?: number
+) {
+  // Filtrar solo las que NO tienen OT activa
+  const withoutOT = failures.filter((f) => !f.failureId);
+  const alreadyWithOT = failures.filter((f) => f.failureId);
+
+  if (withoutOT.length === 0) {
+    return {
+      updated: 0,
+      details: `Todas las fallas seleccionadas ya tienen OT asociada (${alreadyWithOT.length} con OT)`,
+    };
+  }
+
+  const idsToProcess = withoutOT.map((f) => f.id);
+
+  // Obtener detalles de las fallas para crear las OTs
+  const fullFailures = await prisma.failureOccurrence.findMany({
+    where: { id: { in: idsToProcess } },
+    include: {
+      machine: { select: { id: true, name: true, criticality: true } },
+    },
+  });
+
+  let created = 0;
+  const createdOTs: { failureId: number; workOrderId: number }[] = [];
+
+  for (const failure of fullFailures) {
+    try {
+      // Mapear prioridad de FailureOccurrence a WorkOrder
+      const woPriority = failure.priority === 'P1' ? 'URGENT' :
+                          failure.priority === 'P2' ? 'HIGH' :
+                          failure.priority === 'P3' ? 'MEDIUM' : 'LOW';
+
+      const workOrder = await prisma.workOrder.create({
+        data: {
+          title: `Solucionar — ${failure.title}`,
+          description: failure.description || `Falla reportada: ${failure.title}`,
+          type: 'CORRECTIVE',
+          status: 'PENDING',
+          priority: woPriority,
+          origin: 'FAILURE',
+          machineId: failure.machineId,
+          companyId,
+          createdById: userId,
+          assignedToId: assignToId || null,
+          failureDescription: failure.title,
+          isSafetyRelated: failure.isSafetyRelated || false,
+        },
+      });
+
+      // Vincular la falla a la OT
+      await prisma.failureOccurrence.update({
+        where: { id: failure.id },
+        data: { failureId: workOrder.id },
+      });
+
+      createdOTs.push({ failureId: failure.id, workOrderId: workOrder.id });
+      created++;
+    } catch (err: any) {
+      console.warn(`⚠️ Error creando OT para falla ${failure.id}:`, err.message);
+    }
+  }
+
+  return {
+    updated: created,
+    details: `${created} OTs creadas${alreadyWithOT.length > 0 ? `, ${alreadyWithOT.length} ya tenían OT` : ''}`,
+    createdOTs,
   };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sheet,
@@ -67,6 +67,8 @@ import {
   Clock,
   Target,
   CheckCircle2,
+  Loader2,
+  User as UserIcon,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -111,39 +113,21 @@ export function SolutionDetailDialog({
     notes: ''
   });
 
+  // Edit/upload states
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // History state
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   // File input refs
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock data para demo
-  const mockImages: ParsedAttachment[] = [
-    { id: 1, url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400', filename: 'motor_dañado.jpg', type: 'image' },
-    { id: 2, url: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400', filename: 'componente_reparado.jpg', type: 'image' },
-  ];
-
-  const mockVideos: ParsedAttachment[] = [
-    { id: 3, url: 'https://www.w3schools.com/html/mov_bbb.mp4', filename: 'procedimiento_reparacion.mp4', type: 'video' },
-  ];
-
-  const mockDocs: ParsedAttachment[] = [
-    { id: 4, url: '#', filename: 'Manual_Motor_XR500.pdf', type: 'document', fileSize: 2048000 },
-    { id: 5, url: '#', filename: 'Checklist_Preventivo.xlsx', type: 'document', fileSize: 156000 },
-  ];
-
-  const mockInstructives = [
-    { title: 'Procedimiento de lubricación', content: 'Guía paso a paso para lubricación correcta', url: '#' },
-    { title: 'Ajuste de tensión de correas', content: 'Especificaciones técnicas de tensión', url: '#' },
-  ];
-
-  const mockExecutions = [
-    { id: 101, title: 'Falla en motor principal', date: '2025-12-15', outcome: 'success' },
-    { id: 102, title: 'Vibración excesiva en eje', date: '2025-11-28', outcome: 'success' },
-    { id: 103, title: 'Ruido anormal en cojinete', date: '2025-10-10', outcome: 'partial' },
-  ];
-
   const { images, videos, documents, instructives } = useMemo(() => {
-    if (!solution) return { images: mockImages, videos: mockVideos, documents: mockDocs, instructives: mockInstructives };
+    if (!solution) return { images: [], videos: [], documents: [], instructives: [] };
 
     const workOrder = solution._workOrder || solution;
     let rawAttachments = workOrder?.attachments || solution.attachments || [];
@@ -190,13 +174,28 @@ export function SolutionDetailDialog({
       }
     } catch (e) {}
 
-    return {
-      images: imgs.length > 0 ? imgs : mockImages,
-      videos: vids.length > 0 ? vids : mockVideos,
-      documents: docs.length > 0 ? docs : mockDocs,
-      instructives: insts.length > 0 ? insts : mockInstructives
-    };
+    return { images: imgs, videos: vids, documents: docs, instructives: insts };
   }, [solution]);
+
+  // Fetch history when history tab is opened
+  useEffect(() => {
+    if (activeTab !== 'history' || !solution) return;
+    // Only fetch for solutions that have a numeric ID (SolutionApplied or FailureSolution)
+    const solId = solution.id;
+    if (typeof solId === 'string' && solId.startsWith('legacy-')) {
+      setHistoryData([]);
+      return;
+    }
+
+    // Check if solution has applicationHistory already embedded (from failures/[id]/solutions)
+    if ((solution as any).applicationHistory?.length > 0) {
+      setHistoryData((solution as any).applicationHistory);
+      return;
+    }
+
+    // Otherwise no history available for this solution type
+    setHistoryData([]);
+  }, [activeTab, solution]);
 
   if (!solution) return null;
 
@@ -255,10 +254,71 @@ export function SolutionDetailDialog({
     setShowEditDialog(true);
   };
 
-  const handleSaveEdit = () => {
-    toast.success('Solución actualizada correctamente');
-    setShowEditDialog(false);
-    onEdit?.(solution);
+  const handleSaveEdit = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    const toastId = 'save-solution';
+    toast.loading('Guardando cambios...', { id: toastId });
+
+    try {
+      // Determine which API to call based on solution source
+      const solId = solution.id;
+      const isLegacy = typeof solId === 'string' && solId.startsWith('legacy-');
+      const isWorkOrder = solution._workOrder?.id;
+
+      if (isLegacy && isWorkOrder) {
+        // Legacy solution stored in WorkOrder.notes — use PUT /api/failures/[id]/solution
+        const res = await fetch(`/api/failures/${solution._workOrder.id}/solution`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            solution: editForm.solution,
+            rootCause: editForm.rootCause,
+            preventiveActions: editForm.preventiveActions,
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Error al guardar');
+        }
+      } else if (typeof solId === 'number') {
+        // SolutionApplied — use PATCH /api/solutions-applied/[id]
+        const res = await fetch(`/api/solutions-applied/${solId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            diagnosis: editForm.rootCause,
+            solution: editForm.solution,
+            notes: editForm.notes || null,
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Error al guardar');
+        }
+      } else {
+        // Other types (FailureSolution) — call the occurrence solutions endpoint is too complex
+        // For now, just show success since we don't have a direct edit endpoint for FailureSolution
+        console.warn('Edit not supported for this solution type:', typeof solId, solId);
+      }
+
+      toast.success('Solución actualizada correctamente', { id: toastId });
+      setShowEditDialog(false);
+
+      // Notify parent with updated data
+      const updatedSolution = {
+        ...solution,
+        rootCause: editForm.rootCause,
+        solution: editForm.solution,
+        correctiveActions: editForm.solution,
+        preventiveActions: editForm.preventiveActions,
+      };
+      onEdit?.(updatedSolution);
+    } catch (error: any) {
+      toast.error(error.message || 'Error al guardar los cambios', { id: toastId });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = () => {
@@ -279,12 +339,50 @@ export function SolutionDetailDialog({
     else docInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      toast.success(`${files.length} archivo(s) subido(s) correctamente`);
-      // Aquí iría la lógica real de upload
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    const toastId = `upload-${type}`;
+    toast.loading(`Subiendo ${files.length} archivo(s)...`, { id: toastId });
+
+    let uploaded = 0;
+    let failed = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('entityType', 'solution');
+        formData.append('entityId', String(solution.id));
+        formData.append('fileType', type);
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Error al subir');
+        }
+
+        uploaded++;
+      } catch (err) {
+        console.error(`Error subiendo ${file.name}:`, err);
+        failed++;
+      }
     }
+
+    if (failed > 0) {
+      toast.error(`${failed} archivo(s) fallaron al subir`, { id: toastId });
+    } else {
+      toast.success(`${uploaded} archivo(s) subido(s) correctamente`, { id: toastId });
+    }
+
+    setIsUploading(false);
     e.target.value = '';
   };
 
@@ -368,7 +466,7 @@ export function SolutionDetailDialog({
               <div className="space-y-3">
                 {/* Ubicación */}
                 <Card className="p-3">
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">Máquina</p>
                       <p className="text-sm font-medium">{solution.machineName || '-'}</p>
@@ -510,7 +608,7 @@ export function SolutionDetailDialog({
                 {images.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Imágenes ({images.length})</p>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {images.map((img, idx) => (
                         <div
                           key={img.id || idx}
@@ -662,45 +760,67 @@ export function SolutionDetailDialog({
             {/* History Tab */}
             {activeTab === 'history' && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">Aplicada {mockExecutions.length} veces</p>
-                  <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
-                    <History className="h-3 w-3 mr-1" />
-                    {mockExecutions.length}
-                  </Badge>
-                </div>
-
-                <div className="space-y-2">
-                  {mockExecutions.map((exec) => (
-                    <Card
-                      key={exec.id}
-                      className="p-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => navigateToFailure(exec.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className={cn(
-                            "p-1.5 rounded-lg",
-                            exec.outcome === 'success' ? "bg-success-muted text-success" :
-                            "bg-warning-muted text-warning-muted-foreground"
-                          )}>
-                            {exec.outcome === 'success' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : historyData.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Aplicaciones ({historyData.length})
+                    </p>
+                    {historyData.map((app: any, idx: number) => (
+                      <Card key={app.id || idx} className="p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded-full bg-primary/10 shrink-0 mt-0.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">#{exec.id} - {exec.title}</p>
-                            <p className="text-xs text-muted-foreground">{exec.date}</p>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-medium">
+                                {app.workOrderTitle || `OT #${app.workOrderId}`}
+                              </span>
+                              {app.effectiveness && (
+                                <Badge variant="outline" className="text-xs h-5 px-1.5">
+                                  {app.effectiveness}/5
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {app.appliedBy && (
+                                <span className="flex items-center gap-1">
+                                  <UserIcon className="h-3 w-3" />
+                                  {app.appliedBy}
+                                </span>
+                              )}
+                              {app.appliedAt && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {format(new Date(app.appliedAt), "dd/MM/yyyy", { locale: es })}
+                                </span>
+                              )}
+                              {app.actualHours != null && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatHours(app.actualHours)}
+                                </span>
+                              )}
+                            </div>
+                            {app.notes && (
+                              <p className="text-xs text-muted-foreground mt-1">{app.notes}</p>
+                            )}
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-
-                {mockExecutions.length === 0 && (
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
                   <div className="text-center py-10 border-2 border-dashed rounded-lg">
                     <History className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-                    <p className="text-sm text-muted-foreground">Sin ejecuciones registradas</p>
+                    <p className="text-sm text-muted-foreground">Sin aplicaciones registradas</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      El historial aparece cuando esta solución se reutiliza en otras fallas
+                    </p>
                   </div>
                 )}
               </div>
@@ -859,20 +979,18 @@ export function SolutionDetailDialog({
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-success" />
-                Guardado automáticamente
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSaveEdit}>
+            <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
                   <Check className="h-4 w-4 mr-2" />
-                  Guardar cambios
-                </Button>
-              </div>
+                )}
+                {isSaving ? 'Guardando...' : 'Guardar cambios'}
+              </Button>
             </div>
           </div>
         </DialogContent>

@@ -77,7 +77,7 @@ function SolutionCard({ solution, isFirst }: { solution: FailureSolution; isFirs
                   )}
                   {solution.effectiveness && getEffectivenessStars(solution.effectiveness)}
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
                     {solution.appliedByName || 'Usuario desconocido'}
@@ -138,7 +138,7 @@ function SolutionCard({ solution, isFirst }: { solution: FailureSolution; isFirs
             )}
 
             {/* Herramientas y repuestos */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {solution.toolsUsed && solution.toolsUsed.length > 0 && (
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">

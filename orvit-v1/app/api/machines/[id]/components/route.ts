@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 // ✅ OPTIMIZADO: Construir árbol en memoria con profundidad ilimitada
 function buildSubcomponentTree(components: any[], parentId: number | null): any[] {
@@ -18,6 +19,11 @@ function buildSubcomponentTree(components: any[], parentId: number | null): any[
 // GET /api/machines/[id]/components
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const { id } = params;
     const machineId = Number(id);
 
@@ -29,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const [machine, allComponents] = await Promise.all([
       prisma.machine.findUnique({
         where: { id: machineId },
-        select: { id: true }
+        select: { id: true, companyId: true }
       }),
       // Obtener TODOS los componentes de la máquina en una sola query
       prisma.component.findMany({
@@ -40,6 +46,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     if (!machine) {
       return NextResponse.json({ error: 'Máquina no encontrada' }, { status: 404 });
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Si no hay componentes, devolver array vacío

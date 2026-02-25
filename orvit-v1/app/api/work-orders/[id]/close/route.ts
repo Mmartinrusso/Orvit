@@ -318,7 +318,9 @@ export async function POST(
       workOrderId,
       companyId,
       userId: performerId,
-      sparePartsUsed: data.sparePartsUsed
+      sparePartsUsed: data.sparePartsUsed,
+      machineId: workOrder.machineId ?? undefined,
+      componentId: workOrder.componentId ?? undefined,
     });
 
     if (sparePartsResult.errors.length > 0) {
@@ -423,12 +425,16 @@ async function processSparePartsOnClose({
   workOrderId,
   companyId,
   userId,
-  sparePartsUsed
+  sparePartsUsed,
+  machineId,
+  componentId
 }: {
   workOrderId: number;
   companyId: number;
   userId: number;
   sparePartsUsed?: SparePartUsed[];
+  machineId?: number;
+  componentId?: number;
 }): Promise<ProcessResult> {
   const result: ProcessResult = {
     processed: [],
@@ -492,6 +498,23 @@ async function processSparePartsOnClose({
             }
           })
         ]);
+
+        // ═══ BRIDGE: Crear LotInstallation para trazabilidad ═══
+        if (machineId) {
+          try {
+            await createLotInstallationFIFO({
+              toolId: reservation.toolId,
+              quantity: reservation.quantity,
+              machineId,
+              componentId,
+              workOrderId,
+              userId,
+              companyId
+            });
+          } catch (lotErr: any) {
+            console.warn(`⚠️ No se pudo crear LotInstallation para tool ${reservation.toolId}:`, lotErr.message);
+          }
+        }
 
         result.processed.push({
           toolId: reservation.toolId,
@@ -595,6 +618,23 @@ async function processSparePartsOnClose({
             })
           ]);
 
+          // ═══ BRIDGE: Crear LotInstallation para trazabilidad ═══
+          if (machineId) {
+            try {
+              await createLotInstallationFIFO({
+                toolId: part.id,
+                quantity: part.quantity,
+                machineId,
+                componentId,
+                workOrderId,
+                userId,
+                companyId
+              });
+            } catch (lotErr: any) {
+              console.warn(`⚠️ No se pudo crear LotInstallation para tool ${part.id}:`, lotErr.message);
+            }
+          }
+
           result.processed.push({
             toolId: part.id,
             name: part.name,
@@ -613,5 +653,71 @@ async function processSparePartsOnClose({
     console.error('Error en processSparePartsOnClose:', error);
     result.errors.push(`Error general: ${error.message}`);
     return result;
+  }
+}
+
+/**
+ * Crear LotInstallation usando FIFO (lote más antiguo disponible).
+ * Si no hay lotes disponibles, no falla — es trazabilidad opcional.
+ */
+async function createLotInstallationFIFO({
+  toolId,
+  quantity,
+  machineId,
+  componentId,
+  workOrderId,
+  userId,
+  companyId
+}: {
+  toolId: number;
+  quantity: number;
+  machineId: number;
+  componentId?: number;
+  workOrderId: number;
+  userId: number;
+  companyId: number;
+}) {
+  let remaining = quantity;
+
+  // Buscar lotes disponibles en orden FIFO
+  const availableLots = await prisma.inventoryLot.findMany({
+    where: {
+      toolId,
+      companyId,
+      status: 'AVAILABLE',
+      remainingQty: { gt: 0 }
+    },
+    orderBy: { receivedAt: 'asc' }
+  });
+
+  for (const lot of availableLots) {
+    if (remaining <= 0) break;
+
+    const fromThisLot = Math.min(remaining, lot.remainingQty);
+    const newRemaining = lot.remainingQty - fromThisLot;
+
+    await prisma.$transaction([
+      prisma.lotInstallation.create({
+        data: {
+          lotId: lot.id,
+          machineId,
+          componentId: componentId || null,
+          quantity: fromThisLot,
+          installedById: userId,
+          workOrderId,
+          companyId,
+          notes: `Auto-registrado al cerrar OT #${workOrderId}`
+        }
+      }),
+      prisma.inventoryLot.update({
+        where: { id: lot.id },
+        data: {
+          remainingQty: newRemaining,
+          status: newRemaining === 0 ? 'DEPLETED' : 'AVAILABLE'
+        }
+      })
+    ]);
+
+    remaining -= fromThisLot;
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,9 +33,15 @@ import {
  Trash2,
  Copy,
  X,
+ CheckSquare2,
+ Power,
+ PowerOff,
+ Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { exportPreventivePDF } from '@/lib/pdf/preventive-pdf';
 import { useCompany } from '@/contexts/CompanyContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -97,6 +103,10 @@ export function PreventivoPlanesView({
  const [isDateFromOpen, setIsDateFromOpen] = useState(false);
  const [isDateToOpen, setIsDateToOpen] = useState(false);
  const [groupBy, setGroupBy] = useState<'none' | 'machine' | 'date'>('none');
+ const [selectionMode, setSelectionMode] = useState(false);
+ const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+ const { toast } = useToast();
+ const queryClient = useQueryClient();
 
  // Opciones de filtro
  const priorityOptions = [
@@ -288,6 +298,62 @@ export function PreventivoPlanesView({
 
  return null;
  }, [planes, groupBy]);
+
+ // Handlers de selección
+ const toggleSelection = useCallback((id: number) => {
+   setSelectedIds(prev => {
+     const next = new Set(prev);
+     if (next.has(id)) next.delete(id); else next.add(id);
+     return next;
+   });
+ }, []);
+
+ const toggleSelectionMode = useCallback(() => {
+   setSelectionMode(prev => !prev);
+   setSelectedIds(new Set());
+ }, []);
+
+ const handleBulkActivate = useCallback(async (active: boolean) => {
+   const ids = Array.from(selectedIds);
+   let done = 0;
+   for (const id of ids) {
+     try {
+       const res = await fetch(`/api/maintenance/preventive/${id}`, {
+         method: 'PUT',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ isActive: active }),
+       });
+       if (res.ok) done++;
+     } catch {}
+   }
+   toast({
+     title: done > 0 ? (active ? 'Activados' : 'Desactivados') : 'Error',
+     description: `${done} de ${ids.length} plan${ids.length !== 1 ? 'es' : ''} ${active ? 'activado' : 'desactivado'}${done !== 1 ? 's' : ''}`,
+     variant: done === 0 ? 'destructive' : 'default',
+   });
+   setSelectedIds(new Set());
+   setSelectionMode(false);
+   queryClient.invalidateQueries({ queryKey: ['preventive-planes', companyId] });
+ }, [selectedIds, companyId, toast, queryClient]);
+
+ const handleBulkDelete = useCallback(async () => {
+   const ids = Array.from(selectedIds);
+   let deleted = 0;
+   for (const id of ids) {
+     try {
+       const res = await fetch(`/api/maintenance/preventive/${id}`, { method: 'DELETE' });
+       if (res.ok) deleted++;
+     } catch {}
+   }
+   toast({
+     title: deleted > 0 ? 'Eliminados' : 'Error al eliminar',
+     description: `${deleted} de ${ids.length} plan${ids.length !== 1 ? 'es' : ''} eliminado${deleted !== 1 ? 's' : ''}`,
+     variant: deleted === 0 ? 'destructive' : 'default',
+   });
+   setSelectedIds(new Set());
+   setSelectionMode(false);
+   queryClient.invalidateQueries({ queryKey: ['preventive-planes', companyId] });
+ }, [selectedIds, companyId, toast, queryClient]);
 
  // Loading state
  if (isLoading) {
@@ -501,6 +567,27 @@ export function PreventivoPlanesView({
  <Button variant={groupBy === 'machine' ? 'secondary' : 'ghost'} className="h-7 px-2.5 text-xs rounded-none border-r" onClick={() => setGroupBy('machine')}><Wrench className="h-3 w-3 mr-1" />Máquina</Button>
  <Button variant={groupBy === 'date' ? 'secondary' : 'ghost'} className="h-7 px-2.5 text-xs rounded-md rounded-l-none" onClick={() => setGroupBy('date')}><CalendarIcon className="h-3 w-3 mr-1" />Fecha</Button>
  </div>
+ {/* Modo selección */}
+ <Button
+   variant={selectionMode ? 'secondary' : 'ghost'}
+   size="icon"
+   className="h-7 w-7 shrink-0"
+   onClick={toggleSelectionMode}
+   title={selectionMode ? 'Salir de selección' : 'Seleccionar planes'}
+ >
+   <CheckSquare2 className="h-3.5 w-3.5" />
+ </Button>
+ {/* Exportar PDF */}
+ <Button
+   variant="ghost"
+   size="icon"
+   className="h-7 w-7 shrink-0"
+   onClick={() => exportPreventivePDF(planes, currentCompany?.name || '', 'Planes de Mantenimiento Preventivo')}
+   title="Exportar PDF"
+   disabled={planes.length === 0}
+ >
+   <Download className="h-3.5 w-3.5" />
+ </Button>
  {/* Nuevo Plan */}
  {!hideCreateButton && onCreatePlan && (
  <Button size="icon" className="h-7 w-7 shrink-0" onClick={onCreatePlan}>
@@ -508,6 +595,27 @@ export function PreventivoPlanesView({
  </Button>
  )}
  </div>
+
+ {/* Barra de selección */}
+ {selectionMode && (
+   <div className="flex items-center gap-2 text-xs">
+     <button
+       className="text-primary hover:underline"
+       onClick={() => setSelectedIds(new Set(planes.map((p: any) => p.id)))}
+     >
+       Seleccionar todos ({planes.length})
+     </button>
+     {selectedIds.size > 0 && (
+       <>
+         <span className="text-muted-foreground">·</span>
+         <span className="text-muted-foreground">{selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}</span>
+         <button className="text-muted-foreground hover:underline" onClick={() => setSelectedIds(new Set())}>
+           Limpiar
+         </button>
+       </>
+     )}
+   </div>
+ )}
 
  {/* Stats rápidas */}
  <div className="flex flex-wrap gap-2">
@@ -617,6 +725,9 @@ export function PreventivoPlanesView({
  onExecute={onExecutePlan}
  onDelete={onDeletePlan}
  onDuplicate={onDuplicatePlan}
+ isSelected={selectedIds.has(plan.id)}
+ onToggleSelect={toggleSelection}
+ selectionMode={selectionMode}
  />
  ))}
  </div>
@@ -635,11 +746,45 @@ export function PreventivoPlanesView({
  onExecute={onExecutePlan}
  onDelete={onDeletePlan}
  onDuplicate={onDuplicatePlan}
+ isSelected={selectedIds.has(plan.id)}
+ onToggleSelect={toggleSelection}
+ selectionMode={selectionMode}
  />
  ))}
  </div>
  )}
  </div>
+
+ {/* Barra de acciones masivas */}
+ {selectionMode && selectedIds.size > 0 && (
+   <div className="sticky bottom-0 bg-background border border-border rounded-lg shadow-lg p-3 flex items-center justify-between gap-3">
+     <span className="text-sm font-medium">
+       {selectedIds.size} plan{selectedIds.size !== 1 ? 'es' : ''} seleccionado{selectedIds.size !== 1 ? 's' : ''}
+     </span>
+     <div className="flex flex-wrap gap-2">
+       <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+         Limpiar
+       </Button>
+       <Button
+         variant="outline"
+         size="sm"
+         className="text-success border-success/50 hover:bg-success/10"
+         onClick={() => handleBulkActivate(true)}
+       >
+         <Power className="h-4 w-4 mr-1" />
+         Activar
+       </Button>
+       <Button variant="outline" size="sm" onClick={() => handleBulkActivate(false)}>
+         <PowerOff className="h-4 w-4 mr-1" />
+         Desactivar
+       </Button>
+       <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+         <Trash2 className="h-4 w-4 mr-1" />
+         Eliminar
+       </Button>
+     </div>
+   </div>
+ )}
  </div>
  );
 }
@@ -653,6 +798,9 @@ interface PlanCardProps {
  onExecute?: (p: any) => void;
  onDelete?: (p: any) => void;
  onDuplicate?: (p: any) => void;
+ isSelected?: boolean;
+ onToggleSelect?: (id: number) => void;
+ selectionMode?: boolean;
 }
 
 function PlanCard({
@@ -663,17 +811,31 @@ function PlanCard({
  onExecute,
  onDelete,
  onDuplicate,
+ isSelected = false,
+ onToggleSelect,
+ selectionMode = false,
 }: PlanCardProps) {
  return (
  <Card
- className="cursor-pointer hover:shadow-md transition-shadow w-full overflow-hidden"
- onClick={() => onView?.(plan)}
+ className={cn(
+   "cursor-pointer hover:shadow-md transition-shadow w-full overflow-hidden",
+   selectionMode && isSelected && "ring-2 ring-primary border-primary"
+ )}
+ onClick={() => selectionMode ? onToggleSelect?.(plan.id) : onView?.(plan)}
  >
  <div className="p-4">
  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
  <div className="flex-1 min-w-0">
  {/* Título y prioridad */}
  <div className="flex flex-wrap items-center gap-2 mb-2">
+ {selectionMode && (
+   <Checkbox
+     checked={isSelected}
+     onCheckedChange={() => onToggleSelect?.(plan.id)}
+     onClick={(e) => e.stopPropagation()}
+     className="shrink-0"
+   />
+ )}
  <h3 className="text-sm font-medium break-words">
  {plan.title || 'Sin título'}
  </h3>

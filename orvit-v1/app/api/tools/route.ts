@@ -2,7 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
+import { z } from 'zod';
+
+const CreateToolSchema = z.object({
+  name: z.string().min(1, 'Nombre es requerido'),
+  description: z.string().optional().default(''),
+  code: z.string().optional().default(''),
+  itemType: z.enum(['TOOL', 'SUPPLY', 'SPARE_PART', 'HAND_TOOL', 'CONSUMABLE', 'MATERIAL']).default('TOOL'),
+  category: z.string().min(1, 'Categoría es requerida'),
+  brand: z.string().optional().default(''),
+  model: z.string().optional().default(''),
+  serialNumber: z.string().optional().default(''),
+  stockQuantity: z.coerce.number().min(0).default(0),
+  minStockLevel: z.coerce.number().min(0).default(0),
+  maxStockLevel: z.coerce.number().min(0).default(100),
+  reorderPoint: z.coerce.number().min(0).optional().nullable(),
+  location: z.string().optional().default(''),
+  cost: z.coerce.number().min(0).optional().default(0),
+  supplier: z.string().optional().default(''),
+  companyId: z.coerce.number().positive('Company ID es requerido'),
+  logo: z.string().optional().nullable(),
+  isCritical: z.boolean().optional().default(false),
+  leadTimeDays: z.coerce.number().min(0).optional().nullable(),
+  unit: z.string().optional().default('unidad'),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -65,19 +89,12 @@ export async function GET(request: NextRequest) {
     
     // console.log(`📋 GET /api/tools - companyId: ${companyId}`) // Log reducido;
 
-    // Si no se proporciona companyId, usar fallback
+    // companyId es requerido — no usar fallback para evitar exposición cross-tenant
     if (!companyId || companyId === 'undefined') {
-      // Obtener la primera empresa disponible
-      const companies = await prisma.$queryRaw`SELECT id FROM "Company" LIMIT 1` as any[];
-      if (companies.length > 0) {
-        companyId = companies[0].id.toString();
-        // console.log(`✅ Usando companyId fallback: ${companyId}`) // Log reducido;
-      } else {
-        return NextResponse.json(
-          { error: 'No hay empresas disponibles' },
-          { status: 404 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'Company ID es requerido' },
+        { status: 400 }
+      );
     }
 
     // console.log(`🔍 Buscando herramientas para empresa: ${companyId}`) // Log reducido;
@@ -135,64 +152,56 @@ export async function GET(request: NextRequest) {
   // ✅ OPTIMIZADO: Removido $disconnect() - no es necesario con connection pooling
 }
 
-// POST /api/tools - Crear nueva herramienta (simplificado)
+// POST /api/tools - Crear nueva herramienta con validación Zod
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      name,
-      description,
-      itemType,
-      category,
-      brand,
-      model,
-      stockQuantity,
-      minStockLevel,
-      location,
-      cost,
-      supplier,
-      companyId,
-      logo
-    } = body;
+    const parsed = CreateToolSchema.safeParse(body);
 
-    // Validaciones básicas
-    if (!name || !category || !companyId) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Nombre, categoría y companyId son requeridos' },
+        { error: 'Datos inválidos', details: parsed.error.flatten() },
         { status: 400 }
       );
     }
 
-    // Crear nueva herramienta usando SQL directo
+    const d = parsed.data;
+
     const newTool = await prisma.$queryRaw`
       INSERT INTO "Tool" (
-        name, description, "itemType", category, brand, model,
-        "stockQuantity", "minStockLevel", location, status, cost, supplier,
-        logo,
+        name, description, code, "itemType", category, brand, model, "serialNumber",
+        "stockQuantity", "minStockLevel", "maxStockLevel", "reorderPoint",
+        location, status, cost, supplier, logo,
+        "isCritical", "leadTimeDays", unit,
         "companyId", "createdAt", "updatedAt"
       )
       VALUES (
-        ${name}, 
-        ${description || ''}, 
-        ${itemType || 'TOOL'}::"ItemType", 
-        ${category}, 
-        ${brand || ''}, 
-        ${model || ''}, 
-        ${stockQuantity !== undefined ? stockQuantity : 0}, 
-        ${minStockLevel !== undefined ? minStockLevel : 0}, 
-        ${location || ''}, 
+        ${d.name},
+        ${d.description || null},
+        ${d.code || null},
+        ${d.itemType}::"ItemType",
+        ${d.category},
+        ${d.brand || null},
+        ${d.model || null},
+        ${d.serialNumber || null},
+        ${d.stockQuantity},
+        ${d.minStockLevel},
+        ${d.maxStockLevel},
+        ${d.reorderPoint ?? null},
+        ${d.location || null},
         'AVAILABLE'::"ToolStatus",
-        ${Number(cost) || 0}, 
-        ${supplier || ''}, 
-        ${logo || null},
-        ${parseInt(companyId)}, 
-        NOW(), 
+        ${d.cost ?? 0},
+        ${d.supplier || null},
+        ${d.logo || null},
+        ${d.isCritical},
+        ${d.leadTimeDays ?? null},
+        ${d.unit},
+        ${d.companyId},
+        NOW(),
         NOW()
       )
       RETURNING *
     ` as any[];
-
-    // console.log(`✅ Herramienta creada: ${newTool[0]?.name}`) // Log reducido;
 
     return NextResponse.json({
       success: true,
@@ -201,13 +210,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error en POST /api/tools:', error);
+    console.error('[POST /api/tools]', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor: ' + (error as Error).message },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
   }
-  // ✅ OPTIMIZADO: Removido $disconnect() - no es necesario con connection pooling
 }
 
 // PUT /api/tools - Actualizar herramienta

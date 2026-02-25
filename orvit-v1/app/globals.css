@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
 /* Legacy theme variables and utility classes removed —
    all theming now handled by @layer base CSS variables + Tailwind tokens */
 

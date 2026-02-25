@@ -118,6 +118,7 @@ export const solutionHistoryParamsSchema = z.object({
   minEffectiveness: z.number().int().min(1).max(5).optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
+  search: z.string().max(200).optional(),
   limit: z.number().int().min(1).max(200).optional().default(50),
   offset: z.number().int().min(0).optional().default(0)
 }).refine(

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, RefreshCw, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight } from 'lucide-react';
+import { Search, RefreshCw, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, X, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useMovimientos, useWarehouses, type MovimientosFilters } from '../hooks';
@@ -32,6 +32,7 @@ import {
 } from '@/lib/almacen/types';
 import { EmptyState } from '../shared/EmptyState';
 import { cn, formatNumber } from '@/lib/utils';
+import { downloadCSV } from '@/lib/cargas/utils';
 
 interface KardexTabProps {
   initialSupplierItemId?: number;
@@ -45,6 +46,8 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
     supplierItemId: initialSupplierItemId,
   });
   const [localSearch, setLocalSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [pagination, setPagination] = useState({ page: 1, pageSize: 50 });
 
   const { data: warehouses = [] } = useWarehouses();
@@ -79,11 +82,50 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, []);
 
+  const handleDateFrom = useCallback((value: string) => {
+    setDateFrom(value);
+    setFilters((prev) => ({ ...prev, dateFrom: value || undefined }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handleDateTo = useCallback((value: string) => {
+    setDateTo(value);
+    setFilters((prev) => ({ ...prev, dateTo: value || undefined }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handleClearDates = useCallback(() => {
+    setDateFrom('');
+    setDateTo('');
+    setFilters((prev) => ({ ...prev, dateFrom: undefined, dateTo: undefined }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const hasDateFilter = !!dateFrom || !!dateTo;
+
+  const handleExportCSV = useCallback(() => {
+    const headers = ['Fecha', 'Tipo', 'Código', 'Item', 'Depósito', 'Cantidad', 'Stock Anterior', 'Stock Posterior', 'Referencia', 'Usuario'];
+    const rows = movimientos.map((mov: any) => [
+      format(new Date(mov.fecha), 'dd/MM/yyyy HH:mm', { locale: es }),
+      MovementTypeLabels[mov.tipo as MovementType] || mov.tipo,
+      mov.supplierItem?.codigoProveedor || '',
+      mov.supplierItem?.nombre || '',
+      mov.warehouse?.nombre || '',
+      (isPositiveMovement(mov.tipo) ? '+' : '-') + formatNumber(Math.abs(mov.cantidad), 2),
+      mov.stockAnterior != null ? formatNumber(mov.stockAnterior, 2) : '',
+      mov.stockPosterior != null ? formatNumber(mov.stockPosterior, 2) : '',
+      mov.referencia || '',
+      mov.usuario?.name || '',
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    downloadCSV(csv, `kardex-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+  }, [movimientos]);
+
   return (
     <div className="space-y-4">
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar item..."
@@ -98,11 +140,11 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
           value={filters.warehouseId?.toString() || 'all'}
           onValueChange={handleWarehouseChange}
         >
-          <SelectTrigger className="w-[180px] h-9">
+          <SelectTrigger className="w-[150px] h-9">
             <SelectValue placeholder="Depósito" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los depósitos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             {warehouses.map((w) => (
               <SelectItem key={w.id} value={w.id.toString()}>
                 {w.nombre}
@@ -115,8 +157,8 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
           value={filters.tipo || 'all'}
           onValueChange={handleTipoChange}
         >
-          <SelectTrigger className="w-[180px] h-9">
-            <SelectValue placeholder="Tipo de movimiento" />
+          <SelectTrigger className="w-[160px] h-9">
+            <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los tipos</SelectItem>
@@ -128,25 +170,100 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
           </SelectContent>
         </Select>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="ml-auto"
-        >
-          <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-        </Button>
+        {/* Date range */}
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => handleDateFrom(e.target.value)}
+            className="h-9 w-[140px] text-sm"
+            placeholder="Desde"
+          />
+          <span className="text-muted-foreground text-sm">—</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => handleDateTo(e.target.value)}
+            className="h-9 w-[140px] text-sm"
+            placeholder="Hasta"
+          />
+          {hasDateFilter && (
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleClearDates}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 ml-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={movimientos.length === 0}
+            className="h-9 w-9 p-0"
+            title="Exportar CSV"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-9 w-9 p-0"
+          >
+            <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+          </Button>
+        </div>
       </div>
 
-      {/* Tabla */}
+      {/* Contenido */}
       {isLoading ? (
         <TableSkeleton />
       ) : movimientos.length === 0 ? (
         <EmptyState type="kardex" />
       ) : (
         <>
-          <div className="rounded-md border">
+          {/* Cards mobile */}
+          <div className="space-y-2 md:hidden">
+            {movimientos.map((mov: any) => {
+              const isPositive = isPositiveMovement(mov.tipo);
+              return (
+                <div key={mov.id} className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{mov.supplierItem?.nombre || '-'}</p>
+                      <p className="text-xs font-mono text-muted-foreground mt-0.5">
+                        {mov.supplierItem?.codigoProveedor || '-'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={cn('text-sm font-bold', isPositive ? 'text-green-600' : 'text-destructive')}>
+                        {isPositive ? '+' : '-'}{formatNumber(Math.abs(mov.cantidad), 2)}
+                      </span>
+                      <MovementTypeBadge tipo={mov.tipo} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                    <span>{mov.warehouse?.nombre || '-'}</span>
+                    <span>{format(new Date(mov.fecha), 'dd/MM/yy HH:mm', { locale: es })}</span>
+                  </div>
+                  {(mov.stockAnterior != null || mov.stockPosterior != null) && (
+                    <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                      <span>Stock:</span>
+                      <span>{mov.stockAnterior != null ? formatNumber(mov.stockAnterior, 2) : '-'}</span>
+                      <ArrowRightIcon />
+                      <span className="font-medium text-foreground">{mov.stockPosterior != null ? formatNumber(mov.stockPosterior, 2) : '-'}</span>
+                      {mov.usuario?.name && <span className="ml-auto">· {mov.usuario.name}</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Tabla desktop */}
+          <div className="hidden md:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -210,7 +327,7 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
           {/* Paginación */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Mostrando {movimientos.length} de {total} movimientos
+              {movimientos.length} de {total} movimientos
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -222,7 +339,7 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
                 Anterior
               </Button>
               <span>
-                Página {pagination.page} de {totalPages}
+                {pagination.page} / {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -238,6 +355,10 @@ export function KardexTab({ initialSupplierItemId }: KardexTabProps) {
       )}
     </div>
   );
+}
+
+function ArrowRightIcon() {
+  return <span className="mx-0.5">→</span>;
 }
 
 function MovementTypeBadge({ tipo }: { tipo: MovementType }) {
@@ -273,15 +394,9 @@ function TableSkeleton() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-32" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+            {[24, 20, 32, 24, 16, 16, 16, 24, 24].map((w, i) => (
+              <TableHead key={i}><Skeleton className={`h-4 w-${w}`} /></TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>

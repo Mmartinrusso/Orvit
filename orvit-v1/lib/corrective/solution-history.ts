@@ -43,6 +43,7 @@ export interface SolutionHistoryParams {
   minEffectiveness?: number;
   startDate?: Date;
   endDate?: Date;
+  search?: string;
   limit?: number;
   offset?: number;
 }
@@ -219,11 +220,22 @@ export async function getSolutionHistory(params: SolutionHistoryParams) {
     minEffectiveness,
     startDate,
     endDate,
+    search,
     limit = 50,
     offset = 0
   } = validated;
 
   const where: any = { companyId };
+
+  // Text search across diagnosis, solution, confirmedCause, and failure title
+  if (search) {
+    where.OR = [
+      { diagnosis: { contains: search, mode: 'insensitive' } },
+      { solution: { contains: search, mode: 'insensitive' } },
+      { confirmedCause: { contains: search, mode: 'insensitive' } },
+      { failureOccurrence: { title: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
 
   if (failureOccurrenceId) {
     where.failureOccurrenceId = failureOccurrenceId;
@@ -277,14 +289,24 @@ export async function getSolutionHistory(params: SolutionHistoryParams) {
             id: true,
             title: true,
             machineId: true,
-            reportedAt: true
+            reportedAt: true,
+            machine: {
+              select: { id: true, name: true }
+            },
+            component: {
+              select: { id: true, name: true }
+            },
+            subComponent: {
+              select: { id: true, name: true }
+            }
           }
         },
         workOrder: {
           select: {
             id: true,
             title: true,
-            status: true
+            status: true,
+            completedDate: true
           }
         }
       },

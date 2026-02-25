@@ -28,6 +28,12 @@ export { useMovimientos, useKardex, useMovimientosHoy } from './useMovimientos';
 // Reservas
 export { useReservas, useReservasSummary, useReservasMutations, useReservasCount } from './useReservas';
 
+// Transferencias
+export { useTransferencias, useTransferencia, useTransferenciasMutations } from './useTransferencias';
+
+// Ajustes
+export { useAjustes, useAjuste, useAjustesMutations } from './useAjustes';
+
 // Stats
 export { useAlmacenStats, useAlmacenKPIs } from './useAlmacenStats';
 

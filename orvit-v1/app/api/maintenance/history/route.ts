@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ✅ OPTIMIZACIÓN: Ejecutar queries en paralelo
-    const [workOrders, templates, preventiveTemplateRecord, maintenanceHistoryRecords] = await Promise.all([
+    const [workOrders, templates, preventiveTemplateRecord, maintenanceHistoryRecords, machinePreventiveTemplates] = await Promise.all([
       prisma.workOrder.findMany({
         where: workOrderWhere,
         include: {
@@ -123,6 +123,18 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { executedAt: 'desc' },
         take: 200
+      }) : Promise.resolve([]),
+      // 5ta query: traer todos los preventiveTemplates del machine para obtener su executionHistory
+      // Solo cuando hay machineId y NO hay maintenanceId específico (ese ya lo cubre preventiveTemplateRecord)
+      (machineIdNum && !maintenanceIdNum) ? prisma.preventiveTemplate.findMany({
+        where: { machineId: machineIdNum },
+        select: {
+          id: true, title: true, description: true, machineId: true,
+          executionHistory: true, lastMaintenanceDate: true,
+          lastExecutionDuration: true, priority: true, nextMaintenanceDate: true,
+          legacyDocumentId: true,
+          machine: { select: { id: true, name: true } }
+        }
       }) : Promise.resolve([])
     ]);
 
@@ -149,13 +161,23 @@ export async function GET(request: NextRequest) {
       isFromChecklist: false
     }));
 
+    // IDs de documentos legacy que ya fueron migrados a preventiveTemplate — no duplicar
+    const migratedLegacyDocIds = new Set(
+      (machinePreventiveTemplates as any[])
+        .map((t: any) => t.legacyDocumentId)
+        .filter(Boolean)
+    );
+
     // ✅ OPTIMIZACIÓN: Procesar templates sin queries adicionales
     const templateHistory: any[] = [];
     let templatesProcessed = 0;
     let templatesFiltered = 0;
-    
+
     for (const template of templates) {
       try {
+        // Saltear documentos legacy que ya tienen un preventiveTemplate moderno
+        if (migratedLegacyDocIds.has(template.id)) continue;
+
         const data = JSON.parse(template.url);
         templatesProcessed++;
         
@@ -343,6 +365,64 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Procesar preventiveTemplates de la machine (historial por machineId)
+    const machinePreventiveTemplateHistory: any[] = [];
+    for (const tpl of (machinePreventiveTemplates as any[])) {
+      const entries = Array.isArray(tpl.executionHistory) ? (tpl.executionHistory as any[]) : [];
+      if (entries.length > 0) {
+        for (const entry of entries) {
+          machinePreventiveTemplateHistory.push({
+            id: `prevtpl-${tpl.id}-${entry.id}`,
+            maintenanceId: tpl.id,
+            maintenanceType: 'PREVENTIVE',
+            type: 'PREVENTIVE_TEMPLATE',
+            title: tpl.title,
+            description: tpl.description,
+            machineId: tpl.machineId ?? null,
+            machineName: tpl.machine?.name ?? null,
+            assignedToName: entry.operators?.[0]?.name ?? null,
+            executedAt: entry.executedAt ? new Date(entry.executedAt).toISOString() : new Date().toISOString(),
+            actualDuration: entry.actualDuration ? Math.round(Number(entry.actualDuration) * 60) : null,
+            notes: entry.notes ?? '',
+            issues: entry.issues ?? '',
+            completionStatus: entry.completionStatus || 'COMPLETED',
+            companyId: companyIdNum,
+            priority: tpl.priority || 'MEDIUM',
+            status: 'COMPLETED',
+            scheduledDate: tpl.nextMaintenanceDate?.toISOString() ?? null,
+            completedDate: entry.executedAt ? new Date(entry.executedAt).toISOString() : null,
+            isFromChecklist: false,
+            reExecutionReason: entry.reExecutionReason ?? null,
+            cost: entry.cost ?? null,
+            operators: Array.isArray(entry.operators) ? entry.operators : [],
+          });
+        }
+      } else if (tpl.lastMaintenanceDate) {
+        // Solo tiene lastMaintenanceDate, sin entries detalladas
+        machinePreventiveTemplateHistory.push({
+          id: `prevtpl-${tpl.id}-last`,
+          maintenanceId: tpl.id,
+          maintenanceType: 'PREVENTIVE',
+          type: 'PREVENTIVE_TEMPLATE',
+          title: tpl.title,
+          description: tpl.description,
+          machineId: tpl.machineId ?? null,
+          machineName: tpl.machine?.name ?? null,
+          assignedToName: null,
+          executedAt: tpl.lastMaintenanceDate.toISOString(),
+          actualDuration: tpl.lastExecutionDuration ? Math.round(Number(tpl.lastExecutionDuration) * 60) : null,
+          notes: '',
+          completionStatus: 'COMPLETED',
+          companyId: companyIdNum,
+          priority: tpl.priority || 'MEDIUM',
+          status: 'COMPLETED',
+          scheduledDate: tpl.nextMaintenanceDate?.toISOString() ?? null,
+          completedDate: tpl.lastMaintenanceDate.toISOString(),
+          isFromChecklist: false,
+        });
+      }
+    }
+
     // Procesar maintenance_history records
     const maintenanceHistoryData = maintenanceHistoryRecords.map((record: any) => ({
       id: `history-${record.id}`,
@@ -374,14 +454,42 @@ export async function GET(request: NextRequest) {
       cost: record.cost ?? null
     }));
 
+    // Eliminar work orders PREVENTIVOS duplicados por entries del template (mismo título, < 10h)
+    // El timezone gap (21:00 Argentina = 00:00 UTC siguiente día) hace que "mismo día UTC" falle,
+    // por eso comparamos por proximidad de tiempo en lugar de día exacto.
+    const templateEntryTitles = new Set(
+      machinePreventiveTemplateHistory.map((e: any) => (e.title || '').toLowerCase().trim())
+    );
+    const deduplicatedWorkOrderHistory = workOrderHistory.filter((wo: any) => {
+      if (wo.maintenanceType !== 'PREVENTIVE') return true;
+      const woTitle = (wo.title || '').toLowerCase().trim();
+      if (!templateEntryTitles.has(woTitle)) return true;
+      return !machinePreventiveTemplateHistory.some((tpl: any) => {
+        if ((tpl.title || '').toLowerCase().trim() !== woTitle) return false;
+        const diffHours = Math.abs(
+          new Date(wo.executedAt).getTime() - new Date(tpl.executedAt).getTime()
+        ) / (1000 * 3600);
+        return diffHours < 10;
+      });
+    });
+
     // Combinar y ordenar
     // Cuando se busca por maintenanceId específico (preventive template), solo incluir
     // el historial directo de ese template — no mezclar work orders que podrían
     // tener el mismo ID numérico por coincidencia.
-    const combinedHistory = (maintenanceIdNum
+    const rawCombined = maintenanceIdNum
       ? [...preventiveTemplateHistory, ...templateHistory.filter(t => t.maintenanceId === maintenanceIdNum)]
-      : [...workOrderHistory, ...templateHistory, ...preventiveTemplateHistory, ...maintenanceHistoryData]
-    ).sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
+      : [...deduplicatedWorkOrderHistory, ...templateHistory, ...preventiveTemplateHistory, ...machinePreventiveTemplateHistory, ...maintenanceHistoryData];
+
+    // Deduplicar por id exacto
+    const seenIds = new Set<string>();
+    const combinedHistory = rawCombined
+      .filter(item => {
+        if (seenIds.has(item.id)) return false;
+        seenIds.add(item.id);
+        return true;
+      })
+      .sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
 
     // Paginar
     const startIndex = page * pageSize;

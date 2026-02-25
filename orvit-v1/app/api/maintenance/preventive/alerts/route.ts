@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/maintenance/preventive/alerts - Obtener alertas de mantenimientos próximos
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const daysAhead = Number(searchParams.get('daysAhead')) || 7;
@@ -16,6 +29,12 @@ export async function GET(request: NextRequest) {
         { error: 'companyId es requerido' },
         { status: 400 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && Number(companyId) !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     const today = new Date();

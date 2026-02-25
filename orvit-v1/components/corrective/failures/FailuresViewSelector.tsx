@@ -63,7 +63,7 @@ export function FailuresViewSelector({ className }: FailuresViewSelectorProps) {
             key={view.id}
             onClick={() => setView(view.id)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+              'flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
               'hover:text-foreground',
               isActive
                 ? 'bg-background text-foreground shadow-sm'
@@ -72,7 +72,7 @@ export function FailuresViewSelector({ className }: FailuresViewSelectorProps) {
             title={view.description}
           >
             <Icon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{view.label}</span>
+            <span>{view.label}</span>
           </button>
         );
       })}

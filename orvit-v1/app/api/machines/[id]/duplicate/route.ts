@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,14 +10,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
+    const auth = await verifyAuth(request);
+    if (!auth) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
     const machineId = parseInt(params.id);
@@ -35,6 +30,10 @@ export async function POST(
 
     if (!originalMachine) {
       return NextResponse.json({ error: 'Máquina no encontrada' }, { status: 404 });
+    }
+
+    if (originalMachine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Parsear opciones del body (qué incluir en la duplicación)

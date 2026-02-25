@@ -265,3 +265,87 @@ export const MovementTypeColors: Record<MovementType, string> = {
   LIBERACION_RESERVA: 'bg-muted text-muted-foreground',
   CONSUMO_RESERVA: 'bg-success-muted text-success-muted-foreground',
 };
+
+// ============================================
+// TransferStatus - Estados de Transferencia
+// ============================================
+export const TransferStatuses = [
+  'BORRADOR',
+  'SOLICITADO',
+  'EN_TRANSITO',
+  'RECIBIDO_PARCIAL',
+  'COMPLETADO',
+  'CANCELADO',
+] as const;
+
+export type TransferStatus = (typeof TransferStatuses)[number];
+export const TransferStatusSchema = z.enum(TransferStatuses);
+
+export const TransferStatusLabels: Record<TransferStatus, string> = {
+  BORRADOR: 'Borrador',
+  SOLICITADO: 'Solicitado',
+  EN_TRANSITO: 'En Tránsito',
+  RECIBIDO_PARCIAL: 'Recibido Parcial',
+  COMPLETADO: 'Completado',
+  CANCELADO: 'Cancelado',
+};
+
+export const TransferStatusColors: Record<TransferStatus, string> = {
+  BORRADOR: 'bg-muted text-muted-foreground',
+  SOLICITADO: 'bg-info-muted text-info-muted-foreground',
+  EN_TRANSITO: 'bg-accent-purple-muted text-accent-purple-muted-foreground',
+  RECIBIDO_PARCIAL: 'bg-warning-muted text-warning-muted-foreground',
+  COMPLETADO: 'bg-success-muted text-success-muted-foreground',
+  CANCELADO: 'bg-destructive/10 text-destructive',
+};
+
+// ============================================
+// AdjustmentStatus - Estados de Ajuste
+// ============================================
+export const AdjustmentStatuses = [
+  'BORRADOR',
+  'PENDIENTE_APROBACION',
+  'CONFIRMADO',
+  'RECHAZADO',
+] as const;
+
+export type AdjustmentStatus = (typeof AdjustmentStatuses)[number];
+export const AdjustmentStatusSchema = z.enum(AdjustmentStatuses);
+
+export const AdjustmentStatusLabels: Record<AdjustmentStatus, string> = {
+  BORRADOR: 'Borrador',
+  PENDIENTE_APROBACION: 'Pendiente Aprobación',
+  CONFIRMADO: 'Confirmado',
+  RECHAZADO: 'Rechazado',
+};
+
+export const AdjustmentStatusColors: Record<AdjustmentStatus, string> = {
+  BORRADOR: 'bg-muted text-muted-foreground',
+  PENDIENTE_APROBACION: 'bg-warning-muted text-warning-muted-foreground',
+  CONFIRMADO: 'bg-success-muted text-success-muted-foreground',
+  RECHAZADO: 'bg-destructive/10 text-destructive',
+};
+
+// ============================================
+// AdjustmentType - Tipos de Ajuste
+// ============================================
+export const AdjustmentTypes = [
+  'INVENTARIO_FISICO',
+  'ROTURA',
+  'VENCIMIENTO',
+  'MERMA',
+  'CORRECCION',
+  'DEVOLUCION_INTERNA',
+] as const;
+
+export type AdjustmentType = (typeof AdjustmentTypes)[number];
+export const AdjustmentTypeSchema = z.enum(AdjustmentTypes);
+
+export const AdjustmentTypeLabels: Record<AdjustmentType, string> = {
+  INVENTARIO_FISICO: 'Inventario Físico',
+  ROTURA: 'Rotura',
+  VENCIMIENTO: 'Vencimiento',
+  MERMA: 'Merma',
+  CORRECCION: 'Corrección',
+  DEVOLUCION_INTERNA: 'Devolución Interna',
+};

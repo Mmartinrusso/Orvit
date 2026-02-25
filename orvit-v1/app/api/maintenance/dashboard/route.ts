@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders, shouldDisableCache } from '@/lib/perf';
 
 export const dynamic = 'force-dynamic';
@@ -8,15 +10,26 @@ export const dynamic = 'force-dynamic';
  * ✨ ENDPOINT OPTIMIZADO: Dashboard unificado de mantenimiento
  * Reemplaza múltiples requests individuales con una sola llamada
  * Usa Promise.all para ejecutar queries en paralelo
- * 
+ *
  * ANTES: ~8-10 requests (pending, completed, kpis, machines, mobile units, etc.)
  * DESPUÉS: 1 request
  */
 export async function GET(request: NextRequest) {
   const perfCtx = startPerf();
   const { searchParams } = new URL(request.url);
-  
+
   try {
+    // Autenticación
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
     const companyId = searchParams.get('companyId');
     const sectorId = searchParams.get('sectorId');
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50', 10), 100);
@@ -26,6 +39,12 @@ export async function GET(request: NextRequest) {
         { error: 'companyId es requerido' },
         { status: 400 }
       );
+    }
+
+    // Company boundary check
+    const tokenCompanyId = payload.companyId as number | undefined;
+    if (tokenCompanyId && parseInt(companyId) !== tokenCompanyId) {
+      return NextResponse.json({ error: 'No autorizado para esta empresa' }, { status: 403 });
     }
 
     endParse(perfCtx);

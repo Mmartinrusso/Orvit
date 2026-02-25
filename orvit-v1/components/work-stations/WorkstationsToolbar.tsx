@@ -146,7 +146,7 @@ export function WorkstationsToolbar({
           </div>
 
           {/* Lado derecho: Acciones */}
-          <div className="flex gap-2 flex-wrap sm:flex-nowrap items-center">
+          <div className="flex gap-2 items-center shrink-0">
             {onExport && (
               <Button
                 variant="ghost"
@@ -154,6 +154,7 @@ export function WorkstationsToolbar({
                 onClick={onExport}
                 aria-label="Exportar CSV"
                 title="Exportar a CSV"
+                className="hidden sm:inline-flex"
               >
                 <Download className="h-4 w-4" />
               </Button>
@@ -164,10 +165,11 @@ export function WorkstationsToolbar({
               onClick={onRefresh}
               disabled={refreshing}
               aria-label="Actualizar"
+              className="hidden sm:inline-flex"
             >
               <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
             </Button>
-            <div className="flex items-center border rounded-md">
+            <div className="hidden sm:flex items-center border rounded-md">
               <Button
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                 size="icon-lg"
@@ -188,14 +190,24 @@ export function WorkstationsToolbar({
               </Button>
             </div>
             {canCreate && (
-              <Button
-                onClick={onCreateWorkstation}
-                size="lg"
-                className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:inline-flex text-xs"
-              >
-                <Plus className="h-3 w-3 mr-2" />
-                Nuevo Puesto
-              </Button>
+              <>
+                <Button
+                  onClick={onCreateWorkstation}
+                  size="icon-lg"
+                  className="sm:hidden"
+                  aria-label="Nuevo puesto de trabajo"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={onCreateWorkstation}
+                  size="lg"
+                  className="items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-md px-3 bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:inline-flex text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-2" />
+                  Nuevo Puesto
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -203,8 +215,8 @@ export function WorkstationsToolbar({
 
       {/* Filter Bar */}
       <div className="px-4 md:px-6">
-        <div className="flex flex-wrap items-center gap-2 h-10">
-          <div className="relative flex-1 min-w-[200px]">
+        <div className="flex flex-wrap items-center gap-2 sm:h-10">
+          <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
               placeholder="Buscar por nombre, código o descripción..."
@@ -214,7 +226,7 @@ export function WorkstationsToolbar({
             />
           </div>
           <Select value={filters.estado} onValueChange={(v) => handleFilterChange('estado', v)}>
-            <SelectTrigger className="h-9 w-[130px] text-xs">
+            <SelectTrigger className="h-9 flex-1 sm:flex-none sm:w-[130px] text-xs">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -223,6 +235,7 @@ export function WorkstationsToolbar({
               <SelectItem value="INACTIVE">Inactivo</SelectItem>
             </SelectContent>
           </Select>
+          <div className="hidden sm:block">
           <Select value={filters.hasInstructives} onValueChange={(v) => handleFilterChange('hasInstructives', v)}>
             <SelectTrigger className="h-9 w-[150px] text-xs">
               <SelectValue placeholder="Instructivos" />
@@ -233,6 +246,8 @@ export function WorkstationsToolbar({
               <SelectItem value="no">Sin instructivos</SelectItem>
             </SelectContent>
           </Select>
+          </div>
+          <div className="hidden sm:block">
           <Select value={filters.hasMachines} onValueChange={(v) => handleFilterChange('hasMachines', v)}>
             <SelectTrigger className="h-9 w-[140px] text-xs">
               <SelectValue placeholder="Máquinas" />
@@ -243,6 +258,8 @@ export function WorkstationsToolbar({
               <SelectItem value="no">Sin máquinas</SelectItem>
             </SelectContent>
           </Select>
+          </div>
+          <div className="hidden sm:block">
           <Select value={filters.sortBy} onValueChange={(v) => handleFilterChange('sortBy', v as SortOption)}>
             <SelectTrigger className="h-9 w-[150px] text-xs">
               <SelectValue placeholder="Ordenar" />
@@ -253,22 +270,70 @@ export function WorkstationsToolbar({
               ))}
             </SelectContent>
           </Select>
-          {availableSectores.length > 1 && (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="lg" className="text-xs">
-                  <SlidersHorizontal className="h-3 w-3 mr-2" />
-                  Filtros avanzados
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" size="md">
-                <SheetHeader>
-                  <SheetTitle>Filtros avanzados</SheetTitle>
-                  <SheetDescription>
-                    Aplicá filtros adicionales para encontrar puestos específicos
-                  </SheetDescription>
-                </SheetHeader>
-                <SheetBody className="space-y-4">
+          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  'h-9 text-xs gap-1.5',
+                  availableSectores.length <= 1 && 'sm:hidden'
+                )}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Filtros avanzados</span>
+                <span className="sm:hidden">Filtros</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" size="md">
+              <SheetHeader>
+                <SheetTitle>Filtros</SheetTitle>
+                <SheetDescription>
+                  Filtrá los puestos por características específicas
+                </SheetDescription>
+              </SheetHeader>
+              <SheetBody className="space-y-4">
+                <div className="sm:hidden space-y-2">
+                  <label className="text-sm font-medium">Instructivos</label>
+                  <Select value={filters.hasInstructives} onValueChange={(v) => handleFilterChange('hasInstructives', v)}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Instructivos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Con instructivos</SelectItem>
+                      <SelectItem value="no">Sin instructivos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:hidden space-y-2">
+                  <label className="text-sm font-medium">Máquinas</label>
+                  <Select value={filters.hasMachines} onValueChange={(v) => handleFilterChange('hasMachines', v)}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Máquinas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="yes">Con máquinas</SelectItem>
+                      <SelectItem value="no">Sin máquinas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:hidden space-y-2">
+                  <label className="text-sm font-medium">Ordenar por</label>
+                  <Select value={filters.sortBy} onValueChange={(v) => handleFilterChange('sortBy', v as SortOption)}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Ordenar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {availableSectores.length > 1 && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Sector</label>
                     <Select value={filters.sectorId || 'all'} onValueChange={(v) => handleFilterChange('sectorId', v === 'all' ? undefined : v)}>
@@ -285,10 +350,10 @@ export function WorkstationsToolbar({
                       </SelectContent>
                     </Select>
                   </div>
-                </SheetBody>
-              </SheetContent>
-            </Sheet>
-          )}
+                )}
+              </SheetBody>
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Active Filters Chips */}

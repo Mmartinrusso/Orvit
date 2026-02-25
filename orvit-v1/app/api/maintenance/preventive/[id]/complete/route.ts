@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
+import { verifyToken } from '@/lib/auth';
 import {
   completeTemplate,
 } from '@/lib/maintenance/preventive-template.repository';
@@ -9,12 +9,41 @@ import {
 // Helper para obtener el usuario actual
 async function getCurrentUser() {
   try {
-    const token = cookies().get('token')?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
     if (!token) return null;
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET || 'tu-clave-secreta-super-segura'));
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) return null;
     const user = await prisma.user.findUnique({ where: { id: payload.userId as number } });
     return user;
   } catch { return null; }
+}
+
+/**
+ * Resuelve la tarifa horaria del técnico.
+ * Prioridad: TechnicianCostRate → env MAINTENANCE_HOURLY_RATE_DEFAULT → 25
+ */
+async function resolveHourlyRate(
+  userId: number | undefined,
+  companyId: number | undefined
+): Promise<number> {
+  const defaultRate = parseFloat(process.env.MAINTENANCE_HOURLY_RATE_DEFAULT || '25');
+  if (!userId || !companyId) return defaultRate;
+  try {
+    const now = new Date();
+    const rate = await prisma.technicianCostRate.findFirst({
+      where: {
+        userId,
+        companyId,
+        isActive: true,
+        effectiveFrom: { lte: now },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }]
+      },
+      orderBy: { effectiveFrom: 'desc' },
+      select: { hourlyRate: true }
+    });
+    return rate ? parseFloat(rate.hourlyRate.toString()) : defaultRate;
+  } catch { return defaultRate; }
 }
 
 // POST /api/maintenance/preventive/[id]/complete - Completar mantenimiento preventivo
@@ -73,8 +102,11 @@ export async function POST(
 
     // Calcular métricas
     const actualDuration = executionData?.duration || executionData?.actualHours || 0;
-    const averageHourlyRate = 25;
-    const estimatedCost = actualDuration * averageHourlyRate;
+    const hourlyRate = await resolveHourlyRate(
+      template.assignedToId ?? undefined,
+      template.companyId ?? undefined
+    );
+    const estimatedCost = actualDuration * hourlyRate;
     const newCount = (template.maintenanceCount || 0) + 1;
     const newAvgDuration = template.averageDuration
       ? ((template.averageDuration + actualDuration) / 2)

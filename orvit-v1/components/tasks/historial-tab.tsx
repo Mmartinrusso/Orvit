@@ -281,29 +281,31 @@ export function HistorialTab() {
           <h2 className="text-xl font-semibold">Historial de Tareas</h2>
           <p className="text-sm text-muted-foreground mt-1">{history.length} tarea{history.length !== 1 ? 's' : ''} en el historial</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={toggleSelectionMode}>
             {isSelectionMode ? 'Cancelar' : 'Seleccionar'}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsAutoDeleteDialogOpen(true)}>Auto-eliminar</Button>
-          <Button variant="destructive" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>Limpiar todo</Button>
+          <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => setIsAutoDeleteDialogOpen(true)}>Auto-eliminar</Button>
+          <Button variant="destructive" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>Limpiar</Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar en historial..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[130px]"><SelectValue placeholder="Prioridad" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="high">Alta</SelectItem>
-            <SelectItem value="medium">Media</SelectItem>
-            <SelectItem value="low">Baja</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="hidden sm:block">
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-[130px]"><SelectValue placeholder="Prioridad" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="high">Alta</SelectItem>
+              <SelectItem value="medium">Media</SelectItem>
+              <SelectItem value="low">Baja</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isSelectionMode && (

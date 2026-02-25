@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,10 +38,7 @@ import {
   Loader2,
   ArrowRight,
   Clock,
-  CheckCircle2,
-  XCircle,
   Zap,
-  Eye,
   ShieldAlert,
   Layers,
   ClipboardList,
@@ -71,7 +69,7 @@ interface Tool {
 
 interface Movement {
   id: number;
-  type: 'IN' | 'OUT' | 'TRANSFER' | 'MAINTENANCE' | 'RETURN' | 'STOCK_IN' | 'STOCK_OUT';
+  type: 'IN' | 'OUT' | 'TRANSFER' | 'ADJUSTMENT' | 'LOAN' | 'RETURN';
   quantity: number;
   createdAt: string;
   reason: string | null;
@@ -94,63 +92,57 @@ export default function PanolDashboardPage() {
   const { currentCompany } = useCompany();
   const permissions = usePanolPermissions();
 
-  const [tools, setTools] = useState<Tool[]>([]);
-  const [movements, setMovements] = useState<Movement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState('7');
-  const [smartAlerts, setSmartAlerts] = useState<any[]>([]);
-  const [alertsSummary, setAlertsSummary] = useState({ critical: 0, warning: 0, info: 0, total: 0 });
 
-  const loadData = async (refresh = false) => {
-    if (!currentCompany?.id) return;
-
-    if (refresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-
-    try {
-      const [toolsRes, movementsRes, alertsRes] = await Promise.all([
-        fetch(`/api/tools?companyId=${currentCompany.id}`),
-        fetch(`/api/tools/movements?companyId=${currentCompany.id}&limit=500`),
+  const { data: dashboardData, isLoading, isFetching: isRefreshing, refetch } = useQuery({
+    queryKey: ['panol', 'dashboard', currentCompany?.id],
+    queryFn: async () => {
+      const [toolsRes, movementsRes, alertsRes, fieldStorageRes] = await Promise.all([
+        fetch(`/api/tools?companyId=${currentCompany!.id}`),
+        fetch(`/api/tools/movements?companyId=${currentCompany!.id}&limit=200`),
         fetch('/api/panol/alerts'),
+        fetch('/api/panol/field-vs-storage?limit=8'),
       ]);
 
-      if (toolsRes.ok) {
-        const toolsData = await toolsRes.json();
-        const toolsArray = Array.isArray(toolsData) ? toolsData : (toolsData?.tools || toolsData?.items || []);
-        setTools(toolsArray);
-      }
+      if (!toolsRes.ok) toast.error('Error al cargar el inventario');
+      if (!movementsRes.ok) toast.error('Error al cargar movimientos');
+      if (!alertsRes.ok) toast.warning('Alertas de stock no disponibles');
 
-      if (movementsRes.ok) {
-        const movementsData = await movementsRes.json();
-        const movementsArray = Array.isArray(movementsData) ? movementsData : (movementsData?.movements || movementsData?.items || []);
-        setMovements(movementsArray);
-      }
+      const toolsData = toolsRes.ok ? await toolsRes.json() : { tools: [] };
+      const movementsData = movementsRes.ok ? await movementsRes.json() : { movements: [] };
+      const alertsData = alertsRes.ok ? await alertsRes.json() : null;
+      const fsData = fieldStorageRes.ok ? await fieldStorageRes.json() : null;
 
-      if (alertsRes.ok) {
-        const alertsData = await alertsRes.json();
-        if (alertsData.success) {
-          setSmartAlerts(alertsData.data.alerts || []);
-          setAlertsSummary(alertsData.data.summary || { critical: 0, warning: 0, info: 0, total: 0 });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Error al cargar datos');
-      setTools([]);
-      setMovements([]);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      const tools = (Array.isArray(toolsData) ? toolsData : (toolsData?.tools || toolsData?.items || [])) as Tool[];
+      const movements = (Array.isArray(movementsData) ? movementsData : (movementsData?.movements || movementsData?.items || [])) as Movement[];
+
+      return {
+        tools,
+        movements,
+        smartAlerts: alertsData?.success ? (alertsData.data.alerts || []) : [],
+        alertsSummary: alertsData?.success ? (alertsData.data.summary || { critical: 0, warning: 0, info: 0, total: 0 }) : { critical: 0, warning: 0, info: 0, total: 0 },
+        fieldVsStorage: fsData?.success ? { summary: fsData.summary, topItems: fsData.topItems } : null,
+      };
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const tools = dashboardData?.tools ?? [];
+  const movements = dashboardData?.movements ?? [];
+  const smartAlerts = dashboardData?.smartAlerts ?? [];
+  const alertsSummary = dashboardData?.alertsSummary ?? { critical: 0, warning: 0, info: 0, total: 0 };
+  const fieldVsStorage = dashboardData?.fieldVsStorage ?? null;
+
+  const handleRefresh = async () => {
+    toast.loading('Actualizando datos...', { id: 'dashboard-refresh' });
+    try {
+      await refetch();
+      toast.success('Datos actualizados', { id: 'dashboard-refresh' });
+    } catch {
+      toast.error('Error al actualizar', { id: 'dashboard-refresh' });
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [currentCompany?.id]);
 
   const stats = useMemo(() => {
     const daysAgo = parseInt(dateRange);
@@ -178,8 +170,8 @@ export default function PanolDashboardPage() {
     };
 
     // Movement stats
-    const isEntry = (type: string) => ['IN', 'RETURN', 'STOCK_IN'].includes(type);
-    const isExit = (type: string) => ['OUT', 'STOCK_OUT'].includes(type);
+    const isEntry = (type: string) => ['IN', 'RETURN', 'ADJUSTMENT'].includes(type);
+    const isExit = (type: string) => ['OUT', 'LOAN'].includes(type);
 
     const entriesQty = recentMovements.filter(m => isEntry(m.type)).reduce((sum, m) => sum + m.quantity, 0);
     const exitsQty = recentMovements.filter(m => isExit(m.type)).reduce((sum, m) => sum + m.quantity, 0);
@@ -325,7 +317,7 @@ export default function PanolDashboardPage() {
                     variant="outline"
                     size="sm"
                     className="h-9 w-9 p-0"
-                    onClick={() => loadData(true)}
+                    onClick={handleRefresh}
                     disabled={isRefreshing}
                   >
                     <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
@@ -478,6 +470,110 @@ export default function PanolDashboardPage() {
               </Card>
             </Link>
           </div>
+
+          {/* Repuestos: Campo vs Pañol */}
+          {fieldVsStorage && fieldVsStorage.summary.totalTypes > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-accent-purple-muted-foreground" />
+                    Repuestos: Campo vs Pañol
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" asChild>
+                    <Link href="/panol/lotes">
+                      Ver detalle <ArrowRight className="h-3 w-3 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-2">
+                {/* Mini KPIs */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">En Pañol</p>
+                    <p className="text-xl font-bold text-success">{fieldVsStorage.summary.totalInStorage}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">En Campo</p>
+                    <p className="text-xl font-bold text-info-muted-foreground">{fieldVsStorage.summary.totalInField}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">Cobertura</p>
+                    <p className={cn(
+                      "text-xl font-bold",
+                      fieldVsStorage.summary.overallCoverage >= 80 ? "text-success" :
+                      fieldVsStorage.summary.overallCoverage >= 50 ? "text-warning-muted-foreground" :
+                      "text-destructive"
+                    )}>
+                      {fieldVsStorage.summary.overallCoverage}%
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">Tipos</p>
+                    <p className="text-xl font-bold">{fieldVsStorage.summary.totalTypes}</p>
+                  </div>
+                </div>
+
+                {/* Barras horizontales apiladas */}
+                {fieldVsStorage.topItems.length > 0 && (
+                  <div className="space-y-2">
+                    {fieldVsStorage.topItems.slice(0, 6).map((item) => {
+                      const total = item.inStorage + item.inField;
+                      if (total === 0) return null;
+                      const maxTotal = Math.max(
+                        ...fieldVsStorage!.topItems.slice(0, 6).map(i => i.inStorage + i.inField),
+                        1
+                      );
+                      const barWidth = (total / maxTotal) * 100;
+                      const storagePct = total > 0 ? (item.inStorage / total) * 100 : 0;
+                      const fieldPct = total > 0 ? (item.inField / total) * 100 : 0;
+
+                      return (
+                        <div key={item.id} className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium truncate max-w-[200px]">
+                                {item.code ? `${item.code} - ` : ''}{item.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                                {item.inStorage} + {item.inField}
+                              </span>
+                            </div>
+                            <div
+                              className="h-2.5 rounded-full overflow-hidden flex bg-muted"
+                              style={{ width: `${barWidth}%` }}
+                            >
+                              <div
+                                className="h-full bg-success transition-all"
+                                style={{ width: `${storagePct}%` }}
+                              />
+                              <div
+                                className="h-full bg-info transition-all"
+                                style={{ width: `${fieldPct}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Leyenda */}
+                <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded-full bg-success" />
+                    En Pañol
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded-full bg-info" />
+                    En Campo
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Smart Alerts Section */}
           {smartAlerts.length > 0 && (
@@ -843,7 +939,7 @@ export default function PanolDashboardPage() {
                   ) : (
                     <div className="space-y-2">
                       {stats.recentActivity.map((mov) => {
-                        const isEntry = ['IN', 'RETURN', 'STOCK_IN'].includes(mov.type);
+                        const isEntry = ['IN', 'RETURN', 'ADJUSTMENT'].includes(mov.type);
 
                         return (
                           <div key={mov.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/30 transition-colors">

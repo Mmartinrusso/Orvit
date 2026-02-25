@@ -470,19 +470,19 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
   // ─── Render por tab ────────────────────────────────
 
   const renderTareasTab = () => (
-    <div className="flex flex-col h-full gap-4 px-6 py-4">
+    <div className="flex flex-col h-full gap-4 px-3 sm:px-6 py-4">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ClipboardList className="h-6 w-6" style={{ color: userColors.chart1 }} />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: userColors.chart1 }} />
             Tareas
           </h1>
-          <p className="text-sm text-muted-foreground">Gestión de tareas del equipo</p>
+          <p className="text-sm text-muted-foreground hidden sm:block">Gestión de tareas del equipo</p>
         </div>
-        <Button onClick={() => setIsNewTaskModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Tarea
+        <Button onClick={() => setIsNewTaskModalOpen(true)} size="sm">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Nueva Tarea</span>
         </Button>
       </div>
 
@@ -587,30 +587,34 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
 
       {/* Layout: Sidebars + Content */}
       <div className="flex flex-1 gap-3 min-h-0">
-        {/* Sidebar de grupos */}
+        {/* Sidebar de grupos — oculto en mobile */}
         {currentCompany?.id && (
-          <TaskGroupsSidebar
-            groups={taskGroups}
-            selectedGroupId={selectedGroupId}
-            onGroupSelect={setSelectedGroupId}
-            companyId={currentCompany.id}
-            onGroupsChange={refetchGroups}
-          />
+          <div className="hidden sm:block flex-shrink-0">
+            <TaskGroupsSidebar
+              groups={taskGroups}
+              selectedGroupId={selectedGroupId}
+              onGroupSelect={setSelectedGroupId}
+              companyId={currentCompany.id}
+              onGroupsChange={refetchGroups}
+            />
+          </div>
         )}
 
-        {/* Sidebar de usuarios */}
-        <TasksUserSidebar
-          tasks={tasks}
-          users={allUsers}
-          selectedUserId={selectedUserId}
-          onUserSelect={setSelectedUserId}
-        />
+        {/* Sidebar de usuarios — oculto en mobile */}
+        <div className="hidden sm:block flex-shrink-0">
+          <TasksUserSidebar
+            tasks={tasks}
+            users={allUsers}
+            selectedUserId={selectedUserId}
+            onUserSelect={setSelectedUserId}
+          />
+        </div>
 
         {/* Área de contenido */}
         <div className="flex-1 flex flex-col min-w-0 gap-4">
           {/* Toolbar */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar tareas..."
@@ -631,46 +635,55 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
               )}
             </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pendiente">Pendientes</SelectItem>
-                <SelectItem value="en-curso">En curso</SelectItem>
-                <SelectItem value="realizada">Realizadas</SelectItem>
-                <SelectItem value="cancelada">Canceladas</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Estado — oculto en mobile */}
+            <div className="hidden sm:block">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pendiente">Pendientes</SelectItem>
+                  <SelectItem value="en-curso">En curso</SelectItem>
+                  <SelectItem value="realizada">Realizadas</SelectItem>
+                  <SelectItem value="cancelada">Canceladas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Prioridad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="urgente">Urgente</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="media">Media</SelectItem>
-                <SelectItem value="baja">Baja</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Prioridad — oculto en mobile */}
+            <div className="hidden sm:block">
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Prioridad" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="media">Media</SelectItem>
+                  <SelectItem value="baja">Baja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Actualizar tareas"
-                  onClick={handleRefresh}
-                  disabled={isLoadingTasks}
-                >
-                  <RefreshCw className={cn("h-4 w-4", isLoadingTasks && "animate-spin")} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Actualizar</TooltipContent>
-            </Tooltip>
+            {/* Refresh — oculto en mobile */}
+            <div className="hidden sm:block">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Actualizar tareas"
+                    onClick={handleRefresh}
+                    disabled={isLoadingTasks}
+                  >
+                    <RefreshCw className={cn("h-4 w-4", isLoadingTasks && "animate-spin")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Actualizar</TooltipContent>
+              </Tooltip>
+            </div>
 
             {/* View Toggle */}
             <div className="flex border rounded-lg p-1 gap-1 ml-auto">
@@ -703,6 +716,40 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
                 <TooltipContent>Vista Lista</TooltipContent>
               </Tooltip>
             </div>
+          </div>
+
+          {/* Mobile: Grupo + Usuario quickfilters */}
+          <div className="flex sm:hidden items-center gap-2">
+            {taskGroups.length > 0 && (
+              <Select
+                value={selectedGroupId?.toString() ?? 'all'}
+                onValueChange={(v) => setSelectedGroupId(v === 'all' ? null : parseInt(v))}
+              >
+                <SelectTrigger className="flex-1 h-8 text-xs bg-background">
+                  <SelectValue placeholder="Grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los grupos</SelectItem>
+                  {taskGroups.map((g) => (
+                    <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Select
+              value={selectedUserId ?? 'all'}
+              onValueChange={(v) => setSelectedUserId(v === 'all' ? null : v)}
+            >
+              <SelectTrigger className={cn('h-8 text-xs bg-background', taskGroups.length > 0 ? 'flex-1' : 'w-full')}>
+                <SelectValue placeholder="Usuario" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los usuarios</SelectItem>
+                {allUsers.map((u: any) => (
+                  <SelectItem key={u.id} value={u.id.toString()}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Quick Task Input */}
@@ -841,17 +888,18 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
         };
 
         return (
-          <div className="space-y-6 p-6">
-            <div className="flex justify-between items-center">
+          <div className="space-y-6 px-3 sm:px-6 py-4">
+            <div className="flex justify-between items-center gap-2">
               <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <ClipboardList className="h-6 w-6" style={{ color: userColors.chart1 }} />
+                <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: userColors.chart1 }} />
                   Mi Resumen
                 </h1>
-                <p className="text-sm text-muted-foreground">Resumen personal y progreso del equipo</p>
+                <p className="text-sm text-muted-foreground hidden sm:block">Resumen personal y progreso del equipo</p>
               </div>
-              <Button onClick={() => setIsNewTaskModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Nueva Tarea
+              <Button onClick={() => setIsNewTaskModalOpen(true)} size="sm">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nueva Tarea</span>
               </Button>
             </div>
 

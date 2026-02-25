@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 // ✅ OPTIMIZADO: Construir árbol en memoria (de N+1 queries a 2 queries fijas)
 function buildComponentTree(
@@ -16,8 +17,13 @@ function buildComponentTree(
     }));
 }
 
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const { id } = context.params;
     const machineId = Number(id);
 
@@ -28,11 +34,15 @@ export async function GET(request: Request, context: { params: { id: string } })
     // ✅ Query 1: Verificar máquina existe
     const machine = await prisma.machine.findFirst({
       where: { id: machineId },
-      select: { id: true }
+      select: { id: true, companyId: true }
     });
 
     if (!machine) {
       return NextResponse.json({ error: 'Máquina no encontrada' }, { status: 404 });
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // ✅ Query 2 y 3 en paralelo: Todos los componentes + Todas las herramientas

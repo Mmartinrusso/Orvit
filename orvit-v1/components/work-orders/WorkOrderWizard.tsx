@@ -850,7 +850,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
           size="md"
           className="p-0 rounded-2xl border border-border bg-card shadow-xl [&>button:last-child]:hidden"
         >
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Header sticky */}
             <div className="flex-shrink-0 border-b border-border bg-card px-6 py-4">
               <div className="flex items-center justify-between gap-4">
@@ -884,7 +884,7 @@ export default function WorkOrderWizard({ isOpen, onClose, onSubmit, preselected
             </div>
 
             {/* Body con scroll */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-6">
               {renderCurrentStep()}
             </div>
 

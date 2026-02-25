@@ -370,7 +370,10 @@ export async function POST(request: NextRequest) {
               cantidad: parseFloat(item.cantidad),
               unidad: item.unidad || 'UN',
               supplierItemId: item.supplierItemId ? parseInt(item.supplierItemId) : null,
-              especificaciones: item.especificaciones
+              especificaciones: item.especificaciones,
+              toolId: item.toolId ? parseInt(item.toolId) : null,
+              componentId: item.componentId ? parseInt(item.componentId) : null,
+              machineId: item.machineId ? parseInt(item.machineId) : null,
             }))
           }
         },

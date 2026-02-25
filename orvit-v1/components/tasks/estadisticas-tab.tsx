@@ -191,9 +191,9 @@ export function EstadisticasTab() {
           <h2 className="text-xl font-semibold text-foreground">Métricas y Reportes</h2>
           <p className="text-sm text-muted-foreground mt-1">Análisis de rendimiento y métricas de productividad</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-28 sm:w-32 h-9 text-xs sm:text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7">7 días</SelectItem>
               <SelectItem value="30">30 días</SelectItem>
@@ -201,7 +201,7 @@ export function EstadisticasTab() {
             </SelectContent>
           </Select>
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="w-44 h-9"><SelectValue placeholder="Usuario" /></SelectTrigger>
+            <SelectTrigger className="w-36 sm:w-44 h-9 text-xs sm:text-sm"><SelectValue placeholder="Usuario" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los usuarios</SelectItem>
               {usersWithTasks.map((user: any) => (

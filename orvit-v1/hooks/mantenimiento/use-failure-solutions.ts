@@ -100,32 +100,3 @@ export function useAddSolution(occurrenceId: number | null) {
     },
   });
 }
-
-// Hook para obtener soluciones por WorkOrder ID
-// Útil cuando solo tienes el workOrderId pero no el occurrenceId
-export function useFailureSolutionsByWorkOrder(workOrderId: number | null) {
-  return useQuery({
-    queryKey: ['failure-solutions-by-workorder', workOrderId],
-    queryFn: async (): Promise<FailureSolutionsResponse | null> => {
-      if (!workOrderId) return null;
-
-      // Primero obtener la ocurrencia por workOrderId
-      // (esto requiere una API adicional o modificar la existente)
-      // Por ahora, usamos el endpoint existente de solutions que ya maneja workOrderId
-      const response = await fetch(`/api/failures/${workOrderId}/solutions`);
-
-      if (!response.ok) {
-        // Si no hay soluciones, retornar estructura vacía
-        if (response.status === 404) {
-          return null;
-        }
-        const error = await response.json();
-        throw new Error(error.error || 'Error al cargar soluciones');
-      }
-
-      return response.json();
-    },
-    enabled: !!workOrderId,
-    staleTime: 2 * 60 * 1000,
-  });
-}

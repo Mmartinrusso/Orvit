@@ -335,7 +335,7 @@ export async function PATCH(
       where: { workOrderId },
       include: {
         workOrder: {
-          select: { companyId: true }
+          select: { companyId: true, assignedToId: true, title: true }
         }
       }
     });
@@ -390,6 +390,26 @@ export async function PATCH(
         }
       }
     });
+
+    // Notificación in-app al técnico asignado cuando QA cambia a APPROVED o REJECTED
+    if ((data.status === 'APPROVED' || data.status === 'REJECTED') && existingQA.workOrder.assignedToId) {
+      const notifTitle = data.status === 'APPROVED' ? 'QA Aprobado ✓' : 'QA Rechazado ✗';
+      const notifMsg = data.status === 'APPROVED'
+        ? `La OT "${existingQA.workOrder.title}" fue aprobada por control de calidad.`
+        : `La OT "${existingQA.workOrder.title}" fue rechazada. Revisá las observaciones.`;
+
+      prisma.notification.create({
+        data: {
+          type: 'system_alert',
+          title: notifTitle,
+          message: notifMsg,
+          userId: existingQA.workOrder.assignedToId,
+          companyId,
+          priority: data.status === 'REJECTED' ? 'HIGH' : 'MEDIUM',
+          metadata: { workOrderId, qaStatus: data.status, reviewedById: userId },
+        }
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

@@ -44,7 +44,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Verify idea exists and belongs to company
     const idea = await prisma.idea.findFirst({
-      where: { id: ideaId, companyId }
+      where: { id: ideaId, companyId },
+      select: { id: true },
     });
 
     if (!idea) {
@@ -57,42 +58,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Check if user already voted
     const existingVote = await prisma.ideaVote.findUnique({
       where: {
-        ideaId_userId: {
-          ideaId,
-          userId
-        }
+        ideaId_userId: { ideaId, userId }
       }
     });
 
+    // Toggle vote + count atomically
     let voted: boolean;
     let voteCount: number;
 
     if (existingVote) {
-      // Remove vote
-      await prisma.ideaVote.delete({
-        where: { id: existingVote.id }
-      });
+      const [, count] = await prisma.$transaction([
+        prisma.ideaVote.delete({ where: { id: existingVote.id } }),
+        prisma.ideaVote.count({ where: { ideaId } }),
+      ]);
       voted = false;
+      voteCount = count;
     } else {
-      // Add vote
-      await prisma.ideaVote.create({
-        data: {
-          ideaId,
-          userId
-        }
-      });
+      const [, count] = await prisma.$transaction([
+        prisma.ideaVote.create({ data: { ideaId, userId } }),
+        prisma.ideaVote.count({ where: { ideaId } }),
+      ]);
       voted = true;
+      voteCount = count;
     }
-
-    // Get updated vote count
-    voteCount = await prisma.ideaVote.count({
-      where: { ideaId }
-    });
 
     return NextResponse.json({
       success: true,
       voted,
-      voteCount
+      voteCount,
     });
   } catch (error) {
     console.error('Error en POST /api/ideas/[id]/vote:', error);

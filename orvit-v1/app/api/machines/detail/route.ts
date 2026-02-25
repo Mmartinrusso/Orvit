@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logApiPerformance, logApiError } from '@/lib/logger';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +15,16 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const machineId = searchParams.get('machineId');
-  
+
   const perf = logApiPerformance('machines/detail', { machineId });
 
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      perf.end({ error: 'unauthorized' });
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     // Validación robusta
     if (!machineId) {
       perf.end({ error: 'machineId missing' });
@@ -49,6 +56,11 @@ export async function GET(request: NextRequest) {
         { error: 'Máquina no encontrada' },
         { status: 404 }
       );
+    }
+
+    if (machineBasic.companyId !== auth.companyId) {
+      perf.end({ error: 'forbidden' });
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     const companyId = machineBasic.companyId;

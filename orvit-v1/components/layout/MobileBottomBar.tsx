@@ -57,7 +57,7 @@ export default function MobileBottomBar() {
   const { hasPermission: canViewSales } = usePermission('VIEW_SALES');
 
   // No mostrar en páginas de login, máquinas, mantenimiento, empresas, áreas, sectores o si no hay usuario
-  if (!user || pathname === '/login' || pathname === '/maquinas' || pathname === '/empresas' || pathname === '/areas' || pathname === '/sectores' || pathname.startsWith('/mantenimiento')) {
+  if (!user || pathname === '/login' || pathname === '/maquinas' || pathname === '/empresas' || pathname === '/areas' || pathname === '/sectores' || pathname.startsWith('/mantenimiento') || pathname.startsWith('/produccion') || pathname.startsWith('/administracion')) {
     return null;
   }
 

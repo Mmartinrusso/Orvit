@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 import { deductSparePartsFromInventory } from '@/lib/corrective/inventory-integration';
+import { notifyFailureResolved } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
+
+async function getAuthPayload() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
 
 // GET: Listar todas las soluciones de una ocurrencia de falla
 export async function GET(
@@ -10,6 +20,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuthPayload();
+    if (!payload) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const occurrenceId = parseInt(params.id);
 
     if (isNaN(occurrenceId)) {
@@ -94,16 +109,13 @@ export async function GET(
 
   } catch (error: any) {
     console.error('❌ Error en GET /api/failure-occurrences/[id]/solutions:', error);
-    // Si es error de columna/tabla no existente, retornar lista vacía
+    // Errores de schema son errores reales — no silenciar
     if (error?.code === 'P2010' || error?.code === 'P2022' || error?.message?.includes('column') || error?.message?.includes('does not exist') || error?.message?.includes('relation')) {
-      console.warn('⚠️ Schema desactualizado. Ejecutar: npx prisma db push');
-      return NextResponse.json({
-        success: true,
-        occurrence: null,
-        solutions: [],
-        totalSolutions: 0,
-        _warning: 'Schema desactualizado - ejecutar: npx prisma db push'
-      });
+      console.error('⚠️ Schema desactualizado para FailureSolution. Ejecutar: npx prisma db push');
+      return NextResponse.json(
+        { error: 'Schema de base de datos desactualizado. Contacte al administrador.', _schema_error: true },
+        { status: 503 }
+      );
     }
     return NextResponse.json(
       { error: 'Error interno del servidor: ' + error?.message },
@@ -118,6 +130,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const payload = await getAuthPayload();
+    if (!payload) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const occurrenceId = parseInt(params.id);
 
     if (isNaN(occurrenceId)) {
@@ -236,14 +253,61 @@ export async function POST(
       });
 
       // También actualizar el WorkOrder asociado a COMPLETED
-      await prisma.workOrder.update({
-        where: { id: occurrence.failureId },
-        data: {
-          status: 'COMPLETED',
-          completedDate: new Date(),
-          actualHours: actualHours ? parseFloat(actualHours) : null
+      if (occurrence.failureId) {
+        await prisma.workOrder.update({
+          where: { id: occurrence.failureId },
+          data: {
+            status: 'COMPLETED',
+            completedDate: new Date(),
+            actualHours: actualHours ? parseFloat(actualHours) : null
+          }
+        });
+      }
+
+      // Notificar por Discord que la falla fue resuelta (fire-and-forget)
+      const sendDiscordResolved = async () => {
+        try {
+          const fullOccurrence = await prisma.failureOccurrence.findUnique({
+            where: { id: occurrenceId },
+            include: {
+              machine: { select: { name: true, sectorId: true } },
+              component: { select: { name: true } },
+              subComponent: { select: { name: true } },
+            }
+          });
+
+          if (!fullOccurrence?.machine?.sectorId) return;
+
+          const appliedByUser = await prisma.user.findUnique({
+            where: { id: parseInt(appliedById) },
+            select: { name: true }
+          });
+
+          // Calcular tiempo de resolución
+          let resolutionTime: string | undefined;
+          if (fullOccurrence.reportedAt) {
+            const diffMs = new Date().getTime() - new Date(fullOccurrence.reportedAt).getTime();
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            resolutionTime = diffHours > 0 ? `${diffHours}h ${diffMins}min` : `${diffMins} min`;
+          }
+
+          await notifyFailureResolved({
+            id: occurrenceId,
+            title: fullOccurrence.title,
+            machineName: fullOccurrence.machine.name,
+            sectorId: fullOccurrence.machine.sectorId,
+            resolvedBy: appliedByUser?.name || 'Usuario',
+            resolutionTime,
+            solution: title,
+            component: fullOccurrence.component?.name,
+            subComponent: fullOccurrence.subComponent?.name
+          });
+        } catch (discordErr) {
+          console.warn('⚠️ Error enviando notificación Discord de resolución:', discordErr);
         }
-      });
+      };
+      sendDiscordResolved().catch(() => {});
     }
 
     console.log(`✅ Solución creada: ${solution.id} para ocurrencia ${occurrenceId}`);

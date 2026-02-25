@@ -386,7 +386,7 @@ export function UnitsToolbar({
 
       {/* Action bar — secondary actions, only shown when there are units */}
       {hasUnidades && (
-        <div className="flex items-center justify-between px-4 md:px-6 py-2 border-t border-border/40 bg-muted/30">
+        <div className="flex items-center justify-center sm:justify-start px-4 md:px-6 py-2 border-t border-border/40 bg-muted/30">
           <div className="flex items-center gap-2">
             {onToggleSelectionMode && (
               <Button

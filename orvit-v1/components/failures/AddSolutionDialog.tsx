@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Star, Loader2 } from 'lucide-react';
+import { Star, Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -34,6 +34,8 @@ interface AddSolutionDialogProps {
   onOpenChange: (open: boolean) => void;
   occurrenceId: number;
   failureTitle?: string;
+  failurePriority?: string; // P1, P2, P3, P4
+  isSafetyRelated?: boolean;
   onSuccess?: () => void;
   employees?: { id: number; name: string }[];
   currentUserId?: number;
@@ -57,12 +59,27 @@ export function AddSolutionDialog({
   onOpenChange,
   occurrenceId,
   failureTitle,
+  failurePriority,
+  isSafetyRelated,
   onSuccess,
   employees = [],
   currentUserId,
 }: AddSolutionDialogProps) {
   const { toast } = useToast();
   const addSolution = useAddSolution(occurrenceId);
+
+  // QA Rules: determinar nivel de evidencia según prioridad
+  const qaRules = useMemo(() => {
+    const priority = failurePriority?.toUpperCase();
+    const isHighPriority = priority === 'P1' || priority === 'P2' || priority === 'URGENT' || priority === 'HIGH';
+    const isSafety = isSafetyRelated === true;
+    const requireRootCause = isHighPriority || isSafety;
+    const evidenceLevel = (isSafety || priority === 'P1')
+      ? 'COMPLETE' : isHighPriority
+        ? 'STANDARD' : 'OPTIONAL';
+
+    return { requireRootCause, evidenceLevel, isHighPriority, isSafety };
+  }, [failurePriority, isSafetyRelated]);
 
   const [formData, setFormData] = useState<SolutionFormData>({
     title: '',
@@ -125,6 +142,16 @@ export function AddSolutionDialog({
       return;
     }
 
+    // QA Rules validation: rootCause obligatoria para P1/P2 y seguridad
+    if (qaRules.requireRootCause && !formData.rootCause.trim()) {
+      toast({
+        title: 'Causa raíz requerida',
+        description: `Para fallas ${qaRules.isSafety ? 'de seguridad' : 'de alta prioridad'}, la causa raíz es obligatoria.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await addSolution.mutateAsync({
         title: formData.title.trim(),
@@ -174,6 +201,33 @@ export function AddSolutionDialog({
 
         <DialogBody>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* QA Rules Banner */}
+          {qaRules.requireRootCause && (
+            <div className={cn(
+              "flex items-start gap-2 p-3 rounded-lg border text-sm",
+              qaRules.isSafety
+                ? "bg-destructive/10 border-destructive/30 text-destructive"
+                : "bg-warning/10 border-warning/30 text-warning-foreground"
+            )}>
+              {qaRules.isSafety ? (
+                <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              )}
+              <div>
+                <p className="font-medium">
+                  {qaRules.isSafety ? 'Falla de seguridad' : `Falla ${failurePriority}`} — QA requerido
+                </p>
+                <p className="text-xs mt-0.5 opacity-80">
+                  {qaRules.evidenceLevel === 'COMPLETE'
+                    ? 'Se requiere causa raíz, acciones preventivas y evidencia completa.'
+                    : 'Se requiere causa raíz y evidencia estándar.'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Título */}
           <div className="space-y-1.5">
             <Label htmlFor="title" className="text-xs font-medium">
@@ -296,7 +350,7 @@ export function AddSolutionDialog({
           {/* Causa raíz */}
           <div className="space-y-1.5">
             <Label htmlFor="rootCause" className="text-xs font-medium">
-              Causa raíz identificada
+              Causa raíz identificada {qaRules.requireRootCause && '*'}
             </Label>
             <Input
               id="rootCause"

@@ -58,12 +58,13 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { nombre, descripcion, unidad, precioUnitario, codigoProveedor } = body as {
+    const { nombre, descripcion, unidad, precioUnitario, codigoProveedor, toolId } = body as {
       nombre?: string;
       descripcion?: string;
       unidad?: string;
       precioUnitario?: string;
       codigoProveedor?: string;
+      toolId?: number | null;
     };
 
     if (!nombre || !unidad) {
@@ -88,6 +89,7 @@ export async function PUT(
           precioUnitario && precioUnitario !== ''
             ? parseFloat(precioUnitario)
             : null,
+        ...(toolId !== undefined && { toolId: toolId ? parseInt(String(toolId)) : null }),
       },
     });
 
@@ -106,6 +108,14 @@ export async function PUT(
             id: true,
             name: true,
             unit_measure: true,
+          },
+        },
+        tool: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            itemType: true,
           },
         },
       },

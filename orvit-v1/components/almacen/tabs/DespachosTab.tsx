@@ -35,6 +35,7 @@ import { AlmacenFilters } from '../shared/AlmacenFilters';
 import { DespachoStatusBadge } from '../shared/StatusBadge';
 import { EmptyState } from '../shared/EmptyState';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DespachosTabProps {
   onNew: () => void;
@@ -46,6 +47,9 @@ interface DespachosTabProps {
  */
 export function DespachosTab({ onNew, onView }: DespachosTabProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const currentUserId = parseInt(user?.id ?? '0');
+
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filters, setFilters] = useState<DespachosFilters>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 });
@@ -97,7 +101,7 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
 
   const handleDispatch = async (id: number) => {
     try {
-      await dispatch.mutateAsync({ id, userId: 1 }); // TODO: Get current user
+      await dispatch.mutateAsync({ id, userId: currentUserId });
       toast({ title: 'Despacho realizado' });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -106,7 +110,7 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
 
   const handleReceive = async (id: number) => {
     try {
-      await receive.mutateAsync({ id, userId: 1 }); // TODO: Get current user
+      await receive.mutateAsync({ id, userId: currentUserId });
       toast({ title: 'Recepción confirmada' });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -150,6 +154,85 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
     setPagination({ page: 1, pageSize: 20 });
   }, []);
 
+  const ActionsMenu = ({ despacho }: { despacho: any }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onView(despacho.id)}>
+          <Eye className="h-4 w-4 mr-2" />
+          Ver detalle
+        </DropdownMenuItem>
+        {despacho.estado === 'BORRADOR' && (
+          <DropdownMenuItem onClick={() => handlePrepare(despacho.id)}>
+            <PackageCheck className="h-4 w-4 mr-2" />
+            Preparar
+          </DropdownMenuItem>
+        )}
+        {despacho.estado === 'EN_PREPARACION' && (
+          <DropdownMenuItem onClick={() => handleMarkReady(despacho.id)}>
+            <PackageCheck className="h-4 w-4 mr-2" />
+            Marcar Listo
+          </DropdownMenuItem>
+        )}
+        {despacho.estado === 'LISTO_DESPACHO' && (
+          <DropdownMenuItem onClick={() => handleDispatch(despacho.id)}>
+            <Truck className="h-4 w-4 mr-2" />
+            Despachar
+          </DropdownMenuItem>
+        )}
+        {despacho.estado === 'DESPACHADO' && (
+          <DropdownMenuItem onClick={() => handleReceive(despacho.id)}>
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Confirmar Recepción
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        {!['DESPACHADO', 'RECIBIDO', 'CANCELADO'].includes(despacho.estado) && (
+          <DropdownMenuItem
+            onClick={() => handleCancel(despacho.id)}
+            className="text-destructive"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  // Botón de acción principal según estado (para mobile)
+  const PrimaryAction = ({ despacho }: { despacho: any }) => {
+    if (despacho.estado === 'BORRADOR')
+      return (
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handlePrepare(despacho.id); }}>
+          <PackageCheck className="h-3 w-3 mr-1" /> Preparar
+        </Button>
+      );
+    if (despacho.estado === 'EN_PREPARACION')
+      return (
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleMarkReady(despacho.id); }}>
+          <PackageCheck className="h-3 w-3 mr-1" /> Marcar Listo
+        </Button>
+      );
+    if (despacho.estado === 'LISTO_DESPACHO')
+      return (
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleDispatch(despacho.id); }}>
+          <Truck className="h-3 w-3 mr-1" /> Despachar
+        </Button>
+      );
+    if (despacho.estado === 'DESPACHADO')
+      return (
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleReceive(despacho.id); }}>
+          <CheckCircle className="h-3 w-3 mr-1" /> Recibido
+        </Button>
+      );
+    return null;
+  };
+
   return (
     <div className="space-y-4">
       {/* Header con filtros y acciones */}
@@ -184,12 +267,13 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
           )}
           <Button onClick={onNew} size="sm">
             <Plus className="h-4 w-4 mr-1" />
-            Nuevo Despacho
+            <span className="hidden sm:inline">Nuevo Despacho</span>
+            <span className="sm:hidden">Nuevo</span>
           </Button>
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Contenido */}
       {isLoading ? (
         <SkeletonTable rows={5} cols={9} />
       ) : despachos.length === 0 ? (
@@ -199,7 +283,46 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
         />
       ) : (
         <>
-          <div className="rounded-md border overflow-x-auto">
+          {/* Cards mobile */}
+          <div className="space-y-2 md:hidden">
+            {despachos.map((despacho: any) => (
+              <div
+                key={despacho.id}
+                className="p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => onView(despacho.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{despacho.numero}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {despacho.warehouse?.nombre || '-'} · {format(new Date(despacho.createdAt), 'dd/MM/yy', { locale: es })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <DespachoStatusBadge status={despacho.estado} size="sm" />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionsMenu despacho={despacho} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-muted-foreground">{despacho.tipo}</span>
+                  {despacho.materialRequest?.numero && (
+                    <span className="text-xs text-muted-foreground">· Sol. {despacho.materialRequest.numero}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {despacho.items?.length || 0} item{(despacho.items?.length || 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                  <PrimaryAction despacho={despacho} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabla desktop */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -244,53 +367,7 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
                       {format(new Date(despacho.createdAt), 'dd/MM/yyyy', { locale: es })}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onView(despacho.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver detalle
-                          </DropdownMenuItem>
-                          {despacho.estado === 'BORRADOR' && (
-                            <DropdownMenuItem onClick={() => handlePrepare(despacho.id)}>
-                              <PackageCheck className="h-4 w-4 mr-2" />
-                              Preparar
-                            </DropdownMenuItem>
-                          )}
-                          {despacho.estado === 'EN_PREPARACION' && (
-                            <DropdownMenuItem onClick={() => handleMarkReady(despacho.id)}>
-                              <PackageCheck className="h-4 w-4 mr-2" />
-                              Marcar Listo
-                            </DropdownMenuItem>
-                          )}
-                          {despacho.estado === 'LISTO_DESPACHO' && (
-                            <DropdownMenuItem onClick={() => handleDispatch(despacho.id)}>
-                              <Truck className="h-4 w-4 mr-2" />
-                              Despachar
-                            </DropdownMenuItem>
-                          )}
-                          {despacho.estado === 'DESPACHADO' && (
-                            <DropdownMenuItem onClick={() => handleReceive(despacho.id)}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Confirmar Recepción
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          {!['DESPACHADO', 'RECIBIDO', 'CANCELADO'].includes(despacho.estado) && (
-                            <DropdownMenuItem
-                              onClick={() => handleCancel(despacho.id)}
-                              className="text-destructive"
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              Cancelar
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ActionsMenu despacho={despacho} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -301,7 +378,7 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
           {/* Paginación */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Mostrando {despachos.length} de {total} despachos
+              {despachos.length} de {total} despachos
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -313,7 +390,7 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
                 Anterior
               </Button>
               <span>
-                Página {pagination.page} de {totalPages}
+                {pagination.page} / {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -330,4 +407,3 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
     </div>
   );
 }
-

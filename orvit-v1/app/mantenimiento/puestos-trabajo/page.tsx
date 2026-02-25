@@ -570,11 +570,11 @@ export default function PuestosTrabajoPage() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateFilter('estado', 'all')}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
                       <p className="text-2xl font-bold">{dashboardStats.total}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <Briefcase className="h-5 w-5 text-primary" />
                     </div>
                   </div>
@@ -584,11 +584,11 @@ export default function PuestosTrabajoPage() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateFilter('estado', 'ACTIVE')}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">Activos</p>
                       <p className="text-2xl font-bold text-success">{dashboardStats.activos}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
                       <Settings2 className="h-5 w-5 text-success" />
                     </div>
                   </div>
@@ -598,12 +598,15 @@ export default function PuestosTrabajoPage() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateFilter('hasInstructives', 'yes')}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Con Instructivos</p>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">
+                        <span className="sm:hidden">Instructivos</span>
+                        <span className="hidden sm:inline">Con Instructivos</span>
+                      </p>
                       <p className="text-2xl font-bold text-info-muted-foreground">{dashboardStats.conInstructivos}</p>
                       <p className="text-xs text-muted-foreground">{dashboardStats.totalInstructivos} docs</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center shrink-0">
                       <FileText className="h-5 w-5 text-info-muted-foreground" />
                     </div>
                   </div>
@@ -613,12 +616,15 @@ export default function PuestosTrabajoPage() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => updateFilter('hasMachines', 'yes')}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Con Máquinas</p>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">
+                        <span className="sm:hidden">Máquinas</span>
+                        <span className="hidden sm:inline">Con Máquinas</span>
+                      </p>
                       <p className="text-2xl font-bold text-purple-600">{dashboardStats.conMaquinas}</p>
                       <p className="text-xs text-muted-foreground">{dashboardStats.totalMaquinas} asignadas</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0">
                       <ClipboardList className="h-5 w-5 text-purple-600" />
                     </div>
                   </div>
@@ -651,7 +657,7 @@ export default function PuestosTrabajoPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowDashboard(!showDashboard)}
-                className="h-8 text-xs text-muted-foreground"
+                className="h-8 text-xs text-muted-foreground hidden sm:inline-flex"
               >
                 {showDashboard ? 'Ocultar resumen' : 'Mostrar resumen'}
               </Button>
@@ -672,7 +678,7 @@ export default function PuestosTrabajoPage() {
 
         {/* ✅ NUEVO: Barra de acciones en lote */}
         {selectionMode && (
-          <div className="flex items-center gap-4 p-3 mb-4 bg-muted/50 rounded-lg border">
+          <div className="flex flex-wrap items-center gap-2 p-3 mb-4 bg-muted/50 rounded-lg border">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={selectedIds.length === filteredAndSortedWorkStations.length && filteredAndSortedWorkStations.length > 0}

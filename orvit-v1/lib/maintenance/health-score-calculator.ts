@@ -40,6 +40,27 @@ export interface CriticalityScore {
 const DOWNTIME_THRESHOLD_PERCENT = 5 // Umbral de downtime aceptable
 
 /**
+ * Cuenta PMs vencidos combinando legacy (MaintenanceChecklist) y nuevo (PreventiveInstance)
+ */
+async function countOverduePMs(machineId: number, now: Date): Promise<number> {
+  const [legacyOverdue, preventiveOverdue] = await Promise.all([
+    // Legacy: MaintenanceChecklist con nextDueDate pasada
+    prisma.maintenanceChecklist.count({
+      where: { machineId, nextDueDate: { lt: now }, isActive: true }
+    }),
+    // Nuevo: PreventiveInstance OVERDUE o PENDING con fecha pasada, para templates de esta máquina
+    prisma.preventiveInstance.count({
+      where: {
+        template: { machineId, isActive: true },
+        scheduledDate: { lt: now },
+        status: { in: ['PENDING', 'OVERDUE'] }
+      }
+    })
+  ])
+  return legacyOverdue + preventiveOverdue
+}
+
+/**
  * Calcula el health score de una máquina
  */
 export async function calculateHealthScore(machineId: number): Promise<HealthScoreFactors> {
@@ -60,10 +81,9 @@ export async function calculateHealthScore(machineId: number): Promise<HealthSco
       where: { machineId, reportedAt: { gte: thirtyDaysAgo }, status: { not: 'CANCELLED' } }
     }).catch(e => { console.warn('Could not fetch failure occurrences for health score', e); return 0; }),
 
-    // 2. PMs vencidos
-    prisma.maintenanceChecklist.count({
-      where: { machineId, nextDueDate: { lt: now }, isActive: true }
-    }).catch(e => { console.warn('Could not fetch overdue PMs for health score', e); return 0; }),
+    // 2. PMs vencidos (legacy checklists + PreventiveTemplate/Instance)
+    countOverduePMs(machineId, now)
+      .catch(e => { console.warn('Could not fetch overdue PMs for health score', e); return 0; }),
 
     // 3. Reincidencias (misma máquina + mismo componente en 7 días)
     detectRecurrences(machineId, thirtyDaysAgo)

@@ -31,7 +31,25 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cog, Info, FileText, History, Network, Tag, Building, Wrench, X, Eye, Plus, Loader2, FilePlus, Calendar, Download, CheckCircle, Clock, User, MapPin, Camera, ExternalLink, Settings, AlertTriangle, ClipboardList, File, Pencil, Trash2, Package, List, Grid, Shield, Hand, MousePointer, ZoomIn, ZoomOut, Home, RotateCcw, Maximize2, Search, UploadCloud, ChevronsUpDown, Check, AlertCircle, ImageIcon, ChevronUp, ChevronDown, Lightbulb, BarChart3, Box, Sparkles } from 'lucide-react';
+import { Cog, Info, FileText, History, Network, Tag, Building, Wrench, X, Eye, Plus, Loader2, FilePlus, Calendar, Download, CheckCircle, Clock, User, MapPin, Camera, ExternalLink, Settings, AlertTriangle, ClipboardList, File, Pencil, Trash2, Package, List, Grid, Shield, Hand, MousePointer, ZoomIn, ZoomOut, Home, RotateCcw, Maximize2, Search, UploadCloud, ChevronsUpDown, Check, AlertCircle, ImageIcon, ChevronUp, ChevronDown, Lightbulb, BarChart3, Box, Sparkles, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useMachineTabOrder } from '@/hooks/use-machine-tab-order';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn, formatNumber } from '@/lib/utils';
 import ComponentDialog from './ComponentDialog';
@@ -49,6 +67,7 @@ import PreventiveMaintenanceDetailModal from '../work-orders/PreventiveMaintenan
 import WorkOrderWizard from '../work-orders/WorkOrderWizard';
 import { MachineDetailsSection } from './MachineDetailsSection';
 import { MachineDetailHeader } from './MachineDetailHeader';
+import { MachineComponentsTab, getComponentTypeLabel, getSystemLabel } from './MachineComponentsTab';
 import DisassembleMachineDialog from './DisassembleMachineDialog';
 import MachineFailuresTab from './MachineFailuresTab';
 import { FailureQuickReportDialog } from '@/components/corrective/failures/FailureQuickReportDialog';
@@ -132,7 +151,7 @@ const MachineHistoryContent: React.FC<{
         setHistoryRecords(data.history || []);
       }
     } catch (error) {
-      console.error('Error fetching history:', error);
+      debugLog.error('Error fetching history:', error);
     } finally {
       setIsLoading(false);
     }
@@ -365,7 +384,7 @@ const MachineSolutionsContent: React.FC<{
         setSolutions(solutionsData);
       }
     } catch (error) {
-      console.error('Error fetching solutions:', error);
+      debugLog.error('Error fetching solutions:', error);
     } finally {
       setIsLoading(false);
     }
@@ -505,7 +524,7 @@ const MachineMaintenanceContent: React.FC<{
       // Calcular estadísticas después de cargar los datos
       setTimeout(() => calculateStats(), 100);
     } catch (error) {
-      console.error('Error fetching maintenance data:', error);
+      debugLog.error('Error fetching maintenance data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -837,7 +856,7 @@ const MachinePreventiveMaintenanceContent: React.FC<{
         setPreventiveMaintenances(machinePreventive);
       }
     } catch (error) {
-      console.error('Error fetching preventive maintenances:', error);
+      debugLog.error('Error fetching preventive maintenances:', error);
     } finally {
       setLoading(false);
     }
@@ -2192,8 +2211,47 @@ export const MachineInfoDocuments: React.FC<{ machineId: string }> = ({ machineI
   />;
 };
 
-export default function MachineDetailDialog({ 
-  machine, 
+// ─── SortableTabTrigger ──────────────────────────────────────────────────────
+type MachineTabDef = {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: React.ReactNode;
+};
+
+function SortableTabTrigger({ tab, isEditMode }: { tab: MachineTabDef; isEditMode: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const Icon = tab.icon;
+
+  return (
+    <div ref={setNodeRef} style={style} className={cn('flex shrink-0', isDragging && 'opacity-50 z-50')}>
+      <TabsTrigger
+        value={tab.id}
+        className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+      >
+        {isEditMode && (
+          <span
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing touch-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+          </span>
+        )}
+        <Icon className="h-3.5 w-3.5 shrink-0" />
+        <span>{tab.label}</span>
+        {tab.badge}
+      </TabsTrigger>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function MachineDetailDialog({
+  machine,
   components = [], 
   isOpen, 
   onClose,
@@ -2327,6 +2385,15 @@ export default function MachineDetailDialog({
     });
   }, []);
 
+  // ─── Tab order (empresa-wide) ──────────────────────────────────────────────
+  const { tabOrder, setOrder: setTabOrder } = useMachineTabOrder();
+  const [isTabEditMode, setIsTabEditMode] = useState(false);
+
+  const tabSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const [showPreventiveDialog, setShowPreventiveDialog] = useState(false);
   const [showCorrectiveDialog, setShowCorrectiveDialog] = useState(false);
   const [showWorkOrderWizard, setShowWorkOrderWizard] = useState(false);
@@ -2370,6 +2437,58 @@ export default function MachineDetailDialog({
   }, [machine?.id, refetchMachineDetail]);
 
   const machineDetailInvalidateKeys = machine?.id ? [['machine-detail', Number(machine.id)]] : [];
+
+  // ─── Tab definitions (data-driven para soportar reordenamiento) ────────────
+  const tabDefs = useMemo((): MachineTabDef[] => [
+    { id: 'overview',    label: 'Resumen',      icon: BarChart3 },
+    { id: 'info',        label: 'Info',         icon: Info },
+    { id: 'schema',      label: 'Esquema',      icon: Network },
+    { id: '3d-viewer',   label: '3D',           icon: Box },
+    {
+      id: 'maintenance', label: 'Mantenimiento', icon: Settings,
+      badge: headerWorkOrders?.length > 0 ? (
+        <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs bg-info-muted text-info-muted-foreground">
+          {headerWorkOrders.length}
+        </Badge>
+      ) : undefined,
+    },
+    {
+      id: 'failures', label: 'Fallas', icon: AlertTriangle,
+      badge: headerFailures?.length > 0 ? (
+        <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs bg-destructive/10 text-destructive">
+          {headerFailures.length}
+        </Badge>
+      ) : undefined,
+    },
+    { id: 'solutions',   label: 'Soluciones',   icon: Lightbulb },
+    {
+      id: 'components', label: 'Componentes', icon: Wrench,
+      badge: componentList?.length ? (
+        <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs">
+          {componentList.length}
+        </Badge>
+      ) : undefined,
+    },
+    ...(canViewMachineHistory ? [{ id: 'history', label: 'Historial', icon: History }] : []),
+    { id: 'docs',        label: 'Documentos',   icon: FileText },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [canViewMachineHistory, headerWorkOrders?.length, headerFailures?.length, componentList?.length]);
+
+  const orderedTabs = useMemo((): MachineTabDef[] => {
+    if (!tabOrder.length) return tabDefs;
+    const ordered = tabOrder.map(id => tabDefs.find(t => t.id === id)).filter((t): t is MachineTabDef => !!t);
+    const rest = tabDefs.filter(t => !tabOrder.includes(t.id));
+    return [...ordered, ...rest];
+  }, [tabOrder, tabDefs]);
+
+  const handleTabDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = orderedTabs.findIndex(t => t.id === active.id);
+      const newIndex = orderedTabs.findIndex(t => t.id === over.id);
+      setTabOrder(arrayMove(orderedTabs, oldIndex, newIndex).map(t => t.id));
+    }
+  }, [orderedTabs, setTabOrder]);
 
   // ── Mutations: Componentes ──
   const saveComponentOrderMutation = useApiMutation<any, { order: {[key: string]: number} }>({
@@ -2442,7 +2561,7 @@ export default function MachineDetailDialog({
       log('🔍 [MACHINE DETAIL] Response status:', res.status);
       if (!res.ok) {
         const errorText = await res.text();
-        console.error('🔍 [MACHINE DETAIL] Error response:', errorText);
+        debugLog.error('🔍 [MACHINE DETAIL] Error response:', errorText);
         throw new Error(`Error al crear el componente: ${res.status} ${errorText}`);
       }
       return res.json();
@@ -2754,50 +2873,6 @@ export default function MachineDetailDialog({
     }
   };
 
-  const getComponentTypeLabel = (type: string) => {
-    const normalizedType = type?.toLowerCase();
-    switch (normalizedType) {
-      case 'part':
-        return 'Parte Principal';
-      case 'piece':
-        return 'Pieza';
-      case 'subpiece':
-        return 'Subpieza';
-      default:
-        return type || 'Pieza';
-    }
-  };
-
-  const getSystemLabel = (system: string) => {
-    const normalizedSystem = system.toLowerCase();
-    switch (normalizedSystem) {
-      case 'electrico':
-        return 'Sistema Eléctrico';
-      case 'hidraulico':
-        return 'Sistema Hidráulico';
-      case 'neumatico':
-        return 'Sistema Neumático';
-      case 'automatizacion':
-        return 'Automatización';
-      case 'mecanico':
-        return 'Sistema Mecánico';
-      case 'refrigeracion':
-        return 'Sistema de Refrigeración';
-      case 'lubricacion':
-        return 'Sistema de Lubricación';
-      case 'combustible':
-        return 'Sistema de Combustible';
-      case 'control':
-        return 'Sistema de Control';
-      case 'seguridad':
-        return 'Sistema de Seguridad';
-      case 'otro':
-        return 'Otro Sistema';
-      default:
-        return system;
-    }
-  };
-
   const handleViewComponentDetails = (component: MachineComponent) => {
     log('🔍 [MACHINE DETAIL] handleViewComponentDetails llamado con:', component);
     log('🔍 [MACHINE DETAIL] Component ID:', component.id);
@@ -2862,7 +2937,7 @@ export default function MachineDetailDialog({
         await onDelete(machineToDelete);
       }
     } catch (error) {
-      console.error('Error al eliminar máquina:', error);
+      debugLog.error('Error al eliminar máquina:', error);
     }
   };
 
@@ -2914,65 +2989,32 @@ export default function MachineDetailDialog({
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col flex-1 overflow-x-hidden">
               <div className="mb-2 flex-shrink-0 px-1 sm:flex sm:justify-center">
-                <TabsList className="relative items-center justify-start text-muted-foreground w-full sm:w-fit gap-0.5 inline-flex h-9 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden hide-scrollbar">
-                  <TabsTrigger value="overview" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-                    <span>Resumen</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="info" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <Info className="h-3.5 w-3.5 shrink-0" />
-                    <span>Info</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="schema" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <Network className="h-3.5 w-3.5 shrink-0" />
-                    <span>Esquema</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="3d-viewer" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <Box className="h-3.5 w-3.5 shrink-0" />
-                    <span>3D</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="maintenance" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <Settings className="h-3.5 w-3.5 shrink-0" />
-                    <span>Mantenimiento</span>
-                    {headerWorkOrders?.length > 0 ? (
-                      <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs bg-info-muted text-info-muted-foreground">
-                        {headerWorkOrders.length}
-                      </Badge>
-                    ) : null}
-                  </TabsTrigger>
-                  <TabsTrigger value="failures" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                    <span>Fallas</span>
-                    {headerFailures?.length > 0 ? (
-                      <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs bg-destructive/10 text-destructive">
-                        {headerFailures.length}
-                      </Badge>
-                    ) : null}
-                  </TabsTrigger>
-                  <TabsTrigger value="solutions" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                    <span>Soluciones</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="components" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <Wrench className="h-3.5 w-3.5 shrink-0" />
-                    <span>Componentes</span>
-                    {componentList?.length ? (
-                      <Badge variant="secondary" className="ml-0.5 h-5 px-1 text-xs">
-                        {componentList.length}
-                      </Badge>
-                    ) : null}
-                  </TabsTrigger>
-                  {canViewMachineHistory && (
-                    <TabsTrigger value="history" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                      <History className="h-3.5 w-3.5 shrink-0" />
-                      <span>Historial</span>
-                    </TabsTrigger>
-                  )}
-                  <TabsTrigger value="docs" className="flex items-center gap-1 text-xs font-medium h-7 px-2.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md whitespace-nowrap">
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span>Documentos</span>
-                  </TabsTrigger>
-                </TabsList>
+                <DndContext
+                  sensors={tabSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleTabDragEnd}
+                >
+                  <SortableContext
+                    items={orderedTabs.map(t => t.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <TabsList className="relative items-center justify-start text-muted-foreground w-full sm:w-fit gap-0.5 inline-flex h-9 bg-muted/40 border border-border rounded-lg p-0.5 overflow-x-auto overflow-y-hidden hide-scrollbar">
+                      {orderedTabs.map(tab => (
+                        <SortableTabTrigger key={tab.id} tab={tab} isEditMode={isTabEditMode} />
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setIsTabEditMode(prev => !prev)}
+                        className="h-7 w-7 flex items-center justify-center shrink-0 ml-0.5 rounded-md hover:bg-accent transition-colors"
+                        title={isTabEditMode ? 'Guardar orden' : 'Reordenar tabs'}
+                      >
+                        {isTabEditMode
+                          ? <Check className="h-3.5 w-3.5 text-primary" />
+                          : <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+                    </TabsList>
+                  </SortableContext>
+                </DndContext>
               </div>
 
               <div className={cn('flex-1 min-h-0', activeTab === 'schema' ? 'overflow-hidden' : 'overflow-y-auto')}>
@@ -3011,251 +3053,25 @@ export default function MachineDetailDialog({
               </TabsContent>
 
                               <TabsContent value="components" className="mt-0">
-                  <div className="space-y-4 max-h-[calc(90vh-180px)] overflow-y-auto pr-2">
-                    {/* Toolbar de búsqueda y filtros */}
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center sm:justify-between">
-                      <div className="flex flex-1 items-center gap-1.5 sm:gap-2">
-                        {/* Búsqueda */}
-                        <div className="relative flex-1 max-w-sm">
-                          <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 sm:h-4 w-3.5 sm:w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Buscar..."
-                            value={componentSearchTerm}
-                            onChange={(e) => setComponentSearchTerm(e.target.value)}
-                            className="pl-8 sm:pl-10 h-7 sm:h-9 text-xs sm:text-sm"
-                          />
-                          {componentSearchTerm && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0.5 sm:right-1 top-1/2 -translate-y-1/2 h-6 sm:h-7 w-6 sm:w-7 p-0"
-                              onClick={() => setComponentSearchTerm('')}
-                            >
-                              <X className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        {/* Filtro por sistema */}
-                        <Select value={componentSystemFilter} onValueChange={setComponentSystemFilter}>
-                          <SelectTrigger className="w-[100px] sm:w-[160px] h-7 sm:h-9 text-xs sm:text-sm">
-                            <SelectValue placeholder="Sistema" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todos los sistemas</SelectItem>
-                            <SelectItem value="electrico">Eléctrico</SelectItem>
-                            <SelectItem value="hidraulico">Hidráulico</SelectItem>
-                            <SelectItem value="neumatico">Neumático</SelectItem>
-                            <SelectItem value="mecanico">Mecánico</SelectItem>
-                            <SelectItem value="automatizacion">Automatización</SelectItem>
-                            <SelectItem value="refrigeracion">Refrigeración</SelectItem>
-                            <SelectItem value="lubricacion">Lubricación</SelectItem>
-                            <SelectItem value="combustible">Combustible</SelectItem>
-                            <SelectItem value="control">Control</SelectItem>
-                            <SelectItem value="seguridad">Seguridad</SelectItem>
-                            <SelectItem value="otro">Otro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                          {sortedComponents.length} de {componentList.length}
-                        </span>
-                        {canCreateMachine && (
-                          <>
-                            <Button
-                              variant="outline"
-                              className="h-7 sm:h-9 text-xs px-2 sm:px-3"
-                              onClick={() => setIsAIComponentDialogOpen(true)}
-                            >
-                              <Sparkles className="h-3 w-3 sm:mr-1.5" />
-                              <span className="hidden sm:inline">Agregar con IA</span>
-                              <span className="sm:hidden">IA</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="h-7 sm:h-9 text-xs px-2 sm:px-3"
-                              onClick={() => {
-                                log('🔍 [MACHINE DETAIL] Botón "Agregar componente" presionado');
-                                log('🔍 [MACHINE DETAIL] canCreateMachine:', canCreateMachine);
-                                log('🔍 [MACHINE DETAIL] machine.id:', machine?.id);
-                                log('🔍 [MACHINE DETAIL] isAddComponentDialogOpen antes:', isAddComponentDialogOpen);
-                                setIsAddComponentDialogOpen(true);
-                                log('🔍 [MACHINE DETAIL] setIsAddComponentDialogOpen(true) ejecutado');
-                              }}
-                            >
-                              <Plus className="h-3 w-3 sm:mr-1.5" />
-                              <span className="hidden sm:inline">Agregar componente</span>
-                              <span className="sm:hidden">Agregar</span>
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {sortedComponents.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {sortedComponents.map((component) => (
-                          <Card
-                            key={component.id}
-                            className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/30 group"
-                            onClick={() => handleViewComponentDetails(component)}
-                          >
-                            {/* Imagen/Icono arriba */}
-                            <div className="relative h-24 sm:h-28 bg-gradient-to-br from-muted/50 to-muted/20 flex items-center justify-center">
-                              {component.logo ? (
-                                <img
-                                  src={component.logo}
-                                  alt={`Logo de ${component.name}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Wrench className="h-10 w-10 text-muted-foreground/50" />
-                              )}
-                              {/* Input de orden en esquina - editable */}
-                              <input
-                                type="number"
-                                min="1"
-                                max={componentList.length}
-                                defaultValue={(componentOrder[component.id.toString()] || 0) + 1}
-                                onClick={(e) => e.stopPropagation()}
-                                onBlur={(e) => {
-                                  e.stopPropagation();
-                                  const inputValue = parseInt(e.target.value);
-                                  const maxPosition = componentList.length;
-                                  if (inputValue < 1) e.target.value = '1';
-                                  else if (inputValue > maxPosition) e.target.value = maxPosition.toString();
-                                  const newPosition = parseInt(e.target.value) - 1;
-                                  if (newPosition >= 0 && newPosition < componentList.length) {
-                                    setComponentOrder(prev => {
-                                      const newOrder = { ...prev };
-                                      const currentPosition = newOrder[component.id.toString()] || 0;
-                                      if (currentPosition === newPosition) return prev;
-                                      const componentIds = Object.keys(newOrder).filter(id => id !== component.id.toString());
-                                      if (newPosition > currentPosition) {
-                                        componentIds.forEach(id => {
-                                          const pos = newOrder[id];
-                                          if (pos > currentPosition && pos <= newPosition) newOrder[id] = pos - 1;
-                                        });
-                                      } else {
-                                        componentIds.forEach(id => {
-                                          const pos = newOrder[id];
-                                          if (pos >= newPosition && pos < currentPosition) newOrder[id] = pos + 1;
-                                        });
-                                      }
-                                      newOrder[component.id.toString()] = newPosition;
-                                      saveComponentOrder(newOrder);
-                                      return newOrder;
-                                    });
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  e.stopPropagation();
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                                onFocus={(e) => e.stopPropagation()}
-                                className="absolute top-2 left-2 h-6 w-8 text-center text-xs font-medium rounded bg-background/90 backdrop-blur-sm border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary"
-                                title="Cambiar posición"
-                              />
-                              {/* Acciones en esquina derecha */}
-                              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {canEditMachine && (
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditComponent(component);
-                                    }}
-                                    className="h-6 w-6 p-0 bg-background/80 backdrop-blur-sm"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                )}
-                                {canDeleteMachine && (
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteComponent(Number(component.id));
-                                    }}
-                                    className="h-6 w-6 p-0 bg-background/80 backdrop-blur-sm text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                            {/* Contenido abajo */}
-                            <CardContent className="p-3">
-                              <h3 className="text-sm font-semibold text-foreground truncate">{component.name}</h3>
-                              <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 px-1.5 py-0">
-                                  {component.parentId === null || component.parentId === undefined ? 'Parte Principal' : getComponentTypeLabel(component.type)}
-                                </Badge>
-                                {component.system && (
-                                  <Badge variant="outline" className="text-xs bg-info-muted text-info-muted-foreground border-info-muted px-1.5 py-0">
-                                    {getSystemLabel(component.system)}
-                                  </Badge>
-                                )}
-                              </div>
-                              {component.technicalInfo && (
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
-                                  {typeof component.technicalInfo === 'string'
-                                    ? component.technicalInfo
-                                    : ''}
-                                </p>
-                              )}
-                              {/* Indicador de subcomponentes */}
-                              {component.children && component.children.length > 0 && (
-                                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                                  <Wrench className="h-3 w-3" />
-                                  <span>{component.children.length} pieza{component.children.length !== 1 ? 's' : ''}</span>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <Card>
-                        <CardContent className="text-center py-12">
-                          <Wrench className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                          <h3 className="text-sm font-medium mb-2">No hay componentes registrados</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Esta máquina no tiene componentes registrados en el sistema.
-                          </p>
-                          {canCreateMachine && (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                className="h-9 text-xs"
-                                onClick={() => setIsAIComponentDialogOpen(true)}
-                              >
-                                <Sparkles className="h-3 w-3 mr-2" />
-                                Agregar con IA
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="h-9 text-xs"
-                                onClick={() => {
-                                  log('🔍 [MACHINE DETAIL] Botón "Agregar componente" (sin componentes) presionado');
-                                  log('🔍 [MACHINE DETAIL] canCreateMachine:', canCreateMachine);
-                                  log('🔍 [MACHINE DETAIL] machine.id:', machine?.id);
-                                  setIsAddComponentDialogOpen(true);
-                                }}
-                              >
-                                <Plus className="h-3 w-3 mr-2" />
-                                Agregar componente
-                              </Button>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
+                  <MachineComponentsTab
+                    sortedComponents={sortedComponents}
+                    componentList={componentList}
+                    componentSearchTerm={componentSearchTerm}
+                    setComponentSearchTerm={setComponentSearchTerm}
+                    componentSystemFilter={componentSystemFilter}
+                    setComponentSystemFilter={setComponentSystemFilter}
+                    componentOrder={componentOrder}
+                    setComponentOrder={setComponentOrder}
+                    saveComponentOrder={saveComponentOrder}
+                    setIsAIComponentDialogOpen={setIsAIComponentDialogOpen}
+                    setIsAddComponentDialogOpen={setIsAddComponentDialogOpen}
+                    handleViewComponentDetails={handleViewComponentDetails}
+                    handleEditComponent={handleEditComponent}
+                    handleDeleteComponent={handleDeleteComponent}
+                    canCreateMachine={canCreateMachine}
+                    canEditMachine={canEditMachine}
+                    canDeleteMachine={canDeleteMachine}
+                  />
                 </TabsContent>
 
 
@@ -3575,7 +3391,7 @@ const FailureDialog: React.FC<{
         setAvailableTools(data.tools || []);
       }
     } catch (error) {
-      console.error('Error fetching tools:', error);
+      debugLog.error('Error fetching tools:', error);
       setAvailableTools([]);
     } finally {
       setLoadingTools(false);
@@ -3594,7 +3410,7 @@ const FailureDialog: React.FC<{
         setAvailableSpareParts(data.tools || []);
       }
     } catch (error) {
-      console.error('Error fetching spare parts:', error);
+      debugLog.error('Error fetching spare parts:', error);
       setAvailableSpareParts([]);
     } finally {
       setLoadingSpareParts(false);
@@ -3619,12 +3435,12 @@ const FailureDialog: React.FC<{
         log('📦 Categories received:', data.categories);
         setCategories(data.categories || []);
       } else {
-        console.error('❌ Error response:', response.status, response.statusText);
+        debugLog.error('❌ Error response:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('❌ Error details:', errorText);
+        debugLog.error('❌ Error details:', errorText);
       }
     } catch (error) {
-      console.error('❌ Error fetching categories:', error);
+      debugLog.error('❌ Error fetching categories:', error);
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -3667,7 +3483,7 @@ const FailureDialog: React.FC<{
       
       setComponentSpareParts(uniqueSpareParts);
     } catch (error) {
-      console.error('Error fetching component spare parts:', error);
+      debugLog.error('Error fetching component spare parts:', error);
       setComponentSpareParts([]);
     } finally {
       setLoadingComponentSpareParts(false);
@@ -3812,7 +3628,7 @@ const FailureDialog: React.FC<{
       }, 1000);
 
     } catch (error) {
-      console.error('Error uploading files:', error);
+      debugLog.error('Error uploading files:', error);
       toast.error(error instanceof Error ? error.message : 'Error al subir archivos');
     } finally {
       setUploadingSolutionFiles(false);
@@ -3873,7 +3689,7 @@ const FailureDialog: React.FC<{
           toast.error(`Error al subir ${file.name}`);
         }
       } catch (error) {
-        console.error('Error uploading file:', error);
+        debugLog.error('Error uploading file:', error);
         toast.error(`Error al subir ${file.name}`);
       }
     }
@@ -3927,7 +3743,7 @@ const FailureDialog: React.FC<{
           log('✅ Foto subida exitosamente:', photoUrl);
         } else {
           const errorText = await uploadResponse.text();
-          console.error('❌ Error uploading photo:', errorText);
+          debugLog.error('❌ Error uploading photo:', errorText);
           toast.error('Error al subir la foto');
           setUploadingToolPhoto(false);
           return;
@@ -3987,11 +3803,11 @@ const FailureDialog: React.FC<{
         toast.success(successMessage);
       } else {
         const errorData = await response.json();
-        console.error('❌ API Error:', errorData);
+        debugLog.error('❌ API Error:', errorData);
         throw new Error(errorData.error || 'Error al crear la herramienta');
       }
     } catch (error) {
-      console.error('Error creating tool:', error);
+      debugLog.error('Error creating tool:', error);
       toast.error('No se pudo crear la herramienta');
     } finally {
       setUploadingToolPhoto(false);
@@ -5584,7 +5400,7 @@ const FailureDetailModal: React.FC<{
         setOccurrences(data.occurrences || []);
       }
     } catch (error) {
-      console.error('Error fetching occurrences:', error);
+      debugLog.error('Error fetching occurrences:', error);
     } finally {
       setLoadingOccurrences(false);
     }
@@ -5602,11 +5418,11 @@ const FailureDetailModal: React.FC<{
         setSolutions(data.solutions || []);
         log('✅ Solutions loaded for failure:', failure.id, data.solutions);
       } else {
-        console.error('Error fetching solutions:', await response.text());
+        debugLog.error('Error fetching solutions:', await response.text());
         setSolutions([]);
       }
     } catch (error) {
-      console.error('Error fetching solutions:', error);
+      debugLog.error('Error fetching solutions:', error);
       setSolutions([]);
     } finally {
       setLoadingSolutions(false);
@@ -5711,7 +5527,7 @@ const FailureDetailModal: React.FC<{
       }, 500);
       
     } catch (error) {
-      console.error('Error al descargar documento:', error);
+      debugLog.error('Error al descargar documento:', error);
       toast.error('Error al iniciar la descarga');
     }
   };
@@ -6419,7 +6235,7 @@ const SolutionEditDialog: React.FC<{
         setTools(data.tools || []);
       }
     } catch (error) {
-      console.error('Error fetching tools:', error);
+      debugLog.error('Error fetching tools:', error);
     }
   };
 
@@ -6431,7 +6247,7 @@ const SolutionEditDialog: React.FC<{
         setSpareParts(data.spareParts || []);
       }
     } catch (error) {
-      console.error('Error fetching spare parts:', error);
+      debugLog.error('Error fetching spare parts:', error);
     }
   };
 
@@ -6476,7 +6292,7 @@ const SolutionEditDialog: React.FC<{
           }]);
         }
       } catch (error) {
-        console.error('Error uploading file:', error);
+        debugLog.error('Error uploading file:', error);
         toast.error('Error al subir el archivo');
       }
     }
@@ -6802,7 +6618,7 @@ const FailureEditDialog: React.FC<{
           }]);
         }
       } catch (error) {
-        console.error('Error uploading file:', error);
+        debugLog.error('Error uploading file:', error);
         toast.error('Error al subir el archivo');
       }
     }

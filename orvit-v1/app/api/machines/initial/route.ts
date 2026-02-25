@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { logApiPerformance, logApiError } from '@/lib/logger';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,23 +15,29 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const companyId = searchParams.get('companyId');
   const sectorId = searchParams.get('sectorId');
-  
-  const perf = logApiPerformance('machines/initial', { companyId, sectorId });
+
+  const perf = logApiPerformance('machines/initial', { sectorId });
 
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      perf.end({ error: 'unauthorized' });
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '100', 10), 200);
 
-    if (!companyId) {
+    // Siempre usar companyId del usuario autenticado
+    const companyIdNum = auth.companyId!;
+    if (!companyIdNum) {
       perf.end({ error: 'companyId missing' });
       return NextResponse.json(
-        { error: 'companyId es requerido' },
+        { error: 'Usuario sin empresa asociada' },
         { status: 400 }
       );
     }
 
-    const companyIdNum = parseInt(companyId);
     const sectorIdNum = sectorId ? parseInt(sectorId) : null;
 
     // ✨ OPTIMIZACIÓN: Ejecutar todas las queries en paralelo
@@ -60,7 +67,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    logApiError('machines/initial', error, { companyId, sectorId });
+    logApiError('machines/initial', error, { sectorId });
     perf.end({ error: true });
     return NextResponse.json(
       { error: 'Error interno del servidor' },

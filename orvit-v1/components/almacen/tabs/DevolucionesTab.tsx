@@ -33,6 +33,7 @@ import { AlmacenFilters } from '../shared/AlmacenFilters';
 import { DevolucionStatusBadge } from '../shared/StatusBadge';
 import { EmptyState } from '../shared/EmptyState';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DevolucionesTabProps {
   onNew: () => void;
@@ -44,6 +45,9 @@ interface DevolucionesTabProps {
  */
 export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const currentUserId = parseInt(user?.id ?? '0');
+
   const [filters, setFilters] = useState<DevolucionesFilters>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 });
 
@@ -70,7 +74,7 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
 
   const handleAccept = async (id: number) => {
     try {
-      await accept.mutateAsync({ id, userId: 1 }); // TODO: Get current user
+      await accept.mutateAsync({ id, userId: currentUserId });
       toast({ title: 'Devolución aceptada' });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -79,7 +83,7 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
 
   const handleReject = async (id: number) => {
     try {
-      await reject.mutateAsync({ id, userId: 1 }); // TODO: Get current user
+      await reject.mutateAsync({ id, userId: currentUserId });
       toast({ title: 'Devolución rechazada' });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -96,6 +100,41 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
     setFilters({});
     setPagination({ page: 1, pageSize: 20 });
   }, []);
+
+  const ActionsMenu = ({ devolucion }: { devolucion: any }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onView(devolucion.id)}>
+          <Eye className="h-4 w-4 mr-2" />
+          Ver detalle
+        </DropdownMenuItem>
+        {devolucion.estado === 'BORRADOR' && (
+          <DropdownMenuItem onClick={() => handleSubmit(devolucion.id)}>
+            <Send className="h-4 w-4 mr-2" />
+            Enviar
+          </DropdownMenuItem>
+        )}
+        {devolucion.estado === 'PENDIENTE_REVISION' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleAccept(devolucion.id)}>
+              <Check className="h-4 w-4 mr-2" />
+              Aceptar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleReject(devolucion.id)}>
+              <X className="h-4 w-4 mr-2" />
+              Rechazar
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="space-y-4">
@@ -117,11 +156,12 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
 
         <Button onClick={onNew} size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          Nueva Devolución
+          <span className="hidden sm:inline">Nueva Devolución</span>
+          <span className="sm:hidden">Nueva</span>
         </Button>
       </div>
 
-      {/* Tabla */}
+      {/* Contenido */}
       {isLoading ? (
         <TableSkeleton />
       ) : devoluciones.length === 0 ? (
@@ -131,7 +171,45 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
         />
       ) : (
         <>
-          <div className="rounded-md border">
+          {/* Cards mobile */}
+          <div className="space-y-2 md:hidden">
+            {devoluciones.map((devolucion: any) => (
+              <div
+                key={devolucion.id}
+                className="p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => onView(devolucion.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{devolucion.numero}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {devolucion.solicitante?.name || '-'} · {format(new Date(devolucion.createdAt), 'dd/MM/yy', { locale: es })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <DevolucionStatusBadge status={devolucion.estado} size="sm" />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionsMenu devolucion={devolucion} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  {devolucion.despacho?.numero && (
+                    <span className="text-xs text-muted-foreground">Desp. {devolucion.despacho.numero}</span>
+                  )}
+                  {devolucion.motivo && (
+                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">· {devolucion.motivo}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {devolucion.items?.length || 0} item{(devolucion.items?.length || 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabla desktop */}
+          <div className="hidden md:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -166,38 +244,7 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
                       {format(new Date(devolucion.createdAt), 'dd/MM/yyyy', { locale: es })}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onView(devolucion.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver detalle
-                          </DropdownMenuItem>
-                          {devolucion.estado === 'BORRADOR' && (
-                            <DropdownMenuItem onClick={() => handleSubmit(devolucion.id)}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Enviar
-                            </DropdownMenuItem>
-                          )}
-                          {devolucion.estado === 'PENDIENTE_REVISION' && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleAccept(devolucion.id)}>
-                                <Check className="h-4 w-4 mr-2" />
-                                Aceptar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleReject(devolucion.id)}>
-                                <X className="h-4 w-4 mr-2" />
-                                Rechazar
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ActionsMenu devolucion={devolucion} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -208,7 +255,7 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
           {/* Paginación */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Mostrando {devoluciones.length} de {total} devoluciones
+              {devoluciones.length} de {total} devoluciones
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -220,7 +267,7 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
                 Anterior
               </Button>
               <span>
-                Página {pagination.page} de {totalPages}
+                {pagination.page} / {totalPages}
               </span>
               <Button
                 variant="outline"

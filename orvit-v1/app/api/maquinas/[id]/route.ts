@@ -1,19 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 import { deleteEntityFiles, deleteMultipleEntityFiles, deleteS3File } from '@/lib/s3-utils';
+import { notifyMachineStatusChange } from '@/lib/discord/notifications';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const { id } = params;
   const machine = await prisma.machine.findUnique({ where: { id: Number(id) } });
   if (!machine) {
     return NextResponse.json({ error: "Máquina no encontrada." }, { status: 404 });
   }
+
+  if (machine.companyId !== auth.companyId) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
   // (Opcional) Si se desean adjuntos, se pueden cargar (por ejemplo, desde un modelo Attachment) y agregar a la respuesta.
   // Por ahora, se devuelve la máquina sin attachments.
   return NextResponse.json(machine);
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const { id } = params;
   if (!id || isNaN(Number(id))) {
     return NextResponse.json({ error: 'ID de máquina inválido' }, { status: 400 });
@@ -48,6 +65,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     if (!currentMachine) {
       return NextResponse.json({ error: 'Máquina no encontrada' }, { status: 404 });
+    }
+
+    // Verificar que la máquina pertenece a la empresa del usuario
+    // Necesitamos el companyId de la máquina actual
+    const machineForAuth = await prisma.machine.findUnique({
+      where: { id: Number(id) },
+      select: { companyId: true }
+    });
+    if (machineForAuth && machineForAuth.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
+    // Validar que no se cambia la propiedad de la máquina a otra empresa
+    if (Number(body.companyId) !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Si se proporciona plantZoneId, validar que existe y pertenece al sector
@@ -121,7 +153,65 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  const { id } = params;
+  if (!id || isNaN(Number(id))) {
+    return NextResponse.json({ error: 'ID de máquina inválido' }, { status: 400 });
+  }
+
+  const machine = await prisma.machine.findUnique({
+    where: { id: Number(id) },
+    select: { companyId: true, status: true, name: true, sectorId: true }
+  });
+  if (!machine) {
+    return NextResponse.json({ error: 'Máquina no encontrada' }, { status: 404 });
+  }
+  if (machine.companyId !== auth.companyId) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
+  const body = await request.json();
+  if (!body.status) {
+    return NextResponse.json({ error: 'Campo requerido: status' }, { status: 400 });
+  }
+  try {
+    const oldStatus = machine.status;
+    const updated = await prisma.machine.update({
+      where: { id: Number(id) },
+      data: { status: body.status },
+    });
+
+    // Notificar a Discord si el nuevo estado es OUT_OF_SERVICE o MAINTENANCE
+    if (body.status === 'OUT_OF_SERVICE' || body.status === 'MAINTENANCE') {
+      notifyMachineStatusChange({
+        machineId: Number(id),
+        machineName: machine.name,
+        oldStatus: oldStatus,
+        newStatus: body.status,
+        sectorId: machine.sectorId,
+        changedByName: auth.name || undefined,
+      }).catch((err) => {
+        console.error('[PATCH /maquinas] Error enviando notificación Discord de cambio de estado:', err);
+      });
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json({ error: 'Error al actualizar estado', details: error }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const { id } = params;
   const machineId = Number(id);
 
@@ -135,7 +225,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const [machine, componentIds] = await Promise.all([
       prisma.machine.findUnique({
         where: { id: machineId },
-        select: { id: true }
+        select: { id: true, companyId: true }
       }),
       // Obtener TODOS los IDs de componentes de la máquina (query plana, sin recursión)
       prisma.component.findMany({
@@ -146,6 +236,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     if (!machine) {
       return NextResponse.json({ error: "Máquina no encontrada." }, { status: 404 });
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     const allComponentIds = componentIds.map(c => c.id);

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,8 +13,13 @@ interface Params {
  * Obtiene estadísticas completas de una máquina para el overview
  * ✨ OPTIMIZADO: Queries paralelas y raw SQL donde es beneficioso
  */
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const machineId = parseInt(params.id);
 
     if (isNaN(machineId)) {
@@ -109,6 +115,10 @@ export async function GET(request: Request, { params }: Params) {
 
     if (!machine) {
       return NextResponse.json({ error: 'Machine not found' }, { status: 404 });
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Procesar conteos de failures

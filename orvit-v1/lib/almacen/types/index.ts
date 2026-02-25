@@ -71,4 +71,19 @@ export {
   MovementTypeSchema,
   MovementTypeLabels,
   MovementTypeColors,
+
+  // Transfer
+  TransferStatuses,
+  type TransferStatus,
+  TransferStatusLabels,
+  TransferStatusColors,
+
+  // Adjustment
+  AdjustmentStatuses,
+  type AdjustmentStatus,
+  AdjustmentStatusLabels,
+  AdjustmentStatusColors,
+  AdjustmentTypes,
+  type AdjustmentType,
+  AdjustmentTypeLabels,
 } from './enums';

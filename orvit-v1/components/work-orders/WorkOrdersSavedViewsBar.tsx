@@ -1,13 +1,12 @@
 'use client';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { WorkOrder, MaintenanceType, WorkOrderStatus } from '@/lib/types';
 
-export type PresetKey = 'all' | 'correctivos' | 'preventivos' | 'mine' | 'unassigned';
+export type PresetKey = 'all' | 'correctivos' | 'mine' | 'unassigned';
 
 export interface PresetFilters {
   type?: MaintenanceType;
@@ -32,11 +31,6 @@ export const PRESETS: Preset[] = [
     key: 'correctivos',
     label: 'Correctivos',
     filters: { type: 'CORRECTIVE' as MaintenanceType },
-  },
-  {
-    key: 'preventivos',
-    label: 'Preventivos',
-    filters: { type: 'PREVENTIVE' as MaintenanceType },
   },
   {
     key: 'mine',
@@ -109,7 +103,7 @@ export function WorkOrdersSavedViewsBar({ workOrders = [], className }: WorkOrde
   }, [workOrders, user?.id]);
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-1 bg-muted/50 p-1 rounded-lg', className)}>
+    <div className={cn('flex w-fit max-w-full items-center bg-muted/70 p-1 rounded-lg gap-0.5 overflow-x-auto overflow-y-hidden hide-scrollbar', className)}>
       {PRESETS.map((preset) => {
         const isActive = currentPreset === preset.key;
         const count = counts[preset.key];
@@ -119,25 +113,24 @@ export function WorkOrdersSavedViewsBar({ workOrders = [], className }: WorkOrde
             key={preset.key}
             onClick={() => handlePresetChange(preset.key)}
             className={cn(
-              'inline-flex items-center justify-center rounded-md px-3 h-7 text-xs transition-all',
+              'inline-flex items-center gap-1.5 px-3 h-7 text-xs rounded-md transition-all whitespace-nowrap shrink-0',
               isActive
-                ? 'bg-background text-foreground shadow-sm font-medium'
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                ? 'bg-background text-foreground font-medium shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
             )}
           >
             {preset.label}
             {count > 0 && (
-              <Badge
-                variant={isActive ? 'secondary' : 'outline'}
+              <span
                 className={cn(
-                  'ml-1.5 h-5 px-1.5 text-xs font-normal',
+                  'tabular-nums px-1.5 py-px rounded-full text-[10px] font-semibold min-w-[18px] text-center leading-4',
                   isActive
-                    ? 'bg-foreground/10 text-foreground border-transparent'
-                    : 'bg-transparent border-border/50'
+                    ? 'bg-muted text-foreground'
+                    : 'bg-background/80 text-muted-foreground'
                 )}
               >
                 {count}
-              </Badge>
+              </span>
             )}
           </button>
         );

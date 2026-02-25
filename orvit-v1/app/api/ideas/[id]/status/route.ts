@@ -47,7 +47,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // TODO: Verify user has permission to change status (admin/supervisor role)
+    // Only admin roles can change idea status
+    const actor = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { systemRole: true },
+    });
+    const adminRoles = ['ADMIN', 'SUPERADMIN', 'ADMIN_ENTERPRISE'];
+    if (!actor || !adminRoles.includes(actor.systemRole ?? '')) {
+      return NextResponse.json(
+        { error: 'Sin permisos para cambiar el estado de ideas' },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
     const { status, reviewNotes, implementationNotes } = body;

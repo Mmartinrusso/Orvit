@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 // GET /api/machines/[id]/tools - Obtener repuestos asociados a una máquina
 export async function GET(
@@ -7,6 +8,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const machineId = parseInt(params.id);
     const { searchParams } = new URL(request.url);
     const componentId = searchParams.get('componentId');
@@ -16,6 +22,20 @@ export async function GET(
         { error: 'ID de máquina inválido' },
         { status: 400 }
       );
+    }
+
+    // Verificar que la máquina pertenece a la empresa del usuario
+    const machine = await prisma.machine.findUnique({
+      where: { id: machineId },
+      select: { id: true, companyId: true }
+    });
+
+    if (!machine) {
+      return NextResponse.json({ error: 'Máquina no encontrada' }, { status: 404 });
+    }
+
+    if (machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Construir la consulta base

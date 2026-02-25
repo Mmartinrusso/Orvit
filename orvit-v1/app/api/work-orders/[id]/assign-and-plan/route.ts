@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { notifyOTAssigned } from '@/lib/discord/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -266,7 +267,19 @@ export async function POST(
       console.log(`   SLA: ${slaDueAt.toISOString()}`);
     }
 
-    // TODO: Agregar notificación Discord cuando esté implementado
+    // Notificación Discord (fire-and-forget)
+    notifyOTAssigned({
+      id: updatedWorkOrder.id,
+      title: updatedWorkOrder.title,
+      priority: updatedWorkOrder.priority,
+      machineName: updatedWorkOrder.machine?.name,
+      sectorId: (updatedWorkOrder as any).sectorId ?? 0,
+      assignedTo: technician.user.name,
+      assignedToId: data.assignedToId,
+      assignedBy: (payload.name as string | undefined) ?? String(userId),
+      scheduledDate: scheduledDate?.toISOString(),
+      slaDeadline: slaDueAt?.toISOString(),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

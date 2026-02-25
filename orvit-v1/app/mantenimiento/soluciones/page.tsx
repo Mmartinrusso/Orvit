@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { LayoutGrid, List, Search, X, Lightbulb, AlertTriangle, Wrench, Shield, FileText } from 'lucide-react';
+import { LayoutGrid, List, Search, X, Lightbulb, CheckCircle2, AlertTriangle, XCircle, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,114 +18,117 @@ import {
 } from '@/components/ui/select';
 import { SolutionCard, Solution } from '@/components/solutions/SolutionCard';
 import { SolutionDetailDialog } from '@/components/solutions/SolutionDetailDialog';
+import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 
+const PAGE_SIZE = 40;
+
+// Map SolutionApplied API data → Solution interface for SolutionCard
+function mapToSolution(sa: any): Solution {
+  return {
+    id: sa.id,
+    title: sa.failureOccurrence?.title || sa.diagnosis?.substring(0, 80) || `Solución #${sa.id}`,
+    description: sa.diagnosis,
+    rootCause: sa.confirmedCause || sa.diagnosis,
+    solution: sa.solution,
+    machineName: sa.failureOccurrence?.machine?.name,
+    machineId: sa.failureOccurrence?.machineId,
+    componentName: sa.failureOccurrence?.component?.name,
+    componentId: sa.failureOccurrence?.component?.id,
+    subcomponentNames: sa.failureOccurrence?.subComponent?.name || undefined,
+    completedDate: sa.performedAt,
+    createdAt: sa.createdAt,
+    executedBy: sa.performedBy ? { id: sa.performedBy.id, name: sa.performedBy.name } : undefined,
+    effectiveness: sa.effectiveness,
+    priority: undefined,
+    status: sa.outcome,
+    attachments: sa.attachments || [],
+    _workOrder: sa.workOrder,
+  };
+}
+
 export default function SolucionesPage() {
-  const { currentCompany, currentSector } = useCompany();
+  const { currentCompany } = useCompany();
   const [searchTerm, setSearchTerm] = useState('');
   const [machineFilter, setMachineFilter] = useState<string>('ALL');
+  const [outcomeFilter, setOutcomeFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null);
   const [activeKPI, setActiveKPI] = useState<string | null>(null);
 
-  // Fetch completed corrective work orders with solution data
-  const { data: solutions, isLoading } = useQuery({
-    queryKey: ['solutions', currentCompany?.id, currentSector?.id],
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
+  // Build query params
+  const queryParams = useMemo(() => {
+    const p: Record<string, string> = { mode: 'history', limit: String(PAGE_SIZE) };
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (machineFilter !== 'ALL') p.machineId = machineFilter;
+    if (outcomeFilter !== 'ALL') p.outcome = outcomeFilter;
+    if (activeKPI === 'worked') p.outcome = 'FUNCIONÓ';
+    if (activeKPI === 'partial') p.outcome = 'PARCIAL';
+    if (activeKPI === 'failed') p.outcome = 'NO_FUNCIONÓ';
+    return p;
+  }, [debouncedSearch, machineFilter, outcomeFilter, activeKPI]);
+
+  // Main query
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['solutions-applied', currentCompany?.id, queryParams],
     queryFn: async () => {
-      if (!currentCompany?.id) return [];
+      if (!currentCompany?.id) return { data: [], pagination: { total: 0, hasMore: false } };
 
-      const params = new URLSearchParams({
-        companyId: currentCompany.id.toString(),
-        type: 'CORRECTIVE',
-        status: 'COMPLETED'
-      });
-
-      if (currentSector?.id) {
-        params.append('sectorId', currentSector.id.toString());
-      }
-
-      const response = await fetch(`/api/work-orders?${params.toString()}`);
+      const params = new URLSearchParams(queryParams);
+      const response = await fetch(`/api/solutions-applied?${params.toString()}`);
       if (!response.ok) throw new Error('Error fetching solutions');
-
-      const workOrders = await response.json();
-
-      return workOrders
-        .filter((wo: any) => wo.solution || wo.rootCause || wo.correctiveActions)
-        .map((wo: any) => ({
-          id: wo.id,
-          title: wo.title,
-          description: wo.description,
-          rootCause: wo.rootCause,
-          solution: wo.solution,
-          correctiveActions: wo.correctiveActions,
-          preventiveActions: wo.preventiveActions,
-          failureDescription: wo.failureDescription,
-          machineId: wo.machineId,
-          machineName: wo.machine?.name,
-          componentId: wo.componentId,
-          componentName: wo.component?.name,
-          // Subcomponentes ya vienen procesados del API
-          subcomponentNames: wo.subcomponentNames?.join(', ') || null,
-          completedDate: wo.completedDate,
-          createdAt: wo.createdAt,
-          executedBy: wo.assignedTo || wo.assignedWorker,
-          assignedTo: wo.assignedTo,
-          priority: wo.priority,
-          status: wo.status,
-          attachments: wo.attachments || [],
-          _workOrder: wo
-        }));
+      return response.json();
     },
     enabled: !!currentCompany?.id,
-    staleTime: 2 * 60 * 1000
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
-  // Stats
-  const stats = useMemo(() => {
-    if (!solutions) return { total: 0, withRootCause: 0, withPreventive: 0, withSolution: 0 };
+  // Totals query (no filters, for KPIs)
+  const { data: totalsData } = useQuery({
+    queryKey: ['solutions-applied-totals', currentCompany?.id],
+    queryFn: async () => {
+      if (!currentCompany?.id) return null;
 
-    return {
-      total: solutions.length,
-      withRootCause: solutions.filter((s: Solution) => s.rootCause).length,
-      withSolution: solutions.filter((s: Solution) => s.solution || s.correctiveActions).length,
-      withPreventive: solutions.filter((s: Solution) => s.preventiveActions).length
-    };
-  }, [solutions]);
+      const [allRes, workedRes, partialRes, failedRes] = await Promise.all([
+        fetch('/api/solutions-applied?mode=history&limit=1'),
+        fetch('/api/solutions-applied?mode=history&limit=1&outcome=FUNCION%C3%93'),
+        fetch('/api/solutions-applied?mode=history&limit=1&outcome=PARCIAL'),
+        fetch('/api/solutions-applied?mode=history&limit=1&outcome=NO_FUNCION%C3%93'),
+      ]);
 
-  // Filter solutions
-  const filteredSolutions = useMemo(() => {
-    if (!solutions) return [];
+      const [all, worked, partial, failed] = await Promise.all([
+        allRes.ok ? allRes.json() : { pagination: { total: 0 } },
+        workedRes.ok ? workedRes.json() : { pagination: { total: 0 } },
+        partialRes.ok ? partialRes.json() : { pagination: { total: 0 } },
+        failedRes.ok ? failedRes.json() : { pagination: { total: 0 } },
+      ]);
 
-    return solutions.filter((sol: Solution) => {
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        const matchesSearch =
-          sol.title?.toLowerCase().includes(term) ||
-          sol.rootCause?.toLowerCase().includes(term) ||
-          sol.solution?.toLowerCase().includes(term) ||
-          sol.correctiveActions?.toLowerCase().includes(term) ||
-          sol.machineName?.toLowerCase().includes(term) ||
-          sol.componentName?.toLowerCase().includes(term);
-        if (!matchesSearch) return false;
-      }
+      return {
+        total: all.pagination?.total || 0,
+        worked: worked.pagination?.total || 0,
+        partial: partial.pagination?.total || 0,
+        failed: failed.pagination?.total || 0,
+      };
+    },
+    enabled: !!currentCompany?.id,
+    staleTime: 5 * 60 * 1000,
+  });
 
-      if (machineFilter !== 'ALL' && sol.machineId?.toString() !== machineFilter) {
-        return false;
-      }
+  const solutions: Solution[] = useMemo(() => {
+    if (!data?.data) return [];
+    return data.data.map(mapToSolution);
+  }, [data]);
 
-      if (activeKPI === 'rootCause' && !sol.rootCause) return false;
-      if (activeKPI === 'solution' && !sol.solution && !sol.correctiveActions) return false;
-      if (activeKPI === 'preventive' && !sol.preventiveActions) return false;
+  const totalResults = data?.pagination?.total || 0;
+  const hasMore = data?.pagination?.hasMore || false;
 
-      return true;
-    });
-  }, [solutions, searchTerm, machineFilter, activeKPI]);
-
-  // Unique machines
+  // Machine list from loaded results
   const solutionMachines = useMemo(() => {
-    if (!solutions) return [];
-    const machineMap = new Map();
-    solutions.forEach((sol: Solution) => {
+    const machineMap = new Map<number, string>();
+    solutions.forEach((sol) => {
       if (sol.machineId && sol.machineName) {
         machineMap.set(sol.machineId, sol.machineName);
       }
@@ -133,15 +136,16 @@ export default function SolucionesPage() {
     return Array.from(machineMap, ([id, name]) => ({ id, name }));
   }, [solutions]);
 
-  const hasActiveFilters = searchTerm || machineFilter !== 'ALL' || activeKPI;
+  const stats = totalsData || { total: 0, worked: 0, partial: 0, failed: 0 };
+  const hasActiveFilters = searchTerm || machineFilter !== 'ALL' || outcomeFilter !== 'ALL' || activeKPI;
 
   const clearFilters = () => {
     setSearchTerm('');
     setMachineFilter('ALL');
+    setOutcomeFilter('ALL');
     setActiveKPI(null);
   };
 
-  // KPI definitions matching Fallas style
   const kpiDefinitions = [
     {
       key: 'total',
@@ -151,38 +155,48 @@ export default function SolucionesPage() {
       iconColor: 'text-warning-muted-foreground',
     },
     {
-      key: 'rootCause',
-      title: 'Con Causa Raíz',
-      value: stats.withRootCause,
-      icon: AlertTriangle,
-      iconColor: 'text-destructive',
-    },
-    {
-      key: 'solution',
-      title: 'Documentadas',
-      value: stats.withSolution,
-      icon: Wrench,
+      key: 'worked',
+      title: 'Funcionaron',
+      value: stats.worked,
+      icon: CheckCircle2,
       iconColor: 'text-success',
     },
     {
-      key: 'preventive',
-      title: 'Con Preventivas',
-      value: stats.withPreventive,
-      icon: Shield,
-      iconColor: 'text-info-muted-foreground',
+      key: 'partial',
+      title: 'Parciales',
+      value: stats.partial,
+      icon: AlertTriangle,
+      iconColor: 'text-warning-muted-foreground',
+    },
+    {
+      key: 'failed',
+      title: 'No Funcionaron',
+      value: stats.failed,
+      icon: XCircle,
+      iconColor: 'text-destructive',
     },
   ];
 
   const isKPIActive = (key: string) => activeKPI === key;
 
   const handleKPIClick = (key: string) => {
-    if (key === 'total') return;
-    setActiveKPI(activeKPI === key ? null : key);
+    if (key === 'total') {
+      setActiveKPI(null);
+      setOutcomeFilter('ALL');
+      return;
+    }
+    if (activeKPI === key) {
+      setActiveKPI(null);
+      setOutcomeFilter('ALL');
+    } else {
+      setActiveKPI(key);
+      setOutcomeFilter('ALL'); // KPI overrides dropdown
+    }
   };
 
   return (
     <div className="h-screen sidebar-shell flex flex-col min-h-0">
-      {/* Header sticky - mismo que Fallas */}
+      {/* Header */}
       <div className="sticky top-0 z-20 border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex h-16 items-center justify-between px-4 md:px-6 gap-4">
           <div className="flex items-center gap-3 min-w-0">
@@ -216,8 +230,8 @@ export default function SolucionesPage() {
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="px-4 md:px-6 py-4 space-y-4">
-          {/* KPIs - mismo estilo que FailureKPIs */}
-          {isLoading ? (
+          {/* KPIs */}
+          {isLoading && !totalsData ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[...Array(4)].map((_, i) => (
                 <Card key={i} className="border-border bg-card">
@@ -274,13 +288,12 @@ export default function SolucionesPage() {
             </div>
           )}
 
-          {/* Filters - mismo estilo que FailureFiltersBar */}
+          {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Búsqueda */}
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Buscar por título, causa raíz..."
+                placeholder="Buscar por diagnóstico, solución..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 h-9 text-xs bg-background"
@@ -298,19 +311,21 @@ export default function SolucionesPage() {
             </div>
 
             {/* Máquina */}
-            <Select value={machineFilter} onValueChange={setMachineFilter}>
-              <SelectTrigger className="h-9 w-[140px] text-xs bg-background">
-                <SelectValue placeholder="Máquina" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todas</SelectItem>
-                {solutionMachines.map((machine: any) => (
-                  <SelectItem key={machine.id} value={machine.id.toString()}>
-                    {machine.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {solutionMachines.length > 0 && (
+              <Select value={machineFilter} onValueChange={setMachineFilter}>
+                <SelectTrigger className="h-9 w-full sm:w-[140px] text-xs bg-background">
+                  <SelectValue placeholder="Máquina" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todas</SelectItem>
+                  {solutionMachines.map((machine) => (
+                    <SelectItem key={machine.id} value={machine.id.toString()}>
+                      {machine.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Limpiar filtros */}
             {hasActiveFilters && (
@@ -327,7 +342,7 @@ export default function SolucionesPage() {
 
             {/* Contador */}
             <div className="ml-auto text-xs text-muted-foreground">
-              {filteredSolutions.length} resultado{filteredSolutions.length !== 1 ? 's' : ''}
+              {solutions.length} de {totalResults} resultado{totalResults !== 1 ? 's' : ''}
             </div>
           </div>
 
@@ -338,7 +353,7 @@ export default function SolucionesPage() {
                 <Skeleton key={i} className="h-48 rounded-xl" />
               ))}
             </div>
-          ) : filteredSolutions.length === 0 ? (
+          ) : solutions.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
               <p className="text-sm text-muted-foreground">
                 {hasActiveFilters
@@ -347,20 +362,37 @@ export default function SolucionesPage() {
               </p>
             </div>
           ) : (
-            <div className={cn(
-              viewMode === 'grid'
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
-                : "flex flex-col gap-2"
-            )}>
-              {filteredSolutions.map((solution: Solution) => (
-                <SolutionCard
-                  key={solution.id}
-                  solution={solution}
-                  onClick={setSelectedSolution}
-                  variant={viewMode === 'list' ? 'compact' : 'default'}
-                />
-              ))}
-            </div>
+            <>
+              <div className={cn(
+                viewMode === 'grid'
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+                  : "flex flex-col gap-2"
+              )}>
+                {solutions.map((solution: Solution) => (
+                  <SolutionCard
+                    key={solution.id}
+                    solution={solution}
+                    onClick={setSelectedSolution}
+                    variant={viewMode === 'list' ? 'compact' : 'default'}
+                  />
+                ))}
+              </div>
+
+              {/* Load more */}
+              {hasMore && (
+                <div className="flex justify-center pt-2 pb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 text-xs"
+                    disabled={isFetching}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5 mr-1.5" />
+                    {isFetching ? 'Cargando...' : `Mostrar más (${totalResults - solutions.length} restantes)`}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

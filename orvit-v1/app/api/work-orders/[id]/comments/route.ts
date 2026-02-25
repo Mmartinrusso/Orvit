@@ -122,6 +122,34 @@ export const POST = withGuards(async (request: NextRequest, { user, params: _p }
       },
     });
 
+    // @Mentions: notificar a usuarios mencionados (fire-and-forget)
+    const mentionMatches = content.match(/@([\w\s]+?)(?=\s|$|[^a-záéíóúüñ\s])/gi);
+    if (mentionMatches && mentionMatches.length > 0) {
+      const mentionedNames = [...new Set(mentionMatches.map(m => m.slice(1).trim()))];
+      prisma.user.findMany({
+        where: {
+          name: { in: mentionedNames, mode: 'insensitive' },
+          companies: { some: { companyId: workOrder.companyId } },
+          id: { not: Number(authorId) },
+        },
+        select: { id: true },
+      }).then(mentionedUsers =>
+        Promise.all(mentionedUsers.map(u =>
+          prisma.notification.create({
+            data: {
+              type: 'task_commented',
+              title: 'Te mencionaron en un comentario',
+              message: `${author.name} te mencionó en la OT #${id}: "${content.slice(0, 100)}${content.length > 100 ? '…' : ''}"`,
+              userId: u.id,
+              companyId: workOrder.companyId,
+              priority: 'MEDIUM',
+              metadata: { workOrderId: Number(id), commentId: newComment.id, authorId: Number(authorId) },
+            }
+          })
+        ))
+      ).catch(() => {});
+    }
+
     // Formatear respuesta para el frontend
     const formattedComment = {
       id: newComment.id,

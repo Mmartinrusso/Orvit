@@ -97,7 +97,7 @@ export async function GET(
     // Verificar que la OT existe
     const workOrder = await prisma.workOrder.findFirst({
       where: { id: workOrderId, companyId },
-      select: { id: true, title: true, status: true }
+      select: { id: true, title: true, status: true, machineId: true }
     });
 
     if (!workOrder) {
@@ -159,7 +159,7 @@ export async function GET(
         companyId,
         isActive: true,
         OR: [
-          { machineId: workOrder.id }, // TODO: Debería ser machineId de la OT
+          { machineId: workOrder.machineId },
           { componentId: null, machineId: null } // Plantillas genéricas
         ]
       },

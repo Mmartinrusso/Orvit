@@ -120,6 +120,16 @@ export async function GET(
               unit_measure: true,
             }
           },
+          tool: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              itemType: true,
+              stockQuantity: true,
+              minStockLevel: true,
+            }
+          },
           priceHistory: {
             where: isStandardMode ? {
               OR: [
@@ -319,7 +329,7 @@ export async function POST(
     const { id } = await params;
     const proveedorId = parseInt(id);
     const body = await request.json();
-    const { nombre, descripcion, unidad, precioUnitario, supplyId, codigoProveedor } = body;
+    const { nombre, descripcion, unidad, precioUnitario, supplyId, codigoProveedor, toolId } = body;
 
     if (!nombre || !nombre.trim()) {
       return NextResponse.json(
@@ -370,6 +380,16 @@ export async function POST(
       resolvedSupplyId = newSupply.id;
     }
 
+    // Validar toolId si viene
+    if (toolId) {
+      const tool = await prisma.tool.findFirst({
+        where: { id: parseInt(toolId), companyId },
+      });
+      if (!tool) {
+        return NextResponse.json({ error: 'Tool del pañol no encontrado' }, { status: 404 });
+      }
+    }
+
     // Verificar que no existe ya este item para este proveedor (mismo supply)
     const itemExistente = await prisma.supplierItem.findFirst({
       where: {
@@ -406,6 +426,7 @@ export async function POST(
         codigoProveedor: codigoProveedor?.trim() || null,
         unidad: unidadFinal,
         precioUnitario: precioUnitario ? parseFloat(precioUnitario) : null,
+        toolId: toolId ? parseInt(toolId) : null,
         activo: true,
         companyId: companyId,
       },
@@ -416,7 +437,15 @@ export async function POST(
             name: true,
             unit_measure: true,
           }
-        }
+        },
+        tool: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            itemType: true,
+          }
+        },
       },
     });
 

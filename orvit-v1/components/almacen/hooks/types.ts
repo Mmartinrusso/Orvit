@@ -103,6 +103,23 @@ export interface MovimientosFilters extends BaseFilters {
   fechaHasta?: string;
 }
 
+// Filtros específicos para transferencias
+export interface TransferenciasFilters extends BaseFilters {
+  estado?: string;
+  warehouseOrigenId?: number;
+  warehouseDestinoId?: number;
+  fechaDesde?: string;
+  fechaHasta?: string;
+}
+
+// Filtros específicos para ajustes
+export interface AjustesFilters extends BaseFilters {
+  estado?: string;
+  tipo?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+}
+
 // Para acciones batch
 export interface BatchActionParams {
   ids: number[];

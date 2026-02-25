@@ -1,40 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-// Helper para obtener el usuario actual con su empresa
-async function getCurrentUser() {
-  try {
-    const token = cookies().get('token')?.value;
-    if (!token) {
-      throw new Error('No hay token de autenticación');
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    
-    // Obtener usuario con su empresa
-    const userWithCompany = await prisma.$queryRaw`
-      SELECT u.*, uc."companyId" 
-      FROM "User" u 
-      INNER JOIN "UserOnCompany" uc ON u.id = uc."userId" 
-      WHERE u.id = ${payload.userId as number} 
-      LIMIT 1
-    ` as any[];
-
-    if (userWithCompany.length === 0) {
-      throw new Error('Usuario no encontrado');
-    }
-    
-    return userWithCompany[0];
-  } catch (error) {
-    console.error('Error obteniendo usuario:', error);
-    return null;
-  }
-}
+import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // PUT /api/failures/[id]/solution - Actualizar solo la solución de una falla
 export async function PUT(
@@ -42,12 +9,16 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+    // 1. Autenticación con verifyToken (reemplaza raw SQL)
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
     const failureId = params.id;
@@ -70,7 +41,7 @@ export async function PUT(
 
     console.log(`📝 PUT /api/failures/${failureId}/solution - Actualizando solución`);
 
-    // Verificar que la falla existe
+    // 2. Verificar que la falla existe
     const existingFailure = await prisma.workOrder.findUnique({
       where: { id: parseInt(failureId) },
       include: { attachments: true }
@@ -83,7 +54,20 @@ export async function PUT(
       );
     }
 
-    // Obtener datos adicionales existentes
+    // 3. Company boundary check
+    if (payload.companyId && existingFailure.companyId !== payload.companyId) {
+      const userCompany = await prisma.companyUser.findFirst({
+        where: { userId: payload.userId as number, companyId: existingFailure.companyId }
+      });
+      if (!userCompany) {
+        return NextResponse.json(
+          { error: 'No autorizado para esta empresa' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 4. Obtener datos adicionales existentes
     let additionalData = {};
     try {
       if (existingFailure.notes) {
@@ -94,7 +78,7 @@ export async function PUT(
       additionalData = {};
     }
 
-    // Actualizar solo los campos de solución
+    // 5. Actualizar solo los campos de solución
     const updatedAdditionalData = {
       ...additionalData,
       solution: solution || '',
@@ -103,9 +87,8 @@ export async function PUT(
       actualHours: actualHours || null
     };
 
-    // ✅ OPTIMIZADO: Usar transacción para atomicidad de update + attachments
+    // 6. Usar transacción para atomicidad de update + attachments
     const updatedFailure = await prisma.$transaction(async (tx) => {
-      // Actualizar la falla con la solución
       const updated = await tx.workOrder.update({
         where: { id: parseInt(failureId) },
         data: {
@@ -139,7 +122,6 @@ export async function PUT(
 
       // Actualizar adjuntos de solución si se proporcionaron nuevos
       if (solutionAttachments && solutionAttachments.length > 0) {
-        // Eliminar adjuntos de solución existentes
         await tx.workOrderAttachment.deleteMany({
           where: {
             workOrderId: parseInt(failureId),
@@ -147,7 +129,6 @@ export async function PUT(
           }
         });
 
-        // Crear nuevos adjuntos de solución
         await tx.workOrderAttachment.createMany({
           data: solutionAttachments.map((attachment: any) => ({
             workOrderId: parseInt(failureId),

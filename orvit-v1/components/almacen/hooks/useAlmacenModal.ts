@@ -9,6 +9,8 @@ export type AlmacenModalType =
   | 'despacho'
   | 'devolucion'
   | 'reserva'
+  | 'transferencia'
+  | 'ajuste'
   | 'item'
   | null;
 
@@ -23,7 +25,9 @@ export type AlmacenTab =
   | 'devoluciones'
   | 'inventario'
   | 'kardex'
-  | 'reservas';
+  | 'reservas'
+  | 'transferencias'
+  | 'ajustes';
 
 interface UseAlmacenModalReturn {
   // Estado actual
@@ -55,6 +59,12 @@ interface UseAlmacenModalReturn {
 
   isNewReserva: boolean;
   isViewReserva: boolean;
+
+  isNewTransferencia: boolean;
+  isViewTransferencia: boolean;
+
+  isNewAjuste: boolean;
+  isViewAjuste: boolean;
 
   isViewItem: boolean;
 
@@ -166,6 +176,14 @@ export function useAlmacenModal(): UseAlmacenModalReturn {
       // Reservas
       isNewReserva: modal === 'reserva' && mode === 'new',
       isViewReserva: modal === 'reserva' && mode === 'view' && id !== null,
+
+      // Transferencias
+      isNewTransferencia: modal === 'transferencia' && mode === 'new',
+      isViewTransferencia: modal === 'transferencia' && mode === 'view' && id !== null,
+
+      // Ajustes
+      isNewAjuste: modal === 'ajuste' && mode === 'new',
+      isViewAjuste: modal === 'ajuste' && mode === 'view' && id !== null,
 
       // Items
       isViewItem: modal === 'item' && id !== null,

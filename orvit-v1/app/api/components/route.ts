@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,8 +60,13 @@ async function getComponentBreadcrumb(componentId: number): Promise<string[]> {
   return path;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -89,6 +95,15 @@ export async function POST(request: Request) {
 
     if (!name || !machineId) {
       return NextResponse.json({ error: 'Faltan campos obligatorios: name, machineId' }, { status: 400 });
+    }
+
+    // Verificar que la máquina pertenece a la empresa del usuario
+    const machine = await prisma.machine.findUnique({
+      where: { id: Number(machineId) },
+      select: { id: true, companyId: true }
+    });
+    if (!machine || machine.companyId !== auth.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     if ((shouldCreateSpare || shouldLinkSpare) && !companyId) {
@@ -309,8 +324,14 @@ export async function POST(request: Request) {
 }
 
 // GET para listar todos los componentes
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await verifyAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   const components = await prisma.component.findMany({
+    where: { machine: { companyId: auth.companyId } },
     select: {
       id: true,
       name: true,

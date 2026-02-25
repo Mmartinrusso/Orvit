@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,52 +85,37 @@ interface TopMachine {
   ots: number;
 }
 
+async function fetchConsumptionData(from: string, to: string) {
+  const params = new URLSearchParams({ from, to });
+  const res = await fetch(`/api/panol/consumption?${params}`);
+  const data = await res.json();
+  if (!data.success) throw new Error('Error al cargar consumo');
+  return {
+    consumption: data.data.byWorkOrder || [] as WorkOrderConsumption[],
+    summary: data.data.summary || { totalConsumed: 0, totalCost: 0, uniqueTools: 0, uniqueOTs: 0 },
+    topTools: data.data.topTools || [] as TopItem[],
+    topMachines: data.data.topMachines || [] as TopMachine[],
+  };
+}
+
 export default function ConsumoPage() {
   const permissions = usePanolPermissions();
-
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState({
     from: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     to: format(new Date(), 'yyyy-MM-dd'),
   });
 
-  const [consumption, setConsumption] = useState<WorkOrderConsumption[]>([]);
-  const [summary, setSummary] = useState({
-    totalConsumed: 0,
-    totalCost: 0,
-    uniqueTools: 0,
-    uniqueOTs: 0,
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['panol-consumption', dateRange.from, dateRange.to],
+    queryFn: () => fetchConsumptionData(dateRange.from, dateRange.to),
+    staleTime: 1000 * 60 * 3,
   });
-  const [topTools, setTopTools] = useState<TopItem[]>([]);
-  const [topMachines, setTopMachines] = useState<TopMachine[]>([]);
 
-  const fetchConsumption = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set('from', dateRange.from);
-      params.set('to', dateRange.to);
-
-      const res = await fetch(`/api/panol/consumption?${params}`);
-      const data = await res.json();
-
-      if (data.success) {
-        setConsumption(data.data.byWorkOrder || []);
-        setSummary(data.data.summary || {});
-        setTopTools(data.data.topTools || []);
-        setTopMachines(data.data.topMachines || []);
-      }
-    } catch (error) {
-      toast.error('Error al cargar consumo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchConsumption();
-  }, [dateRange]);
+  const consumption = data?.consumption || [];
+  const summary = data?.summary || { totalConsumed: 0, totalCost: 0, uniqueTools: 0, uniqueOTs: 0 };
+  const topTools = data?.topTools || [];
+  const topMachines = data?.topMachines || [];
 
   const filteredConsumption = searchTerm
     ? consumption.filter(c =>

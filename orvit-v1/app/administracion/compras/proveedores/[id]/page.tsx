@@ -112,6 +112,7 @@ import { ProveedorModal } from '@/components/compras/proveedor-modal';
 import ProveedorCuentaCorriente from '@/components/compras/proveedor-cuenta-corriente';
 import { RecepcionDetalleModal } from '@/components/compras/recepcion-detalle-modal';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { ToolSearchCombobox } from '@/components/panol/ToolSearchCombobox';
 
 interface Proveedor {
   id: string;
@@ -308,7 +309,13 @@ export default function ProveedorDetailPage() {
     codigoProveedor: '',
     unidad: 'UN',
     precioUnitario: '',
+    toolId: null as number | null,
   });
+
+  // Estados para vincular SupplierItem ↔ Tool del Pañol
+  const [linkingItemId, setLinkingItemId] = useState<number | null>(null);
+  const [linkingToolId, setLinkingToolId] = useState<number | null>(null);
+  const [isLinking, setIsLinking] = useState(false);
 
   // Estados para Recepciones (Tab Recepciones)
   const [recepciones, setRecepciones] = useState<Array<{
@@ -411,13 +418,14 @@ export default function ProveedorDetailPage() {
           codigoProveedor: nuevoItemForm.codigoProveedor.trim() || null,
           unidad: nuevoItemForm.unidad || 'UN',
           precioUnitario: nuevoItemForm.precioUnitario ? parseFloat(nuevoItemForm.precioUnitario) : null,
+          toolId: nuevoItemForm.toolId || null,
         }),
       });
 
       if (response.ok) {
         toast.success('Item creado correctamente');
         setIsNuevoItemOpen(false);
-        setNuevoItemForm({ nombre: '', descripcion: '', codigoProveedor: '', unidad: 'UN', precioUnitario: '' });
+        setNuevoItemForm({ nombre: '', descripcion: '', codigoProveedor: '', unidad: 'UN', precioUnitario: '', toolId: null });
         // Recargar items
         loadItemsProveedor(params.id as string);
       } else {
@@ -429,6 +437,40 @@ export default function ProveedorDetailPage() {
       toast.error('Error al crear el item');
     } finally {
       setIsSubmittingItem(false);
+    }
+  };
+
+  // Vincular SupplierItem con Tool del Pañol
+  const handleLinkTool = async () => {
+    if (!linkingItemId) return;
+    setIsLinking(true);
+    try {
+      const item = itemsProveedor.find((i: any) => i.id === linkingItemId);
+      const response = await fetch(
+        `/api/compras/proveedores/${params.id}/items/${linkingItemId}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: item?.nombre,
+            unidad: item?.unidad,
+            toolId: linkingToolId,
+          }),
+        }
+      );
+      if (response.ok) {
+        toast.success(linkingToolId ? 'Item vinculado al pañol' : 'Vinculación removida');
+        loadItemsProveedor(params.id as string);
+        setLinkingItemId(null);
+        setLinkingToolId(null);
+      } else {
+        const err = await response.json();
+        toast.error(err.error || 'Error al vincular');
+      }
+    } catch {
+      toast.error('Error al vincular');
+    } finally {
+      setIsLinking(false);
     }
   };
 
@@ -2641,6 +2683,7 @@ export default function ProveedorDetailPage() {
                         <TableHead className="text-right">Precio Actual</TableHead>
                         <TableHead className="text-center">Variación</TableHead>
                         <TableHead>Última Compra</TableHead>
+                        <TableHead className="text-center">Pañol</TableHead>
                         <TableHead className="text-center">Compras</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -2714,6 +2757,36 @@ export default function ProveedorDetailPage() {
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {item.tool ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="secondary" className="text-xs gap-1 cursor-default">
+                                    <Link2 className="w-3 h-3" />
+                                    {item.tool.code || item.tool.name.substring(0, 12)}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">{item.tool.name}</p>
+                                  <p className="text-xs">Stock: {item.tool.stockQuantity} u.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs text-muted-foreground"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLinkingItemId(item.id);
+                                  setLinkingToolId(null);
+                                }}
+                              >
+                                <Link2 className="w-3 h-3 mr-1" />
+                                Vincular
+                              </Button>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
@@ -4663,6 +4736,19 @@ export default function ProveedorDetailPage() {
                 El precio se actualizará automáticamente con cada factura cargada
               </p>
             </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">
+                Vincular con Pañol (opcional)
+              </Label>
+              <ToolSearchCombobox
+                value={nuevoItemForm.toolId}
+                onSelect={(id) => setNuevoItemForm(prev => ({ ...prev, toolId: id }))}
+                placeholder="Buscar repuesto en pañol..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Si vinculas con un item del pañol, las recepciones actualizarán el stock automáticamente
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNuevoItemOpen(false)} disabled={isSubmittingItem}>
@@ -4670,6 +4756,48 @@ export default function ProveedorDetailPage() {
             </Button>
             <Button onClick={handleCrearItem} disabled={isSubmittingItem || !nuevoItemForm.nombre.trim()}>
               {isSubmittingItem ? 'Creando...' : 'Crear Item'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Vincular SupplierItem con Tool del Pañol */}
+      <Dialog open={linkingItemId !== null} onOpenChange={(open) => { if (!open) { setLinkingItemId(null); setLinkingToolId(null); } }}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-4 h-4" />
+              Vincular con Pañol
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona el item del pañol que corresponde a este producto del proveedor.
+              Las futuras recepciones actualizarán el stock del pañol automáticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {linkingItemId && (
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs text-muted-foreground">Item del proveedor:</p>
+                <p className="text-sm font-medium">
+                  {itemsProveedor.find((i: any) => i.id === linkingItemId)?.nombre || ''}
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Item del Pañol</Label>
+              <ToolSearchCombobox
+                value={linkingToolId}
+                onSelect={(id) => setLinkingToolId(id)}
+                placeholder="Buscar en pañol..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setLinkingItemId(null); setLinkingToolId(null); }} disabled={isLinking}>
+              Cancelar
+            </Button>
+            <Button onClick={handleLinkTool} disabled={isLinking || !linkingToolId}>
+              {isLinking ? 'Vinculando...' : 'Vincular'}
             </Button>
           </DialogFooter>
         </DialogContent>
