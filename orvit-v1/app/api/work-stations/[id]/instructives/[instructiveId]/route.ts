@@ -49,11 +49,11 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, description, fileUrl, fileName, fileType, fileSize, isActive } = body;
+    const { title, description, fileUrl, fileName, fileType, fileSize, isActive, scope, contentHtml, machineIds, componentIds } = body;
 
     if (!title) {
-      return NextResponse.json({ 
-        error: "Título del instructivo es requerido" 
+      return NextResponse.json({
+        error: "Título del instructivo es requerido"
       }, { status: 400 });
     }
 
@@ -65,8 +65,8 @@ export async function PUT(
     });
 
     if (!existingInstructive) {
-      return NextResponse.json({ 
-        error: "Instructivo no encontrado" 
+      return NextResponse.json({
+        error: "Instructivo no encontrado"
       }, { status: 404 });
     }
 
@@ -81,7 +81,11 @@ export async function PUT(
         fileName,
         fileType,
         fileSize: fileSize ? parseInt(fileSize) : null,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        scope: scope !== undefined ? scope : existingInstructive.scope,
+        contentHtml: contentHtml !== undefined ? contentHtml : existingInstructive.contentHtml,
+        machineIds: machineIds !== undefined ? JSON.stringify(machineIds) : existingInstructive.machineIds,
+        componentIds: componentIds !== undefined ? JSON.stringify(componentIds) : existingInstructive.componentIds,
       },
       include: {
         createdBy: {

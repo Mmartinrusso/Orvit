@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 // GET /api/work-stations/[id]/machines
 export async function GET(
@@ -7,6 +9,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const token = cookies().get('token')?.value;
+    if (!token || !(await verifyToken(token))) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const workStationId = parseInt(params.id);
     
     if (isNaN(workStationId)) {
@@ -46,6 +53,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const token = cookies().get('token')?.value;
+    if (!token || !(await verifyToken(token))) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const workStationId = parseInt(params.id);
     const body = await request.json();
     

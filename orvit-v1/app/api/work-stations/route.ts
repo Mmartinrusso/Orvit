@@ -252,7 +252,10 @@ function getOrderBy(sortBy?: string) {
     case 'name-desc':
       return [{ name: 'desc' as const }];
     case 'date':
+    case 'recent-desc':
       return [{ createdAt: 'desc' as const }];
+    // instructives-desc and machines-desc are sorted client-side after fetch
+    // since Prisma doesn't support ordering by relation count without raw SQL
     default:
       return [{ name: 'asc' as const }];
   }
