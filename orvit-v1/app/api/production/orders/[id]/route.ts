@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent, logOrderStatusChange } from '@/lib/production/event-logger';
 
@@ -36,10 +37,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.ORDENES.VIEW);
+    if (error) return error;
 
     const orderId = parseInt(params.id);
     if (isNaN(orderId)) {
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const order = await prisma.productionOrder.findFirst({
       where: {
         id: orderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         product: {
@@ -187,10 +186,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.ORDENES.EDIT);
+    if (error) return error;
 
     const orderId = parseInt(params.id);
     if (isNaN(orderId)) {
@@ -201,7 +198,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingOrder = await prisma.productionOrder.findFirst({
       where: {
         id: orderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -214,7 +211,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Detectar si es un cambio de estado
     if (body.status && Object.keys(body).length <= 2) {
       const statusData = StatusChangeSchema.parse(body);
-      return handleStatusChange(existingOrder, statusData, auth);
+      return handleStatusChange(existingOrder, statusData, { user: { id: user!.id }, companyId: user!.companyId });
     }
 
     // Actualización normal - solo permitida en DRAFT o RELEASED
@@ -272,9 +269,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       eventType: 'ORDER_UPDATED',
       previousValue: previousValues,
       newValue: validatedData,
-      performedById: auth.user.id,
+      performedById: user!.id,
       productionOrderId: order.id,
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     });
 
     return NextResponse.json({
@@ -377,10 +374,8 @@ async function handleStatusChange(
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.ORDENES.DELETE);
+    if (error) return error;
 
     const orderId = parseInt(params.id);
     if (isNaN(orderId)) {
@@ -391,7 +386,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingOrder = await prisma.productionOrder.findFirst({
       where: {
         id: orderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         _count: {

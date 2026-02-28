@@ -102,12 +102,21 @@ interface UserActivity {
 }
 
 export default function UsuariosPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasPermission } = useAuth();
   const { currentCompany } = useCompany();
   const { toast } = useToast();
-  
-  // Verificar permisos para acceder a esta página
+
+  // Verificar permisos granulares para esta página
   const { hasPermission: canManageUsers, isLoading: loadingPerms } = usePermissionRobust('gestionar_usuarios');
+
+  // Permisos granulares
+  const canViewUsers = hasPermission('users.view');
+  const canCreateUser = hasPermission('users.create');
+  const canEditUser = hasPermission('users.edit');
+  const canDeleteUser = hasPermission('users.delete');
+  const canEditRole = hasPermission('users.edit_role');
+  const canActivateDeactivate = hasPermission('users.activate_deactivate');
+  const canExportReports = hasPermission('reports.export');
   
   // Estados principales - TODOS LOS HOOKS DEBEN IR ANTES DE CUALQUIER RETURN
   const [users, setUsers] = useState<User[]>([]);
@@ -452,18 +461,15 @@ export default function UsuariosPage() {
   };
 
   const canEdit = (targetUserId: number) => {
-    // Solo necesita users.manage para todo
-    return canManageUsers;
+    return canEditUser || canManageUsers;
   };
 
   const canDelete = (targetUserId: number) => {
-    // Solo necesita users.manage para todo
-    return canManageUsers;
+    return canDeleteUser || canManageUsers;
   };
 
   const canManageBulk = () => {
-    // Solo necesita users.manage para todo
-    return canManageUsers;
+    return canActivateDeactivate || canEditRole || canDeleteUser || canManageUsers;
   };
 
   // Mostrar loading mientras se verifican los permisos
@@ -508,7 +514,7 @@ export default function UsuariosPage() {
   }
 
   return (
-    <PermissionGuard permission="ingresar_usuarios" showUnauthorized={true}>
+    <PermissionGuard permission="users.view" showUnauthorized={true}>
       <div className="w-full p-0">
         <Tabs defaultValue="users" className="space-y-0">
           {/* Header con tabs */}
@@ -521,11 +527,13 @@ export default function UsuariosPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportUsers}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar
-                </Button>
-                {canManageUsers && (
+                {(canExportReports || canManageUsers) && (
+                  <Button variant="outline" size="sm" onClick={exportUsers}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar
+                  </Button>
+                )}
+                {(canCreateUser || canManageUsers) && (
                   <Button size="sm" onClick={() => {
                     setSelectedUserId(null);
                     setIsEditDialogOpen(true);
@@ -651,7 +659,7 @@ export default function UsuariosPage() {
           </div>
 
           {/* Barra de acciones para usuarios seleccionados */}
-          {selectedUsers.length > 0 && (
+          {selectedUsers.length > 0 && canManageBulk() && (
             <Card className="border-primary/20 bg-background">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -659,49 +667,57 @@ export default function UsuariosPage() {
                     <span className="font-medium text-foreground">{selectedUsers.length} usuarios seleccionados</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setBulkActionDialog({ open: true, action: 'activate' })}
-                    >
-                      <UserCheck className="h-4 w-4 mr-2" />
-                      Activar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setBulkActionDialog({ open: true, action: 'deactivate' })}
-                    >
-                      <UserX className="h-4 w-4 mr-2" />
-                      Desactivar
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          <Settings className="h-4 w-4 mr-2" />
-                          Cambiar Rol
+                    {(canActivateDeactivate || canManageUsers) && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setBulkActionDialog({ open: true, action: 'activate' })}
+                        >
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Activar
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => setBulkActionDialog({ open: true, action: 'change_role', newRole: 'USER' })}>
-                          Usuario
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setBulkActionDialog({ open: true, action: 'change_role', newRole: 'SUPERVISOR' })}>
-                          Supervisor
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setBulkActionDialog({ open: true, action: 'change_role', newRole: 'ADMIN' })}>
-                          Administrador
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setBulkActionDialog({ open: true, action: 'delete' })}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Eliminar
-                    </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setBulkActionDialog({ open: true, action: 'deactivate' })}
+                        >
+                          <UserX className="h-4 w-4 mr-2" />
+                          Desactivar
+                        </Button>
+                      </>
+                    )}
+                    {(canEditRole || canManageUsers) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Cambiar Rol
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => setBulkActionDialog({ open: true, action: 'change_role', newRole: 'USER' })}>
+                            Usuario
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setBulkActionDialog({ open: true, action: 'change_role', newRole: 'SUPERVISOR' })}>
+                            Supervisor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setBulkActionDialog({ open: true, action: 'change_role', newRole: 'ADMIN' })}>
+                            Administrador
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    {(canDeleteUser || canManageUsers) && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setBulkActionDialog({ open: true, action: 'delete' })}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -831,8 +847,8 @@ export default function UsuariosPage() {
                                 Editar usuario
                               </DropdownMenuItem>
                             )}
-                            {canEdit(user.id) && canManageUsers && <DropdownMenuSeparator />}
-                            {canManageUsers && (
+                            {canEdit(user.id) && (canActivateDeactivate || canManageUsers) && <DropdownMenuSeparator />}
+                            {(canActivateDeactivate || canManageUsers) && (
                               <>
                                 <DropdownMenuItem
                                   onClick={(e) => {
@@ -901,7 +917,7 @@ export default function UsuariosPage() {
                               <p className="text-xs text-muted-foreground mb-3">
                                 No hay usuarios registrados en el sistema
                               </p>
-                              {canManageUsers && (
+                              {(canCreateUser || canManageUsers) && (
                                 <Button size="sm" onClick={() => {
                                   setSelectedUserId(null);
                                   setIsEditDialogOpen(true);

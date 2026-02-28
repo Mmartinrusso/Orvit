@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Table,
   TableBody,
@@ -56,6 +57,10 @@ interface CentroCosto {
 
 export default function CentrosCostoPage() {
   const confirm = useConfirm();
+  const { hasPermission } = useAuth();
+  const canCreateCentro = hasPermission('compras.centros_costo.create');
+  const canEditCentro = hasPermission('compras.centros_costo.edit');
+  const canDeleteCentro = hasPermission('compras.centros_costo.delete');
   const [searchTerm, setSearchTerm] = useState('');
   const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -180,10 +185,12 @@ export default function CentrosCostoPage() {
             Organiza las compras por centros de costo
           </p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Centro
-        </Button>
+        {canCreateCentro && (
+          <Button onClick={() => handleOpenModal()}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Centro
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -288,10 +295,12 @@ export default function CentrosCostoPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenModal(centro)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        {centro.isActive && (
+                        {canEditCentro && (
+                          <Button variant="ghost" size="sm" onClick={() => handleOpenModal(centro)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {centro.isActive && canDeleteCentro && (
                           <Button
                             variant="ghost"
                             size="sm"

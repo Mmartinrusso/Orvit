@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +110,10 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; icon: any }>
 export default function TransferenciasPage() {
   const { mode } = useViewMode();
   const prevModeRef = useRef(mode);
+  const { hasPermission } = useAuth();
+  const canCreateStock = hasPermission('compras.stock.transferencias');
+  const canEditStock = hasPermission('compras.stock.transferencias');
+  const canDeleteStock = hasPermission('compras.stock.transferencias');
 
   const [transferencias, setTransferencias] = useState<StockTransfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -304,10 +309,12 @@ export default function TransferenciasPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
-          <Button onClick={() => setShowFormModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Transferencia
-          </Button>
+          {canCreateStock && (
+            <Button onClick={() => setShowFormModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Transferencia
+            </Button>
+          )}
         </div>
       </div>
 
@@ -432,10 +439,12 @@ export default function TransferenciasPage() {
             <div className="text-center py-12">
               <Truck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay transferencias registradas</p>
-              <Button variant="outline" className="mt-4" onClick={() => setShowFormModal(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Crear primera transferencia
-              </Button>
+              {canCreateStock && (
+                <Button variant="outline" className="mt-4" onClick={() => setShowFormModal(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear primera transferencia
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -503,21 +512,27 @@ export default function TransferenciasPage() {
                                 </DropdownMenuItem>
                                 {transfer.estado === 'BORRADOR' && (
                                   <>
-                                    <DropdownMenuItem onClick={() => setSendingId(transfer.id)}>
-                                      <Send className="h-4 w-4 mr-2" />
-                                      Enviar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() => setDeletingId(transfer.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Eliminar
-                                    </DropdownMenuItem>
+                                    {canEditStock && (
+                                      <DropdownMenuItem onClick={() => setSendingId(transfer.id)}>
+                                        <Send className="h-4 w-4 mr-2" />
+                                        Enviar
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canDeleteStock && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-destructive"
+                                          onClick={() => setDeletingId(transfer.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Eliminar
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
                                   </>
                                 )}
-                                {transfer.estado === 'EN_TRANSITO' && (
+                                {transfer.estado === 'EN_TRANSITO' && canEditStock && (
                                   <DropdownMenuItem onClick={() => setReceivingId(transfer.id)}>
                                     <PackageCheck className="h-4 w-4 mr-2" />
                                     Recibir

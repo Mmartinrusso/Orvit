@@ -1,62 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-// ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-// Helper para obtener el usuario actual
-async function getCurrentUser() {
-  try {
-    const token = cookies().get('token')?.value;
-    if (!token) {
-      throw new Error('No hay token de autenticación');
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      include: {
-        companies: {
-          include: {
-            company: true
-          }
-        },
-        ownedCompanies: true
-      }
-    });
-
-    return user;
-  } catch (error) {
-    console.error('Error obteniendo usuario:', error);
-    return null;
-  }
-}
 
 // GET /api/tools/loans - Obtener préstamos activos
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.manage_loans');
+    if (error) return error;
+
+    // companyId always from JWT — ignore query param
+    const companyId = user!.companyId;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
     const status = searchParams.get('status') || 'BORROWED';
     const toolId = searchParams.get('toolId');
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID es requerido' },
-        { status: 400 }
-      );
-    }
-
     const whereConditions: any = {
       tool: {
-        companyId: parseInt(companyId)
+        companyId
       },
       status: status
     };
@@ -115,14 +78,17 @@ export async function GET(request: NextRequest) {
 // POST /api/tools/loans - Crear nuevo préstamo
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, error } = await requirePermission('tools.manage_loans');
+    if (error) return error;
+
     const body = await request.json();
-    const { 
-      toolId, 
+    const {
+      toolId,
       userId, // A quién se le presta (puede ser usuario o operario)
       borrowerType, // "USER" o "WORKER"
-      quantity, 
+      quantity,
       expectedReturnDate,
-      notes 
+      notes
     } = body;
 
     if (!toolId || !userId || !quantity || !borrowerType) {
@@ -132,14 +98,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar usuario actual (pañolero)
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return NextResponse.json(
-        { error: 'Usuario no autenticado' },
-        { status: 401 }
-      );
-    }
+    // authUser from requirePermission acts as currentUser
+    const currentUser = { id: authUser!.id, name: authUser!.name };
 
     // Verificar que la herramienta existe y tiene stock
     const tool = await prisma.tool.findUnique({

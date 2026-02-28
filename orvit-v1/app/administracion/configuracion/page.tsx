@@ -140,10 +140,16 @@ const CHANNEL_TYPES = [
 
 export default function ConfiguracionPage() {
   const confirm = useConfirm();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { currentCompany, updateCurrentCompany } = useCompany();
   const { toast } = useToast();
   const { canConfigureCompany, isLoading: permissionLoading } = useCompanySettingsPermission();
+
+  // Permisos granulares de configuracion
+  const canViewSettings = hasPermission('settings.view');
+  const canEditSettings = hasPermission('settings.edit');
+  const canSystemSettings = hasPermission('settings.system');
+  const canManageNotifications = hasPermission('notifications.manage');
   const { theme, setTheme } = useTheme();
   const { fontSize, setFontSize, resetFontSize, overrides, setOverride, resetAll, hasOverrides } = useFontSize();
   const searchParams = useSearchParams();
@@ -1006,13 +1012,13 @@ export default function ConfiguracionPage() {
             <User className="h-4 w-4 mr-2" />
             Mi Perfil
           </TabsTrigger>
-          {canConfigureCompany && (
+          {(canConfigureCompany || canEditSettings || canSystemSettings) && (
             <TabsTrigger value="company">
               <Building2 className="h-4 w-4 mr-2" />
               Empresa
             </TabsTrigger>
           )}
-          <TabsTrigger value="notifications">
+          <TabsTrigger value="notifications" disabled={!canManageNotifications && !canViewSettings && !canConfigureCompany}>
             <Bell className="h-4 w-4 mr-2" />
             Notificaciones
           </TabsTrigger>
@@ -1126,7 +1132,7 @@ export default function ConfiguracionPage() {
         </TabsContent>
 
         {/* ====== TAB: EMPRESA ====== */}
-        {canConfigureCompany && (
+        {(canConfigureCompany || canEditSettings || canSystemSettings) && (
           <TabsContent value="company" className="space-y-6 px-4 md:px-6 pb-6">
             {/* Sub-tabs dentro de Empresa */}
             <Tabs defaultValue="info" className="space-y-6">
@@ -1291,7 +1297,7 @@ export default function ConfiguracionPage() {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleSaveCompany} disabled={saveCompanyMutation.isPending}>
+                      <Button onClick={handleSaveCompany} disabled={saveCompanyMutation.isPending || (!canEditSettings && !canConfigureCompany)}>
                         {saveCompanyMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
@@ -1380,7 +1386,7 @@ export default function ConfiguracionPage() {
                     )}
 
                     <div className="flex justify-end pt-4">
-                      <Button onClick={handleSavePurchaseConfig} disabled={savePurchaseConfigMutation.isPending}>
+                      <Button onClick={handleSavePurchaseConfig} disabled={savePurchaseConfigMutation.isPending || (!canEditSettings && !canConfigureCompany)}>
                         {savePurchaseConfigMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
@@ -1661,7 +1667,7 @@ export default function ConfiguracionPage() {
                       </div>
 
                       <div className="flex justify-end pt-4">
-                        <Button onClick={handleSaveT2Config} disabled={saveT2ConfigMutation.isPending}>
+                        <Button onClick={handleSaveT2Config} disabled={saveT2ConfigMutation.isPending || (!canSystemSettings && !canConfigureCompany)}>
                           {saveT2ConfigMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           ) : (

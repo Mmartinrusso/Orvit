@@ -43,6 +43,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCompany } from '@/contexts/CompanyContext';
 import { DatePicker } from '@/components/ui/date-picker';
+import { useAuth } from '@/contexts/AuthContext';
 
 const editarSolicitudSchema = z.object({
   prioridad: z.enum(['baja', 'media', 'alta', 'urgente'], {
@@ -114,6 +115,8 @@ export default function EditarSolicitudPage() {
   const params = useParams();
   const router = useRouter();
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const canEditSolicitud = hasPermission('compras.solicitudes.edit');
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -348,7 +351,7 @@ export default function EditarSolicitudPage() {
           <Button variant="outline" onClick={() => router.push(`/administracion/compras/solicitudes/${solicitud.id}`)}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit(onSubmit)} disabled={saving}>
+          <Button onClick={handleSubmit(onSubmit)} disabled={saving || !canEditSolicitud}>
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

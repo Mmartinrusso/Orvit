@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getAssistantContext } from '@/lib/assistant/auth'
 import { processMessageStream } from '@/lib/assistant/engine'
 import { ConversationMessage } from '@/lib/assistant/types'
+import { requireAuth } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -16,6 +17,9 @@ export const runtime = 'nodejs'
  * Envía un mensaje al asistente y recibe una respuesta en streaming
  */
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth()
+  if (error) return error
+
   try {
     // 1. Verificar autenticación
     const context = await getAssistantContext()

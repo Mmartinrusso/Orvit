@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMachinesInitial } from '@/hooks/use-machines-initial';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +19,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 export default function MaquinasPage() {
   const confirm = useConfirm();
+  const { hasPermission } = useAuth();
   const router = useRouter();
   const { currentCompany, currentSector } = useCompany();
 
@@ -51,6 +54,8 @@ export default function MaquinasPage() {
   };
 
   const handleDeleteMachine = async (machine: Machine) => {
+    if (!hasPermission('machines.delete')) return;
+
     const ok = await confirm({
       title: 'Eliminar máquina',
       description: '¿Estás seguro de que quieres eliminar esta máquina?',
@@ -58,12 +63,12 @@ export default function MaquinasPage() {
       variant: 'destructive',
     });
     if (!ok) return;
-    
+
     try {
       const response = await fetch(`/api/maquinas/${machine.id}`, {
         method: 'DELETE'
       });
-      
+
       if (response.ok) {
         refetch(); // ✨ Usar refetch en lugar de setMachines
       }
@@ -73,6 +78,8 @@ export default function MaquinasPage() {
   };
 
   const handleCreateWorkOrder = async (machine: Machine) => {
+    if (!hasPermission('work_orders.create')) return;
+
     try {
       const response = await fetch('/api/work-orders', {
         method: 'POST',
@@ -104,31 +111,34 @@ export default function MaquinasPage() {
   }
 
   return (
-    <>
-      {/* Mobile navbar */}
-      <MobileMachineNavbar onAddMachine={() => setIsDialogOpen(true)} />
-      
-      <div className="min-h-screen md:sidebar-shell">
-        <div className="md:m-3 md:rounded-2xl md:h-[calc(100vh-24px)] md:surface-card md:dashboard-surface h-screen px-4 md:px-6 pt-2 md:py-6 pb-4 space-y-4 md:space-y-6">
-          {/* Header - Hidden on mobile since we have the mobile navbar */}
-          <div className="hidden md:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Máquinas</h1>
-              <p className="text-muted-foreground text-sm md:text-base">
-                Gestión de máquinas{currentSector ? ` en ${currentSector.name}` : ''}
-              </p>
+    <PermissionGuard permission="machines.view">
+      <>
+        {/* Mobile navbar */}
+        <MobileMachineNavbar onAddMachine={() => setIsDialogOpen(true)} />
+
+        <div className="min-h-screen md:sidebar-shell">
+          <div className="md:m-3 md:rounded-2xl md:h-[calc(100vh-24px)] md:surface-card md:dashboard-surface h-screen px-4 md:px-6 pt-2 md:py-6 pb-4 space-y-4 md:space-y-6">
+            {/* Header - Hidden on mobile since we have the mobile navbar */}
+            <div className="hidden md:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Máquinas</h1>
+                <p className="text-muted-foreground text-sm md:text-base">
+                  Gestión de máquinas{currentSector ? ` en ${currentSector.name}` : ''}
+                </p>
+              </div>
+
+              {hasPermission('machines.create') && (
+                <Button
+                  onClick={() => setIsDialogOpen(true)}
+                  className="sm:self-end w-full sm:w-auto"
+                  disabled={!currentSector}
+                  title={!currentSector ? 'Debe seleccionar un sector primero' : ''}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar máquina
+                </Button>
+              )}
             </div>
-          
-            <Button 
-              onClick={() => setIsDialogOpen(true)} 
-              className="sm:self-end w-full sm:w-auto"
-              disabled={!currentSector}
-              title={!currentSector ? 'Debe seleccionar un sector primero' : ''}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar máquina
-            </Button>
-          </div>
           
           {/* Filters - Mobile Optimized */}
           <div className="flex flex-col gap-3">
@@ -197,15 +207,16 @@ export default function MaquinasPage() {
         </div>
       </div>
 
-      {/* Dialogs */}
-      <MachineDialog 
-        isOpen={isDialogOpen} 
-        onClose={() => setIsDialogOpen(false)}
-        onSave={() => {
-          setIsDialogOpen(false);
-          refetch(); // ✨ Usar refetch del hook
-        }}
-      />
-    </>
+        {/* Dialogs */}
+        <MachineDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onSave={() => {
+            setIsDialogOpen(false);
+            refetch(); // ✨ Usar refetch del hook
+          }}
+        />
+      </>
+    </PermissionGuard>
   );
 } 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,18 +12,17 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
+    const { user, error } = await requirePermission('moc.view')
+    if (error) return error
+    const companyId = user!.companyId
+
     const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get('companyId')
     const status = searchParams.get('status')
     const machineId = searchParams.get('machineId')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId is required' }, { status: 400 })
-    }
-
-    const where: any = { companyId: parseInt(companyId) }
+    const where: any = { companyId }
 
     if (status && status !== 'all') {
       where.status = status
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     // Calculate summary
     const statusCounts = await prisma.managementOfChange.groupBy({
       by: ['status'],
-      where: { companyId: parseInt(companyId) },
+      where: { companyId },
       _count: { id: true }
     })
 
@@ -91,20 +91,12 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
-
-    const payload = await verifyToken(token)
-    if (!payload?.userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-    }
+    const { user, error } = await requirePermission('moc.create')
+    if (error) return error
+    const companyId = user!.companyId
 
     const body = await request.json()
     const {
-      companyId,
       title,
       description,
       changeType,
@@ -124,7 +116,7 @@ export async function POST(request: Request) {
       requiresTraining
     } = body
 
-    if (!companyId || !title || !description || !changeType) {
+    if (!title || !description || !changeType) {
       return NextResponse.json(
         { error: 'companyId, title, description, and changeType are required' },
         { status: 400 }
@@ -160,7 +152,7 @@ export async function POST(request: Request) {
         componentId,
         areaId,
         sectorId,
-        requestedById: payload.userId,
+        requestedById: user!.id,
         plannedStartDate: plannedStartDate ? new Date(plannedStartDate) : null,
         plannedEndDate: plannedEndDate ? new Date(plannedEndDate) : null,
         isTemporary: isTemporary || false,
@@ -178,7 +170,7 @@ export async function POST(request: Request) {
       data: {
         mocId: moc.id,
         toStatus: 'DRAFT',
-        changedById: payload.userId,
+        changedById: user!.id,
         notes: 'MOC creado'
       }
     })

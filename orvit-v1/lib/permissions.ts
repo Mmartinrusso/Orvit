@@ -65,6 +65,8 @@ export type Permission =
   | 'panol.create_product'
   | 'panol.edit_product'
   | 'panol.register_movement'
+  | 'panol.view_costs'
+  | 'panol.delete_product'
 
   // Permisos de Reportes
   | 'reports.view'
@@ -105,15 +107,35 @@ export type Permission =
   | 'ingresar_maquinas_mantenimiento'
   | 'ingresar_panol'
   | 'ingresar_historial_mantenimiento'
+  | 'mantenimientos'
+  | 'maquinas_mantenimiento'
+  | 'ordenes_de_trabajo'
+  | 'puestos_trabajo'
+  | 'reportes_mantenimiento'
+  | 'unidades_moviles'
 
   // Permisos de Navegación - Administración
   | 'ingresar_dashboard_administracion'
-  | 'ingresar_tareas'
   | 'ingresar_permisos'
+  | 'ingresar_permisos_roles'
   | 'ingresar_usuarios'
   | 'ingresar_reportes'
   | 'ingresar_configuracion'
   | 'ingresar_controles'
+  | 'ingresar_clientes'
+  | 'ingresar_costos'
+  | 'ingresar_cotizaciones'
+  | 'ingresar_dashboard_ventas'
+  | 'ingresar_personal'
+  | 'ingresar_productos'
+  | 'ingresar_ventas'
+  | 'ingresar_ventas_modulo'
+  | 'ingresar_compras'
+  | 'ingresar_tesoreria'
+  | 'ingresar_nominas'
+  | 'ingresar_auditoria'
+  | 'ingresar_automatizaciones'
+  | 'ingresar_costos_modulo'
   
   // Permisos de Controles
   | 'controles.manage'
@@ -123,6 +145,8 @@ export type Permission =
   | 'ingresar_dashboard_produccion'
   | 'ingresar_maquinas_produccion'
   | 'ingresar_vehiculos'
+  | 'maquinas_produccion'
+  | 'vehiculos_produccion'
 
   // Permisos de Sectores
   | 'sectors.edit'
@@ -136,14 +160,14 @@ export type Permission =
 
   // Permisos de Ventas (Legacy - mantener para compatibilidad)
   | 'VIEW_SALES_DASHBOARD'
-  | 'VIEW_CLIENTS'
-  | 'CREATE_CLIENT'
-  | 'EDIT_CLIENT'
-  | 'DELETE_CLIENT'
-  | 'VIEW_PRODUCTS'
-  | 'CREATE_PRODUCT'
-  | 'EDIT_PRODUCT'
-  | 'DELETE_PRODUCT'
+  | 'ventas.clientes.view'
+  | 'ventas.clientes.create'
+  | 'ventas.clientes.edit'
+  | 'ventas.clientes.delete'
+  | 'ventas.productos.view'
+  | 'ventas.productos.create'
+  | 'ventas.productos.edit'
+  | 'ventas.productos.delete'
   | 'VIEW_QUOTES'
   | 'CREATE_QUOTE'
   | 'EDIT_QUOTE'
@@ -157,6 +181,20 @@ export type Permission =
   | 'CANCEL_SALE'
   | 'VIEW_SALES_REPORTS'
   | 'EXPORT_SALES_DATA'
+
+  // Permisos de Ventas - Clientes
+  | 'ventas.clientes.view'              // Ver clientes de ventas
+
+  // Permisos de Ventas - Vendedores
+  | 'ventas.vendedores.resumen'         // Ver resumen de vendedores
+
+  // Permisos de Ventas - Liquidaciones
+  | 'ventas.liquidaciones.view'         // Ver liquidaciones
+  | 'ventas.liquidaciones.create'       // Crear liquidaciones
+  | 'ventas.liquidaciones.edit'         // Editar liquidaciones
+  | 'ventas.liquidaciones.delete'       // Eliminar liquidaciones
+  | 'ventas.liquidaciones.confirm'      // Confirmar liquidaciones
+  | 'ventas.liquidaciones.pay'          // Pagar liquidaciones
 
   // Permisos de Ventas Premium v2 - Navegación
   | 'ventas.ingresar'                    // Acceso al módulo de ventas
@@ -319,6 +357,66 @@ export type Permission =
   | 'compras.cotizaciones.seleccionar'  // Seleccionar cotización ganadora
   | 'compras.cotizaciones.convertir_oc' // Crear OC desde cotización
 
+  // Permisos de Comprobantes de Compra (Purchase Receipts/Invoices)
+  | 'compras.comprobantes.view'         // Ver comprobantes
+  | 'compras.comprobantes.create'       // Crear comprobantes
+  | 'compras.comprobantes.edit'         // Editar comprobantes
+  | 'compras.comprobantes.delete'       // Eliminar comprobantes
+  | 'compras.comprobantes.approve'      // Aprobar comprobantes
+  | 'compras.comprobantes.reject'       // Rechazar comprobantes
+  | 'compras.comprobantes.anular'       // Anular comprobantes
+
+  // Permisos de Proveedores (Suppliers)
+  | 'compras.proveedores.view'          // Ver proveedores
+  | 'compras.proveedores.create'        // Crear proveedores
+  | 'compras.proveedores.edit'          // Editar proveedores
+  | 'compras.proveedores.delete'        // Eliminar proveedores
+
+  // Permisos de Solicitudes de Compra (Purchase Requests)
+  | 'compras.solicitudes.view'          // Ver solicitudes
+  | 'compras.solicitudes.create'        // Crear solicitudes
+  | 'compras.solicitudes.edit'          // Editar solicitudes
+  | 'compras.solicitudes.delete'        // Eliminar solicitudes
+  | 'compras.solicitudes.approve'       // Aprobar solicitudes
+  | 'compras.solicitudes.reject'        // Rechazar solicitudes
+
+  // Permisos de Órdenes de Compra (Purchase Orders)
+  | 'compras.ordenes.view'              // Ver órdenes de compra
+  | 'compras.ordenes.create'            // Crear órdenes de compra
+  | 'compras.ordenes.edit'              // Editar órdenes de compra
+  | 'compras.ordenes.delete'            // Eliminar órdenes de compra
+  | 'compras.ordenes.approve'           // Aprobar órdenes de compra
+  | 'compras.ordenes.cancel'            // Cancelar órdenes de compra
+
+  // Permisos de Stock / Inventario
+  | 'compras.stock.view'                // Ver inventario
+  | 'compras.stock.ajustes'             // Crear ajustes de stock
+  | 'compras.stock.transferencias'      // Crear transferencias de stock
+
+  // Permisos de Notas de Crédito/Débito
+  | 'compras.notas.view'                // Ver notas de crédito/débito
+  | 'compras.notas.create'              // Crear notas de crédito/débito
+  | 'compras.notas.edit'                // Editar notas de crédito/débito
+  | 'compras.notas.delete'              // Eliminar notas de crédito/débito
+
+  // Permisos de Devoluciones
+  | 'compras.devoluciones.view'         // Ver devoluciones
+  | 'compras.devoluciones.create'       // Crear devoluciones
+  | 'compras.devoluciones.edit'         // Editar devoluciones
+  | 'compras.devoluciones.delete'       // Eliminar devoluciones
+
+  // Permisos de Centros de Costo
+  | 'compras.centros_costo.view'        // Ver centros de costo
+  | 'compras.centros_costo.create'      // Crear centros de costo
+  | 'compras.centros_costo.edit'        // Editar centros de costo
+  | 'compras.centros_costo.delete'      // Eliminar centros de costo
+
+  // Permisos de Depósitos
+  | 'compras.depositos.view'            // Ver depósitos
+  | 'compras.depositos.create'          // Crear depósitos
+  | 'compras.depositos.edit'            // Editar depósitos
+  | 'compras.depositos.delete'          // Eliminar depósitos
+
   // Permisos de PTW (Permit to Work)
   | 'ptw.view'                          // Ver permisos de trabajo
   | 'ptw.create'                        // Crear permisos de trabajo
@@ -469,7 +567,45 @@ export type Permission =
 
   // Permisos de Reportes de Producción
   | 'produccion.reportes.view'           // Ver reportes de producción
-  | 'produccion.reportes.export';        // Exportar reportes de producción
+  | 'produccion.reportes.export'         // Exportar reportes de producción
+
+  // Permisos de Almacén - Acceso base
+  | 'ingresar_almacen'                   // Acceso al módulo de almacén
+  | 'almacen.view'                       // Ver módulo almacén
+  | 'almacen.view_dashboard'             // Ver dashboard de almacén
+  | 'almacen.view_inventory'             // Ver inventario unificado
+  | 'almacen.view_costs'                 // Ver costos en almacén
+  // Almacén - Solicitudes
+  | 'almacen.request.view'              // Ver solicitudes de material
+  | 'almacen.request.view_all'          // Ver todas las solicitudes
+  | 'almacen.request.create'            // Crear solicitudes de material
+  | 'almacen.request.edit'              // Editar solicitudes propias
+  | 'almacen.request.approve'           // Aprobar solicitudes
+  | 'almacen.request.reject'            // Rechazar solicitudes
+  | 'almacen.request.cancel'            // Cancelar solicitudes
+  // Almacén - Despachos
+  | 'almacen.dispatch.view'             // Ver despachos
+  | 'almacen.dispatch.create'           // Crear despachos
+  | 'almacen.dispatch.process'          // Procesar despachos
+  | 'almacen.dispatch.confirm'          // Confirmar entrega
+  | 'almacen.dispatch.receive'          // Confirmar recepción
+  | 'almacen.dispatch.cancel'           // Cancelar despachos
+  // Almacén - Devoluciones
+  | 'almacen.return.view'               // Ver devoluciones
+  | 'almacen.return.create'             // Crear devoluciones
+  | 'almacen.return.process'            // Procesar devoluciones
+  // Almacén - Reservas
+  | 'almacen.reservation.view'          // Ver reservas de material
+  | 'almacen.reservation.create'        // Crear reservas manuales
+  | 'almacen.reservation.release'       // Liberar reservas
+  // Almacén - Operaciones
+  | 'almacen.transfer'                  // Transferir stock entre depósitos
+  | 'almacen.adjust'                    // Ajustar inventario
+  | 'almacen.cycle_count'               // Realizar conteo cíclico
+  // Almacén - Administración
+  | 'almacen.manage_warehouses'         // Administrar depósitos
+  | 'almacen.manage_locations'          // Administrar ubicaciones
+  | 'almacen.manage_all';              // Superadmin almacén
 
 export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'ADMIN_ENTERPRISE' | 'SUPERVISOR' | 'USER';
 
@@ -534,6 +670,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'panol.create_product',
     'panol.edit_product',
     'panol.register_movement',
+    'panol.view_costs',
+    'panol.delete_product',
     'reports.view',
     'reports.export',
     'reports.advanced',
@@ -561,19 +699,43 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ingresar_mantenimiento',
     'ingresar_produccion',
     'ingresar_controles',
+    // Permisos de navegación legacy (sidebar)
+    'mantenimientos',
+    'maquinas_mantenimiento',
+    'maquinas_produccion',
+    'ordenes_de_trabajo',
+    'puestos_trabajo',
+    'reportes_mantenimiento',
+    'unidades_moviles',
+    'vehiculos_produccion',
+    'ingresar_clientes',
+    'ingresar_costos',
+    'ingresar_cotizaciones',
+    'ingresar_dashboard_ventas',
+    'ingresar_permisos_roles',
+    'ingresar_personal',
+    'ingresar_productos',
+    'ingresar_ventas',
+    'ingresar_ventas_modulo',
+    'ingresar_compras',
+    'ingresar_tesoreria',
+    'ingresar_nominas',
+    'ingresar_auditoria',
+    'ingresar_automatizaciones',
+    'ingresar_costos_modulo',
     // Permisos de controles
     'controles.manage',
     'controles.create_records',
-    // Permisos de ventas (Legacy)
+    // Permisos de ventas (migrado a dotted format)
     'VIEW_SALES_DASHBOARD',
-    'VIEW_CLIENTS',
-    'CREATE_CLIENT',
-    'EDIT_CLIENT',
-    'DELETE_CLIENT',
-    'VIEW_PRODUCTS',
-    'CREATE_PRODUCT',
-    'EDIT_PRODUCT',
-    'DELETE_PRODUCT',
+    'ventas.clientes.view',
+    'ventas.clientes.create',
+    'ventas.clientes.edit',
+    'ventas.clientes.delete',
+    'ventas.productos.view',
+    'ventas.productos.create',
+    'ventas.productos.edit',
+    'ventas.productos.delete',
     'VIEW_QUOTES',
     'CREATE_QUOTE',
     'EDIT_QUOTE',
@@ -590,6 +752,17 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Permisos de Ventas Premium v2 - SUPERADMIN tiene TODOS
     'ventas.ingresar',
     'ventas.dashboard.view',
+    // Clientes
+    'ventas.clientes.view',
+    // Vendedores
+    'ventas.vendedores.resumen',
+    // Liquidaciones
+    'ventas.liquidaciones.view',
+    'ventas.liquidaciones.create',
+    'ventas.liquidaciones.edit',
+    'ventas.liquidaciones.delete',
+    'ventas.liquidaciones.confirm',
+    'ventas.liquidaciones.pay',
     // Cotizaciones
     'ventas.cotizaciones.view',
     'ventas.cotizaciones.create',
@@ -724,6 +897,57 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'compras.cotizaciones.delete',
     'compras.cotizaciones.seleccionar',
     'compras.cotizaciones.convertir_oc',
+    // Permisos de Comprobantes de Compra - SUPERADMIN tiene todos
+    'compras.comprobantes.view',
+    'compras.comprobantes.create',
+    'compras.comprobantes.edit',
+    'compras.comprobantes.delete',
+    'compras.comprobantes.approve',
+    'compras.comprobantes.reject',
+    'compras.comprobantes.anular',
+    // Permisos de Proveedores - SUPERADMIN tiene todos
+    'compras.proveedores.view',
+    'compras.proveedores.create',
+    'compras.proveedores.edit',
+    'compras.proveedores.delete',
+    // Permisos de Solicitudes de Compra - SUPERADMIN tiene todos
+    'compras.solicitudes.view',
+    'compras.solicitudes.create',
+    'compras.solicitudes.edit',
+    'compras.solicitudes.delete',
+    'compras.solicitudes.approve',
+    'compras.solicitudes.reject',
+    // Permisos de Órdenes de Compra - SUPERADMIN tiene todos
+    'compras.ordenes.view',
+    'compras.ordenes.create',
+    'compras.ordenes.edit',
+    'compras.ordenes.delete',
+    'compras.ordenes.approve',
+    'compras.ordenes.cancel',
+    // Permisos de Stock - SUPERADMIN tiene todos
+    'compras.stock.view',
+    'compras.stock.ajustes',
+    'compras.stock.transferencias',
+    // Permisos de Notas Cr/Db - SUPERADMIN tiene todos
+    'compras.notas.view',
+    'compras.notas.create',
+    'compras.notas.edit',
+    'compras.notas.delete',
+    // Permisos de Devoluciones - SUPERADMIN tiene todos
+    'compras.devoluciones.view',
+    'compras.devoluciones.create',
+    'compras.devoluciones.edit',
+    'compras.devoluciones.delete',
+    // Permisos de Centros de Costo - SUPERADMIN tiene todos
+    'compras.centros_costo.view',
+    'compras.centros_costo.create',
+    'compras.centros_costo.edit',
+    'compras.centros_costo.delete',
+    // Permisos de Depósitos - SUPERADMIN tiene todos
+    'compras.depositos.view',
+    'compras.depositos.create',
+    'compras.depositos.edit',
+    'compras.depositos.delete',
     // Permisos de PTW - SUPERADMIN tiene todos
     'ptw.view',
     'ptw.create',
@@ -857,7 +1081,38 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'produccion.config.shifts',
     'produccion.config.routines',
     'produccion.reportes.view',
-    'produccion.reportes.export'
+    'produccion.reportes.export',
+    // Almacén
+    'ingresar_almacen',
+    'almacen.view',
+    'almacen.view_dashboard',
+    'almacen.view_inventory',
+    'almacen.view_costs',
+    'almacen.request.view',
+    'almacen.request.view_all',
+    'almacen.request.create',
+    'almacen.request.edit',
+    'almacen.request.approve',
+    'almacen.request.reject',
+    'almacen.request.cancel',
+    'almacen.dispatch.view',
+    'almacen.dispatch.create',
+    'almacen.dispatch.process',
+    'almacen.dispatch.confirm',
+    'almacen.dispatch.receive',
+    'almacen.dispatch.cancel',
+    'almacen.return.view',
+    'almacen.return.create',
+    'almacen.return.process',
+    'almacen.reservation.view',
+    'almacen.reservation.create',
+    'almacen.reservation.release',
+    'almacen.transfer',
+    'almacen.adjust',
+    'almacen.cycle_count',
+    'almacen.manage_warehouses',
+    'almacen.manage_locations',
+    'almacen.manage_all'
   ],
 
   ADMIN: [
@@ -911,6 +1166,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'panol.create_product',
     'panol.edit_product',
     'panol.register_movement',
+    'panol.view_costs',
+    'panol.delete_product',
     'reports.view',
     'reports.export',
     'reports.advanced',
@@ -935,17 +1192,41 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ingresar_mantenimiento',
     'ingresar_produccion',
     'ingresar_controles',
+    // Permisos de navegación legacy (sidebar)
+    'mantenimientos',
+    'maquinas_mantenimiento',
+    'maquinas_produccion',
+    'ordenes_de_trabajo',
+    'puestos_trabajo',
+    'reportes_mantenimiento',
+    'unidades_moviles',
+    'vehiculos_produccion',
+    'ingresar_clientes',
+    'ingresar_costos',
+    'ingresar_cotizaciones',
+    'ingresar_dashboard_ventas',
+    'ingresar_permisos_roles',
+    'ingresar_personal',
+    'ingresar_productos',
+    'ingresar_ventas',
+    'ingresar_ventas_modulo',
+    'ingresar_compras',
+    'ingresar_tesoreria',
+    'ingresar_nominas',
+    'ingresar_auditoria',
+    'ingresar_automatizaciones',
+    'ingresar_costos_modulo',
     // Permisos de controles
     'controles.manage',
     'controles.create_records',
-    // Permisos de ventas (Legacy - excepto DELETE)
+    // Permisos de ventas (migrado a dotted format - excepto DELETE)
     'VIEW_SALES_DASHBOARD',
-    'VIEW_CLIENTS',
-    'CREATE_CLIENT',
-    'EDIT_CLIENT',
-    'VIEW_PRODUCTS',
-    'CREATE_PRODUCT',
-    'EDIT_PRODUCT',
+    'ventas.clientes.view',
+    'ventas.clientes.create',
+    'ventas.clientes.edit',
+    'ventas.productos.view',
+    'ventas.productos.create',
+    'ventas.productos.edit',
     'VIEW_QUOTES',
     'CREATE_QUOTE',
     'EDIT_QUOTE',
@@ -959,6 +1240,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Permisos de Ventas Premium v2 - ADMIN (sin DELETE, sin unlimited)
     'ventas.ingresar',
     'ventas.dashboard.view',
+    // Clientes
+    'ventas.clientes.view',
+    // Vendedores
+    'ventas.vendedores.resumen',
+    // Liquidaciones
+    'ventas.liquidaciones.view',
+    'ventas.liquidaciones.create',
     // Cotizaciones (sin delete)
     'ventas.cotizaciones.view',
     'ventas.cotizaciones.create',
@@ -1076,6 +1364,49 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'compras.cotizaciones.edit',
     'compras.cotizaciones.seleccionar',
     'compras.cotizaciones.convertir_oc',
+    // Permisos de Comprobantes de Compra - ADMIN (sin delete)
+    'compras.comprobantes.view',
+    'compras.comprobantes.create',
+    'compras.comprobantes.edit',
+    'compras.comprobantes.approve',
+    'compras.comprobantes.reject',
+    'compras.comprobantes.anular',
+    // Permisos de Proveedores - ADMIN (sin delete)
+    'compras.proveedores.view',
+    'compras.proveedores.create',
+    'compras.proveedores.edit',
+    // Permisos de Solicitudes de Compra - ADMIN (sin delete)
+    'compras.solicitudes.view',
+    'compras.solicitudes.create',
+    'compras.solicitudes.edit',
+    'compras.solicitudes.approve',
+    'compras.solicitudes.reject',
+    // Permisos de Órdenes de Compra - ADMIN (sin delete)
+    'compras.ordenes.view',
+    'compras.ordenes.create',
+    'compras.ordenes.edit',
+    'compras.ordenes.approve',
+    'compras.ordenes.cancel',
+    // Permisos de Stock - ADMIN
+    'compras.stock.view',
+    'compras.stock.ajustes',
+    'compras.stock.transferencias',
+    // Permisos de Notas Cr/Db - ADMIN (sin delete)
+    'compras.notas.view',
+    'compras.notas.create',
+    'compras.notas.edit',
+    // Permisos de Devoluciones - ADMIN (sin delete)
+    'compras.devoluciones.view',
+    'compras.devoluciones.create',
+    'compras.devoluciones.edit',
+    // Permisos de Centros de Costo - ADMIN (sin delete)
+    'compras.centros_costo.view',
+    'compras.centros_costo.create',
+    'compras.centros_costo.edit',
+    // Permisos de Depósitos - ADMIN (sin delete)
+    'compras.depositos.view',
+    'compras.depositos.create',
+    'compras.depositos.edit',
     // Permisos de PTW - ADMIN (sin delete)
     'ptw.view',
     'ptw.create',
@@ -1196,7 +1527,38 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'produccion.config.shifts',
     'produccion.config.routines',
     'produccion.reportes.view',
-    'produccion.reportes.export'
+    'produccion.reportes.export',
+    // Almacén
+    'ingresar_almacen',
+    'almacen.view',
+    'almacen.view_dashboard',
+    'almacen.view_inventory',
+    'almacen.view_costs',
+    'almacen.request.view',
+    'almacen.request.view_all',
+    'almacen.request.create',
+    'almacen.request.edit',
+    'almacen.request.approve',
+    'almacen.request.reject',
+    'almacen.request.cancel',
+    'almacen.dispatch.view',
+    'almacen.dispatch.create',
+    'almacen.dispatch.process',
+    'almacen.dispatch.confirm',
+    'almacen.dispatch.receive',
+    'almacen.dispatch.cancel',
+    'almacen.return.view',
+    'almacen.return.create',
+    'almacen.return.process',
+    'almacen.reservation.view',
+    'almacen.reservation.create',
+    'almacen.reservation.release',
+    'almacen.transfer',
+    'almacen.adjust',
+    'almacen.cycle_count',
+    'almacen.manage_warehouses',
+    'almacen.manage_locations',
+    'almacen.manage_all'
   ],
 
   ADMIN_ENTERPRISE: [
@@ -1251,6 +1613,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'panol.create_product',
     'panol.edit_product',
     'panol.register_movement',
+    'panol.view_costs',
+    'panol.delete_product',
     'reports.view',
     'reports.export',
     'reports.advanced',
@@ -1285,14 +1649,38 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ingresar_planificacion',
     'ingresar_maquinas_mantenimiento',
     'ingresar_panol',
-    // Permisos de ventas (Legacy - excepto DELETE)
+    // Permisos de navegación legacy (sidebar)
+    'mantenimientos',
+    'maquinas_mantenimiento',
+    'maquinas_produccion',
+    'ordenes_de_trabajo',
+    'puestos_trabajo',
+    'reportes_mantenimiento',
+    'unidades_moviles',
+    'vehiculos_produccion',
+    'ingresar_clientes',
+    'ingresar_costos',
+    'ingresar_cotizaciones',
+    'ingresar_dashboard_ventas',
+    'ingresar_permisos_roles',
+    'ingresar_personal',
+    'ingresar_productos',
+    'ingresar_ventas',
+    'ingresar_ventas_modulo',
+    'ingresar_compras',
+    'ingresar_tesoreria',
+    'ingresar_nominas',
+    'ingresar_auditoria',
+    'ingresar_automatizaciones',
+    'ingresar_costos_modulo',
+    // Permisos de ventas (migrado a dotted format - excepto DELETE)
     'VIEW_SALES_DASHBOARD',
-    'VIEW_CLIENTS',
-    'CREATE_CLIENT',
-    'EDIT_CLIENT',
-    'VIEW_PRODUCTS',
-    'CREATE_PRODUCT',
-    'EDIT_PRODUCT',
+    'ventas.clientes.view',
+    'ventas.clientes.create',
+    'ventas.clientes.edit',
+    'ventas.productos.view',
+    'ventas.productos.create',
+    'ventas.productos.edit',
     'VIEW_QUOTES',
     'CREATE_QUOTE',
     'EDIT_QUOTE',
@@ -1306,6 +1694,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Permisos de Ventas Premium v2 - ADMIN_ENTERPRISE (gestión completa de su empresa)
     'ventas.ingresar',
     'ventas.dashboard.view',
+    // Clientes
+    'ventas.clientes.view',
+    // Vendedores
+    'ventas.vendedores.resumen',
+    // Liquidaciones
+    'ventas.liquidaciones.view',
+    'ventas.liquidaciones.create',
     // Cotizaciones (TODOS los permisos)
     'ventas.cotizaciones.view',
     'ventas.cotizaciones.create',
@@ -1418,6 +1813,53 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'compras.cotizaciones.edit',
     'compras.cotizaciones.seleccionar',
     'compras.cotizaciones.convertir_oc',
+    // Permisos de Comprobantes de Compra - ADMIN_ENTERPRISE (sin delete)
+    'compras.comprobantes.view',
+    'compras.comprobantes.create',
+    'compras.comprobantes.edit',
+    'compras.comprobantes.approve',
+    'compras.comprobantes.reject',
+    'compras.comprobantes.anular',
+    // Permisos de Proveedores - ADMIN_ENTERPRISE (gestión completa)
+    'compras.proveedores.view',
+    'compras.proveedores.create',
+    'compras.proveedores.edit',
+    'compras.proveedores.delete',
+    // Permisos de Solicitudes de Compra - ADMIN_ENTERPRISE (sin delete)
+    'compras.solicitudes.view',
+    'compras.solicitudes.create',
+    'compras.solicitudes.edit',
+    'compras.solicitudes.approve',
+    'compras.solicitudes.reject',
+    // Permisos de Órdenes de Compra - ADMIN_ENTERPRISE (gestión completa)
+    'compras.ordenes.view',
+    'compras.ordenes.create',
+    'compras.ordenes.edit',
+    'compras.ordenes.delete',
+    'compras.ordenes.approve',
+    'compras.ordenes.cancel',
+    // Permisos de Stock - ADMIN_ENTERPRISE
+    'compras.stock.view',
+    'compras.stock.ajustes',
+    'compras.stock.transferencias',
+    // Permisos de Notas Cr/Db - ADMIN_ENTERPRISE (sin delete)
+    'compras.notas.view',
+    'compras.notas.create',
+    'compras.notas.edit',
+    // Permisos de Devoluciones - ADMIN_ENTERPRISE (sin delete)
+    'compras.devoluciones.view',
+    'compras.devoluciones.create',
+    'compras.devoluciones.edit',
+    // Permisos de Centros de Costo - ADMIN_ENTERPRISE (gestión completa)
+    'compras.centros_costo.view',
+    'compras.centros_costo.create',
+    'compras.centros_costo.edit',
+    'compras.centros_costo.delete',
+    // Permisos de Depósitos - ADMIN_ENTERPRISE (gestión completa)
+    'compras.depositos.view',
+    'compras.depositos.create',
+    'compras.depositos.edit',
+    'compras.depositos.delete',
     // Permisos de PTW - ADMIN_ENTERPRISE (gestión completa de su empresa)
     'ptw.view',
     'ptw.create',
@@ -1551,7 +1993,38 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'produccion.config.shifts',
     'produccion.config.routines',
     'produccion.reportes.view',
-    'produccion.reportes.export'
+    'produccion.reportes.export',
+    // Almacén
+    'ingresar_almacen',
+    'almacen.view',
+    'almacen.view_dashboard',
+    'almacen.view_inventory',
+    'almacen.view_costs',
+    'almacen.request.view',
+    'almacen.request.view_all',
+    'almacen.request.create',
+    'almacen.request.edit',
+    'almacen.request.approve',
+    'almacen.request.reject',
+    'almacen.request.cancel',
+    'almacen.dispatch.view',
+    'almacen.dispatch.create',
+    'almacen.dispatch.process',
+    'almacen.dispatch.confirm',
+    'almacen.dispatch.receive',
+    'almacen.dispatch.cancel',
+    'almacen.return.view',
+    'almacen.return.create',
+    'almacen.return.process',
+    'almacen.reservation.view',
+    'almacen.reservation.create',
+    'almacen.reservation.release',
+    'almacen.transfer',
+    'almacen.adjust',
+    'almacen.cycle_count',
+    'almacen.manage_warehouses',
+    'almacen.manage_locations',
+    'almacen.manage_all'
   ],
 
   SUPERVISOR: [
@@ -1596,17 +2069,44 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ingresar_administracion',
     'ingresar_mantenimiento',
     'ingresar_produccion',
-    // Permisos básicos de ventas (Legacy)
+    // Permisos de navegación legacy (sidebar)
+    'mantenimientos',
+    'maquinas_mantenimiento',
+    'maquinas_produccion',
+    'ordenes_de_trabajo',
+    'puestos_trabajo',
+    'reportes_mantenimiento',
+    'unidades_moviles',
+    'vehiculos_produccion',
+    'ingresar_clientes',
+    'ingresar_costos',
+    'ingresar_cotizaciones',
+    'ingresar_dashboard_ventas',
+    'ingresar_personal',
+    'ingresar_productos',
+    'ingresar_ventas',
+    'ingresar_ventas_modulo',
+    'ingresar_compras',
+    'ingresar_tesoreria',
+    'ingresar_nominas',
+    'ingresar_costos_modulo',
+    // Permisos básicos de ventas (migrado a dotted format)
     'VIEW_SALES_DASHBOARD',
-    'VIEW_CLIENTS',
-    'CREATE_CLIENT',
-    'VIEW_PRODUCTS',
+    'ventas.clientes.view',
+    'ventas.clientes.create',
+    'ventas.productos.view',
     'VIEW_QUOTES',
     'CREATE_QUOTE',
     'VIEW_SALES',
     // Permisos de Ventas Premium v2 - SUPERVISOR (operativo)
     'ventas.ingresar',
     'ventas.dashboard.view',
+    // Clientes
+    'ventas.clientes.view',
+    // Vendedores
+    'ventas.vendedores.resumen',
+    // Liquidaciones (solo ver)
+    'ventas.liquidaciones.view',
     // Cotizaciones (solo crear y editar propias)
     'ventas.cotizaciones.view',
     'ventas.cotizaciones.create',
@@ -1665,6 +2165,35 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'compras.cotizaciones.create',
     'compras.cotizaciones.edit',
     'compras.cotizaciones.seleccionar',
+    // Permisos de Comprobantes de Compra - SUPERVISOR (crear y ver)
+    'compras.comprobantes.view',
+    'compras.comprobantes.create',
+    'compras.comprobantes.edit',
+    // Permisos de Proveedores - SUPERVISOR (ver y crear)
+    'compras.proveedores.view',
+    'compras.proveedores.create',
+    // Permisos de Solicitudes de Compra - SUPERVISOR (operativo)
+    'compras.solicitudes.view',
+    'compras.solicitudes.create',
+    'compras.solicitudes.edit',
+    // Permisos de Órdenes de Compra - SUPERVISOR (operativo)
+    'compras.ordenes.view',
+    'compras.ordenes.create',
+    'compras.ordenes.edit',
+    // Permisos de Stock - SUPERVISOR
+    'compras.stock.view',
+    'compras.stock.ajustes',
+    'compras.stock.transferencias',
+    // Permisos de Notas Cr/Db - SUPERVISOR (ver y crear)
+    'compras.notas.view',
+    'compras.notas.create',
+    // Permisos de Devoluciones - SUPERVISOR (ver y crear)
+    'compras.devoluciones.view',
+    'compras.devoluciones.create',
+    // Permisos de Centros de Costo - SUPERVISOR (solo ver)
+    'compras.centros_costo.view',
+    // Permisos de Depósitos - SUPERVISOR (solo ver)
+    'compras.depositos.view',
     // Permisos de PTW - SUPERVISOR (puede crear, aprobar y cerrar)
     'ptw.view',
     'ptw.create',
@@ -1796,6 +2325,25 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'compras.pedidos.create',
     // Permisos de Cotizaciones de Compra - USER (solo ver)
     'compras.cotizaciones.view',
+    // Permisos de Comprobantes - USER (solo ver)
+    'compras.comprobantes.view',
+    // Permisos de Proveedores - USER (solo ver)
+    'compras.proveedores.view',
+    // Permisos de Solicitudes - USER (ver y crear propias)
+    'compras.solicitudes.view',
+    'compras.solicitudes.create',
+    // Permisos de Órdenes de Compra - USER (solo ver)
+    'compras.ordenes.view',
+    // Permisos de Stock - USER (solo ver)
+    'compras.stock.view',
+    // Permisos de Notas Cr/Db - USER (solo ver)
+    'compras.notas.view',
+    // Permisos de Devoluciones - USER (solo ver)
+    'compras.devoluciones.view',
+    // Permisos de Centros de Costo - USER (solo ver)
+    'compras.centros_costo.view',
+    // Permisos de Depósitos - USER (solo ver)
+    'compras.depositos.view',
     // Permisos de PTW - USER (solo ver y crear requests)
     'ptw.view',
     'ptw.create',
@@ -1893,6 +2441,84 @@ export const COMPRAS_COTIZACIONES_PERMISSIONS = {
   DELETE: 'compras.cotizaciones.delete',
   SELECCIONAR: 'compras.cotizaciones.seleccionar',
   CONVERTIR_OC: 'compras.cotizaciones.convertir_oc',
+} as const;
+
+// Permisos de Comprobantes de Compra
+export const COMPRAS_COMPROBANTES_PERMISSIONS = {
+  VIEW: 'compras.comprobantes.view',
+  CREATE: 'compras.comprobantes.create',
+  EDIT: 'compras.comprobantes.edit',
+  DELETE: 'compras.comprobantes.delete',
+  APPROVE: 'compras.comprobantes.approve',
+  REJECT: 'compras.comprobantes.reject',
+  ANULAR: 'compras.comprobantes.anular',
+} as const;
+
+// Permisos de Proveedores
+export const COMPRAS_PROVEEDORES_PERMISSIONS = {
+  VIEW: 'compras.proveedores.view',
+  CREATE: 'compras.proveedores.create',
+  EDIT: 'compras.proveedores.edit',
+  DELETE: 'compras.proveedores.delete',
+} as const;
+
+// Permisos de Solicitudes de Compra
+export const COMPRAS_SOLICITUDES_PERMISSIONS = {
+  VIEW: 'compras.solicitudes.view',
+  CREATE: 'compras.solicitudes.create',
+  EDIT: 'compras.solicitudes.edit',
+  DELETE: 'compras.solicitudes.delete',
+  APPROVE: 'compras.solicitudes.approve',
+  REJECT: 'compras.solicitudes.reject',
+} as const;
+
+// Permisos de Órdenes de Compra
+export const COMPRAS_ORDENES_PERMISSIONS = {
+  VIEW: 'compras.ordenes.view',
+  CREATE: 'compras.ordenes.create',
+  EDIT: 'compras.ordenes.edit',
+  DELETE: 'compras.ordenes.delete',
+  APPROVE: 'compras.ordenes.approve',
+  CANCEL: 'compras.ordenes.cancel',
+} as const;
+
+// Permisos de Stock / Inventario
+export const COMPRAS_STOCK_PERMISSIONS = {
+  VIEW: 'compras.stock.view',
+  AJUSTES: 'compras.stock.ajustes',
+  TRANSFERENCIAS: 'compras.stock.transferencias',
+} as const;
+
+// Permisos de Notas de Crédito/Débito
+export const COMPRAS_NOTAS_PERMISSIONS = {
+  VIEW: 'compras.notas.view',
+  CREATE: 'compras.notas.create',
+  EDIT: 'compras.notas.edit',
+  DELETE: 'compras.notas.delete',
+} as const;
+
+// Permisos de Devoluciones
+export const COMPRAS_DEVOLUCIONES_PERMISSIONS = {
+  VIEW: 'compras.devoluciones.view',
+  CREATE: 'compras.devoluciones.create',
+  EDIT: 'compras.devoluciones.edit',
+  DELETE: 'compras.devoluciones.delete',
+} as const;
+
+// Permisos de Centros de Costo
+export const COMPRAS_CENTROS_COSTO_PERMISSIONS = {
+  VIEW: 'compras.centros_costo.view',
+  CREATE: 'compras.centros_costo.create',
+  EDIT: 'compras.centros_costo.edit',
+  DELETE: 'compras.centros_costo.delete',
+} as const;
+
+// Permisos de Depósitos
+export const COMPRAS_DEPOSITOS_PERMISSIONS = {
+  VIEW: 'compras.depositos.view',
+  CREATE: 'compras.depositos.create',
+  EDIT: 'compras.depositos.edit',
+  DELETE: 'compras.depositos.delete',
 } as const;
 
 // Permisos de PTW (Permit to Work)

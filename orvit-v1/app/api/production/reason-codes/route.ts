@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,8 @@ const ReasonCodeSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.REASON_CODES);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
     const flat = searchParams.get('flat') === 'true'; // Retornar lista plana o jerárquica
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (type) {
@@ -89,10 +88,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.REASON_CODES);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = ReasonCodeSchema.parse(body);
@@ -101,7 +98,7 @@ export async function POST(request: NextRequest) {
     const existingCode = await prisma.productionReasonCode.findUnique({
       where: {
         companyId_code: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code,
         },
       },
@@ -119,7 +116,7 @@ export async function POST(request: NextRequest) {
       const parent = await prisma.productionReasonCode.findFirst({
         where: {
           id: validatedData.parentId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -141,7 +138,7 @@ export async function POST(request: NextRequest) {
     const reasonCode = await prisma.productionReasonCode.create({
       data: {
         ...validatedData,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         parent: true,
@@ -172,10 +169,8 @@ export async function POST(request: NextRequest) {
 // Endpoint para crear múltiples códigos de motivo (seed inicial)
 export async function PUT(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.REASON_CODES);
+    if (error) return error;
 
     const body = await request.json();
 
@@ -197,7 +192,7 @@ export async function PUT(request: NextRequest) {
         const existing = await prisma.productionReasonCode.findUnique({
           where: {
             companyId_code: {
-              companyId: auth.companyId,
+              companyId: user!.companyId,
               code: validatedData.code,
             },
           },
@@ -211,7 +206,7 @@ export async function PUT(request: NextRequest) {
         const reasonCode = await prisma.productionReasonCode.create({
           data: {
             ...validatedData,
-            companyId: auth.companyId,
+            companyId: user!.companyId,
           },
         });
 

@@ -10,6 +10,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { SignJWT } from 'jose';
 // Importaciones directas para evitar problemas de exportación circular
 import {
   verifyRefreshToken,
@@ -23,6 +25,14 @@ import { AUTH_CONFIG } from '@/lib/auth/config';
 import { isSessionActive, updateSessionActivity } from '@/lib/auth/sessions';
 import { isBlacklisted } from '@/lib/auth/blacklist';
 import { getClientIdentifier, checkRateLimit, incrementRateLimit } from '@/lib/auth/rate-limit';
+
+function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET no está definido o es demasiado corto.');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -159,6 +169,24 @@ export async function POST(request: NextRequest) {
       refreshToken: rotationResult.newRefreshToken,
       accessTokenExpires,
       refreshTokenExpires: rotationResult.expiresAt,
+    });
+
+    // Regenerar cookie legacy para backward-compatibility con middleware
+    const legacyToken = await new SignJWT({
+      userId: user.id,
+      email: user.email,
+      role: userRole,
+      companyId: companyId || null,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(getJwtSecretKey());
+
+    cookies().set('token', legacyToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24h
     });
 
     return NextResponse.json({

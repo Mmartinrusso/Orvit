@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,8 @@ const DOCUMENTS_CACHE_TTL = 60 * 1000; // 60 segundos
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const body = await request.json();
     console.log('📥 Documents POST - Received data:', body);
 
@@ -81,6 +84,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const entityType = searchParams.get('entityType');
   const entityId = searchParams.get('entityId');

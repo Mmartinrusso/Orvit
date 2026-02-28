@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       ? new Date(searchParams.get('endDate')!)
       : undefined;
 
-    const outcome = searchParams.get('outcome') as 'FUNCIONÓ' | 'PARCIAL' | 'NO_FUNCIONÓ' | undefined;
+    const outcome = (searchParams.get('outcome') || undefined) as 'FUNCIONÓ' | 'PARCIAL' | 'NO_FUNCIONÓ' | undefined;
 
     const title = searchParams.get('title') || undefined;
     const search = searchParams.get('search') || undefined;
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('❌ Error en GET /api/solutions-applied:', error);
+    console.error('❌ Error en GET /api/solutions-applied:', error.message, { code: error.code, meta: error.meta });
 
     // Si es error de validación, retornar 400
     if (error.message?.includes('Validación falló')) {

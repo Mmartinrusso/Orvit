@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +28,13 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Gauge,
   Plus,
   Search,
@@ -34,6 +43,11 @@ import {
   CheckCircle2,
   Clock,
   Calendar,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Play,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatDistanceToNow, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -63,9 +77,103 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function CalibrationPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const FORM_DEFAULT = { machineId: '', instrumentName: '', instrumentSerial: '', calibrationType: 'INTERNAL', frequencyDays: '365' };
+  const [form, setForm] = useState(FORM_DEFAULT);
+  const patchForm = (patch: Partial<typeof FORM_DEFAULT>) => setForm(prev => ({ ...prev, ...patch }));
+
+  const { data: machinesData } = useQuery({
+    queryKey: ['machines-dropdown', currentCompany?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/machines?companyId=${currentCompany?.id}`);
+      if (!res.ok) return { machines: [] };
+      return res.json();
+    },
+    enabled: !!currentCompany?.id,
+  });
+  const machines = machinesData?.machines || [];
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/calibration?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Calibración eliminada');
+      queryClient.invalidateQueries({ queryKey: ['calibrations'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al eliminar calibración'),
+  });
+
+  const executeMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch('/api/calibration', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'execute', result: 'PASS' }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al ejecutar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Calibración ejecutada correctamente');
+      queryClient.invalidateQueries({ queryKey: ['calibrations'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al ejecutar calibración'),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch('/api/calibration', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'approve', approved: true }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al aprobar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Calibración aprobada');
+      queryClient.invalidateQueries({ queryKey: ['calibrations'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al aprobar calibración'),
+  });
+
+  const handleDelete = (id: number) => {
+    if (!confirm('¿Eliminar esta calibración? Esta acción no se puede deshacer.')) return;
+    deleteMutation.mutate(id);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof FORM_DEFAULT) => {
+      const res = await fetch('/api/calibration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          machineId: parseInt(data.machineId),
+          instrumentName: data.instrumentName,
+          instrumentSerial: data.instrumentSerial || undefined,
+          calibrationType: data.calibrationType,
+          frequencyDays: parseInt(data.frequencyDays),
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al crear');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Calibración creada correctamente');
+      setIsDialogOpen(false);
+      setForm(FORM_DEFAULT);
+      queryClient.invalidateQueries({ queryKey: ['calibrations'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al crear calibración'),
+  });
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['calibrations', currentCompany?.id, statusFilter],
@@ -110,6 +218,7 @@ export default function CalibrationPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          {hasPermission('calibration.create') && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -123,17 +232,38 @@ export default function CalibrationPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Nombre del Instrumento</Label>
-                  <Input placeholder="Ej: Manómetro digital" />
+                  <Label>Máquina *</Label>
+                  <Select value={form.machineId} onValueChange={v => patchForm({ machineId: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar máquina..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {machines.map((m: any) => (
+                        <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre del Instrumento *</Label>
+                  <Input
+                    placeholder="Ej: Manómetro digital"
+                    value={form.instrumentName}
+                    onChange={e => patchForm({ instrumentName: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Número de Serie</Label>
-                  <Input placeholder="Ej: SN-12345" />
+                  <Input
+                    placeholder="Ej: SN-12345"
+                    value={form.instrumentSerial}
+                    onChange={e => patchForm({ instrumentSerial: e.target.value })}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Tipo de Calibración</Label>
-                    <Select defaultValue="INTERNAL">
+                    <Select value={form.calibrationType} onValueChange={v => patchForm({ calibrationType: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -146,15 +276,24 @@ export default function CalibrationPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Frecuencia (días)</Label>
-                    <Input type="number" defaultValue={365} />
+                    <Input
+                      type="number"
+                      value={form.frequencyDays}
+                      onChange={e => patchForm({ frequencyDays: e.target.value })}
+                    />
                   </div>
                 </div>
-                <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
-                  Crear Calibración
+                <Button
+                  className="w-full"
+                  onClick={() => createMutation.mutate(form)}
+                  disabled={!form.machineId || !form.instrumentName || createMutation.isPending}
+                >
+                  {createMutation.isPending ? 'Creando...' : 'Crear Calibración'}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -245,6 +384,9 @@ export default function CalibrationPage() {
                 <TableHead>Próxima Calibración</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Resultado</TableHead>
+                {(hasPermission('calibration.edit') || hasPermission('calibration.delete') || hasPermission('calibration.execute') || hasPermission('calibration.approve')) && (
+                  <TableHead className="w-[60px]">Acciones</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -302,6 +444,49 @@ export default function CalibrationPage() {
                         </Badge>
                       ) : '-'}
                     </TableCell>
+                    {(hasPermission('calibration.edit') || hasPermission('calibration.delete') || hasPermission('calibration.execute') || hasPermission('calibration.approve')) && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {hasPermission('calibration.edit') && (
+                              <DropdownMenuItem onClick={() => toast.info('Edición de calibración próximamente')}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('calibration.execute') && (cal.status === 'PENDING' || cal.status === 'OVERDUE') && (
+                              <DropdownMenuItem onClick={() => executeMutation.mutate(cal.id)}>
+                                <Play className="h-4 w-4 mr-2" />
+                                Ejecutar Calibración
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('calibration.approve') && cal.status === 'COMPLETED' && (
+                              <DropdownMenuItem onClick={() => approveMutation.mutate(cal.id)}>
+                                <ShieldCheck className="h-4 w-4 mr-2" />
+                                Aprobar
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('calibration.delete') && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDelete(cal.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

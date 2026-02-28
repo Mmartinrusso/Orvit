@@ -13,7 +13,7 @@ import { z } from 'zod';
 
 // Schema para batch update
 const batchUpdateSchema = z.object({
-  ids: z.array(z.number().int().positive()).min(1, 'Se requiere al menos un ID'),
+  ids: z.array(z.number().int().positive()).min(1, 'Se requiere al menos un ID').max(50, 'Máximo 50 unidades por operación'),
   data: z.object({
     estado: z.enum(['ACTIVO', 'MANTENIMIENTO', 'FUERA_SERVICIO', 'DESHABILITADO']).optional(),
     sectorId: z.number().int().nullable().optional(),
@@ -24,7 +24,7 @@ const batchUpdateSchema = z.object({
 
 // Schema para batch delete
 const batchDeleteSchema = z.object({
-  ids: z.array(z.number().int().positive()).min(1, 'Se requiere al menos un ID')
+  ids: z.array(z.number().int().positive()).min(1, 'Se requiere al menos un ID').max(50, 'Máximo 50 unidades por operación')
 });
 
 export const dynamic = 'force-dynamic';
@@ -57,10 +57,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const { ids, data } = validation.data;
+    const companyId = payload.companyId as number; // Siempre del JWT
 
-    // 3. Ejecutar actualización batch
+    // 3. Ejecutar actualización batch scoped por companyId
     const result = await prisma.unidadMovil.updateMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, companyId },
       data: {
         ...data,
         updatedAt: new Date()
@@ -110,11 +111,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { ids } = validation.data;
+    const companyId = payload.companyId as number; // Siempre del JWT
 
-    // 3. Verificar si alguna tiene work orders activas
+    // 3. Verificar si alguna tiene work orders activas (scoped por companyId)
     const unitsWithActiveWO = await prisma.unidadMovil.findMany({
       where: {
         id: { in: ids },
+        companyId,
         workOrders: {
           some: {
             status: { in: ['PENDING', 'IN_PROGRESS'] }
@@ -131,9 +134,9 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 4. Ejecutar eliminación batch
+    // 4. Ejecutar eliminación batch scoped por companyId
     const result = await prisma.unidadMovil.deleteMany({
-      where: { id: { in: ids } }
+      where: { id: { in: ids }, companyId }
     });
 
     return NextResponse.json({

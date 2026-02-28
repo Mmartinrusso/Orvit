@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,9 @@ const MESHY_STATUS_URL = 'https://api.meshy.ai/v2/image-to-3d';
  * Check the status of a 3D model generation task
  */
 export async function GET(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const taskId = searchParams.get('taskId');

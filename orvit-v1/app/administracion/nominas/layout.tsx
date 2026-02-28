@@ -1,12 +1,15 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
-interface NominasLayoutProps {
-  children: ReactNode;
-}
-
-export default function NominasLayout({ children }: NominasLayoutProps) {
-  // Simple layout que solo pasa el children sin interferir con el MainLayout
-  return <>{children}</>;
+export default function NominasLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <PermissionGuard permission="ingresar_nominas">
+      {children}
+    </PermissionGuard>
+  );
 }

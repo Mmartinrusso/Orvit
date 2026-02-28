@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-// ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
 // Almacenamiento temporal de categorías creadas (en producción esto debería ser una tabla)
 const tempCategories = new Map<number, Set<string>>();
@@ -11,7 +10,9 @@ const tempCategories = new Map<number, Set<string>>();
 // GET /api/tools/categories
 export async function GET(request: NextRequest) {
   try {
-    // Obtener companyId de los headers o query params
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
@@ -75,6 +76,9 @@ export async function GET(request: NextRequest) {
 // POST /api/tools/categories
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.create');
+    if (error) return error;
+
     const body = await request.json();
     const { name, description, companyId } = body;
 

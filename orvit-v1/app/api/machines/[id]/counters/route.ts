@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { cookies } from 'next/headers'
-import { verifyToken } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +14,9 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
+    const { user, error } = await requirePermission('counters.view')
+    if (error) return error
+
     const machineId = parseInt(params.id)
     if (isNaN(machineId)) {
       return NextResponse.json({ error: 'Invalid machine ID' }, { status: 400 })
@@ -69,21 +71,12 @@ export async function GET(request: Request, { params }: Params) {
  */
 export async function POST(request: Request, { params }: Params) {
   try {
+    const { user, error } = await requirePermission('counters.create')
+    if (error) return error
+
     const machineId = parseInt(params.id)
     if (isNaN(machineId)) {
       return NextResponse.json({ error: 'Invalid machine ID' }, { status: 400 })
-    }
-
-    // Verificar autenticación
-    const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
-
-    const payload = await verifyToken(token)
-    if (!payload?.userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const machine = await prisma.machine.findUnique({
@@ -114,7 +107,7 @@ export async function POST(request: Request, { params }: Params) {
         source: source || 'MANUAL',
         companyId: machine.companyId,
         lastReadingAt: initialValue ? new Date() : null,
-        lastReadingById: initialValue ? payload.userId : null
+        lastReadingById: initialValue ? user!.id : null
       }
     })
 

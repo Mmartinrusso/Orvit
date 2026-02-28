@@ -5,24 +5,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET - List all skills for a company
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('skills.view');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId') || payload.companyId;
+    const companyId = searchParams.get('companyId') || user!.companyId;
     const category = searchParams.get('category');
     const isCertificationRequired = searchParams.get('isCertificationRequired');
     const search = searchParams.get('search');
@@ -93,38 +87,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new skill
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // Check permission (skills.create)
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: payload.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    const hasPermission = userOnCompany?.role?.permissions?.some(
-      p => p.permission === 'skills.create'
-    );
-
-    if (!hasPermission && payload.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Sin permiso para crear habilidades' }, { status: 403 });
-    }
+    const { user, error } = await requirePermission('skills.create');
+    if (error) return error;
 
     const body = await request.json();
     const { name, description, category, code, isCertificationRequired, certificationValidityDays, companyId } = body;
@@ -133,7 +97,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
     }
 
-    const targetCompanyId = companyId || payload.companyId;
+    const targetCompanyId = companyId || user!.companyId;
 
     // Check if skill with same name or code already exists
     const existingSkill = await prisma.skill.findFirst({

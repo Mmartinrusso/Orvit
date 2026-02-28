@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { aggregateOEE, OEEInput } from '@/lib/production/oee-calculator';
 import { format } from 'date-fns';
 
@@ -8,10 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.DASHBOARD_VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const dateFrom = searchParams.get('dateFrom');
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const reports = await prisma.dailyProductionReport.findMany({
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         date: { gte: startDate, lte: endDate },
         ...(workCenterId ? { workCenterId: parseInt(workCenterId) } : {}),
       },

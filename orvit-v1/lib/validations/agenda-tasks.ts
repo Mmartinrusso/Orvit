@@ -35,8 +35,15 @@ export const CreateAgendaTaskSchema = z.object({
   assignedToUserId: z.number().int().positive('ID de usuario asignado inválido').optional().nullable(),
   assignedToContactId: z.number().int().positive('ID de contacto asignado inválido').optional().nullable(),
   assignedToName: z.string().trim().max(200, 'Nombre del asignado muy largo').optional(),
+  isCompanyVisible: z.boolean().optional().default(false),
   companyId: coercePositiveInt('ID de empresa'),
   reminders: z.array(TaskReminderSchema).max(10, 'Máximo 10 recordatorios').optional(),
+});
+
+// ─── Comment ─────────────────────────────────────────────────────────────────
+
+export const CreateAgendaTaskCommentSchema = z.object({
+  content: z.string().trim().min(1, 'El comentario no puede estar vacío').max(5000, 'Comentario muy largo'),
 });
 
 // ─── Types ──────────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ export const MANTENIMIENTO_MODULES: SidebarModule[] = [
   { id: 'mant.dashboard', name: 'Dashboard', icon: 'LayoutDashboard', path: '/mantenimiento/dashboard', isCore: true, category: 'core', description: 'KPIs, tareas urgentes, alertas del sector', order: 0 },
 
   // ─── CORRECTIVO ───
-  { id: 'mant.fallas', name: 'Fallas', icon: 'AlertTriangle', path: '/mantenimiento/fallas', isCore: true, category: 'core', description: 'Reportes e incidentes', order: 10 },
+  { id: 'mant.fallas', name: 'Incidentes', icon: 'AlertTriangle', path: '/mantenimiento/fallas', isCore: true, category: 'core', description: 'Fallas y roturas de mantenimiento', order: 10 },
   { id: 'mant.ordenes', name: 'Órdenes de trabajo', icon: 'ClipboardList', path: '/mantenimiento/ordenes', isCore: true, category: 'core', description: 'Gestión de órdenes de trabajo', order: 11 },
   { id: 'mant.soluciones', name: 'Soluciones', icon: 'Lightbulb', path: '/mantenimiento/soluciones', isCore: false, category: 'optional', description: 'Base de conocimiento de soluciones', order: 12 },
 

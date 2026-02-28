@@ -667,6 +667,22 @@ export default function ComprobanteFormModal({
  }
  };
 
+ const loadConceptosProveedor = async (proveedorId: string, esIndirectoActual: boolean) => {
+ if (!esIndirectoActual) return;
+ try {
+ const res = await fetch(`/api/compras/proveedores/${proveedorId}/conceptos`);
+ if (!res.ok) return;
+ const data: Array<{ id: number; descripcion: string; monto: string | null }> = await res.json();
+ if (data.length > 0 && conceptos.length === 0) {
+ setConceptos(data.map((c) => ({
+ id: `prefill-${c.id}`,
+ descripcion: c.descripcion,
+ monto: c.monto ? String(c.monto) : '',
+ })));
+ }
+ } catch { /* silencioso */ }
+ };
+
  const selectProveedor = (proveedor: Proveedor) => {
  setFormData({
  ...formData,
@@ -677,6 +693,7 @@ export default function ComprobanteFormModal({
  });
  setProveedorPopoverOpen(false);
  loadProveedorItems(proveedor.id);
+ loadConceptosProveedor(proveedor.id, formData.esIndirecto);
  // Si es NCA_DEVOLUCION, cargar devoluciones del proveedor
  if (formData.tipoNca === 'NCA_DEVOLUCION') {
  loadDevolucionesProveedor(proveedor.id);
@@ -2767,9 +2784,12 @@ export default function ComprobanteFormModal({
  <Switch
  id="esIndirecto"
  checked={formData.esIndirecto}
- onCheckedChange={(checked) =>
- setFormData({ ...formData, esIndirecto: checked, indirectCategory: checked ? formData.indirectCategory : '' })
+ onCheckedChange={(checked) => {
+ setFormData({ ...formData, esIndirecto: checked, indirectCategory: checked ? formData.indirectCategory : '' });
+ if (checked && formData.proveedorId) {
+ loadConceptosProveedor(formData.proveedorId, true);
  }
+ }}
  />
  </div>
  {formData.esIndirecto && (

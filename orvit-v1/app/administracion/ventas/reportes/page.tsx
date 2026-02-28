@@ -49,6 +49,7 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { usePermission } from '@/hooks/use-permissions';
 
 // Tipos
 interface Reporte {
@@ -83,6 +84,10 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export default function ReportesPage() {
+  // Permission checks for specific report types
+  const { hasPermission: canViewRentabilidad } = usePermission('ventas.reportes.rentabilidad');
+  const { hasPermission: canViewAging } = usePermission('ventas.reportes.aging');
+
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
   const [generando, setGenerando] = useState(false);
@@ -349,7 +354,12 @@ export default function ReportesPage() {
         <div className="lg:col-span-1 space-y-4">
           <h2 className="text-lg font-semibold">Reportes Disponibles</h2>
           <div className="space-y-2">
-            {reportes.map((reporte) => {
+            {reportes.filter((reporte) => {
+              // Gate specific report types by permission
+              if (reporte.id === 'rentabilidad' && !canViewRentabilidad) return false;
+              if (reporte.id === 'cobranzas-pendientes' && !canViewAging) return false;
+              return true;
+            }).map((reporte) => {
               const Icon = iconMap[reporte.icon] || FileText;
               const isActive = reporteActivo === reporte.id;
 

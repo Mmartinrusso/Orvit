@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { usePanolPermissions } from '@/hooks/use-panol-permissions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +110,7 @@ function getDueBadge(loan: Loan) {
 export default function PrestamosPage() {
   const { currentCompany } = useCompany();
   const queryClient = useQueryClient();
+  const { canManageLoans } = usePanolPermissions();
   const [statusFilter, setStatusFilter] = useState('BORROWED');
   const [searchTerm, setSearchTerm] = useState('');
   const [returnDialog, setReturnDialog] = useState<Loan | null>(null);
@@ -126,7 +128,7 @@ export default function PrestamosPage() {
     mutationFn: ({ loanId, body }: { loanId: number; body: { returnNotes?: string; condition?: string } }) =>
       returnLoan(loanId, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tool-loans'] });
+      queryClient.invalidateQueries({ queryKey: ['tool-loans', currentCompany?.id] });
       setReturnDialog(null);
       setReturnNotes('');
       setReturnCondition('OK');
@@ -138,6 +140,10 @@ export default function PrestamosPage() {
   });
 
   const handleReturn = () => {
+    if (!canManageLoans) {
+      toast.error('No tienes permisos para gestionar préstamos');
+      return;
+    }
     if (!returnDialog) return;
     returnMutation.mutate({
       loanId: returnDialog.id,
@@ -305,7 +311,7 @@ export default function PrestamosPage() {
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(loan.borrowedAt), { addSuffix: true, locale: es })}
                         </span>
-                        {loan.status === 'BORROWED' && (
+                        {loan.status === 'BORROWED' && canManageLoans && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -409,7 +415,7 @@ export default function PrestamosPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {loan.status === 'BORROWED' && (
+                            {loan.status === 'BORROWED' && canManageLoans && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8">

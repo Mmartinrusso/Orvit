@@ -26,7 +26,7 @@ interface RouteParams {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.CLIENTES_CREDIT_ADJUST);
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.CUENTA_CORRIENTE_RECALCULATE);
     if (error) return error;
 
     const companyId = user!.companyId;

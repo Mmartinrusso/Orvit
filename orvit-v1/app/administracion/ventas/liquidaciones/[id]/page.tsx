@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { usePermission } from '@/hooks/use-permissions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,6 +90,8 @@ export default function LiquidacionDetailPage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const router = useRouter();
   const confirm = useConfirm();
+  const { hasPermission: canPayCommission } = usePermission('ventas.comisiones.pay');
+  const { hasPermission: canCalculateCommission } = usePermission('ventas.comisiones.calculate');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -263,13 +266,13 @@ export default function LiquidacionDetailPage({ params }: { params: Promise<{ id
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {data.estado === 'BORRADOR' && (
+                {data.estado === 'BORRADOR' && canCalculateCommission && (
                   <DropdownMenuItem onClick={handleConfirmar}>
                     <CheckCircle className="w-4 h-4 mr-2 text-blue-500" />
                     Confirmar liquidación
                   </DropdownMenuItem>
                 )}
-                {data.estado === 'CONFIRMADA' && (
+                {data.estado === 'CONFIRMADA' && canPayCommission && (
                   <DropdownMenuItem onClick={() => setPayDialogOpen(true)}>
                     <Wallet className="w-4 h-4 mr-2 text-success" />
                     Registrar pago

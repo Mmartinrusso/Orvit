@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getAssistantContext } from '@/lib/assistant/auth'
 import { AssistantActionType, ActionResult } from '@/lib/assistant/types'
 import { reindexEntity } from '@/lib/assistant/indexer'
+import { requireAuth } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,9 @@ export const dynamic = 'force-dynamic'
  * Ejecuta una acción en el sistema
  */
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth()
+  if (error) return error
+
   try {
     // 1. Verificar autenticación
     const context = await getAssistantContext()
@@ -84,6 +88,9 @@ export async function POST(request: NextRequest) {
  * Obtiene el historial de acciones
  */
 export async function GET(request: NextRequest) {
+  const { error: getError } = await requireAuth()
+  if (getError) return getError
+
   try {
     const context = await getAssistantContext()
     if (!context) {

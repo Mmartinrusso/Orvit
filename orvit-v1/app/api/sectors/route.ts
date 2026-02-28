@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
     const areaId = searchParams.get('areaId');
     const forProduction = searchParams.get('forProduction'); // Filtrar solo sectores habilitados para producción
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
-
-    console.log('🔍 Fetching sectors with params:', { companyId, areaId, forProduction });
-
     let whereClause: any = {
-      companyId: parseInt(companyId)
+      companyId: user!.companyId
     };
 
     if (areaId) {

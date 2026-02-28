@@ -40,6 +40,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 interface WorkCenter {
@@ -71,6 +72,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function WorkCentersConfigPage() {
+  const { hasPermission } = useAuth();
+  const canManageWorkCenters = hasPermission('produccion.config.work_centers');
   const [loading, setLoading] = useState(true);
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -248,10 +251,12 @@ export default function WorkCentersConfigPage() {
           </div>
         </div>
 
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Centro
-        </Button>
+        {canManageWorkCenters && (
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Centro
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -310,25 +315,27 @@ export default function WorkCentersConfigPage() {
                           : '-'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(wc)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedWorkCenter(wc);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                        {canManageWorkCenters && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(wc)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedWorkCenter(wc);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

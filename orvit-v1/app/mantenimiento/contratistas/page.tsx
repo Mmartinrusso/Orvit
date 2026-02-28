@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +28,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   HardHat,
   Plus,
   Search,
@@ -37,6 +46,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Link2,
 } from 'lucide-react';
 
 interface Contractor {
@@ -72,10 +85,91 @@ const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function ContractorsPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const FORM_DEFAULT = { name: '', legalName: '', taxId: '', contactName: '', contactEmail: '', contactPhone: '', address: '', notes: '', type: 'MAINTENANCE' };
+  const [form, setForm] = useState(FORM_DEFAULT);
+  const patchForm = (patch: Partial<typeof FORM_DEFAULT>) => setForm(prev => ({ ...prev, ...patch }));
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/contractors?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Contratista eliminado');
+      queryClient.invalidateQueries({ queryKey: ['contractors'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al eliminar contratista'),
+  });
+
+  const rateMutation = useMutation({
+    mutationFn: async ({ id, rating }: { id: number; rating: number }) => {
+      const res = await fetch('/api/contractors', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'rate', rating }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al calificar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Contratista calificado');
+      queryClient.invalidateQueries({ queryKey: ['contractors'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al calificar contratista'),
+  });
+
+  const handleDelete = (id: number) => {
+    if (!confirm('¿Eliminar este contratista? Esta acción no se puede deshacer.')) return;
+    deleteMutation.mutate(id);
+  };
+
+  const handleRate = (id: number) => {
+    const ratingStr = prompt('Calificación (1-5):');
+    if (!ratingStr) return;
+    const rating = parseInt(ratingStr);
+    if (isNaN(rating) || rating < 1 || rating > 5) {
+      toast.error('La calificación debe ser un número entre 1 y 5');
+      return;
+    }
+    rateMutation.mutate({ id, rating });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof FORM_DEFAULT) => {
+      const res = await fetch('/api/contractors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          legalName: data.legalName || undefined,
+          taxId: data.taxId || undefined,
+          contactName: data.contactName || undefined,
+          contactEmail: data.contactEmail || undefined,
+          contactPhone: data.contactPhone || undefined,
+          address: data.address || undefined,
+          notes: data.notes || undefined,
+          type: data.type,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al crear');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Contratista creado correctamente');
+      setIsDialogOpen(false);
+      setForm(FORM_DEFAULT);
+      queryClient.invalidateQueries({ queryKey: ['contractors'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al crear contratista'),
+  });
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['contractors', currentCompany?.id, statusFilter, typeFilter],
@@ -128,6 +222,7 @@ export default function ContractorsPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          {hasPermission('contractors.create') && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -143,21 +238,33 @@ export default function ContractorsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nombre Comercial *</Label>
-                    <Input placeholder="Ej: Servicios Técnicos S.A." />
+                    <Input
+                      placeholder="Ej: Servicios Técnicos S.A."
+                      value={form.name}
+                      onChange={e => patchForm({ name: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Razón Social</Label>
-                    <Input placeholder="Ej: Servicios Técnicos S.A. de C.V." />
+                    <Input
+                      placeholder="Ej: Servicios Técnicos S.A. de C.V."
+                      value={form.legalName}
+                      onChange={e => patchForm({ legalName: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>CUIT/RFC</Label>
-                    <Input placeholder="Ej: 30-12345678-9" />
+                    <Input
+                      placeholder="Ej: 30-12345678-9"
+                      value={form.taxId}
+                      onChange={e => patchForm({ taxId: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Tipo de Servicio</Label>
-                    <Select defaultValue="MAINTENANCE">
+                    <Select value={form.type} onValueChange={v => patchForm({ type: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -173,32 +280,58 @@ export default function ContractorsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Contacto Principal</Label>
-                  <Input placeholder="Nombre del contacto" />
+                  <Input
+                    placeholder="Nombre del contacto"
+                    value={form.contactName}
+                    onChange={e => patchForm({ contactName: e.target.value })}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input type="email" placeholder="contacto@empresa.com" />
+                    <Input
+                      type="email"
+                      placeholder="contacto@empresa.com"
+                      value={form.contactEmail}
+                      onChange={e => patchForm({ contactEmail: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Teléfono</Label>
-                    <Input placeholder="+54 11 1234-5678" />
+                    <Input
+                      placeholder="+54 11 1234-5678"
+                      value={form.contactPhone}
+                      onChange={e => patchForm({ contactPhone: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Dirección</Label>
-                  <Textarea placeholder="Dirección completa..." />
+                  <Textarea
+                    placeholder="Dirección completa..."
+                    value={form.address}
+                    onChange={e => patchForm({ address: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Notas</Label>
-                  <Textarea placeholder="Notas adicionales sobre el contratista..." />
+                  <Textarea
+                    placeholder="Notas adicionales sobre el contratista..."
+                    value={form.notes}
+                    onChange={e => patchForm({ notes: e.target.value })}
+                  />
                 </div>
-                <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
-                  Crear Contratista
+                <Button
+                  className="w-full"
+                  onClick={() => createMutation.mutate(form)}
+                  disabled={!form.name || createMutation.isPending}
+                >
+                  {createMutation.isPending ? 'Creando...' : 'Crear Contratista'}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -301,6 +434,9 @@ export default function ContractorsPage() {
                 <TableHead>Servicios</TableHead>
                 <TableHead>Certificaciones</TableHead>
                 <TableHead>Asignaciones</TableHead>
+                {(hasPermission('contractors.edit') || hasPermission('contractors.delete') || hasPermission('contractors.assign') || hasPermission('contractors.rate')) && (
+                  <TableHead className="w-[60px]">Acciones</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -369,6 +505,49 @@ export default function ContractorsPage() {
                     <TableCell>
                       <Badge variant="outline">{contractor.assignment_count || 0}</Badge>
                     </TableCell>
+                    {(hasPermission('contractors.edit') || hasPermission('contractors.delete') || hasPermission('contractors.assign') || hasPermission('contractors.rate')) && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {hasPermission('contractors.edit') && (
+                              <DropdownMenuItem onClick={() => toast.info('Edición de contratista próximamente')}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('contractors.assign') && (
+                              <DropdownMenuItem onClick={() => toast.info('Asignación de contratista próximamente')}>
+                                <Link2 className="h-4 w-4 mr-2" />
+                                Asignar a OT
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('contractors.rate') && (
+                              <DropdownMenuItem onClick={() => handleRate(contractor.id)}>
+                                <Star className="h-4 w-4 mr-2" />
+                                Calificar
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('contractors.delete') && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDelete(contractor.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

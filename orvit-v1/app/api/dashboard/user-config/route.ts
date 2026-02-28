@@ -5,6 +5,7 @@ import { cached, invalidateCache } from '@/lib/cache/cache-manager';
 import { dashboardConfigKeys, invalidationPatterns, TTL } from '@/lib/cache/cache-keys';
 import { validateRequest } from '@/lib/validations/helpers';
 import { SaveDashboardConfigSchema } from '@/lib/validations/dashboard';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,9 @@ export const dynamic = 'force-dynamic';
  * GET - Obtener configuración de dashboard del usuario
  */
 export async function GET(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -75,6 +79,9 @@ export async function GET(request: NextRequest) {
  * POST - Crear o actualizar configuración de dashboard
  */
 export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const validation = validateRequest(SaveDashboardConfigSchema, body);
@@ -137,6 +144,9 @@ export async function POST(request: NextRequest) {
  * DELETE - Eliminar configuración de dashboard
  */
 export async function DELETE(request: NextRequest) {
+  const { error: delAuthError } = await requireAuth();
+  if (delAuthError) return delAuthError;
+
   try {
     const { searchParams } = new URL(request.url);
     const configId = searchParams.get('id');

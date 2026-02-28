@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,20 +111,18 @@ function collectMachineIds(zones: any[]): number[] {
 // GET: Listar zonas de planta
 export async function GET(request: Request) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
     const sectorId = searchParams.get('sectorId');
     const parentId = searchParams.get('parentId');
     const includeChildren = searchParams.get('includeChildren') === 'true';
     const includeMachines = searchParams.get('includeMachines') === 'true';
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId es requerido' }, { status: 400 });
-    }
-
     // Construir filtros
     const where: any = {
-      companyId: Number(companyId)
+      companyId: user!.companyId
     };
 
     if (sectorId) {
@@ -168,7 +167,24 @@ export async function GET(request: Request) {
             logo: true,
             status: true,
             brand: true,
-            model: true
+            model: true,
+            type: true,
+            serialNumber: true,
+            companyId: true,
+            sectorId: true,
+            plantZoneId: true,
+            acquisitionDate: true,
+            assetCode: true,
+            sapCode: true,
+            productionLine: true,
+            installationDate: true,
+            manufacturingYear: true,
+            description: true,
+            voltage: true,
+            power: true,
+            weight: true,
+            dimensions: true,
+            aliases: true,
           }
         } : false,
         sector: {
@@ -221,6 +237,9 @@ export async function GET(request: Request) {
 // POST: Crear zona de planta
 export async function POST(request: Request) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const {
       name,
@@ -231,13 +250,14 @@ export async function POST(request: Request) {
       order = 0,
       parentId,
       sectorId,
-      companyId
     } = body;
 
+    const companyId = user!.companyId;
+
     // Validaciones
-    if (!name || !sectorId || !companyId) {
+    if (!name || !sectorId) {
       return NextResponse.json({
-        error: 'Faltan campos obligatorios: name, sectorId, companyId'
+        error: 'Faltan campos obligatorios: name, sectorId'
       }, { status: 400 });
     }
 

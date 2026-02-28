@@ -29,9 +29,14 @@ import {
   ShieldCheck,
   ArrowRight,
   ArrowLeft,
-  ClipboardCheck
+  ClipboardCheck,
+  Eye,
+  User,
+  Calendar,
 } from 'lucide-react';
 import LOTOStatusBadge from './LOTOStatusBadge';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface LOTOExecutionDialogProps {
   procedure: LOTOProcedure | null;
@@ -64,7 +69,7 @@ export default function LOTOExecutionDialog({
   workOrderId,
   ptwId,
 }: LOTOExecutionDialogProps) {
-  const [mode, setMode] = useState<'lock' | 'verify' | 'unlock'>('lock');
+  const [mode, setMode] = useState<'lock' | 'verify' | 'unlock' | 'view'>('lock');
   const [lockSteps, setLockSteps] = useState<LockStep[]>([]);
   const [unlockSteps, setUnlockSteps] = useState<LockStep[]>([]);
   const [notes, setNotes] = useState('');
@@ -86,7 +91,9 @@ export default function LOTOExecutionDialog({
 
   useEffect(() => {
     if (execution) {
-      if (execution.status === LOTOStatus.LOCKED && !execution.zeroEnergyVerified) {
+      if (execution.status === LOTOStatus.UNLOCKED) {
+        setMode('view');
+      } else if (execution.status === LOTOStatus.LOCKED && !execution.zeroEnergyVerified) {
         setMode('verify');
       } else if (execution.status === LOTOStatus.LOCKED && execution.zeroEnergyVerified) {
         setMode('unlock');
@@ -155,6 +162,65 @@ export default function LOTOExecutionDialog({
   };
 
   if (!procedure) return null;
+
+  const renderViewMode = () => {
+    if (!execution) return null;
+    const fmt = (d: any) => d ? format(new Date(d), 'dd/MM/yyyy HH:mm', { locale: es }) : '—';
+
+    return (
+      <div className="space-y-4">
+        <Alert className="border-success/20 bg-success-muted">
+          <CheckCircle className="h-4 w-4 text-success" />
+          <AlertTitle>Ejecución completada</AlertTitle>
+          <AlertDescription>Este bloqueo fue liberado exitosamente.</AlertDescription>
+        </Alert>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="p-3 border rounded-lg">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Bloqueado
+            </p>
+            <p className="font-medium">{execution.lockedBy?.name}</p>
+            <p className="text-muted-foreground">{fmt(execution.lockedAt)}</p>
+          </div>
+          {execution.zeroEnergyVerifiedBy && (
+            <div className="p-3 border rounded-lg">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" /> Energía cero verificada
+              </p>
+              <p className="font-medium">{execution.zeroEnergyVerifiedBy?.name}</p>
+              <p className="text-muted-foreground">{fmt(execution.zeroEnergyVerifiedAt)}</p>
+            </div>
+          )}
+          {execution.unlockedBy && (
+            <div className="p-3 border rounded-lg">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                <Unlock className="h-3 w-3" /> Desbloqueado
+              </p>
+              <p className="font-medium">{execution.unlockedBy?.name}</p>
+              <p className="text-muted-foreground">{fmt(execution.unlockedAt)}</p>
+            </div>
+          )}
+          {(execution.workOrder || execution.ptw) && (
+            <div className="p-3 border rounded-lg">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Contexto</p>
+              {execution.workOrder && <p className="font-medium">OT: {execution.workOrder.title}</p>}
+              {execution.ptw && <p className="font-medium">PTW: {execution.ptw.number}</p>}
+            </div>
+          )}
+        </div>
+
+        {execution.notes && (
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Notas</p>
+            <p className="text-sm">{execution.notes}</p>
+          </div>
+        )}
+
+        {renderEnergySources()}
+      </div>
+    );
+  };
 
   const renderEnergySources = () => (
     <div className="space-y-2">
@@ -446,6 +512,12 @@ export default function LOTOExecutionDialog({
             </Button>
           </>
         );
+      case 'view':
+        return (
+          <Button variant="outline" onClick={onClose}>
+            Cerrar
+          </Button>
+        );
     }
   };
 
@@ -457,9 +529,11 @@ export default function LOTOExecutionDialog({
             {mode === 'lock' && <Lock className="h-5 w-5 text-destructive" />}
             {mode === 'verify' && <CheckCircle className="h-5 w-5 text-primary" />}
             {mode === 'unlock' && <Unlock className="h-5 w-5 text-success" />}
+            {mode === 'view' && <Eye className="h-5 w-5 text-muted-foreground" />}
             {mode === 'lock' && 'Ejecutar Bloqueo LOTO'}
             {mode === 'verify' && 'Verificar Energia Cero'}
             {mode === 'unlock' && 'Ejecutar Desbloqueo LOTO'}
+            {mode === 'view' && 'Historial de Ejecución'}
           </DialogTitle>
           <DialogDescription>
             {procedure.name} - {procedure.machine?.name}
@@ -475,6 +549,7 @@ export default function LOTOExecutionDialog({
           {mode === 'lock' && renderLockMode()}
           {mode === 'verify' && renderVerifyMode()}
           {mode === 'unlock' && renderUnlockMode()}
+          {mode === 'view' && renderViewMode()}
         </DialogBody>
 
         <DialogFooter>{getFooterButtons()}</DialogFooter>

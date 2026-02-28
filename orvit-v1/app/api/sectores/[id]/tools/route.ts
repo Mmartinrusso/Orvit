@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // GET - Obtener todas las herramientas asignadas a un sector
 export async function GET(
@@ -7,6 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const sectorId = parseInt(params.id);
 
     if (isNaN(sectorId)) {
@@ -44,6 +48,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const sectorId = parseInt(params.id);
     const body = await request.json();
     const { toolId, quantity = 1, isRequired = true, notes } = body;

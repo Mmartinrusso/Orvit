@@ -85,8 +85,36 @@ async function getViewModeFromCookie(
 }
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
+  // Leer accessToken (sistema nuevo) con fallback a token (legacy)
+  const accessToken = request.cookies.get('accessToken')?.value;
+  const legacyToken = request.cookies.get('token')?.value;
+  const token = accessToken || legacyToken;
   const pathname = request.nextUrl.pathname;
+
+  // Helper: intentar refresh inline antes de redirigir a /login
+  // Solo para rutas de página (no API) — evita el flash a /login
+  const tryRefreshOrLogin = async (): Promise<NextResponse> => {
+    const refreshCookie = request.cookies.get('refreshToken')?.value;
+    if (refreshCookie && !pathname.startsWith('/api/')) {
+      try {
+        const refreshRes = await fetch(new URL('/api/auth/refresh', request.url), {
+          method: 'POST',
+          headers: { Cookie: request.headers.get('cookie') || '' },
+        });
+        if (refreshRes.ok) {
+          // Redirigir a la misma URL con cookies nuevas
+          const response = NextResponse.redirect(request.url);
+          for (const cookie of refreshRes.headers.getSetCookie()) {
+            response.headers.append('Set-Cookie', cookie);
+          }
+          return response;
+        }
+      } catch {
+        // Refresh falló, continuar al redirect a /login
+      }
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  };
 
   // Helper to create response with ViewMode header injected
   const createResponseWithViewMode = async (
@@ -192,6 +220,8 @@ export async function middleware(request: NextRequest) {
     '/api/webhooks',       // Webhooks externos
     '/api/telegram',       // Bot de Telegram
     '/api/google-drive/credentials', // Credenciales públicas de Google Drive
+    '/api/notifications/reminders-check', // Llamado interno por cron/reminder-check
+    '/api/tasks/check-overdue',           // Llamado interno por cron/task-due-check
   ];
   const isPublicApiPath = publicApiPaths.some(path => pathname.startsWith(path));
 
@@ -213,7 +243,7 @@ export async function middleware(request: NextRequest) {
   // Verificar si es la ruta de superadmin
   if (pathname.startsWith('/superadmin')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return tryRefreshOrLogin();
     }
 
     try {
@@ -224,7 +254,7 @@ export async function middleware(request: NextRequest) {
         if (payload.role === 'ADMIN') {
           return NextResponse.redirect(new URL('/empresas', request.url));
         } else {
-          return NextResponse.redirect(new URL('/login', request.url));
+          return tryRefreshOrLogin();
         }
       }
 
@@ -235,14 +265,14 @@ export async function middleware(request: NextRequest) {
       });
     } catch (error) {
       console.error('Error verifying JWT in middleware:', error);
-      return NextResponse.redirect(new URL('/login', request.url));
+      return tryRefreshOrLogin();
     }
   }
 
   // Para rutas de administración, verificar autenticación y permisos específicos
   if (pathname.startsWith('/administracion')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return tryRefreshOrLogin();
     }
 
     try {
@@ -268,13 +298,13 @@ export async function middleware(request: NextRequest) {
       });
     } catch (error) {
       console.error('❌ [MIDDLEWARE] Error verificando JWT para administración:', error);
-      return NextResponse.redirect(new URL('/login', request.url));
+      return tryRefreshOrLogin();
     }
   }
 
   // Para otras rutas protegidas, verificar que hay token válido
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return tryRefreshOrLogin();
   }
 
   try {
@@ -291,7 +321,7 @@ export async function middleware(request: NextRequest) {
     });
   } catch (error) {
     console.error('Invalid JWT in middleware:', error);
-    return NextResponse.redirect(new URL('/login', request.url));
+    return tryRefreshOrLogin();
   }
 }
 

@@ -1,5 +1,6 @@
 export { AgendaV2Page } from './AgendaV2Page';
 export { AgendaV2Sidebar } from './AgendaV2Sidebar';
+export type { TaskGroupItem } from './AgendaV2Sidebar';
 export { BoardView } from './BoardView';
 export { BoardColumn } from './BoardColumn';
 export { TaskCard } from './TaskCard';
@@ -8,4 +9,9 @@ export { TaskDetailPanel } from './TaskDetailPanel';
 export { SubtaskList } from './SubtaskList';
 export { InboxView } from './InboxView';
 export { DashboardView } from './DashboardView';
+export { ReportingView } from './ReportingView';
+export { PortfolioView } from './PortfolioView';
+export { FixedTasksView } from './FixedTasksView';
 export { CreateTaskModal } from './CreateTaskModal';
+export { CreateGroupModal } from './CreateGroupModal';
+export type { CreateGroupInput } from './CreateGroupModal';

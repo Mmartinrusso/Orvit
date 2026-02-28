@@ -70,7 +70,11 @@ const CommandList = React.forwardRef<
       '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20',
       className
     )}
-    style={{ overscrollBehavior: 'contain' }}
+    style={{ overscrollBehavior: 'contain', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+    onWheel={(e) => {
+      e.stopPropagation();
+      e.currentTarget.scrollTop += e.deltaY;
+    }}
     {...props}
   />
 ));

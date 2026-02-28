@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { StockMovementType } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 /**
  * GET /api/almacen/movements
@@ -17,6 +18,10 @@ import { StockMovementType } from '@prisma/client';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Permission check: almacen.view_inventory
+    const { user, error: authError } = await requirePermission('almacen.view_inventory');
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
 
     const companyId = Number(searchParams.get('companyId'));

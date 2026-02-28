@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAvailability, getCompanyAvailability, checkAvailability } from '@/lib/almacen/stock-availability';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 /**
  * GET /api/almacen/availability
@@ -16,6 +17,10 @@ import { getAvailability, getCompanyAvailability, checkAvailability } from '@/li
  */
 export async function GET(request: NextRequest) {
   try {
+    // Permission check: almacen.view_inventory
+    const { user, error: authError } = await requirePermission('almacen.view_inventory');
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
 
     // Get company from session/auth

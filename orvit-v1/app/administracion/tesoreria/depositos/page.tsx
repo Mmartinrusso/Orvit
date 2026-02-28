@@ -48,6 +48,7 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { v4 as uuidv4 } from 'uuid';
@@ -155,6 +156,8 @@ export default function DepositosPage() {
   const queryClient = useQueryClient();
   const { viewMode } = useViewMode();
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const canManageCash = hasPermission('treasury.manage_cash');
   const companyId = currentCompany?.id || 0;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -322,6 +325,7 @@ export default function DepositosPage() {
               <RefreshCcw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
               Actualizar
             </button>
+            {canManageCash && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-7 text-xs">
@@ -537,6 +541,7 @@ export default function DepositosPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
         </div>
       </div>

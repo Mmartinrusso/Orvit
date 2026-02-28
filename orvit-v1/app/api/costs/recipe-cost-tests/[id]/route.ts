@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { getUserAndCompany } from '@/lib/costs-auth';
 
 // DELETE /api/costs/recipe-cost-tests/[id] - Eliminar una prueba de costos
@@ -9,6 +10,9 @@ export async function DELETE(
 ) {
   console.log('🗑️ DELETE /api/costs/recipe-cost-tests/[id] - Iniciando...');
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const auth = await getUserAndCompany();
     console.log('🔐 Auth obtenida:', { hasAuth: !!auth, companyId: auth?.companyId });
     if (!auth || !auth.companyId) {

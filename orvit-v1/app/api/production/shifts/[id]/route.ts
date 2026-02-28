@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.SHIFTS);
+    if (error) return error;
 
     const shiftId = parseInt(params.id);
     if (isNaN(shiftId)) {
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const shift = await prisma.workShift.findFirst({
       where: {
         id: shiftId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -58,10 +57,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.SHIFTS);
+    if (error) return error;
 
     const shiftId = parseInt(params.id);
     if (isNaN(shiftId)) {
@@ -72,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingShift = await prisma.workShift.findFirst({
       where: {
         id: shiftId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -87,7 +84,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (validatedData.code && validatedData.code !== existingShift.code) {
       const duplicateCode = await prisma.workShift.findFirst({
         where: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code,
           id: { not: shiftId },
         },
@@ -129,10 +126,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.SHIFTS);
+    if (error) return error;
 
     const shiftId = parseInt(params.id);
     if (isNaN(shiftId)) {
@@ -143,7 +138,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingShift = await prisma.workShift.findFirst({
       where: {
         id: shiftId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 

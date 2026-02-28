@@ -7,6 +7,7 @@ import { PaymentRequestStatus, Priority } from '@prisma/client';
 import { logCreation } from '@/lib/compras/audit-helper';
 import { getViewMode } from '@/lib/view-mode/get-mode';
 import { MODE } from '@/lib/view-mode/types';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -291,6 +292,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Permission check: ingresar_compras
+    const hasPerm = await hasUserPermission(user.id, parseInt(companyId), 'ingresar_compras');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     // Obtener ViewMode desde header X-VM (inyectado por middleware)
     const viewMode = getViewMode(request);

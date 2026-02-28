@@ -26,7 +26,8 @@ import {
   BarChart3,
   PieChart,
   Building2,
-  Wrench
+  Wrench,
+  AlertTriangle
 } from 'lucide-react';
 
 interface CostsData {
@@ -40,9 +41,11 @@ interface CostsData {
     labor: number;
     parts: number;
     thirdParty: number;
+    extras: number;
     laborPercent: number;
     partsPercent: number;
     thirdPartyPercent: number;
+    extrasPercent: number;
   };
   topMachines: Array<{
     machineId: number;
@@ -197,6 +200,22 @@ function CostDistributionChart({ data }: { data: CostsData['distribution'] }) {
           <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.thirdParty)}</p>
         </div>
       </div>
+
+      {data.extras > 0 && (
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex justify-between text-sm mb-1">
+              <span className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Extras (daños)
+              </span>
+              <span>{data.extrasPercent}%</span>
+            </div>
+            <Progress value={data.extrasPercent} className="h-2 [&>div]:bg-destructive" />
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.extras)}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -207,25 +226,61 @@ function MonthlyTrendChart({ data }: { data: CostsData['monthlyTrend'] }) {
   const maxCost = Math.max(...data.map(d => d.totalCost), 1);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="grid grid-cols-6 gap-2">
-        {data.map((item, idx) => (
-          <div key={idx} className="text-center">
-            <div className="h-32 flex flex-col justify-end gap-1 mb-2">
-              <div
-                className="bg-primary/80 rounded-t w-full"
-                style={{
-                  height: `${item.totalCost ? (item.totalCost / maxCost) * 100 : 0}%`,
-                  minHeight: item.totalCost ? '4px' : '0'
-                }}
-                title={formatCurrency(item.totalCost)}
-              />
+        {data.map((item, idx) => {
+          const barH = item.totalCost > 0 ? Math.max((item.totalCost / maxCost) * 100, 3) : 0;
+          const catSum = item.laborCost + item.partsCost + item.thirdPartyCost;
+          const laborPct = catSum > 0 ? (item.laborCost / catSum) * 100 : 0;
+          const partsPct = catSum > 0 ? (item.partsCost / catSum) * 100 : 0;
+          const thirdPartyPct = catSum > 0 ? (item.thirdPartyCost / catSum) * 100 : 0;
+
+          return (
+            <div key={idx} className="text-center">
+              <div className="h-32 flex flex-col justify-end mb-2">
+                {item.totalCost > 0 ? (
+                  <div
+                    className="w-full relative rounded-t overflow-hidden"
+                    style={{ height: `${barH}%` }}
+                    title={`Total: ${formatCurrency(item.totalCost)}\nMO: ${formatCurrency(item.laborCost)}\nRepuestos: ${formatCurrency(item.partsCost)}\nTerceros: ${formatCurrency(item.thirdPartyCost)}`}
+                  >
+                    <div className="absolute inset-0 flex flex-col">
+                      {thirdPartyPct > 0 && (
+                        <div className="bg-orange-400/70 w-full" style={{ height: `${thirdPartyPct}%` }} />
+                      )}
+                      {partsPct > 0 && (
+                        <div className="bg-emerald-500/60 w-full" style={{ height: `${partsPct}%` }} />
+                      )}
+                      {laborPct > 0 && (
+                        <div className="bg-primary/80 w-full flex-1" style={{ height: `${laborPct}%` }} />
+                      )}
+                      {catSum === 0 && <div className="bg-primary/80 w-full h-full" />}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-0.5 bg-border rounded" />
+                )}
+              </div>
+              <div className="text-xs font-medium">{item.month}</div>
+              <div className="text-xs text-muted-foreground">{formatCurrency(item.totalCost)}</div>
+              <div className="text-xs text-muted-foreground">{item.workOrderCount} OTs</div>
             </div>
-            <div className="text-xs font-medium">{item.month}</div>
-            <div className="text-xs text-muted-foreground">{formatCurrency(item.totalCost)}</div>
-            <div className="text-xs text-muted-foreground">{item.workOrderCount} OTs</div>
-          </div>
-        ))}
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t justify-center">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary/80" />
+          Mano de obra
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500/60" />
+          Repuestos
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-orange-400/70" />
+          Terceros
+        </span>
       </div>
     </div>
   );
@@ -275,6 +330,38 @@ function BudgetComparisonCard({ data }: { data: CostsData['budgetComparison'] })
                 </span>
               </div>
             </div>
+
+            {(data.budget.labor > 0 || data.budget.parts > 0 || data.budget.thirdParty > 0) && (
+              <div className="pt-3 border-t space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Desglose por categoría
+                </p>
+                {[
+                  { label: 'Mano de obra', budget: data.budget.labor, actual: data.actual.labor },
+                  { label: 'Repuestos', budget: data.budget.parts, actual: data.actual.parts },
+                  { label: 'Terceros', budget: data.budget.thirdParty, actual: data.actual.thirdParty },
+                ]
+                  .filter(row => row.budget > 0)
+                  .map(row => {
+                    const pct = Math.round((row.actual / row.budget) * 100);
+                    const over = row.actual > row.budget;
+                    return (
+                      <div key={row.label}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">{row.label}</span>
+                          <span className={`text-xs ${over ? 'text-destructive font-medium' : ''}`}>
+                            {formatCurrency(row.actual)} / {formatCurrency(row.budget)}
+                          </span>
+                        </div>
+                        <Progress
+                          value={Math.min(pct, 100)}
+                          className={`h-1.5 ${over ? '[&>div]:bg-destructive' : ''}`}
+                        />
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </>
         )}
       </CardContent>
@@ -419,6 +506,48 @@ export default function CostosPage() {
               <BudgetComparisonCard data={data.budgetComparison} />
             ) : null}
           </div>
+
+          {/* Top 3 Máquinas */}
+          {!isLoading && data?.topMachines && data.topMachines.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wrench className="h-5 w-5" />
+                  Top 3 Máquinas Más Costosas
+                </CardTitle>
+                <CardDescription>Las máquinas con mayor gasto en el período</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {data.topMachines.map((machine, idx) => {
+                  const pct = data.kpis.totalCostPeriod > 0
+                    ? (machine.totalCost / data.kpis.totalCostPeriod) * 100
+                    : 0;
+                  return (
+                    <div key={machine.machineId}>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="flex items-center gap-2 text-sm font-medium">
+                          <span className="text-xs text-muted-foreground tabular-nums w-4">
+                            #{idx + 1}
+                          </span>
+                          {machine.machineName}
+                        </span>
+                        <div className="text-right">
+                          <span className="text-sm font-bold">{formatCurrency(machine.totalCost)}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {machine.workOrderCount} OT{machine.workOrderCount !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {Math.round(pct)}% del total del período
+                      </p>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Tendencia mensual */}
           <Card>
@@ -567,6 +696,7 @@ export default function CostosPage() {
                     <TableRow>
                       <TableHead>OT</TableHead>
                       <TableHead>Máquina</TableHead>
+                      <TableHead className="hidden sm:table-cell">Completada</TableHead>
                       <TableHead className="text-right">M. de Obra</TableHead>
                       <TableHead className="text-right">Repuestos</TableHead>
                       <TableHead className="text-right">Terceros</TableHead>
@@ -583,12 +713,37 @@ export default function CostosPage() {
                           </div>
                         </TableCell>
                         <TableCell>{cost.machineName || '-'}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                          {cost.completedDate
+                            ? new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(cost.completedDate))
+                            : '-'}
+                        </TableCell>
                         <TableCell className="text-right">{formatCurrency(cost.laborCost)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(cost.partsCost)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(cost.thirdPartyCost)}</TableCell>
                         <TableCell className="text-right font-bold">{formatCurrency(cost.totalCost)}</TableCell>
                       </TableRow>
                     ))}
+                    {(data?.recentCosts.length ?? 0) > 1 && (
+                      <TableRow className="border-t-2 bg-muted/30 font-semibold">
+                        <TableCell colSpan={2} className="text-sm text-muted-foreground">
+                          Total mostrado
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell" />
+                        <TableCell className="text-right">
+                          {formatCurrency(data!.recentCosts.reduce((s, c) => s + c.laborCost, 0))}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(data!.recentCosts.reduce((s, c) => s + c.partsCost, 0))}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(data!.recentCosts.reduce((s, c) => s + c.thirdPartyCost, 0))}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {formatCurrency(data!.recentCosts.reduce((s, c) => s + c.totalCost, 0))}
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               )}

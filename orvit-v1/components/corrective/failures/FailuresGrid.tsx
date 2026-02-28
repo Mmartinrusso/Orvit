@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Eye,
   MoreVertical,
@@ -65,6 +66,7 @@ interface FailureOccurrence {
     name: string;
     avatar?: string;
   };
+  incidentType?: string;
 }
 
 interface FailuresGridProps {
@@ -79,6 +81,10 @@ interface FailuresGridProps {
   canEdit?: boolean;
   canDelete?: boolean;
   className?: string;
+  // Bulk selection
+  selectionMode?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number) => void;
 }
 
 const priorityConfig: Record<string, { color: string; bg: string; label: string }> = {
@@ -123,6 +129,9 @@ export function FailuresGrid({
   canEdit = true,
   canDelete = false,
   className,
+  selectionMode = false,
+  selectedIds = [],
+  onToggleSelect,
 }: FailuresGridProps) {
   if (failures.length === 0) {
     return null;
@@ -145,18 +154,29 @@ export function FailuresGrid({
                               (failure.component ? [failure.component] : []);
         const allSubcomponents = failure.affectedSubcomponentsList || [];
 
+        const isSelected = selectedIds.includes(failure.id);
+
         return (
           <Card
             key={failure.id}
             className={cn(
               'overflow-hidden cursor-pointer hover:shadow-md transition-all group',
-              failure.causedDowntime && 'ring-1 ring-rose-200 dark:ring-rose-900/50'
+              failure.causedDowntime && 'ring-1 ring-rose-200 dark:ring-rose-900/50',
+              selectionMode && isSelected && 'ring-2 ring-primary bg-primary/5'
             )}
-            onClick={() => onSelectFailure?.(failure.id)}
+            onClick={selectionMode ? () => onToggleSelect?.(failure.id) : () => onSelectFailure?.(failure.id)}
           >
             {/* Header */}
             <div className={cn('px-4 py-3 border-b', priorityInfo.bg)}>
               <div className="flex items-start gap-3">
+                {selectionMode && (
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect?.(failure.id)}
+                    className="mt-1 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
                 <div className={cn(
                   'p-2 rounded-lg shrink-0',
                   failure.causedDowntime
@@ -311,6 +331,11 @@ export function FailuresGrid({
                   <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5">
                     <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />
                     Seguridad
+                  </Badge>
+                )}
+                {failure.incidentType === 'ROTURA' && (
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0 h-5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                    Rotura
                   </Badge>
                 )}
               </div>

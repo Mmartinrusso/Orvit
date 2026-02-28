@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/auth';
 import { logStateChange } from '@/lib/compras/audit-helper';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Permission check: almacen.adjust
+    const { error: permError } = await requirePermission('almacen.adjust');
+    if (permError) return permError;
+
     const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

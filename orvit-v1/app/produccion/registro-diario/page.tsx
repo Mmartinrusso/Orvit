@@ -102,9 +102,13 @@ interface Shift {
 
 export default function ProduccionDelDiaPage() {
   const { currentSector } = useCompany();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const confirm = useConfirm();
   const userColors = useUserColors();
+
+  // Permission checks for daily parts
+  const canConfirmParts = hasPermission('produccion.partes.confirm');
+  const canReviewParts = hasPermission('produccion.partes.review');
 
   // State
   const [loading, setLoading] = useState(true);
@@ -453,7 +457,7 @@ export default function ProduccionDelDiaPage() {
                 {statusConfig[session.status]?.label}
               </Badge>
             )}
-            {session?.status === 'DRAFT' && session.entries.length > 0 && (
+            {session?.status === 'DRAFT' && session.entries.length > 0 && canConfirmParts && (
               <Button size="sm" onClick={handleSubmit} disabled={submitting} className="gap-1">
                 <Send className="h-4 w-4" />
                 Enviar turno
@@ -461,17 +465,21 @@ export default function ProduccionDelDiaPage() {
             )}
             {session?.status === 'SUBMITTED' && (
               <>
-                <Button size="sm" variant="outline" onClick={handleReopen} disabled={submitting} className="gap-1">
-                  <Unlock className="h-4 w-4" />
-                  Reabrir
-                </Button>
-                <Button size="sm" onClick={handleApprove} disabled={submitting} className="gap-1">
-                  <Check className="h-4 w-4" />
-                  Aprobar
-                </Button>
+                {canReviewParts && (
+                  <Button size="sm" variant="outline" onClick={handleReopen} disabled={submitting} className="gap-1">
+                    <Unlock className="h-4 w-4" />
+                    Reabrir
+                  </Button>
+                )}
+                {canReviewParts && (
+                  <Button size="sm" onClick={handleApprove} disabled={submitting} className="gap-1">
+                    <Check className="h-4 w-4" />
+                    Aprobar
+                  </Button>
+                )}
               </>
             )}
-            {session?.status === 'APPROVED' && (
+            {session?.status === 'APPROVED' && canReviewParts && (
               <Button size="sm" variant="outline" onClick={handleReopen} disabled={submitting} className="gap-1">
                 <Unlock className="h-4 w-4" />
                 Reabrir

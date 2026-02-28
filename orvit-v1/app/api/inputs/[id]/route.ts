@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const input = await prisma.inputItem.findUnique({
       where: { id: params.id },
       include: {
@@ -61,6 +65,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const validatedData = UpdateInputSchema.parse(body);
 
@@ -136,6 +143,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     // Verificar que el insumo existe
     const existingInput = await prisma.inputItem.findUnique({
       where: { id: params.id },

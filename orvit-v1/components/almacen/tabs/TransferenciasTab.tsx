@@ -39,6 +39,7 @@ import { EmptyState } from '../shared/EmptyState';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { downloadCSV } from '@/lib/cargas/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TransferenciasTabProps {
   onNew: () => void;
@@ -50,6 +51,8 @@ interface TransferenciasTabProps {
  */
 export function TransferenciasTab({ onNew, onView }: TransferenciasTabProps) {
   const { toast } = useToast();
+  const { hasPermission } = useAuth();
+  const canTransfer = hasPermission('almacen.transfer');
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filters, setFilters] = useState<TransferenciasFilters>({});
@@ -148,20 +151,20 @@ export function TransferenciasTab({ onNew, onView }: TransferenciasTabProps) {
           <Eye className="h-4 w-4 mr-2" />
           Ver detalle
         </DropdownMenuItem>
-        {transfer.estado === 'BORRADOR' && (
+        {canTransfer && transfer.estado === 'BORRADOR' && (
           <DropdownMenuItem onClick={() => handleSend(transfer.id)}>
             <Send className="h-4 w-4 mr-2" />
             Enviar
           </DropdownMenuItem>
         )}
-        {transfer.estado === 'EN_TRANSITO' && (
+        {canTransfer && transfer.estado === 'EN_TRANSITO' && (
           <DropdownMenuItem onClick={() => handleReceive(transfer.id)}>
             <PackageCheck className="h-4 w-4 mr-2" />
             Recibir
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        {['BORRADOR', 'SOLICITADO'].includes(transfer.estado) && (
+        {canTransfer && ['BORRADOR', 'SOLICITADO'].includes(transfer.estado) && (
           <DropdownMenuItem
             onClick={() => handleCancel(transfer.id)}
             className="text-destructive"
@@ -196,11 +199,13 @@ export function TransferenciasTab({ onNew, onView }: TransferenciasTabProps) {
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleExportCSV} disabled={transferencias.length === 0} title="Exportar CSV">
             <Download className="h-4 w-4" />
           </Button>
-          <Button onClick={onNew} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Nueva Transferencia</span>
-            <span className="sm:hidden">Nueva</span>
-          </Button>
+          {canTransfer && (
+            <Button onClick={onNew} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Nueva Transferencia</span>
+              <span className="sm:hidden">Nueva</span>
+            </Button>
+          )}
         </div>
       </div>
 

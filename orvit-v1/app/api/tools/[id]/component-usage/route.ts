@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 // GET /api/tools/[id]/component-usage - Obtener componentes que usan este repuesto
 export async function GET(
@@ -7,6 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
+
     const toolId = parseInt(params.id);
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');

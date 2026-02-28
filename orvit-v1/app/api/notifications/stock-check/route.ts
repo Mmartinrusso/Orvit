@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendInstantNotification } from '@/lib/instant-notifications';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,9 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos (aumentado)
 
 // POST /api/notifications/stock-check - REACTIVADO CON LÓGICA CORRECTA
 export async function POST(request: NextRequest) {
+  const { user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   console.log('🔍 [STOCK CHECK] Iniciando verificación de stock...');
   
   // Verificar cache para evitar ejecuciones múltiples

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -32,10 +33,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.VIEW);
+    if (error) return error;
 
     const id = parseInt(params.id);
     if (isNaN(id)) {
@@ -43,7 +42,7 @@ export async function GET(
     }
 
     const resourceType = await prisma.productionResourceType.findFirst({
-      where: { id, companyId: auth.companyId },
+      where: { id, companyId: user!.companyId },
       include: {
         resources: {
           orderBy: { order: 'asc' },
@@ -76,10 +75,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
 
     const id = parseInt(params.id);
     if (isNaN(id)) {
@@ -87,7 +84,7 @@ export async function PUT(
     }
 
     const existing = await prisma.productionResourceType.findFirst({
-      where: { id, companyId: auth.companyId },
+      where: { id, companyId: user!.companyId },
     });
 
     if (!existing) {
@@ -105,7 +102,7 @@ export async function PUT(
       const duplicate = await prisma.productionResourceType.findUnique({
         where: {
           companyId_code: {
-            companyId: auth.companyId,
+            companyId: user!.companyId,
             code: validatedData.code.toUpperCase(),
           },
         },
@@ -157,10 +154,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
 
     const id = parseInt(params.id);
     if (isNaN(id)) {
@@ -168,7 +163,7 @@ export async function DELETE(
     }
 
     const existing = await prisma.productionResourceType.findFirst({
-      where: { id, companyId: auth.companyId },
+      where: { id, companyId: user!.companyId },
       include: { _count: { select: { resources: true } } },
     });
 

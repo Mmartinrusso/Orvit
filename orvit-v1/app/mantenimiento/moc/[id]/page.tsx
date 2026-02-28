@@ -2,6 +2,7 @@
 
 import { use } from 'react';
 import { MOCDetail } from '@/components/moc';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -22,8 +23,10 @@ export default function MOCDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <MOCDetail mocId={mocId} />
-    </div>
+    <PermissionGuard permission="moc.view" fallback={<div className="p-6 text-muted-foreground">No tienes permisos para ver esta página</div>}>
+      <div className="container mx-auto p-6">
+        <MOCDetail mocId={mocId} />
+      </div>
+    </PermissionGuard>
   );
 }

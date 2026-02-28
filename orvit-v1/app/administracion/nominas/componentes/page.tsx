@@ -38,6 +38,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PayrollUnion {
   id: number;
@@ -61,6 +62,8 @@ interface SalaryComponent {
 export default function ComponentesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const canManageNominas = hasPermission('ingresar_nominas');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filterUnionId, setFilterUnionId] = useState<string>('all');
@@ -250,7 +253,7 @@ export default function ComponentesPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {components.length === 0 && (
+            {components.length === 0 && canManageNominas && (
               <Button variant="outline" size="sm" onClick={initializeDefaults} className="h-8">
                 <Wand2 className="mr-2 h-3.5 w-3.5" />
                 Inicializar Defaults
@@ -271,12 +274,14 @@ export default function ComponentesPage() {
               Actualizar
             </button>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="h-8">
-                  <Plus className="mr-2 h-3.5 w-3.5" />
-                  Nuevo
-                </Button>
-              </DialogTrigger>
+              {canManageNominas && (
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8">
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    Nuevo
+                  </Button>
+                </DialogTrigger>
+              )}
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Nuevo Componente Salarial</DialogTitle>

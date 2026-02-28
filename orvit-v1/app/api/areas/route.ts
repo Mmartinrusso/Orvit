@@ -4,20 +4,17 @@ import { cached, invalidateCache } from '@/lib/cache/cache-manager';
 import { areaKeys, TTL } from '@/lib/cache/cache-keys';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateAreaSchema } from '@/lib/validations/areas';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/areas?companyId=123 - Obtener áreas reales de la base de datos
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId) {
-      return new NextResponse('ID de empresa requerido', { status: 400 });
-    }
-
-    const companyIdNum = parseInt(companyId);
+    const companyIdNum = user!.companyId;
     const cacheKey = areaKeys.list(companyIdNum);
 
     const areas = await cached(cacheKey, async () => {
@@ -76,13 +73,16 @@ export async function GET(request: Request) {
 // POST /api/areas - Crear área en la base de datos
 export async function POST(request: Request) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const validation = validateRequest(CreateAreaSchema, body);
     if (!validation.success) return validation.response;
 
-    const { name, companyId, icon, logo } = validation.data;
+    const { name, icon, logo } = validation.data;
 
-    const companyIdNum = companyId;
+    const companyIdNum = user!.companyId;
 
     // Verificar si ya existe
     const existingArea = await prisma.area.findFirst({

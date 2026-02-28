@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ import {
   X,
   Loader2,
   CheckSquare,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -50,6 +52,7 @@ export function WorkOrdersBulkBar({
   const [priorityOpen, setPriorityOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState('');
+  const confirm = useConfirm();
 
   if (selectedIds.length === 0) return null;
 
@@ -98,9 +101,26 @@ export function WorkOrdersBulkBar({
     setScheduleDate('');
   };
 
-  const handleCancel = () => {
-    if (!confirm(`¿Cancelar ${selectedIds.length} orden(es)? Esta acción no se puede deshacer.`)) return;
+  const handleCancel = async () => {
+    const ok = await confirm({
+      title: 'Cancelar órdenes',
+      description: `¿Cancelar ${selectedIds.length} orden${selectedIds.length !== 1 ? 'es' : ''} de trabajo? Esta acción no se puede deshacer.`,
+      confirmText: 'Cancelar órdenes',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     executeBulk('cancel', { cancelReason: 'Cancelación en lote' });
+  };
+
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: 'Eliminar órdenes',
+      description: `¿Eliminar ${selectedIds.length} orden${selectedIds.length !== 1 ? 'es' : ''} de trabajo? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    executeBulk('delete');
   };
 
   return (
@@ -208,11 +228,23 @@ export function WorkOrdersBulkBar({
             variant="outline"
             size="sm"
             disabled={loading}
-            className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="h-8 text-xs text-muted-foreground hover:bg-muted/50"
             onClick={handleCancel}
           >
             <XCircle className="h-3.5 w-3.5 mr-1.5" />
             Cancelar
+          </Button>
+
+          {/* Eliminar */}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={loading}
+            className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            Eliminar
           </Button>
         </div>
 

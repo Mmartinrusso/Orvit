@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,11 +33,37 @@ export default function SkillsPage() {
 
   // Permission checks
   const canView = hasPermission('skills.view');
+  const canViewCertifications = hasPermission('certifications.view');
+
+  const { data: skillsData } = useQuery({
+    queryKey: ['skills-stats', currentCompany?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/skills?companyId=${currentCompany?.id}`);
+      if (!res.ok) return { skills: [] };
+      return res.json();
+    },
+    enabled: !!currentCompany?.id && canView,
+  });
+
+  const { data: certSummaryData } = useQuery({
+    queryKey: ['certifications-summary', currentCompany?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/certifications?companyId=${currentCompany?.id}`);
+      if (!res.ok) return { summary: { expiringSoon: 0 } };
+      return res.json();
+    },
+    enabled: !!currentCompany?.id && canViewCertifications,
+  });
+
+  const skills = skillsData?.skills || [];
+  const skillsCount = skills.length;
+  // Users who have at least one skill (sum of _count.userSkills across all skills may double-count,
+  // so we use it as a proxy for activity rather than unique user count)
+  const totalUserSkillAssignments = skills.reduce((sum: number, s: any) => sum + (s._count?.userSkills || 0), 0);
   const canCreate = hasPermission('skills.create');
   const canEdit = hasPermission('skills.edit');
   const canDelete = hasPermission('skills.delete');
   const canManageRequirements = hasPermission('skills.requirements.manage');
-  const canViewCertifications = hasPermission('certifications.view');
 
   if (isLoading) {
     return (
@@ -113,7 +140,7 @@ export default function SkillsPage() {
             <Award className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">{skillsCount}</div>
             <p className="text-xs text-muted-foreground">
               En el catálogo
             </p>
@@ -123,14 +150,14 @@ export default function SkillsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Personal Capacitado
+              Asignaciones
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">{totalUserSkillAssignments}</div>
             <p className="text-xs text-muted-foreground">
-              Con skills asignadas
+              Skills asignadas a personal
             </p>
           </CardContent>
         </Card>
@@ -138,14 +165,16 @@ export default function SkillsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Certificaciones Activas
+              Requieren Certificación
             </CardTitle>
             <FileCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">
+              {skills.filter((s: any) => s.isCertificationRequired).length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Vigentes
+              Con certificado obligatorio
             </p>
           </CardContent>
         </Card>
@@ -153,14 +182,16 @@ export default function SkillsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Por Vencer
+              Categorías
             </CardTitle>
             <AlertTriangle className="h-4 w-4 text-warning-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning-muted-foreground">-</div>
+            <div className="text-2xl font-bold text-warning-muted-foreground">
+              {skillsData?.categories?.length ?? '-'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Próximos 30 días
+              En el catálogo
             </p>
           </CardContent>
         </Card>
@@ -186,9 +217,11 @@ export default function SkillsPage() {
           <TabsTrigger value="expiring" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             Por Vencer
-            <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1">
-              0
-            </Badge>
+            {(certSummaryData?.summary?.expiringSoon ?? 0) > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1">
+                {certSummaryData!.summary.expiringSoon}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 

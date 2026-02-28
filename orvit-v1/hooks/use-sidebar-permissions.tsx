@@ -15,8 +15,8 @@ interface SidebarPermissions {
  * Ya NO hace fetch - lee directamente de AuthContext
  */
 export function useSidebarPermissions() {
-  const { user, loading, hasPermission } = useAuth();
-  
+  const { user, loading, hasPermission, hasAnyPermission } = useAuth();
+
   // ✨ OPTIMIZACIÓN: Calcular permisos desde memoria
   const permissions = useMemo<SidebarPermissions>(() => {
     if (!user) {
@@ -29,12 +29,12 @@ export function useSidebarPermissions() {
     }
 
     return {
-      canViewTasks: hasPermission('ingresar_tareas'),
+      canViewTasks: hasAnyPermission(['tasks.view_all', 'ingresar_tareas']),
       canViewUsuarios: hasPermission('gestionar_usuarios'),
       canViewPermisos: hasPermission('admin.permissions'),
       canViewRoles: hasPermission('admin.roles'),
     };
-  }, [user, hasPermission]);
+  }, [user, hasPermission, hasAnyPermission]);
 
   // No-op function para mantener compatibilidad
   const refreshPermissions = async () => {

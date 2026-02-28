@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // Configuración S3
 const s3 = new S3Client({
@@ -54,6 +55,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const maintenanceId = parseInt(params.id);
 
     if (isNaN(maintenanceId)) {
@@ -128,6 +132,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const maintenanceId = parseInt(params.id);
 
     if (isNaN(maintenanceId)) {
@@ -303,6 +310,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const maintenanceId = parseInt(params.id);
 
     if (isNaN(maintenanceId)) {

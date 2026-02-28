@@ -244,6 +244,8 @@ export async function POST(
         type: 'system',
         authorId: userId,
       },
+    }).catch((err: Error) => {
+      console.warn('⚠️ No se pudo registrar comentario de sistema:', err.message);
     });
 
     // 11. Si tiene FailureOccurrence y se inicia, actualizar estado

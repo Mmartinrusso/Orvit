@@ -70,7 +70,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const isPlantStopped = false;
   
   return (
-    <header className="border-b border-border h-16 px-4 flex items-center bg-background">
+    <header className="border-b border-border h-24 px-4 flex items-center bg-background">
       <div className="flex items-center md:hidden mr-2">
         <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <Menu className="h-5 w-5" />

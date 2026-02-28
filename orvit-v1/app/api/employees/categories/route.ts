@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/employees/categories - Obtener categorías de empleados
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const companyId = String(user!.companyId);
 
     // Obtener categorías de empleados activas
     const categories = await prisma.$queryRaw`

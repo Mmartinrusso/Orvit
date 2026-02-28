@@ -36,6 +36,7 @@ import {
   type ReservaType,
 } from '@/lib/almacen/types';
 import { cn, formatNumber } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ReservasTabProps {
   onViewItem?: (supplierItemId: number) => void;
@@ -46,6 +47,8 @@ interface ReservasTabProps {
  */
 export function ReservasTab({ onViewItem }: ReservasTabProps) {
   const { toast } = useToast();
+  const { hasPermission } = useAuth();
+  const canReleaseReserva = hasPermission('almacen.reservation.release');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filters, setFilters] = useState<ReservasFilters>({});
 
@@ -138,7 +141,7 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
         />
 
         <div className="flex items-center gap-2">
-          {selectedIds.length > 0 && (
+          {canReleaseReserva && selectedIds.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -190,7 +193,7 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
                     <div className="flex items-center gap-1 shrink-0">
                       {expiringSoon && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
                       <ReservaStatusBadge status={reserva.estado} size="sm" />
-                      {canRelease && (
+                      {canRelease && canReleaseReserva && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -330,7 +333,7 @@ export function ReservasTab({ onViewItem }: ReservasTabProps) {
                           : '-'}
                       </TableCell>
                       <TableCell>
-                        {canRelease && (
+                        {canRelease && canReleaseReserva && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

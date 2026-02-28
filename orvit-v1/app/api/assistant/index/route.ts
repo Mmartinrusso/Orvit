@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getAssistantContext } from '@/lib/assistant/auth'
 import { indexEntity, indexAllEntitiesOfType, deleteEntityEmbedding } from '@/lib/assistant/indexer'
 import { IndexableEntityType } from '@/lib/assistant/types'
+import { requireAuth } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,9 @@ const VALID_ENTITY_TYPES: IndexableEntityType[] = [
  * Indexa una entidad específica o todas las de un tipo
  */
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth()
+  if (error) return error
+
   try {
     // 1. Verificar autenticación (solo admins)
     const context = await getAssistantContext()
@@ -111,6 +115,9 @@ export async function POST(request: NextRequest) {
  * Obtiene el estado de indexación
  */
 export async function GET(request: NextRequest) {
+  const { error: getError } = await requireAuth()
+  if (getError) return getError
+
   try {
     const context = await getAssistantContext()
     if (!context) {
@@ -167,6 +174,9 @@ export async function GET(request: NextRequest) {
  * Elimina embeddings
  */
 export async function DELETE(request: NextRequest) {
+  const { error: delError } = await requireAuth()
+  if (delError) return delError
+
   try {
     const context = await getAssistantContext()
     if (!context) {

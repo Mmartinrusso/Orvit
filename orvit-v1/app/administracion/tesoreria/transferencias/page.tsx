@@ -38,6 +38,7 @@ import { Plus, ArrowRightLeft, RefreshCw, Wallet, Building2 } from 'lucide-react
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CashAccount {
   id: number;
@@ -110,6 +111,8 @@ async function createTransfer(data: any) {
 export default function TransferenciasPage() {
   const queryClient = useQueryClient();
   const { mode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canTransfer = hasPermission('treasury.transfer');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [tipoOrigen, setTipoOrigen] = useState<'caja' | 'banco'>('caja');
   const [tipoDestino, setTipoDestino] = useState<'caja' | 'banco'>('banco');
@@ -208,6 +211,7 @@ export default function TransferenciasPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          {canTransfer && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -372,6 +376,7 @@ export default function TransferenciasPage() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 

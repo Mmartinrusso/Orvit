@@ -4,6 +4,7 @@ import { formatNumber } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { usePermission } from '@/hooks/use-permissions';
 import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +41,7 @@ interface Pago {
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { hasPermission: canAssignPriceLists } = usePermission('ventas.listas_precios.assign');
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
@@ -236,7 +238,7 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <PermissionGuard permission="VIEW_CLIENTS">
+    <PermissionGuard permission="ventas.clientes.view">
       <div className="space-y-6 p-4 md:p-6 pb-24 md:pb-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -461,10 +463,12 @@ export default function ClientDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Listas de Precios</span>
-                <Button variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar
-                </Button>
+                {canAssignPriceLists && (
+                  <Button variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>

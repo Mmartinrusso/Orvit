@@ -300,9 +300,10 @@ model Company {
   recurringPurchaseOrders RecurringPurchaseOrder[]
 
   // Agenda: Tareas y Recordatorios
-  agendaTasks     AgendaTask[]
-  agendaReminders AgendaReminder[]
-  voiceTaskLogs   VoiceTaskLog[]
+  agendaTasks          AgendaTask[]
+  agendaReminders      AgendaReminder[]
+  voiceTaskLogs        VoiceTaskLog[]
+  agendaTaskComments   AgendaTaskComment[] @relation("AgendaTaskCommentCompany")
 
   // Mantenimiento Preventivo
   preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateCompany")
@@ -351,6 +352,12 @@ model Company {
 
   // Conteo Físico de Pañol
   stockCountSessions StockCountSession[]
+
+  // Controles de Seguimiento de Soluciones
+  solutionControlInstances SolutionControlInstance[]
+
+  // Conceptos de gasto predefinidos por proveedor
+  supplierExpenseConcepts SupplierExpenseConcept[]
 
   @@index([subscriptionId])
   @@index([primaryAdminId])
@@ -453,6 +460,7 @@ model User {
   downtimeReturned          DowntimeLog[]              @relation("DowntimeReturnedBy")
   occurrencesLinked         FailureOccurrence[]        @relation("OccurrenceLinkedBy")
   occurrencesReopened       FailureOccurrence[]        @relation("OccurrenceReopenedBy")
+  occurrencesCorrected      FailureOccurrence[]        @relation("OccurrenceCorrectedBy")
   failureOccurrenceComments FailureOccurrenceComment[] @relation("FailureOccurrenceCommentAuthor")
 
   // P5: Nuevas relaciones
@@ -689,10 +697,12 @@ model User {
   recurringPurchaseOrders RecurringPurchaseOrder[] @relation("RecurringOrderCreador")
 
   // Agenda: Tareas y Recordatorios
-  agendaTasksCreated  AgendaTask[]     @relation("AgendaTasksCreatedBy")
-  agendaTasksAssigned AgendaTask[]     @relation("AgendaTasksAssignedToUser")
-  agendaReminders     AgendaReminder[] @relation("AgendaRemindersUser")
-  voiceTaskLogs       VoiceTaskLog[]   @relation("VoiceTaskLogsUser")
+  agendaTasksCreated  AgendaTask[]      @relation("AgendaTasksCreatedBy")
+  agendaTasksAssigned AgendaTask[]      @relation("AgendaTasksAssignedToUser")
+  agendaReminders     AgendaReminder[]  @relation("AgendaRemindersUser")
+  voiceTaskLogs       VoiceTaskLog[]    @relation("VoiceTaskLogsUser")
+  agendaTaskComments   AgendaTaskComment[] @relation("AgendaTaskCommentAuthor")
+  taskGroupMemberships TaskGroupMember[]   @relation("TaskGroupMemberships")
 
   // Módulo Almacén
   stockReservationsCreated     StockReservation[]   @relation("StockReservationCreatedBy")
@@ -739,6 +749,9 @@ model User {
 
   // Conteo Físico de Pañol
   stockCountSessionsCreated StockCountSession[] @relation("StockCountCreatedBy")
+
+  // Controles de Seguimiento de Soluciones
+  solutionControlsCompleted SolutionControlInstance[] @relation("SolutionControlCompletedBy")
 
   @@index([role, isActive])
   @@index([isActive])
@@ -1814,6 +1827,7 @@ model FailureOccurrence {
   affectedComponents   Json? // IDs de componentes afectados
   status               String?   @default("OPEN") @db.VarChar(20) // OPEN, IN_PROGRESS, RESOLVED
   notes                String?
+  incidentType         String    @default("FALLA") @db.VarChar(20) // "FALLA" | "ROTURA"
 
   // NUEVOS CAMPOS - Sistema Correctivo Profesional
   isIntermittent Boolean @default(false)
@@ -1842,6 +1856,11 @@ model FailureOccurrence {
   // Fotos/Archivos adjuntos
   photos Json? // Array de URLs de fotos [{url, fileName, originalName}]
 
+  // Corrección de diagnóstico (al cerrar OT)
+  originalReport  Json? // Snapshot del reporte original antes de corrección {title, description, machineId, subcomponentId, affectedComponents, failureCategory, incidentType}
+  correctedAt     DateTime?
+  correctedById   Int?
+
   // Relaciones
   workOrder            WorkOrder?               @relation(fields: [failureId], references: [id], onDelete: Cascade)
   occurrenceEvents     FailureOccurrenceEvent[] // Eventos "pasó otra vez" normalizados
@@ -1861,6 +1880,7 @@ model FailureOccurrence {
   linkedDuplicates  FailureOccurrence[]        @relation("LinkedDuplicates")
   linkedBy          User?                      @relation("OccurrenceLinkedBy", fields: [linkedById], references: [id])
   reopenedByUser    User?                      @relation("OccurrenceReopenedBy", fields: [reopenedById], references: [id])
+  correctedByUser   User?                      @relation("OccurrenceCorrectedBy", fields: [correctedById], references: [id])
 
   // Libro de Ideas
   ideas Idea[]
@@ -1883,6 +1903,7 @@ model FailureOccurrence {
   @@index([companyId, isLinkedDuplicate, status]) // Performance - Filtro principal GET
   @@index([companyId, isLinkedDuplicate, priority, status]) // Performance - Alertas
   @@index([companyId, reopenedFrom]) // Performance - Reincidencias
+  @@index([companyId, incidentType, status, reportedAt]) // Performance - Tabs Fallas/Roturas
   @@map("failure_occurrences")
 }
 
@@ -2253,6 +2274,9 @@ model Contact {
 
   // Agenda: Tareas asignadas a este contacto
   agendaTasks AgendaTask[] @relation("AgendaTasksAssignedToContact")
+
+  // WhatsApp para notificaciones externas
+  whatsapp String?
 
   @@map("Contact")
 }
@@ -3667,6 +3691,8 @@ model suppliers {
   grniAccruals             GRNIAccrual[]
   // Solicitudes de cambio (doble aprobación)
   changeRequests           SupplierChangeRequest[]
+  // Conceptos de gasto predefinidos
+  expenseConcepts          SupplierExpenseConcept[]
 
   @@index([company_id], map: "idx_suppliers_company_id")
   @@index([cuit])
@@ -3770,10 +3796,44 @@ model supplies {
   category              SupplyCategory?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   supply_monthly_prices supply_monthly_prices[]
   supply_price_history  supply_price_history[]
+  technicalSheet        SupplyTechnicalSheet?
 
   @@unique([company_id, code]) // Código único por empresa
   @@index([company_id], map: "idx_supplies_company_id")
   @@index([categoryId])
+}
+
+// =====================================================
+// FICHA TÉCNICA DE MATERIA PRIMA
+// =====================================================
+
+model SupplyTechnicalSheet {
+  id                Int      @id @default(autoincrement())
+  supplyId          Int      @unique // 1-to-1 con supplies
+  // Propiedades físicas
+  density           Float?   // g/cm³
+  viscosity         Float?   // mPa·s / cP
+  ph                Float?
+  flashPoint        Float?   // °C — punto de inflamación
+  color             String?  @db.VarChar(100)
+  odor              String?  @db.VarChar(100)
+  // Almacenamiento
+  storageTemp       String?  @db.VarChar(100) // ej: "5-25°C"
+  storageConditions String?  @db.Text
+  shelfLifeDays     Int? // días de vida útil
+  // Seguridad / MSDS
+  casNumber         String?  @db.VarChar(50)
+  hazardClass       String?  @db.VarChar(100)
+  sdsUrl            String?  @db.VarChar(500) // link a hoja de seguridad
+  // Documentos adjuntos (JSON array de {url, name, size, type})
+  documents         Json     @default("[]")
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  supply supplies @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+
+  @@map("supply_technical_sheets")
 }
 
 // =====================================================
@@ -4945,6 +5005,8 @@ model SupplierItem {
   devolucionItems          DevolucionMaterialItem[]
   // Módulo Producción - link a insumos de recetas
   inputItems               InputItem[]               @relation("InputItemSupply")
+  // Documentos por proveedor (SDS, certificados, fichas del proveedor)
+  supplierDocuments        Json                      @default("[]")
 
   @@unique([supplierId, supplyId])
   @@index([supplierId, codigoProveedor])
@@ -5429,6 +5491,9 @@ enum NotificationType {
   cheque_overdue
   quote_expiring
   payment_received
+  // Tipos para controles de seguimiento de soluciones
+  SOLUTION_CONTROL_DUE
+  SOLUTION_CONTROL_OVERDUE
 }
 
 enum TaskStatus {
@@ -5921,6 +5986,7 @@ model SolutionApplied {
   effectiveness Int? // 1-5
   attachments   Json? // URLs de fotos/archivos
   notes         String? @db.Text
+  repairAction  String? @db.VarChar(20) // "CAMBIO" | "REPARACION" — solo para incidentes tipo ROTURA
 
   // Obsolescencia (para marcar soluciones que ya no aplican)
   isObsolete     Boolean   @default(false) // Si la solución ya no es válida
@@ -5939,6 +6005,10 @@ model SolutionApplied {
   performedBy       User              @relation("SolutionAppliedPerformedBy", fields: [performedById], references: [id])
   template          Template?         @relation(fields: [templateUsedId], references: [id])
   company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  controlInstances  SolutionControlInstance[]
+
+  // Plan de controles de seguimiento (JSON: [{order, delayMinutes, description}])
+  controlPlan       Json?
 
   @@index([failureOccurrenceId])
   @@index([workOrderId])
@@ -5950,6 +6020,46 @@ model SolutionApplied {
   @@index([companyId, outcome, effectiveness]) // ✅ getTopSolutions optimizado
   @@index([companyId, isObsolete, outcome]) // ✅ Filtrar no-obsoletas que funcionaron
   @@map("solutions_applied")
+}
+
+// ─── Controles de Seguimiento de Soluciones ─────────────────────────────────
+
+enum SolutionControlStatus {
+  WAITING   // Esperando que se complete el control anterior (scheduledAt = null)
+  PENDING   // Programado, aún no vencido
+  NOTIFIED  // Notificación enviada, pendiente de completar
+  COMPLETED // Completado por el técnico
+  OVERDUE   // Vencido sin completar
+  SKIPPED   // Saltado manualmente
+}
+
+model SolutionControlInstance {
+  id                Int                    @id @default(autoincrement())
+  solutionAppliedId Int
+  order             Int                    // 1-based
+  delayMinutes      Int                    // delay respecto al anterior completado (o performedAt para order=1)
+  description       String
+  scheduledAt       DateTime?              // null hasta que el anterior se complete (para order > 1)
+  status            SolutionControlStatus  @default(PENDING)
+  notifiedAt        DateTime?
+  completedAt       DateTime?
+  completedById     Int?
+  outcome           String?                // "OK" | "NOK" | "PARCIAL"
+  notes             String?
+  photos            Json?
+  requiresFollowup  Boolean                @default(false)
+  companyId         Int
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  solutionApplied SolutionApplied @relation(fields: [solutionAppliedId], references: [id], onDelete: Cascade)
+  completedBy     User?           @relation("SolutionControlCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([solutionAppliedId])
+  @@index([scheduledAt, status])
+  @@index([companyId, status])
+  @@map("solution_control_instances")
 }
 
 // Configuraciones de Correctivo por Empresa
@@ -14857,12 +14967,45 @@ model AgendaTask {
   // Log de voz (si se creó por audio)
   voiceLog VoiceTaskLog?
 
+  // Visibilidad y externos
+  isCompanyVisible    Boolean   @default(false) // visible para todos los usuarios de la empresa
+  externalNotified    Boolean   @default(false)
+  externalNotifiedAt  DateTime?
+
+  // Comentarios
+  comments AgendaTaskComment[]
+
   @@index([createdById, status])
   @@index([assignedToUserId])
   @@index([assignedToContactId])
   @@index([companyId, dueDate])
   @@index([companyId, status])
+  @@index([companyId, isCompanyVisible])
   @@map("agenda_tasks")
+}
+
+model AgendaTaskComment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Tarea a la que pertenece
+  taskId Int
+  task   AgendaTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Autor del comentario
+  authorId Int
+  author   User @relation("AgendaTaskCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Multi-tenant
+  companyId Int
+  company   Company @relation("AgendaTaskCommentCompany", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([authorId])
+  @@index([companyId])
+  @@map("agenda_task_comments")
 }
 
 model AgendaReminder {
@@ -16128,18 +16271,37 @@ model TaskGroup {
   icon        String?   @db.VarChar(50)
   description String?   @db.Text
   isArchived  Boolean   @default(false)
+  isProject   Boolean   @default(false) // true = Proyecto (multi-member), false = Grupo simple
   companyId   Int
   createdById Int
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy   User       @relation("TaskGroupCreator", fields: [createdById], references: [id])
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy   User               @relation("TaskGroupCreator", fields: [createdById], references: [id])
   tasks       Task[]
   agendaTasks AgendaTask[]
+  members     TaskGroupMember[]
 
   @@index([companyId])
+  @@index([companyId, isProject])
   @@map("task_groups")
+}
+
+model TaskGroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  userId    Int
+  role      String   @default("member") @db.VarChar(20) // "owner" | "member"
+  createdAt DateTime @default(now())
+
+  group TaskGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User      @relation("TaskGroupMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("task_group_members")
 }
 
 // ─── Conteo Físico de Pañol ──────────────────────────────────────────
@@ -16183,4 +16345,27 @@ model StockCountItem {
   @@unique([sessionId, toolId])
   @@index([sessionId])
   @@map("stock_count_items")
+}
+
+// =====================================================
+// CONCEPTOS DE GASTO PREDEFINIDOS POR PROVEEDOR
+// Permiten autocompletar los conceptos al cargar
+// comprobantes indirectos de un proveedor recurrente
+// =====================================================
+
+model SupplierExpenseConcept {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int
+  descripcion String   @db.VarChar(255)
+  monto       Decimal? @db.Decimal(15, 2)
+  orden       Int      @default(0)
+  companyId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier suppliers @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_expense_concepts")
+  @@index([supplierId])
 }

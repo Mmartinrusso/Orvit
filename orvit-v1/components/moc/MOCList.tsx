@@ -41,6 +41,7 @@ import { MOCStatusBadge, MOCTypeBadge } from './MOCStatusBadge';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MOC {
   id: number;
@@ -66,6 +67,7 @@ interface MOCListProps {
 
 export function MOCList({ companyId }: MOCListProps) {
   const router = useRouter();
+  const { hasPermission } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const queryClient = useQueryClient();
@@ -123,10 +125,12 @@ export function MOCList({ companyId }: MOCListProps) {
               Control de cambios en equipos, procesos y procedimientos
             </CardDescription>
           </div>
-          <Button onClick={() => router.push('/mantenimiento/moc/nuevo')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo MOC
-          </Button>
+          {hasPermission('moc.create') && (
+            <Button onClick={() => router.push('/mantenimiento/moc/nuevo')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo MOC
+            </Button>
+          )}
         </div>
 
         {/* Summary */}
@@ -247,7 +251,7 @@ export function MOCList({ companyId }: MOCListProps) {
                           <Eye className="h-4 w-4 mr-2" />
                           Ver detalles
                         </DropdownMenuItem>
-                        {moc.status === 'DRAFT' && (
+                        {moc.status === 'DRAFT' && hasPermission('moc.edit') && (
                           <DropdownMenuItem onClick={() => router.push(`/mantenimiento/moc/${moc.id}/editar`)}>
                             <Pencil className="h-4 w-4 mr-2" />
                             Editar

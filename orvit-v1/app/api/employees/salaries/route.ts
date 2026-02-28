@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,20 +9,16 @@ export const dynamic = 'force-dynamic';
 // GET /api/employees/salaries - Obtener sueldos mensuales
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Salaries GET - Iniciando...');
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const companyId = String(user!.companyId);
     const employeeId = searchParams.get('employeeId');
     const month = searchParams.get('month');
 
     console.log('📊 Parámetros:', { companyId, employeeId, month });
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
 
     // Construir filtros
     const whereClause: any = {
@@ -151,12 +148,16 @@ export async function GET(request: NextRequest) {
 // POST /api/employees/salaries - Registrar nuevo sueldo
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { employeeId, fecha_imputacion, grossSalary, payrollTaxes, notes, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!employeeId || !fecha_imputacion || !grossSalary || !companyId) {
+    const body = await request.json();
+    const { employeeId, fecha_imputacion, grossSalary, payrollTaxes, notes } = body;
+    const companyId = String(user!.companyId);
+
+    if (!employeeId || !fecha_imputacion || !grossSalary) {
       return NextResponse.json(
-        { error: 'employeeId, fecha_imputacion, grossSalary y companyId son requeridos' },
+        { error: 'employeeId, fecha_imputacion y grossSalary son requeridos' },
         { status: 400 }
       );
     }

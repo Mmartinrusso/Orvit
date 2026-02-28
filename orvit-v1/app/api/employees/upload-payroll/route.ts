@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/employees/upload-payroll - Cargar planilla de empleados
 export async function POST(request: NextRequest) {
   try {
-    // Obtener companyId de los query parameters
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
+    const companyId = String(user!.companyId);
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
-    if (!file || !companyId) {
+    if (!file) {
       return NextResponse.json(
-        { error: 'Archivo y companyId son requeridos' },
+        { error: 'Archivo es requerido' },
         { status: 400 }
       );
     }

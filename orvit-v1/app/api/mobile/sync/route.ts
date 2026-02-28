@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,9 @@ interface OfflineAction {
  * Syncs offline queue items from mobile device
  */
 export async function POST(request: Request) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const body = await request.json();
     const { companyId, userId, actions } = body as {
@@ -146,6 +150,9 @@ async function processAction(
  * Gets data that needs to be synced to mobile device
  */
 export async function GET(request: Request) {
+  const { error: getError } = await requireAuth();
+  if (getError) return getError;
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = parseInt(searchParams.get('companyId') || '0');

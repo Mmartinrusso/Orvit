@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders, shouldDisableCache } from '@/lib/perf';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,8 +9,10 @@ export const dynamic = 'force-dynamic';
 // GET /api/price-comparisons?companyId=123
 export async function GET(request: NextRequest) {
   const perfCtx = startPerf();
-  
+
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     
@@ -85,6 +88,9 @@ export async function GET(request: NextRequest) {
 // POST /api/price-comparisons
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const { name, companyId, competitors, products } = body;
 
@@ -176,6 +182,9 @@ export async function POST(request: NextRequest) {
 // DELETE /api/price-comparisons?id=123
 export async function DELETE(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

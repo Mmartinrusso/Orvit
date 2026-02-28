@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
 
@@ -30,10 +31,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.VIEW);
+    if (error) return error;
 
     const lotId = parseInt(params.id);
     if (isNaN(lotId)) {
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const lot = await prisma.productionBatchLot.findFirst({
       where: {
         id: lotId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         productionOrder: {
@@ -115,10 +114,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.APPROVE);
+    if (error) return error;
 
     const lotId = parseInt(params.id);
     if (isNaN(lotId)) {
@@ -129,7 +126,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingLot = await prisma.productionBatchLot.findFirst({
       where: {
         id: lotId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -156,7 +153,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           qualityStatus: 'BLOCKED',
           blockedReason,
           blockedAt: new Date(),
-          blockedById: auth.user.id,
+          blockedById: user!.id,
         },
       });
 
@@ -166,9 +163,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         entityId: lotId,
         eventType: 'LOT_BLOCKED',
         newValue: { blockedReason },
-        performedById: auth.user.id,
+        performedById: user!.id,
         productionOrderId: existingLot.productionOrderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       });
 
       return NextResponse.json({
@@ -194,7 +191,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         data: {
           qualityStatus: 'APPROVED',
           releasedAt: new Date(),
-          releasedById: auth.user.id,
+          releasedById: user!.id,
           blockedReason: null,
         },
       });
@@ -205,9 +202,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         entityId: lotId,
         eventType: 'LOT_RELEASED',
         notes,
-        performedById: auth.user.id,
+        performedById: user!.id,
         productionOrderId: existingLot.productionOrderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       });
 
       return NextResponse.json({
@@ -240,7 +237,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         data: {
           qualityStatus: 'APPROVED',
           releasedAt: new Date(),
-          releasedById: auth.user.id,
+          releasedById: user!.id,
         },
       });
 
@@ -250,9 +247,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         entityId: lotId,
         eventType: 'LOT_RELEASED',
         notes,
-        performedById: auth.user.id,
+        performedById: user!.id,
         productionOrderId: existingLot.productionOrderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       });
 
       return NextResponse.json({
@@ -285,10 +282,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.APPROVE);
+    if (error) return error;
 
     const lotId = parseInt(params.id);
     if (isNaN(lotId)) {
@@ -299,7 +294,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingLot = await prisma.productionBatchLot.findFirst({
       where: {
         id: lotId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         _count: {

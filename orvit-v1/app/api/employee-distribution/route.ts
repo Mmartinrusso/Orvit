@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/employee-distribution - Obtener configuraciones de distribución de empleados
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Employee Distribution GET - Iniciando...');
-    
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+
+    const companyId = String(user!.companyId);
 
     // Obtener todas las configuraciones de distribución de empleados para la empresa
     const distributions = await prisma.$queryRawUnsafe(`
@@ -53,18 +49,21 @@ export async function GET(request: NextRequest) {
 // POST /api/employee-distribution - Crear nueva configuración de distribución de empleados
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Employee Distribution POST - Iniciando...');
-    
+
     const body = await request.json();
-    const { 
-      companyId, 
-      employeeId, 
-      productCategoryId, 
-      percentage 
+    const {
+      employeeId,
+      productCategoryId,
+      percentage
     } = body;
+    const companyId = String(user!.companyId);
 
     // Validaciones
-    if (!companyId || !employeeId || !productCategoryId || percentage === undefined) {
+    if (!employeeId || !productCategoryId || percentage === undefined) {
       return NextResponse.json(
         { error: 'Todos los campos son requeridos' },
         { status: 400 }

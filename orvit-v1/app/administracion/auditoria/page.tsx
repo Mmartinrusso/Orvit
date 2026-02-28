@@ -39,6 +39,8 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 interface PriceChangeLog {
   id: string;
@@ -63,8 +65,13 @@ interface PriceChangeSummary {
 }
 
 export default function AuditoriaPage() {
+  const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState<'general' | 'price-changes'>('general');
+
+  // Permisos granulares de auditoria
+  const canViewAudit = hasPermission('audit.view');
+  const canExportAudit = hasPermission('audit.export');
 
   // Price changes state
   const [priceChangeLogs, setPriceChangeLogs] = useState<PriceChangeLog[]>([]);
@@ -184,6 +191,7 @@ export default function AuditoriaPage() {
   ];
 
   return (
+    <PermissionGuard permission="audit.view" showUnauthorized={true}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -403,7 +411,7 @@ export default function AuditoriaPage() {
                     <RefreshCw className={`h-4 w-4 mr-1 ${priceLoading ? 'animate-spin' : ''}`} />
                     Actualizar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                  <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!canExportAudit}>
                     <Download className="h-4 w-4 mr-1" />
                     Exportar CSV
                   </Button>
@@ -565,5 +573,6 @@ export default function AuditoriaPage() {
         </>
       )}
     </div>
+    </PermissionGuard>
   );
 }

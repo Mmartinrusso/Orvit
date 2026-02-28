@@ -157,10 +157,15 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
   const [isDeleteFixedTaskDialogOpen, setIsDeleteFixedTaskDialogOpen] = useState(false);
   const [isDeletingFixedTask, setIsDeletingFixedTask] = useState(false);
 
-  const { hasPermission: canViewTasks } = usePermissionRobust('ingresar_tareas');
-  const { hasPermission: canCreateFixedTask } = usePermissionRobust('crear_tarea_fija');
-  const { hasPermission: canEditFixedTask } = usePermissionRobust('editar_tarea_fija');
-  const { hasPermission: canDeleteFixedTask } = usePermissionRobust('eliminar_tarea_fija');
+  const { hasPermission: canViewTasks } = usePermissionRobust('tasks.view_all');
+  const { hasPermission: canCreateTask } = usePermissionRobust('tasks.create');
+  const { hasPermission: canEditTask } = usePermissionRobust('tasks.edit');
+  const { hasPermission: canDeleteTask } = usePermissionRobust('tasks.delete');
+  const { hasPermission: canAssignTask } = usePermissionRobust('tasks.assign');
+  const { hasPermission: canCompleteTask } = usePermissionRobust('tasks.complete');
+  const { hasPermission: canCreateFixedTask } = usePermissionRobust('fixed_tasks.create');
+  const { hasPermission: canEditFixedTask } = usePermissionRobust('fixed_tasks.edit');
+  const { hasPermission: canDeleteFixedTask } = usePermissionRobust('fixed_tasks.delete');
 
   const { tasks, fetchTasks, createTask, updateTaskAPI, deleteTask, setSelectedTask, selectedTask } = useTaskStore();
   const { user } = useAuth();
@@ -480,10 +485,12 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
           </h1>
           <p className="text-sm text-muted-foreground hidden sm:block">Gestión de tareas del equipo</p>
         </div>
-        <Button onClick={() => setIsNewTaskModalOpen(true)} size="sm">
-          <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Nueva Tarea</span>
-        </Button>
+        {canCreateTask && (
+          <Button onClick={() => setIsNewTaskModalOpen(true)} size="sm">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nueva Tarea</span>
+          </Button>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -822,8 +829,8 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
                 selectedTaskId={selectedTask?.id}
                 onTaskSelect={(task) => setSelectedTask(task)}
                 onTaskEdit={(task) => { setEditingRegularTask(task); setIsEditTaskModalOpen(true); }}
-                canEdit={(task) => task.assignedTo?.id?.toString() === user?.id || canViewTasks}
-                canDelete={(task) => task.createdBy?.id?.toString() === user?.id || canViewTasks}
+                canEdit={(task) => canEditTask || task.assignedTo?.id?.toString() === user?.id || canViewTasks}
+                canDelete={(task) => canDeleteTask || task.createdBy?.id?.toString() === user?.id || canViewTasks}
               />
             )}
           </div>
@@ -897,10 +904,12 @@ export default function TareasContent({ activeTab }: TareasContentProps) {
                 </h1>
                 <p className="text-sm text-muted-foreground hidden sm:block">Resumen personal y progreso del equipo</p>
               </div>
-              <Button onClick={() => setIsNewTaskModalOpen(true)} size="sm">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Nueva Tarea</span>
-              </Button>
+              {canCreateTask && (
+                <Button onClick={() => setIsNewTaskModalOpen(true)} size="sm">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Nueva Tarea</span>
+                </Button>
+              )}
             </div>
 
             {/* KPI Cards */}

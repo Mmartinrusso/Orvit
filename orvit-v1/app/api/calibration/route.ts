@@ -2,36 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET: List calibrations
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('calibration.view');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
     const status = searchParams.get('status');
     const machineId = searchParams.get('machineId');
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId requerido' }, { status: 400 });
-    }
-
-    const where: any = { companyId };
-    if (status && status !== 'all') where.status = status;
-    if (machineId) where.machineId = parseInt(machineId);
+    const statusCondition = status && status !== 'all'
+      ? Prisma.sql`AND c.status = ${status}`
+      : Prisma.sql``;
+    const machineCondition = machineId
+      ? Prisma.sql`AND c."machineId" = ${parseInt(machineId)}`
+      : Prisma.sql``;
 
     const calibrations = await prisma.$queryRaw`
       SELECT
@@ -42,8 +34,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN "Machine" m ON c."machineId" = m.id
       LEFT JOIN "User" u ON c."calibratedById" = u.id
       WHERE c."companyId" = ${companyId}
-      ${status && status !== 'all' ? prisma.$queryRaw`AND c.status = ${status}` : prisma.$queryRaw``}
-      ${machineId ? prisma.$queryRaw`AND c."machineId" = ${parseInt(machineId)}` : prisma.$queryRaw``}
+      ${statusCondition}
+      ${machineCondition}
       ORDER BY c."nextCalibrationDate" ASC NULLS LAST
     `;
 
@@ -69,21 +61,12 @@ export async function GET(request: NextRequest) {
 // POST: Create calibration
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('calibration.create');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const body = await request.json();
     const {
-      companyId,
       machineId,
       componentId,
       instrumentName,
@@ -95,9 +78,9 @@ export async function POST(request: NextRequest) {
       toleranceMax,
     } = body;
 
-    if (!companyId || !machineId || !instrumentName) {
+    if (!machineId || !instrumentName) {
       return NextResponse.json(
-        { error: 'companyId, machineId e instrumentName son requeridos' },
+        { error: 'machineId e instrumentName son requeridos' },
         { status: 400 }
       );
     }
@@ -133,6 +116,148 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, calibrationNumber }, { status: 201 });
   } catch (error) {
     console.error('Error creating calibration:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
+// PUT: Update calibration (edit, execute, approve)
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, action } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+
+    // Determine required permission based on action
+    let permissionName = 'calibration.edit';
+    if (action === 'execute') permissionName = 'calibration.execute';
+    else if (action === 'approve') permissionName = 'calibration.approve';
+
+    const { user, error } = await requirePermission(permissionName);
+    if (error) return error;
+
+    const companyId = user!.companyId;
+
+    // Verify ownership
+    const existing = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "Calibration" WHERE id = ${id} AND "companyId" = ${companyId}
+    `;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Calibración no encontrada' }, { status: 404 });
+    }
+
+    if (action === 'execute') {
+      const { result, measurementBefore, measurementAfter, notes } = body;
+
+      await prisma.$executeRaw`
+        UPDATE "Calibration" SET
+          status = 'COMPLETED',
+          result = ${result || 'PASS'},
+          "measurementBefore" = ${measurementBefore || null},
+          "measurementAfter" = ${measurementAfter || null},
+          "calibratedById" = ${user!.id},
+          "lastCalibrationDate" = NOW(),
+          notes = ${notes || null},
+          "updatedAt" = NOW()
+        WHERE id = ${id} AND "companyId" = ${companyId}
+      `;
+
+      // Calculate next calibration date
+      const calData = await prisma.$queryRaw<{ frequencyDays: number }[]>`
+        SELECT "frequencyDays" FROM "Calibration" WHERE id = ${id}
+      `;
+      if (calData[0]?.frequencyDays) {
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + calData[0].frequencyDays);
+        await prisma.$executeRaw`
+          UPDATE "Calibration" SET
+            "nextCalibrationDate" = ${nextDate},
+            "dueDate" = ${nextDate}
+          WHERE id = ${id}
+        `;
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'approve') {
+      const { approved, approvalNotes } = body;
+
+      await prisma.$executeRaw`
+        UPDATE "Calibration" SET
+          "approvedById" = ${user!.id},
+          "approvedAt" = NOW(),
+          "approvalStatus" = ${approved ? 'APPROVED' : 'REJECTED'},
+          "approvalNotes" = ${approvalNotes || null},
+          "updatedAt" = NOW()
+        WHERE id = ${id} AND "companyId" = ${companyId}
+      `;
+
+      return NextResponse.json({ success: true });
+    }
+
+    // Default: edit
+    const {
+      instrumentName,
+      instrumentSerial,
+      calibrationType,
+      frequencyDays,
+      standardUsed,
+      toleranceMin,
+      toleranceMax,
+    } = body;
+
+    await prisma.$executeRaw`
+      UPDATE "Calibration" SET
+        "instrumentName" = COALESCE(${instrumentName || null}, "instrumentName"),
+        "instrumentSerial" = ${instrumentSerial || null},
+        "calibrationType" = COALESCE(${calibrationType || null}, "calibrationType"),
+        "frequencyDays" = COALESCE(${frequencyDays || null}, "frequencyDays"),
+        "standardUsed" = ${standardUsed || null},
+        "toleranceMin" = ${toleranceMin || null},
+        "toleranceMax" = ${toleranceMax || null},
+        "updatedAt" = NOW()
+      WHERE id = ${id} AND "companyId" = ${companyId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating calibration:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
+// DELETE: Delete calibration
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error } = await requirePermission('calibration.delete');
+    if (error) return error;
+
+    const companyId = user!.companyId;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const existing = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "Calibration" WHERE id = ${parseInt(id)} AND "companyId" = ${companyId}
+    `;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Calibración no encontrada' }, { status: 404 });
+    }
+
+    await prisma.$executeRaw`
+      DELETE FROM "Calibration" WHERE id = ${parseInt(id)} AND "companyId" = ${companyId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting calibration:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

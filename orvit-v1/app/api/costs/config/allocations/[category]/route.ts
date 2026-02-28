@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { AllocationsArraySchema, AllocationCategoryQuerySchema } from '@/lib/validations/costs';
 import { z } from 'zod';
 
@@ -9,6 +10,9 @@ export async function PUT(
   { params }: { params: { category: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     // Validate category
     const validatedCategory = AllocationCategoryQuerySchema.parse({ 
       category: params.category 

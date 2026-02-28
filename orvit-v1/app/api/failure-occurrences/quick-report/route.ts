@@ -15,6 +15,7 @@ import { calculatePriority } from '@/lib/corrective/priority-calculator';
 import { detectDuplicates } from '@/lib/corrective/duplicate-detector';
 import { handleDowntime } from '@/lib/corrective/downtime-manager';
 import { notifyNewFailure, notifyP1ToSectorTechnicians } from '@/lib/discord/notifications';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,9 +49,30 @@ const quickReportSchema = z.object({
   isSafetyRelated: z.boolean().optional().default(false),
   notes: z.string().optional(),
 
+  // Tipo de incidente (Fallas vs Roturas)
+  incidentType: z.enum(['FALLA', 'ROTURA']).optional().default('FALLA'),
+
   // CIERRE INMEDIATO (ya se resolvió en el momento)
   resolveImmediately: z.boolean().optional().default(false),
   immediateSolution: z.string().optional(),
+
+  // Datos de resolución completa (cuando resolveImmediately=true desde CreateIncidentDialog)
+  diagnosis: z.string().min(5).optional(),
+  outcome: z.enum(['FUNCIONÓ', 'PARCIAL', 'NO_FUNCIONÓ']).optional(),
+  actualMinutes: z.number().int().positive().optional(),
+  toolsUsed: z.array(z.object({ id: z.number(), name: z.string(), quantity: z.number() })).optional(),
+  sparePartsUsed: z.array(z.object({ id: z.number(), name: z.string(), quantity: z.number() })).optional(),
+  repairAction: z.enum(['CAMBIO', 'REPARACION']).optional(), // Solo para ROTURA
+  repairDetail: z.string().optional(), // Detalle de reparación o pieza cambiada
+  fixType: z.enum(['DEFINITIVA', 'PARCHE']).optional().default('DEFINITIVA'),
+  performedByIds: z.array(z.number().int().positive()).optional(), // Operadores adicionales
+  supervisorId: z.number().int().positive().optional(), // Supervisor
+  controlPlan: z.array(z.object({
+    order: z.number().int().positive(),
+    delayMinutes: z.number().int().positive(),
+    description: z.string().max(500),
+    type: z.enum(['from_resolution', 'from_previous']).optional().default('from_resolution'),
+  })).optional(), // Controles de seguimiento
 
   // CONTROL DE FLUJO
   forceCreate: z.boolean().optional().default(false), // Ignorar duplicados
@@ -78,6 +100,10 @@ export async function POST(request: NextRequest) {
 
     const companyId = payload.companyId as number;
     const userId = payload.userId as number;
+
+    // Permission check: ingresar_mantenimiento
+    const hasPerm = await hasUserPermission(userId, companyId, 'ingresar_mantenimiento');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     // 2. Parsear y validar body
     const body = await request.json();
@@ -219,6 +245,7 @@ export async function POST(request: NextRequest) {
         data: {
           // failureId: null (NO hay WorkOrder para observaciones)
           companyId,
+          incidentType: data.incidentType,
           machineId: data.machineId,
           subcomponentId: primarySubcomponentId,
           affectedComponents: (data.componentIds?.length || data.subcomponentIds?.length)
@@ -268,6 +295,7 @@ export async function POST(request: NextRequest) {
       occurrence = await prisma.failureOccurrence.create({
         data: {
           companyId,
+          incidentType: data.incidentType,
           machineId: data.machineId,
           subcomponentId: primarySubcomponentId,
           affectedComponents: (data.componentIds?.length || data.subcomponentIds?.length)
@@ -302,6 +330,74 @@ export async function POST(request: NextRequest) {
           reporter: { select: { id: true, name: true, email: true } },
         }
       });
+
+      // Crear SolutionApplied si se proporcionaron datos completos de resolución
+      if (data.diagnosis) {
+        // Construir notas de la solución incluyendo repairDetail si existe
+        let solutionNotes = data.notes || '';
+        if (data.repairDetail) {
+          const detailLabel = data.repairAction === 'CAMBIO' ? 'Pieza cambiada' : 'Detalle de reparación';
+          solutionNotes = `${detailLabel}: ${data.repairDetail}${solutionNotes ? `\n\n${solutionNotes}` : ''}`;
+        }
+
+        const solutionApplied = await prisma.solutionApplied.create({
+          data: {
+            failureOccurrenceId: occurrence.id,
+            workOrderId: null, // Sin OT — resolución inmediata
+            diagnosis: data.diagnosis,
+            solution: data.immediateSolution || data.diagnosis,
+            outcome: data.outcome || 'FUNCIONÓ',
+            performedById: data.supervisorId || userId, // Supervisor como principal, o el usuario actual
+            performedByIds: data.performedByIds?.length ? data.performedByIds : undefined,
+            performedAt: new Date(),
+            actualMinutes: data.actualMinutes,
+            fixType: data.fixType || 'DEFINITIVA',
+            toolsUsed: data.toolsUsed || undefined,
+            sparePartsUsed: data.sparePartsUsed || undefined,
+            repairAction: data.repairAction || undefined, // CAMBIO | REPARACION (solo Roturas)
+            controlPlan: data.controlPlan || undefined,
+            notes: solutionNotes || undefined,
+            companyId,
+          }
+        });
+        console.log('   - SolutionApplied creada con datos completos');
+
+        // Crear SolutionControlInstance records si hay controlPlan
+        if (data.controlPlan && data.controlPlan.length > 0) {
+          const performedAt = new Date();
+          // Ordenar por order para procesar secuencialmente
+          const sortedControls = [...data.controlPlan].sort((a, b) => a.order - b.order);
+
+          for (const control of sortedControls) {
+            const isFirst = control.order === 1;
+            const controlType = control.type || 'from_resolution';
+
+            // Solo el primer control "from_resolution" se agenda inmediatamente
+            // Los "from_previous" se agendan cuando el control anterior se completa (manejado por otro endpoint)
+            let scheduledAt: Date | null = null;
+            if (isFirst) {
+              scheduledAt = new Date(performedAt.getTime() + control.delayMinutes * 60000);
+            } else if (controlType === 'from_resolution') {
+              // Controles aislados: se cuentan desde la resolución
+              scheduledAt = new Date(performedAt.getTime() + control.delayMinutes * 60000);
+            }
+            // from_previous con order > 1: scheduledAt queda null, se calcula cuando el anterior se completa
+
+            await prisma.solutionControlInstance.create({
+              data: {
+                solutionAppliedId: solutionApplied.id,
+                order: control.order,
+                delayMinutes: control.delayMinutes,
+                description: control.description,
+                status: isFirst ? 'PENDING' : (controlType === 'from_resolution' ? 'PENDING' : 'WAITING'),
+                scheduledAt,
+                companyId,
+              }
+            });
+          }
+          console.log(`   - ${data.controlPlan.length} controles de seguimiento creados`);
+        }
+      }
 
       console.log('✅ Falla con cierre inmediato creada (sin OT):');
       console.log('   - FailureOccurrence ID:', occurrence.id);
@@ -341,6 +437,7 @@ export async function POST(request: NextRequest) {
         data: {
           failureId: workOrder.id, // WorkOrder asociado
           companyId,
+          incidentType: data.incidentType,
           machineId: data.machineId,
           subcomponentId: primarySubcomponentId,
           affectedComponents: (data.componentIds?.length || data.subcomponentIds?.length)

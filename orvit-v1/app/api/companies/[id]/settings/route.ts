@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth, requirePermission } from '@/lib/auth/shared-helpers';
 
 // GET /api/companies/[id]/settings - Obtener configuración de la empresa
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const companyId = parseInt(params.id);
 
@@ -45,6 +49,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const { error: permError } = await requirePermission('settings.edit');
+  if (permError) return permError;
+
   try {
     const companyId = parseInt(params.id);
 

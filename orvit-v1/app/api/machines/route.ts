@@ -13,6 +13,7 @@ export const GET = withGuards(async (request: NextRequest, { user }) => {
     const sectorId = searchParams.get('sectorId');
     const search = searchParams.get('search');
     const limit = searchParams.get('limit');
+    const includeCounters = searchParams.get('includeCounters') === 'true';
 
     // Siempre usar companyId del usuario autenticado (no confiar en query param)
     const companyId = user.companyId;
@@ -57,7 +58,27 @@ export const GET = withGuards(async (request: NextRequest, { user }) => {
               }
             }
           }
-        }
+        },
+        ...(includeCounters && {
+          counters: {
+            select: {
+              id: true,
+              name: true,
+              unit: true,
+              currentValue: true,
+              lastReadingAt: true,
+              triggers: {
+                where: { isActive: true },
+                select: {
+                  id: true,
+                  triggerEvery: true,
+                  nextTriggerValue: true,
+                  checklist: { select: { id: true, title: true } }
+                }
+              }
+            }
+          }
+        })
       },
       orderBy: { name: 'asc' },
       ...(limit ? { take: parseInt(limit) } : {})

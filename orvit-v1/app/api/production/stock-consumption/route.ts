@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import {
   calculateMaterialRequirements,
   checkStockAvailability,
@@ -21,6 +23,9 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.VIEW);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
 
     const productionOrderId = Number(searchParams.get('productionOrderId'));
@@ -96,6 +101,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.CREATE);
+    if (error) return error;
+
     const body = await request.json();
     const { dailyReportId, warehouseId, userId, allowNegative } = body;
 

@@ -126,6 +126,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import UnifiedAreaSectorSelector from './UnifiedAreaSectorSelector';
 import {
   Tooltip,
   TooltipContent,
@@ -244,6 +245,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     () => allLeafItems.filter((i) => favorites.includes(i.moduleId)),
     [allLeafItems, favorites]
   );
+  // Ocultar en la lista de favoritos los que pertenecen al área actual (ya están visibles en el nav)
+  const currentAreaPrefix = '/' + pathname.split('/').filter(Boolean)[0];
+  const visibleFavoriteItems = useMemo(
+    () => favoriteItems.filter((i) => !i.path.startsWith(currentAreaPrefix + '/')),
+    [favoriteItems, currentAreaPrefix]
+  );
 
   // Áreas que soportan edición de sidebar
   const areaName = currentArea?.name;
@@ -301,7 +308,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   }, [areas, canAccessAdministration, canAccessMaintenance, canAccessProduction]);
   
   // Sincronizar el área del contexto con el pathname actual
-  // Esto corrige el caso donde localStorage tiene un área distinta a la URL actual (ej: recarga en /mantenimiento con área "Administración" en localStorage)
+  // Esto corrige el caso donde localStorage tiene un área distinta a la URL actual
+  // IMPORTANTE: setArea() borra el sector, así que restauramos después
   useEffect(() => {
     if (!areas || areas.length === 0 || !pathname) return;
 
@@ -321,8 +329,16 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const correctArea = areas.find(a => a.name.trim() === areaNameByPath);
     if (correctArea) {
       setArea(correctArea);
+      // setArea borra el sector — restaurar desde lastSector si existe
+      const saved = typeof window !== 'undefined'
+        ? localStorage.getItem(`lastSector_area_${correctArea.id}`)
+        : null;
+      if (saved) {
+        try { setSector(JSON.parse(saved)); } catch { /* ignore */ }
+      }
     }
-  }, [pathname, areas, currentArea?.name, setArea]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- currentArea?.name intencionalmente omitido: el efecto solo debe correr cuando cambia el pathname, no cuando el área cambia programáticamente (evita revertir el área durante la navegación)
+  }, [pathname, areas]);
 
   // Asegurar que el supervisor tenga su sector asignado seleccionado
   useEffect(() => {
@@ -383,11 +399,29 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     canAccessCosts,
     canAccessControls,
     canAccessCargas,
+    canAccessCompras,
+    canAccessTesoreria,
+    canAccessNominas,
+    canAccessAuditoria,
+    canAccessAutomatizaciones,
+    canAccessCostosModule,
     canAccessProductionMachines,
     canAccessVehicles,
     canAccessPersonalGroup,
     canAccessVentasGroup,
     canAccessCostosGroup,
+    // Mantenimiento granular
+    canAccessMaintenanceDashboard,
+    canAccessMaintenanceFallas,
+    canAccessMaintenanceOrdenes,
+    canAccessMaintenancePreventivo,
+    canAccessMaintenanceCostos,
+    canAccessPTW,
+    canAccessLOTO,
+    canAccessMOC,
+    canAccessSkills,
+    canAccessCalibration,
+    canAccessContractors,
     // Producción
     canAccessProductionDashboard,
     canAccessProductionOrders,
@@ -444,24 +478,24 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   }), [canAccessSalesDashboard, canAccessClients, canAccessProducts, canAccessQuotes, canAccessSalesModule]);
 
   const comprasPermissionsMap = useMemo((): Record<string, boolean> => ({
-    'compras.dashboard': true, 'compras.torre-control': true, 'compras.pedidos': true,
-    'compras.ordenes': true, 'compras.proveedores': true, 'compras.cuentas-corrientes': true,
-    'compras.comprobantes': true, 'compras.stock': true, 'compras.stock-kardex': true,
-    'compras.stock-ajustes': true, 'compras.stock-transferencias': true,
-    'compras.stock-reposicion': true, 'compras.solicitudes': true,
-    'compras.devoluciones': true, 'compras.historial': true,
-  }), []);
+    'compras.dashboard': canAccessCompras, 'compras.torre-control': canAccessCompras, 'compras.pedidos': canAccessCompras,
+    'compras.ordenes': canAccessCompras, 'compras.proveedores': canAccessCompras, 'compras.cuentas-corrientes': canAccessCompras,
+    'compras.comprobantes': canAccessCompras, 'compras.stock': canAccessCompras, 'compras.stock-kardex': canAccessCompras,
+    'compras.stock-ajustes': canAccessCompras, 'compras.stock-transferencias': canAccessCompras,
+    'compras.stock-reposicion': canAccessCompras, 'compras.solicitudes': canAccessCompras,
+    'compras.devoluciones': canAccessCompras, 'compras.historial': canAccessCompras,
+  }), [canAccessCompras]);
 
   const tesoreriaPermissionsMap = useMemo((): Record<string, boolean> => ({
-    'tesoreria.posicion': true, 'tesoreria.cajas': true, 'tesoreria.bancos': true,
-    'tesoreria.cheques': true, 'tesoreria.transferencias': true, 'tesoreria.flujo-caja': true,
-  }), []);
+    'tesoreria.posicion': canAccessTesoreria, 'tesoreria.cajas': canAccessTesoreria, 'tesoreria.bancos': canAccessTesoreria,
+    'tesoreria.cheques': canAccessTesoreria, 'tesoreria.transferencias': canAccessTesoreria, 'tesoreria.flujo-caja': canAccessTesoreria,
+  }), [canAccessTesoreria]);
 
   const nominasPermissionsMap = useMemo((): Record<string, boolean> => ({
-    'nominas.dashboard': true, 'nominas.empleados': true, 'nominas.gremios': true,
-    'nominas.sectores': true, 'nominas.configuracion': true, 'nominas.componentes': true,
-    'nominas.adelantos': true, 'nominas.liquidaciones': true,
-  }), []);
+    'nominas.dashboard': canAccessNominas, 'nominas.empleados': canAccessNominas, 'nominas.gremios': canAccessNominas,
+    'nominas.sectores': canAccessNominas, 'nominas.configuracion': canAccessNominas, 'nominas.componentes': canAccessNominas,
+    'nominas.adelantos': canAccessNominas, 'nominas.liquidaciones': canAccessNominas,
+  }), [canAccessNominas]);
 
   const almacenPermissionsMap = useMemo((): Record<string, boolean> => ({
     'almacen.dashboard': canAccessAlmacenDashboard,
@@ -594,34 +628,51 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   }, [router]);
 
   // Handler optimizado para cambio de área (memoizado)
-  const handleAreaChange = useCallback((area: any) => {
-    if (currentArea?.id === area.id) return;
+  // sectorOverride: si se pasa, usa ese sector en vez de buscar en lastSector
+  const handleAreaChange = useCallback((area: any, sectorOverride?: any) => {
+    // Si es la misma área y hay sectorOverride, solo cambiar sector
+    if (currentArea?.id === area.id && sectorOverride) {
+      setSector(sectorOverride);
+      // Quedarse en la página actual si ya estamos en el área correcta
+      const areaName = area.name.trim().toUpperCase();
+      const isOnCorrectArea =
+        (areaName === 'MANTENIMIENTO' && pathname.startsWith('/mantenimiento')) ||
+        ((areaName === 'PRODUCCIÓN' || areaName === 'PRODUCCION') && pathname.startsWith('/produccion'));
+      if (!isOnCorrectArea) {
+        if (areaName === 'MANTENIMIENTO') router.replace('/mantenimiento/dashboard');
+        else if (areaName === 'PRODUCCIÓN' || areaName === 'PRODUCCION') router.replace('/produccion/dashboard');
+      }
+      return;
+    }
 
-    // Intentar restaurar el último sector usado en esta área
-    let lastSector: any = null;
-    if (typeof window !== 'undefined' && area.id) {
+    if (currentArea?.id === area.id && !sectorOverride) return;
+
+    // Determinar el sector a usar
+    let targetSector: any = sectorOverride || null;
+    if (!targetSector && typeof window !== 'undefined' && area.id) {
       const saved = localStorage.getItem(`lastSector_area_${area.id}`);
       if (saved) {
-        try { lastSector = JSON.parse(saved); } catch { /* ignore */ }
+        try { targetSector = JSON.parse(saved); } catch { /* ignore */ }
       }
     }
 
-    // Determinar la ruta de destino
+    // Determinar la ruta de destino (comparación case-insensitive para robustez con nombres de DB)
+    const areaNameUpper = area.name?.trim().toUpperCase() || '';
     let targetRoute = '/sectores';
-    if (area.name === 'Administración') {
+    if (areaNameUpper === 'ADMINISTRACIÓN' || areaNameUpper === 'ADMINISTRACION') {
       targetRoute = '/administracion/dashboard';
-    } else if (area.name === 'Mantenimiento') {
-      targetRoute = lastSector ? '/mantenimiento/dashboard' : '/sectores';
-    } else if (area.name === 'Producción') {
-      targetRoute = lastSector ? '/produccion/dashboard' : '/sectores';
+    } else if (areaNameUpper === 'MANTENIMIENTO') {
+      targetRoute = targetSector ? '/mantenimiento/dashboard' : '/sectores';
+    } else if (areaNameUpper === 'PRODUCCIÓN' || areaNameUpper === 'PRODUCCION') {
+      targetRoute = targetSector ? '/produccion/dashboard' : '/sectores';
     }
 
     // Cambiar el área ANTES de redirigir para evitar flash del área anterior
     setArea(area);
 
-    // Restaurar sector si había uno guardado, sino limpiar
-    if (lastSector) {
-      setSector(lastSector);
+    // Restaurar sector si había uno, sino limpiar
+    if (targetSector) {
+      setSector(targetSector);
     } else {
       setSector(null);
       if (typeof window !== 'undefined') {
@@ -629,20 +680,27 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       }
     }
 
-    // Usar router.replace para evitar agregar al historial
     router.replace(targetRoute);
-  }, [currentArea?.id, setSector, setArea, router]);
+  }, [currentArea?.id, setSector, setArea, router, pathname]);
 
   // Handler optimizado para cambio de sector (memoizado)
+  // Solo navega a dashboard si estamos en /sectores, /areas, o en otra área
   const handleSectorChange = useCallback((sector: any) => {
     setSector(sector);
     const areaName = currentArea?.name.trim().toUpperCase();
-    if (areaName === 'MANTENIMIENTO') {
-      router.replace('/mantenimiento/dashboard');
-    } else if (areaName === 'PRODUCCIÓN') {
-      router.replace('/produccion/dashboard');
+    const isOnSelectionPage = pathname === '/sectores' || pathname === '/areas';
+    const isOnCorrectArea =
+      (areaName === 'MANTENIMIENTO' && pathname.startsWith('/mantenimiento')) ||
+      ((areaName === 'PRODUCCIÓN' || areaName === 'PRODUCCION') && pathname.startsWith('/produccion'));
+
+    if (isOnSelectionPage || !isOnCorrectArea) {
+      if (areaName === 'MANTENIMIENTO') {
+        router.replace('/mantenimiento/dashboard');
+      } else if (areaName === 'PRODUCCIÓN' || areaName === 'PRODUCCION') {
+        router.replace('/produccion/dashboard');
+      }
     }
-  }, [currentArea?.name, setSector, router]);
+  }, [currentArea?.name, setSector, router, pathname]);
   
   // Cerrar el sidebar cuando cambia la ruta en móvil
   useEffect(() => {
@@ -650,16 +708,23 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       setIsOpen(false);
     }
   }, [pathname]); // Solo ejecutar cuando cambia pathname, no cuando cambia isOpen
+
+  // Guardar path actual en sessionStorage para restauración per-tab
+  useEffect(() => {
+    if (typeof window !== 'undefined' && pathname && pathname !== '/login') {
+      sessionStorage.setItem('lastPath', pathname);
+    }
+  }, [pathname]);
   
   // ========== SIDEBAR MANTENIMIENTO — configurable por empresa ==========
 
   // Todos los items de mantenimiento son visibles (el filtro de área ya garantiza acceso)
   const mantenimientoPermissionsMap = useMemo((): Record<string, boolean> => ({
-    'mant.dashboard': true,
-    'mant.fallas': true,
-    'mant.ordenes': true,
-    'mant.soluciones': true,
-    'mant.preventivo': true,
+    'mant.dashboard': canAccessMaintenanceDashboard,
+    'mant.fallas': canAccessMaintenanceFallas,
+    'mant.ordenes': canAccessMaintenanceOrdenes,
+    'mant.soluciones': canAccessMaintenanceDashboard,
+    'mant.preventivo': canAccessMaintenancePreventivo,
     'mant.maquinas': canAccessMaintenanceMachines,
     'mant.unidades-moviles': canAccessMobileUnits,
     'mant.puestos-trabajo': canAccessWorkStations,
@@ -669,27 +734,27 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     'mant.panol-dashboard': canAccessPanol,
     'mant.panol-conteo': canAccessPanol,
     'mant.panol-rapido': canAccessPanol,
-    'mant.ideas': true,
-    'mant.costos': true,
-    'mant.health-score': true,
-    'mant.fmea': true,
-    'mant.criticidad': true,
-    'mant.monitoreo': true,
-    'mant.ptw': true,
-    'mant.loto': true,
-    'mant.moc': true,
-    'mant.skills': true,
-    'mant.contadores': true,
-    'mant.calibracion': true,
-    'mant.lubricacion': true,
-    'mant.contratistas': true,
-    'mant.conocimiento': true,
-    'mant.lecciones': true,
-    'mant.garantias': true,
-    'mant.paradas': true,
-    'mant.qr': true,
-    'mant.puntos-medicion': true,
-  }), [canAccessMaintenanceMachines, canAccessMobileUnits, canAccessWorkStations, canAccessPanol]);
+    'mant.ideas': canAccessMaintenanceDashboard,
+    'mant.costos': canAccessMaintenanceCostos,
+    'mant.health-score': canAccessMaintenanceDashboard,
+    'mant.fmea': canAccessMaintenanceDashboard,
+    'mant.criticidad': canAccessMaintenanceDashboard,
+    'mant.monitoreo': canAccessMaintenanceDashboard,
+    'mant.ptw': canAccessPTW,
+    'mant.loto': canAccessLOTO,
+    'mant.moc': canAccessMOC,
+    'mant.skills': canAccessSkills,
+    'mant.contadores': canAccessMaintenanceDashboard,
+    'mant.calibracion': canAccessCalibration,
+    'mant.lubricacion': canAccessMaintenanceDashboard,
+    'mant.contratistas': canAccessContractors,
+    'mant.conocimiento': canAccessMaintenanceDashboard,
+    'mant.lecciones': canAccessMaintenanceDashboard,
+    'mant.garantias': canAccessMaintenanceDashboard,
+    'mant.paradas': canAccessMaintenanceDashboard,
+    'mant.qr': canAccessMaintenanceDashboard,
+    'mant.puntos-medicion': canAccessMaintenanceDashboard,
+  }), [canAccessMaintenanceDashboard, canAccessMaintenanceFallas, canAccessMaintenanceOrdenes, canAccessMaintenancePreventivo, canAccessMaintenanceMachines, canAccessMobileUnits, canAccessWorkStations, canAccessPanol, canAccessMaintenanceCostos, canAccessPTW, canAccessLOTO, canAccessMOC, canAccessSkills, canAccessCalibration, canAccessContractors]);
 
   const mantenimientoItems = useMemo(() => {
     const config = getEffectiveConfig('mantenimiento', companySidebarConfig ?? null);
@@ -831,17 +896,17 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       description: 'Sistema completo de gestión y análisis de costos',
       children: costosItems,
     } : null,
-    compras: comprasItems.length > 0 ? {
+    compras: canAccessCompras && comprasItems.length > 0 ? {
       name: getSL('compras', 'Compras'), icon: ShoppingCart,
       description: 'Sistema completo de gestión de compras y proveedores',
       children: comprasItems,
     } : null,
-    tesoreria: tesoreriaItems.length > 0 ? {
+    tesoreria: canAccessTesoreria && tesoreriaItems.length > 0 ? {
       name: getSL('tesoreria', 'Tesorería'), icon: Wallet,
       description: 'Gestión de cajas, bancos y cheques',
       children: tesoreriaItems,
     } : null,
-    nominas: nominasItems.length > 0 ? {
+    nominas: canAccessNominas && nominasItems.length > 0 ? {
       name: getSL('nominas', 'Nóminas'), icon: Users,
       description: 'Gestión de sueldos, liquidaciones y adelantos',
       children: nominasItems,
@@ -851,13 +916,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       description: 'Despachos, solicitudes y control de inventario',
       children: almacenItems,
     } : null,
-    automatizaciones: {
+    automatizaciones: canAccessAutomatizaciones ? {
       name: getSL('automatizaciones', 'Automatizaciones'),
       href: '/administracion/automatizaciones',
       icon: Zap,
       description: 'Reglas y acciones automáticas del sistema',
       moduleId: 'sys.automatizaciones',
-    },
+    } : null,
     controles: canAccessControls ? {
       name: getSL('controles', 'Controles'),
       href: '/administracion/controles',
@@ -1013,7 +1078,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <PageSearch />
 
             {/* Header: User Profile */}
-            <div className="flex flex-col px-2 py-1.5 md:px-3 border-b border-sidebar-ring/20">
+            <div className="flex flex-col justify-center px-2 py-1 md:px-3 border-b border-sidebar-ring/20">
               <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -1022,7 +1087,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     data-size="lg"
                     className={cn(
                       "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm",
-                      isOpen ? "h-8" : "h-8 w-8 justify-center p-0"
+                      isOpen ? "h-10" : "h-10 w-10 justify-center p-0"
                     )}
                   >
                     <span className="relative flex shrink-0 overflow-hidden h-8 w-8 rounded-lg">
@@ -1118,109 +1183,23 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
             {isOpen ? (
               <div className="space-y-2 px-2 md:px-3 pt-2">
-                {/* Selector de Sector Rápido - Integrado en el header */}
-                {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-between h-8 px-2 rounded-md transition-all duration-200 text-sm font-normal",
-                          "bg-sidebar-accent/50 border-sidebar-ring/30 hover:bg-sidebar-accent hover:border-sidebar-ring/50",
-                          "text-sidebar-foreground"
-                        )}
-                        disabled={availableSectors.length === 1 && user?.role?.toUpperCase() === 'SUPERVISOR'}
-                      >
-                        <span className="truncate">
-                          {currentSector ? currentSector.name : 'Seleccionar sector'}
-                        </span>
-                        {availableSectors.length > 1 && (
-                          <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50 ml-1.5" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableSectors.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Sectores disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableSectors.map((sector) => (
-                          <DropdownMenuItem
-                            key={sector.id}
-                            onClick={() => handleSectorChange(sector)}
-                            className={cn(
-                              "text-sm",
-                              currentSector?.id === sector.id && 'bg-accent'
-                            )}
-                          >
-                            {sector.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Cambiar de área
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
-                )}
-
-                {/* Selector de Área - Solo para Administración */}
-                {currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0 && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-between h-8 px-3 rounded-full text-sm font-normal",
-                          "bg-sidebar-accent/40 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        aria-label="Cambiar área"
-                      >
-                        <span className="min-w-0 truncate flex items-baseline gap-1.5">
-                          <span className="text-xs text-sidebar-foreground/60 leading-none">Área:</span>
-                          <span className="truncate leading-none">{currentArea.name}</span>
-                        </span>
-                        {availableAreas.length > 1 && (
-                          <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50 ml-1.5" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableAreas.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Áreas disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableAreas.map((area) => (
-                          <DropdownMenuItem
-                            key={area.id}
-                            onClick={() => handleAreaChange(area)}
-                            className={cn(
-                              "text-sm",
-                              currentArea?.id === area.id && 'bg-accent'
-                            )}
-                          >
-                            {area.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Ver todas las áreas
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
+                {/* Selector unificado de Área + Sector */}
+                {currentArea && availableAreas && availableAreas.length > 0 && (
+                  <UnifiedAreaSectorSelector
+                    currentArea={currentArea}
+                    currentSector={currentSector}
+                    availableAreas={availableAreas}
+                    availableSectors={availableSectors}
+                    currentCompany={currentCompany}
+                    onAreaChange={handleAreaChange}
+                    onSectorChange={handleSectorChange}
+                    onPreventClose={(open) => sidebarContext?.setPreventClose(open)}
+                    isCollapsed={false}
+                  />
                 )}
 
                 {/* Separador fino: contexto (selectores) vs navegación */}
-                {(
-                  (currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0) ||
-                  (currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0)
-                ) && (
+                {currentArea && availableAreas && availableAreas.length > 0 && (
                   <div className="h-px w-full bg-sidebar-ring/20" />
                 )}
 
@@ -1587,92 +1566,19 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1 px-2">
-                {/* Selector de Sector Compacto cuando sidebar está cerrado */}
-                {currentArea && currentArea.name !== 'Administración' && availableSectors && availableSectors.length > 0 && currentSector && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-8 h-8 p-0 rounded-md transition-colors",
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        title={currentSector.name}
-                        disabled={availableSectors.length === 1 && user?.role?.toUpperCase() === 'SUPERVISOR'}
-                      >
-                        <Factory className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableSectors.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Sectores disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableSectors.map((sector) => (
-                          <DropdownMenuItem
-                            key={sector.id}
-                            onClick={() => handleSectorChange(sector)}
-                              className={cn(
-                              "text-sm",
-                              currentSector?.id === sector.id && 'bg-accent'
-                            )}
-                          >
-                            {sector.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Cambiar de área
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
-                )}
-
-                {/* Selector de Área Compacto cuando sidebar está cerrado - Solo para Administración */}
-                {currentArea && currentArea.name === 'Administración' && availableAreas && availableAreas.length > 0 && (
-                  <DropdownMenu onOpenChange={(open) => sidebarContext?.setPreventClose(open)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-8 h-8 p-0 rounded-md transition-colors",
-                          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                        title="Cambiar área"
-                        aria-label="Cambiar área"
-                      >
-                        <Building2 className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    {availableAreas.length > 1 && (
-                      <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel className="text-sm">Áreas disponibles</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {availableAreas.map((area) => (
-                          <DropdownMenuItem
-                            key={area.id}
-                            onClick={() => handleAreaChange(area)}
-                              className={cn(
-                              "text-sm",
-                              currentArea?.id === area.id && 'bg-accent'
-                            )}
-                          >
-                            {area.name}
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => router.push('/areas')}
-                          className="text-sm"
-                        >
-                          Ver todas las áreas
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
+                {/* Selector unificado de Área + Sector (collapsed) */}
+                {currentArea && availableAreas && availableAreas.length > 0 && (
+                  <UnifiedAreaSectorSelector
+                    currentArea={currentArea}
+                    currentSector={currentSector}
+                    availableAreas={availableAreas}
+                    availableSectors={availableSectors}
+                    currentCompany={currentCompany}
+                    onAreaChange={handleAreaChange}
+                    onSectorChange={handleSectorChange}
+                    onPreventClose={(open) => sidebarContext?.setPreventClose(open)}
+                    isCollapsed={true}
+                  />
                 )}
               </div>
             )}
@@ -1685,7 +1591,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 {isOpen ? (
               <div className="flex flex-col gap-1">
                 {/* ─── Favoritos (bottom, colapsable) ─── */}
-                {favoriteItems.length > 0 && (
+                {visibleFavoriteItems.length > 0 && (
                   <div className="mb-0.5">
                     <button
                       type="button"
@@ -1698,7 +1604,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     </button>
                     {favoritesOpen && (
                       <ul className="flex flex-col gap-0.5 mt-0.5">
-                        {favoriteItems.map((favItem) => {
+                        {visibleFavoriteItems.map((favItem) => {
                           const FavIcon = resolveSidebarIcon(favItem.icon);
                           const favActive = (() => {
                             const href = favItem.path;
@@ -1756,7 +1662,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             ) : (
               <div className="flex flex-col items-center gap-1">
                 {/* ─── Favoritos colapsado ─── */}
-                {favoriteItems.map((favItem) => {
+                {visibleFavoriteItems.map((favItem) => {
                   const FavIcon = resolveSidebarIcon(favItem.icon);
                   const favActive = (() => {
                     const href = favItem.path;
@@ -1786,7 +1692,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     </Tooltip>
                   );
                 })}
-                {favoriteItems.length > 0 && <div className="w-5 h-px bg-sidebar-ring/20 my-0.5" />}
+                {visibleFavoriteItems.length > 0 && <div className="w-5 h-px bg-sidebar-ring/20 my-0.5" />}
 
                 {/* Feedback (collapsed) */}
                 <Tooltip>

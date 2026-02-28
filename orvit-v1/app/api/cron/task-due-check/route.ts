@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
     console.log('⏰ Ejecutando cron job: verificación de tareas próximas a vencer');
 
     // Ejecutar la verificación de tareas próximas a vencer
-    const checkResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tasks/check-overdue`, {
+    const baseUrl = new URL(request.url).origin;
+    const checkResponse = await fetch(`${baseUrl}/api/tasks/check-overdue`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         companyId,
         machineId: { in: machineIds },
         type: { in: ['CORRECTIVE', 'FAILURE'] },
-        status: 'completed',
+        status: 'COMPLETED',
         closedAt: { gte: startDate, lte: endDate }
       },
       select: {
@@ -242,7 +242,7 @@ export async function GET(request: NextRequest) {
         companyId,
         machineId: { in: machineIds },
         type: { in: ['CORRECTIVE', 'FAILURE'] },
-        status: 'completed',
+        status: 'COMPLETED',
         closedAt: { gte: trendStartDate }
       },
       select: { closedAt: true, startedAt: true, actualHours: true }

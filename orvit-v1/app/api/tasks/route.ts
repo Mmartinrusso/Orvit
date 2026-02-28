@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 import { Prisma } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 // Importar utilidades centralizadas
 import {
@@ -244,6 +245,10 @@ export async function GET(request: NextRequest) {
 // POST /api/tasks - Crear nueva tarea
 export async function POST(request: NextRequest) {
   try {
+    // Verificar permiso de crear tareas
+    const { user: permUser, error: permError } = await requirePermission('tasks.create');
+    if (permError) return permError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });

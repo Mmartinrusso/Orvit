@@ -224,6 +224,10 @@ export default function ConteoPage() {
   // ── Actions ───────────────────────────────────────────────────────────
 
   const startCount = async () => {
+    if (!permissions.canPerformCount) {
+      toast.error('No tienes permisos para realizar conteos');
+      return;
+    }
     setIsStarting(true);
     try {
       const res = await fetch('/api/panol/conteo', {

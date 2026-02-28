@@ -61,7 +61,11 @@ function PreventivoPageContent() {
   const companyId = currentCompany?.id ? parseInt(currentCompany.id.toString()) : null;
   const sectorId = currentSector?.id ? parseInt(currentSector.id.toString()) : null;
 
-  const { hasPermission: canEditChecklist } = usePermissionRobust('editar_checklist');
+  const { hasPermission: canEditChecklist } = usePermissionRobust('preventive_maintenance.edit');
+  const { hasPermission: canCreatePreventive } = usePermissionRobust('preventive_maintenance.create');
+  const { hasPermission: canEditPreventive } = usePermissionRobust('preventive_maintenance.edit');
+  const { hasPermission: canDeletePreventive } = usePermissionRobust('preventive_maintenance.delete');
+  const { hasPermission: canCompletePreventive } = usePermissionRobust('preventive_maintenance.complete');
 
   // Alertas de mantenimiento
   const { data: alertsData } = useMaintenanceAlerts({
@@ -453,7 +457,7 @@ function PreventivoPageContent() {
               </>
             )}
 
-            {(currentView === 'hoy' || currentView === 'calendario' || currentView === 'planes') && (
+            {(currentView === 'hoy' || currentView === 'calendario' || currentView === 'planes') && canCreatePreventive && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="bg-black hover:bg-muted-foreground text-white">
@@ -500,26 +504,26 @@ function PreventivoPageContent() {
           {currentView === 'hoy' && (
             <PreventivoHoyView
               onViewMaintenance={handleViewMaintenance}
-              onEditMaintenance={handleEditMaintenance}
-              onExecuteMaintenance={handleExecuteMaintenance}
-              onDeleteMaintenance={handleDeleteMaintenance}
-              onDuplicateMaintenance={handleDuplicateMaintenance}
+              onEditMaintenance={canEditPreventive ? handleEditMaintenance : undefined}
+              onExecuteMaintenance={canCompletePreventive ? handleExecuteMaintenance : undefined}
+              onDeleteMaintenance={canDeletePreventive ? handleDeleteMaintenance : undefined}
+              onDuplicateMaintenance={canCreatePreventive ? handleDuplicateMaintenance : undefined}
             />
           )}
           {currentView === 'calendario' && (
             <PreventivoCalendarioView
               onEventClick={handleViewMaintenance}
-              onEdit={handleEditMaintenance}
+              onEdit={canEditPreventive ? handleEditMaintenance : undefined}
             />
           )}
           {currentView === 'planes' && (
             <PreventivoPlanesView
               hideCreateButton={true}
               onViewPlan={handleViewMaintenance}
-              onEditPlan={handleEditMaintenance}
-              onExecutePlan={handleExecuteMaintenance}
-              onDeletePlan={handleDeleteMaintenance}
-              onDuplicatePlan={handleDuplicateMaintenance}
+              onEditPlan={canEditPreventive ? handleEditMaintenance : undefined}
+              onExecutePlan={canCompletePreventive ? handleExecuteMaintenance : undefined}
+              onDeletePlan={canDeletePreventive ? handleDeleteMaintenance : undefined}
+              onDuplicatePlan={canCreatePreventive ? handleDuplicateMaintenance : undefined}
             />
           )}
           {currentView === 'checklists' && (

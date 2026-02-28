@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
 import { usePedidosCompra } from '@/hooks/compras/use-pedidos-compra';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,7 @@ const PRIORIDAD_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 export function PedidosCompraList() {
+ const { hasPermission } = useAuth();
  const confirm = useConfirm();
  const [searchTerm, setSearchTerm] = useState('');
  const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -453,6 +455,7 @@ export function PedidosCompraList() {
  <Repeat className="h-3.5 w-3.5 mr-1" />
  Recurrentes
  </Button>
+ {hasPermission('compras.pedidos.create') && (
  <Button
  size="sm"
  variant="outline"
@@ -462,10 +465,13 @@ export function PedidosCompraList() {
  <Mic className="h-3.5 w-3.5 mr-1" />
  Crear con Voz
  </Button>
+ )}
+ {hasPermission('compras.pedidos.create') && (
  <Button size="sm" className="h-7 text-xs" onClick={handleCreate}>
  <Plus className="h-3.5 w-3.5 mr-1" />
  Nuevo Pedido
  </Button>
+ )}
  </div>
  </div>
  </div>
@@ -753,6 +759,7 @@ export function PedidosCompraList() {
  Deseleccionar
  </Button>
  </div>
+ {hasPermission('compras.pedidos.delete') && (
  <Button
  variant="destructive"
  size="sm"
@@ -767,6 +774,7 @@ export function PedidosCompraList() {
  )}
  Eliminar seleccionados
  </Button>
+ )}
  </div>
  )}
 
@@ -804,9 +812,9 @@ export function PedidosCompraList() {
  </TableHeader>
  <TableBody>
  {pedidos.map((pedido) => {
- const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado);
- const canDelete = pedido.estado === 'BORRADOR';
- const canSend = pedido.estado === 'BORRADOR';
+ const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado) && hasPermission('compras.pedidos.edit');
+ const canDelete = pedido.estado === 'BORRADOR' && hasPermission('compras.pedidos.delete');
+ const canSend = pedido.estado === 'BORRADOR' && hasPermission('compras.pedidos.enviar');
 
  return (
  <TableRow
@@ -844,7 +852,7 @@ export function PedidosCompraList() {
  </TableCell>
  <TableCell className="text-right">
  <div className="flex items-center justify-end gap-1">
- {pedido.estado === 'APROBADA' && (
+ {pedido.estado === 'APROBADA' && hasPermission('compras.cotizaciones.convertir_oc') && (
  <Button
  variant="outline"
  size="sm"
@@ -866,10 +874,12 @@ export function PedidosCompraList() {
  <Eye className="h-4 w-4 mr-2" />
  Ver Detalle
  </DropdownMenuItem>
+ {hasPermission('compras.pedidos.create') && (
  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(pedido); }}>
  <Copy className="h-4 w-4 mr-2" />
  Duplicar
  </DropdownMenuItem>
+ )}
  {canEdit && (
  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(pedido.id); }}>
  <Edit className="h-4 w-4 mr-2" />
@@ -921,9 +931,9 @@ export function PedidosCompraList() {
  ) : (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
  {pedidos.map((pedido) => {
- const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado);
- const canDelete = pedido.estado === 'BORRADOR';
- const canSend = pedido.estado === 'BORRADOR';
+ const canEdit = !['COMPLETADA', 'RECHAZADA', 'CANCELADA'].includes(pedido.estado) && hasPermission('compras.pedidos.edit');
+ const canDelete = pedido.estado === 'BORRADOR' && hasPermission('compras.pedidos.delete');
+ const canSend = pedido.estado === 'BORRADOR' && hasPermission('compras.pedidos.enviar');
  const quotationsCount = pedido._count?.quotations || pedido.quotations?.length || 0;
 
  return (
@@ -951,7 +961,7 @@ export function PedidosCompraList() {
  </div>
  </div>
  <div className="flex items-center gap-1 shrink-0">
- {pedido.estado === 'APROBADA' && (
+ {pedido.estado === 'APROBADA' && hasPermission('compras.cotizaciones.convertir_oc') && (
  <Button
  variant="outline"
  size="sm"
@@ -973,10 +983,12 @@ export function PedidosCompraList() {
  <Eye className="h-4 w-4 mr-2" />
  Ver Detalle
  </DropdownMenuItem>
+ {hasPermission('compras.pedidos.create') && (
  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(pedido); }}>
  <Copy className="h-4 w-4 mr-2" />
  Duplicar
  </DropdownMenuItem>
+ )}
  {canEdit && (
  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(pedido.id); }}>
  <Edit className="h-4 w-4 mr-2" />

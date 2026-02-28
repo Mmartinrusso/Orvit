@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAssistantContext } from '@/lib/assistant/auth'
 import { transcribeAudio } from '@/lib/assistant/engine'
+import { requireAuth } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,9 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
  * Transcribe audio a texto usando Whisper
  */
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth()
+  if (error) return error
+
   try {
     // 1. Verificar autenticación
     const context = await getAssistantContext()

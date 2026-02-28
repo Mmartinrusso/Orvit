@@ -1,3 +1,6 @@
+'use client';
+
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import MainLayout from '@/components/layout/MainLayout';
 
 export default function PanolLayout({
@@ -6,8 +9,10 @@ export default function PanolLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MainLayout>
-      {children}
-    </MainLayout>
+    <PermissionGuard permission="ingresar_panol">
+      <MainLayout>
+        {children}
+      </MainLayout>
+    </PermissionGuard>
   );
-} 
+}

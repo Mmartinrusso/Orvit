@@ -37,6 +37,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowLeft,
   Plus,
@@ -155,6 +156,8 @@ export default function EmpleadoDetallePage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const canManageNominas = hasPermission('ingresar_nominas');
   const employeeId = params.id as string;
 
   // State para gremio/categoría
@@ -478,10 +481,12 @@ export default function EmpleadoDetallePage() {
               </div>
             </div>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Concepto
-          </Button>
+          {canManageNominas && (
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Concepto
+            </Button>
+          )}
         </div>
       </div>
 
@@ -733,34 +738,36 @@ export default function EmpleadoDetallePage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(concept)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {!concept.noDelete && (
+                        {canManageNominas && (
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={async () => {
-                                const ok = await confirm({
-                                  title: 'Eliminar concepto',
-                                  description: '¿Eliminar este concepto?',
-                                  confirmText: 'Eliminar',
-                                  variant: 'destructive',
-                                });
-                                if (ok) {
-                                  deleteMutation.mutate(concept.id);
-                                }
-                              }}
+                              onClick={() => handleOpenDialog(concept)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Edit className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
+                            {!concept.noDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: 'Eliminar concepto',
+                                    description: '¿Eliminar este concepto?',
+                                    confirmText: 'Eliminar',
+                                    variant: 'destructive',
+                                  });
+                                  if (ok) {
+                                    deleteMutation.mutate(concept.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -832,34 +839,36 @@ export default function EmpleadoDetallePage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(concept)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {!concept.noDelete && (
+                        {canManageNominas && (
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={async () => {
-                                const ok = await confirm({
-                                  title: 'Eliminar concepto',
-                                  description: '¿Eliminar este concepto?',
-                                  confirmText: 'Eliminar',
-                                  variant: 'destructive',
-                                });
-                                if (ok) {
-                                  deleteMutation.mutate(concept.id);
-                                }
-                              }}
+                              onClick={() => handleOpenDialog(concept)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Edit className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
+                            {!concept.noDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: 'Eliminar concepto',
+                                    description: '¿Eliminar este concepto?',
+                                    confirmText: 'Eliminar',
+                                    variant: 'destructive',
+                                  });
+                                  if (ok) {
+                                    deleteMutation.mutate(concept.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

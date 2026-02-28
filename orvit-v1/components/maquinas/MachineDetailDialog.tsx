@@ -2265,13 +2265,15 @@ export default function MachineDetailDialog({
   const confirm = useConfirm();
 
   // 🔍 PERMISOS DE MÁQUINAS
-  const { hasPermission: canCreateMachine } = usePermissionRobust('crear_maquina');
-  const { hasPermission: canEditMachine } = usePermissionRobust('editar_maquina');
-  const { hasPermission: canDeleteMachine } = usePermissionRobust('eliminar_maquina');
+  const { hasPermission: canCreateMachine } = usePermissionRobust('machines.create');
+  const { hasPermission: canEditMachine } = usePermissionRobust('machines.edit');
+  const { hasPermission: canDeleteMachine } = usePermissionRobust('machines.delete');
   const { hasPermission: canDisassembleMachine } = usePermissionRobust('machines.disassemble');
-  const { hasPermission: canViewMachineHistory } = usePermissionRobust('ver_historial_maquina');
+  const { hasPermission: canViewMachineHistory } = usePermissionRobust('machines.view');
+  const { hasPermission: canMaintainMachine } = usePermissionRobust('machines.maintain');
+  const { hasPermission: canAddDocument } = usePermissionRobust('machines.add_document');
   const { hasPermission: canRegisterFailure } = usePermissionRobust('registrar_falla');
-  const { hasPermission: canCreateMaintenance } = usePermissionRobust('crear_mantenimiento');
+  const { hasPermission: canCreateMaintenance } = usePermissionRobust('preventive_maintenance.create');
 
   // 📱 Android back button: interceptar para cerrar el modal en vez de navegar
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { generateOrderCode } from '@/lib/production/order-code-generator';
 import { logProductionEvent } from '@/lib/production/event-logger';
@@ -27,10 +28,8 @@ const ProductionOrderSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.ORDENES.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -44,7 +43,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (status) {
@@ -160,10 +159,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.ORDENES.CREATE);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = ProductionOrderSchema.parse(body);
@@ -172,7 +169,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.costProduct.findFirst({
       where: {
         id: validatedData.productId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -188,7 +185,7 @@ export async function POST(request: NextRequest) {
       const workCenter = await prisma.workCenter.findFirst({
         where: {
           id: validatedData.workCenterId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -206,7 +203,7 @@ export async function POST(request: NextRequest) {
         where: {
           id: validatedData.sectorId,
           area: {
-            companyId: auth.companyId,
+            companyId: user!.companyId,
           },
         },
       });
@@ -220,7 +217,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generar código único
-    const code = await generateOrderCode(auth.companyId);
+    const code = await generateOrderCode(user!.companyId);
 
     // Crear la orden
     const order = await prisma.productionOrder.create({
@@ -241,8 +238,8 @@ export async function POST(request: NextRequest) {
         priority: validatedData.priority,
         notes: validatedData.notes,
         status: 'DRAFT',
-        companyId: auth.companyId,
-        createdById: auth.user.id,
+        companyId: user!.companyId,
+        createdById: user!.id,
       },
       include: {
         product: {
@@ -286,9 +283,9 @@ export async function POST(request: NextRequest) {
         plannedQuantity: Number(order.plannedQuantity),
         status: order.status,
       },
-      performedById: auth.user.id,
+      performedById: user!.id,
       productionOrderId: order.id,
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     });
 
     return NextResponse.json({

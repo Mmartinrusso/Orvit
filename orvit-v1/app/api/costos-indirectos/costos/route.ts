@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const month = searchParams.get('month'); // Opcional: filtrar por mes
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const { searchParams } = new URL(request.url);
+    const companyId = String(user!.companyId);
+    const month = searchParams.get('month'); // Opcional: filtrar por mes
 
     let query = `
       SELECT 
@@ -58,6 +55,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const { name, categoryId, amount, month, description, dueDate, status, companyId } = body;
 

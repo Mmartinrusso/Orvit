@@ -3,7 +3,7 @@
  *
  * Este script:
  * 1. Obtiene todos los permisos de la base de datos
- * 2. Filtra los permisos relacionados con productos (VIEW_PRODUCTS, CREATE_PRODUCT, etc.)
+ * 2. Filtra los permisos relacionados con productos (ventas.productos.view, ventas.productos.create, etc.)
  * 3. Los asigna al rol "Administrador" de todas las empresas
  *
  * Uso: node scripts/assign-productos-permissions.js
@@ -14,10 +14,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const PRODUCTOS_PERMISSIONS = [
-  'VIEW_PRODUCTS',
-  'CREATE_PRODUCT',
-  'EDIT_PRODUCT',
-  'DELETE_PRODUCT'
+  'ventas.productos.view',
+  'ventas.productos.create',
+  'ventas.productos.edit',
+  'ventas.productos.delete'
 ];
 
 async function main() {
@@ -27,10 +27,10 @@ async function main() {
     // 1. Crear permisos si no existen
     console.log('🔧 Creando permisos si no existen...');
     const permissionsToCreate = [
-      { name: 'VIEW_PRODUCTS', description: 'Ver listado de productos', category: 'ventas' },
-      { name: 'CREATE_PRODUCT', description: 'Crear nuevos productos', category: 'ventas' },
-      { name: 'EDIT_PRODUCT', description: 'Editar productos existentes', category: 'ventas' },
-      { name: 'DELETE_PRODUCT', description: 'Eliminar productos', category: 'ventas' }
+      { name: 'ventas.productos.view', description: 'Ver listado de productos', category: 'ventas' },
+      { name: 'ventas.productos.create', description: 'Crear nuevos productos', category: 'ventas' },
+      { name: 'ventas.productos.edit', description: 'Editar productos existentes', category: 'ventas' },
+      { name: 'ventas.productos.delete', description: 'Eliminar productos', category: 'ventas' }
     ];
 
     for (const perm of permissionsToCreate) {

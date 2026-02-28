@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,10 @@ export async function GET(request: NextRequest) {
 // PUT /api/notifications/preferences - Update user notification preferences
 export async function PUT(request: NextRequest) {
   try {
+    // Verificar permiso notifications.manage
+    const { user: authUser, error: authError } = await requirePermission('notifications.manage');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

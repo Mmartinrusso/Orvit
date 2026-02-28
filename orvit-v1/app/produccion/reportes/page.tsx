@@ -26,6 +26,7 @@ import {
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   BarChart,
   Bar,
@@ -66,6 +67,9 @@ interface ReportData {
 const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4'];
 
 export default function ProductionReportsPage() {
+  const { hasPermission } = useAuth();
+  const canExportReports = hasPermission('produccion.reportes.export');
+
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [dateFrom, setDateFrom] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -225,14 +229,16 @@ export default function ProductionReportsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={exportToCSV} disabled={exporting || !reportData}>
-              {exporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              Exportar CSV
-            </Button>
+            {canExportReports && (
+              <Button onClick={exportToCSV} disabled={exporting || !reportData}>
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Exportar CSV
+              </Button>
+            )}
           </div>
         </div>
       </div>

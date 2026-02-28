@@ -28,21 +28,16 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Stepper, type Step } from '@/components/ui/stepper';
 import { Badge } from '@/components/ui/badge';
 import {
-  ChevronDown,
-  Upload,
+  ArrowLeft,
+  ArrowRight,
   Loader2,
   X,
   CheckCircle2,
   FileText,
-  Wrench,
+  Camera,
   AlertTriangle,
   Eye
 } from 'lucide-react';
@@ -72,7 +67,7 @@ const quickReportSchema = z.object({
   title: z.string().min(5, 'Mínimo 5 caracteres').max(100),
   causedDowntime: z.boolean().default(false),
 
-  // OPCIONALES (modo detallado - colapsable)
+  // OPCIONALES (modo detallado)
   description: z.string().optional(),
   symptomIds: z.array(z.number()).optional(),
   isIntermittent: z.boolean().default(false),
@@ -105,11 +100,23 @@ interface CreationResult {
   resolvedImmediately: boolean;
 }
 
+// ── Stepper config ──
+type FormStep = 'equipo' | 'problema' | 'detalle';
+
+const formSteps: Step[] = [
+  { id: 'equipo', label: 'Equipo', description: '¿Dónde ocurrió?' },
+  { id: 'problema', label: 'Problema', description: '¿Qué pasó?' },
+  { id: 'detalle', label: 'Detalle', description: 'Clasificación y evidencia' },
+];
+
+const formStepIds: FormStep[] = ['equipo', 'problema', 'detalle'];
+
 interface FailureQuickReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedMachineId?: number;
   preselectedComponentId?: string | number;
+  incidentType?: 'FALLA' | 'ROTURA';
 }
 
 interface DuplicateCandidate {
@@ -122,28 +129,30 @@ interface DuplicateCandidate {
 }
 
 /**
- * Dialog de reporte rápido de fallas
+ * Dialog de reporte rápido de fallas — Stepper Wizard
  *
- * UX "Cargar Poco":
- * - Modo rápido: 3 inputs + foto = 20-30s
- * - "+ Detalles" colapsable para datos opcionales
+ * 3 pasos:
+ * 1. Equipo — ¿Dónde ocurrió? (máquina/componentes)
+ * 2. Problema — ¿Qué pasó? (título, síntomas, downtime, descripción)
+ * 3. Detalle — Clasificación y evidencia (foto, flags, resolución inmediata)
  *
- * Flujo:
- * 1. Usuario llena 3 campos básicos
- * 2. Submit → Detectar duplicados
- * 3. Si hay duplicados → Modal con opciones (Vincular | Nueva)
- * 4. Si NO hay duplicados → Crear directamente
- * 5. Si causedDowntime=true → Crear downtime automático
+ * Flujo post-submit:
+ * 1. Detectar duplicados → Modal con opciones
+ * 2. Crear → Modal éxito + AssignAndPlan si supervisor
  */
 export function FailureQuickReportDialog({
   open,
   onOpenChange,
   preselectedMachineId,
   preselectedComponentId,
+  incidentType = 'FALLA',
 }: FailureQuickReportDialogProps) {
   const router = useRouter();
   const { hasPermission, user } = useAuth();
-  const [showDetails, setShowDetails] = useState(false);
+
+  // ── Stepper state ──
+  const [formStep, setFormStep] = useState<FormStep>('equipo');
+
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [pendingData, setPendingData] = useState<QuickReportFormData | null>(null);
@@ -153,7 +162,6 @@ export function FailureQuickReportDialog({
   const [creationResult, setCreationResult] = useState<CreationResult | null>(null);
 
   // Modal de asignación (solo si usuario tiene permiso de asignar)
-  // Verificamos: permiso explícito O rol que típicamente puede asignar
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const userRole = user?.role?.toUpperCase() || '';
   const canAssignWorkOrders =
@@ -201,9 +209,59 @@ export function FailureQuickReportDialog({
     }
   }, [open, preselectedMachineId, preselectedComponentId]);
 
-  // Observar si es observación o cierre inmediato
+  // Observar si es observación
   const isObservation = form.watch('isObservation');
-  const resolveImmediately = form.watch('resolveImmediately');
+
+  // ── Stepper navigation ──
+  const currentFormStepIndex = formStepIds.indexOf(formStep);
+  const isFirstFormStep = currentFormStepIndex === 0;
+  const isLastFormStep = currentFormStepIndex === formStepIds.length - 1;
+
+  const handleNextFormStep = async () => {
+    // Validar campos del paso actual antes de avanzar
+    let isValid = true;
+    if (formStep === 'equipo') {
+      isValid = await form.trigger('machineId');
+      if (!isValid) toast.error('Seleccioná una máquina');
+    } else if (formStep === 'problema') {
+      isValid = await form.trigger('title');
+      if (!isValid) toast.error('Completá el título (mínimo 5 caracteres)');
+    }
+    if (isValid && !isLastFormStep) {
+      setFormStep(formStepIds[currentFormStepIndex + 1]);
+    }
+  };
+
+  const handlePrevFormStep = () => {
+    if (isFirstFormStep) {
+      onOpenChange(false);
+    } else {
+      setFormStep(formStepIds[currentFormStepIndex - 1]);
+    }
+  };
+
+  const handleStepClick = (stepId: string) => {
+    setFormStep(stepId as FormStep);
+  };
+
+  // ── Validación y submit ──
+  const handleValidateAndSubmit = async () => {
+    const isValid = await form.trigger();
+    if (!isValid) {
+      const errors = form.formState.errors;
+      if (errors.machineId) {
+        setFormStep('equipo');
+        toast.error('Seleccioná una máquina en el paso 1');
+      } else if (errors.title) {
+        setFormStep('problema');
+        toast.error('Completá el título en el paso 2');
+      } else {
+        toast.error('Revisá los campos obligatorios');
+      }
+      return;
+    }
+    form.handleSubmit(handleSubmit)();
+  };
 
   // Upload handler
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,7 +288,7 @@ export function FailureQuickReportDialog({
       const formData = new FormData();
       formData.append('file', file);
       formData.append('entityType', 'failure');
-      formData.append('entityId', 'temp'); // Temporal hasta crear la falla
+      formData.append('entityId', 'temp');
       formData.append('fileType', 'photo');
 
       // Simular progreso
@@ -259,7 +317,6 @@ export function FailureQuickReportDialog({
 
       const data = await response.json();
 
-      // Agregar a lista de archivos
       const newFile: UploadedFile = {
         url: data.url,
         fileName: data.fileName,
@@ -267,7 +324,6 @@ export function FailureQuickReportDialog({
       };
       setUploadedFiles((prev) => [...prev, newFile]);
 
-      // Actualizar form
       const currentAttachments = form.getValues('attachments') || [];
       form.setValue('attachments', [...currentAttachments, data.url]);
 
@@ -277,7 +333,6 @@ export function FailureQuickReportDialog({
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -300,7 +355,7 @@ export function FailureQuickReportDialog({
       const res = await fetch('/api/failure-occurrences/quick-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, incidentType }),
       });
 
       if (!res.ok) {
@@ -311,7 +366,6 @@ export function FailureQuickReportDialog({
       return res.json();
     },
     onSuccess: (data) => {
-      // Si retorna hasDuplicates=true → duplicados encontrados (HTTP 200)
       if (data.hasDuplicates && data.duplicates?.length > 0) {
         setDuplicates(data.duplicates);
         setShowDuplicateModal(true);
@@ -319,21 +373,18 @@ export function FailureQuickReportDialog({
         return;
       }
 
-      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
       queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       queryClient.invalidateQueries({ queryKey: ['failure-kpis'] });
       queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
       queryClient.invalidateQueries({ queryKey: ['work-orders'] });
 
-      // Si fue vinculado a existente
       if (data.wasLinkedToExisting && data.linkedTo) {
         toast.success(`Falla vinculada al caso #${data.linkedTo.id}`);
         resetAndClose();
         return;
       }
 
-      // Guardar resultado para mostrar modal de acciones
       setCreationResult({
         occurrence: data.occurrence,
         workOrder: data.workOrder || undefined,
@@ -341,13 +392,10 @@ export function FailureQuickReportDialog({
         resolvedImmediately: data.resolvedImmediately || false,
       });
 
-      // Si hay OT creada y el usuario puede asignar → mostrar modal de asignación
-      // Esto aplica para supervisores, no para operarios
       if (data.workOrder && canAssignWorkOrders) {
         setShowAssignDialog(true);
         toast.success('Falla reportada. Asigna la OT a un técnico.');
       } else {
-        // Para operarios o si no hay OT → mostrar modal de éxito normal
         setShowSuccessModal(true);
       }
 
@@ -374,7 +422,7 @@ export function FailureQuickReportDialog({
     setPendingData(null);
     setDuplicates([]);
     setCreationResult(null);
-    setShowDetails(false);
+    setFormStep('equipo');
     onOpenChange(false);
   };
 
@@ -397,7 +445,6 @@ export function FailureQuickReportDialog({
   // Handler: Crear nueva falla ignorando duplicados
   const handleCreateNewAfterDuplicates = () => {
     if (pendingData) {
-      // Forzar creación nueva (ignorar duplicados)
       quickReportMutation.mutate({ ...pendingData, forceCreate: true });
       setShowDuplicateModal(false);
     }
@@ -406,7 +453,6 @@ export function FailureQuickReportDialog({
   // Handler: Vincular a una falla existente
   const handleLinkDuplicate = async (mainOccurrenceId: number) => {
     if (pendingData) {
-      // Crear falla vinculada al caso principal
       quickReportMutation.mutate({
         ...pendingData,
         linkToOccurrenceId: mainOccurrenceId,
@@ -417,332 +463,317 @@ export function FailureQuickReportDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>Nueva Falla - Reporte Rápido</DialogTitle>
-            <DialogDescription>
-              Complete los campos básicos. Use "+ Detalles" para información adicional.
-            </DialogDescription>
-          </DialogHeader>
-
+        <DialogContent
+          size="xl"
+          className="p-0 flex flex-col max-h-[90vh]"
+          hideCloseButton
+        >
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              id="quick-report-form"
-              className="flex flex-col flex-1 min-h-0"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleValidateAndSubmit();
+              }}
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
-            <DialogBody className="space-y-4">
-              {/* === SECCIÓN RÁPIDA (3 campos) === */}
-              <div className="rounded-lg border p-4 space-y-4 bg-info-muted/50">
-                <p className="text-sm font-medium text-info-muted-foreground">
-                  Reporte Rápido
-                </p>
-
-                {/* 1. Máquina/Componente(s) */}
-                <FormField
-                  control={form.control}
-                  name="machineId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        1. Máquina / Componente(s) *
-                      </FormLabel>
-                      <FormControl>
-                        <ComponentTreeSelector
-                          value={{
-                            machineId: field.value,
-                            componentIds: form.watch('componentIds'),
-                            subcomponentIds: form.watch('subcomponentIds'),
-                          }}
-                          onChange={(selection) => {
-                            // Si machineId es undefined, resetear todo el form field
-                            if (selection.machineId === undefined) {
-                              form.setValue('machineId', undefined as any);
-                              form.setValue('componentIds', []);
-                              form.setValue('subcomponentIds', []);
-                            } else {
-                              form.setValue('machineId', selection.machineId);
-                              form.setValue('componentIds', selection.componentIds);
-                              form.setValue('subcomponentIds', selection.subcomponentIds);
-                            }
-                          }}
-                          allowMultiple={true}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 2. Título/Síntomas */}
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>2. ¿Qué pasó? *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Se escucha ruido extraño en rodamiento"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Síntomas (chips) */}
-                <FormField
-                  control={form.control}
-                  name="symptomIds"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Síntomas (opcional)</FormLabel>
-                      <FormControl>
-                        <SymptomChips
-                          value={field.value || []}
-                          onChange={field.onChange}
-                          machineId={form.watch('machineId')}
-                          componentId={form.watch('componentIds')?.[0]}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {/* 3. ¿Paró producción? */}
-                <FormField
-                  control={form.control}
-                  name="causedDowntime"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
-                      <div className="space-y-0.5">
-                        <FormLabel>
-                          3. ¿Paró la producción?
-                        </FormLabel>
-                        <p className="text-xs text-muted-foreground">
-                          Se iniciará el registro de downtime automáticamente
-                        </p>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {/* Upload foto */}
-                <div className="space-y-2">
-                  <FormLabel>Foto (opcional)</FormLabel>
-
-                  {/* Input oculto - capture="environment" abre cámara trasera en móviles */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    disabled={isUploading}
-                  />
-
-                  {/* Botón de subida */}
+              {/* ── Sticky Header: Título + Stepper ── */}
+              <div className="flex-shrink-0 bg-background border-b">
+                <div className="px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 -ml-1"
+                      onClick={handlePrevFormStep}
                     >
-                      {isUploading ? (
-                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="mr-2 h-3.5 w-3.5" />
-                      )}
-                      {isUploading ? `Subiendo ${uploadProgress}%` : 'Subir Foto'}
+                      <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-xs text-muted-foreground">
-                      JPG, PNG hasta 5MB
-                    </span>
-                  </div>
-
-                  {/* Barra de progreso */}
-                  {isUploading && (
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div
-                        className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Preview de fotos subidas */}
-                  {uploadedFiles.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {uploadedFiles.map((file) => (
-                        <div
-                          key={file.url}
-                          className="relative group rounded-lg border overflow-hidden"
+                    <div>
+                      <h2 className="text-base font-semibold flex items-center gap-2">
+                        {incidentType === 'ROTURA' ? 'Nueva Rotura' : 'Nueva Falla'}
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 py-0"
                         >
-                          <img
-                            src={file.url}
-                            alt={file.originalName}
-                            className="h-16 w-16 object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFile(file.url)}
-                            className="absolute top-0.5 right-0.5 p-0.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
+                          Reporte Rápido
+                        </Badge>
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Paso {currentFormStepIndex + 1} de {formStepIds.length}
+                      </p>
                     </div>
-                  )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex justify-center px-4 pb-3 sm:px-6 sm:pb-4">
+                  <Stepper
+                    steps={formSteps}
+                    currentStep={formStep}
+                    onStepClick={handleStepClick}
+                    className="w-full max-w-md"
+                  />
                 </div>
               </div>
 
-              {/* === "+ DETALLES" COLAPSABLE === */}
-              <Collapsible open={showDetails} onOpenChange={setShowDetails}>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full flex items-center justify-between"
-                  >
-                    <span className="text-sm font-medium">
-                      {showDetails ? '− Ocultar Detalles' : '+ Agregar Detalles'}
-                    </span>
-                    <ChevronDown
-                      className={cn('h-4 w-4 transition-transform', showDetails && 'rotate-180')}
-                    />
-                  </Button>
-                </CollapsibleTrigger>
+              {/* ── Contenido Scrollable ── */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="px-4 py-5 sm:px-6 sm:py-6 space-y-4">
 
-                <CollapsibleContent className="pt-3">
-                  <div className="rounded-lg border p-4 space-y-4 bg-muted/50">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Información adicional (opcional)
-                    </p>
-
-                    {/* Descripción detallada */}
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Descripción Detallada</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describa el problema con más detalle..."
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Flags opcionales */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <FormField
-                        control={form.control}
-                        name="isIntermittent"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
-                            <div className="space-y-0.5">
-                              <FormLabel className="cursor-pointer">
-                                Falla Intermitente
-                              </FormLabel>
-                              <p className="text-xs text-muted-foreground">
-                                Aparece y desaparece
-                              </p>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                  {/* ═══ PASO 1: EQUIPO ═══ */}
+                  {formStep === 'equipo' && (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
+                          <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold">¿Dónde ocurrió?</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Seleccioná la máquina y componente(s) afectados
+                          </p>
+                        </div>
+                      </div>
 
                       <FormField
                         control={form.control}
-                        name="isSafetyRelated"
+                        name="machineId"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
-                            <div className="space-y-0.5">
-                              <FormLabel className="cursor-pointer">
-                                Riesgo Seguridad
-                              </FormLabel>
-                              <p className="text-xs text-muted-foreground">
-                                Puede causar lesiones
-                              </p>
-                            </div>
+                          <FormItem>
+                            <FormLabel>Máquina / Componente(s) *</FormLabel>
                             <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="isObservation"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
-                            <div className="space-y-0.5">
-                              <FormLabel className="cursor-pointer">
-                                Solo Observación
-                              </FormLabel>
-                              <p className="text-xs text-muted-foreground">
-                                No requiere acción
-                              </p>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={(checked) => {
-                                  field.onChange(checked);
-                                  // Si es observación, desactivar cierre inmediato
-                                  if (checked) {
-                                    form.setValue('resolveImmediately', false);
+                              <ComponentTreeSelector
+                                value={{
+                                  machineId: field.value,
+                                  componentIds: form.watch('componentIds'),
+                                  subcomponentIds: form.watch('subcomponentIds'),
+                                }}
+                                onChange={(selection) => {
+                                  if (selection.machineId === undefined) {
+                                    form.setValue('machineId', undefined as any);
+                                    form.setValue('componentIds', []);
+                                    form.setValue('subcomponentIds', []);
+                                  } else {
+                                    form.setValue('machineId', selection.machineId);
+                                    form.setValue('componentIds', selection.componentIds);
+                                    form.setValue('subcomponentIds', selection.subcomponentIds);
                                   }
                                 }}
+                                allowMultiple={true}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* ═══ PASO 2: PROBLEMA ═══ */}
+                  {formStep === 'problema' && (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-9 w-9 rounded-lg bg-red-100 dark:bg-red-950 flex items-center justify-center">
+                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold">¿Qué pasó?</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Describí el problema de la forma más clara posible
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Título */}
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>¿Qué pasó? *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Ej: Se escucha ruido extraño en rodamiento"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Síntomas */}
+                      <FormField
+                        control={form.control}
+                        name="symptomIds"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Síntomas (opcional)</FormLabel>
+                            <FormControl>
+                              <SymptomChips
+                                value={field.value || []}
+                                onChange={field.onChange}
+                                machineId={form.watch('machineId')}
+                                componentId={form.watch('componentIds')?.[0]}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* ¿Paró producción? */}
+                      <FormField
+                        control={form.control}
+                        name="causedDowntime"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                            <div className="space-y-0.5">
+                              <FormLabel>¿Paró la producción?</FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                Se iniciará el registro de downtime automáticamente
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Descripción detallada */}
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Descripción detallada (opcional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Describí el problema con más detalle..."
+                                rows={3}
+                                {...field}
                               />
                             </FormControl>
                           </FormItem>
                         )}
                       />
                     </div>
+                  )}
 
-                    {/* Cierre inmediato - solo si NO es observación */}
-                    {!isObservation && (
-                      <div className="rounded-lg border border-success-muted p-4 bg-success-muted/50 space-y-3">
+                  {/* ═══ PASO 3: DETALLE ═══ */}
+                  {formStep === 'detalle' && (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+                          <Camera className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold">Clasificación y evidencia</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Agregá fotos y clasificá la falla (todo opcional)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Upload foto — prominente */}
+                      <div className="space-y-3">
+                        <FormLabel>Foto</FormLabel>
+
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+
+                        {/* Zona de drop/click */}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                          className={cn(
+                            'w-full rounded-lg border-2 border-dashed p-6 flex flex-col items-center gap-2 transition-colors',
+                            'hover:border-primary/50 hover:bg-muted/50',
+                            isUploading && 'opacity-50 cursor-not-allowed'
+                          )}
+                        >
+                          {isUploading ? (
+                            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                          ) : (
+                            <Camera className="h-8 w-8 text-muted-foreground" />
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {isUploading ? `Subiendo ${uploadProgress}%` : 'Tocar para sacar foto o subir imagen'}
+                          </span>
+                          <span className="text-xs text-muted-foreground/60">
+                            JPG, PNG hasta 5MB
+                          </span>
+                        </button>
+
+                        {/* Barra de progreso */}
+                        {isUploading && (
+                          <div className="w-full bg-muted rounded-full h-1.5">
+                            <div
+                              className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Preview de fotos subidas */}
+                        {uploadedFiles.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {uploadedFiles.map((file) => (
+                              <div
+                                key={file.url}
+                                className="relative group rounded-lg border overflow-hidden"
+                              >
+                                <img
+                                  src={file.url}
+                                  alt={file.originalName}
+                                  className="h-16 w-16 object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveFile(file.url)}
+                                  className="absolute top-0.5 right-0.5 p-0.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Flags opcionales */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <FormField
                           control={form.control}
-                          name="resolveImmediately"
+                          name="isIntermittent"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between">
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
                               <div className="space-y-0.5">
-                                <FormLabel className="cursor-pointer flex items-center gap-2">
-                                  <CheckCircle2 className="h-4 w-4 text-success" />
-                                  Ya lo resolví
+                                <FormLabel className="cursor-pointer">
+                                  Falla Intermitente
                                 </FormLabel>
                                 <p className="text-xs text-muted-foreground">
-                                  Registrar como solucionado inmediatamente (sin crear OT)
+                                  Aparece y desaparece
                                 </p>
                               </div>
                               <FormControl>
@@ -755,81 +786,108 @@ export function FailureQuickReportDialog({
                           )}
                         />
 
-                        {/* Campo de solución con Rich Text - solo si resolveImmediately */}
-                        {resolveImmediately && (
-                          <FormField
-                            control={form.control}
-                            name="immediateSolution"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>¿Qué hiciste para solucionarlo?</FormLabel>
-                                <FormControl>
-                                  <RichTextEditor
-                                    content={field.value || ''}
-                                    onChange={field.onChange}
-                                    placeholder="Describe la solución aplicada. Puedes usar formato y agregar imágenes..."
-                                    minHeight="120px"
-                                    onImageUpload={async (file: File) => {
-                                      // Subir imagen a S3
-                                      const formData = new FormData();
-                                      formData.append('file', file);
-                                      formData.append('entityType', 'failure-solution');
-                                      formData.append('entityId', 'temp');
-                                      formData.append('fileType', 'photo');
-
-                                      const res = await fetch('/api/upload', {
-                                        method: 'POST',
-                                        body: formData,
-                                      });
-
-                                      if (!res.ok) {
-                                        throw new Error('Error al subir imagen');
-                                      }
-
-                                      const data = await res.json();
-                                      return data.url;
-                                    }}
-                                  />
-                                </FormControl>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Usa el botón de imagen para agregar fotos de la reparación
+                        <FormField
+                          control={form.control}
+                          name="isSafetyRelated"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                              <div className="space-y-0.5">
+                                <FormLabel className="cursor-pointer">
+                                  Riesgo Seguridad
+                                </FormLabel>
+                                <p className="text-xs text-muted-foreground">
+                                  Puede causar lesiones
                                 </p>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="isObservation"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                              <div className="space-y-0.5">
+                                <FormLabel className="cursor-pointer">
+                                  Solo Observación
+                                </FormLabel>
+                                <p className="text-xs text-muted-foreground">
+                                  No requiere acción
+                                </p>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    field.onChange(checked);
+                                    if (checked) {
+                                      form.setValue('resolveImmediately', false);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
+
+                    </div>
+                  )}
+
+                </div>
+              </div>
+
+              {/* ── Sticky Footer: Navegación ── */}
+              <div className="flex-shrink-0 bg-muted/30 border-t px-4 py-2.5 sm:px-6 sm:py-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    Paso {currentFormStepIndex + 1} de {formStepIds.length}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrevFormStep}
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+                      {isFirstFormStep ? 'Cancelar' : 'Anterior'}
+                    </Button>
+
+                    {!isLastFormStep ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleNextFormStep}
+                      >
+                        Siguiente
+                        <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={quickReportMutation.isPending}
+                      >
+                        {quickReportMutation.isPending && (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        )}
+                        Reportar Falla
+                      </Button>
                     )}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-
-            </DialogBody>
+                </div>
+              </div>
             </form>
           </Form>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              form="quick-report-form"
-              size="sm"
-              disabled={quickReportMutation.isPending}
-            >
-              {quickReportMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Reportar Falla
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -839,7 +897,6 @@ export function FailureQuickReportDialog({
         onOpenChange={(open) => {
           setShowDuplicateModal(open);
           if (!open) {
-            // Si cierra el modal sin elegir, limpiar datos
             setPendingData(null);
             setDuplicates([]);
           }
@@ -874,9 +931,7 @@ export function FailureQuickReportDialog({
           </DialogHeader>
 
           <DialogBody>
-          {/* Resumen de lo creado */}
           <div className="space-y-3">
-            {/* Falla */}
             <div className="rounded-lg border p-3 bg-muted/30">
               <div className="flex items-start justify-between">
                 <div>
@@ -895,7 +950,6 @@ export function FailureQuickReportDialog({
               </div>
             </div>
 
-            {/* OT creada (si existe) */}
             {creationResult?.workOrder && (
               <div className="rounded-lg border border-info-muted p-3 bg-info-muted/50">
                 <div className="flex items-center gap-2 text-sm">
@@ -912,7 +966,6 @@ export function FailureQuickReportDialog({
               </div>
             )}
 
-            {/* Info adicional según tipo */}
             {creationResult?.isObservation && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertTriangle className="h-4 w-4" />
@@ -929,7 +982,6 @@ export function FailureQuickReportDialog({
           </div>
           </DialogBody>
 
-          {/* Acciones */}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
@@ -969,7 +1021,6 @@ export function FailureQuickReportDialog({
           onOpenChange={(open) => {
             setShowAssignDialog(open);
             if (!open) {
-              // Si cierra sin asignar, mostrar modal de éxito
               setShowSuccessModal(true);
             }
           }}
@@ -980,7 +1031,6 @@ export function FailureQuickReportDialog({
             status: creationResult.workOrder.status,
           }}
           onSuccess={() => {
-            // Después de asignar exitosamente, cerrar todo
             resetAndClose();
           }}
         />

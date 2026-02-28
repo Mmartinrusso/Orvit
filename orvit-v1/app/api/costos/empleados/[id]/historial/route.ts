@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const employeeId = params.id;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID es requerido' }, { status: 400 });
-    }
+    const companyId = String(user!.companyId);
+    const employeeId = params.id;
 
     if (!employeeId) {
       return NextResponse.json({ error: 'Employee ID es requerido' }, { status: 400 });
@@ -65,13 +64,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    const { oldSalary, newSalary, changeReason, companyId } = body;
-    const employeeId = params.id;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID es requerido' }, { status: 400 });
-    }
+    const body = await request.json();
+    const { oldSalary, newSalary, changeReason } = body;
+    const companyId = String(user!.companyId);
+    const employeeId = params.id;
 
     if (!employeeId) {
       return NextResponse.json({ error: 'Employee ID es requerido' }, { status: 400 });

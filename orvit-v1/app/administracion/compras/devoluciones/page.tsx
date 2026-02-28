@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Plus,
   RefreshCw,
@@ -118,6 +119,11 @@ export default function DevolucionesPage() {
   const confirm = useConfirm();
   const searchParams = useSearchParams();
   const { mode: viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canCreateDevolucion = hasPermission('compras.devoluciones.create');
+  const canEditDevolucion = hasPermission('compras.devoluciones.edit');
+  const canDeleteDevolucion = hasPermission('compras.devoluciones.delete');
+  const canApproveDevolucion = hasPermission('compras.devoluciones.approve');
   const [devoluciones, setDevoluciones] = useState<Devolucion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -394,56 +400,66 @@ export default function DevolucionesPage() {
 
     switch (devolucion.estado) {
       case 'BORRADOR':
-        acciones.push(
-          <DropdownMenuItem key="solicitar" onClick={() => handleSolicitar(devolucion)}>
-            <Send className="h-4 w-4 mr-2" />
-            Enviar solicitud
-          </DropdownMenuItem>
-        );
-        acciones.push(
-          <DropdownMenuItem key="delete" onClick={() => abrirEliminarDevolucion(devolucion)} className="text-destructive">
-            <XCircle className="h-4 w-4 mr-2" />
-            Eliminar
-          </DropdownMenuItem>
-        );
+        if (canEditDevolucion) {
+          acciones.push(
+            <DropdownMenuItem key="solicitar" onClick={() => handleSolicitar(devolucion)}>
+              <Send className="h-4 w-4 mr-2" />
+              Enviar solicitud
+            </DropdownMenuItem>
+          );
+        }
+        if (canDeleteDevolucion) {
+          acciones.push(
+            <DropdownMenuItem key="delete" onClick={() => abrirEliminarDevolucion(devolucion)} className="text-destructive">
+              <XCircle className="h-4 w-4 mr-2" />
+              Eliminar
+            </DropdownMenuItem>
+          );
+        }
         break;
 
       case 'SOLICITADA':
-        acciones.push(
-          <DropdownMenuItem key="aprobar" onClick={() => handleAprobarProveedor(devolucion)}>
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Marcar aprobada (proveedor)
-          </DropdownMenuItem>
-        );
-        acciones.push(
-          <DropdownMenuItem key="rechazar" onClick={() => handleRechazar(devolucion)} className="text-destructive">
-            <XCircle className="h-4 w-4 mr-2" />
-            Marcar rechazada
-          </DropdownMenuItem>
-        );
+        if (canApproveDevolucion) {
+          acciones.push(
+            <DropdownMenuItem key="aprobar" onClick={() => handleAprobarProveedor(devolucion)}>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Marcar aprobada (proveedor)
+            </DropdownMenuItem>
+          );
+          acciones.push(
+            <DropdownMenuItem key="rechazar" onClick={() => handleRechazar(devolucion)} className="text-destructive">
+              <XCircle className="h-4 w-4 mr-2" />
+              Marcar rechazada
+            </DropdownMenuItem>
+          );
+        }
         break;
 
       case 'APROBADA_PROVEEDOR':
-        acciones.push(
-          <DropdownMenuItem key="enviar" onClick={() => handleEnviar(devolucion)}>
-            <Truck className="h-4 w-4 mr-2" />
-            Enviar mercadería
-          </DropdownMenuItem>
-        );
-        acciones.push(
-          <DropdownMenuSeparator key="sep1" />
-        );
-        acciones.push(
-          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
-            <XCircle className="h-4 w-4 mr-2" />
-            Cancelar
-          </DropdownMenuItem>
-        );
+        if (canEditDevolucion) {
+          acciones.push(
+            <DropdownMenuItem key="enviar" onClick={() => handleEnviar(devolucion)}>
+              <Truck className="h-4 w-4 mr-2" />
+              Enviar mercadería
+            </DropdownMenuItem>
+          );
+        }
+        if (canEditDevolucion) {
+          acciones.push(
+            <DropdownMenuSeparator key="sep1" />
+          );
+          acciones.push(
+            <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancelar
+            </DropdownMenuItem>
+          );
+        }
         break;
 
       case 'ENVIADA':
         // Cargar NCA si no tiene una asociada
-        if (devolucion._count.creditNotes === 0) {
+        if (devolucion._count.creditNotes === 0 && canEditDevolucion) {
           acciones.push(
             <DropdownMenuItem key="nca" onClick={() => setShowNcaModal(devolucion)} className="text-success">
               <FileText className="h-4 w-4 mr-2" />
@@ -451,20 +467,22 @@ export default function DevolucionesPage() {
             </DropdownMenuItem>
           );
         }
-        acciones.push(
-          <DropdownMenuSeparator key="sep2" />
-        );
-        acciones.push(
-          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
-            <XCircle className="h-4 w-4 mr-2" />
-            Cancelar (revertir stock)
-          </DropdownMenuItem>
-        );
+        if (canEditDevolucion) {
+          acciones.push(
+            <DropdownMenuSeparator key="sep2" />
+          );
+          acciones.push(
+            <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancelar (revertir stock)
+            </DropdownMenuItem>
+          );
+        }
         break;
 
       case 'RECIBIDA_PROVEEDOR':
         // Cargar NCA si no tiene una asociada
-        if (devolucion._count.creditNotes === 0) {
+        if (devolucion._count.creditNotes === 0 && canEditDevolucion) {
           acciones.push(
             <DropdownMenuItem key="nca" onClick={() => setShowNcaModal(devolucion)} className="text-success">
               <FileText className="h-4 w-4 mr-2" />
@@ -472,15 +490,17 @@ export default function DevolucionesPage() {
             </DropdownMenuItem>
           );
         }
-        acciones.push(
-          <DropdownMenuSeparator key="sep3" />
-        );
-        acciones.push(
-          <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
-            <XCircle className="h-4 w-4 mr-2" />
-            Cancelar (revertir stock)
-          </DropdownMenuItem>
-        );
+        if (canEditDevolucion) {
+          acciones.push(
+            <DropdownMenuSeparator key="sep3" />
+          );
+          acciones.push(
+            <DropdownMenuItem key="cancelar" onClick={() => handleCancelar(devolucion)} className="text-destructive">
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancelar (revertir stock)
+            </DropdownMenuItem>
+          );
+        }
         break;
     }
 
@@ -502,10 +522,12 @@ export default function DevolucionesPage() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-          <Button onClick={() => setShowFormModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Devolución
-          </Button>
+          {canCreateDevolucion && (
+            <Button onClick={() => setShowFormModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Devolución
+            </Button>
+          )}
         </div>
       </div>
 

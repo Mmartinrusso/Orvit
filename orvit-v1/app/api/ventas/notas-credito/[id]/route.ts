@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requirePermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
+import { requirePermission, checkPermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
 import { creditNoteActionSchema } from '@/lib/ventas/validation-schemas';
 import {
   getIdempotencyKey,
@@ -125,6 +125,18 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const body = validationResult.data;
+
+    // Granular permission check: cancel/void requires NOTAS_VOID
+    if (body.action === 'cancel') {
+      const voidCheck = await checkPermission(user!.id, user!.companyId, VENTAS_PERMISSIONS.NOTAS_VOID);
+      if (!voidCheck) {
+        return NextResponse.json(
+          { error: 'Sin permisos para anular notas', requiredPermission: VENTAS_PERMISSIONS.NOTAS_VOID },
+          { status: 403 }
+        );
+      }
+    }
+
     const idempotencyKey = getIdempotencyKey(req);
     const operation = getOperationType(body.action);
 

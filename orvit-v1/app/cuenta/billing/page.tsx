@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -197,10 +198,14 @@ async function fetchMySubscription(): Promise<SubscriptionData> {
 // MAIN COMPONENT
 // ============================================
 export default function ClientBillingPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [couponCode, setCouponCode] = useState('');
   const [showCouponDialog, setShowCouponDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  // Only company admins and superadmins can modify billing
+  const isAdmin = user?.role === 'ADMIN_ENTERPRISE' || user?.role === 'SUPERADMIN' || user?.role === 'ADMIN';
 
   // Query
   const { data, isLoading, error } = useQuery({
@@ -367,15 +372,17 @@ export default function ClientBillingPage() {
             <span>
               Tu suscripción se cancelará el {format(new Date(subscription.currentPeriodEnd), "d 'de' MMMM, yyyy", { locale: es })}.
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => reactivateMutation.mutate()}
-              disabled={reactivateMutation.isPending}
-            >
-              {reactivateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Reactivar
-            </Button>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => reactivateMutation.mutate()}
+                disabled={reactivateMutation.isPending}
+              >
+                {reactivateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Reactivar
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -469,21 +476,23 @@ export default function ClientBillingPage() {
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex justify-between border-t pt-6">
-            {!subscription.cancelAtPeriodEnd && subscription.status !== 'CANCELED' && (
-              <Button
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={() => setShowCancelDialog(true)}
-              >
-                Cancelar suscripción
+          {isAdmin && (
+            <CardFooter className="flex justify-between border-t pt-6">
+              {!subscription.cancelAtPeriodEnd && subscription.status !== 'CANCELED' && (
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  Cancelar suscripción
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setShowCouponDialog(true)}>
+                <Gift className="h-4 w-4 mr-2" />
+                Aplicar cupón
               </Button>
-            )}
-            <Button variant="outline" onClick={() => setShowCouponDialog(true)}>
-              <Gift className="h-4 w-4 mr-2" />
-              Aplicar cupón
-            </Button>
-          </CardFooter>
+            </CardFooter>
+          )}
         </Card>
 
         {/* Tokens Card */}
@@ -598,10 +607,12 @@ export default function ClientBillingPage() {
                 <p className="text-muted-foreground mb-4">
                   No tienes pago automático configurado
                 </p>
-                <Button variant="outline">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurar pago automático
-                </Button>
+                {isAdmin && (
+                  <Button variant="outline">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configurar pago automático
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

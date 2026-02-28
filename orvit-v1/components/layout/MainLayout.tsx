@@ -125,9 +125,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
           )}
         </div>
         
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-0 h-screen bg-background">
-          <NavigationLoader />
-          <PageHeader />
+        <NavigationLoader />
+        <PageHeader />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-0 bg-background">
           <div className={cn(
             "flex flex-col",
             (pathname === '/maquinas' || pathname.startsWith('/mantenimiento') || pathname.startsWith('/produccion') || pathname.startsWith('/administracion')) && "pb-16 md:pb-0"

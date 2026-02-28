@@ -218,17 +218,17 @@ async function calculateDowntimePercent(machineId: number, since: Date): Promise
   const downtimeLogs = await prisma.downtimeLog.findMany({
     where: {
       machineId,
-      startTime: { gte: since }
+      startedAt: { gte: since }
     },
     select: {
-      startTime: true,
-      endTime: true
+      startedAt: true,
+      endedAt: true
     }
   })
 
   const totalDowntimeMinutes = downtimeLogs.reduce((sum, log) => {
-    const end = log.endTime || new Date()
-    const minutes = (end.getTime() - log.startTime.getTime()) / (1000 * 60)
+    const end = log.endedAt || new Date()
+    const minutes = (end.getTime() - log.startedAt.getTime()) / (1000 * 60)
     return sum + minutes
   }, 0)
 

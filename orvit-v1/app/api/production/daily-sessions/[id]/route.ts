@@ -1,25 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateDailySessionSchema } from '@/lib/validations/daily-sessions';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  const token = cookies().get('token')?.value;
-  if (!token) throw new Error('No token provided');
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return { userId: payload.userId as number, companyId: payload.companyId as number };
-  } catch {
-    throw new Error('Invalid token');
-  }
-}
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['SUBMITTED'],
@@ -33,7 +19,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId, companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.EDIT);
+    if (error) return error;
+    const companyId = user!.companyId;
+    const userId = user!.id;
     const id = parseInt(params.id);
     const body = await request.json();
 

@@ -288,6 +288,20 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('currentSector');
     }
 
+    // Si no hay sector guardado pero el área lo necesita, restaurar desde lastSector
+    if (!parsedSector && parsedArea) {
+      const areaName = (parsedArea as any).name?.trim().toUpperCase();
+      if (areaName === 'MANTENIMIENTO' || areaName === 'PRODUCCIÓN') {
+        const saved = localStorage.getItem(`lastSector_area_${(parsedArea as any).id}`);
+        if (saved) {
+          try {
+            parsedSector = JSON.parse(saved);
+            localStorage.setItem('currentSector', saved);
+          } catch { /* ignore */ }
+        }
+      }
+    }
+
     setCompanyState(prev => ({
       ...prev,
       currentCompany: parsedCompany,
@@ -296,6 +310,20 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     }));
     setIsLoading(false);
   }, []);
+
+  // Mirror a sessionStorage para restauración per-tab
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (companyState.currentCompany) {
+      sessionStorage.setItem('currentCompany', JSON.stringify(companyState.currentCompany));
+    }
+    if (companyState.currentArea) {
+      sessionStorage.setItem('currentArea', JSON.stringify(companyState.currentArea));
+    }
+    if (companyState.currentSector) {
+      sessionStorage.setItem('currentSector', JSON.stringify(companyState.currentSector));
+    }
+  }, [companyState.currentCompany, companyState.currentArea, companyState.currentSector]);
 
   // Cargar áreas cuando se selecciona una empresa
   useEffect(() => {

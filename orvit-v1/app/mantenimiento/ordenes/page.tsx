@@ -34,6 +34,8 @@ import { WorkOrdersSavedViewsBar, usePresetFilters, PRESETS, PresetKey } from '@
 import { WorkOrdersDispatcherBoard } from '@/components/work-orders/WorkOrdersDispatcherBoard';
 import { WorkOrdersCalendarView } from '@/components/work-orders/WorkOrdersCalendarView';
 import { WorkOrdersBulkBar } from '@/components/work-orders/WorkOrdersBulkBar';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { GuidedCloseDialog } from '@/components/corrective/work-orders/GuidedCloseDialog';
 
 export default function OrdenesTrabajo() {
   const { currentCompany } = useCompany();
@@ -44,7 +46,10 @@ export default function OrdenesTrabajo() {
   const router = useRouter();
 
   const { hasPermission: canCreateWorkOrder } = usePermissionRobust('work_orders.create');
+  const { hasPermission: canEditWorkOrder } = usePermissionRobust('work_orders.edit');
   const { hasPermission: canDeleteWorkOrder } = usePermissionRobust('work_orders.delete');
+  const { hasPermission: canApproveWorkOrder } = usePermissionRobust('work_orders.approve');
+  const confirm = useConfirm();
 
   // V2: Obtener vista y preset desde URL
   const currentView = useWorkOrdersView();
@@ -79,6 +84,7 @@ export default function OrdenesTrabajo() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCorrectiveSheetOpen, setIsCorrectiveSheetOpen] = useState(false);
   const [correctiveSheetAction, setCorrectiveSheetAction] = useState<'close' | 'assign' | null>(null);
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
 
   // Bulk selection
   const [selectionMode, setSelectionMode] = useState(false);
@@ -405,6 +411,14 @@ export default function OrdenesTrabajo() {
         return;
       }
 
+      const ok = await confirm({
+        title: 'Eliminar orden de trabajo',
+        description: `¿Eliminar "${workOrder.title}"? Esta acción no se puede deshacer.`,
+        confirmText: 'Eliminar',
+        variant: 'destructive',
+      });
+      if (!ok) return;
+
       const response = await fetch(`/api/work-orders?id=${workOrder.id}&userId=${user.id}`, {
         method: 'DELETE',
       });
@@ -484,12 +498,11 @@ export default function OrdenesTrabajo() {
           return;
         }
 
-        // COMPLETAR: Siempre abrir sheet para cierre guiado
+        // COMPLETAR: Abrir GuidedCloseDialog directamente (sin sheet)
         if (newStatus === WorkOrderStatus.COMPLETED) {
-          console.log('→ Abriendo sheet para cierre guiado');
+          console.log('→ Abriendo GuidedCloseDialog directamente');
           setSelectedOrder(currentOrder);
-          setCorrectiveSheetAction('close');
-          setIsCorrectiveSheetOpen(true);
+          setIsCloseDialogOpen(true);
           return;
         }
 
@@ -603,6 +616,7 @@ export default function OrdenesTrabajo() {
   };
 
   const handleEdit = (order: WorkOrder) => {
+    if (!canEditWorkOrder) return;
     setSelectedOrder(order);
     setIsEditDialogOpen(true);
     setIsDialogOpen(false);
@@ -742,7 +756,7 @@ export default function OrdenesTrabajo() {
                       <WorkOrdersGrid
                         workOrders={filteredOrders}
                         onViewDetails={handleViewDetails}
-                        onEdit={handleEdit}
+                        onEdit={canEditWorkOrder ? handleEdit : undefined}
                         onDelete={handleWorkOrderDelete}
                         onStatusChange={handleStatusChange}
                         selectionMode={selectionMode}
@@ -753,7 +767,7 @@ export default function OrdenesTrabajo() {
                       <WorkOrdersTable
                         workOrders={filteredOrders}
                         onViewDetails={handleViewDetails}
-                        onEdit={handleEdit}
+                        onEdit={canEditWorkOrder ? handleEdit : undefined}
                         onDelete={handleWorkOrderDelete}
                         onStatusChange={handleStatusChange}
                         selectionMode={selectionMode}
@@ -812,14 +826,15 @@ export default function OrdenesTrabajo() {
                   setSelectedOrder(null);
                 }
               }}
-              onEdit={(order) => {
+              onEdit={canEditWorkOrder ? (order) => {
                 setIsEditDialogOpen(true);
                 setIsDialogOpen(false);
-              }}
+              } : undefined}
               onStatusChange={handleStatusChange}
               onDelete={handleWorkOrderDelete}
               availableUsers={availableUsers}
               canDelete={canDeleteWorkOrder}
+              canEdit={canEditWorkOrder}
             />
             <WorkOrderEditDialog
               workOrder={selectedOrder}
@@ -872,6 +887,22 @@ export default function OrdenesTrabajo() {
             onClearSelection={handleClearSelection}
             availableUsers={availableUsers}
             onComplete={handleBulkComplete}
+          />
+        )}
+
+        {/* GuidedCloseDialog — se abre directo desde botón "Completar" */}
+        {selectedOrder && (
+          <GuidedCloseDialog
+            workOrderId={selectedOrder.id}
+            requiresReturnToProduction={(selectedOrder as any).requiresReturnToProduction ?? false}
+            returnToProductionConfirmed={(selectedOrder as any).returnToProductionConfirmed ?? false}
+            open={isCloseDialogOpen}
+            onOpenChange={(open) => {
+              setIsCloseDialogOpen(open);
+              if (!open) {
+                refetchDashboard();
+              }
+            }}
           />
         )}
 

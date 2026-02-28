@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic';
  * Returns data standards configuration for the company
  */
 export async function GET(request: Request) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = parseInt(searchParams.get('companyId') || '0');
@@ -153,6 +157,9 @@ export async function GET(request: Request) {
  * Update data standards for the company
  */
 export async function PATCH(request: Request) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { companyId, dataStandards } = body;

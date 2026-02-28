@@ -54,6 +54,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Comprobante {
   id: number;
@@ -174,6 +175,14 @@ const formatDateTime = (dateStr: string | null) => {
 export default function SolicitudDetallePage() {
   const params = useParams();
   const router = useRouter();
+  const { hasPermission } = useAuth();
+
+  // Permission checks
+  const canEditSolicitud = hasPermission('compras.solicitudes.edit');
+  const canDeleteSolicitud = hasPermission('compras.solicitudes.delete');
+  const canApproveSolicitud = hasPermission('compras.solicitudes.approve');
+  const canRejectSolicitud = hasPermission('compras.solicitudes.reject');
+
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -348,7 +357,7 @@ export default function SolicitudDetallePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {solicitud.puedeEditar && (
+          {canEditSolicitud && solicitud.puedeEditar && (
             <Button
               variant="outline"
               size="sm"
@@ -365,28 +374,32 @@ export default function SolicitudDetallePage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {solicitud.estado === 'pendiente' && (
+              {solicitud.estado === 'pendiente' && (canApproveSolicitud || canRejectSolicitud) && (
                 <>
-                  <DropdownMenuItem
-                    onClick={handleAprobar}
-                    className="text-success focus:text-success"
-                    disabled={actionLoading}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Aprobar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setShowRejectDialog(true)}
-                    className="text-destructive focus:text-destructive"
-                    disabled={actionLoading}
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Rechazar
-                  </DropdownMenuItem>
+                  {canApproveSolicitud && (
+                    <DropdownMenuItem
+                      onClick={handleAprobar}
+                      className="text-success focus:text-success"
+                      disabled={actionLoading}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Aprobar
+                    </DropdownMenuItem>
+                  )}
+                  {canRejectSolicitud && (
+                    <DropdownMenuItem
+                      onClick={() => setShowRejectDialog(true)}
+                      className="text-destructive focus:text-destructive"
+                      disabled={actionLoading}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Rechazar
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                 </>
               )}
-              {solicitud.puedeEliminar && (
+              {canDeleteSolicitud && solicitud.puedeEliminar && (
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
                   className="text-destructive focus:text-destructive"

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { UpdateLineSchema } from '@/lib/validations/costs';
 import { z } from 'zod';
 
@@ -9,6 +10,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const line = await prisma.line.findUnique({
       where: { id: params.id },
       include: {
@@ -56,6 +60,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const validatedData = UpdateLineSchema.parse(body);
 
@@ -124,6 +131,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     // Check if line exists
     const existingLine = await prisma.line.findUnique({
       where: { id: params.id },

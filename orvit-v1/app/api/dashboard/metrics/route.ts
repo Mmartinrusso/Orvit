@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders } from '@/lib/perf';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   const perfCtx = startPerf();
   const { searchParams } = new URL(request.url);
-  
+
   try {
     const companyId = searchParams.get('companyId');
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7);

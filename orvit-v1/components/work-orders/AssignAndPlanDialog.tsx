@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,11 +9,7 @@ import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogBody,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -23,6 +20,19 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,7 +46,19 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { Loader2, User, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import {
+  Loader2,
+  User,
+  Clock,
+  Check,
+  ChevronsUpDown,
+  Wrench,
+  Play,
+  CalendarClock,
+  ClipboardList,
+  ArrowRight,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addHours, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -49,11 +71,11 @@ const DEFAULT_SLA_HOURS: Record<string, number> = {
   LOW: 168,
 };
 
-const PRIORITY_LABELS: Record<string, string> = {
-  URGENT: 'Urgente (P1)',
-  HIGH: 'Alta (P2)',
-  MEDIUM: 'Media (P3)',
-  LOW: 'Baja (P4)',
+const PRIORITY_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
+  URGENT: { label: 'Urgente (P1)', color: 'text-red-600', dot: 'bg-red-500' },
+  HIGH: { label: 'Alta (P2)', color: 'text-orange-600', dot: 'bg-orange-500' },
+  MEDIUM: { label: 'Media (P3)', color: 'text-yellow-600', dot: 'bg-yellow-500' },
+  LOW: { label: 'Baja (P4)', color: 'text-blue-600', dot: 'bg-blue-500' },
 };
 
 const assignAndPlanSchema = z.object({
@@ -91,6 +113,7 @@ export function AssignAndPlanDialog({
 }: AssignAndPlanDialogProps) {
   const queryClient = useQueryClient();
   const [calculatedSla, setCalculatedSla] = useState<Date | null>(null);
+  const [responsableOpen, setResponsableOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(assignAndPlanSchema),
@@ -101,6 +124,9 @@ export function AssignAndPlanDialog({
   });
 
   const priority = form.watch('priority') || workOrder?.priority || 'MEDIUM';
+  const startImmediately = form.watch('startImmediately');
+  const scheduledDate = form.watch('scheduledDate');
+  const assignedToId = form.watch('assignedToId');
 
   // Calcular SLA cuando cambia la prioridad
   useEffect(() => {
@@ -120,6 +146,24 @@ export function AssignAndPlanDialog({
     },
     enabled: open,
   });
+
+  // Nombre del responsable seleccionado
+  const selectedUserName = useMemo(() => {
+    if (!assignedToId || !users) return null;
+    const u = users.find((u: any) => u.id === assignedToId);
+    return u?.name || null;
+  }, [assignedToId, users]);
+
+  // Preview del resultado
+  const resultPreview = useMemo(() => {
+    if (startImmediately) {
+      return { label: 'En Progreso', icon: Play, color: 'text-green-600 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-900' };
+    }
+    if (scheduledDate) {
+      return { label: 'Programada', icon: CalendarClock, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900' };
+    }
+    return { label: 'Pendiente', icon: ClipboardList, color: 'text-muted-foreground bg-muted/50 border-border' };
+  }, [startImmediately, scheduledDate]);
 
   // Mutation para asignar y planificar
   const assignMutation = useMutation({
@@ -152,7 +196,6 @@ export function AssignAndPlanDialog({
   });
 
   const handleSubmit = (data: FormData) => {
-    // Convert Date to ISO string for API
     const payload = {
       ...data,
       scheduledDate: data.scheduledDate?.toISOString(),
@@ -174,207 +217,335 @@ export function AssignAndPlanDialog({
 
   if (!workOrder) return null;
 
+  const prioConf = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.MEDIUM;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         size="default"
-        className="p-0"
-        onEscapeKeyDown={() => onOpenChange(false)}
-        onPointerDownOutside={() => onOpenChange(false)}
+        className="p-0 flex flex-col max-h-[90vh]"
+        hideCloseButton
       >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Asignar y Planificar
-          </DialogTitle>
-          <DialogDescription>
-            OT #{workOrder.id}: {workOrder.title}
-          </DialogDescription>
-        </DialogHeader>
+        {/* ── Header: Info de la OT ── */}
+        <div className="flex-shrink-0 bg-background border-b">
+          <div className="px-5 py-4 flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-base font-semibold truncate">
+                  Asignar y Planificar
+                </h2>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                  OT #{workOrder.id}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground truncate">
+                {workOrder.title}
+              </p>
+              {workOrder.machine && (
+                <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                  <Wrench className="h-3 w-3" />
+                  <span>{workOrder.machine.name}</span>
+                </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 min-h-0" id="assign-plan-form">
-            {/* Contenido con scroll */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-              {/* Responsable */}
-              <FormField
-                control={form.control}
-                name="assignedToId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsable *</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(parseInt(v))}
-                      value={field.value?.toString()}
-                      disabled={loadingUsers}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar responsable" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {users?.map((user: any) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 min-h-0">
+            {/* ── Contenido scrollable ── */}
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
 
-              {/* Fecha planificada */}
-              <FormField
-                control={form.control}
-                name="scheduledDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha planificada</FormLabel>
-                    <FormControl>
-                      <DateTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        minDate={startOfDay(new Date())}
-                        placeholder="Seleccionar fecha y hora"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Opcional. Si no se especifica, quedará solo asignada.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* ── Sección: Asignación ── */}
+              <div className="space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Asignación
+                </p>
 
-              {/* Estimación y Prioridad en fila */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Responsable — Combobox buscable */}
                 <FormField
                   control={form.control}
-                  name="estimatedMinutes"
+                  name="assignedToId"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Responsable *</FormLabel>
+                      <Popover open={responsableOpen} onOpenChange={setResponsableOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={responsableOpen}
+                              className={cn(
+                                'w-full justify-between font-normal h-10',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                              disabled={loadingUsers}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                {field.value ? (
+                                  <>
+                                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <span className="text-[10px] font-semibold text-primary">
+                                        {selectedUserName?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                      </span>
+                                    </div>
+                                    <span className="truncate">{selectedUserName}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <User className="h-4 w-4 shrink-0" />
+                                    <span>Buscar responsable...</span>
+                                  </>
+                                )}
+                              </div>
+                              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar por nombre..." />
+                            <CommandList>
+                              <CommandEmpty>No se encontró ningún usuario</CommandEmpty>
+                              <CommandGroup>
+                                {users?.map((user: any) => (
+                                  <CommandItem
+                                    key={user.id}
+                                    value={user.name}
+                                    onSelect={() => {
+                                      field.onChange(user.id);
+                                      setResponsableOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] font-medium">
+                                          {user.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                        </span>
+                                      </div>
+                                      <span className="truncate">{user.name}</span>
+                                    </div>
+                                    <Check
+                                      className={cn(
+                                        'h-4 w-4 shrink-0',
+                                        field.value === user.id ? 'opacity-100' : 'opacity-0'
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Prioridad y Estimación */}
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prioridad</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || workOrder.priority}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue>
+                                <div className="flex items-center gap-2">
+                                  <div className={cn('h-2 w-2 rounded-full', prioConf.dot)} />
+                                  <span>{prioConf.label}</span>
+                                </div>
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(PRIORITY_CONFIG).map(([value, conf]) => (
+                              <SelectItem key={value} value={value}>
+                                <div className="flex items-center gap-2">
+                                  <div className={cn('h-2 w-2 rounded-full', conf.dot)} />
+                                  <span>{conf.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="estimatedMinutes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estimación (min)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="60"
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* SLA calculado — compacto */}
+                {calculatedSla && (
+                  <div className="flex items-center gap-2 rounded-lg border border-warning-muted bg-warning-muted/50 px-3 py-2.5">
+                    <Clock className="h-3.5 w-3.5 text-warning-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium text-foreground">
+                        SLA: {format(calculatedSla, "dd/MM/yyyy HH:mm", { locale: es })}
+                      </span>
+                      <span className="text-xs text-warning-muted-foreground ml-1.5">
+                        ({DEFAULT_SLA_HOURS[priority]}h)
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Sección: Planificación ── */}
+              <div className="space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Planificación
+                </p>
+
+                {/* Fecha planificada */}
+                <FormField
+                  control={form.control}
+                  name="scheduledDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimación (min)</FormLabel>
+                      <FormLabel>Fecha planificada</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="60"
+                        <DateTimePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          minDate={startOfDay(new Date())}
+                          placeholder="Seleccionar fecha y hora"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Opcional. Si no se especifica, quedará solo asignada.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Iniciar inmediatamente */}
+                <FormField
+                  control={form.control}
+                  name="startImmediately"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="flex items-center gap-2">
+                          <Play className="h-3.5 w-3.5 text-green-600" />
+                          Iniciar inmediatamente
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          Marcar como &quot;En Progreso&quot; al asignar
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Notas */}
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas (opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Instrucciones adicionales para el técnico..."
+                          rows={2}
                           {...field}
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prioridad</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || workOrder.priority}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
+            </div>
 
-              {/* SLA calculado */}
-              {calculatedSla && (
-                <div className="rounded-lg border border-warning-muted bg-warning-muted/50 p-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-warning-muted-foreground" />
-                    <span className="font-medium text-foreground">
-                      SLA: {format(calculatedSla, "dd/MM/yyyy HH:mm", { locale: es })}
-                    </span>
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {DEFAULT_SLA_HOURS[priority]}h
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-warning-muted-foreground mt-1.5">
-                    Vencimiento calculado según prioridad {PRIORITY_LABELS[priority]}
-                  </p>
+            {/* ── Footer: Preview + Acción ── */}
+            <div className="flex-shrink-0 border-t px-5 py-3 space-y-3">
+              {/* Preview del resultado */}
+              {assignedToId && (
+                <div className={cn(
+                  'flex items-center gap-2 rounded-lg border px-3 py-2 text-xs',
+                  resultPreview.color
+                )}>
+                  <resultPreview.icon className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    Se asignará a <strong>{selectedUserName}</strong> como{' '}
+                    <strong>{resultPreview.label}</strong>
+                    {scheduledDate && !startImmediately && (
+                      <> para el <strong>{format(scheduledDate, "dd/MM HH:mm", { locale: es })}</strong></>
+                    )}
+                  </span>
                 </div>
               )}
 
-              {/* Iniciar inmediatamente */}
-              <FormField
-                control={form.control}
-                name="startImmediately"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-1">
-                      <FormLabel>Iniciar inmediatamente</FormLabel>
-                      <FormDescription>
-                        Marcar la OT como "En Progreso" al asignar
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {/* Notas */}
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notas (opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Instrucciones adicionales..."
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Botones */}
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={assignMutation.isPending}
+                >
+                  {assignMutation.isPending ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ArrowRight className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Asignar
+                </Button>
+              </div>
             </div>
-
-            {/* Footer fijo */}
-            <DialogFooter className="px-6 py-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={assignMutation.isPending}>
-                {assignMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Asignar
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

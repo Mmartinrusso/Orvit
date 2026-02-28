@@ -45,8 +45,11 @@ interface DevolucionesTabProps {
  */
 export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const currentUserId = parseInt(user?.id ?? '0');
+
+  // Permission flags
+  const canProcess = hasPermission('almacen.return.process');
 
   const [filters, setFilters] = useState<DevolucionesFilters>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 });
@@ -119,7 +122,7 @@ export function DevolucionesTab({ onNew, onView }: DevolucionesTabProps) {
             Enviar
           </DropdownMenuItem>
         )}
-        {devolucion.estado === 'PENDIENTE_REVISION' && (
+        {canProcess && devolucion.estado === 'PENDIENTE_REVISION' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleAccept(devolucion.id)}>

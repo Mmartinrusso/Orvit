@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -23,10 +24,8 @@ const WorkCenterSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.WORK_CENTERS);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
     const includeChildren = searchParams.get('includeChildren') === 'true';
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (type) {
@@ -92,10 +91,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.WORK_CENTERS);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = WorkCenterSchema.parse(body);
@@ -104,7 +101,7 @@ export async function POST(request: NextRequest) {
     const existingWorkCenter = await prisma.workCenter.findUnique({
       where: {
         companyId_code: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code,
         },
       },
@@ -122,7 +119,7 @@ export async function POST(request: NextRequest) {
       const parent = await prisma.workCenter.findFirst({
         where: {
           id: validatedData.parentId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -139,7 +136,7 @@ export async function POST(request: NextRequest) {
       const machine = await prisma.machine.findFirst({
         where: {
           id: validatedData.machineId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -156,7 +153,7 @@ export async function POST(request: NextRequest) {
       const line = await prisma.line.findFirst({
         where: {
           id: validatedData.lineId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -172,7 +169,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...validatedData,
         theoreticalCapacity: validatedData.theoreticalCapacity ?? undefined,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         parent: true,

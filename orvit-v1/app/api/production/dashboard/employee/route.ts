@@ -1,28 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  const token = cookies().get('token')?.value;
-  if (!token) throw new Error('No token provided');
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return { userId: payload.userId as number, companyId: payload.companyId as number };
-  } catch {
-    throw new Error('Invalid token');
-  }
-}
 
 // GET /api/production/dashboard/employee - All-in-one employee dashboard data
 export async function GET(request: Request) {
   try {
-    const { userId, companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.DASHBOARD_VIEW);
+    if (error) return error;
+    const userId = user!.id;
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
 
     const sectorId = searchParams.get('sectorId');

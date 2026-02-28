@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteS3File } from '@/lib/s3-utils';
 import { cookies } from 'next/headers';
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 // Importar utilidades centralizadas
 import {
@@ -136,6 +137,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso de editar tareas
+    const { user: permUser, error: permError } = await requirePermission('tasks.edit');
+    if (permError) return permError;
+
     logger.debug('PUT /api/tasks/[id] - Iniciando actualización');
 
     const user = await getUserFromToken(request);
@@ -404,6 +409,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso de eliminar tareas
+    const { user: permUser, error: permError } = await requirePermission('tasks.delete');
+    if (permError) return permError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });

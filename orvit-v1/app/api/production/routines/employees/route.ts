@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +10,8 @@ export const dynamic = 'force-dynamic';
 // Filtros: workCenterId, sectorId, role, isActive
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const workCenterId = searchParams.get('workCenterId');
@@ -29,7 +28,7 @@ export async function GET(request: NextRequest) {
       const workCenter = await prisma.workCenter.findFirst({
         where: {
           id: parseInt(workCenterId),
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
         include: {
           machine: {
@@ -56,7 +55,7 @@ export async function GET(request: NextRequest) {
       // También buscar si hay un Sector con nombre similar
       const possibleSector = await prisma.sector.findFirst({
         where: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           name: {
             mode: 'insensitive',
             contains: templateName.replace(/^Planta\s+/i, '').trim() // Quitar "Planta " del inicio
@@ -77,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     // Construir filtro para empleados
     let employeeWhereClause: any = {
-      company_id: auth.companyId,
+      company_id: user!.companyId,
     };
 
     // Solo agregar filtro de activos si se requiere
@@ -155,7 +154,7 @@ export async function GET(request: NextRequest) {
         // Buscar puestos de trabajo definidos para este sector
         const workPositions = await prisma.workPosition.findMany({
           where: {
-            company_id: auth.companyId,
+            company_id: user!.companyId,
             sector_id: targetSectorId,
             is_active: true
           },
@@ -169,7 +168,7 @@ export async function GET(request: NextRequest) {
         if (allSectorRoles.length === 0) {
           const sectorEmployees = await prisma.employee.findMany({
             where: {
-              company_id: auth.companyId,
+              company_id: user!.companyId,
               workSector: { source_sector_id: targetSectorId }
             },
             select: { role: true }

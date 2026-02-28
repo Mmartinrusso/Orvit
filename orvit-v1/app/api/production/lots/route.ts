@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { generateLotCode } from '@/lib/production/order-code-generator';
 import { logProductionEvent } from '@/lib/production/event-logger';
@@ -19,10 +20,8 @@ const BatchLotSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const productionOrderId = searchParams.get('productionOrderId');
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (productionOrderId) {
@@ -103,7 +102,7 @@ export async function GET(request: NextRequest) {
     // Estadísticas por estado
     const stats = await prisma.productionBatchLot.groupBy({
       by: ['qualityStatus'],
-      where: { companyId: auth.companyId },
+      where: { companyId: user!.companyId },
       _count: { id: true },
       _sum: { quantity: true },
     });
@@ -136,10 +135,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.VIEW);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = BatchLotSchema.parse(body);
@@ -148,7 +145,7 @@ export async function POST(request: NextRequest) {
     const order = await prisma.productionOrder.findFirst({
       where: {
         id: validatedData.productionOrderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -160,7 +157,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generar código único de lote
-    const lotCode = await generateLotCode(auth.companyId);
+    const lotCode = await generateLotCode(user!.companyId);
 
     const lot = await prisma.productionBatchLot.create({
       data: {
@@ -174,7 +171,7 @@ export async function POST(request: NextRequest) {
           ? new Date(validatedData.expirationDate)
           : null,
         rawMaterialLots: validatedData.rawMaterialLots,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         productionOrder: {
@@ -199,9 +196,9 @@ export async function POST(request: NextRequest) {
         quantity: Number(lot.quantity),
         uom: lot.uom,
       },
-      performedById: auth.user.id,
+      performedById: user!.id,
       productionOrderId: validatedData.productionOrderId,
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     });
 
     return NextResponse.json({

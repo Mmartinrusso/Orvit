@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/employee-cost-distribution/bulk - Guardar múltiples distribuciones de costos por empleados
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
-    const { distributions, companyId } = body;
+    const { distributions } = body;
+    const companyId = String(user!.companyId);
 
     if (!distributions || !Array.isArray(distributions)) {
       return NextResponse.json(
         { error: 'distributions debe ser un array' },
-        { status: 400 }
-      );
-    }
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
         { status: 400 }
       );
     }
@@ -105,15 +103,10 @@ export async function POST(request: NextRequest) {
 // GET /api/employee-cost-distribution/bulk - Obtener distribuciones existentes para la matriz
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const companyId = String(user!.companyId);
 
     const distributions = await prisma.$queryRaw`
       SELECT 

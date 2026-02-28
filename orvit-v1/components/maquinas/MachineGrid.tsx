@@ -289,6 +289,8 @@ export default function MachineGrid({
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   // Ref para rastrear si la apertura fue intencional (doble toque)
   const intentionalOpenRef = useRef(false);
+  // Ref para evitar que al cerrar el dropdown se abra el detalle de la card
+  const menuJustClosedRef = useRef(false);
 
   // Handler para abrir menú de forma intencional
   const openMenuIntentionally = useCallback((machineId: number) => {
@@ -305,8 +307,10 @@ export default function MachineGrid({
       }
       intentionalOpenRef.current = false;
     } else {
-      // Siempre permitir cerrar
+      // Siempre permitir cerrar, marcar que acaba de cerrarse para bloquear el click de la card
+      menuJustClosedRef.current = true;
       setOpenMenuId(null);
+      setTimeout(() => { menuJustClosedRef.current = false; }, 300);
     }
   }, [isMobile]);
 
@@ -843,6 +847,8 @@ export default function MachineGrid({
             key={machine.id}
             className={cn("group overflow-hidden bg-card border shadow-lg hover:shadow-2xl transition-all duration-300 rounded-2xl cursor-pointer", getStatusBorderColor(machine.status))}
             onClick={(e) => {
+              // No abrir el detalle si un menú acaba de cerrarse
+              if (menuJustClosedRef.current) return;
               // No abrir el detalle si el clic viene de un botón de acción o del drag handle
               if (e.target instanceof Element) {
                 const isActionButton = e.target.closest('button') || e.target.closest('[role="button"]') || e.target.closest('[data-drag-handle]');

@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/auth';
 import { withComprasGuards } from '@/lib/modules';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,6 +159,10 @@ export const POST = withComprasGuards(async (request: NextRequest) => {
     if (!companyId) {
       return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
     }
+
+    // Permission check: ingresar_compras
+    const hasPerm = await hasUserPermission(user.id, companyId, 'ingresar_compras');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     const body = await request.json();
     const {

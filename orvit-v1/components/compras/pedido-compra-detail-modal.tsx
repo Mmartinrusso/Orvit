@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
  Dialog,
  DialogContent,
@@ -202,6 +203,7 @@ export function PedidoCompraDetailModal({
  pedidoId,
  onUpdate,
 }: PedidoCompraDetailModalProps) {
+ const { hasPermission } = useAuth();
  const [pedido, setPedido] = useState<PedidoCompra | null>(null);
  const [comments, setComments] = useState<Comment[]>([]);
  const [loading, setLoading] = useState(true);
@@ -470,8 +472,8 @@ export function PedidoCompraDetailModal({
 
  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
- const canAddCotizacion = pedido && ['ENVIADA', 'EN_COTIZACION', 'COTIZADA', 'EN_APROBACION'].includes(pedido.estado);
- const canAprobar = pedido && pedido.estado === 'EN_APROBACION';
+ const canAddCotizacion = pedido && ['ENVIADA', 'EN_COTIZACION', 'COTIZADA', 'EN_APROBACION'].includes(pedido.estado) && hasPermission('compras.cotizaciones.create');
+ const canAprobar = pedido && pedido.estado === 'EN_APROBACION' && (hasPermission('compras.pedidos.aprobar') || hasPermission('compras.pedidos.rechazar'));
  const isResolved = pedido && ['APROBADA', 'RECHAZADA', 'COMPLETADA', 'CANCELADA'].includes(pedido.estado);
 
  const getScoreForQuotation = (cotId: number) => analysis?.scores.find(s => s.id === cotId);
@@ -584,7 +586,8 @@ export function PedidoCompraDetailModal({
  const esRecomendada = analysis?.mejorOpcion?.id === cot.id;
  const esMejorPrecio = analysis?.mejorPrecioIds.includes(cot.id);
  const canSelect = ['RECIBIDA', 'EN_REVISION', 'SELECCIONADA'].includes(cot.estado) &&
- ['ENVIADA', 'EN_COTIZACION', 'COTIZADA', 'EN_APROBACION'].includes(pedido.estado);
+ ['ENVIADA', 'EN_COTIZACION', 'COTIZADA', 'EN_APROBACION'].includes(pedido.estado) &&
+ hasPermission('compras.cotizaciones.seleccionar');
 
  return (
  <Card
@@ -740,7 +743,7 @@ export function PedidoCompraDetailModal({
  Ver
  </Button>
  {/* Editar - solo si no está en proceso, aprobada, completada o rechazada */}
- {!['EN_PROCESO', 'APROBADA', 'COMPLETADA', 'RECHAZADA'].includes(pedido.estado) && (
+ {!['EN_PROCESO', 'APROBADA', 'COMPLETADA', 'RECHAZADA'].includes(pedido.estado) && hasPermission('compras.cotizaciones.edit') && (
  <Button
  variant="ghost"
  size="sm"
@@ -759,7 +762,7 @@ export function PedidoCompraDetailModal({
  <FileText className="w-3.5 h-3.5" />
  </Button>
  )}
- {cot.esSeleccionada && pedido.estado === 'APROBADA' && cot.estado !== 'CONVERTIDA_OC' && (
+ {cot.esSeleccionada && pedido.estado === 'APROBADA' && cot.estado !== 'CONVERTIDA_OC' && hasPermission('compras.cotizaciones.convertir_oc') && (
  <Button size="sm" className="h-7 text-xs px-3" onClick={handleConvertirOC}>
  Crear OC
  </Button>
@@ -789,14 +792,18 @@ export function PedidoCompraDetailModal({
  )}
  </div>
  <div className="flex gap-2 w-full sm:w-auto">
+ {hasPermission('compras.pedidos.rechazar') && (
  <Button variant="outline" size="sm" className="h-8 text-sm flex-1 sm:flex-none" onClick={() => setRejectModalOpen(true)} disabled={actionLoading}>
  <X className="w-4 h-4 mr-1" />
  Rechazar
  </Button>
+ )}
+ {hasPermission('compras.pedidos.aprobar') && (
  <Button size="sm" className="h-8 text-sm flex-1 sm:flex-none" onClick={() => handleAprobar(true)} disabled={actionLoading || !selectedQuotation}>
  {actionLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
  Aprobar
  </Button>
+ )}
  </div>
  </div>
  </div>
@@ -815,7 +822,7 @@ export function PedidoCompraDetailModal({
  )}
  </div>
  {/* Botón Crear OC cuando está aprobada */}
- {pedido.estado === 'APROBADA' && selectedQuotation && selectedQuotation.estado !== 'CONVERTIDA_OC' && (
+ {pedido.estado === 'APROBADA' && selectedQuotation && selectedQuotation.estado !== 'CONVERTIDA_OC' && hasPermission('compras.cotizaciones.convertir_oc') && (
  <Button
  size="sm"
  className="h-8 text-sm"

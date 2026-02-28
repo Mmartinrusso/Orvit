@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/indirect-costs - Obtener costos indirectos desde la tabla indirect_costs
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Indirect Costs GET - Iniciando...');
     
     const { searchParams } = new URL(request.url);

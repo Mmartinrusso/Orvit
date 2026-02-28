@@ -101,19 +101,19 @@ export const VENTAS_PERMISSIONS = {
   DASHBOARD_VIEW: 'ventas.dashboard.view',
 
   // Clientes
-  CLIENTES_VIEW: 'VIEW_CLIENTS',
-  CLIENTES_CREATE: 'CREATE_CLIENT',
-  CLIENTES_EDIT: 'EDIT_CLIENT',
-  CLIENTES_DELETE: 'DELETE_CLIENT',
+  CLIENTES_VIEW: 'ventas.clientes.view',
+  CLIENTES_CREATE: 'ventas.clientes.create',
+  CLIENTES_EDIT: 'ventas.clientes.edit',
+  CLIENTES_DELETE: 'ventas.clientes.delete',
   CLIENTES_BLOCK: 'ventas.clientes.block',
   CLIENTES_CREDIT_VIEW: 'ventas.cuenta_corriente.view',
   CLIENTES_CREDIT_ADJUST: 'ventas.cuenta_corriente.adjust',
 
   // Productos
-  PRODUCTOS_VIEW: 'VIEW_PRODUCTS',
-  PRODUCTOS_CREATE: 'CREATE_PRODUCT',
-  PRODUCTOS_EDIT: 'EDIT_PRODUCT',
-  PRODUCTOS_DELETE: 'DELETE_PRODUCT',
+  PRODUCTOS_VIEW: 'ventas.productos.view',
+  PRODUCTOS_CREATE: 'ventas.productos.create',
+  PRODUCTOS_EDIT: 'ventas.productos.edit',
+  PRODUCTOS_DELETE: 'ventas.productos.delete',
 
   // Cotizaciones
   COTIZACIONES_VIEW: 'ventas.cotizaciones.view',
@@ -203,4 +203,19 @@ export const VENTAS_PERMISSIONS = {
 
   // Resumen de Vendedores
   VENDEDORES_RESUMEN: 'ventas.vendedores.resumen',
+
+  // Ventas generales (vista, config)
+  VENTAS_VIEW: 'ventas.ventas.view',
+  VENTAS_CONFIG: 'ventas.config.edit',
+
+  // Permisos adicionales granulares
+  PAGOS_APPLY: 'ventas.pagos.apply',
+  CUENTA_CORRIENTE_RECALCULATE: 'ventas.cuenta_corriente.recalculate',
+  CONFIG_NUMERACION: 'ventas.config.numeracion',
+  DESCUENTOS_APPROVE: 'ventas.descuentos.approve',
+  COMISIONES_VIEW_ALL: 'ventas.comisiones.view_all',
+  REPORTES_AGING: 'ventas.reportes.aging',
+  AUDIT_VIEW: 'ventas.audit.view',
+  AUDIT_EXPORT: 'ventas.audit.export',
+  INGRESAR: 'ventas.ingresar',
 } as const;

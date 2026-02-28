@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
+    const { user: authUser, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const token = await getToken(request);
     if (!token) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -44,6 +48,9 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const { user: authUser, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const token = await getToken(request);
     if (!token) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

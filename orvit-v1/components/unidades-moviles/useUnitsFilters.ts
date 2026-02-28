@@ -1,11 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 
-export type SortOption = 
-  | 'name-asc' 
-  | 'name-desc' 
-  | 'sector' 
-  | 'updated-desc' 
-  | 'meter-asc' 
+export type SortOption =
+  | 'name-asc'
+  | 'name-desc'
+  | 'sector'
+  | 'updated-desc'
+  | 'meter-asc'
   | 'meter-desc'
   | 'next-service-asc'
   | 'next-service-desc';
@@ -15,6 +15,7 @@ export interface UnitsFilters {
   tipo: string;
   estado: string;
   sectorId: string;
+  sectorName?: string; // Para mostrar en el chip
   sortBy: SortOption;
 }
 
@@ -23,6 +24,7 @@ const defaultFilters: UnitsFilters = {
   tipo: 'all',
   estado: 'all',
   sectorId: 'all',
+  sectorName: undefined,
   sortBy: 'name-asc',
 };
 
@@ -73,9 +75,12 @@ export function useUnitsFilters() {
     
     if (filters.sectorId !== 'all') {
       chips.push({
-        label: `Sector: ${filters.sectorId}`,
+        label: `Sector: ${filters.sectorName || filters.sectorId}`,
         key: 'sectorId',
-        onRemove: () => updateFilter('sectorId', 'all'),
+        onRemove: () => {
+          updateFilter('sectorId', 'all');
+          updateFilter('sectorName', undefined);
+        },
       });
     }
 

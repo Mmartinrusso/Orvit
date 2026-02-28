@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,15 +16,8 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('certifications.view');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -92,38 +85,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // Check permission (certifications.create)
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: payload.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    const hasPermission = userOnCompany?.role?.permissions?.some(
-      p => p.permission === 'certifications.create'
-    );
-
-    if (!hasPermission && payload.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Sin permiso para registrar certificaciones' }, { status: 403 });
-    }
+    const { user, error } = await requirePermission('certifications.create');
+    if (error) return error;
 
     const body = await request.json();
     const {
@@ -202,7 +165,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         documentUrl,
         notes,
         status,
-        issuedById: payload.userId,
+        issuedById: user!.id,
       },
       include: {
         skill: true,
@@ -237,7 +200,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           data: {
             isVerified: true,
             verifiedAt: new Date(),
-            verifiedById: payload.userId,
+            verifiedById: user!.id,
             expiresAt: expiresAt ? new Date(expiresAt) : null,
           },
         });
@@ -255,38 +218,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // Check permission (certifications.edit)
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: payload.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    const hasPermission = userOnCompany?.role?.permissions?.some(
-      p => p.permission === 'certifications.edit'
-    );
-
-    if (!hasPermission && payload.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Sin permiso para editar certificaciones' }, { status: 403 });
-    }
+    const { user, error } = await requirePermission('certifications.edit');
+    if (error) return error;
 
     const body = await request.json();
     const {
@@ -353,38 +286,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // Check permission (certifications.delete)
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: payload.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    const hasPermission = userOnCompany?.role?.permissions?.some(
-      p => p.permission === 'certifications.delete'
-    );
-
-    if (!hasPermission && payload.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Sin permiso para eliminar certificaciones' }, { status: 403 });
-    }
+    const { user, error } = await requirePermission('certifications.delete');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const certificationId = searchParams.get('certificationId');

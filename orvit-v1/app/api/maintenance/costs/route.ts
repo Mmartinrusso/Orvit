@@ -60,9 +60,17 @@ export async function GET(request: NextRequest) {
       getCostsBySector(companyId, startDate, endDate),
       getMonthlyCostTrend(companyId, 6),
       getBudgetComparison(companyId, year, month),
-      // Costos recientes (últimas 10 OTs cerradas)
+      // Costos recientes — OTs completadas en el período seleccionado, ordenadas por fecha de completado
       prisma.maintenanceCostBreakdown.findMany({
-        where: { companyId },
+        where: {
+          companyId,
+          workOrder: {
+            completedDate: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
+        },
         include: {
           workOrder: {
             select: {
@@ -73,7 +81,7 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { calculatedAt: 'desc' },
+        orderBy: { workOrder: { completedDate: 'desc' } },
         take: 10
       })
     ]);
@@ -86,10 +94,12 @@ export async function GET(request: NextRequest) {
     // Top 3 máquinas más costosas
     const topMachines = costsByMachine.slice(0, 3);
 
-    // Distribución de costos
+    // Distribución de costos (incluyendo extras para que sumen 100%)
     const laborTotal = costsByMachine.reduce((sum, m) => sum + m.laborCost, 0);
     const partsTotal = costsByMachine.reduce((sum, m) => sum + m.partsCost, 0);
     const thirdPartyTotal = costsByMachine.reduce((sum, m) => sum + m.thirdPartyCost, 0);
+    // extrasTotal es la diferencia: totalCostPeriod incluye extras, pero costsByMachine no lo expone por separado
+    const extrasTotal = Math.max(0, totalCostPeriod - laborTotal - partsTotal - thirdPartyTotal);
 
     return NextResponse.json({
       success: true,
@@ -104,9 +114,11 @@ export async function GET(request: NextRequest) {
           labor: laborTotal,
           parts: partsTotal,
           thirdParty: thirdPartyTotal,
+          extras: extrasTotal,
           laborPercent: totalCostPeriod > 0 ? Math.round((laborTotal / totalCostPeriod) * 100) : 0,
           partsPercent: totalCostPeriod > 0 ? Math.round((partsTotal / totalCostPeriod) * 100) : 0,
-          thirdPartyPercent: totalCostPeriod > 0 ? Math.round((thirdPartyTotal / totalCostPeriod) * 100) : 0
+          thirdPartyPercent: totalCostPeriod > 0 ? Math.round((thirdPartyTotal / totalCostPeriod) * 100) : 0,
+          extrasPercent: totalCostPeriod > 0 ? Math.round((extrasTotal / totalCostPeriod) * 100) : 0
         },
         topMachines,
         costsByMachine: costsByMachine.slice(0, 10),

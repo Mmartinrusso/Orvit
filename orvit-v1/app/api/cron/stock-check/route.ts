@@ -36,28 +36,7 @@ export async function GET(request: NextRequest) {
     for (const company of companies) {
       results.companiesChecked++;
 
-      // Obtener items con stock bajo
-      const lowStockItems = await prisma.tool.findMany({
-        where: {
-          companyId: company.id,
-          stockQuantity: {
-            lte: prisma.tool.fields.minStockLevel
-          },
-          minStockLevel: { gt: 0 } // Solo items con mínimo configurado
-        },
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          stockQuantity: true,
-          minStockLevel: true,
-          reorderPoint: true,
-          isCritical: true,
-          itemType: true
-        }
-      });
-
-      // Usar raw query para la comparación de campos
+      // Usar raw query para la comparación de campos (stockQuantity <= minStockLevel)
       const lowStockItemsRaw = await prisma.$queryRaw<Array<{
         id: number;
         name: string;

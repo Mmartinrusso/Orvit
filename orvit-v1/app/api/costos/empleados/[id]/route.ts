@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // PUT - Actualizar empleado
 export async function PUT(
@@ -7,10 +8,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     console.log('🔍 Backend: Body completo recibido:', body);
-    
-    const { name, role, grossSalary, payrollTaxes, categoryId, companyId } = body;
+
+    const { name, role, grossSalary, payrollTaxes, categoryId } = body;
+    const companyId = String(user!.companyId);
     const employeeId = params.id;
 
     console.log('🔍 Backend: Datos extraídos:', { 
@@ -125,16 +130,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    const { companyId } = body;
-    const employeeId = params.id;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const companyId = String(user!.companyId);
+    const employeeId = params.id;
 
     // Verificar que el empleado existe y pertenece a la empresa
     const existingEmployee = await prisma.$queryRaw`

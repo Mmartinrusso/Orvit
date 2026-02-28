@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/lib/date-utils';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -93,6 +94,10 @@ export default function NotasCreditoDebitoPage() {
   const confirm = useConfirm();
   // ViewMode context - determina si se puede crear T2
   const { mode: viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canCreateNota = hasPermission('compras.notas.create');
+  const canEditNota = hasPermission('compras.notas.edit');
+  const canApproveNota = hasPermission('compras.notas.approve');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('');
@@ -306,10 +311,12 @@ export default function NotasCreditoDebitoPage() {
             Gestiona notas de crédito y débito de proveedores
           </p>
         </div>
-        <Button onClick={handleOpenModal}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Nota
-        </Button>
+        {canCreateNota && (
+          <Button onClick={handleOpenModal}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Nota
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -448,7 +455,7 @@ export default function NotasCreditoDebitoPage() {
                         <Button variant="ghost" size="sm" onClick={() => handleViewDetail(nota)}>
                           <Eye className="w-4 h-4" />
                         </Button>
-                        {nota.estado === 'PENDIENTE' && (
+                        {nota.estado === 'PENDIENTE' && canApproveNota && (
                           <>
                             <Button
                               variant="ghost"
@@ -468,7 +475,7 @@ export default function NotasCreditoDebitoPage() {
                             </Button>
                           </>
                         )}
-                        {nota.estado === 'APROBADA' && (
+                        {nota.estado === 'APROBADA' && canEditNota && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -699,7 +706,7 @@ export default function NotasCreditoDebitoPage() {
           )}
 
           <DialogFooter>
-            {selectedNota?.estado === 'PENDIENTE' && (
+            {selectedNota?.estado === 'PENDIENTE' && canApproveNota && (
               <>
                 <Button
                   variant="destructive"
@@ -712,7 +719,7 @@ export default function NotasCreditoDebitoPage() {
                 </Button>
               </>
             )}
-            {selectedNota?.estado === 'APROBADA' && (
+            {selectedNota?.estado === 'APROBADA' && canEditNota && (
               <Button onClick={() => handleAction(selectedNota, 'aplicar')}>
                 Aplicar Nota
               </Button>

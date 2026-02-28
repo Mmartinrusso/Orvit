@@ -15,45 +15,16 @@ import type { AgendaTask, AgendaTaskStatus } from '@/lib/agenda/types';
 const COLUMN_CONFIG: Record<AgendaTaskStatus, {
   label: string;
   icon: typeof Circle;
-  pillBg: string;
-  pillText: string;
   iconColor: string;
+  pillBg: string;
+  pillBorder: string;
+  labelColor: string;
 }> = {
-  PENDING: {
-    label: 'To-do',
-    icon: CircleDot,
-    pillBg: '#F6F6F6',
-    pillText: '#050505',
-    iconColor: '#575456',
-  },
-  IN_PROGRESS: {
-    label: 'In Progress',
-    icon: Loader2,
-    pillBg: '#D0E0F0',
-    pillText: '#3070A8',
-    iconColor: '#3070A8',
-  },
-  WAITING: {
-    label: 'In Review',
-    icon: Asterisk,
-    pillBg: '#F9F0DB',
-    pillText: '#907840',
-    iconColor: '#907840',
-  },
-  COMPLETED: {
-    label: 'Completed',
-    icon: ClipboardCheck,
-    pillBg: '#D0EFE0',
-    pillText: '#568177',
-    iconColor: '#568177',
-  },
-  CANCELLED: {
-    label: 'Cancelled',
-    icon: Circle,
-    pillBg: '#F9E4E2',
-    pillText: '#ED8A94',
-    iconColor: '#ED8A94',
-  },
+  PENDING:     { label: 'Por hacer',    icon: CircleDot,      iconColor: '#8A8A98', pillBg: '#F2F2F4',  pillBorder: '#E0E0E6', labelColor: '#4A4A58' },
+  IN_PROGRESS: { label: 'En progreso', icon: Loader2,        iconColor: '#5880A8', pillBg: '#EEF3F8',  pillBorder: '#CCDAE8', labelColor: '#3A5878' },
+  WAITING:     { label: 'En revisión', icon: Asterisk,       iconColor: '#8A7840', pillBg: '#F5F2EA',  pillBorder: '#DED5B0', labelColor: '#685C30' },
+  COMPLETED:   { label: 'Completado',  icon: ClipboardCheck, iconColor: '#508070', pillBg: '#EDF4F0',  pillBorder: '#C2D4C8', labelColor: '#305848' },
+  CANCELLED:   { label: 'Cancelado',   icon: Circle,         iconColor: '#9A7070', pillBg: '#F5F0F0',  pillBorder: '#E0C8C8', labelColor: '#704848' },
 };
 
 interface BoardColumnProps {
@@ -62,74 +33,95 @@ interface BoardColumnProps {
   onTaskClick: (task: AgendaTask) => void;
   onStatusChange: (task: AgendaTask, status: AgendaTaskStatus) => void;
   onDelete: (task: AgendaTask) => void;
+  onEdit?: (task: AgendaTask) => void;
   onCreateTask?: (status: AgendaTaskStatus) => void;
+  isSelectMode?: boolean;
+  selectedIds?: Set<number>;
+  onToggleSelect?: (id: number) => void;
+  columnIndex?: number;
 }
 
-export function BoardColumn({ status, tasks, onTaskClick, onStatusChange, onDelete, onCreateTask }: BoardColumnProps) {
+export function BoardColumn({ status, tasks, onTaskClick, onStatusChange, onDelete, onEdit, onCreateTask, isSelectMode, selectedIds, onToggleSelect, columnIndex = 0 }: BoardColumnProps) {
   const config = COLUMN_CONFIG[status];
   const Icon = config.icon;
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
     <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-      {/* Column Header */}
-      <div className="flex items-center gap-1.5 mb-4 px-1">
-        {/* Drag handle — always visible, subtle */}
+      {/* Column Header — gray outer container */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '5px 6px 5px 8px',
+          background: '#F2F2F2',
+          borderRadius: '10px',
+          marginBottom: '12px',
+        }}
+      >
+        {/* Grip handle */}
         <GripVertical
-          className="h-3 w-3 shrink-0 cursor-grab"
-          style={{ color: '#C8C8D0' }}
+          className="h-3.5 w-3.5 shrink-0 cursor-grab"
+          style={{ color: '#B0B0BC' }}
         />
-        {/* Status pill */}
+
+        {/* Inner colored pill — icon + label */}
         <div
-          className="flex items-center gap-1.5 px-2.5 py-1"
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            padding: '3px 9px',
+            borderRadius: '7px',
             background: config.pillBg,
-            borderRadius: '999px',
+            border: `1px solid ${config.pillBorder}`,
           }}
         >
           <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: config.iconColor }} />
-          <span
-            className="text-[12px]"
-            style={{ fontWeight: 600, color: config.pillText, whiteSpace: 'nowrap' }}
-          >
+          <span style={{ fontSize: '13px', fontWeight: 600, color: config.labelColor, whiteSpace: 'nowrap' }}>
             {config.label}
           </span>
         </div>
 
         {/* Count */}
-        <span className="text-[12px] font-bold" style={{ color: '#9C9CAA' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#9C9CAA' }}>
           {tasks.length}
         </span>
 
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
         {/* Actions */}
-        <div className="ml-auto flex items-center gap-0.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="h-7 w-7 rounded-[10px] flex items-center justify-center transition-colors"
-                style={{ color: '#9C9CAA' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; e.currentTarget.style.color = '#575456'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-xs" onClick={() => onCreateTask?.(status)}>
-                Agregar tarea
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              style={{ height: 26, width: 26, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#9C9CAA', cursor: 'pointer', transition: 'background 120ms ease' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#E6E6E6'; e.currentTarget.style.color = '#575456'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="text-xs" onClick={() => onCreateTask?.(status)}>
+              Agregar tarea
+            </DropdownMenuItem>
+            {isSelectMode && tasks.length > 0 && (
+              <DropdownMenuItem className="text-xs" onClick={() => tasks.forEach(t => onToggleSelect?.(t.id))}>
+                Seleccionar todos ({tasks.length})
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <button
-            onClick={() => onCreateTask?.(status)}
-            className="h-7 w-7 rounded-[10px] flex items-center justify-center transition-colors"
-            style={{ color: '#9C9CAA' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; e.currentTarget.style.color = '#575456'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
-          >
-            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-          </button>
-        </div>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <button
+          onClick={() => onCreateTask?.(status)}
+          style={{ height: 26, width: 26, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#9C9CAA', cursor: 'pointer', transition: 'background 120ms ease' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#E6E6E6'; e.currentTarget.style.color = '#575456'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
+        >
+          <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </button>
       </div>
 
       {/* Cards container */}
@@ -149,13 +141,18 @@ export function BoardColumn({ status, tasks, onTaskClick, onStatusChange, onDele
         }}
       >
         <SortableContext items={tasks.map(t => t.id.toString())} strategy={verticalListSortingStrategy}>
-          {tasks.map(task => (
+          {tasks.map((task, cardIndex) => (
             <TaskCard
               key={task.id}
               task={task}
               onClick={onTaskClick}
               onStatusChange={onStatusChange}
               onDelete={onDelete}
+              onEdit={onEdit}
+              isSelectMode={isSelectMode}
+              isSelected={selectedIds?.has(task.id)}
+              onSelect={onToggleSelect}
+              animationDelay={(columnIndex + cardIndex) * 110}
             />
           ))}
         </SortableContext>

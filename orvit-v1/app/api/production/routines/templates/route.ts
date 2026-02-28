@@ -1,30 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateRoutineTemplateSchema } from '@/lib/validations/production';
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  const token = cookies().get('token')?.value;
-  if (!token) throw new Error('No token provided');
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return { userId: payload.userId as number, companyId: payload.companyId as number };
-  } catch {
-    throw new Error('Invalid token');
-  }
-}
-
 // GET /api/production/routines/templates - List routine templates
 export async function GET(request: Request) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.VIEW);
+    if (error) return error;
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
 
     const type = searchParams.get('type');
@@ -73,6 +61,7 @@ export async function GET(request: Request) {
         groups: isNewFormat ? itemsData.groups : null,
         sections: isNewFormat ? itemsData.sections : [],
         preExecutionInputs: isNewFormat ? itemsData.preExecutionInputs : [],
+        scheduleConfig: isNewFormat ? itemsData.scheduleConfig : null,
       };
     });
 
@@ -98,13 +87,15 @@ export async function GET(request: Request) {
 // POST /api/production/routines/templates - Create routine template
 export async function POST(request: Request) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.MANAGE);
+    if (error) return error;
+    const companyId = user!.companyId;
     const body = await request.json();
 
     const validation = validateRequest(CreateRoutineTemplateSchema, body);
     if (!validation.success) return validation.response;
 
-    const { code, name, type, workCenterId, sectorId, items, groups, sections, itemsStructure, preExecutionInputs, frequency, isActive, maxCompletionTimeMinutes, enableCompletionReminders } = validation.data;
+    const { code, name, type, workCenterId, sectorId, items, groups, sections, itemsStructure, preExecutionInputs, scheduleConfig, frequency, isActive, maxCompletionTimeMinutes, enableCompletionReminders } = validation.data;
 
     // Check for duplicate code
     const existing = await prisma.productionRoutineTemplate.findFirst({
@@ -118,13 +109,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Prepare items data - store items, groups, sections, and preExecutionInputs in the items field as JSON
+    // Prepare items data - store items, groups, sections, preExecutionInputs and scheduleConfig in the items field as JSON
     const itemsData = {
       itemsStructure: itemsStructure || 'flat',
       items: items || [],
       groups: groups || null,
       sections: sections || [],
       preExecutionInputs: preExecutionInputs || [],
+      scheduleConfig: scheduleConfig || null,
     };
 
     const template = await prisma.productionRoutineTemplate.create({
@@ -159,6 +151,7 @@ export async function POST(request: Request) {
       groups: (template.items as any)?.groups || null,
       sections: (template.items as any)?.sections || [],
       preExecutionInputs: (template.items as any)?.preExecutionInputs || [],
+      scheduleConfig: (template.items as any)?.scheduleConfig || null,
     };
 
     return NextResponse.json({ success: true, template: responseTemplate }, { status: 201 });

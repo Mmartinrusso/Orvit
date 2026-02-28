@@ -3,14 +3,12 @@
  *
  * Centralized logging system with:
  * - Pino for structured JSON logging
- * - Sentry integration for error/warn in production
  * - Sensitive data redaction (passwords, tokens, JWT)
  * - Domain-specific child loggers
  * - Development-only debug logging
  */
 
 import pino from 'pino';
-import * as Sentry from '@sentry/nextjs';
 
 // Sensitive field paths to redact
 const REDACT_PATHS = [
@@ -35,7 +33,6 @@ const REDACT_PATHS = [
   'OPENAI_API_KEY',
   'DISCORD_BOT_TOKEN',
   'DISCORD_WEBHOOK_URL',
-  'SENTRY_AUTH_TOKEN',
   'SMTP_PASSWORD',
   'WHATSAPP_API_KEY',
   // AWS
@@ -72,75 +69,8 @@ const baseLogger = pino({
   },
 });
 
-// Sentry-integrated logger wrapper
-function createSentryAwareLogger(pinoLogger: pino.Logger) {
-  const original = {
-    error: pinoLogger.error.bind(pinoLogger),
-    warn: pinoLogger.warn.bind(pinoLogger),
-  };
-
-  // Override error to also capture in Sentry
-  const wrappedError = (...args: Parameters<pino.LogFn>) => {
-    original.error(...args);
-
-    // Send to Sentry in production
-    if (!isDev) {
-      try {
-        const [first, ...rest] = args;
-        if (first instanceof Error) {
-          Sentry.captureException(first, {
-            extra: rest.length > 0 ? { message: rest[0] } : undefined,
-          });
-        } else if (typeof first === 'object' && first !== null) {
-          const meta = first as Record<string, unknown>;
-          const err = meta.err || meta.error;
-          if (err instanceof Error) {
-            Sentry.captureException(err, { extra: meta });
-          } else {
-            Sentry.captureMessage(
-              typeof rest[0] === 'string' ? rest[0] : 'Error logged',
-              { level: 'error', extra: meta }
-            );
-          }
-        } else if (typeof first === 'string') {
-          Sentry.captureMessage(first, { level: 'error' });
-        }
-      } catch {
-        // Don't let Sentry errors break logging
-      }
-    }
-  };
-
-  // Override warn to also send breadcrumb to Sentry
-  const wrappedWarn = (...args: Parameters<pino.LogFn>) => {
-    original.warn(...args);
-
-    if (!isDev) {
-      try {
-        const [first, ...rest] = args;
-        const message = typeof first === 'string' ? first : typeof rest[0] === 'string' ? rest[0] : 'Warning';
-        Sentry.addBreadcrumb({
-          category: 'warning',
-          message,
-          level: 'warning',
-          data: typeof first === 'object' && first !== null ? (first as Record<string, unknown>) : undefined,
-        });
-      } catch {
-        // Don't let Sentry errors break logging
-      }
-    }
-  };
-
-  return { wrappedError, wrappedWarn };
-}
-
-const { wrappedError, wrappedWarn } = createSentryAwareLogger(baseLogger);
-
-// Export the main logger with Sentry-aware error/warn
-export const logger = Object.assign(Object.create(baseLogger), baseLogger, {
-  error: wrappedError,
-  warn: wrappedWarn,
-}) as pino.Logger;
+// Export the main logger
+export const logger = baseLogger as pino.Logger;
 
 // ============================================================================
 // Domain-specific child loggers

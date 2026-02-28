@@ -76,6 +76,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
 import { pdfToImages, generatePdfPreview } from '@/lib/pdf/pdf-to-image';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Proveedor {
   id: string;
@@ -246,6 +247,8 @@ const createEmptyRow = (): GridRow => ({
 
 export default function CargaMasivaPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission('compras.comprobantes.create');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'pdf' | 'grid'>('pdf');
 
@@ -1735,7 +1738,7 @@ export default function CargaMasivaPage() {
                       )}
                     </Button>
                   )}
-                  {approvedCount > 0 && (
+                  {approvedCount > 0 && canCreate && (
                     <Button
                       size="sm"
                       onClick={saveApprovedInvoices}
@@ -1901,7 +1904,7 @@ export default function CargaMasivaPage() {
                   <Plus className="w-4 h-4 mr-2" />
                   Agregar Fila
                 </Button>
-                <Button size="sm" onClick={saveGridRows} disabled={saving || gridRows.length === 0}>
+                <Button size="sm" onClick={saveGridRows} disabled={saving || gridRows.length === 0 || !canCreate}>
                   {saving ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />

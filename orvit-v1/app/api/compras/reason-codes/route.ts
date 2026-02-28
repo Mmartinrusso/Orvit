@@ -6,6 +6,7 @@ import {
   type EntityType,
   type ActionType,
 } from '@/lib/compras/audit-reason-codes';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 /**
  * GET /api/compras/reason-codes
@@ -18,6 +19,8 @@ import {
  */
 export async function GET(req: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
     const { searchParams } = new URL(req.url);
     const entityType = searchParams.get('entityType') as EntityType | null;
     const actionType = searchParams.get('actionType') as ActionType | null;

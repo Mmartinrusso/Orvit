@@ -1,25 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET: Listar tipos de falla del catálogo
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
     const machineId = searchParams.get('machineId');
     const search = searchParams.get('search');
     const isActive = searchParams.get('isActive');
 
-    console.log('📋 GET /api/failure-types', { companyId, machineId, search, isActive });
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const companyId = user!.companyId;
 
     // Construir filtros de forma más simple para evitar errores
     const where: any = {};
@@ -30,8 +26,8 @@ export async function GET(request: NextRequest) {
     } else {
       // Si no hay máquina específica, buscar por empresa
       where.OR = [
-        { companyId: parseInt(companyId) },
-        { Machine: { companyId: parseInt(companyId) } }
+        { companyId },
+        { Machine: { companyId } }
       ];
     }
 
@@ -136,6 +132,9 @@ export async function GET(request: NextRequest) {
 // POST: Crear nuevo tipo de falla en el catálogo
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
 
     console.log('📋 POST /api/failure-types', body);

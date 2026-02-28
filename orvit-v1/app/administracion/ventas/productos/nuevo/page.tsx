@@ -5,7 +5,7 @@ import { ProductForm } from '@/components/ventas/product-form';
 
 export default function NewProductPage() {
   return (
-    <PermissionGuard permission="CREATE_PRODUCT">
+    <PermissionGuard permission="ventas.productos.create">
       <ProductForm />
     </PermissionGuard>
   );

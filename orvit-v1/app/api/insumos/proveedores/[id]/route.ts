@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const supplierId = parseInt(params.id);
     const body = await request.json();
     const { name, contactPerson, phone, email, address } = body;
@@ -62,6 +66,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const supplierId = parseInt(params.id);
 
     // Verificar si hay insumos asociados

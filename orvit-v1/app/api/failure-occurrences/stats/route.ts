@@ -35,6 +35,11 @@ export async function GET(request: NextRequest) {
 
     const companyId = payload.companyId as number;
 
+    // 2b. Filtro por tipo de incidente (tab Fallas/Roturas)
+    const searchParams = request.nextUrl.searchParams;
+    const incidentType = searchParams.get('incidentType'); // FALLA | ROTURA
+    const incidentFilter = incidentType ? { incidentType } : {};
+
     // 2. Calcular stats en paralelo
     // Nota: status usa valores OPEN, IN_PROGRESS, RESOLVED según schema
     const thirtyDaysAgo = new Date();
@@ -47,6 +52,7 @@ export async function GET(request: NextRequest) {
           companyId,
           isLinkedDuplicate: false, // ✅ SIEMPRE filtrar duplicados vinculados
           status: { in: ['OPEN', 'IN_PROGRESS'] },
+          ...incidentFilter,
         },
       }),
 
@@ -57,6 +63,7 @@ export async function GET(request: NextRequest) {
           isLinkedDuplicate: false,
           status: { in: ['OPEN', 'IN_PROGRESS'] },
           reopenedFrom: { not: null },
+          ...incidentFilter,
         },
       }),
 
@@ -67,6 +74,7 @@ export async function GET(request: NextRequest) {
           isLinkedDuplicate: false,
           status: { in: ['OPEN', 'IN_PROGRESS'] },
           causedDowntime: true,
+          ...incidentFilter,
         },
       }),
 
@@ -76,6 +84,7 @@ export async function GET(request: NextRequest) {
           companyId,
           isLinkedDuplicate: false,
           status: { in: ['OPEN', 'IN_PROGRESS'] },
+          ...incidentFilter,
           workOrder: {
             assignedToId: null,
             status: { notIn: ['COMPLETED', 'CANCELLED'] }, // ✅ Usar enum uppercase
@@ -102,6 +111,7 @@ export async function GET(request: NextRequest) {
           isLinkedDuplicate: false,
           status: { in: ['OPEN', 'IN_PROGRESS'] },
           priority: { in: ['P1', 'P2'] },
+          ...incidentFilter,
           OR: [
             { workOrder: null },
             { workOrder: { assignedToId: null } },

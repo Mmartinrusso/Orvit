@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { usePermission } from '@/hooks/use-permissions';
 import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +71,11 @@ interface PendingPayment {
 export default function AprobacionPagosPage() {
   const { mode: viewMode } = useViewMode();
   const { toast } = useToast();
+
+  // Permission checks
+  const { hasPermission: canApprovePayment } = usePermission('ventas.aprobaciones.approve');
+  const { hasPermission: canRejectPayment } = usePermission('ventas.aprobaciones.reject');
+
   const [payments, setPayments] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
@@ -178,7 +184,7 @@ export default function AprobacionPagosPage() {
   };
 
   return (
-    <PermissionGuard permission="ventas.pagos.edit">
+    <PermissionGuard permission="ventas.aprobaciones.view">
       <div className="container mx-auto py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -366,22 +372,26 @@ export default function AprobacionPagosPage() {
                       {formatDateTime(payment.createdAt)}
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleReject(payment)}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Rechazar
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleApprove(payment)}
-                      >
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                        Aprobar
-                      </Button>
+                      {canRejectPayment && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleReject(payment)}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Rechazar
+                        </Button>
+                      )}
+                      {canApprovePayment && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleApprove(payment)}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Aprobar
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

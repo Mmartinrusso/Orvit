@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,9 @@ async function uploadFileToS3(file: File, entityType: string, entityId: string, 
 // POST /api/maintenance/corrective - Crear mantenimiento correctivo
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     
     // Verificar si es FormData o JSON
     const contentType = request.headers.get('content-type') || '';

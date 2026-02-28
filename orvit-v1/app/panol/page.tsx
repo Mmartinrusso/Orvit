@@ -550,33 +550,37 @@ export default function PanolPage() {
                         )}
                         <TableCell>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-success"
-                                  onClick={(e) => { e.stopPropagation(); handleStockIn(tool); }}
-                                >
-                                  <ArrowUp className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Entrada</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive"
-                                  onClick={(e) => { e.stopPropagation(); handleStockOut(tool); }}
-                                  disabled={tool.stockQuantity === 0}
-                                >
-                                  <ArrowDown className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Salida</TooltipContent>
-                            </Tooltip>
+                            {permissions.canRegisterMovement && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-success"
+                                    onClick={(e) => { e.stopPropagation(); handleStockIn(tool); }}
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Entrada</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {permissions.canRegisterMovement && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive"
+                                    onClick={(e) => { e.stopPropagation(); handleStockOut(tool); }}
+                                    disabled={tool.stockQuantity === 0}
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Salida</TooltipContent>
+                              </Tooltip>
+                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -745,35 +749,37 @@ export default function PanolPage() {
                             <span className="text-xs text-muted-foreground">/ {tool.minStockLevel} mín</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 text-success border-success-muted hover:bg-success-muted"
-                                onClick={(e) => { e.stopPropagation(); handleStockIn(tool); }}
-                              >
-                                <ArrowUp className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Entrada</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 text-destructive border-destructive/30 hover:bg-destructive/10"
-                                onClick={(e) => { e.stopPropagation(); handleStockOut(tool); }}
-                                disabled={tool.stockQuantity === 0}
-                              >
-                                <ArrowDown className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Salida</TooltipContent>
-                          </Tooltip>
-                        </div>
+                        {permissions.canRegisterMovement && (
+                          <div className="flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 text-success border-success-muted hover:bg-success-muted"
+                                  onClick={(e) => { e.stopPropagation(); handleStockIn(tool); }}
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Entrada</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive border-destructive/30 hover:bg-destructive/10"
+                                  onClick={(e) => { e.stopPropagation(); handleStockOut(tool); }}
+                                  disabled={tool.stockQuantity === 0}
+                                >
+                                  <ArrowDown className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Salida</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

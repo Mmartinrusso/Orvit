@@ -11,6 +11,7 @@ import { applyViewMode } from '@/lib/view-mode/prisma-helper';
 import { shouldQueryT2, enrichT2Receipts } from '@/lib/view-mode';
 import { inicializarProntoPago } from '@/lib/compras/pronto-pago-helper';
 import { syncAllSupplyPrices } from '@/lib/costs/sync-supply-prices';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -540,6 +541,10 @@ export async function POST(request: NextRequest) {
     if (!companyId) {
       return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
     }
+
+    // Permission check: ingresar_compras
+    const hasPerm = await hasUserPermission(user.id, companyId, 'ingresar_compras');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     // Get ViewMode from middleware header
     const viewMode = getViewMode(request);

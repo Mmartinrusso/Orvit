@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requirePermission } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,10 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
+    // Verificar permiso qr.view
+    const { user: authUser, error: authError } = await requirePermission('qr.view')
+    if (authError) return authError
+
     const code = params.code
 
     // Buscar por slug primero

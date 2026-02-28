@@ -229,6 +229,10 @@ export default function RepuestosPage() {
   };
 
   const handleCreate = async () => {
+    if (!canCreateProduct) {
+      toast.error('No tienes permisos para crear repuestos');
+      return;
+    }
     if (!formData.name.trim()) {
       toast.error('El nombre es requerido');
       return;
@@ -263,6 +267,10 @@ export default function RepuestosPage() {
   };
 
   const handleEdit = async () => {
+    if (!canEditProduct) {
+      toast.error('No tienes permisos para editar repuestos');
+      return;
+    }
     if (!selectedPart || !formData.name.trim()) {
       toast.error('El nombre es requerido');
       return;
@@ -294,6 +302,10 @@ export default function RepuestosPage() {
   };
 
   const handleDelete = async () => {
+    if (!canDeleteProduct) {
+      toast.error('No tienes permisos para eliminar repuestos');
+      return;
+    }
     if (!selectedPart) return;
 
     setSubmitting(true);
@@ -319,6 +331,10 @@ export default function RepuestosPage() {
   };
 
   const openEditDialog = (part: SparePart) => {
+    if (!canEditProduct) {
+      toast.error('No tienes permisos para editar repuestos');
+      return;
+    }
     setSelectedPart(part);
     setFormData({
       name: part.name,

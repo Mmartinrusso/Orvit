@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
 
@@ -37,10 +38,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.VIEW);
+    if (error) return error;
 
     const reportId = parseInt(params.id);
     if (isNaN(reportId)) {
@@ -50,7 +49,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const report = await prisma.dailyProductionReport.findFirst({
       where: {
         id: reportId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         productionOrder: {
@@ -159,10 +158,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.EDIT);
+    if (error) return error;
 
     const reportId = parseInt(params.id);
     if (isNaN(reportId)) {
@@ -173,7 +170,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingReport = await prisma.dailyProductionReport.findFirst({
       where: {
         id: reportId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         productionOrder: true,
@@ -202,7 +199,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         data: {
           isConfirmed: true,
           confirmedAt: new Date(),
-          confirmedById: auth.user.id,
+          confirmedById: user!.id,
         },
         include: {
           shift: { select: { name: true } },
@@ -217,9 +214,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           entityId: report.id,
           eventType: 'REPORT_CONFIRMED',
           notes: reviewNotes,
-          performedById: auth.user.id,
+          performedById: user!.id,
           productionOrderId: existingReport.productionOrderId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         });
       }
 
@@ -253,7 +250,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         data: {
           isReviewed: true,
           reviewedAt: new Date(),
-          reviewedById: auth.user.id,
+          reviewedById: user!.id,
           reviewNotes,
         },
       });
@@ -265,9 +262,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           entityId: report.id,
           eventType: 'REPORT_REVIEWED',
           notes: reviewNotes,
-          performedById: auth.user.id,
+          performedById: user!.id,
           productionOrderId: existingReport.productionOrderId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         });
       }
 
@@ -329,9 +326,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           scrapQuantity: previousScrapQuantity,
         },
         newValue: validatedData,
-        performedById: auth.user.id,
+        performedById: user!.id,
         productionOrderId: existingReport.productionOrderId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       });
     }
 
@@ -358,10 +355,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.EDIT);
+    if (error) return error;
 
     const reportId = parseInt(params.id);
     if (isNaN(reportId)) {
@@ -372,7 +367,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingReport = await prisma.dailyProductionReport.findFirst({
       where: {
         id: reportId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 

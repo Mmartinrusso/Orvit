@@ -49,6 +49,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Recepcion {
   id: number;
@@ -79,6 +80,8 @@ const getEstadoBadge = (estado: string) => {
 export default function RecepcionesPage() {
   const router = useRouter();
   const { mode: viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canEditOrden = hasPermission('compras.ordenes.edit');
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState<string>('all');
   const [recepciones, setRecepciones] = useState<Recepcion[]>([]);
@@ -194,10 +197,12 @@ export default function RecepcionesPage() {
             {pagination.total} registro(s)
           </span>
         </div>
-        <Button size="sm" onClick={() => router.push('/administracion/compras/recepciones/nueva')}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Recepción
-        </Button>
+        {canEditOrden && (
+          <Button size="sm" onClick={() => router.push('/administracion/compras/recepciones/nueva')}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Recepción
+          </Button>
+        )}
       </div>
 
       {/* KPIs inline + Filtros */}
@@ -336,7 +341,7 @@ export default function RecepcionesPage() {
                               <Eye className="w-3.5 h-3.5 mr-2" />
                               Ver detalle
                             </DropdownMenuItem>
-                            {recepcion.estado === 'BORRADOR' && (
+                            {recepcion.estado === 'BORRADOR' && canEditOrden && (
                               <>
                                 <DropdownMenuItem
                                   onClick={() => handleAbrirConfirmar(recepcion)}
@@ -353,14 +358,18 @@ export default function RecepcionesPage() {
                                 </DropdownMenuItem>
                               </>
                             )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleEliminar(recepcion)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5 mr-2" />
-                              Eliminar
-                            </DropdownMenuItem>
+                            {canEditOrden && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => handleEliminar(recepcion)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

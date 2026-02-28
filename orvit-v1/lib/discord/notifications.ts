@@ -1513,3 +1513,75 @@ export async function notifyMachineStatusChange(data: MachineStatusChangeData): 
 
   await sendNotification(data.sectorId, 'FALLA_NUEVA', embed, 'ORVIT - Máquinas');
 }
+
+// ============================================================================
+// NOTIFICACIONES DE CONTROLES DE SEGUIMIENTO DE SOLUCIONES
+// ============================================================================
+
+export interface SolutionControlDueData {
+  controlInstanceId: number;
+  controlOrder: number;
+  controlDescription: string;
+  solutionTitle: string;
+  machineName: string;
+  technicianName: string;
+  scheduledAt: Date;
+  sectorId: number;
+}
+
+export interface SolutionControlOverdueData {
+  controlInstanceId: number;
+  controlOrder: number;
+  controlDescription: string;
+  solutionTitle: string;
+  machineName: string;
+  scheduledAt: Date;
+  sectorId: number;
+}
+
+/**
+ * Notifica que un control de seguimiento de solución venció (debe realizarse)
+ */
+export async function notifySolutionControlDue(data: SolutionControlDueData): Promise<void> {
+  const scheduledStr = data.scheduledAt.toLocaleString('es-AR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+
+  const embed: DiscordEmbed = {
+    title: `⏰ Control de Solución — Paso #${data.controlOrder}`,
+    description: `**${data.controlDescription}**\n\nSolución: ${data.solutionTitle}`,
+    color: DISCORD_COLORS.WARNING,
+    fields: [
+      { name: `${DISCORD_EMOJIS.MAQUINA} Máquina`, value: data.machineName, inline: true },
+      { name: '👤 Técnico', value: data.technicianName, inline: true },
+      { name: '🕐 Programado', value: scheduledStr, inline: true },
+    ],
+    footer: { text: `Control #${data.controlInstanceId} · Paso ${data.controlOrder}` },
+    timestamp: new Date().toISOString(),
+  };
+
+  await sendNotification(data.sectorId, 'FALLA_NUEVA', embed, 'ORVIT - Controles');
+}
+
+/**
+ * Notifica que un control de seguimiento lleva >2h vencido sin completar
+ */
+export async function notifySolutionControlOverdue(data: SolutionControlOverdueData): Promise<void> {
+  const scheduledStr = data.scheduledAt.toLocaleString('es-AR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+
+  const embed: DiscordEmbed = {
+    title: `🔴 Control Vencido — Paso #${data.controlOrder}`,
+    description: `**${data.controlDescription}** no fue completado.\n\nSolución: ${data.solutionTitle}`,
+    color: DISCORD_COLORS.ERROR,
+    fields: [
+      { name: `${DISCORD_EMOJIS.MAQUINA} Máquina`, value: data.machineName, inline: true },
+      { name: '📅 Debía realizarse', value: scheduledStr, inline: true },
+    ],
+    footer: { text: `Control #${data.controlInstanceId} · Paso ${data.controlOrder} — VENCIDO` },
+    timestamp: new Date().toISOString(),
+  };
+
+  await sendNotification(data.sectorId, 'FALLA_NUEVA', embed, 'ORVIT - Controles');
+}

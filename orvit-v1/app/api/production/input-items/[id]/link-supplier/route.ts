@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 /**
  * PATCH /api/production/input-items/[id]/link-supplier
@@ -15,6 +17,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
+
     const inputItemId = params.id;
     if (!inputItemId) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
@@ -97,6 +102,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
+
     const inputItemId = params.id;
     if (!inputItemId) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });

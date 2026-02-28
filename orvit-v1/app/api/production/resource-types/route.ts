@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -29,13 +30,11 @@ const ResourceTypeSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.VIEW);
+    if (error) return error;
 
     const resourceTypes = await prisma.productionResourceType.findMany({
-      where: { companyId: auth.companyId },
+      where: { companyId: user!.companyId },
       include: {
         _count: {
           select: { resources: true },
@@ -59,10 +58,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = ResourceTypeSchema.parse(body);
@@ -71,7 +68,7 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.productionResourceType.findUnique({
       where: {
         companyId_code: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code.toUpperCase(),
         },
       },
@@ -92,7 +89,7 @@ export async function POST(request: NextRequest) {
         config: validatedData.config ?? undefined,
         uomCode: validatedData.uomCode,
         attributesSchema: validatedData.attributesSchema ?? undefined,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 

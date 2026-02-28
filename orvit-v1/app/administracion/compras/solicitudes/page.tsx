@@ -54,6 +54,7 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SolicitudPago {
   id: string;
@@ -84,6 +85,12 @@ export default function SolicitudesPage() {
   const router = useRouter();
   const { currentCompany } = useCompany();
   const { mode: viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+
+  // Permission checks
+  const canCreateSolicitud = hasPermission('compras.solicitudes.create');
+  const canEditSolicitud = hasPermission('compras.solicitudes.edit');
+  const canDeleteSolicitud = hasPermission('compras.solicitudes.delete');
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState<string>('activas');
   const [prioridadFilter, setPrioridadFilter] = useState<string>('all');
@@ -361,10 +368,12 @@ export default function SolicitudesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setShowModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Solicitud
-            </Button>
+            {canCreateSolicitud && (
+              <Button size="sm" onClick={() => setShowModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Solicitud
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -462,15 +471,17 @@ export default function SolicitudesPage() {
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleBulkDelete}
-              disabled={isBulkDeleting}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isBulkDeleting ? 'Eliminando...' : 'Eliminar'}
-            </Button>
+            {canDeleteSolicitud && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isBulkDeleting ? 'Eliminando...' : 'Eliminar'}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -589,7 +600,7 @@ export default function SolicitudesPage() {
                               <Eye className="w-3.5 h-3.5 mr-2" />
                               Ver detalle
                             </DropdownMenuItem>
-                            {canEdit(solicitud.estado) && (
+                            {canEditSolicitud && canEdit(solicitud.estado) && (
                               <DropdownMenuItem onClick={() => router.push(`/administracion/compras/solicitudes/${solicitud.id}/editar`)}>
                                 <Edit className="w-3.5 h-3.5 mr-2" />
                                 Editar
@@ -604,7 +615,7 @@ export default function SolicitudesPage() {
                               <DollarSign className="w-3.5 h-3.5 mr-2" />
                               Ir a Cta. Cte.
                             </DropdownMenuItem>
-                            {canDelete(solicitud.estado) && (
+                            {canDeleteSolicitud && canDelete(solicitud.estado) && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

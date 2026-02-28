@@ -140,7 +140,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                 )}
               </div>
 
-              {/* Vertical line — starts below date header, paints bottom→top */}
+              {/* Vertical line — centered in column */}
               {(() => {
                 const showLine = isThis || (todayCol && !isAnyActive);
                 return (
@@ -151,7 +151,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                       transform: `translateX(-50%) scaleY(${showLine ? 1 : 0})`,
                       transformOrigin: 'bottom',
                       transition: 'transform 600ms cubic-bezier(.4,0,.2,1)',
-                      zIndex: 5, pointerEvents: 'none',
+                      zIndex: 1, pointerEvents: 'none',
                     }} />
                     <div style={{
                       position: 'absolute', left: '50%', top: '34px',
@@ -160,7 +160,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                       transform: `translateX(-50%) scale(${showLine ? 1 : 0})`,
                       opacity: showLine ? 1 : 0,
                       transition: 'transform 350ms ease 400ms, opacity 350ms ease 400ms',
-                      zIndex: 6, pointerEvents: 'none',
+                      zIndex: 2, pointerEvents: 'none',
                     }} />
                   </>
                 );
@@ -201,9 +201,8 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                         cursor: 'pointer',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         boxShadow: isActive ? '0 2px 8px rgba(0,0,0,.18)' : '0 1px 3px rgba(0,0,0,.04)',
-                        transform: isActive ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.95)',
-                        opacity: isActive ? 1 : 0.7,
-                        transition: `background 400ms ease ${pillDelay}ms, color 400ms ease ${pillDelay}ms, border 400ms ease ${pillDelay}ms, box-shadow 400ms ease ${pillDelay}ms, transform 500ms cubic-bezier(.4,0,.2,1) ${pillDelay}ms, opacity 400ms ease ${pillDelay}ms`,
+                        opacity: isActive ? 1 : 0.65,
+                        transition: `background 350ms ease ${pillDelay}ms, color 350ms ease ${pillDelay}ms, border 350ms ease ${pillDelay}ms, box-shadow 350ms ease ${pillDelay}ms, opacity 350ms ease ${pillDelay}ms`,
                       }}
                     >
                       <span style={{ fontWeight: 700, marginRight: '6px', fontSize: '10px' }}>

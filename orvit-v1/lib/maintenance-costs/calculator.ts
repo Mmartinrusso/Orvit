@@ -561,13 +561,16 @@ export async function getBudgetComparison(
     endDate = new Date(year, 11, 31, 23, 59, 59);
   }
 
-  // Obtener costos reales
+  // Obtener costos reales — filtramos por completedDate de la OT, no por calculatedAt
+  // (calculatedAt cambia cada vez que se recalculan costos, lo que puede distorsionar el período)
   const costBreakdowns = await prisma.maintenanceCostBreakdown.findMany({
     where: {
       companyId,
-      calculatedAt: {
-        gte: startDate,
-        lte: endDate
+      workOrder: {
+        completedDate: {
+          gte: startDate,
+          lte: endDate
+        }
       }
     }
   });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { z } from 'zod';
 import * as XLSX from 'xlsx';
 
@@ -34,15 +35,10 @@ interface ImportResult {
 // POST /api/employees/import - Importar empleados desde Excel/CSV
 export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId requerido' },
-        { status: 400 }
-      );
-    }
+    const companyId = String(user!.companyId);
 
     // Verificar que la empresa existe
     const company = await prisma.company.findUnique({

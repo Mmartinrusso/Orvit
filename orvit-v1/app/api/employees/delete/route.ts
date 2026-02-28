@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // DELETE /api/employees/delete - Eliminar empleado
 export async function DELETE(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('=== INICIO DELETE EMPLOYEE ===');
-    
+
     const { searchParams } = new URL(request.url);
     const employeeId = searchParams.get('employeeId');
-    const companyId = searchParams.get('companyId');
+    const companyId = String(user!.companyId);
 
     console.log('Parámetros recibidos:', { employeeId, companyId });
 
-    if (!employeeId || !companyId) {
+    if (!employeeId) {
       console.log('Faltan parámetros requeridos');
       return NextResponse.json(
-        { error: 'employeeId y companyId son requeridos' },
+        { error: 'employeeId es requerido' },
         { status: 400 }
       );
     }

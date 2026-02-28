@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -34,8 +35,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso companies.view
+    const { user: authUser, error: authError } = await requirePermission('companies.view');
+    if (authError) return authError;
+
     const companyId = parseInt(params.id);
-    
+
     if (isNaN(companyId)) {
       return NextResponse.json(
         { error: 'ID de empresa inválido' },
@@ -86,8 +91,12 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso companies.edit
+    const { user: authUser, error: authError } = await requirePermission('companies.edit');
+    if (authError) return authError;
+
     const companyId = parseInt(params.id);
-    
+
     if (isNaN(companyId)) {
       return NextResponse.json(
         { error: 'ID de empresa inválido' },
@@ -95,105 +104,10 @@ export async function PUT(
       );
     }
 
-    // Obtener usuario autenticado
+    // Obtener usuario autenticado (para logging)
     const currentUser = await getUserFromToken();
     if (!currentUser) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    // Verificar permisos usando el sistema de permisos
-    const userCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: currentUser.id,
-        companyId: companyId
-      },
-      include: {
-        role: {
-          include: {
-            permissions: {
-              include: {
-                permission: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    console.log('🔍 [API] Verificando permisos para usuario:', {
-      userId: currentUser.id,
-      userRole: currentUser.role,
-      userName: currentUser.name,
-      companyId: companyId,
-      userCompanyRole: userCompany?.role?.name,
-      rolePermissions: userCompany?.role?.permissions?.map(rp => ({
-        permission: rp.permission.name,
-        isGranted: rp.isGranted
-      })) || []
-    });
-
-    // Verificar si el usuario tiene el permiso company.settings, company.edit o configuracion_empresa
-    let hasPermission = currentUser.role === 'SUPERADMIN';
-
-    if (!hasPermission && userCompany?.role) {
-      // Verificar permisos del rol
-      hasPermission = userCompany.role.permissions?.some(
-        rp => (rp.permission.name === 'company.settings' || rp.permission.name === 'company.edit' || rp.permission.name === 'configuracion_empresa') && rp.isGranted
-      ) || false;
-    }
-
-    // Si no tiene permiso por rol, verificar permisos específicos del usuario
-    if (!hasPermission) {
-      const userPermissions = await prisma.userPermission.findMany({
-        where: {
-          userId: currentUser.id,
-          permission: {
-            name: {
-              in: ['company.settings', 'company.edit', 'configuracion_empresa']
-            }
-          },
-          isGranted: true
-        }
-      });
-      
-      hasPermission = userPermissions.length > 0;
-    }
-    
-    // También verificar si tiene el permiso configuracion_empresa (permiso del frontend)
-    if (!hasPermission) {
-      const configuracionPermission = await prisma.userPermission.findFirst({
-        where: {
-          userId: currentUser.id,
-          permission: {
-            name: 'configuracion_empresa'
-          },
-          isGranted: true
-        }
-      });
-      
-      if (!configuracionPermission && userCompany?.role) {
-        const roleConfigPermission = userCompany.role.permissions?.find(
-          rp => rp.permission.name === 'configuracion_empresa' && rp.isGranted
-        );
-        hasPermission = !!roleConfigPermission;
-      } else {
-        hasPermission = !!configuracionPermission;
-      }
-    }
-
-    console.log('🔍 [API] Resultado de verificación de permisos:', {
-      hasPermission,
-      isSuperAdmin: currentUser.role === 'SUPERADMIN',
-      rolePermissionsFound: userCompany?.role?.permissions?.filter(
-        rp => (rp.permission.name === 'company.settings' || rp.permission.name === 'company.edit' || rp.permission.name === 'configuracion_empresa') && rp.isGranted
-      ).length || 0
-    });
-
-    if (!hasPermission) {
-      return NextResponse.json(
-        { error: 'No tienes permisos para editar empresas' },
-        { status: 403 }
-      );
     }
 
     const body = await request.json();
@@ -441,8 +355,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso companies.delete
+    const { user: authUser, error: authError } = await requirePermission('companies.delete');
+    if (authError) return authError;
+
     const companyId = parseInt(params.id);
-    
+
     if (isNaN(companyId)) {
       return NextResponse.json(
         { error: 'ID de empresa inválido' },
@@ -456,7 +374,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Solo SUPERADMIN puede eliminar empresas
+    // Solo SUPERADMIN puede eliminar empresas (keep extra safety check)
     if (currentUser.role !== 'SUPERADMIN') {
       return NextResponse.json(
         { error: 'Solo los superadministradores pueden eliminar empresas' },

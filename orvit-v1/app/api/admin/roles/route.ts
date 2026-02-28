@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { invalidateUserPermissions } from '@/lib/permissions-helpers';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +13,7 @@ const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 // ✨ OPTIMIZADO: Helper para obtener usuario con empresas y roles
 async function getUserFromToken(request: NextRequest) {
   try {
-    const token = cookies().get('token')?.value;
+    const token = (await cookies()).get('token')?.value;
     if (!token) return null;
 
     const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
@@ -100,6 +102,10 @@ function checkAdminAccess(user: NonNullable<Awaited<ReturnType<typeof getUserFro
 // GET /api/admin/roles - Obtener roles de la empresa
 export async function GET(request: NextRequest) {
   try {
+    // Verificar permiso admin.roles
+    const { user: authUser, error: authError } = await requirePermission('admin.roles');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -165,6 +171,10 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/roles - Asignar permiso a rol
 export async function POST(request: NextRequest) {
   try {
+    // Verificar permiso admin.roles
+    const { user: authUser, error: authError } = await requirePermission('admin.roles');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -229,6 +239,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Invalidar caché Redis de todos los usuarios con este rol — efecto inmediato
+    const usersWithRole = await prisma.userCompany.findMany({
+      where: { roleId: role.id },
+      select: { userId: true },
+    });
+    await Promise.all(
+      usersWithRole.map(uc => invalidateUserPermissions(uc.userId, companyId))
+    );
+
     return NextResponse.json({
       success: true,
       message: `Permiso ${isGranted ? 'asignado' : 'removido'} exitosamente`,
@@ -243,6 +262,10 @@ export async function POST(request: NextRequest) {
 // PUT /api/admin/roles - Crear nuevo rol
 export async function PUT(request: NextRequest) {
   try {
+    // Verificar permiso admin.roles
+    const { user: authUser, error: authError } = await requirePermission('admin.roles');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -320,6 +343,10 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin/roles - Eliminar rol
 export async function DELETE(request: NextRequest) {
   try {
+    // Verificar permiso admin.roles
+    const { user: authUser, error: authError } = await requirePermission('admin.roles');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });

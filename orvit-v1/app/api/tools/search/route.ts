@@ -1,49 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      include: {
-        companies: {
-          include: { company: true },
-        },
-      },
-    });
-
-    return user;
-  } catch (error) {
-    console.error('Error obteniendo usuario desde JWT:', error);
-    return null;
-  }
-}
 
 // GET /api/tools/search?q=texto&itemType=SPARE_PART&limit=20
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || '';

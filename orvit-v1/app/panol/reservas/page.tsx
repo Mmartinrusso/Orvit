@@ -53,6 +53,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine
 } from 'lucide-react';
+import { usePanolPermissions } from '@/hooks/use-panol-permissions';
 
 interface Reservation {
   id: number;
@@ -164,6 +165,7 @@ function formatDateLocal(dateString: string | null): string {
 export default function ReservasPage() {
   const { selectedCompany } = useCompany();
   const queryClient = useQueryClient();
+  const { canManageReservations } = usePanolPermissions();
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -179,7 +181,7 @@ export default function ReservasPage() {
     mutationFn: ({ id, action, quantity, notes }: { id: number; action: string; quantity?: number; notes?: string }) =>
       updateReservation(id, action, quantity, notes),
     onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['reservations', statusFilter] });
       setActionDialog({ type: null, reservation: null });
       toast.success(result.message);
     },
@@ -189,10 +191,18 @@ export default function ReservasPage() {
   });
 
   const handleAction = (action: 'pick' | 'cancel' | 'return', reservation: Reservation) => {
+    if (!canManageReservations) {
+      toast.error('No tienes permisos para gestionar reservas');
+      return;
+    }
     setActionDialog({ type: action, reservation });
   };
 
   const confirmAction = () => {
+    if (!canManageReservations) {
+      toast.error('No tienes permisos para gestionar reservas');
+      return;
+    }
     if (!actionDialog.reservation || !actionDialog.type) return;
     mutation.mutate({
       id: actionDialog.reservation.id,
@@ -390,7 +400,7 @@ export default function ReservasPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {reservation.status === 'PENDING' && (
+                          {reservation.status === 'PENDING' && canManageReservations && (
                             <>
                               <DropdownMenuItem onClick={() => handleAction('pick', reservation)}>
                                 <ArrowDownToLine className="h-4 w-4 mr-2" />
@@ -405,7 +415,7 @@ export default function ReservasPage() {
                               </DropdownMenuItem>
                             </>
                           )}
-                          {reservation.status === 'PICKED' && (
+                          {reservation.status === 'PICKED' && canManageReservations && (
                             <DropdownMenuItem onClick={() => handleAction('return', reservation)}>
                               <ArrowUpFromLine className="h-4 w-4 mr-2" />
                               Devolver

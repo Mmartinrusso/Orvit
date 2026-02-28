@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromToken } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // DELETE /api/work-stations/[id]/machines/[machineId]
 export async function DELETE(
@@ -8,6 +9,8 @@ export async function DELETE(
   { params }: { params: { id: string; machineId: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const userId = await getUserIdFromToken();
     
     const workStationId = parseInt(params.id);

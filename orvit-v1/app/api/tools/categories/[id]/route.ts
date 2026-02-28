@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 // GET /api/tools/categories/[id] - Obtener una categoría específica
 export async function GET(
@@ -7,6 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
+
     const categoryId = parseInt(params.id);
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -53,6 +57,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requirePermission('tools.edit');
+    if (error) return error;
+
     const categoryId = parseInt(params.id);
     const body = await request.json();
     const { searchParams } = new URL(request.url);
@@ -142,6 +149,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requirePermission('tools.delete');
+    if (error) return error;
+
     const categoryId = parseInt(params.id);
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');

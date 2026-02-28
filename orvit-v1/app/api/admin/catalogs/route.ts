@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders, shouldDisableCache } from '@/lib/perf';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +16,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const perfCtx = startPerf();
   const { searchParams } = new URL(request.url);
-  
+
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const companyId = searchParams.get('companyId');
 
     if (!companyId) {

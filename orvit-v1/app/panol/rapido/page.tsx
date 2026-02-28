@@ -42,6 +42,7 @@ import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { usePanolPermissions } from '@/hooks/use-panol-permissions';
 
 type QuickAction = 'scan-in' | 'scan-out' | 'scan-view' | 'ot-pick' | null;
 
@@ -69,6 +70,7 @@ interface WorkOrder {
 }
 
 export default function AccionesRapidasPage() {
+  const { canRegisterMovement, canManageStock, canManageReservations } = usePanolPermissions();
   const [activeAction, setActiveAction] = useState<QuickAction>(null);
   const [lastScanned, setLastScanned] = useState<{
     name: string;
@@ -119,6 +121,10 @@ export default function AccionesRapidasPage() {
   };
 
   const handlePickSingle = async (reservation: Reservation) => {
+    if (!canManageReservations) {
+      toast.error('No tienes permisos para despachar reservas');
+      return;
+    }
     setProcessingIds((prev) => [...prev, reservation.id]);
     try {
       const res = await fetch(`/api/tools/reservations/${reservation.id}`, {
@@ -142,6 +148,10 @@ export default function AccionesRapidasPage() {
   };
 
   const handlePickAll = async () => {
+    if (!canManageReservations) {
+      toast.error('No tienes permisos para despachar reservas');
+      return;
+    }
     if (otReservations.length === 0) return;
 
     const ids = otReservations.map((r) => r.id);
@@ -186,7 +196,7 @@ export default function AccionesRapidasPage() {
     setOtReservations([]);
   };
 
-  const quickActions = [
+  const allQuickActions = [
     {
       id: 'scan-in' as QuickAction,
       title: 'Entrada Rápida',
@@ -194,6 +204,7 @@ export default function AccionesRapidasPage() {
       icon: ArrowUpCircle,
       color: 'text-success',
       bgColor: 'bg-success-muted',
+      visible: canManageStock || canRegisterMovement,
     },
     {
       id: 'scan-out' as QuickAction,
@@ -202,6 +213,7 @@ export default function AccionesRapidasPage() {
       icon: ArrowDownCircle,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
+      visible: canManageStock || canRegisterMovement,
     },
     {
       id: 'scan-view' as QuickAction,
@@ -210,6 +222,7 @@ export default function AccionesRapidasPage() {
       icon: Search,
       color: 'text-info-muted-foreground',
       bgColor: 'bg-info-muted',
+      visible: true, // read-only, always visible
     },
     {
       id: 'ot-pick' as QuickAction,
@@ -218,8 +231,11 @@ export default function AccionesRapidasPage() {
       icon: ClipboardList,
       color: 'text-accent-purple-muted-foreground',
       bgColor: 'bg-accent-purple-muted',
+      visible: canManageReservations,
     },
   ];
+
+  const quickActions = allQuickActions.filter(a => a.visible);
 
   const navigationLinks = [
     {

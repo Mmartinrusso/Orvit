@@ -98,22 +98,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
-
-// Sentry: deshabilitado el upload en build (SENTRY_AUTH_TOKEN con permisos insuficientes)
-// El tracking en runtime sigue funcionando via sentry.client.config.ts y sentry.server.config.ts
-const { withSentryConfig } = require("@sentry/nextjs");
-
-module.exports = withSentryConfig(
-  module.exports,
-  {
-    org: "orvit",
-    project: "javascript-nextjs",
-    silent: true,
-    disableLogger: true,
-    // Deshabilitar completamente upload de sourcemaps y creación de releases
-    sourcemaps: { disable: true },
-    release: { create: false, finalize: false },
-    telemetry: false,
-  }
-);

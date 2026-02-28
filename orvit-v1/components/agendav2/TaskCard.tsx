@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, Link2, MoreHorizontal, AlertCircle } from 'lucide-react';
+import { MessageSquare, Link2, MoreHorizontal, AlertCircle, Check, Pencil } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import {
   DropdownMenu,
@@ -88,10 +88,15 @@ interface TaskCardProps {
   onClick: (task: AgendaTask) => void;
   onStatusChange?: (task: AgendaTask, status: AgendaTaskStatus) => void;
   onDelete?: (task: AgendaTask) => void;
+  onEdit?: (task: AgendaTask) => void;
   progress?: number;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: number) => void;
+  animationDelay?: number;
 }
 
-export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: TaskCardProps) {
+export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, progress, isSelectMode, isSelected, onSelect, animationDelay = 0 }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -123,32 +128,69 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: 
   const availableStatuses: AgendaTaskStatus[] = ['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'];
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        ...style,
-        background: '#FFFFFF',
-        border: '1px solid #E8E8E8',
-        borderRadius: '16px',
-        padding: '16px',
-        cursor: 'pointer',
-        userSelect: 'none',
-        boxShadow: '0 1px 4px rgba(0,0,0,.05)',
-      }}
-      {...attributes}
-      {...listeners}
-      onClick={() => onClick(task)}
-      onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,.09)';
-        e.currentTarget.style.borderColor = '#D8D8D8';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,.05)';
-        e.currentTarget.style.borderColor = '#E8E8E8';
-      }}
-    >
+    /* Outer: DnD positioning only */
+    <div ref={setNodeRef} style={style}>
+      <style>{`
+        @keyframes card-cascade-in {
+          from { transform: translate(-10px, -10px); opacity: 0; }
+          to   { transform: translate(0, 0);          opacity: 1; }
+        }
+      `}</style>
+      {/* Inner: visual card + diagonal cascade animation on mount */}
+      <div
+        style={{
+          position: 'relative',
+          background: isSelected ? '#EBF2FB' : '#FFFFFF',
+          border: `1px solid ${isSelected ? '#3070A8' : '#E8E8E8'}`,
+          borderRadius: '16px',
+          padding: '16px',
+          cursor: 'pointer',
+          userSelect: 'none',
+          boxShadow: '0 1px 4px rgba(0,0,0,.05)',
+          animationName: 'card-cascade-in',
+          animationDuration: '1300ms',
+          animationTimingFunction: 'cubic-bezier(0.22,1,0.36,1)',
+          animationFillMode: 'both',
+          animationDelay: `${animationDelay}ms`,
+          transition: 'background 120ms ease, border-color 120ms ease, box-shadow 150ms ease',
+        }}
+        {...(isSelectMode ? {} : { ...attributes, ...listeners })}
+        onClick={() => {
+          if (isSelectMode) {
+            onSelect?.(task.id);
+          } else {
+            onClick(task);
+          }
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,.09)';
+          e.currentTarget.style.borderColor = '#D8D8D8';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,.05)';
+          e.currentTarget.style.borderColor = '#E8E8E8';
+        }}
+      >
+      {/* Select mode checkbox overlay */}
+      {isSelectMode && (
+        <div
+          style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}
+          onClick={e => { e.stopPropagation(); onSelect?.(task.id); }}
+        >
+          <div style={{
+            width: '18px', height: '18px', borderRadius: '5px',
+            border: `2px solid ${isSelected ? '#3070A8' : '#CCCCCC'}`,
+            background: isSelected ? '#3070A8' : '#FFFFFF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 120ms ease',
+          }}>
+            {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFFFFF' }} />}
+          </div>
+        </div>
+      )}
+
       {/* Row 1: project/category name + menu */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '10px', paddingLeft: isSelectMode ? '22px' : '0', transition: 'padding 150ms ease' }}>
         <span style={{ fontSize: '14px', fontWeight: 700, color: '#050505', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           {groupLabel}
         </span>
@@ -163,6 +205,10 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: 
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem className="text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(task); }}>
+              <Pencil className="h-3 w-3 mr-2" /> Editar tarea
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {availableStatuses.filter(s => s !== task.status).map(s => (
               <DropdownMenuItem key={s} onClick={(e) => { e.stopPropagation(); onStatusChange?.(task, s); }} className="text-xs">
                 Mover a {STATUS_MOVE_LABEL[s]}
@@ -183,16 +229,16 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: 
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
               padding: '4px 10px',
-              border: isOverdue ? '1px solid #F9E4E2' : '1px solid #E8E8E8',
+              border: '1px solid #E8E8E8',
               borderRadius: '999px',
-              background: isOverdue ? '#FFF0EF' : '#FFFFFF',
+              background: isOverdue ? '#FAF7F7' : '#FFFFFF',
             }}
           >
             {isOverdue
-              ? <AlertCircle className="h-3 w-3" style={{ color: '#ED8A94', flexShrink: 0 }} />
+              ? <AlertCircle className="h-3 w-3" style={{ color: '#B09098', flexShrink: 0 }} />
               : <CategoryBarChart color={chartColor} />
             }
-            <span style={{ fontSize: '11px', fontWeight: 500, color: isOverdue ? '#ED8A94' : '#9C9CAA', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 500, color: isOverdue ? '#A08088' : '#9C9CAA', whiteSpace: 'nowrap' }}>
               {format(new Date(task.dueDate), 'MMM dd, yyyy')}
             </span>
           </div>
@@ -203,7 +249,7 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: 
       <div style={{ borderTop: '1px solid #F0F0F0', marginBottom: '12px' }} />
 
       {/* Row 3: task title */}
-      <p className="line-clamp-2" style={{ fontSize: '13px', fontWeight: 500, color: '#1A1A1A', lineHeight: 1.4, marginBottom: '14px' }}>
+      <p className="line-clamp-2" style={{ fontSize: '13px', fontWeight: 700, color: '#1A1A1A', lineHeight: 1.4, marginBottom: '14px' }}>
         {task.title}
       </p>
 
@@ -213,7 +259,7 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: 
           <div style={{ height: '100%', width: `${displayProgress}%`, borderRadius: '999px', background: barFill, transition: 'width 500ms ease' }} />
         </div>
         <p style={{ fontSize: '11px', color: '#9C9CAA', marginTop: '5px' }}>
-          Progress : {displayProgress}%
+          <span style={{ fontWeight: 700, color: '#6B6B78' }}>Progreso</span> : {displayProgress}%
         </p>
       </div>
 
@@ -239,15 +285,16 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, progress }: 
 
         {/* Counts */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#9C9CAA' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#050505' }}>
             <MessageSquare className="h-[13px] w-[13px]" />
             {mockCounts.comments}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#9C9CAA' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#050505' }}>
             <Link2 className="h-[13px] w-[13px]" />
             {mockCounts.links}
           </span>
         </div>
+      </div>
       </div>
     </div>
   );

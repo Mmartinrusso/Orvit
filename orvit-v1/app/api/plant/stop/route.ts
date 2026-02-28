@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/plant/stop
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const {
       sectorId,
@@ -141,16 +145,12 @@ export async function POST(request: NextRequest) {
 // GET /api/plant/stop - Obtener paradas activas
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const sectorId = searchParams.get('sectorId');
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID es requerido' },
-        { status: 400 }
-      );
-    }
+    const { searchParams } = new URL(request.url);
+    const companyId = String(user!.companyId);
+    const sectorId = searchParams.get('sectorId');
 
     // Buscar paradas activas
     const activePlantStops = await prisma.document.findMany({

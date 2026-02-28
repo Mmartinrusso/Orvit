@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/auth';
 import { logStatusChange, logCancellation } from '@/lib/compras/audit-helper';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,6 +166,10 @@ export async function PUT(
     if (!companyId) {
       return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
     }
+
+    // Permission check: ingresar_compras
+    const hasPerm = await hasUserPermission(user.id, companyId, 'ingresar_compras');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     const { id: idStr } = await params;
     const id = parseInt(idStr);
@@ -349,6 +354,10 @@ export async function DELETE(
     if (!companyId) {
       return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
     }
+
+    // Permission check: ingresar_compras
+    const hasPerm = await hasUserPermission(user.id, companyId, 'ingresar_compras');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     const { id: idStr } = await params;
     const id = parseInt(idStr);

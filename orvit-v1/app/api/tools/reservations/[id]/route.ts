@@ -8,8 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,20 +22,11 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error } = await requirePermission('panol.view_products');
+    if (error) return error;
+
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || !payload.companyId) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    const companyId = payload.companyId as number;
+    const companyId = user!.companyId;
 
     const reservation = await prisma.sparePartReservation.findFirst({
       where: {
@@ -112,21 +102,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
+    const { user: authUser, error } = await requirePermission('panol.register_movement');
+    if (error) return error;
+
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || !payload.companyId) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    const companyId = payload.companyId as number;
-    const userId = payload.userId as number;
+    const companyId = authUser!.companyId;
+    const userId = authUser!.id;
 
     const body = await request.json();
     const { action, quantity, notes } = body;
@@ -366,20 +347,11 @@ async function handleReturn(reservation: any, userId: number, quantity?: number,
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error } = await requirePermission('tools.delete');
+    if (error) return error;
+
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || !payload.companyId) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    const companyId = payload.companyId as number;
+    const companyId = user!.companyId;
 
     const reservation = await prisma.sparePartReservation.findFirst({
       where: {

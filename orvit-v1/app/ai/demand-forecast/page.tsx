@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { DemandForecastChart } from '@/components/ai/demand-forecast-chart';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,6 +87,7 @@ export default function DemandForecastPage() {
   };
 
   return (
+    <PermissionGuard permission="ingresar_almacen">
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
@@ -351,5 +353,6 @@ export default function DemandForecastPage() {
         </Card>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

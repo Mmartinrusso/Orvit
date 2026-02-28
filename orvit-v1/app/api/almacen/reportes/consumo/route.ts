@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export async function GET(request: Request) {
   try {
+    // Permission check: almacen.view_costs
+    const { user, error: authError } = await requirePermission('almacen.view_costs');
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const fechaDesde = searchParams.get('fechaDesde');

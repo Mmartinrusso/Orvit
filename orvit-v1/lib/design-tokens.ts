@@ -37,15 +37,16 @@ export const DIALOG_CONTENT_CLASSES = {
 } as const;
 
 // Para Sheet (side panels)
+// Usa sm: breakpoint para que en mobile sea full-width y en desktop el ancho fijo
 export const SHEET_SIZES = {
   /** Panel estrecho - detalles rápidos */
-  sm: 'w-[400px]',
+  sm: 'sm:!w-[400px]',
   /** Panel mediano - formularios */
-  md: 'w-[600px]',
+  md: 'sm:!w-[600px]',
   /** Panel amplio - formularios complejos */
-  lg: 'w-[800px]',
+  lg: 'sm:!w-[800px]',
   /** Panel muy amplio - gestión completa */
-  xl: 'w-[1000px]',
+  xl: 'sm:!w-[1000px]',
 } as const;
 
 // ============================================

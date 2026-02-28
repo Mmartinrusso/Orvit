@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.DASHBOARD_VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const dateFrom = searchParams.get('dateFrom');
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest) {
     const orderStats = await prisma.productionOrder.groupBy({
       by: ['status'],
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         ...(workCenterId ? { workCenterId: parseInt(workCenterId) } : {}),
       },
       _count: { id: true },
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
     // Plan vs Real for orders completed in period
     const completedOrders = await prisma.productionOrder.findMany({
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         status: 'COMPLETED',
         actualEndDate: dateFilter,
         ...(workCenterId ? { workCenterId: parseInt(workCenterId) } : {}),
@@ -66,7 +65,7 @@ export async function GET(request: NextRequest) {
     // ====== DAILY REPORTS METRICS ======
     const dailyReports = await prisma.dailyProductionReport.findMany({
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         date: dateFilter,
         ...(workCenterId ? { workCenterId: parseInt(workCenterId) } : {}),
       },
@@ -99,7 +98,7 @@ export async function GET(request: NextRequest) {
     // ====== DOWNTIME METRICS ======
     const downtimes = await prisma.productionDowntime.findMany({
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         startTime: dateFilter,
         ...(workCenterId ? { workCenterId: parseInt(workCenterId) } : {}),
       },
@@ -143,7 +142,7 @@ export async function GET(request: NextRequest) {
     const qualityStats = await prisma.productionQualityControl.groupBy({
       by: ['result'],
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         inspectedAt: dateFilter,
       },
       _count: { id: true },
@@ -158,7 +157,7 @@ export async function GET(request: NextRequest) {
     const lotStats = await prisma.productionBatchLot.groupBy({
       by: ['qualityStatus'],
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       _count: { id: true },
     });
@@ -170,7 +169,7 @@ export async function GET(request: NextRequest) {
     // ====== RECENT EVENTS ======
     const recentEvents = await prisma.productionEvent.findMany({
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         performedAt: dateFilter,
       },
       include: {
@@ -193,7 +192,7 @@ export async function GET(request: NextRequest) {
     const productionByDay = await prisma.dailyProductionReport.groupBy({
       by: ['date'],
       where: {
-        companyId: auth.companyId,
+        companyId: user!.companyId,
         date: dateFilter,
         ...(workCenterId ? { workCenterId: parseInt(workCenterId) } : {}),
       },

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/notifications/daily-overdue-check
 export async function POST(request: NextRequest) {
+  const { user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     console.log('🔔 Iniciando verificación diaria de órdenes vencidas...');
 

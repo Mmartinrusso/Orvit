@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         where: {
           companyId: company.id,
           type: 'CORRECTIVE',
-          status: { in: ['INCOMING', 'PENDING', 'SCHEDULED', 'IN_PROGRESS', 'WAITING', 'pending', 'in_progress', 'waiting'] }
+          status: { in: ['INCOMING', 'PENDING', 'SCHEDULED', 'IN_PROGRESS', 'WAITING'] }
         },
         select: {
           id: true,
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         where: {
           companyId: company.id,
           type: 'PREVENTIVE',
-          status: { in: ['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'pending'] },
+          status: { in: ['PENDING', 'SCHEDULED', 'IN_PROGRESS'] },
           scheduledDate: { not: null }
         },
         select: {

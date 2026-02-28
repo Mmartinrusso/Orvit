@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resetCompletedTask, shouldTaskReset } from '@/lib/task-scheduler';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +18,12 @@ function verifyInternalSecret(request: NextRequest): boolean {
 
 // POST /api/fixed-tasks/auto-reset - Reiniciar tareas completadas que ya vencieron
 export async function POST(request: NextRequest) {
-  if (!verifyInternalSecret(request)) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  const { user, error: authError } = await requireAuth();
+  if (authError) {
+    // Fallback: also check internal secret for cron jobs
+    if (!verifyInternalSecret(request)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
   }
 
   try {
@@ -77,8 +82,12 @@ export async function POST(request: NextRequest) {
 
 // GET /api/fixed-tasks/auto-reset - Estado de tareas pendientes de reinicio
 export async function GET(request: NextRequest) {
-  if (!verifyInternalSecret(request)) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  const { user: authUser, error: authError } = await requireAuth();
+  if (authError) {
+    // Fallback: also check internal secret for cron jobs
+    if (!verifyInternalSecret(request)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
   }
 
   try {

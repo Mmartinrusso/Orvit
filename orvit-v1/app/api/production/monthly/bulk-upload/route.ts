@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,41 +43,37 @@ function detectSeparator(firstLine: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 POST /api/production/monthly/bulk-upload - Iniciando...');
-  
+  console.log('POST /api/production/monthly/bulk-upload - Iniciando...');
+
   try {
-    console.log('🔍 Iniciando carga masiva de producción mensual...');
-    
-    console.log('📥 Parseando FormData...');
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
+
+    console.log('Iniciando carga masiva de produccion mensual...');
+
+    console.log('Parseando FormData...');
     const formData = await request.formData();
-    
-    console.log('📋 FormData keys:', Array.from(formData.keys()));
-    
+
+    console.log('FormData keys:', Array.from(formData.keys()));
+
     const file = formData.get('file') as File;
-    const companyIdStr = formData.get('companyId') as string;
-    
-    console.log('📋 Datos recibidos:', {
+
+    console.log('Datos recibidos:', {
       hasFile: !!file,
       fileName: file?.name,
       fileSize: file?.size,
       fileType: file?.type,
-      companyIdStr,
-      hasCompanyId: !!companyIdStr,
-      companyIdType: typeof companyIdStr
     });
-    
-    if (!file || !companyIdStr) {
-      console.error('❌ Datos faltantes:', {
-        file: !!file,
-        companyId: !!companyIdStr
-      });
+
+    if (!file) {
+      console.error('Datos faltantes: archivo no proporcionado');
       return NextResponse.json(
-        { error: 'Archivo y companyId son requeridos' },
+        { error: 'Archivo es requerido' },
         { status: 400 }
       );
     }
-    
-    const companyId = parseInt(companyIdStr);
+
+    const companyId = user!.companyId;
     const fileContent = await file.text();
     const lines = fileContent.split('\n').filter(line => line.trim());
     

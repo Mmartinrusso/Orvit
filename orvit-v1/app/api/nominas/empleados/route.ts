@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getPayrollAuth, hasPayrollAccess } from '@/lib/nominas/auth-helper';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +101,10 @@ export async function POST(request: NextRequest) {
     if (!auth || !hasPayrollAccess(auth.user)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+
+    // Permission check: ingresar_nominas
+    const hasPerm = await hasUserPermission(auth.user.id, auth.companyId, 'ingresar_nominas');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     const body = await request.json();
     const {
@@ -208,6 +213,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    // Permission check: ingresar_nominas
+    const hasPermPut = await hasUserPermission(auth.user.id, auth.companyId, 'ingresar_nominas');
+    if (!hasPermPut) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
+
     const body = await request.json();
     const {
       id,
@@ -292,6 +301,10 @@ export async function DELETE(request: NextRequest) {
     if (!auth || !hasPayrollAccess(auth.user)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+
+    // Permission check: ingresar_nominas
+    const hasPermDel = await hasUserPermission(auth.user.id, auth.companyId, 'ingresar_nominas');
+    if (!hasPermDel) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');

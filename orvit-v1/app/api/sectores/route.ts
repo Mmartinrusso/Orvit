@@ -7,6 +7,7 @@ import { cached, invalidateCache } from '@/lib/cache/cache-manager';
 import { sectorKeys, TTL } from '@/lib/cache/cache-keys';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateSectorSchema } from '@/lib/validations/sectors';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -140,6 +141,10 @@ async function checkUserPermission(userId: number, userRole: string, companyId: 
 // POST /api/sectors
 export async function POST(request: Request) {
   try {
+    // Verificar permiso sectors.create
+    const { user: authUser, error: authError } = await requirePermission('sectors.create');
+    if (authError) return authError;
+
     const userId = await getUserIdFromToken();
     const body = await request.json();
     const validation = validateRequest(CreateSectorSchema, body);

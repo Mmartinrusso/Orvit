@@ -97,6 +97,25 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json();
     const { accion, motivo, cae, fechaVtoCae } = body;
 
+    // Granular permission check per action
+    if (accion === 'emitir') {
+      const emitCheck = await checkPermission(user!.id, user!.companyId, VENTAS_PERMISSIONS.FACTURAS_EMIT);
+      if (!emitCheck) {
+        return NextResponse.json(
+          { error: 'Sin permisos para emitir facturas', requiredPermission: VENTAS_PERMISSIONS.FACTURAS_EMIT },
+          { status: 403 }
+        );
+      }
+    } else if (accion === 'anular') {
+      const voidCheck = await checkPermission(user!.id, user!.companyId, VENTAS_PERMISSIONS.FACTURAS_VOID);
+      if (!voidCheck) {
+        return NextResponse.json(
+          { error: 'Sin permisos para anular facturas', requiredPermission: VENTAS_PERMISSIONS.FACTURAS_VOID },
+          { status: 403 }
+        );
+      }
+    }
+
     switch (accion) {
       case 'emitir':
         if (factura.estado !== 'BORRADOR') {

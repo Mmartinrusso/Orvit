@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -18,16 +19,14 @@ const WorkShiftSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.SHIFTS);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('activeOnly') === 'true';
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (activeOnly) {
@@ -57,10 +56,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.SHIFTS);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = WorkShiftSchema.parse(body);
@@ -69,7 +66,7 @@ export async function POST(request: NextRequest) {
     const existingShift = await prisma.workShift.findUnique({
       where: {
         companyId_code: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code,
         },
       },
@@ -85,7 +82,7 @@ export async function POST(request: NextRequest) {
     const shift = await prisma.workShift.create({
       data: {
         ...validatedData,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 

@@ -1,25 +1,31 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Plus, Search, Bell, Share2, Users, ChevronRight, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgendaV2Header } from './AgendaV2HeaderContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { toast } from 'sonner';
-import type { AgendaTask, AgendaTaskStatus, AgendaStats, CreateAgendaTaskInput } from '@/lib/agenda/types';
+import type { AgendaTask, AgendaTaskStatus, AgendaStats, CreateAgendaTaskInput, UpdateAgendaTaskInput } from '@/lib/agenda/types';
 import { BoardView } from './BoardView';
 import { InboxView } from './InboxView';
 import { DashboardView } from './DashboardView';
+import { ReportingView } from './ReportingView';
+import { PortfolioView } from './PortfolioView';
+import { FixedTasksView } from './FixedTasksView';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { CreateTaskModal } from './CreateTaskModal';
-import { AgendaV2Sidebar } from './AgendaV2Sidebar';
+import { AgendaV2Sidebar, type TaskGroupItem } from './AgendaV2Sidebar';
+import { CreateGroupModal, type CreateGroupInput } from './CreateGroupModal';
 
-export type ViewMode = 'board' | 'inbox' | 'dashboard';
+export type ViewMode = 'board' | 'inbox' | 'dashboard' | 'reporting' | 'portfolio' | 'fixed-tasks';
 
 const VIEW_LABEL: Record<ViewMode, string> = {
-  board: 'Mi Tarea',
-  inbox: 'Inbox',
-  dashboard: 'Dashboard',
+  board:         'Mi Tarea',
+  inbox:         'Inbox',
+  dashboard:     'Dashboard',
+  reporting:     'Reporting',
+  portfolio:     'Portfolio',
+  'fixed-tasks': 'Tareas Fijas',
 };
 
 // ── Demo data (shown when API returns no tasks) ───────────────────────────────
@@ -214,7 +220,7 @@ async function fetchStats(companyId: number): Promise<AgendaStats> {
 
 async function updateTaskStatus(taskId: number, status: AgendaTaskStatus) {
   const res = await fetch(`/api/agenda/tasks/${taskId}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
@@ -232,6 +238,22 @@ async function createTask(data: CreateAgendaTaskInput & { status?: AgendaTaskSta
   return res.json();
 }
 
+async function deleteTask(taskId: number) {
+  const res = await fetch(`/api/agenda/tasks/${taskId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Error al eliminar tarea');
+  return res.json().catch(() => null);
+}
+
+async function updateTask(taskId: number, data: Partial<UpdateAgendaTaskInput>) {
+  const res = await fetch(`/api/agenda/tasks/${taskId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Error al actualizar tarea');
+  return res.json();
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AgendaV2Page() {
@@ -239,11 +261,20 @@ export function AgendaV2Page() {
   const queryClient = useQueryClient();
 
   const [view, setView] = useState<ViewMode>('board');
-  const [search, setSearch] = useState('');
+  const [viewAnimKey, setViewAnimKey] = useState(0);
+  const agendaHeader = useAgendaV2Header();
+  const search = agendaHeader?.search ?? '';
   const [selectedTask, setSelectedTask] = useState<AgendaTask | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [createGroupIsProject, setCreateGroupIsProject] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDefaultStatus, setCreateDefaultStatus] = useState<AgendaTaskStatus>('PENDING');
+  const [createDefaultDate, setCreateDefaultDate] = useState<string | undefined>(undefined);
+  const [editingTask, setEditingTask] = useState<AgendaTask | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const companyId = currentCompany?.id;
 
@@ -261,6 +292,19 @@ export function AgendaV2Page() {
     enabled: !!companyId,
     staleTime: 60_000,
   });
+
+  const { data: rawGroups, isLoading: loadingGroups } = useQuery<TaskGroupItem[]>({
+    queryKey: ['agendav2-groups', companyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/agenda/task-groups?companyId=${companyId}`);
+      if (!res.ok) throw new Error('Error al cargar grupos');
+      return res.json();
+    },
+    enabled: !!companyId,
+    staleTime: 30_000,
+  });
+
+  const groups: TaskGroupItem[] = rawGroups ?? [];
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const statusMutation = useMutation({
@@ -284,20 +328,89 @@ export function AgendaV2Page() {
     onError: () => toast.error('Error al crear la tarea'),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => Promise.all(ids.map(id => deleteTask(id))),
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
+      toast.success(`${ids.length} tarea${ids.length !== 1 ? 's' : ''} eliminada${ids.length !== 1 ? 's' : ''}`);
+    },
+    onError: () => toast.error('Error al eliminar las tareas'),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<UpdateAgendaTaskInput> }) =>
+      updateTask(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
+      setIsEditOpen(false);
+      setEditingTask(null);
+      toast.success('Tarea actualizada');
+    },
+    onError: () => toast.error('Error al actualizar la tarea'),
+  });
+
+  const createGroupMutation = useMutation({
+    mutationFn: async (data: CreateGroupInput) => {
+      const res = await fetch('/api/agenda/task-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, companyId }),
+      });
+      if (!res.ok) throw new Error('Error al crear grupo');
+      return res.json();
+    },
+    onSuccess: (newGroup) => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-groups', companyId] });
+      toast.success(`${newGroup.isProject ? 'Proyecto' : 'Grupo'} "${newGroup.name}" creado`);
+      setSelectedGroupId(newGroup.id);
+      setView('board');
+    },
+    onError: () => toast.error('Error al crear grupo'),
+  });
+
+  // Sync loading state to header context (shows spinner in PageHeader)
+  const setIsLoading = agendaHeader?.setIsLoading;
+  useEffect(() => { setIsLoading?.(loadingTasks); }, [loadingTasks, setIsLoading]);
+
   // ── Derived data ───────────────────────────────────────────────────────────
   const apiTasks: AgendaTask[] = Array.isArray(rawTasks) ? rawTasks : [];
   // Use demo tasks when API returns no tasks (for visual preview)
   const safeTasks: AgendaTask[] = apiTasks.length > 0 ? apiTasks : DEMO_TASKS;
 
   const filteredTasks = useMemo(() => {
-    if (!search.trim()) return safeTasks;
-    const lower = search.toLowerCase();
-    return safeTasks.filter(t =>
-      t.title.toLowerCase().includes(lower) ||
-      (t.description || '').toLowerCase().includes(lower) ||
-      (t.category || '').toLowerCase().includes(lower)
-    );
-  }, [safeTasks, search]);
+    let tasks = safeTasks;
+
+    // Filter by selected group
+    if (selectedGroupId !== null) {
+      tasks = tasks.filter(t => t.groupId === selectedGroupId);
+    }
+
+    // Filter by search
+    if (search.trim()) {
+      const lower = search.toLowerCase();
+      tasks = tasks.filter(t =>
+        t.title.toLowerCase().includes(lower) ||
+        (t.description || '').toLowerCase().includes(lower) ||
+        (t.category || '').toLowerCase().includes(lower)
+      );
+    }
+    return tasks;
+  }, [safeTasks, search, selectedGroupId]);
+
+  // Label for the active view/group
+  const pageTitle = selectedGroupId
+    ? (groups.find(g => g.id === selectedGroupId)?.name ?? VIEW_LABEL[view])
+    : VIEW_LABEL[view];
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleTaskClick(task: AgendaTask) {
@@ -309,12 +422,31 @@ export function AgendaV2Page() {
     await statusMutation.mutateAsync({ taskId, status });
   }
 
-  function handleTaskDelete(_task: AgendaTask) {
-    toast.info('Eliminar tarea: disponible próximamente');
+  async function handleTaskDelete(task: AgendaTask) {
+    try {
+      await deleteMutation.mutateAsync(task.id);
+      toast.success('Tarea eliminada');
+      if (selectedTask?.id === task.id) {
+        setIsDetailOpen(false);
+        setSelectedTask(null);
+      }
+    } catch {
+      toast.error('Error al eliminar la tarea');
+    }
   }
 
-  function handleCreateTask(status: AgendaTaskStatus) {
+  async function handleBulkDelete(ids: number[]) {
+    await bulkDeleteMutation.mutateAsync(ids);
+  }
+
+  function handleEditTask(task: AgendaTask) {
+    setEditingTask(task);
+    setIsEditOpen(true);
+  }
+
+  function handleCreateTask(status: AgendaTaskStatus, date?: string) {
     setCreateDefaultStatus(status);
+    setCreateDefaultDate(date);
     setIsCreateOpen(true);
   }
 
@@ -331,206 +463,187 @@ export function AgendaV2Page() {
       {/* Inner sidebar */}
       <AgendaV2Sidebar
         view={view}
-        onViewChange={setView}
-        onCreateTask={() => { setCreateDefaultStatus('PENDING'); setIsCreateOpen(true); }}
+        onViewChange={(v) => { setView(v); setSelectedGroupId(null); setViewAnimKey(k => k + 1); }}
+        onCreateTask={() => handleCreateTask('PENDING')}
         tasks={safeTasks}
+        groups={groups}
+        selectedGroupId={selectedGroupId}
+        onSelectGroup={setSelectedGroupId}
+        onCreateGroup={(isProject) => {
+          setCreateGroupIsProject(isProject);
+          setIsCreateGroupOpen(true);
+        }}
+        loadingGroups={loadingGroups}
       />
 
-      {/* Main panel */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        {/* TopBar */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 20px',
-            borderBottom: '1px solid #E4E4E4',
-            background: '#FFFFFF',
-            flexShrink: 0,
-          }}
-        >
-          {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#9C9CAA' }}>Synchro</span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" style={{ color: '#D0D0D0' }} />
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#050505' }} className="truncate">
-              {VIEW_LABEL[view]}
-            </span>
-          </div>
-
-          {/* Search */}
-          <div className="relative mx-4 flex-1 max-w-xs hidden md:block">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: '#9C9CAA' }} />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar tareas..."
-              className="w-full outline-none"
-              style={{
-                paddingLeft: '32px',
-                paddingRight: '12px',
-                height: '36px',
-                fontSize: '13px',
-                background: '#FFFFFF',
-                border: '1px solid #E4E4E4',
-                borderRadius: '10px',
-                color: '#050505',
-              }}
-            />
-          </div>
-
-          {/* Right actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {/* Avatar group */}
-            <div className="hidden sm:flex items-center" style={{ gap: '-6px' }}>
-              {[1, 2, 3].map(i => (
-                <div
-                  key={i}
-                  style={{
-                    height: '28px',
-                    width: '28px',
-                    borderRadius: '50%',
-                    border: '2px solid #FFFFFF',
-                    background: '#F6F6F6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginLeft: i > 1 ? '-6px' : '0',
-                  }}
-                >
-                  <Users className="h-3 w-3" style={{ color: '#9C9CAA' }} />
-                </div>
-              ))}
+      {/* Main panel — position:relative so expanded panel covers only this area */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden', position: 'relative' }}>
+        {/* Content + inline detail panel */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Scrollable main content */}
+          <div
+            key={`view-${view}-${viewAnimKey}`}
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              padding: '20px',
+              background: '#FFFFFF',
+              animation: 'view-fade-in 220ms cubic-bezier(0.22,1,0.36,1) both',
+            }}
+          >
+            <style>{`@keyframes view-fade-in { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }`}</style>
+            {/* Page title row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {selectedGroupId && (
+                  <span
+                    style={{
+                      display: 'inline-block', width: '10px', height: '10px',
+                      borderRadius: '50%', flexShrink: 0,
+                      background: groups.find(g => g.id === selectedGroupId)?.color ?? '#6366f1',
+                    }}
+                  />
+                )}
+                <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#050505' }}>{pageTitle}</h1>
+                {selectedGroupId && (
+                  <span style={{ fontSize: '11px', color: '#9C9CAA', background: '#F0F0F0', padding: '2px 8px', borderRadius: '20px' }}>
+                    {groups.find(g => g.id === selectedGroupId)?.isProject ? 'Proyecto' : 'Grupo'}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: '12px', color: '#9C9CAA' }}>
+                {filteredTasks.length} tarea{filteredTasks.length !== 1 ? 's' : ''}
+              </p>
             </div>
 
-            <button
-              className="hidden sm:flex items-center gap-1.5"
-              style={{
-                height: '32px',
-                padding: '0 12px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#575456',
-                background: '#FFFFFF',
-                border: '1px solid #E4E4E4',
-                borderRadius: '10px',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
-            >
-              <Plus className="h-3 w-3" strokeWidth={2.5} />
-              Invitar
-            </button>
+            {view === 'board' && (
+              <BoardView
+                tasks={filteredTasks}
+                onTaskClick={handleTaskClick}
+                onTaskStatusChange={handleStatusChange}
+                onTaskDelete={handleTaskDelete}
+                onEditTask={handleEditTask}
+                onBulkDelete={handleBulkDelete}
+                onCreateTask={handleCreateTask}
+                isLoading={loadingTasks}
+              />
+            )}
 
-            <div className="hidden sm:block" style={{ width: '1px', height: '16px', background: '#E4E4E4', margin: '0 2px' }} />
+            {view === 'inbox' && (
+              <InboxView
+                tasks={filteredTasks}
+                onTaskClick={handleTaskClick}
+              />
+            )}
 
-            <button
-              style={{
-                height: '32px',
-                width: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '10px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#9C9CAA',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; e.currentTarget.style.color = '#575456'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              style={{
-                height: '32px',
-                width: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '10px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#9C9CAA',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; e.currentTarget.style.color = '#575456'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
-            >
-              <Bell className="h-3.5 w-3.5" />
-            </button>
+            {view === 'dashboard' && (
+              <DashboardView
+                tasks={filteredTasks}
+                stats={stats}
+                isLoading={loadingTasks}
+              />
+            )}
 
-            {loadingTasks && (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin ml-1" style={{ color: '#9C9CAA' }} />
+            {view === 'reporting' && (
+              <ReportingView
+                tasks={safeTasks}
+                stats={stats}
+                isLoading={loadingTasks}
+              />
+            )}
+
+            {view === 'portfolio' && (
+              <PortfolioView
+                groups={groups}
+                tasks={safeTasks}
+                onSelectGroup={(id) => {
+                  setSelectedGroupId(id);
+                  setView('board');
+                  setViewAnimKey(k => k + 1);
+                }}
+                onCreateGroup={(isProject) => {
+                  setCreateGroupIsProject(isProject);
+                  setIsCreateGroupOpen(true);
+                }}
+                loadingGroups={loadingGroups}
+              />
+            )}
+
+            {view === 'fixed-tasks' && (
+              <FixedTasksView
+                tasks={filteredTasks}
+                onTaskClick={handleTaskClick}
+                onCreateTask={handleCreateTask}
+                isLoading={loadingTasks}
+              />
             )}
           </div>
-        </div>
 
-        {/* Scrollable content */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            padding: '20px',
-            background: '#FAFAFA',
-          }}
-        >
-          {/* Page title row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#050505' }}>{VIEW_LABEL[view]}</h1>
-            <p style={{ fontSize: '12px', color: '#9C9CAA' }}>
-              {filteredTasks.length} tarea{filteredTasks.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-
-          {view === 'board' && (
-            <BoardView
-              tasks={filteredTasks}
-              onTaskClick={handleTaskClick}
-              onTaskStatusChange={handleStatusChange}
-              onTaskDelete={handleTaskDelete}
-              onCreateTask={handleCreateTask}
-              isLoading={loadingTasks}
-            />
-          )}
-
-          {view === 'inbox' && (
-            <InboxView
-              tasks={filteredTasks}
-              onTaskClick={handleTaskClick}
-            />
-          )}
-
-          {view === 'dashboard' && (
-            <DashboardView
-              tasks={filteredTasks}
-              stats={stats}
-              isLoading={loadingTasks}
-            />
-          )}
+          {/* Inline detail panel — slides in from the right without overlay */}
+          <TaskDetailPanel
+            task={selectedTask}
+            open={isDetailOpen}
+            onClose={() => { setIsDetailOpen(false); setIsPanelExpanded(false); }}
+            expanded={isPanelExpanded}
+            onExpandedChange={setIsPanelExpanded}
+            onStatusChange={async (task, status) => {
+              await handleStatusChange(task.id, status);
+            }}
+            onEdit={(task) => {
+              setIsDetailOpen(false);
+              handleEditTask(task);
+            }}
+          />
         </div>
       </div>
-
-      {/* Detail panel (Sheet) */}
-      <TaskDetailPanel
-        task={selectedTask}
-        open={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        onStatusChange={async (task, status) => {
-          await handleStatusChange(task.id, status);
-        }}
-      />
 
       {/* Create task modal */}
       <CreateTaskModal
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         defaultStatus={createDefaultStatus}
+        defaultDate={createDefaultDate}
+        defaultGroupId={selectedGroupId}
+        groups={groups}
         onSave={async (data) => { await createMutation.mutateAsync(data); }}
         isSaving={createMutation.isPending}
+      />
+
+      {/* Edit task modal */}
+      <CreateTaskModal
+        open={isEditOpen}
+        onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingTask(null); }}
+        editTask={editingTask ?? undefined}
+        groups={groups}
+        onSave={async (data) => {
+          if (!editingTask) return;
+          await editMutation.mutateAsync({
+            id: editingTask.id,
+            data: {
+              title: data.title,
+              description: data.description,
+              priority: data.priority,
+              dueDate: data.dueDate ?? null,
+              category: data.category,
+              status: data.status,
+              assignedToUserId: data.assignedToUserId ?? null,
+              groupId: data.groupId ?? null,
+              isCompanyVisible: data.isCompanyVisible,
+            },
+          });
+        }}
+        isSaving={editMutation.isPending}
+      />
+
+      {/* Create group / project modal */}
+      <CreateGroupModal
+        open={isCreateGroupOpen}
+        defaultIsProject={createGroupIsProject}
+        companyId={companyId ?? 0}
+        onClose={() => setIsCreateGroupOpen(false)}
+        onConfirm={async (data) => {
+          await createGroupMutation.mutateAsync(data);
+        }}
       />
     </div>
   );

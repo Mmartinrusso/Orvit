@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
 
@@ -29,10 +30,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARADAS.VIEW);
+    if (error) return error;
 
     const downtimeId = parseInt(params.id);
     if (isNaN(downtimeId)) {
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const downtime = await prisma.productionDowntime.findFirst({
       where: {
         id: downtimeId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         productionOrder: {
@@ -134,10 +133,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARADAS.EDIT);
+    if (error) return error;
 
     const downtimeId = parseInt(params.id);
     if (isNaN(downtimeId)) {
@@ -148,7 +145,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingDowntime = await prisma.productionDowntime.findFirst({
       where: {
         id: downtimeId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         reasonCode: true,
@@ -194,8 +191,8 @@ ${existingDowntime.machine ? `- Máquina: ${existingDowntime.machine.name}` : ''
           priority,
           status: 'pending',
           machineId: existingDowntime.machineId,
-          companyId: auth.companyId,
-          createdById: auth.user.id,
+          companyId: user!.companyId,
+          createdById: user!.id,
         },
       });
 
@@ -221,9 +218,9 @@ ${existingDowntime.machine ? `- Máquina: ${existingDowntime.machine.name}` : ''
           entityId: downtimeId,
           eventType: 'DOWNTIME_LINKED_TO_WO',
           newValue: { workOrderId: workOrder.id },
-          performedById: auth.user.id,
+          performedById: user!.id,
           productionOrderId: existingDowntime.productionOrderId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         });
       }
 
@@ -272,9 +269,9 @@ ${existingDowntime.machine ? `- Máquina: ${existingDowntime.machine.name}` : ''
           entityId: downtimeId,
           eventType: 'DOWNTIME_ENDED',
           newValue: { durationMinutes },
-          performedById: auth.user.id,
+          performedById: user!.id,
           productionOrderId: existingDowntime.productionOrderId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         });
       }
     }
@@ -302,10 +299,8 @@ ${existingDowntime.machine ? `- Máquina: ${existingDowntime.machine.name}` : ''
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARADAS.DELETE);
+    if (error) return error;
 
     const downtimeId = parseInt(params.id);
     if (isNaN(downtimeId)) {
@@ -316,7 +311,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingDowntime = await prisma.productionDowntime.findFirst({
       where: {
         id: downtimeId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 

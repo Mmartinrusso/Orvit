@@ -50,6 +50,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { useApiMutation } from '@/hooks/use-api-mutation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Proveedor {
   id: string;
@@ -84,6 +85,13 @@ interface Proveedor {
 export default function ProveedoresPage() {
   const confirm = useConfirm();
   const router = useRouter();
+  const { hasPermission } = useAuth();
+
+  // Permission checks
+  const canCreate = hasPermission('compras.proveedores.create');
+  const canEditProv = hasPermission('compras.proveedores.edit');
+  const canDeleteProv = hasPermission('compras.proveedores.delete');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState<string>('activo');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -303,17 +311,21 @@ export default function ProveedoresPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
-              <Upload className="w-4 h-4 mr-2" />
-              Importar
-            </Button>
-            <Button size="sm" onClick={() => {
-              setEditingProveedor(null);
-              setIsModalOpen(true);
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Proveedor
-            </Button>
+            {canCreate && (
+              <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+            )}
+            {canCreate && (
+              <Button size="sm" onClick={() => {
+                setEditingProveedor(null);
+                setIsModalOpen(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Proveedor
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -361,20 +373,22 @@ export default function ProveedoresPage() {
               Deseleccionar
             </Button>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={handleBulkDelete}
-            disabled={bulkDeleteMutation.isPending}
-          >
-            {bulkDeleteMutation.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-            )}
-            Eliminar seleccionados
-          </Button>
+          {canDeleteProv && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+              )}
+              Eliminar seleccionados
+            </Button>
+          )}
         </div>
       )}
 
@@ -473,38 +487,46 @@ export default function ProveedoresPage() {
                             <Eye className="w-3.5 h-3.5 mr-2" />
                             Ver detalle
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingProveedor(proveedor);
-                              setIsModalOpen(true);
-                            }}
-                          >
-                            <Edit className="w-3.5 h-3.5 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleToggleActive(proveedor)}
-                          >
-                            {proveedor.estado === 'activo' ? (
-                              <>
-                                <Ban className="w-3.5 h-3.5 mr-2" />
-                                Desactivar
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="w-3.5 h-3.5 mr-2" />
-                                Activar
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteSingle(proveedor.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-2" />
-                            Eliminar
-                          </DropdownMenuItem>
+                          {canEditProv && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingProveedor(proveedor);
+                                setIsModalOpen(true);
+                              }}
+                            >
+                              <Edit className="w-3.5 h-3.5 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                          )}
+                          {canEditProv && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleToggleActive(proveedor)}
+                              >
+                                {proveedor.estado === 'activo' ? (
+                                  <>
+                                    <Ban className="w-3.5 h-3.5 mr-2" />
+                                    Desactivar
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-3.5 h-3.5 mr-2" />
+                                    Activar
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {canDeleteProv && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteSingle(proveedor.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

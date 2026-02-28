@@ -17,6 +17,7 @@ interface FailureStats {
 interface FailureKPIsProps {
   activeFilter?: FailureFilters;
   onFilterChange?: (filters: FailureFilters) => void;
+  incidentType?: string;
 }
 
 type KPIKey = 'totalOpen' | 'recurrences' | 'withDowntime' | 'unassigned';
@@ -64,11 +65,12 @@ const kpiDefinitions: KpiItem[] = [
  * KPIs clickeables del dashboard de Fallas
  * Al hacer click, aplica filtros correspondientes
  */
-export function FailureKPIs({ activeFilter, onFilterChange }: FailureKPIsProps) {
+export function FailureKPIs({ activeFilter, onFilterChange, incidentType }: FailureKPIsProps) {
   const { data: stats, isLoading } = useQuery<FailureStats>({
-    queryKey: ['failure-stats'],
+    queryKey: ['failure-stats', incidentType],
     queryFn: async () => {
-      const res = await fetch('/api/failure-occurrences/stats');
+      const params = incidentType ? `?incidentType=${incidentType}` : '';
+      const res = await fetch(`/api/failure-occurrences/stats${params}`);
       if (!res.ok) throw new Error('Error al cargar estadísticas');
       return res.json();
     },

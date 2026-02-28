@@ -19,14 +19,32 @@ export function useApiClient(options?: ApiClientOptions) {
     url: string,
     init?: RequestInit
   ): Promise<ApiResponse<T>> => {
+    const doFetch = () => fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...init?.headers,
+      },
+      ...init,
+    });
+
     try {
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...init?.headers,
-        },
-        ...init,
-      });
+      let res = await doFetch();
+
+      // Auto-retry en 401: intentar refresh y reintentar (excepto rutas de auth)
+      if (res.status === 401 && !url.includes('/api/auth/')) {
+        try {
+          const refreshRes = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            credentials: 'include',
+          });
+          if (refreshRes.ok) {
+            res = await doFetch();
+          }
+        } catch {
+          // Refresh falló, continuar con el 401 original
+        }
+      }
 
       const json = await res.json().catch(() => null);
 
@@ -40,9 +58,17 @@ export function useApiClient(options?: ApiClientOptions) {
 
       return { data: json, error: null };
     } catch (err: any) {
-      const errorMsg = err?.message || 'Error de conexión';
+      // Detectar error de red (offline, DNS, timeout) vs error de server
+      const isNetworkError = err instanceof TypeError && err.message === 'Failed to fetch';
+      const errorMsg = isNetworkError
+        ? 'Sin conexión. Verificá tu internet e intentá de nuevo.'
+        : (err?.message || 'Error de conexión');
       if (!silent) {
-        toast.error(errorMsg);
+        if (isNetworkError) {
+          toast.error(errorMsg, { id: 'network-error', duration: 5000 });
+        } else {
+          toast.error(errorMsg);
+        }
       }
       return { data: null, error: errorMsg };
     }

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,6 +114,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Permission check: almacen.transfer
+    const { error: permError } = await requirePermission('almacen.transfer');
+    if (permError) return permError;
+
     const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -210,6 +215,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Permission check: almacen.transfer
+    const { error: permError } = await requirePermission('almacen.transfer');
+    if (permError) return permError;
+
     const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

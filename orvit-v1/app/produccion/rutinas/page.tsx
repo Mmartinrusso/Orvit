@@ -80,6 +80,7 @@ import { useRoutineExecutions } from '@/hooks/produccion/use-routine-executions'
 import { useRoutineTemplates, type RoutineTemplate } from '@/hooks/produccion/use-routine-templates';
 import { useRoutineDrafts } from '@/hooks/produccion/use-routine-drafts';
 import { useMyRoutines } from '@/hooks/produccion/use-my-routines';
+import { useRoutineEmployees } from '@/hooks/produccion/use-production-reference';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 interface RoutineExecutionDetail {
@@ -135,6 +136,7 @@ export default function RoutinesPage() {
   const [showExecuteDialog, setShowExecuteDialog] = useState(false);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
   const [showExecutionDetailDialog, setShowExecutionDetailDialog] = useState(false);
+  const [showTemplateDetailDialog, setShowTemplateDetailDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RoutineTemplate | null>(null);
   const [selectedExecutionDetail, setSelectedExecutionDetail] = useState<RoutineExecutionDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -161,6 +163,9 @@ export default function RoutinesPage() {
   const {
     routines: myRoutines, summary: myRoutinesSummary, isLoading: loadingMyRoutines, invalidate: invalidateMyRoutines,
   } = useMyRoutines(activeTab === 'my-routines' ? currentSector?.id : undefined);
+
+  const { data: allEmployeesData } = useRoutineEmployees({ all: true }, activeTab === 'executions');
+  const allEmployees = allEmployeesData?.employees ?? [];
 
   const isLoading = activeTab === 'executions' ? loadingExecutions : activeTab === 'templates' ? loadingTemplates : loadingMyRoutines;
 
@@ -1011,6 +1016,15 @@ export default function RoutinesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedTemplate(template);
+                                    setShowTemplateDetailDialog(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  Ver detalle
+                                </DropdownMenuItem>
                                 {canExecute && template.isActive && (
                                   <DropdownMenuItem
                                     onClick={() => {
@@ -1119,6 +1133,114 @@ export default function RoutinesPage() {
                 setDraftToResume(null);
               }}
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Detail Dialog */}
+      <Dialog open={showTemplateDetailDialog} onOpenChange={(open) => {
+        setShowTemplateDetailDialog(open);
+        if (!open) setSelectedTemplate(null);
+      }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {selectedTemplate?.name}
+              <span className="font-mono text-xs text-muted-foreground ml-1">({selectedTemplate?.code})</span>
+            </DialogTitle>
+            <DialogDescription>Composición de la plantilla — solo lectura</DialogDescription>
+          </DialogHeader>
+
+          {selectedTemplate && (() => {
+            const sections: any[] = selectedTemplate.sections || [];
+            const items: any[] = Array.isArray(selectedTemplate.items) ? selectedTemplate.items : [];
+            const hasSections = sections.length > 0;
+            const typeInfo = ROUTINE_TYPES.find(t => t.value === selectedTemplate.type);
+            const FREQ: Record<string,string> = { EVERY_SHIFT: 'Cada turno', DAILY: 'Diario', WEEKLY: 'Semanal' };
+            const TYPE_LABELS: Record<string,string> = {
+              CHECK: 'Sí/No', VALUE: 'Número', TEXT: 'Texto', PHOTO: 'Foto',
+              SELECT: 'Opciones', CHECKBOX: 'Casillas', DATE: 'Fecha', TIME: 'Hora',
+              RATING: 'Escala', EMPLOYEE_SELECT: 'Empleados', MATERIAL_INPUT: 'Materiales', MACHINE_SELECT: 'Máquina',
+            };
+            // Support both old format (description/inputs[]) and new format (question/type)
+            const getItemText = (item: any) => item.question || item.description || item.label || '(Sin pregunta)';
+            const getItemType = (item: any) => item.type || item.inputs?.[0]?.type || '';
+            const getItemRequired = (item: any) => item.required ?? item.inputs?.[0]?.required ?? false;
+            const getItemUnit = (item: any) => item.unit || item.inputs?.[0]?.unit;
+            const renderItem = (item: any, idx: number) => (
+              <div key={item.id || idx} className="flex items-start gap-3 py-2 border-b border-border/50 last:border-0">
+                <span className="flex-shrink-0 w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-medium mt-0.5">{idx + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium leading-snug">{getItemText(item)}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className="text-[10px] text-muted-foreground">{TYPE_LABELS[getItemType(item)] || getItemType(item)}</span>
+                    {getItemRequired(item) && <span className="text-[10px] font-medium text-destructive">Obligatorio</span>}
+                    {getItemUnit(item) && <span className="text-[10px] text-muted-foreground">· {getItemUnit(item)}</span>}
+                  </div>
+                </div>
+              </div>
+            );
+            const getItemsForSection = (sectionId: string | null) =>
+              sectionId === null
+                ? items.filter((i: any) => !i.sectionId)
+                : items.filter((i: any) => i.sectionId === sectionId);
+
+            return (
+              <>
+                <div className="flex flex-wrap gap-2 py-2 border-b border-border">
+                  {typeInfo && <Badge className={`${typeInfo.color} text-white text-xs`}>{typeInfo.label}</Badge>}
+                  <Badge variant="outline" className="text-xs">{FREQ[selectedTemplate.frequency] || selectedTemplate.frequency}</Badge>
+                  <Badge variant="outline" className="text-xs">{items.length} ítems</Badge>
+                  {hasSections && <Badge variant="outline" className="text-xs">{sections.length} secciones</Badge>}
+                  {selectedTemplate.isActive
+                    ? <Badge variant="secondary" className="text-success bg-success-muted text-xs">Activa</Badge>
+                    : <Badge variant="secondary" className="text-muted-foreground bg-muted text-xs">Inactiva</Badge>}
+                </div>
+
+                <div className="space-y-4 py-2">
+                  {hasSections ? (
+                    <>
+                      {getItemsForSection(null).length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Sin sección</p>
+                          <div className="bg-muted/30 rounded-lg px-3 py-1">
+                            {getItemsForSection(null).map((item: any, idx: number) => renderItem(item, idx))}
+                          </div>
+                        </div>
+                      )}
+                      {sections.map((section: any) => {
+                        const sectionItems = getItemsForSection(section.id);
+                        return (
+                          <div key={section.id}>
+                            <p className="text-xs font-medium text-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                              <ClipboardList className="h-3.5 w-3.5 text-primary" />
+                              {section.name}
+                              <span className="font-normal text-muted-foreground normal-case">({sectionItems.length} ítems)</span>
+                            </p>
+                            <div className="bg-primary/5 border border-primary/10 rounded-lg px-3 py-1">
+                              {sectionItems.length > 0
+                                ? sectionItems.map((item: any, idx: number) => renderItem(item, idx))
+                                : <p className="text-xs text-muted-foreground py-2 text-center">Sin ítems</p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <div className="bg-muted/30 rounded-lg px-3 py-1">
+                      {items.length > 0
+                        ? items.map((item: any, idx: number) => renderItem(item, idx))
+                        : <p className="text-xs text-muted-foreground py-4 text-center">Sin ítems configurados</p>}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+
+          <div className="flex justify-end pt-2 border-t border-border">
+            <Button variant="outline" size="sm" onClick={() => setShowTemplateDetailDialog(false)}>Cerrar</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1255,7 +1377,7 @@ export default function RoutinesPage() {
                               {group.items?.filter((item: any) => !item.disabled).map((item: any) => {
                                 const response = (selectedDraftDetail.responses as any[])?.find((r: any) => r.itemId === item.id);
                                 return (
-                                  <DraftItemRow key={item.id} item={item} response={response} />
+                                  <DraftItemRow key={item.id} item={item} response={response} employees={allEmployees} />
                                 );
                               })}
                             </div>
@@ -1269,7 +1391,7 @@ export default function RoutinesPage() {
                           .map((item: any) => {
                             const response = (selectedDraftDetail.responses as any[])?.find((r: any) => r.itemId === item.id);
                             return (
-                              <DraftItemRow key={item.id} item={item} response={response} />
+                              <DraftItemRow key={item.id} item={item} response={response} employees={allEmployees} />
                             );
                           })}
                       </div>
@@ -1450,21 +1572,38 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
                   const inputResponse = response?.inputs?.find((i: any) => i.inputId === input.id);
                   const hasInputValue = inputResponse?.value !== null && inputResponse?.value !== '' && inputResponse?.value !== undefined;
                   return (
-                    <div key={input.id} className="flex items-center gap-2 text-xs bg-muted/40 rounded-lg px-3 py-1.5">
+                    <div key={input.id} className={cn('text-xs bg-muted/40 rounded-lg px-3 py-1.5', input.type === 'EMPLOYEE_SELECT' ? 'flex flex-col gap-1' : 'flex items-center gap-2')}>
                       <span className="text-muted-foreground shrink-0">{input.label}:</span>
                       {hasInputValue ? (
-                        <span className="font-medium text-foreground">
-                          {input.type === 'CHECK'
-                            ? (inputResponse.value === true || inputResponse.value === 'true' ? '✓ Sí' : '✗ No')
-                            : input.type === 'PHOTO'
-                              ? (
-                                  <a href={inputResponse.value} target="_blank" rel="noopener noreferrer" className="text-info-muted-foreground underline inline-flex items-center gap-1">
-                                    <Image className="h-3 w-3" />
-                                    Ver foto
-                                  </a>
-                                )
-                              : `${inputResponse.value}${input.unit ? ` ${input.unit}` : ''}`}
-                        </span>
+                        input.type === 'EMPLOYEE_SELECT' && Array.isArray(inputResponse.value) ? (
+                          <div className="space-y-1">
+                            {inputResponse.value.map((e: any, i: number) => {
+                              const name = e?.employee?.name || e?.name || (e?.employeeId ? (allEmployees.find((emp: any) => emp.id === e.employeeId)?.name ?? e.employeeId) : '?');
+                              const role = e?.assignedRole || e?.employee?.role || allEmployees.find((emp: any) => emp.id === e?.employeeId)?.role;
+                              return (
+                                <div key={i} className="flex items-center gap-2">
+                                  <span className="font-medium text-foreground">{name}</span>
+                                  {role && <span className="text-muted-foreground">— {role}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="font-medium text-foreground">
+                            {input.type === 'CHECK'
+                              ? (inputResponse.value === true || inputResponse.value === 'true' ? '✓ Sí' : '✗ No')
+                              : input.type === 'PHOTO'
+                                ? (
+                                    <a href={inputResponse.value} target="_blank" rel="noopener noreferrer" className="text-info-muted-foreground underline inline-flex items-center gap-1">
+                                      <Image className="h-3 w-3" />
+                                      Ver foto
+                                    </a>
+                                  )
+                                : Array.isArray(inputResponse.value)
+                                  ? inputResponse.value.map((v: any) => (typeof v === 'object' ? (v?.employee?.name || v?.name || v?.label || v?.employeeId || JSON.stringify(v)) : v)).join(', ')
+                                  : `${inputResponse.value}${input.unit ? ` ${input.unit}` : ''}`}
+                          </span>
+                        )
                       ) : (
                         <span className="text-muted-foreground italic">–</span>
                       )}
@@ -1512,7 +1651,11 @@ function ExecutionItemRow({ item, response }: { item: any; response: any }) {
   );
 }
 
-function DraftItemRow({ item, response }: { item: any; response: any }) {
+function DraftItemRow({ item, response, employees = [] }: { item: any; response: any; employees?: any[] }) {
+  const resolveEmployeeName = (e: any) =>
+    e?.employee?.name ||
+    e?.name ||
+    (e?.employeeId ? (employees.find((emp: any) => emp.id === e.employeeId)?.name ?? e.employeeId) : '?');
   const hasResponse = response?.inputs?.some(
     (inp: any) => inp.value !== null && inp.value !== '' && inp.value !== undefined
   );
@@ -1552,14 +1695,31 @@ function DraftItemRow({ item, response }: { item: any; response: any }) {
                 const inputResponse = response?.inputs?.find((i: any) => i.inputId === input.id);
                 const hasValue = inputResponse?.value !== null && inputResponse?.value !== '' && inputResponse?.value !== undefined;
                 return (
-                  <div key={input.id} className="flex items-center gap-2 text-xs">
+                  <div key={input.id} className={cn('text-xs', input.type === 'EMPLOYEE_SELECT' ? 'flex flex-col gap-1' : 'flex items-center gap-2')}>
                     <span className="text-muted-foreground">{input.label}:</span>
                     {hasValue ? (
-                      <span className="font-medium text-success">
-                        {input.type === 'CHECK'
-                          ? (inputResponse.value === true || inputResponse.value === 'true' ? 'Sí' : 'No')
-                          : `${inputResponse.value}${input.unit ? ` ${input.unit}` : ''}`}
-                      </span>
+                      input.type === 'EMPLOYEE_SELECT' && Array.isArray(inputResponse.value) ? (
+                        <div className="space-y-1 pl-1">
+                          {inputResponse.value.map((e: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className="font-medium text-success">{resolveEmployeeName(e)}</span>
+                              {(e?.assignedRole || e?.employee?.role || employees.find((emp: any) => emp.id === e?.employeeId)?.role) && (
+                                <span className="text-muted-foreground">
+                                  — {e?.assignedRole || e?.employee?.role || employees.find((emp: any) => emp.id === e?.employeeId)?.role}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="font-medium text-success">
+                          {input.type === 'CHECK'
+                            ? (inputResponse.value === true || inputResponse.value === 'true' ? 'Sí' : 'No')
+                            : Array.isArray(inputResponse.value)
+                              ? inputResponse.value.map((v: any) => (typeof v === 'object' ? (v?.employee?.name || v?.name || v?.label || v?.employeeId || JSON.stringify(v)) : v)).join(', ')
+                              : `${inputResponse.value}${input.unit ? ` ${input.unit}` : ''}`}
+                        </span>
+                      )
                     ) : (
                       <span className="text-muted-foreground italic">–</span>
                     )}

@@ -1,32 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/locations - Obtener ubicaciones de la empresa
 export async function GET(request: NextRequest) {
   try {
-    console.log('📍 [LOCATIONS API] Iniciando GET /api/locations');
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    console.log('📍 [LOCATIONS API] companyId recibido:', companyId);
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId) {
-      console.log('📍 [LOCATIONS API] Error: companyId es requerido');
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
-
-    const companyIdNum = parseInt(companyId);
-    if (isNaN(companyIdNum)) {
-      console.log('📍 [LOCATIONS API] Error: companyId no es un número válido');
-      return NextResponse.json(
-        { error: 'companyId debe ser un número válido' },
-        { status: 400 }
-      );
-    }
+    const companyIdNum = user!.companyId;
 
     console.log('📍 [LOCATIONS API] Buscando productos con companyId:', companyIdNum);
 
@@ -106,16 +90,10 @@ export async function GET(request: NextRequest) {
 // POST /api/locations - Crear nueva ubicación (se guarda al crear/editar un producto con esa ubicación)
 export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const body = await request.json();
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
 
     if (!body.name || typeof body.name !== 'string' || body.name.trim() === '') {
       return NextResponse.json(

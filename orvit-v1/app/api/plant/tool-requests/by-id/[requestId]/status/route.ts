@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // PUT /api/plant/tool-requests/by-id/[requestId]/status - Actualizar estado de solicitud
 export async function PUT(
@@ -7,6 +8,9 @@ export async function PUT(
   { params }: { params: { requestId: string } }
 ) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const requestId = params.requestId;
     const body = await request.json();
     const { status, notes, updatedBy } = body;

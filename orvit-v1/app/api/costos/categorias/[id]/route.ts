@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // PUT - Actualizar categoría
 export async function PUT(
@@ -7,20 +8,17 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
-    const { name, description, companyId } = body;
+    const { name, description } = body;
+    const companyId = String(user!.companyId);
     const categoryId = parseInt(params.id);
 
     if (!name?.trim()) {
       return NextResponse.json(
         { error: 'El nombre de la categoría es obligatorio' },
-        { status: 400 }
-      );
-    }
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'ID de empresa es obligatorio' },
         { status: 400 }
       );
     }
@@ -65,16 +63,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    const { companyId } = body;
-    const categoryId = parseInt(params.id);
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'ID de empresa es obligatorio' },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const companyId = String(user!.companyId);
+    const categoryId = parseInt(params.id);
 
     // Verificar que la categoría existe y pertenece a la empresa
     const existingCategory = await prisma.$queryRaw`

@@ -1,13 +1,15 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
-interface ComprasLayoutProps {
-  children: ReactNode;
+export default function ComprasLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <PermissionGuard permission="ingresar_compras">
+      {children}
+    </PermissionGuard>
+  );
 }
-
-export default function ComprasLayout({ children }: ComprasLayoutProps) {
-  // Simple layout que solo pasa el children sin interferir con el MainLayout
-  return <>{children}</>;
-}
-

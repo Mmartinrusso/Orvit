@@ -1,50 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-// Helper para obtener el usuario actual
-async function getCurrentUser() {
-  try {
-    const token = cookies().get('token')?.value;
-    if (!token) {
-      throw new Error('No hay token de autenticación');
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number }
-    });
-
-    return user;
-  } catch (error) {
-    console.error('Error obteniendo usuario:', error);
-    return null;
-  }
-}
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 // POST /api/tools/loans/[id]/return - Devolver herramienta prestada
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user: authUser, error } = await requirePermission('tools.manage_loans');
+    if (error) return error;
+
     const body = await request.json();
     const { returnNotes, condition, returnedBy } = body;
-    const loanId = parseInt(params.id);
+    const { id } = await params;
+    const loanId = parseInt(id);
 
-    // Verificar usuario actual
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return NextResponse.json(
-        { error: 'Usuario no autenticado' },
-        { status: 401 }
-      );
-    }
+    const currentUser = { id: authUser!.id, name: authUser!.name };
 
     // Obtener el préstamo
     const loan = await prisma.toolLoan.findUnique({

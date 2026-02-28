@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,15 +17,8 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('skills.view');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const includeExpired = searchParams.get('includeExpired') === 'true';
@@ -98,38 +91,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    // Check permission (skills.assign)
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: payload.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    const hasPermission = userOnCompany?.role?.permissions?.some(
-      p => p.permission === 'skills.assign'
-    );
-
-    if (!hasPermission && payload.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Sin permiso para asignar habilidades' }, { status: 403 });
-    }
+    const { user, error } = await requirePermission('skills.assign');
+    if (error) return error;
 
     const body = await request.json();
     const { skillId, level, notes, acquiredAt, expiresAt } = body;
@@ -216,15 +179,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
 
     const body = await request.json();
     const { skillId, level, notes, expiresAt, isVerified } = body;
@@ -232,6 +186,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!skillId) {
       return NextResponse.json({ error: 'skillId es requerido' }, { status: 400 });
     }
+
+    // If verifying, need skills.verify permission; otherwise skills.assign
+    const requiredPermission = isVerified !== undefined ? 'skills.verify' : 'skills.assign';
+    const { user, error } = await requirePermission(requiredPermission);
+    if (error) return error;
 
     // Find existing user skill
     const existingUserSkill = await prisma.userSkill.findUnique({
@@ -248,41 +207,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (!existingUserSkill) {
       return NextResponse.json({ error: 'Habilidad de usuario no encontrada' }, { status: 404 });
-    }
-
-    // Check permissions based on what's being updated
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: existingUserSkill.skill.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    // If verifying, need skills.verify permission
-    if (isVerified !== undefined) {
-      const canVerify = userOnCompany?.role?.permissions?.some(
-        p => p.permission === 'skills.verify'
-      );
-
-      if (!canVerify && payload.role !== 'SUPERADMIN') {
-        return NextResponse.json({ error: 'Sin permiso para verificar habilidades' }, { status: 403 });
-      }
-    } else {
-      // For other updates, need skills.assign permission
-      const canAssign = userOnCompany?.role?.permissions?.some(
-        p => p.permission === 'skills.assign'
-      );
-
-      if (!canAssign && payload.role !== 'SUPERADMIN') {
-        return NextResponse.json({ error: 'Sin permiso para modificar habilidades' }, { status: 403 });
-      }
     }
 
     const updateData: Record<string, unknown> = {};
@@ -306,7 +230,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.isVerified = isVerified;
       if (isVerified) {
         updateData.verifiedAt = new Date();
-        updateData.verifiedById = payload.userId;
+        updateData.verifiedById = user!.id;
       } else {
         updateData.verifiedAt = null;
         updateData.verifiedById = null;
@@ -343,15 +267,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: userId } = await params;
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('skills.assign');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const skillId = searchParams.get('skillId');
@@ -375,29 +292,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!existingUserSkill) {
       return NextResponse.json({ error: 'Habilidad de usuario no encontrada' }, { status: 404 });
-    }
-
-    // Check permission (skills.assign)
-    const userOnCompany = await prisma.userOnCompany.findFirst({
-      where: {
-        userId: payload.userId,
-        companyId: existingUserSkill.skill.companyId,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: true,
-          },
-        },
-      },
-    });
-
-    const hasPermission = userOnCompany?.role?.permissions?.some(
-      p => p.permission === 'skills.assign'
-    );
-
-    if (!hasPermission && payload.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Sin permiso para quitar habilidades' }, { status: 403 });
     }
 
     await prisma.userSkill.delete({

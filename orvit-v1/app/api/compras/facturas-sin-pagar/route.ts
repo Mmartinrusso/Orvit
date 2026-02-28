@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getT2Client, isT2DatabaseConfigured } from '@/lib/prisma-t2';
 import { getViewMode } from '@/lib/view-mode/get-mode';
 import { MODE } from '@/lib/view-mode/types';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // Caché en memoria para facturas (5 minutos TTL)
 interface CacheEntry {
@@ -39,14 +40,16 @@ async function ensureIndexes() {
 
 // GET /api/compras/facturas-sin-pagar - Obtener facturas sin pagar de un proveedor
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const proveedorId = searchParams.get('proveedorId');
-  const companyId = searchParams.get('companyId');
 
   try {
-    if (!proveedorId || !companyId) {
+    if (!proveedorId) {
       return NextResponse.json(
-        { error: 'proveedorId y companyId son requeridos' },
+        { error: 'proveedorId es requerido' },
         { status: 400 }
       );
     }
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
     const viewMode = getViewMode(request);
 
     const proveedorIdNum = parseInt(proveedorId);
-    const companyIdNum = parseInt(companyId);
+    const companyIdNum = user!.companyId;
     // Incluir viewMode en cache key para separar resultados por modo
     const cacheKey = `${proveedorIdNum}-${companyIdNum}-${viewMode}`;
 

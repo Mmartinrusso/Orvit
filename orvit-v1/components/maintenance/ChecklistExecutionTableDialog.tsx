@@ -154,7 +154,7 @@ export default function ChecklistExecutionTableDialog({
  
  const { currentCompany, currentSector } = useCompany();
  const { user } = useAuth();
- const { hasPermission: canEditMaintenance } = usePermissionRobust('editar_mantenimiento');
+ const { hasPermission: canEditMaintenance } = usePermissionRobust('preventive_maintenance.edit');
  const [maintenanceItems, setMaintenanceItems] = useState<MaintenanceItem[]>([]);
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [checklistId, setChecklistId] = useState('');

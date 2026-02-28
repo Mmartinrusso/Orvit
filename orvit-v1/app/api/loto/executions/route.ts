@@ -3,34 +3,22 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { LOTOStatus, AuditAction } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET: List LOTO executions
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('loto.view');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
     const workOrderId = searchParams.get('workOrderId');
     const ptwId = searchParams.get('ptwId');
     const status = searchParams.get('status') as LOTOStatus | null;
     const procedureId = searchParams.get('procedureId');
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId requerido' }, { status: 400 });
-    }
 
     const where: any = { companyId };
     if (workOrderId) where.workOrderId = parseInt(workOrderId);
@@ -63,21 +51,12 @@ export async function GET(request: NextRequest) {
 // POST: Create a new LOTO execution (lock)
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('loto.execute');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const body = await request.json();
     const {
-      companyId,
       procedureId,
       workOrderId,
       ptwId,
@@ -85,9 +64,9 @@ export async function POST(request: NextRequest) {
       notes,
     } = body;
 
-    if (!companyId || !procedureId || !workOrderId) {
+    if (!procedureId) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: companyId, procedureId, workOrderId' },
+        { error: 'Falta campo requerido: procedureId' },
         { status: 400 }
       );
     }
@@ -115,19 +94,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if there's already an active LOTO for this work order
-    const existingLOTO = await prisma.lOTOExecution.findFirst({
-      where: {
-        workOrderId,
-        status: { not: LOTOStatus.UNLOCKED },
-      },
-    });
-
-    if (existingLOTO) {
-      return NextResponse.json(
-        { error: 'Ya existe un LOTO activo para esta orden de trabajo' },
-        { status: 400 }
-      );
+    // Check for duplicate active LOTO on same work order (only if workOrderId provided)
+    if (workOrderId) {
+      const existingLOTO = await prisma.lOTOExecution.findFirst({
+        where: {
+          workOrderId,
+          status: { not: LOTOStatus.UNLOCKED },
+        },
+      });
+      if (existingLOTO) {
+        return NextResponse.json(
+          { error: 'Ya existe un LOTO activo para esta orden de trabajo' },
+          { status: 400 }
+        );
+      }
     }
 
     // If PTW is specified, verify it's active
@@ -143,13 +123,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const userId = payload.userId as number;
+    const userId = user!.id;
 
     const execution = await prisma.lOTOExecution.create({
       data: {
         companyId,
         procedureId,
-        workOrderId,
+        workOrderId: workOrderId || null,
         ptwId: ptwId || null,
         status: LOTOStatus.LOCKED,
         lockedById: userId,
@@ -167,11 +147,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update work order to indicate LOTO is active
-    await prisma.workOrder.update({
-      where: { id: workOrderId },
-      data: { lotoBlocked: true },
-    });
+    // Update work order lotoBlocked flag if linked
+    if (workOrderId) {
+      await prisma.workOrder.update({
+        where: { id: workOrderId },
+        data: { lotoBlocked: true },
+      });
+    }
 
     // Log the execution in audit log
     await prisma.auditLog.create({
@@ -181,11 +163,11 @@ export async function POST(request: NextRequest) {
         action: AuditAction.LOCK_LOTO,
         newValue: {
           procedureId,
-          workOrderId,
+          workOrderId: workOrderId || null,
           ptwId,
           lockDetails,
         },
-        summary: `LOTO locked for WO #${workOrderId}`,
+        summary: `LOTO locked: ${procedure.name}${workOrderId ? ` (OT #${workOrderId})` : ''}`,
         performedById: userId,
         companyId,
       },

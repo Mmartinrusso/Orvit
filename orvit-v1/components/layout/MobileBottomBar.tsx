@@ -51,9 +51,9 @@ export default function MobileBottomBar() {
   const { hasPermission: canViewUsers } = usePermission('VIEW_USERS');
   
   // Permisos de ventas
-  const { hasPermission: canCreateProduct } = usePermission('CREATE_PRODUCT');
+  const { hasPermission: canCreateProduct } = usePermission('ventas.productos.create');
   const { hasPermission: canCreateQuote } = usePermission('CREATE_QUOTE');
-  const { hasPermission: canCreateClient } = usePermission('CREATE_CLIENT');
+  const { hasPermission: canCreateClient } = usePermission('ventas.clientes.create');
   const { hasPermission: canViewSales } = usePermission('VIEW_SALES');
 
   // No mostrar en páginas de login, máquinas, mantenimiento, empresas, áreas, sectores o si no hay usuario

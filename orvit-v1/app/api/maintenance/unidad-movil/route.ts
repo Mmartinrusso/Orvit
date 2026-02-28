@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 // POST - Crear mantenimiento preventivo para unidad móvil
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticación
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+    const payload = await verifyToken(token);
+    if (!payload || !payload.companyId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       id,
@@ -188,19 +201,23 @@ export async function POST(request: NextRequest) {
 // GET - Obtener mantenimientos de unidades móviles
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const unidadMovilId = searchParams.get('unidadMovilId');
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID es requerido' },
-        { status: 400 }
-      );
+    // Verificar autenticación
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+    const authPayload = await verifyToken(token);
+    if (!authPayload || !authPayload.companyId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const unidadMovilId = searchParams.get('unidadMovilId');
+    const companyId = authPayload.companyId as number; // Siempre del JWT
+
     const where: any = {
-      companyId: parseInt(companyId),
+      companyId,
       isMobileUnit: true,
     };
 

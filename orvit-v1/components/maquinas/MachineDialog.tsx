@@ -245,8 +245,8 @@ export default function MachineDialog({ isOpen, onClose, onSave, machine, presel
         if (machine.acquisitionDate instanceof Date) return machine.acquisitionDate.toISOString().slice(0, 10);
         return new Date(machine.acquisitionDate).toISOString().slice(0, 10);
       })(),
-      companyId: machine?.companyId ? String(machine.companyId) : '1',
-      sectorId: machine?.sectorId ? String(machine.sectorId) : '1',
+      companyId: machine?.companyId ? String(machine.companyId) : String(currentCompany?.id ?? ''),
+      sectorId: machine?.sectorId ? String(machine.sectorId) : String(currentSector?.id ?? ''),
       plantZoneId: machine?.plantZoneId ? String(machine.plantZoneId) : (preselectedZoneId ? String(preselectedZoneId) : ''),
       logo: machine?.logo || '',
       // Nuevos campos
@@ -300,7 +300,6 @@ export default function MachineDialog({ isOpen, onClose, onSave, machine, presel
       aliases: aliases.length > 0 ? aliases : null,
     };
     onSave(normalized);
-    form.reset();
   };
 
   const handleSubmit = form.handleSubmit(onSubmit);

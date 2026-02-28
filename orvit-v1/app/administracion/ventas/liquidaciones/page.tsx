@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { usePermission } from '@/hooks/use-permissions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ interface Stats {
 
 export default function LiquidacionesPage() {
   const router = useRouter();
+  const { hasPermission: canCalculateCommission } = usePermission('ventas.comisiones.calculate');
   const [liquidaciones, setLiquidaciones] = useState<LiquidacionRow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,10 +164,12 @@ export default function LiquidacionesPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={() => router.push('/administracion/ventas/liquidaciones/nueva')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nueva Liquidación
-              </Button>
+              {canCalculateCommission && (
+                <Button onClick={() => router.push('/administracion/ventas/liquidaciones/nueva')}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Liquidación
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -332,7 +336,7 @@ export default function LiquidacionesPage() {
                             : 'Creá la primera para comenzar'}
                         </p>
                       </div>
-                      {!search && estadoFilter === 'all' && (
+                      {!search && estadoFilter === 'all' && canCalculateCommission && (
                         <Button
                           size="sm"
                           onClick={() => router.push('/administracion/ventas/liquidaciones/nueva')}

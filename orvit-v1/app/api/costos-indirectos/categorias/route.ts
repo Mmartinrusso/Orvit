@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,15 +8,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const companyId = String(user!.companyId);
 
     const categories = await prisma.$queryRaw`
       SELECT 
@@ -45,12 +41,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, description, type, color, icon, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!name || !type || !companyId) {
+    const body = await request.json();
+    const { name, description, type, color, icon } = body;
+    const companyId = String(user!.companyId);
+
+    if (!name || !type) {
       return NextResponse.json(
-        { error: 'Nombre, tipo y companyId son requeridos' },
+        { error: 'Nombre y tipo son requeridos' },
         { status: 400 }
       );
     }

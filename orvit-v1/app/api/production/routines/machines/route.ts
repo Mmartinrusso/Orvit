@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +10,8 @@ export const dynamic = 'force-dynamic';
 // Filtros: sectorId, workCenterId, type, status
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const sectorId = searchParams.get('sectorId');
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
       const workCenter = await prisma.workCenter.findFirst({
         where: {
           id: parseInt(workCenterId),
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
         include: {
           machine: {
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Construir filtro para máquinas
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (activeOnly) {
@@ -133,7 +132,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener tipos de máquina disponibles
     const machineTypes = await prisma.machine.findMany({
-      where: { companyId: auth.companyId },
+      where: { companyId: user!.companyId },
       distinct: ['type'],
       select: { type: true },
     });

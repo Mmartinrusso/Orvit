@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Save, Package, FileSignature, Loader2 } from 'lucide-react';
+import { Settings, Save, Package, FileSignature, Loader2, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AlmacenSettings {
@@ -16,6 +17,8 @@ interface AlmacenSettings {
 
 export default function AlmacenConfiguracionPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const canManageAll = hasPermission('almacen.manage_all');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<AlmacenSettings>({
@@ -68,6 +71,17 @@ export default function AlmacenConfiguracionPage() {
       setSaving(false);
     }
   };
+
+  if (!canManageAll) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <ShieldAlert className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground text-sm">No tiene permisos para acceder a esta configuración.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

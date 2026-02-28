@@ -3,25 +3,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET - Get skills matrix for a company
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('skills.view');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId') || payload.companyId;
+    const companyId = searchParams.get('companyId') || user!.companyId;
 
     if (!companyId) {
       return NextResponse.json({ error: 'companyId es requerido' }, { status: 400 });

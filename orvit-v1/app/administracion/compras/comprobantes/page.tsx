@@ -94,6 +94,7 @@ import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Proveedor {
   id: string;
@@ -161,6 +162,12 @@ export default function ComprobantesPage() {
   const router = useRouter();
   // const { company } = useCompany();
   const { mode: viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+
+  // Permission checks
+  const canCreate = hasPermission('compras.comprobantes.create');
+  const canEdit = hasPermission('compras.comprobantes.edit');
+  const canDelete = hasPermission('compras.comprobantes.delete');
   const [comprobantes, setComprobantes] = useState<Comprobante[]>([]);
   const [updatingUrgente, setUpdatingUrgente] = useState<string | null>(null);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -1601,14 +1608,18 @@ export default function ComprobantesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push('/administracion/compras/comprobantes/carga-masiva')}>
-              <Upload className="w-4 h-4 mr-2" />
-              Carga Masiva
-            </Button>
-            <Button size="sm" onClick={() => setIsModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo
-            </Button>
+            {canCreate && (
+              <Button variant="outline" size="sm" onClick={() => router.push('/administracion/compras/comprobantes/carga-masiva')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Carga Masiva
+              </Button>
+            )}
+            {canCreate && (
+              <Button size="sm" onClick={() => setIsModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1737,15 +1748,17 @@ export default function ComprobantesPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-                disabled={isBulkDeleting}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {isBulkDeleting ? 'Eliminando...' : 'Eliminar'}
-              </Button>
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={isBulkDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {isBulkDeleting ? 'Eliminando...' : 'Eliminar'}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -1902,16 +1915,18 @@ export default function ComprobantesPage() {
                               <Eye className="w-3.5 h-3.5 mr-2" />
                               Ver detalle
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setEditingComprobanteId(comprobante.id);
-                                setEditingDocType(comprobante.docType as 'T1' | 'T2' || null);
-                                loadComprobanteParaEditar(comprobante.id, comprobante.docType);
-                              }}
-                            >
-                              <Edit className="w-3.5 h-3.5 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
+                            {canEdit && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditingComprobanteId(comprobante.id);
+                                  setEditingDocType(comprobante.docType as 'T1' | 'T2' || null);
+                                  loadComprobanteParaEditar(comprobante.id, comprobante.docType);
+                                }}
+                              >
+                                <Edit className="w-3.5 h-3.5 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                            )}
                             {comprobante.estado === 'pendiente' && (
                               <DropdownMenuItem
                                 onClick={() => handleSacarPago(comprobante)}
@@ -1998,14 +2013,18 @@ export default function ComprobantesPage() {
                                 )}
                               </>
                             )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => abrirEliminarComprobante(comprobante)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5 mr-2" />
-                              Eliminar
-                            </DropdownMenuItem>
+                            {canDelete && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => abrirEliminarComprobante(comprobante)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

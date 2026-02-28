@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,17 +10,13 @@ export const dynamic = 'force-dynamic';
 // GET /api/production/monthly - Obtener producción mensual
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.REPORTES.VIEW);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const companyId = String(user!.companyId);
     const month = searchParams.get('month');
     const productId = searchParams.get('productId');
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
 
     let query = `
       SELECT 
@@ -69,20 +67,23 @@ export async function GET(request: NextRequest) {
 // POST /api/production/monthly - Crear/actualizar producción mensual
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.REPORTES.VIEW);
+    if (error) return error;
+
     const body = await request.json();
-    const { 
-      companyId, 
-      productId, 
+    const {
+      productId,
       month,
       goodUnits,
       scrapUnits,
       observations
     } = body;
+    const companyId = user!.companyId;
 
     // Validar campos requeridos
-    if (!companyId || !productId || !month) {
+    if (!productId || !month) {
       return NextResponse.json(
-        { error: 'companyId, productId y month son requeridos' },
+        { error: 'productId y month son requeridos' },
         { status: 400 }
       );
     }

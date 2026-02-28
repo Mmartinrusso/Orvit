@@ -34,6 +34,26 @@ export default function NuevaEmpresaPage() {
     return null;
   }
 
+  // Solo ADMIN_ENTERPRISE puede crear empresas
+  if (!isLoading && user && user.role !== 'ADMIN_ENTERPRISE' && user.role !== 'SUPERADMIN') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">No autorizado</h2>
+          <p className="text-muted-foreground mb-4">
+            No tienes permisos para crear empresas.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

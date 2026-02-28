@@ -50,8 +50,8 @@ async function fetchUsers() {
   const data = await res.json();
   const arr = Array.isArray(data) ? data : (data?.users || []);
   return arr.filter((user: any) =>
-    user.permissions?.some((p: any) => p.name === 'ingresar_tareas') ||
-    user.roles?.some((r: any) => r.permissions?.some((p: any) => p.name === 'ingresar_tareas'))
+    user.permissions?.some((p: any) => p.name === 'tasks.view_all' || p.name === 'ingresar_tareas') ||
+    user.roles?.some((r: any) => r.permissions?.some((p: any) => p.name === 'tasks.view_all' || p.name === 'ingresar_tareas'))
   );
 }
 

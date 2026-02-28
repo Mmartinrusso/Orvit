@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PTWType, PTWStatus } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,28 +30,15 @@ async function generatePTWNumber(companyId: number): Promise<string> {
 // GET: List all PTW for a company
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('ptw.view');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
     const status = searchParams.get('status') as PTWStatus | null;
     const type = searchParams.get('type') as PTWType | null;
     const workOrderId = searchParams.get('workOrderId');
     const machineId = searchParams.get('machineId');
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId requerido' }, { status: 400 });
-    }
 
     const where: any = { companyId };
     if (status) where.status = status;
@@ -81,21 +69,12 @@ export async function GET(request: NextRequest) {
 // POST: Create a new PTW
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('ptw.create');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const body = await request.json();
     const {
-      companyId,
       type,
       workOrderId,
       machineId,
@@ -112,7 +91,7 @@ export async function POST(request: NextRequest) {
       validTo,
     } = body;
 
-    if (!companyId || !type || !title || !description || !validFrom || !validTo) {
+    if (!type || !title || !description || !validFrom || !validTo) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos: companyId, type, title, description, validFrom, validTo' },
         { status: 400 }
@@ -141,7 +120,7 @@ export async function POST(request: NextRequest) {
         emergencyContacts: emergencyContacts || [],
         validFrom: new Date(validFrom),
         validTo: new Date(validTo),
-        requestedById: payload.userId as number,
+        requestedById: user!.id,
       },
       include: {
         workOrder: { select: { id: true, title: true } },
@@ -158,7 +137,7 @@ export async function POST(request: NextRequest) {
         entityId: permit.id,
         action: 'CREATE',
         newValue: { number: permit.number, type: permit.type, title: permit.title },
-        performedById: payload.userId as number,
+        performedById: user!.id,
         companyId,
       },
     });

@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { companyId, sectorId, estado, tipo, search, limit = 100, offset = 0 } = validation.data;
+    const { sectorId, estado, tipo, search, limit = 100, offset = 0 } = validation.data;
+    const companyId = payload.companyId as number; // Siempre del JWT, nunca del cliente
 
     // 3. Construir filtro WHERE
     const where: any = { companyId };
@@ -160,13 +161,14 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validation.data;
+    const companyId = payload.companyId as number; // Siempre del JWT, nunca del cliente
 
     // 3. Verificar patente duplicada (solo si tiene patente)
     if (data.patente) {
       const existingUnidad = await prisma.unidadMovil.findFirst({
         where: {
           patente: data.patente,
-          companyId: data.companyId
+          companyId
         },
         select: { id: true }
       });
@@ -193,7 +195,7 @@ export async function POST(request: NextRequest) {
         kilometraje: data.kilometraje || 0,
         estado: data.estado || 'ACTIVO',
         sectorId: data.sectorId || null,
-        companyId: data.companyId,
+        companyId,
         descripcion: data.descripcion || '',
         fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : null,
         valorAdquisicion: data.valorAdquisicion || null,

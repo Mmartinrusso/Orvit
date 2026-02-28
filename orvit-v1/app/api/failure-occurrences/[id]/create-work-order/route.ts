@@ -16,6 +16,7 @@ import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import { calculatePriority } from '@/lib/corrective/priority-calculator';
 import { notifyOTCreated, notifyOTAssigned } from '@/lib/discord/notifications';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -54,6 +55,11 @@ export async function POST(
 
     const companyId = payload.companyId as number;
     const userId = payload.userId as number;
+
+    // Permission check: work_orders.create
+    const hasPerm = await hasUserPermission(userId, companyId, 'work_orders.create');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
+
     const failureOccurrenceId = parseInt(params.id);
 
     if (isNaN(failureOccurrenceId)) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // GET /api/recetas/[id] - Obtener una receta específica
 export async function GET(
@@ -7,6 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Recetas GET by ID - Iniciando...');
     
     const { searchParams } = new URL(request.url);
@@ -113,6 +117,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Recetas PUT - Iniciando...');
     
     const { searchParams } = new URL(request.url);
@@ -337,6 +344,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 API Recetas DELETE - Iniciando...');
     
     const { searchParams } = new URL(request.url);

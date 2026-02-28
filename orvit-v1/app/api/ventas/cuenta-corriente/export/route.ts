@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.CLIENTES_CREDIT_VIEW);
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_EXPORT);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);

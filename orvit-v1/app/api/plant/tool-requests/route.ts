@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/plant/tool-requests - Crear solicitud de herramientas durante parada
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const {
       plantStopId,
@@ -126,17 +130,13 @@ export async function POST(request: NextRequest) {
 // GET /api/plant/tool-requests - Obtener solicitudes de herramientas
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const companyId = String(user!.companyId);
     const sectorId = searchParams.get('sectorId');
     const status = searchParams.get('status'); // PENDING, APPROVED, REJECTED, DELIVERED
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID es requerido' },
-        { status: 400 }
-      );
-    }
 
     // Buscar solicitudes de herramientas
     const toolRequestRecords = await prisma.document.findMany({

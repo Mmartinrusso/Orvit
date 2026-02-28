@@ -80,7 +80,7 @@ export function StandardSheet({
         side={side}
         className={cn(
           // Sobrescribir el ancho por defecto
-          '!w-full sm:!max-w-none',
+          'w-full sm:!max-w-none',
           sizeClass,
           'flex flex-col h-full overflow-hidden',
           contentClassName
@@ -142,7 +142,7 @@ export function StandardSheetContent({
     <SheetContent
       side={side}
       className={cn(
-        '!w-full sm:!max-w-none',
+        'w-full sm:!max-w-none',
         sizeClass,
         'flex flex-col h-full overflow-hidden',
         className

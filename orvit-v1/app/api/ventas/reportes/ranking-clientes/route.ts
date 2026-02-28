@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // GET - Ranking de clientes por volumen de compras (optimized - no N+1)
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_VIEW);
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_ADVANCED);
     if (error) return error;
 
     const companyId = user!.companyId;

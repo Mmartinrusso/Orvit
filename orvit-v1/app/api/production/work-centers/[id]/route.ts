@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -27,10 +28,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.WORK_CENTERS);
+    if (error) return error;
 
     const workCenterId = parseInt(params.id);
     if (isNaN(workCenterId)) {
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const workCenter = await prisma.workCenter.findFirst({
       where: {
         id: workCenterId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         parent: true,
@@ -89,10 +88,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.WORK_CENTERS);
+    if (error) return error;
 
     const workCenterId = parseInt(params.id);
     if (isNaN(workCenterId)) {
@@ -103,7 +100,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingWorkCenter = await prisma.workCenter.findFirst({
       where: {
         id: workCenterId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -118,7 +115,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (validatedData.code && validatedData.code !== existingWorkCenter.code) {
       const duplicateCode = await prisma.workCenter.findFirst({
         where: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code,
           id: { not: workCenterId },
         },
@@ -142,7 +139,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
 
       // Verificar que el nuevo padre no sea un descendiente
-      const isDescendant = await checkIsDescendant(workCenterId, validatedData.parentId, auth.companyId);
+      const isDescendant = await checkIsDescendant(workCenterId, validatedData.parentId, user!.companyId);
       if (isDescendant) {
         return NextResponse.json(
           { error: 'No se puede asignar un descendiente como padre (ciclo detectado)' },
@@ -199,10 +196,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.WORK_CENTERS);
+    if (error) return error;
 
     const workCenterId = parseInt(params.id);
     if (isNaN(workCenterId)) {
@@ -213,7 +208,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingWorkCenter = await prisma.workCenter.findFirst({
       where: {
         id: workCenterId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         children: true,

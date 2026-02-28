@@ -1,30 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateRoutineExecutionSchema } from '@/lib/validations/production';
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  const token = cookies().get('token')?.value;
-  if (!token) throw new Error('No token provided');
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return { userId: payload.userId as number, companyId: payload.companyId as number };
-  } catch {
-    throw new Error('Invalid token');
-  }
-}
-
 // GET /api/production/routines - List routine executions
 export async function GET(request: Request) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.VIEW);
+    if (error) return error;
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
 
     const templateId = searchParams.get('templateId');
@@ -111,7 +99,10 @@ export async function GET(request: Request) {
 // POST /api/production/routines - Execute a routine (or complete a draft)
 export async function POST(request: Request) {
   try {
-    const { userId, companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.EXECUTE);
+    if (error) return error;
+    const userId = user!.id;
+    const companyId = user!.companyId;
     const body = await request.json();
 
     const validation = validateRequest(CreateRoutineExecutionSchema, body);

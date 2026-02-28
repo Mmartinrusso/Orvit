@@ -52,6 +52,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Cheque {
   id: number;
@@ -118,6 +119,8 @@ const ESTADO_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destruc
 export default function ChequesPage() {
   const queryClient = useQueryClient();
   const { viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canManageCheque = hasPermission('treasury.manage_cheque');
   const [filtroEstado, setFiltroEstado] = useState<string>('');
   const [filtroOrigen, setFiltroOrigen] = useState<string>('');
   const [selectedCheque, setSelectedCheque] = useState<Cheque | null>(null);
@@ -364,7 +367,7 @@ export default function ChequesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {cheque.estado === 'CARTERA' && cheque.origen === 'RECIBIDO' && (
+                        {canManageCheque && cheque.estado === 'CARTERA' && cheque.origen === 'RECIBIDO' && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
@@ -387,7 +390,7 @@ export default function ChequesPage() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
-                        {cheque.estado === 'DEPOSITADO' && (
+                        {canManageCheque && cheque.estado === 'DEPOSITADO' && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">

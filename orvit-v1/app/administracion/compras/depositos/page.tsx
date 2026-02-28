@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Table,
   TableBody,
@@ -54,6 +55,10 @@ interface Deposito {
 
 export default function DepositosPage() {
   const confirm = useConfirm();
+  const { hasPermission } = useAuth();
+  const canCreateDeposito = hasPermission('compras.depositos.create');
+  const canEditDeposito = hasPermission('compras.depositos.edit');
+  const canDeleteDeposito = hasPermission('compras.depositos.delete');
   const [searchTerm, setSearchTerm] = useState('');
   const [depositos, setDepositos] = useState<Deposito[]>([]);
   const [loading, setLoading] = useState(false);
@@ -183,10 +188,12 @@ export default function DepositosPage() {
             Gestiona los depósitos y almacenes de la empresa
           </p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Depósito
-        </Button>
+        {canCreateDeposito && (
+          <Button onClick={() => handleOpenModal()}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Depósito
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -299,14 +306,16 @@ export default function DepositosPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenModal(deposito)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        {deposito.isActive && (
+                        {canEditDeposito && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenModal(deposito)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {deposito.isActive && canDeleteDeposito && (
                           <Button
                             variant="ghost"
                             size="sm"

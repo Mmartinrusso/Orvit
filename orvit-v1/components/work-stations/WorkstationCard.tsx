@@ -24,6 +24,7 @@ import {
   Power,
   PowerOff,
   Settings,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -52,6 +53,9 @@ export interface WorkStation {
     id: number;
     name: string;
   }[];
+  instructivesCount?: number;
+  machinesCount?: number;
+  activeWorkOrdersCount?: number;
 }
 
 interface WorkstationCardProps {
@@ -89,8 +93,9 @@ export function WorkstationCard({
   onToggleSelection,
   className,
 }: WorkstationCardProps) {
-  const instructivesCount = workstation.instructives?.length || 0;
-  const machinesCount = workstation.machines?.length || 0;
+  const instructivesCount = workstation.instructivesCount ?? workstation.instructives?.length ?? 0;
+  const machinesCount = workstation.machinesCount ?? workstation.machines?.length ?? 0;
+  const activeWorkOrdersCount = workstation.activeWorkOrdersCount ?? 0;
 
   const formatDate = (date: string) => {
     try {
@@ -248,6 +253,14 @@ export function WorkstationCard({
             <span className="text-muted-foreground">Máquinas:</span>
             <span className="font-normal text-foreground">{machinesCount}</span>
           </div>
+          {activeWorkOrdersCount > 0 && (
+            <div className="col-span-2 flex items-center gap-1.5 text-xs">
+              <ClipboardList className="h-3 w-3 text-warning shrink-0" />
+              <span className="text-warning font-medium">
+                {activeWorkOrdersCount} OT{activeWorkOrdersCount !== 1 ? 's' : ''} activa{activeWorkOrdersCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Footer: Info + Acciones */}

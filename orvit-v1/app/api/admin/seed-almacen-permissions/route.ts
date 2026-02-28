@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 const ALMACEN_PERMISSIONS = [
   { name: 'ingresar_almacen', description: 'Acceso al módulo de almacén', category: 'almacen' },
@@ -35,6 +36,12 @@ const ALMACEN_PERMISSIONS = [
 ];
 
 export async function POST() {
+  const { user, error } = await requireAuth();
+  if (error) return error;
+  if (user!.role.toUpperCase() !== 'SUPERADMIN') {
+    return NextResponse.json({ error: 'Solo SUPERADMIN puede ejecutar seeds' }, { status: 403 });
+  }
+
   try {
     const results = {
       permissionsCreated: 0,
@@ -140,6 +147,9 @@ export async function POST() {
 }
 
 export async function GET() {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
+
   return NextResponse.json({
     message: 'Use POST para aplicar los permisos de Almacén al rol Administrador',
     permissions: ALMACEN_PERMISSIONS.map((p) => p.name),

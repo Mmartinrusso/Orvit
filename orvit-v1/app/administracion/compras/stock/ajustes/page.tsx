@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -114,6 +115,10 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string }> = {
 export default function AjustesPage() {
   const { mode } = useViewMode();
   const prevModeRef = useRef(mode);
+  const { hasPermission } = useAuth();
+  const canCreateStock = hasPermission('compras.stock.ajustes');
+  const canEditStock = hasPermission('compras.stock.ajustes');
+  const canDeleteStock = hasPermission('compras.stock.ajustes');
 
   const [ajustes, setAjustes] = useState<StockAdjustment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,10 +290,12 @@ export default function AjustesPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
-          <Button onClick={() => setShowFormModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Ajuste
-          </Button>
+          {canCreateStock && (
+            <Button onClick={() => setShowFormModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Ajuste
+            </Button>
+          )}
         </div>
       </div>
 
@@ -429,10 +436,12 @@ export default function AjustesPage() {
             <div className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No hay ajustes registrados</p>
-              <Button variant="outline" className="mt-4" onClick={() => setShowFormModal(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Crear primer ajuste
-              </Button>
+              {canCreateStock && (
+                <Button variant="outline" className="mt-4" onClick={() => setShowFormModal(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear primer ajuste
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -511,18 +520,24 @@ export default function AjustesPage() {
                                 </DropdownMenuItem>
                                 {ajuste.estado === 'BORRADOR' && (
                                   <>
-                                    <DropdownMenuItem onClick={() => setConfirmingId(ajuste.id)}>
-                                      <Check className="h-4 w-4 mr-2" />
-                                      Confirmar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() => setDeletingId(ajuste.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Eliminar
-                                    </DropdownMenuItem>
+                                    {canEditStock && (
+                                      <DropdownMenuItem onClick={() => setConfirmingId(ajuste.id)}>
+                                        <Check className="h-4 w-4 mr-2" />
+                                        Confirmar
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canDeleteStock && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-destructive"
+                                          onClick={() => setDeletingId(ajuste.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Eliminar
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
                                   </>
                                 )}
                               </DropdownMenuContent>

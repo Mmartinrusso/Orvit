@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -158,24 +159,27 @@ export default function ReporteRapidoPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="pt-8 pb-8">
-            <CheckCircle2 className="h-16 w-16 mx-auto text-success mb-4" />
-            <h2 className="text-xl font-bold mb-2">Reporte Enviado</h2>
-            <p className="text-muted-foreground mb-4">
-              Se ha creado una orden de trabajo automáticamente
-            </p>
-            <Button onClick={() => router.push('/mobile/mi-dia')} className="w-full">
-              Ver Mi Día
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <PermissionGuard permission="ingresar_mantenimiento">
+        <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+          <Card className="w-full max-w-md text-center">
+            <CardContent className="pt-8 pb-8">
+              <CheckCircle2 className="h-16 w-16 mx-auto text-success mb-4" />
+              <h2 className="text-xl font-bold mb-2">Reporte Enviado</h2>
+              <p className="text-muted-foreground mb-4">
+                Se ha creado una orden de trabajo automáticamente
+              </p>
+              <Button onClick={() => router.push('/mobile/mi-dia')} className="w-full">
+                Ver Mi Día
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </PermissionGuard>
     );
   }
 
   return (
+    <PermissionGuard permission="ingresar_mantenimiento">
     <div className="min-h-screen bg-muted pb-8">
       {/* Header */}
       <div className="bg-destructive text-white p-4 sticky top-0 z-10">
@@ -337,5 +341,6 @@ export default function ReporteRapidoPage() {
         </Button>
       </form>
     </div>
+    </PermissionGuard>
   );
 }

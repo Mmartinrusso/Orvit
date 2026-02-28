@@ -62,6 +62,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { generatePurchaseOrderPDF, PurchaseOrderPDFData } from '@/lib/pdf/purchase-order-pdf';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Proveedor {
   id: number;
@@ -177,6 +178,12 @@ export default function OrdenCompraDetallePage() {
   const router = useRouter();
   const params = useParams();
   const ordenId = params.id as string;
+  const { hasPermission } = useAuth();
+
+  // Permission checks
+  const canEditOrden = hasPermission('compras.ordenes.edit');
+  const canApproveOrden = hasPermission('compras.ordenes.approve');
+  const canCancelOrden = hasPermission('compras.ordenes.cancel');
 
   const [orden, setOrden] = useState<OrdenCompra | null>(null);
   const [loading, setLoading] = useState(true);
@@ -407,49 +414,49 @@ export default function OrdenCompraDetallePage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {acciones.includes('editar') && (
+                {canEditOrden && acciones.includes('editar') && (
                   <DropdownMenuItem onClick={() => router.push(`/administracion/compras/ordenes/${orden.id}/editar`)}>
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('enviar_aprobacion') && (
+                {canEditOrden && acciones.includes('enviar_aprobacion') && (
                   <DropdownMenuItem onClick={() => ejecutarAccion('enviar_aprobacion')}>
                     <Send className="w-4 h-4 mr-2" />
                     Enviar a Aprobación
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('aprobar') && (
+                {canApproveOrden && acciones.includes('aprobar') && (
                   <DropdownMenuItem onClick={() => ejecutarAccion('aprobar')}>
                     <Check className="w-4 h-4 mr-2" />
                     Aprobar
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('rechazar') && (
+                {canApproveOrden && acciones.includes('rechazar') && (
                   <DropdownMenuItem onClick={() => setRechazarDialogOpen(true)}>
                     <X className="w-4 h-4 mr-2" />
                     Rechazar
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('enviar_proveedor') && (
+                {canEditOrden && acciones.includes('enviar_proveedor') && (
                   <DropdownMenuItem onClick={() => ejecutarAccion('enviar_proveedor')}>
                     <Send className="w-4 h-4 mr-2" />
                     Enviar a Proveedor
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('confirmar') && (
+                {canEditOrden && acciones.includes('confirmar') && (
                   <DropdownMenuItem onClick={() => ejecutarAccion('confirmar')}>
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     Confirmar Proveedor
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('completar') && (
+                {canEditOrden && acciones.includes('completar') && (
                   <DropdownMenuItem onClick={() => ejecutarAccion('completar')}>
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     Marcar Completada
                   </DropdownMenuItem>
                 )}
-                {acciones.includes('reabrir') && (
+                {canEditOrden && acciones.includes('reabrir') && (
                   <DropdownMenuItem onClick={() => ejecutarAccion('reabrir')}>
                     <RotateCcw className="w-4 h-4 mr-2" />
                     Reabrir

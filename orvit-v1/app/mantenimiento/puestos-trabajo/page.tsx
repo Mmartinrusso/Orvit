@@ -214,7 +214,7 @@ export default function PuestosTrabajoPage() {
     name: string;
     description?: string;
     code?: string;
-    status: 'ACTIVE' | 'INACTIVE';
+    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
     sectorId?: number;
   }) => {
     if (!currentCompany) {

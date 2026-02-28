@@ -76,6 +76,7 @@ export const CreateRoutineTemplateSchema = z.object({
   sections: z.any().optional(),
   itemsStructure: z.enum(['flat', 'grouped', 'sectioned']).default('flat'),
   preExecutionInputs: z.any().optional(),
+  scheduleConfig: z.any().optional(),
   estimatedMinutes: z.coerce.number().int().min(0, 'Tiempo estimado no puede ser negativo').optional(),
   maxCompletionTimeMinutes: z.coerce.number().int().min(1, 'Tiempo máximo debe ser al menos 1 minuto').default(60),
   enableCompletionReminders: z.boolean().default(true),

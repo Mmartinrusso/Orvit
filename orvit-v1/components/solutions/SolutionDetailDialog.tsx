@@ -74,6 +74,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn, formatNumber } from '@/lib/utils';
 import { Solution } from './SolutionCard';
+import { SolutionControlList } from './SolutionControlList';
 import { toast } from 'sonner';
 
 interface ParsedAttachment {
@@ -455,6 +456,9 @@ export function SolutionDetailDialog({
                   Docs {(documents.length + instructives.length) > 0 && `(${documents.length + instructives.length})`}
                 </TabsTrigger>
                 <TabsTrigger value="history">Historial</TabsTrigger>
+                {typeof solution?.id === 'number' && (
+                  <TabsTrigger value="controles">Controles</TabsTrigger>
+                )}
               </TabsList>
             </Tabs>
           </div>
@@ -823,6 +827,13 @@ export function SolutionDetailDialog({
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Controles Tab */}
+            {activeTab === 'controles' && typeof solution?.id === 'number' && (
+              <div className="py-1">
+                <SolutionControlList solutionAppliedId={solution.id} />
               </div>
             )}
           </div>

@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { UserRole } from '@prisma/client';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
+import { PERMISSION_CATALOG } from '@/lib/permissions-catalog';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,6 +103,10 @@ function checkAdminAccess(user: NonNullable<Awaited<ReturnType<typeof getUserFro
 // GET /api/admin/permissions - Obtener todos los permisos
 export async function GET(request: NextRequest) {
   try {
+    // Verificar permiso admin.permissions
+    const { user: authUser, error: authError } = await requirePermission('admin.permissions');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -111,35 +117,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 
-    // ✨ OPTIMIZADO: Consulta única con Prisma
-    const [permissions, categoriesData] = await Promise.all([
-      prisma.permission.findMany({
-        where: { isActive: true },
-        orderBy: [{ category: 'asc' }, { name: 'asc' }],
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          category: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      }),
-      prisma.permission.findMany({
-        where: {
-          isActive: true,
-          category: { not: null }
-        },
-        select: { category: true },
-        distinct: ['category']
-      })
-    ]);
+    const dbPermissions = await prisma.permission.findMany({
+      where: { isActive: true },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
-    const categories = categoriesData
-      .map(c => c.category)
-      .filter((c): c is string => c !== null)
-      .sort();
+    // Enrich with catalog: use catalog category & description as source of truth
+    const permissions = dbPermissions.map(p => {
+      const catalogEntry = PERMISSION_CATALOG[p.name];
+      return {
+        ...p,
+        category: catalogEntry?.category || p.category || 'sin_categoria',
+        description: catalogEntry?.es || p.description || p.name,
+      };
+    });
+
+    // Extract unique categories from the enriched data
+    const categorySet = new Set<string>();
+    for (const p of permissions) {
+      if (p.category) categorySet.add(p.category);
+    }
+    const categories = [...categorySet].sort();
 
     return NextResponse.json({
       success: true,
@@ -147,8 +154,8 @@ export async function GET(request: NextRequest) {
       categories,
       stats: {
         totalPermissions: permissions.length,
-        totalCategories: categories.length
-      }
+        totalCategories: categories.length,
+      },
     });
   } catch (error) {
     console.error('Error obteniendo permisos:', error);
@@ -159,6 +166,10 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/permissions - Crear nuevo permiso
 export async function POST(request: NextRequest) {
   try {
+    // Verificar permiso admin.permissions
+    const { user: authUser, error: authError } = await requirePermission('admin.permissions');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -210,14 +221,18 @@ export async function POST(request: NextRequest) {
 // DELETE /api/admin/permissions - Eliminar todos los permisos y sus asignaciones
 export async function DELETE(request: NextRequest) {
   try {
+    // Verificar permiso admin.permissions
+    const { user: authUser, error: authError } = await requirePermission('admin.permissions');
+    if (authError) return authError;
+
     const user = await getUserFromToken(request);
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     if (user.role !== UserRole.SUPERADMIN) {
-      return NextResponse.json({ 
-        error: 'Solo SUPERADMIN puede eliminar todos los permisos' 
+      return NextResponse.json({
+        error: 'Solo SUPERADMIN puede eliminar todos los permisos'
       }, { status: 403 });
     }
 

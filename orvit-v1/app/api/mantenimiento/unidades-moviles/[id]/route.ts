@@ -41,9 +41,11 @@ export async function GET(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // 2. Obtener unidad con work orders count
-    const unidad = await prisma.unidadMovil.findUnique({
-      where: { id },
+    const companyId = payload.companyId as number;
+
+    // 2. Obtener unidad con work orders count (companyId siempre del JWT)
+    const unidad = await prisma.unidadMovil.findFirst({
+      where: { id, companyId },
       include: {
         sector: {
           select: {
@@ -124,13 +126,14 @@ export async function PUT(
     }
 
     const data = validation.data;
+    const companyId = payload.companyId as number; // Siempre del JWT
 
     // 3. ✅ OPTIMIZADO: Verificar duplicado solo si se proporciona patente
     if (data.patente) {
       const duplicate = await prisma.unidadMovil.findFirst({
         where: {
           patente: data.patente,
-          companyId: data.companyId,
+          companyId,
           id: { not: id }
         },
         select: { id: true }
@@ -144,10 +147,10 @@ export async function PUT(
       }
     }
 
-    // 4. ✅ OPTIMIZADO: Actualizar directamente (sin findUnique previo)
+    // 4. Actualizar directamente con companyId en WHERE para evitar cross-tenant
     try {
       const unidad = await prisma.unidadMovil.update({
-        where: { id },
+        where: { id, companyId },
         data: {
           ...(data.nombre !== undefined && { nombre: data.nombre }),
           ...(data.tipo !== undefined && { tipo: data.tipo }),
@@ -246,10 +249,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // 2. ✅ OPTIMIZADO: Eliminar directamente (sin findUnique previo)
+    const companyId = payload.companyId as number;
+
+    // 2. Eliminar con companyId en WHERE para evitar cross-tenant
     try {
       await prisma.unidadMovil.delete({
-        where: { id }
+        where: { id, companyId }
       });
 
       return NextResponse.json({

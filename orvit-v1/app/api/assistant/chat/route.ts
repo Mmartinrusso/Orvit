@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getAssistantContext } from '@/lib/assistant/auth'
 import { processMessage } from '@/lib/assistant/engine'
 import { ConversationMessage } from '@/lib/assistant/types'
+import { requireAuth } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,9 @@ export const dynamic = 'force-dynamic'
  * Envía un mensaje al asistente y recibe una respuesta
  */
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth()
+  if (error) return error
+
   try {
     // 1. Verificar autenticación
     const context = await getAssistantContext()
@@ -156,6 +160,9 @@ export async function POST(request: NextRequest) {
  * Obtiene el historial de conversaciones o una conversación específica
  */
 export async function GET(request: NextRequest) {
+  const { error: getError } = await requireAuth()
+  if (getError) return getError
+
   try {
     // 1. Verificar autenticación
     const context = await getAssistantContext()
@@ -221,6 +228,9 @@ export async function GET(request: NextRequest) {
  * Elimina (archiva) una conversación
  */
 export async function DELETE(request: NextRequest) {
+  const { error: delError } = await requireAuth()
+  if (delError) return delError
+
   try {
     const context = await getAssistantContext()
     if (!context) {

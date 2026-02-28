@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,17 +9,15 @@ export const dynamic = 'force-dynamic';
 // Obtiene los sectores de trabajo (puestos de trabajo) disponibles
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('activeOnly') !== 'false';
 
     const workSectors = await prisma.workSector.findMany({
       where: {
-        company_id: auth.companyId,
+        company_id: user!.companyId,
         is_active: activeOnly ? true : undefined,
       },
       include: {

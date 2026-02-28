@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { employees, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID es requerido' }, { status: 400 });
-    }
+    const body = await request.json();
+    const { employees } = body;
+    const companyId = String(user!.companyId);
 
     if (!Array.isArray(employees) || employees.length === 0) {
       return NextResponse.json({ error: 'Lista de empleados es requerida' }, { status: 400 });

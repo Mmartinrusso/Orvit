@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/admin/seed-ventas
  * Crea facturas de prueba con ítems para el mes actual.
- * Solo para desarrollo.
+ * Solo para desarrollo o SUPERADMIN.
  */
 export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'No disponible en producción' }, { status: 403 });
+    const { user, error } = await requireAuth();
+    if (error) return error;
+    if (user!.role.toUpperCase() !== 'SUPERADMIN') {
+      return NextResponse.json({ error: 'Solo SUPERADMIN puede ejecutar seeds en producción' }, { status: 403 });
+    }
   }
 
   try {

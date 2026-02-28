@@ -1,40 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/compras/auth';
 import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        companies: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
-    });
-
-    return user;
-  } catch {
-    return null;
-  }
-}
 
 // Generar numero de cotizacion automatico
 async function generarNumeroCotizacion(companyId: number): Promise<string> {
@@ -61,15 +30,10 @@ async function generarNumeroCotizacion(companyId: number): Promise<string> {
 // GET - Listar cotizaciones
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('compras.cotizaciones.view');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -157,15 +121,10 @@ export async function GET(request: NextRequest) {
 // POST - Crear cotizacion
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('compras.cotizaciones.create');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const body = await request.json();
     const {
@@ -278,7 +237,7 @@ export async function POST(request: NextRequest) {
         beneficios || null,
         adjuntos && Array.isArray(adjuntos) && adjuntos.length > 0 ? adjuntos : [],
         companyId,
-        user.id
+        user!.id
       );
 
       const cotizacionId = insertResult[0].id;
@@ -324,9 +283,9 @@ export async function POST(request: NextRequest) {
           entidad: 'request',
           entidadId: parseInt(requestId),
           tipo: 'SISTEMA',
-          contenido: `Cotizacion ${numero} recibida por ${user.name}`,
+          contenido: `Cotizacion ${numero} recibida por ${user!.name}`,
           companyId,
-          userId: user.id
+          userId: user!.id
         }
       });
     } catch (commentError) {

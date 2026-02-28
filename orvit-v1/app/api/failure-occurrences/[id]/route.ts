@@ -12,6 +12,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { expandSymptoms } from '@/lib/corrective/symptoms';
 import { notifyPriorityEscalated, notifyFailureResolved } from '@/lib/discord/notifications';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -283,11 +284,16 @@ export async function PATCH(
     }
 
     const companyId = payload.companyId as number;
+    const userId = payload.userId as number;
     const id = parseInt(params.id);
 
     if (isNaN(id)) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
+
+    // Permission check: ingresar_mantenimiento
+    const hasPerm = await hasUserPermission(userId, companyId, 'ingresar_mantenimiento');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     // 2. Verificar que la falla existe y pertenece a la empresa
     const existing = await prisma.failureOccurrence.findFirst({
@@ -446,11 +452,16 @@ export async function DELETE(
     }
 
     const companyId = payload.companyId as number;
+    const userId = payload.userId as number;
     const id = parseInt(params.id);
 
     if (isNaN(id)) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
+
+    // Permission check: ingresar_mantenimiento
+    const hasPermDel = await hasUserPermission(userId, companyId, 'ingresar_mantenimiento');
+    if (!hasPermDel) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     // 2. Verificar que la falla existe
     const existing = await prisma.failureOccurrence.findFirst({

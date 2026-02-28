@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -17,10 +18,8 @@ const ResourceSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const resourceTypeId = searchParams.get('resourceTypeId');
@@ -29,7 +28,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (resourceTypeId) {
@@ -81,10 +80,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = ResourceSchema.parse(body);
@@ -93,7 +90,7 @@ export async function POST(request: NextRequest) {
     const resourceType = await prisma.productionResourceType.findFirst({
       where: {
         id: validatedData.resourceTypeId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -108,7 +105,7 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.productionResource.findUnique({
       where: {
         companyId_code: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           code: validatedData.code.toUpperCase(),
         },
       },
@@ -126,7 +123,7 @@ export async function POST(request: NextRequest) {
       const workCenter = await prisma.workCenter.findFirst({
         where: {
           id: validatedData.workCenterId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -143,7 +140,7 @@ export async function POST(request: NextRequest) {
     if (!order) {
       const maxOrder = await prisma.productionResource.aggregate({
         where: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           resourceTypeId: validatedData.resourceTypeId,
         },
         _max: { order: true },
@@ -160,7 +157,7 @@ export async function POST(request: NextRequest) {
         metadata: validatedData.metadata ?? undefined,
         status: validatedData.status,
         order,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         resourceType: {

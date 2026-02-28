@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // console.log('🔍 [API] GET /api/companies/[id]/users iniciado') // Log reducido;
+    // Verificar permiso companies.manage_users
+    const { user: authUser, error: authError } = await requirePermission('companies.manage_users');
+    if (authError) return authError;
+
     console.log('📋 [API] Params recibidos:', params);
     
     const companyId = parseInt(params.id);

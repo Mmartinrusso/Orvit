@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePermission } from '@/hooks/use-permissions';
 import { useApiMutation, createFetchMutation } from '@/hooks/use-api-mutation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -274,6 +275,11 @@ export function QuoteEditorModal({
   onQuoteCreated,
   onQuoteUpdated,
 }: QuoteEditorModalProps) {
+  // — Permissions
+  const { hasPermission: canApplyDiscount } = usePermission('ventas.descuentos.apply');
+  const { hasPermission: canUnlimitedDiscount } = usePermission('ventas.descuentos.unlimited');
+  const { hasPermission: canApproveDiscount } = usePermission('ventas.descuentos.approve');
+
   // — Data
   const [clients, setClients] = useState<ClientLight[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -1076,12 +1082,13 @@ export function QuoteEditorModal({
                       value={descuentoGlobal}
                       onChange={e =>
                         setDescuentoGlobal(
-                          Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))
+                          Math.min(canUnlimitedDiscount ? 100 : 50, Math.max(0, parseFloat(e.target.value) || 0))
                         )
                       }
+                      disabled={!canApplyDiscount}
                       className="h-8 text-sm"
                       min="0"
-                      max="100"
+                      max={canUnlimitedDiscount ? "100" : "50"}
                       step="0.5"
                     />
                   </div>

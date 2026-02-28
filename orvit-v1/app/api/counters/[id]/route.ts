@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
 interface Params {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 /**
@@ -15,7 +16,11 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
-    const counterId = parseInt(params.id)
+    const { user, error } = await requirePermission('counters.view')
+    if (error) return error
+
+    const { id } = await params
+    const counterId = parseInt(id)
     if (isNaN(counterId)) {
       return NextResponse.json({ error: 'Invalid counter ID' }, { status: 400 })
     }
@@ -60,7 +65,11 @@ export async function GET(request: Request, { params }: Params) {
  */
 export async function PATCH(request: Request, { params }: Params) {
   try {
-    const counterId = parseInt(params.id)
+    const { user, error } = await requirePermission('counters.edit')
+    if (error) return error
+
+    const { id } = await params
+    const counterId = parseInt(id)
     if (isNaN(counterId)) {
       return NextResponse.json({ error: 'Invalid counter ID' }, { status: 400 })
     }
@@ -101,7 +110,11 @@ export async function PATCH(request: Request, { params }: Params) {
  */
 export async function DELETE(request: Request, { params }: Params) {
   try {
-    const counterId = parseInt(params.id)
+    const { user, error } = await requirePermission('counters.delete')
+    if (error) return error
+
+    const { id } = await params
+    const counterId = parseInt(id)
     if (isNaN(counterId)) {
       return NextResponse.json({ error: 'Invalid counter ID' }, { status: 400 })
     }

@@ -9,6 +9,7 @@ import {
   StockMovementType,
   MaterialRequestStatus,
 } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 /**
  * GET /api/almacen/despachos
@@ -26,6 +27,10 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Permission check: almacen.dispatch.view
+    const { user, error: authError } = await requirePermission('almacen.dispatch.view');
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
 
     const companyId = Number(searchParams.get('companyId'));
@@ -151,6 +156,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Permission check: almacen.dispatch.create
+    const { user, error } = await requirePermission('almacen.dispatch.create');
+    if (error) return error;
+
     const body = await request.json();
     const {
       tipo,
@@ -254,6 +263,20 @@ export async function PATCH(request: NextRequest) {
         { error: 'id y action son requeridos' },
         { status: 400 }
       );
+    }
+
+    // Permission check per action
+    const actionPermissionMap: Record<string, string> = {
+      prepare: 'almacen.dispatch.process',
+      ready: 'almacen.dispatch.process',
+      dispatch: 'almacen.dispatch.confirm',
+      receive: 'almacen.dispatch.receive',
+      cancel: 'almacen.dispatch.cancel',
+    };
+    const requiredPerm = actionPermissionMap[action];
+    if (requiredPerm) {
+      const { user, error: authError } = await requirePermission(requiredPerm);
+      if (authError) return authError;
     }
 
     const despacho = await prisma.despacho.findUnique({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { triggerFailureReported, triggerWorkOrderCreated } from '@/lib/automation/engine';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const data = await request.json();
     console.log('🔧 [API] Recibiendo datos de falla:', data);
     console.log('🔧 [API] Datos completos:', JSON.stringify(data, null, 2));
@@ -253,22 +257,19 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const machineId = searchParams.get('machineId');
-    const companyId = searchParams.get('companyId');
-
-    console.log('🔍 [API GET /failures] Parámetros:', { machineId, companyId });
 
     let whereClause: any = {
-      type: 'CORRECTIVE' // Solo fallas (mantenimientos correctivos)
+      type: 'CORRECTIVE', // Solo fallas (mantenimientos correctivos)
+      companyId: user!.companyId
     };
 
     if (machineId) {
       whereClause.machineId = parseInt(machineId);
-    }
-
-    if (companyId) {
-      whereClause.companyId = parseInt(companyId);
     }
 
     console.log('🔍 [API GET /failures] Where clause:', whereClause);

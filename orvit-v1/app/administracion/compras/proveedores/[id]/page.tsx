@@ -112,6 +112,7 @@ import { ProveedorModal } from '@/components/compras/proveedor-modal';
 import ProveedorCuentaCorriente from '@/components/compras/proveedor-cuenta-corriente';
 import { RecepcionDetalleModal } from '@/components/compras/recepcion-detalle-modal';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ToolSearchCombobox } from '@/components/panol/ToolSearchCombobox';
 
 interface Proveedor {
@@ -172,6 +173,8 @@ export default function ProveedorDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { mode: viewMode, isLoading: viewModeLoading } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canEditProv = hasPermission('compras.proveedores.edit');
   const [proveedor, setProveedor] = useState<Proveedor | null>(null);
   const [facturas, setFacturas] = useState<FacturaCompra[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
@@ -2021,19 +2024,21 @@ export default function ProveedorDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsProveedorModalOpen(true);
-            }}
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Editar
-          </Button>
+          {canEditProv && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsProveedorModalOpen(true);
+              }}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
+          )}
         </div>
       </div>
 

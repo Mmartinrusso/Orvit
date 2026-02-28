@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,10 @@ const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar permiso reports.view
+    const { user: authUser, error: authError } = await requirePermission('reports.view');
+    if (authError) return authError;
+
     // Verificar autenticación usando JWT
     const cookieStore = cookies();
     const token = cookieStore.get('token');

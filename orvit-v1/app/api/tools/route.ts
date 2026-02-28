@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import { z } from 'zod';
 
 const CreateToolSchema = z.object({
@@ -30,64 +28,14 @@ const CreateToolSchema = z.object({
 
 export const dynamic = 'force-dynamic';
 
-// ✅ OPTIMIZADO: Usar instancia global de prisma en lugar de crear nueva
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-// Helper para obtener el usuario actual y sus empresas
-async function getCurrentUserWithCompanies() {
-  try {
-    const token = cookies().get('token')?.value;
-    if (!token) {
-      throw new Error('No hay token de autenticación');
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number }
-    });
-
-    if (!user) {
-      throw new Error('Usuario no encontrado');
-    }
-
-    // Obtener empresa usando consulta SQL directa para evitar problemas de relaciones
-    let userCompany = null;
-    try {
-      const companies = await prisma.$queryRaw`
-        SELECT c.* FROM "Company" c 
-        INNER JOIN "UserOnCompany" uc ON c.id = uc."companyId" 
-        WHERE uc."userId" = ${user.id} 
-        LIMIT 1
-      ` as any[];
-      
-      if (companies.length > 0) {
-        userCompany = companies[0];
-      }
-    } catch (error) {
-      console.log('⚠️ Error obteniendo empresa, usando fallback');
-      // Fallback: obtener cualquier empresa
-      const allCompanies = await prisma.$queryRaw`SELECT * FROM "Company" LIMIT 1` as any[];
-      if (allCompanies.length > 0) {
-        userCompany = allCompanies[0];
-      }
-    }
-    
-    return { user, userCompany };
-  } catch (error) {
-    console.error('Error obteniendo usuario:', error);
-    return { user: null, userCompany: null };
-  }
-}
-
 // GET /api/tools
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     let companyId = searchParams.get('companyId');
-    
-    // console.log(`📋 GET /api/tools - companyId: ${companyId}`) // Log reducido;
 
     // companyId es requerido — no usar fallback para evitar exposición cross-tenant
     if (!companyId || companyId === 'undefined') {
@@ -155,6 +103,9 @@ export async function GET(request: NextRequest) {
 // POST /api/tools - Crear nueva herramienta con validación Zod
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.create');
+    if (error) return error;
+
     const body = await request.json();
     const parsed = CreateToolSchema.safeParse(body);
 
@@ -221,6 +172,9 @@ export async function POST(request: NextRequest) {
 // PUT /api/tools - Actualizar herramienta
 export async function PUT(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.edit');
+    if (error) return error;
+
     const body = await request.json();
     const { id, stockQuantity, ...otherFields } = body;
 

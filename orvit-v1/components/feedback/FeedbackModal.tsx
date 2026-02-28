@@ -2,6 +2,20 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  useDroppable,
+  useDraggable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
+import {
   Bug, Lightbulb, Sparkles, Info, ArrowUp, Minus, ArrowDown,
   Plus, Clock, CheckCircle2, XCircle, Loader2, ChevronLeft,
   MessageSquare, Trash2, Send, Inbox, RotateCw,
@@ -15,7 +29,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,17 +80,17 @@ const typeDescriptions: Record<FeedbackType, string> = {
   'nueva-idea': 'Tengo una idea para algo nuevo',
 };
 
-const statusConfig: Record<FeedbackStatus, { label: string; icon: typeof Clock; color: string; badgeVariant: 'pending' | 'in_progress' | 'completed' | 'cancelled' }> = {
-  'pendiente':   { label: 'Pendiente',   icon: Clock,        color: 'text-warning-muted-foreground', badgeVariant: 'pending'     },
-  'en-progreso': { label: 'En progreso', icon: Loader2,      color: 'text-info-muted-foreground',     badgeVariant: 'in_progress' },
-  'completado':  { label: 'Completado',  icon: CheckCircle2, color: 'text-success',   badgeVariant: 'completed'   },
-  'rechazado':   { label: 'Rechazado',   icon: XCircle,      color: 'text-destructive',       badgeVariant: 'cancelled'   },
+const statusConfig: Record<FeedbackStatus, { label: string; icon: typeof Clock; color: string; bgColor: string; badgeVariant: 'pending' | 'in_progress' | 'completed' | 'cancelled' }> = {
+  'pendiente':   { label: 'Pendiente',   icon: Clock,        color: 'text-warning',     bgColor: 'bg-warning/5 border-warning/20',    badgeVariant: 'pending'     },
+  'en-progreso': { label: 'En progreso', icon: Loader2,      color: 'text-info',        bgColor: 'bg-info/5 border-info/20',          badgeVariant: 'in_progress' },
+  'completado':  { label: 'Completado',  icon: CheckCircle2, color: 'text-success',     bgColor: 'bg-success/5 border-success/20',    badgeVariant: 'completed'   },
+  'rechazado':   { label: 'Rechazado',   icon: XCircle,      color: 'text-destructive', bgColor: 'bg-destructive/5 border-destructive/20', badgeVariant: 'cancelled'   },
 };
 
 const priorityConfig: Record<FeedbackPriority, { label: string; icon: typeof ArrowUp; color: string }> = {
   'baja':  { label: 'Baja',  icon: ArrowDown, color: 'text-muted-foreground' },
-  'media': { label: 'Media', icon: Minus,     color: 'text-warning'       },
-  'alta':  { label: 'Alta',  icon: ArrowUp,   color: 'text-destructive'         },
+  'media': { label: 'Media', icon: Minus,     color: 'text-warning'          },
+  'alta':  { label: 'Alta',  icon: ArrowUp,   color: 'text-destructive'      },
 };
 
 // Helpers
@@ -88,58 +101,150 @@ const safeStatus = (s: string): FeedbackStatus =>
 const safePriority = (p: string): FeedbackPriority =>
   p in priorityConfig ? p as FeedbackPriority : 'media';
 
-// Sub-components
-function FeedbackCard({ fb, onClick }: { fb: FeedbackItem; onClick: () => void }) {
+// ─── FeedbackCard ───────────────────────────────────────────────────────────
+function FeedbackCard({
+  fb,
+  onClick,
+  compact = false,
+}: {
+  fb: FeedbackItem;
+  onClick: () => void;
+  compact?: boolean;
+}) {
   const type = typeConfig[safeType(fb.type)];
-  const status = statusConfig[safeStatus(fb.status)];
   const priority = priorityConfig[safePriority(fb.priority)];
   const TypeIcon = type.icon;
-  const StatusIcon = status.icon;
   const PriorityIcon = priority.icon;
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all hover:bg-accent/50 group',
-        !fb.read ? 'border-primary/30 bg-primary/[0.03]' : 'border-border'
+        'w-full flex items-start gap-2.5 p-3 rounded-lg border text-left transition-all hover:shadow-sm group bg-background',
+        !fb.read ? 'border-primary/30 bg-primary/[0.03]' : 'border-border',
+        compact && 'p-2.5'
       )}
     >
-      <div className={cn('mt-0.5 p-1.5 rounded-lg border shrink-0', type.bgColor, type.borderColor)}>
-        <TypeIcon className={cn('h-4 w-4', type.color)} />
+      <div className={cn('mt-0.5 p-1.5 rounded-md border shrink-0', type.bgColor, type.borderColor)}>
+        <TypeIcon className={cn('h-3.5 w-3.5', type.color)} />
       </div>
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center gap-2">
-          <p className={cn('text-sm truncate', !fb.read ? 'font-semibold' : 'font-medium')}>
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex items-start gap-1.5">
+          <p className={cn('text-xs leading-tight flex-1', !fb.read ? 'font-semibold' : 'font-medium')}>
             {fb.title}
           </p>
-          {!fb.read && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+          {!fb.read && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />}
         </div>
-        <p className="text-xs text-muted-foreground line-clamp-1">{fb.description}</p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant={status.badgeVariant} size="sm" className="gap-1">
-            <StatusIcon className={cn('h-3 w-3', safeStatus(fb.status) === 'en-progreso' && 'animate-spin')} />
-            {status.label}
-          </Badge>
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{fb.description}</p>
+        <div className="flex items-center gap-1.5 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <PriorityIcon className={cn('h-3 w-3', priority.color)} />
-            {priority.label}
+            <span>{priority.label}</span>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {fb.user.name} · {formatDistanceToNow(new Date(fb.createdAt), { addSuffix: true, locale: es })}
+          <span className="text-xs text-muted-foreground">·</span>
+          <span className="text-xs text-muted-foreground truncate max-w-[80px]">
+            {fb.user.name.split(' ')[0]}
           </span>
           {fb.adminResponse && (
-            <Badge variant="outline" size="sm" className="gap-1 text-xs">
+            <Badge variant="outline" size="sm" className="gap-1 text-xs ml-auto">
               <MessageSquare className="h-2.5 w-2.5" />
-              Respondido
             </Badge>
           )}
         </div>
+        <p className="text-[10px] text-muted-foreground/70">
+          {formatDistanceToNow(new Date(fb.createdAt), { addSuffix: true, locale: es })}
+        </p>
       </div>
     </button>
   );
 }
 
+// ─── DraggableFeedbackCard ──────────────────────────────────────────────────
+function DraggableFeedbackCard({ fb, onClick }: { fb: FeedbackItem; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: fb.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'touch-none cursor-grab active:cursor-grabbing',
+        isDragging && 'opacity-30 pointer-events-none'
+      )}
+    >
+      <FeedbackCard fb={fb} onClick={onClick} compact />
+    </div>
+  );
+}
+
+// ─── KanbanColumn ────────────────────────────────────────────────────────────
+function KanbanColumn({
+  status,
+  items,
+  onOpenDetail,
+}: {
+  status: FeedbackStatus;
+  items: FeedbackItem[];
+  onOpenDetail: (fb: FeedbackItem) => void;
+}) {
+  const cfg = statusConfig[status];
+  const Icon = cfg.icon;
+
+  const { setNodeRef, isOver } = useDroppable({ id: status });
+
+  return (
+    <div className="flex flex-col min-w-0 flex-1">
+      {/* Column header */}
+      <div className={cn(
+        'flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg border',
+        cfg.bgColor
+      )}>
+        <Icon className={cn(
+          'h-3.5 w-3.5 shrink-0',
+          cfg.color,
+          status === 'en-progreso' && 'animate-spin'
+        )} />
+        <span className="text-xs font-semibold truncate">{cfg.label}</span>
+        <span className={cn(
+          'ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full shrink-0',
+          items.length > 0 ? `${cfg.color} bg-background` : 'text-muted-foreground'
+        )}>
+          {items.length}
+        </span>
+      </div>
+
+      {/* Droppable area */}
+      <div
+        ref={setNodeRef}
+        className={cn(
+          'flex-1 flex flex-col gap-2 min-h-[200px] rounded-lg p-1.5 transition-colors border-2 border-dashed',
+          isOver
+            ? 'border-primary/40 bg-primary/5'
+            : 'border-transparent bg-muted/20'
+        )}
+      >
+        {items.map(fb => (
+          <DraggableFeedbackCard
+            key={fb.id}
+            fb={fb}
+            onClick={() => onOpenDetail(fb)}
+          />
+        ))}
+        {items.length === 0 && (
+          <div className="flex flex-col items-center justify-center flex-1 py-6 text-center">
+            <div className={cn('h-8 w-8 rounded-full mb-2 flex items-center justify-center', cfg.bgColor)}>
+              <Icon className={cn('h-4 w-4 opacity-40', cfg.color)} />
+            </div>
+            <p className="text-xs text-muted-foreground/60">Sin items</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── EmptyState ──────────────────────────────────────────────────────────────
 function EmptyState({ message, onAction }: { message: string; onAction?: () => void }) {
   return (
     <div className="text-center py-10">
@@ -157,14 +262,16 @@ function EmptyState({ message, onAction }: { message: string; onAction?: () => v
   );
 }
 
+// ─── FeedbackModal ────────────────────────────────────────────────────────────
 export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   const confirm = useConfirm();
+
   // State
   const [view, setView] = useState<View>('list');
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
-  const [activeTab, setActiveTab] = useState('pendientes');
+  const [activeDragId, setActiveDragId] = useState<number | null>(null);
 
   // Form state
   const [selectedType, setSelectedType] = useState<FeedbackType | null>(null);
@@ -175,6 +282,16 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   // Admin response state
   const [adminResponse, setAdminResponse] = useState('');
 
+  // DnD sensors — 8px threshold to distinguish click from drag
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    })
+  );
+
   // Mutations
   const submitMutation = useApiMutation<{ feedback: FeedbackItem }, { type: FeedbackType; priority: FeedbackPriority; title: string; description: string }>({
     mutationFn: createFetchMutation({ url: '/api/feedback', method: 'POST' }),
@@ -183,7 +300,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     onSuccess: () => {
       resetForm();
       setView('list');
-      setActiveTab('pendientes');
       fetchFeedbacks();
     },
   });
@@ -238,33 +354,36 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     }
   }, [open, fetchFeedbacks]);
 
-  // Computed
-  const counts = useMemo(() => {
-    const all = feedbacks.map(fb => ({ ...fb, status: safeStatus(fb.status) }));
-    return {
-      pendientes: all.filter(f => f.status === 'pendiente').length,
-      enProgreso: all.filter(f => f.status === 'en-progreso').length,
-      resueltos: all.filter(f => f.status === 'completado' || f.status === 'rechazado').length,
-      todos: all.length,
+  // Computed — feedbacks grouped by status
+  const feedbacksByStatus = useMemo(() => {
+    const result: Record<FeedbackStatus, FeedbackItem[]> = {
+      'pendiente': [],
+      'en-progreso': [],
+      'completado': [],
+      'rechazado': [],
     };
+    feedbacks.forEach(fb => {
+      const normalized = {
+        ...fb,
+        type: safeType(fb.type),
+        status: safeStatus(fb.status),
+        priority: safePriority(fb.priority),
+      };
+      result[normalized.status].push(normalized);
+    });
+    return result;
   }, [feedbacks]);
 
-  const filteredByTab = useMemo(() => {
-    const all = feedbacks.map(fb => ({
-      ...fb,
-      type: safeType(fb.type),
-      status: safeStatus(fb.status),
-      priority: safePriority(fb.priority),
-    }));
-    switch (activeTab) {
-      case 'pendientes': return all.filter(f => f.status === 'pendiente');
-      case 'en-progreso': return all.filter(f => f.status === 'en-progreso');
-      case 'resueltos': return all.filter(f => f.status === 'completado' || f.status === 'rechazado');
-      default: return all;
-    }
-  }, [feedbacks, activeTab]);
+  const totalUnread = useMemo(
+    () => feedbacks.filter(f => !f.read).length,
+    [feedbacks]
+  );
 
-  // Derived mutation states
+  const activeDragFeedback = useMemo(
+    () => activeDragId ? feedbacks.find(f => f.id === activeDragId) ?? null : null,
+    [activeDragId, feedbacks]
+  );
+
   const submitting = submitMutation.isPending;
   const updatingStatus = updateStatusMutation.isPending || sendResponseMutation.isPending;
 
@@ -339,11 +458,54 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     }
   };
 
+  // ── DnD handlers ──────────────────────────────────────────────────────────
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as number);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const draggedFb = feedbacks.find(f => f.id === active.id);
+    if (!draggedFb) return;
+
+    // over.id is always a column status string (useDroppable ids)
+    const targetStatus = over.id as FeedbackStatus;
+    if (!(targetStatus in statusConfig)) return;
+
+    const currentStatus = safeStatus(draggedFb.status);
+    if (targetStatus === currentStatus) return;
+
+    // Optimistic update
+    setFeedbacks(prev =>
+      prev.map(f => f.id === draggedFb.id ? { ...f, status: targetStatus } : f)
+    );
+
+    // API call
+    fetch(`/api/feedback/${draggedFb.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: targetStatus, read: true }),
+    }).then(r => {
+      if (!r.ok) throw new Error();
+      toast.success(`Movido a "${statusConfig[targetStatus].label}"`);
+    }).catch(() => {
+      // Revert
+      setFeedbacks(prev =>
+        prev.map(f => f.id === draggedFb.id ? draggedFb : f)
+      );
+      toast.error('Error al mover');
+    });
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(o); }}>
-      <DialogContent size="lg">
+      <DialogContent size={view === 'list' ? 'xl' : 'lg'}>
 
-        {/* ===================== LIST VIEW ===================== */}
+        {/* ===================== LIST VIEW — KANBAN ===================== */}
         {view === 'list' && (
           <>
             <DialogHeader>
@@ -352,12 +514,12 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                   <DialogTitle className="flex items-center gap-2">
                     <MessageSquare className="h-5 w-5" />
                     Feedback
-                    {counts.pendientes > 0 && (
-                      <Badge variant="pending" size="sm">{counts.pendientes} nuevo{counts.pendientes !== 1 ? 's' : ''}</Badge>
+                    {totalUnread > 0 && (
+                      <Badge variant="pending" size="sm">{totalUnread} nuevo{totalUnread !== 1 ? 's' : ''}</Badge>
                     )}
                   </DialogTitle>
                   <DialogDescription>
-                    Sugerencias, problemas e ideas de los usuarios
+                    Arrastrá las tarjetas para cambiar el estado
                   </DialogDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -373,71 +535,39 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
             </DialogHeader>
 
             <DialogBody>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="pendientes" className="flex-1 gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    Pendientes
-                    {counts.pendientes > 0 && (
-                      <span className="ml-0.5 text-xs bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.pendientes}</span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="en-progreso" className="flex-1 gap-1.5">
-                    <Loader2 className="h-3.5 w-3.5" />
-                    En progreso
-                    {counts.enProgreso > 0 && (
-                      <span className="ml-0.5 text-xs bg-info text-info-foreground px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.enProgreso}</span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="resueltos" className="flex-1 gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Resueltos
-                    {counts.resueltos > 0 && (
-                      <span className="ml-0.5 text-xs bg-success text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.resueltos}</span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="todos" className="flex-1 gap-1.5">
-                    Todos
-                    <span className="ml-0.5 text-xs bg-zinc-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">{counts.todos}</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Cargando destinatarios...</p>
-                    </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : feedbacks.length === 0 ? (
+                <EmptyState message="No hay feedbacks todavía" onAction={() => setView('new-type')} />
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {(Object.keys(statusConfig) as FeedbackStatus[]).map(status => (
+                      <KanbanColumn
+                        key={status}
+                        status={status}
+                        items={feedbacksByStatus[status]}
+                        onOpenDetail={openDetail}
+                      />
+                    ))}
                   </div>
-                ) : (
-                  <>
-                    <TabsContent value="pendientes">
-                      {filteredByTab.length === 0
-                        ? <EmptyState message="No hay feedbacks pendientes" onAction={() => setView('new-type')} />
-                        : <div className="space-y-2">{filteredByTab.map(fb => <FeedbackCard key={fb.id} fb={fb} onClick={() => openDetail(fb)} />)}</div>
-                      }
-                    </TabsContent>
-                    <TabsContent value="en-progreso">
-                      {filteredByTab.length === 0
-                        ? <EmptyState message="No hay feedbacks en progreso" />
-                        : <div className="space-y-2">{filteredByTab.map(fb => <FeedbackCard key={fb.id} fb={fb} onClick={() => openDetail(fb)} />)}</div>
-                      }
-                    </TabsContent>
-                    <TabsContent value="resueltos">
-                      {filteredByTab.length === 0
-                        ? <EmptyState message="No hay feedbacks resueltos aún" />
-                        : <div className="space-y-2">{filteredByTab.map(fb => <FeedbackCard key={fb.id} fb={fb} onClick={() => openDetail(fb)} />)}</div>
-                      }
-                    </TabsContent>
-                    <TabsContent value="todos">
-                      {filteredByTab.length === 0
-                        ? <EmptyState message="No hay feedbacks todavía" onAction={() => setView('new-type')} />
-                        : <div className="space-y-2">{filteredByTab.map(fb => <FeedbackCard key={fb.id} fb={fb} onClick={() => openDetail(fb)} />)}</div>
-                      }
-                    </TabsContent>
-                  </>
-                )}
-              </Tabs>
+
+                  <DragOverlay modifiers={[snapCenterToCursor]} dropAnimation={null}>
+                    {activeDragFeedback ? (
+                      <div className="rotate-1 shadow-2xl w-52 opacity-95 pointer-events-none">
+                        <FeedbackCard fb={activeDragFeedback} onClick={() => {}} compact />
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              )}
             </DialogBody>
           </>
         )}

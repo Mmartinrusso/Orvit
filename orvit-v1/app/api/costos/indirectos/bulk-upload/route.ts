@@ -1,26 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔍 Iniciando carga masiva de costos indirectos...');
-    
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const companyId = formData.get('companyId') as string;
+    const companyId = String(user!.companyId);
 
-    console.log('📊 Datos recibidos:', { 
-      fileName: file?.name, 
-      fileSize: file?.size, 
-      companyId 
+    console.log('📊 Datos recibidos:', {
+      fileName: file?.name,
+      fileSize: file?.size,
+      companyId
     });
 
-    if (!file || !companyId) {
-      console.log('❌ Error: Archivo o companyId faltante');
+    if (!file) {
+      console.log('❌ Error: Archivo faltante');
       return NextResponse.json(
-        { error: 'Archivo y companyId son requeridos' },
+        { error: 'Archivo es requerido' },
         { status: 400 }
       );
     }

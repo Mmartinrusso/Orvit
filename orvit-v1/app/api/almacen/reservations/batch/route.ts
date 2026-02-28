@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { StockReservationStatus } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,10 @@ interface BatchResult {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Permission check: batch release requires almacen.reservation.release
+    const { user, error: authError } = await requirePermission('almacen.reservation.release');
+    if (authError) return authError;
+
     const body = await request.json();
     const { ids, action, motivo, companyId } = body;
 

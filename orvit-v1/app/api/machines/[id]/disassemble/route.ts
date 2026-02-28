@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
@@ -54,7 +55,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  // 1. Validar autenticación
+  // 1. Validar autenticación y permiso de desarmar
+  const { user: authUser, error: authError } = await requirePermission('machines.disassemble');
+  if (authError) return authError;
+
   const user = await validateTokenFromCookie();
   if (!user) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-// ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
 // GET /api/tools/locations - Obtener todas las ubicaciones
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
 
@@ -55,6 +57,9 @@ export async function GET(request: NextRequest) {
 // POST /api/tools/locations - Crear nueva ubicación
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.create');
+    if (error) return error;
+
     const body = await request.json();
     const { name, description, type, companyId } = body;
 

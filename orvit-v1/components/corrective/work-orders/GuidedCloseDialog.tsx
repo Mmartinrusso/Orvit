@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,8 +37,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, AlertTriangle, CheckCircle2, Lightbulb } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import {
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  Lightbulb,
+  FileText,
+  ArrowRight,
+  Wrench,
+  Clock,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { SolutionControlPlan, type ControlStep } from '@/components/solutions/SolutionControlPlan';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ClipboardCheck, ChevronDown } from 'lucide-react';
 
 /**
  * Schema para cierre mínimo (obligatorio)
@@ -47,7 +62,7 @@ const minimumCloseSchema = z.object({
     .string()
     .max(150, 'Máximo 150 caracteres')
     .optional()
-    .or(z.literal('')),  // Permite vacío - se usará la solución como título
+    .or(z.literal('')),
   diagnosis: z
     .string()
     .min(10, 'Mínimo 10 caracteres')
@@ -61,6 +76,15 @@ const minimumCloseSchema = z.object({
   }),
   fixType: z.enum(['PARCHE', 'DEFINITIVA']).default('DEFINITIVA'),
   actualMinutes: z.number().int().min(1).optional(),
+  // Corrección de diagnóstico
+  confirmedCause: z.string().max(255).optional(),
+  diagnosisMatchesReport: z.boolean().default(true),
+  // Corrección de falla (máquina, componente, título, descripción)
+  correctionTitle: z.string().max(100).optional().or(z.literal('')),
+  correctionDescription: z.string().max(2000).optional().or(z.literal('')),
+  correctionMachineId: z.number().int().positive().optional(),
+  correctionComponentId: z.number().int().positive().optional(),
+  correctionSubcomponentId: z.number().int().positive().optional(),
 });
 
 /**
@@ -69,7 +93,6 @@ const minimumCloseSchema = z.object({
 const professionalCloseSchema = minimumCloseSchema.extend({
   finalComponentId: z.number().int().optional(),
   finalSubcomponentId: z.number().int().optional(),
-  confirmedCause: z.string().max(255).optional(),
   effectiveness: z.number().int().min(1).max(5).optional(),
   notes: z.string().max(2000).optional(),
 });
@@ -98,10 +121,8 @@ const fixTypeLabels = {
 /**
  * Dialog de cierre guiado con tabs Mínimo | Profesional
  *
- * Validaciones:
- * - Si requiresReturnToProduction=true Y returnToProductionConfirmed=false → Bloquear
- * - Tab Mínimo: diagnosis, solution, outcome obligatorios
- * - Tab Profesional: Todos los campos opcionales
+ * Incluye sección de "Revisión del reporte" donde el técnico puede
+ * confirmar o corregir lo que fue reportado originalmente.
  */
 export function GuidedCloseDialog({
   workOrderId,
@@ -113,10 +134,10 @@ export function GuidedCloseDialog({
   const [activeTab, setActiveTab] = useState<'minimum' | 'professional'>(
     'minimum'
   );
+  const [controlPlan, setControlPlan] = useState<ControlStep[]>([]);
+  const [controlPlanOpen, setControlPlanOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Siempre usar professionalCloseSchema ya que incluye todos los campos
-  // minimumCloseSchema es un subset, así que professionalCloseSchema valida ambos casos
   const form = useForm<CloseFormData>({
     resolver: zodResolver(professionalCloseSchema),
     defaultValues: {
@@ -125,7 +146,38 @@ export function GuidedCloseDialog({
       solution: '',
       outcome: undefined,
       fixType: 'DEFINITIVA',
+      diagnosisMatchesReport: true,
+      confirmedCause: '',
+      correctionTitle: '',
+      correctionDescription: '',
     },
+  });
+
+  const diagnosisMatchesReport = form.watch('diagnosisMatchesReport');
+
+  // Fetch datos de la falla asociada a esta OT
+  const { data: failureData } = useQuery({
+    queryKey: ['wo-failure-report', workOrderId],
+    queryFn: async () => {
+      const res = await fetch(`/api/work-orders/${workOrderId}?include=failureOccurrences`);
+      if (!res.ok) return null;
+      const wo = await res.json();
+      const fo = wo.failureOccurrences?.[0];
+      if (!fo) return null;
+      return {
+        id: fo.id,
+        title: fo.title || 'Sin título',
+        description: fo.description || null,
+        priority: fo.priority,
+        status: fo.status,
+        causedDowntime: fo.causedDowntime,
+        machineId: wo.machineId as number | null,
+        machineName: wo.machine?.name || null,
+        componentName: wo.component?.name || null,
+        incidentType: fo.incidentType,
+      };
+    },
+    enabled: open,
   });
 
   // Fetch previous solutions (para sugerencias)
@@ -142,9 +194,33 @@ export function GuidedCloseDialog({
     enabled: open,
   });
 
+  // Queries para corrección de falla (solo cuando toggle está OFF)
+  const correctionMachineId = form.watch('correctionMachineId');
+  const correctionComponentId = form.watch('correctionComponentId');
+
+  const { data: machines } = useQuery({
+    queryKey: ['machines-list'],
+    queryFn: async () => {
+      const res = await fetch('/api/machines');
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.machines || [];
+    },
+    enabled: open && !diagnosisMatchesReport,
+  });
+
+  const { data: machineComponents } = useQuery({
+    queryKey: ['machine-components', correctionMachineId],
+    queryFn: async () => {
+      const res = await fetch(`/api/machines/${correctionMachineId}/components`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: open && !!correctionMachineId && !diagnosisMatchesReport,
+  });
+
   const closeMutation = useMutation({
     mutationFn: async (data: CloseFormData) => {
-      // data ya viene limpio desde handleSubmit con closingMode incluido
       const res = await fetch(`/api/work-orders/${workOrderId}/close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,8 +229,6 @@ export function GuidedCloseDialog({
 
       if (!res.ok) {
         const error = await res.json();
-        console.error('❌ [GuidedCloseDialog] Error response:', error);
-        // Mensaje más claro para el caso de downtime abierto
         if (error.requiresAction && error.reason) {
           throw new Error(error.reason);
         }
@@ -170,6 +244,8 @@ export function GuidedCloseDialog({
       queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
       onOpenChange(false);
       form.reset();
+      setControlPlan([]);
+      setControlPlanOpen(false);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -177,7 +253,6 @@ export function GuidedCloseDialog({
   });
 
   const handleSubmit = (data: CloseFormData) => {
-    // Limpiar datos antes de enviar
     const cleanData: Record<string, unknown> = {
       diagnosis: data.diagnosis,
       solution: data.solution,
@@ -186,23 +261,44 @@ export function GuidedCloseDialog({
       closingMode: activeTab === 'minimum' ? 'MINIMUM' : 'PROFESSIONAL',
     };
 
-    // Agregar título solo si tiene contenido
     if (data.title && data.title.trim()) {
       cleanData.title = data.title.trim();
     }
 
-    // Agregar tiempo real si se proporcionó
     if (data.actualMinutes && data.actualMinutes > 0) {
       cleanData.actualMinutes = data.actualMinutes;
     }
 
-    // Campos profesionales (solo si estamos en tab profesional)
+    // Causa confirmada en SolutionApplied
+    if (data.confirmedCause && data.confirmedCause.trim()) {
+      cleanData.confirmedCause = data.confirmedCause.trim();
+    }
+
+    // Corrección de falla: actualiza el FailureOccurrence y guarda snapshot del original
+    if (!data.diagnosisMatchesReport) {
+      const correction: Record<string, unknown> = {};
+      if (data.correctionTitle?.trim()) correction.title = data.correctionTitle.trim();
+      if (data.correctionDescription?.trim()) correction.description = data.correctionDescription.trim();
+      if (data.correctionMachineId) correction.machineId = data.correctionMachineId;
+      if (data.correctionSubcomponentId) correction.subcomponentId = data.correctionSubcomponentId;
+      if (data.confirmedCause?.trim()) correction.confirmedCause = data.confirmedCause.trim();
+      if (Object.keys(correction).length > 0) {
+        cleanData.correction = correction;
+      }
+    }
+
+    // Campos profesionales
     if (activeTab === 'professional') {
       if (data.finalComponentId) cleanData.finalComponentId = data.finalComponentId;
       if (data.finalSubcomponentId) cleanData.finalSubcomponentId = data.finalSubcomponentId;
-      if (data.confirmedCause) cleanData.confirmedCause = data.confirmedCause;
       if (data.effectiveness) cleanData.effectiveness = data.effectiveness;
       if (data.notes) cleanData.notes = data.notes;
+    }
+
+    // Plan de control
+    const validSteps = controlPlan.filter(s => s.description.trim() && s.delayMinutes > 0);
+    if (validSteps.length > 0) {
+      cleanData.controlPlan = validSteps;
     }
 
     closeMutation.mutate(cleanData as CloseFormData);
@@ -211,7 +307,6 @@ export function GuidedCloseDialog({
   const handleLoadPreviousSolution = (solutionId: number) => {
     const solution = previousSolutions?.find((s: any) => s.id === solutionId);
     if (solution) {
-      // Cargar título si existe, o generar uno desde la solución
       if (solution.title) {
         form.setValue('title', solution.title);
       } else if (solution.solution) {
@@ -236,19 +331,36 @@ export function GuidedCloseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="md" className="p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-success" />
-            Cierre de Orden de Trabajo
-          </DialogTitle>
-          <DialogDescription>
-            Complete la información del trabajo realizado. Tab{' '}
-            <strong>Mínimo</strong> para cierre rápido, <strong>Profesional</strong> para registro completo.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent size="lg" className="p-0 flex flex-col max-h-[90vh]" hideCloseButton>
+        {/* ── Header ── */}
+        <div className="flex-shrink-0 bg-background border-b">
+          <div className="px-5 py-4 flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+                <h2 className="text-base font-semibold truncate">
+                  Cierre de Orden de Trabajo
+                </h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Complete la información del trabajo realizado
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-        <DialogBody className="px-6 py-5 space-y-5">
+        {/* ── Contenido scrollable ── */}
+        <Form {...form}>
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           {/* Alerta de bloqueo */}
           {isBlocked && (
             <Alert variant="destructive">
@@ -258,6 +370,250 @@ export function GuidedCloseDialog({
                 Producción antes de cerrar esta orden (hay downtime abierto).
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* ── Sección: Lo que se reportó ── */}
+          {failureData && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Lo que se reportó
+                </p>
+                <Badge
+                  variant={failureData.incidentType === 'ROTURA' ? 'destructive' : 'outline'}
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {failureData.incidentType || 'FALLA'}
+                </Badge>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{failureData.title}</p>
+                {failureData.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {failureData.description}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {failureData.machineName && (
+                    <span className="flex items-center gap-1">
+                      <Wrench className="h-3 w-3" />
+                      {failureData.machineName}
+                      {failureData.componentName && ` > ${failureData.componentName}`}
+                    </span>
+                  )}
+                  {failureData.causedDowntime && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Causó parada
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Toggle: ¿Coincide con lo que encontraste? */}
+              <div className="flex items-center justify-between rounded-md border bg-background px-3 py-2">
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium">¿Coincide con lo que encontraste?</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Si no, contá qué era realmente más abajo
+                  </p>
+                </div>
+                <Switch
+                  checked={diagnosisMatchesReport}
+                  onCheckedChange={(checked) => {
+                    form.setValue('diagnosisMatchesReport', checked);
+                    if (checked) {
+                      form.setValue('confirmedCause', '');
+                      form.setValue('correctionTitle', '');
+                      form.setValue('correctionDescription', '');
+                      form.setValue('correctionMachineId', undefined);
+                      form.setValue('correctionComponentId', undefined);
+                      form.setValue('correctionSubcomponentId', undefined);
+                    } else if (failureData?.machineId) {
+                      // Preseleccionar la máquina de la OT
+                      form.setValue('correctionMachineId', failureData.machineId);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Sección de corrección expandida — solo si NO coincide */}
+              {!diagnosisMatchesReport && (
+                <div className="rounded-md border border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/50 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Corrección del reporte
+                  </p>
+
+                  {/* Título corregido */}
+                  <FormField
+                    control={form.control}
+                    name="correctionTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Título corregido</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: Correa desgastada en motor principal"
+                            className="text-sm bg-white dark:bg-background"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Máquina + Componente en grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="correctionMachineId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Máquina real</FormLabel>
+                          <Select
+                            onValueChange={(v) => {
+                              field.onChange(parseInt(v));
+                              // Reset componente y subcomponente al cambiar máquina
+                              form.setValue('correctionComponentId', undefined);
+                              form.setValue('correctionSubcomponentId', undefined);
+                            }}
+                            value={field.value?.toString() ?? ''}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="bg-white dark:bg-background text-sm">
+                                <SelectValue placeholder="Seleccionar..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {(machines || []).map((m: any) => (
+                                <SelectItem key={m.id} value={m.id.toString()}>
+                                  {m.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="correctionComponentId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Componente real</FormLabel>
+                          <Select
+                            onValueChange={(v) => {
+                              field.onChange(parseInt(v));
+                              form.setValue('correctionSubcomponentId', undefined);
+                            }}
+                            value={field.value?.toString() ?? ''}
+                            disabled={!correctionMachineId}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="bg-white dark:bg-background text-sm">
+                                <SelectValue placeholder={correctionMachineId ? 'Seleccionar...' : 'Elegí máquina'} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {(machineComponents || []).map((c: any) => (
+                                <SelectItem key={c.id} value={c.id.toString()}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Subcomponente (si hay componente seleccionado y tiene subcomponentes) */}
+                  {correctionComponentId && machineComponents && (() => {
+                    const selectedComp = machineComponents.find((c: any) => c.id === correctionComponentId);
+                    const subs = selectedComp?.subcomponents || [];
+                    if (subs.length === 0) return null;
+                    return (
+                      <FormField
+                        control={form.control}
+                        name="correctionSubcomponentId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Subcomponente</FormLabel>
+                            <Select
+                              onValueChange={(v) => field.onChange(parseInt(v))}
+                              value={field.value?.toString() ?? ''}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white dark:bg-background text-sm">
+                                  <SelectValue placeholder="Seleccionar..." />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {subs.map((s: any) => (
+                                  <SelectItem key={s.id} value={s.id.toString()}>
+                                    {s.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })()}
+
+                  {/* Causa real */}
+                  <FormField
+                    control={form.control}
+                    name="confirmedCause"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">¿Qué era realmente? (Causa real)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: No era el rodamiento, era la correa desgastada"
+                            className="text-sm bg-white dark:bg-background"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Descripción corregida */}
+                  <FormField
+                    control={form.control}
+                    name="correctionDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Descripción corregida (opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Detalle adicional sobre lo que encontraste..."
+                            className="text-sm bg-white dark:bg-background"
+                            rows={2}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <p className="text-[10px] text-orange-600 dark:text-orange-400">
+                    La falla se actualizará con estos datos. Lo reportado originalmente queda guardado.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Sugerencias de soluciones previas */}
@@ -286,7 +642,7 @@ export function GuidedCloseDialog({
             </Alert>
           )}
 
-          <Form {...form}>
+          {/* ── Formulario con tabs ── */}
             <form onSubmit={form.handleSubmit(handleSubmit)} id="close-form">
               <Tabs
                 value={activeTab}
@@ -341,7 +697,7 @@ export function GuidedCloseDialog({
                       <FormLabel>¿Qué encontraste? (Diagnóstico) *</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Ej: Rodamiento desgastado en motor principal"
+                          placeholder="Ej: Rodamiento desgastado en motor principal, con juego axial excesivo"
                           rows={2}
                           {...field}
                         />
@@ -370,63 +726,64 @@ export function GuidedCloseDialog({
                   )}
                 />
 
-                {/* Resultado */}
-                <FormField
-                  control={form.control}
-                  name="outcome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Resultado *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione resultado..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(outcomeLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Resultado + Tipo de Solución en fila */}
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="outcome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Resultado *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(outcomeLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Tipo de Solución */}
-                <FormField
-                  control={form.control}
-                  name="fixType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Solución</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione tipo..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(fixTypeLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="fixType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Solución</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(fixTypeLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {/* Tiempo Real */}
                 <FormField
@@ -438,6 +795,7 @@ export function GuidedCloseDialog({
                       <FormControl>
                         <Input
                           type="number"
+                          inputMode="numeric"
                           placeholder="90"
                           {...field}
                           onChange={(e) =>
@@ -462,24 +820,6 @@ export function GuidedCloseDialog({
                   Incluye todos los campos del cierre mínimo + datos adicionales
                   para análisis
                 </p>
-
-                {/* Causa Confirmada */}
-                <FormField
-                  control={form.control}
-                  name="confirmedCause"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Causa Confirmada</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Falta de lubricación programada"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {/* Efectividad */}
                 <FormField
@@ -531,10 +871,37 @@ export function GuidedCloseDialog({
               </TabsContent>
               </Tabs>
             </form>
-          </Form>
-        </DialogBody>
 
-        <DialogFooter className="px-6 py-4 border-t">
+          {/* ─── Plan de control de seguimiento ─── */}
+          <Collapsible open={controlPlanOpen} onOpenChange={setControlPlanOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-between h-8 px-2 text-sm font-normal text-muted-foreground hover:text-foreground"
+              >
+                <span className="flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4" />
+                  Plan de control de seguimiento
+                  {controlPlan.length > 0 && (
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                      {controlPlan.length} {controlPlan.length === 1 ? 'paso' : 'pasos'}
+                    </span>
+                  )}
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${controlPlanOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <SolutionControlPlan value={controlPlan} onChange={setControlPlan} />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+        </Form>
+
+        {/* ── Footer ── */}
+        <DialogFooter className="px-5 py-4 border-t">
           <Button
             type="button"
             variant="outline"

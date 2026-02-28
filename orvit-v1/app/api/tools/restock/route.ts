@@ -1,39 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-// ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-// Helper para obtener el usuario actual
-async function getCurrentUser() {
-  try {
-    const token = cookies().get('token')?.value;
-    if (!token) {
-      throw new Error('No hay token de autenticación');
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number }
-    });
-
-    return user;
-  } catch (error) {
-    console.error('Error obteniendo usuario:', error);
-    return null;
-  }
-}
 
 // POST /api/tools/restock - Reponer stock de herramientas
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, error } = await requirePermission('tools.manage_stock');
+    if (error) return error;
+
     const body = await request.json();
     const { toolId, quantity, reason, notes, supplier } = body;
 
@@ -44,14 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar usuario
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return NextResponse.json(
-        { error: 'Usuario no autenticado' },
-        { status: 401 }
-      );
-    }
+    const currentUser = { id: authUser!.id };
 
     // Obtener la herramienta actual
     const tool = await prisma.tool.findUnique({

@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_VIEW);
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_ADVANCED);
     if (error) return error;
 
     const { searchParams } = new URL(req.url);

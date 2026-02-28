@@ -124,7 +124,7 @@ export default function MachineMaintenanceTab({
     machineId, true, companyId, sectorId
   );
   const { components } = useMachineComponents(machineId, true);
-  const { hasPermission: canCreateMaintenance } = usePermissionRobust('crear_mantenimiento');
+  const { hasPermission: canCreateMaintenance } = usePermissionRobust('preventive_maintenance.create');
 
   const handleExecuteClick = (wo: any, e: React.MouseEvent) => {
     e.stopPropagation();

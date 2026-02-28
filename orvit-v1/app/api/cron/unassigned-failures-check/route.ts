@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     // Obtener fallas abiertas sin OT asignada
     const unassignedFailures = await prisma.failureOccurrence.findMany({
       where: {
-        status: { in: ['OPEN', 'REPORTED'] },
+        status: { in: ['REPORTED', 'IN_PROGRESS'] },
         // No tiene OT o la OT no tiene asignado
         OR: [
           { workOrder: null },

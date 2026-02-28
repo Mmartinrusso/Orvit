@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,12 +10,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const families = await prisma.$queryRaw<any[]>`
       SELECT
@@ -44,10 +43,14 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { companyId, name, description, checklistIds } = body;
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId || !name) {
+    const body = await request.json();
+    const { name, description, checklistIds } = body;
+    const companyId = user!.companyId;
+
+    if (!name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -73,6 +76,9 @@ export async function POST(request: Request) {
  */
 export async function PATCH(request: Request) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const { familyId, machineIds, action } = body;
 

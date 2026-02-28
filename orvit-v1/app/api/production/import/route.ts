@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import * as XLSX from 'xlsx';
 
@@ -31,27 +33,9 @@ interface ImportResult {
 // POST /api/production/import - Importar producción desde Excel/CSV
 export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId requerido' },
-        { status: 400 }
-      );
-    }
-
-    // Verificar que la empresa existe
-    const company = await prisma.company.findUnique({
-      where: { id: parseInt(companyId) },
-    });
-
-    if (!company) {
-      return NextResponse.json(
-        { error: 'Empresa no encontrada' },
-        { status: 404 }
-      );
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CONFIG.EDIT);
+    if (error) return error;
+    const companyId = String(user!.companyId);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;

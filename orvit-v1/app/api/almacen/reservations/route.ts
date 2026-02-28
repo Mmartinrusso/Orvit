@@ -7,6 +7,7 @@ import {
   getReservationsSummary,
 } from '@/lib/almacen/reservation-service';
 import { StockReservationStatus, StockReservationType } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 /**
  * GET /api/almacen/reservations
@@ -23,6 +24,10 @@ import { StockReservationStatus, StockReservationType } from '@prisma/client';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Permission check: almacen.view
+    const { user, error: authError } = await requirePermission('almacen.view');
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
 
     const companyId = Number(searchParams.get('companyId'));
@@ -131,6 +136,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Permission check: almacen.reservation.create
+    const { user, error: authError } = await requirePermission('almacen.reservation.create');
+    if (authError) return authError;
+
     const body = await request.json();
     const {
       supplierItemId,
@@ -222,6 +231,10 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    // Permission check: almacen.reservation.release
+    const { user, error: authError } = await requirePermission('almacen.reservation.release');
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
 
     const id = searchParams.get('id');

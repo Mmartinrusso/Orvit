@@ -26,6 +26,7 @@ import {
 import { TrendingUp, DollarSign, Package, AlertTriangle } from 'lucide-react';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 interface ProfitabilityData {
   periodo: {
@@ -171,6 +172,7 @@ export default function RentabilidadPage() {
   ];
 
   return (
+    <PermissionGuard permission="ventas.reportes.rentabilidad">
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div>
@@ -350,5 +352,6 @@ export default function RentabilidadPage() {
         </Card>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

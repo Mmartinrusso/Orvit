@@ -7,6 +7,10 @@ export const dynamic = 'force-dynamic';
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId') || '3';

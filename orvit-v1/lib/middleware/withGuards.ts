@@ -33,7 +33,6 @@ import { JWT_SECRET } from '@/lib/auth';
 import { getUserPermissions } from '@/lib/permissions-helpers';
 import { loggers } from '@/lib/logger';
 import type { Permission } from '@/lib/permissions';
-import * as Sentry from '@sentry/nextjs';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -296,11 +295,6 @@ export function withGuards(
           },
           `Rate limit exceeded: ${endpoint}`
         );
-
-        Sentry.captureMessage(`Rate limit exceeded: ${endpoint}`, {
-          level: 'warning',
-          extra: { userId, companyId, maxReqs },
-        });
 
         return NextResponse.json(
           { error: 'Demasiadas solicitudes. Intenta de nuevo más tarde.' },

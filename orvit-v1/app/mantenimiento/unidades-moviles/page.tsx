@@ -35,6 +35,7 @@ import { UnitsBulkActions } from '@/components/unidades-moviles/UnitsBulkActions
 import { KilometrajeMasivoDialog } from '@/components/unidades-moviles/KilometrajeMasivoDialog';
 import { UnidadMovil } from '@/components/unidades-moviles/UnitCard';
 import { useUnitsFilters, UnitsFilters } from '@/components/unidades-moviles/useUnitsFilters';
+import { TipoUnidadEnum } from '@/lib/unidades-moviles/validations';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -145,19 +146,7 @@ export default function UnidadesMovilesPage() {
     return Object.keys(errors).length === 0;
   }, [formData]);
 
-  const tiposUnidad = [
-    'Camión',
-    'Camioneta',
-    'Auto',
-    'Moto',
-    'Tractor',
-    'Grúa',
-    'Excavadora',
-    'Bulldozer',
-    'Montacargas',
-    'Autoelevador',
-    'Otro'
-  ];
+  const tiposUnidad = TipoUnidadEnum.options;
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -344,10 +333,7 @@ export default function UnidadesMovilesPage() {
       const response = await fetch(`/api/mantenimiento/unidades-moviles/${editingUnidad.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          companyId: currentCompany?.id
-        })
+        body: JSON.stringify(formData)
       });
 
       if (response.ok) {

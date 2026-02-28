@@ -879,18 +879,14 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
     ? input.employeeSelectConfig.absenceReasons
     : DEFAULT_ABSENCE_REASONS;
 
-  // Obtener lista de puestos únicos - usar allSectorRoles de la API si está disponible
-  // De lo contrario, extraer de los empleados cargados
+  // Obtener lista de puestos únicos — siempre incluir los roles de los empleados cargados
+  // para garantizar que el valor actual del select siempre tenga una opción coincidente
   const availableRoles = React.useMemo(() => {
-    // Si tenemos allSectorRoles de la API, usarlo (tiene TODOS los puestos del sector)
-    if (allSectorRoles.length > 0) {
-      return allSectorRoles;
-    }
-    // Fallback: extraer de los empleados cargados
-    const roles = employees
+    const empRoles = employees
       .map(emp => emp.role)
       .filter((role): role is string => !!role && role.trim() !== '');
-    return [...new Set(roles)].sort();
+    const combined = [...new Set([...allSectorRoles, ...empRoles])];
+    return combined.sort();
   }, [employees, allSectorRoles]);
 
   // Cache de puestos de trabajo por sector (para transferencias)
@@ -973,6 +969,7 @@ function EmployeeSelectRenderer({ input, employees, workSectors, sectors, value,
       const emp = employees.find(e => e.id === employeeId);
       onChange([...value, {
         employeeId,
+        employee: emp,  // Incluir objeto completo para poder mostrar el nombre en historial/detalles
         tasks: [],
         status: 'PRESENT',
         assignedRole: emp?.role || undefined, // Puesto por defecto
@@ -2247,7 +2244,17 @@ export default function NewRoutineExecutionForm({
     if (loadingData || initializedRef.current) return;
     initializedRef.current = true;
 
-    const templateToUse = draftToResume?.template || preselectedTemplate;
+    // Si reanudamos un draft, usamos el template completo del cache (groups, itemsStructure, etc.)
+    // El template del draft API solo tiene { id, code, name, type, items } — incompleto para renderizar
+    let templateToUse = draftToResume?.template || preselectedTemplate;
+    if (draftToResume?.template && templates.length > 0) {
+      const fullTemplate = templates.find(t => t.id === draftToResume.template.id);
+      if (fullTemplate) {
+        templateToUse = fullTemplate;
+        setSelectedTemplate(fullTemplate);
+      }
+    }
+
     if (templateToUse) {
       initializeResponses(templateToUse);
 
@@ -2324,7 +2331,7 @@ export default function NewRoutineExecutionForm({
     setIsSaving(true);
     try {
       // Build responses array in the same format as final submit
-      const allItems = selectedTemplate.items || [];
+      const allItems = Array.isArray(selectedTemplate.items) ? selectedTemplate.items : [];
       const responseArray = allItems.map((item: any) => {
         const inputs = item.inputs || [{ id: item.id, type: item.type || 'CHECK' }];
         const inputData = inputs.map((input: any) => ({
@@ -2366,7 +2373,7 @@ export default function NewRoutineExecutionForm({
     }
   }, [selectedTemplate, draftId]);
 
-  const flatItems: RoutineItem[] = selectedTemplate?.items || [];
+  const flatItems: RoutineItem[] = Array.isArray(selectedTemplate?.items) ? selectedTemplate!.items : [];
 
   // Ítems habilitados y con condición visible (declared here to avoid TDZ in handleCancel)
   const visibleFlatItems = useMemo(() => {
@@ -2497,9 +2504,9 @@ export default function NewRoutineExecutionForm({
   const getAllItems = (template: RoutineTemplate): RoutineItem[] => {
     let items: RoutineItem[];
     if (template.itemsStructure === 'hierarchical' && template.groups?.length) {
-      items = template.groups.flatMap((g) => g.items);
+      items = template.groups.flatMap((g) => Array.isArray(g.items) ? g.items : []);
     } else {
-      items = template.items || [];
+      items = Array.isArray(template.items) ? template.items : [];
     }
     // Filter out disabled items
     return items.filter(item => !item.disabled);
@@ -2975,7 +2982,7 @@ export default function NewRoutineExecutionForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 flex-1 min-h-0 overflow-hidden">
         {/* Template Selection */}
-        {!preselectedTemplate && (
+        {!preselectedTemplate && !draftToResume && (
           <FormField
             control={form.control}
             name="templateId"

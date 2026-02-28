@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import {
   completeTemplate,
 } from '@/lib/maintenance/preventive-template.repository';
@@ -52,6 +53,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso de completar mantenimiento preventivo
+    const { user: permUser, error: permError } = await requirePermission('preventive_maintenance.complete');
+    if (permError) return permError;
+
     const id = Number(params.id);
     const body = await request.json();
     const { executionData } = body;

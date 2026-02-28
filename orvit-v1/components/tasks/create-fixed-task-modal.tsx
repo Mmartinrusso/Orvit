@@ -323,7 +323,7 @@ export function CreateFixedTaskModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <DialogBody className="space-y-6">
               {/* Información básica */}
               <Card>
@@ -368,7 +368,7 @@ export function CreateFixedTaskModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="frequency">Frecuencia *</Label>
                       <Select 
@@ -473,7 +473,7 @@ export function CreateFixedTaskModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="estimatedTime">Tiempo estimado (minutos)</Label>
                       <Input

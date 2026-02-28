@@ -33,7 +33,7 @@ export const CreateWorkOrderSchema = z.object({
   scheduledDate: optionalIsoDateString,
   estimatedHours: coerceOptionalNonNegative,
   cost: coerceOptionalNonNegative,
-  notes: z.string().max(10000, 'Notas muy largas').optional(),
+  notes: z.string().max(10000, 'Notas muy largas').nullable().optional(),
   companyId: coercePositiveInt('ID de empresa'),
   sectorId: coerceOptionalPositiveInt,
   status: WorkOrderStatusSchema.default('PENDING'),
@@ -58,7 +58,7 @@ export const UpdateWorkOrderSchema = z.object({
   estimatedHours: z.number().min(0).nullable().optional(),
   actualHours: z.number().min(0).nullable().optional(),
   cost: z.number().min(0).nullable().optional(),
-  notes: z.string().max(10000, 'Notas muy largas').optional(),
+  notes: z.string().max(10000, 'Notas muy largas').nullable().optional(),
   sectorId: z.number().int().positive().nullable().optional(),
 });
 

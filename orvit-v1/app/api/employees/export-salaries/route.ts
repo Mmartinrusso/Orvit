@@ -1,24 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/employees/export-salaries - Exportar empleados con sus últimos sueldos
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 Iniciando exportación de sueldos...');
-    
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    
-    console.log('Company ID:', companyId);
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId requerido' },
-        { status: 400 }
-      );
-    }
+    console.log('🔍 Iniciando exportación de sueldos...');
+
+    const companyId = String(user!.companyId);
+
+    console.log('Company ID:', companyId);
 
     // Obtener empleados activos con sus categorías
     console.log('Buscando empleados...');

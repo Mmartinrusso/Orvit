@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import { logApiPerformance, logApiError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +16,16 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const companyId = searchParams.get('companyId');
   const itemType = searchParams.get('itemType');
-  
+
   const perf = logApiPerformance('tools/dashboard', { companyId, itemType });
 
   try {
+    const { user, error } = await requirePermission('panol.view_products');
+    if (error) {
+      perf.end({ error: 'unauthorized' });
+      return error;
+    }
+
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50', 10), 100);
 
     if (!companyId) {

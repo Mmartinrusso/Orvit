@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,11 +8,14 @@ export const dynamic = 'force-dynamic';
 // POST - Generar registros mensuales para todas las bases activas
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     // Por ahora, obtener el primer usuario activo sin autenticación
     const user = await prisma.user.findFirst({
       where: { isActive: true }
     });
-    
+
     if (!user) {
       return NextResponse.json({ error: 'No se encontró usuario activo' }, { status: 404 });
     }

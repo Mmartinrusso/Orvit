@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,6 +132,8 @@ export default function EmpleadosPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const canManageNominas = hasPermission('ingresar_nominas');
 
   // Dialog states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -910,37 +913,43 @@ export default function EmpleadosPage() {
             />
             {!bulkEditMode ? (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={enterBulkEdit}
-                  disabled={filteredEmployees.length === 0}
-                >
-                  <Table2 className="h-4 w-4 mr-2" />
-                  Edicion masiva
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      Excel
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Importar desde Excel
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={downloadTemplate}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Descargar plantilla
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button size="sm" onClick={() => handleOpenDialog()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo Empleado
-                </Button>
+                {canManageNominas && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={enterBulkEdit}
+                    disabled={filteredEmployees.length === 0}
+                  >
+                    <Table2 className="h-4 w-4 mr-2" />
+                    Edicion masiva
+                  </Button>
+                )}
+                {canManageNominas && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        Excel
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importar desde Excel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={downloadTemplate}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Descargar plantilla
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {canManageNominas && (
+                  <Button size="sm" onClick={() => handleOpenDialog()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuevo Empleado
+                  </Button>
+                )}
               </>
             ) : (
               <>
@@ -1009,7 +1018,7 @@ export default function EmpleadosPage() {
                   : 'Crea tu primer empleado o importa desde Excel'
                 }
               </p>
-              {!searchTerm && filterUnionId === 'all' && filterSectorId === 'all' && (
+              {!searchTerm && filterUnionId === 'all' && filterSectorId === 'all' && canManageNominas && (
                 <div className="flex justify-center gap-2">
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="h-4 w-4 mr-2" />
@@ -1214,27 +1223,31 @@ export default function EmpleadosPage() {
                             <DollarSign className="h-4 w-4 mr-2" />
                             Conceptos Fijos
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenDialog(emp)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={async () => {
-                              const ok = await confirm({
-                                title: 'Desactivar empleado',
-                                description: `¿Desactivar a ${emp.name}?`,
-                                confirmText: 'Eliminar',
-                                variant: 'destructive',
-                              });
-                              if (ok) {
-                                deleteMutation.mutate(emp.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Desactivar
-                          </DropdownMenuItem>
+                          {canManageNominas && (
+                            <DropdownMenuItem onClick={() => handleOpenDialog(emp)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                          )}
+                          {canManageNominas && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: 'Desactivar empleado',
+                                  description: `¿Desactivar a ${emp.name}?`,
+                                  confirmText: 'Eliminar',
+                                  variant: 'destructive',
+                                });
+                                if (ok) {
+                                  deleteMutation.mutate(emp.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Desactivar
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

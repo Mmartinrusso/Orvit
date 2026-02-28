@@ -21,15 +21,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
+    // companyId always from JWT — never from client
+    const companyId = payload.companyId as number;
+
+    // Require skills.view or skills.requirements.manage
+    if (payload.role !== 'SUPERADMIN') {
+      const userOnCompany = await prisma.userOnCompany.findFirst({
+        where: { userId: payload.userId, companyId },
+        include: { role: { include: { permissions: true } } },
+      });
+      const hasPermission = userOnCompany?.role?.permissions?.some(
+        (p) =>
+          p.permission === 'skills.view' ||
+          p.permission === 'skills.requirements.manage'
+      );
+      if (!hasPermission) {
+        return NextResponse.json(
+          { error: 'Sin permiso para ver requisitos de habilidades' },
+          { status: 403 }
+        );
+      }
+    }
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId') || payload.companyId;
     const checklistId = searchParams.get('checklistId');
     const machineId = searchParams.get('machineId');
     const maintenanceType = searchParams.get('maintenanceType');
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId es requerido' }, { status: 400 });
-    }
 
     const where: Record<string, unknown> = {
       companyId: Number(companyId),

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-// ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
 // GET /api/tools/suppliers - Obtener todos los proveedores
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
+
     // Obtener parámetros
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -57,6 +59,9 @@ export async function GET(request: NextRequest) {
 // POST /api/tools/suppliers - Crear nuevo proveedor
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('tools.create');
+    if (error) return error;
+
     const body = await request.json();
     const { name, contact, phone, email, companyId } = body;
 

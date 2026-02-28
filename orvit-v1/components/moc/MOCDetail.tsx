@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,12 +44,17 @@ import {
   MapPin,
   Calendar,
   Loader2,
+  Plus,
+  Trash2,
+  Circle,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { MOCStatusBadge, MOCTypeBadge, MOCPriorityBadge } from './MOCStatusBadge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MOCDetailProps {
   mocId: number;
@@ -86,6 +91,7 @@ const statusActions: Record<string, StatusAction[]> = {
 
 export function MOCDetail({ mocId }: MOCDetailProps) {
   const router = useRouter();
+  const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [statusDialog, setStatusDialog] = useState<StatusAction | null>(null);
   const [statusNotes, setStatusNotes] = useState('');
@@ -128,6 +134,68 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
     },
   });
 
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [showTaskInput, setShowTaskInput] = useState(false);
+  const taskInputRef = useRef<HTMLInputElement>(null);
+
+  const createTaskMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const res = await fetch(`/api/moc/${mocId}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al crear tarea');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setNewTaskTitle('');
+      setShowTaskInput(false);
+      queryClient.invalidateQueries({ queryKey: ['moc', mocId] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const completeTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await fetch(`/api/moc/${mocId}/tasks?taskId=${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COMPLETED' }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al completar tarea');
+      }
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['moc', mocId] }),
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await fetch(`/api/moc/${mocId}/tasks?taskId=${taskId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al eliminar tarea');
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['moc', mocId] }),
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleAddTask = () => {
+    const title = newTaskTitle.trim();
+    if (!title) return;
+    createTaskMutation.mutate(title);
+  };
+
   const moc = data?.moc;
 
   if (isLoading) {
@@ -158,7 +226,15 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
     );
   }
 
-  const availableActions = statusActions[moc.status] || [];
+  // Filter available actions based on permissions
+  const allActions = statusActions[moc.status] || [];
+  const availableActions = allActions.filter((action) => {
+    if (action.status === 'APPROVED') return hasPermission('moc.approve');
+    if (action.status === 'REJECTED') return hasPermission('moc.approve');
+    if (action.status === 'UNDER_REVIEW' || action.status === 'PENDING_REVIEW') return hasPermission('moc.review');
+    if (action.status === 'IMPLEMENTING' || action.status === 'COMPLETED') return hasPermission('moc.implement');
+    return hasPermission('moc.edit');
+  });
 
   const handleStatusChange = (action: StatusAction) => {
     if (action.requiresNotes) {
@@ -221,7 +297,7 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
                   </DropdownMenu>
                 )}
 
-                {moc.status === 'DRAFT' && (
+                {moc.status === 'DRAFT' && hasPermission('moc.edit') && (
                   <Button
                     variant="outline"
                     onClick={() => router.push(`/mantenimiento/moc/${mocId}/editar`)}
@@ -423,33 +499,130 @@ export function MOCDetail({ mocId }: MOCDetailProps) {
               </TabsContent>
 
               <TabsContent value="tasks" className="mt-4">
-                {moc.tasks?.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ListTodo className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No hay tareas de implementación</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {moc.tasks?.map((task: any) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center gap-4 p-3 border rounded-lg"
+                <div className="space-y-3">
+                  {/* Header con botón agregar */}
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                      {moc.tasks?.filter((t: any) => t.status === 'COMPLETED').length || 0} / {moc.tasks?.length || 0} completadas
+                    </p>
+                    {moc.status === 'IMPLEMENTING' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowTaskInput(true);
+                          setTimeout(() => taskInputRef.current?.focus(), 50);
+                        }}
                       >
-                        <div className="flex-1">
-                          <p className="font-medium">{task.description}</p>
-                          {task.assignedTo && (
-                            <p className="text-sm text-muted-foreground">
-                              Asignado a: {task.assignedTo.name}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant={task.completedAt ? 'default' : 'secondary'}>
-                          {task.completedAt ? 'Completada' : 'Pendiente'}
-                        </Badge>
-                      </div>
-                    ))}
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nueva tarea
+                      </Button>
+                    )}
                   </div>
-                )}
+
+                  {/* Formulario nueva tarea */}
+                  {showTaskInput && (
+                    <div className="flex gap-2">
+                      <Input
+                        ref={taskInputRef}
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        placeholder="Título de la tarea..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddTask();
+                          if (e.key === 'Escape') { setShowTaskInput(false); setNewTaskTitle(''); }
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleAddTask}
+                        disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
+                      >
+                        {createTaskMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Agregar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setShowTaskInput(false); setNewTaskTitle(''); }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Lista de tareas */}
+                  {!moc.tasks?.length && !showTaskInput ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ListTodo className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No hay tareas de implementación</p>
+                      {moc.status === 'IMPLEMENTING' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => { setShowTaskInput(true); setTimeout(() => taskInputRef.current?.focus(), 50); }}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Agregar primera tarea
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {moc.tasks?.map((task: any) => {
+                        const isCompleted = task.status === 'COMPLETED';
+                        return (
+                          <div
+                            key={task.id}
+                            className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-muted/40' : 'hover:bg-muted/20'}`}
+                          >
+                            <button
+                              onClick={() => !isCompleted && completeTaskMutation.mutate(task.id)}
+                              disabled={isCompleted || completeTaskMutation.isPending}
+                              className="flex-shrink-0"
+                              aria-label={isCompleted ? 'Tarea completada' : 'Marcar como completada'}
+                            >
+                              {isCompleted
+                                ? <CheckCircle className="h-5 w-5 text-success" />
+                                : <Circle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                              }
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-medium text-sm ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className="text-xs text-muted-foreground truncate">{task.description}</p>
+                              )}
+                              <div className="flex items-center gap-3 mt-0.5">
+                                {task.assignedTo && (
+                                  <span className="text-xs text-muted-foreground">
+                                    → {task.assignedTo.name}
+                                  </span>
+                                )}
+                                {task.completedBy && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ✓ {task.completedBy.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {!isCompleted && (
+                              <button
+                                onClick={() => deleteTaskMutation.mutate(task.id)}
+                                disabled={deleteTaskMutation.isPending}
+                                className="flex-shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                aria-label="Eliminar tarea"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="documents" className="mt-4">

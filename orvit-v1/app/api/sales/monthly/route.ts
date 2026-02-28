@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic';
 // GET /api/sales/monthly - Obtener ventas mensuales
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const month = searchParams.get('month');
@@ -90,6 +93,8 @@ export async function GET(request: NextRequest) {
 // POST /api/sales/monthly - Crear o actualizar ventas mensuales
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     
@@ -195,6 +200,8 @@ export async function POST(request: NextRequest) {
 // DELETE /api/sales/monthly - Eliminar venta mensual
 export async function DELETE(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const saleId = searchParams.get('saleId');

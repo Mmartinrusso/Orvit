@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // GET /api/plant/tool-requests/by-stop/[stopId] - Obtener solicitudes de herramientas para una parada específica
 export async function GET(
@@ -7,16 +8,11 @@ export async function GET(
   { params }: { params: { stopId: string } }
 ) {
   try {
-    const stopId = params.stopId;
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error } = await requireAuth();
+    if (error) return error;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID es requerido' },
-        { status: 400 }
-      );
-    }
+    const stopId = params.stopId;
+    const companyId = String(user!.companyId);
 
     // Buscar solicitudes de herramientas para esta parada específica
     const toolRequestRecords = await prisma.document.findMany({

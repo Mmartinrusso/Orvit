@@ -36,6 +36,7 @@ import { Plus, Building2, RefreshCcw, Eye, FileText, Search, X } from 'lucide-re
 import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BankAccount {
   id: number;
@@ -95,6 +96,8 @@ const BANCOS_ARGENTINA = [
 export default function BancosPage() {
   const queryClient = useQueryClient();
   const { viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canManageBank = hasPermission('treasury.manage_bank');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
@@ -215,6 +218,7 @@ export default function BancosPage() {
               <RefreshCcw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
               Actualizar
             </button>
+            {canManageBank && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-7 text-xs">
@@ -342,6 +346,7 @@ export default function BancosPage() {
               </form>
             </DialogContent>
           </Dialog>
+            )}
         </div>
       </div>
       </div>

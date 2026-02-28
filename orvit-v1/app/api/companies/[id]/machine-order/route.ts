@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const companyId = parseInt(params.id);
 
@@ -61,6 +65,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     const companyId = parseInt(params.id);
     const { order } = await request.json();

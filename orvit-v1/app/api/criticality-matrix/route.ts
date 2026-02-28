@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,14 +10,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
+    const companyId = user!.companyId;
     const areaId = searchParams.get('areaId');
     const sectorId = searchParams.get('sectorId');
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
-    }
 
     // Get machines with criticality scores
     const whereClause: any = {
@@ -114,6 +114,9 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const body = await request.json();
     const { updates } = body;
 

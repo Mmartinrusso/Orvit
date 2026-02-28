@@ -43,6 +43,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 interface ReasonCode {
@@ -68,6 +69,8 @@ const REASON_TYPES = [
 ];
 
 export default function ReasonCodesConfigPage() {
+  const { hasPermission } = useAuth();
+  const canManageReasonCodes = hasPermission('produccion.config.reason_codes');
   const [loading, setLoading] = useState(true);
   const [reasonCodes, setReasonCodes] = useState<ReasonCode[]>([]);
   const [activeTab, setActiveTab] = useState('DOWNTIME');
@@ -243,10 +246,12 @@ export default function ReasonCodesConfigPage() {
           </div>
         </div>
 
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Código
-        </Button>
+        {canManageReasonCodes && (
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Código
+          </Button>
+        )}
       </div>
 
       {/* Tabs by Type */}
@@ -331,25 +336,27 @@ export default function ReasonCodesConfigPage() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditDialog(rc)}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setSelectedCode(rc);
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
+                              {canManageReasonCodes && (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditDialog(rc)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedCode(rc);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))

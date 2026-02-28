@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { getUserName } from '@/lib/maintenance-helpers';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import {
   createTemplate,
   listTemplates,
@@ -22,6 +23,10 @@ async function getAuth() {
 // POST /api/maintenance/preventive - Crear mantenimiento preventivo
 export async function POST(request: NextRequest) {
   try {
+    // Verificar permiso de crear mantenimiento preventivo
+    const { user: permUser, error: permError } = await requirePermission('preventive_maintenance.create');
+    if (permError) return permError;
+
     // Autenticación
     const payload = await getAuth();
     if (!payload || !payload.userId) {

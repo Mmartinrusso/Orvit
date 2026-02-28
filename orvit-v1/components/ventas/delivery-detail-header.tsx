@@ -18,6 +18,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { WhatsAppDropdown } from '@/components/ventas/whatsapp-button';
+import { usePermission } from '@/hooks/use-permissions';
 import { formatDateTime } from '@/lib/date-utils';
 import { toast } from 'sonner';
 
@@ -50,6 +51,8 @@ interface DeliveryDetailHeaderProps {
 }
 
 export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHeaderProps) {
+  const { hasPermission: canDispatch } = usePermission('ventas.entregas.dispatch');
+  const { hasPermission: canProgram } = usePermission('ventas.entregas.program');
   const config = ESTADOS_CONFIG[delivery.estado as DeliveryStatus] || ESTADOS_CONFIG.PENDIENTE;
   const Icon = config.icon;
 
@@ -160,14 +163,14 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
             </Button>
           )}
 
-          {delivery.estado === 'PENDIENTE' && (
+          {delivery.estado === 'PENDIENTE' && canProgram && (
             <Button size="sm" onClick={() => handleAction('preparar')}>
               <Package className="w-4 h-4 mr-2" />
               Iniciar preparación
             </Button>
           )}
 
-          {delivery.estado === 'EN_PREPARACION' && (
+          {delivery.estado === 'EN_PREPARACION' && canProgram && (
             <Button size="sm" onClick={() => handleAction('listar')}>
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Lista para despacho
@@ -176,18 +179,22 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
 
           {delivery.estado === 'LISTA_PARA_DESPACHO' && (
             <>
-              <Button size="sm" variant="outline" onClick={() => handleAction('retirar')}>
-                <Package className="w-4 h-4 mr-2" />
-                Marcar retirada
-              </Button>
-              <Button size="sm" onClick={() => handleAction('despachar')}>
-                <Truck className="w-4 h-4 mr-2" />
-                Despachar
-              </Button>
+              {canDispatch && (
+                <Button size="sm" variant="outline" onClick={() => handleAction('retirar')}>
+                  <Package className="w-4 h-4 mr-2" />
+                  Marcar retirada
+                </Button>
+              )}
+              {canDispatch && (
+                <Button size="sm" onClick={() => handleAction('despachar')}>
+                  <Truck className="w-4 h-4 mr-2" />
+                  Despachar
+                </Button>
+              )}
             </>
           )}
 
-          {delivery.estado === 'EN_TRANSITO' && (
+          {delivery.estado === 'EN_TRANSITO' && canDispatch && (
             <>
               <Button size="sm" variant="outline" onClick={() => handleAction('fallar')}>
                 <X className="w-4 h-4 mr-2" />
@@ -200,7 +207,7 @@ export function DeliveryDetailHeader({ delivery, onRefresh }: DeliveryDetailHead
             </>
           )}
 
-          {delivery.estado === 'RETIRADA' && (
+          {delivery.estado === 'RETIRADA' && canDispatch && (
             <Button size="sm" onClick={() => handleAction('entregar')}>
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Confirmar entrega

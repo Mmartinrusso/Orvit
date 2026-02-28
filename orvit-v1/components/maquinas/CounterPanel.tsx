@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +68,7 @@ interface CounterPanelProps {
 }
 
 export function CounterPanel({ machineId, machineName }: CounterPanelProps) {
+  const { hasPermission } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
   const [recordingCounter, setRecordingCounter] = useState<Counter | null>(null);
@@ -125,10 +127,12 @@ export function CounterPanel({ machineId, machineName }: CounterPanelProps) {
                 Mantenimiento basado en uso para {machineName || 'esta máquina'}
               </CardDescription>
             </div>
-            <Button onClick={() => setIsFormOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Contador
-            </Button>
+            {hasPermission('counters.create') && (
+              <Button onClick={() => setIsFormOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Contador
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -200,6 +204,7 @@ interface CounterCardProps {
 }
 
 function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: CounterCardProps) {
+  const { hasPermission } = useAuth();
   const trigger = counter.triggers?.[0];
   const progressPercent = trigger
     ? Math.min(100, ((Number(counter.currentValue) - (Number(trigger.nextTriggerValue) - Number(trigger.triggerEvery))) / Number(trigger.triggerEvery)) * 100)
@@ -235,14 +240,18 @@ function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: Cou
               <History className="h-4 w-4 mr-2" />
               Ver historial
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onEdit}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Eliminar
-            </DropdownMenuItem>
+            {hasPermission('counters.edit') && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+            )}
+            {hasPermission('counters.delete') && (
+              <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -275,10 +284,12 @@ function CounterCard({ counter, onRecord, onEdit, onDelete, onViewHistory }: Cou
         </p>
       )}
 
-      <Button onClick={onRecord} className="w-full" variant="outline">
-        <Plus className="h-4 w-4 mr-2" />
-        Registrar lectura
-      </Button>
+      {hasPermission('counters.record_reading') && (
+        <Button onClick={onRecord} className="w-full" variant="outline">
+          <Plus className="h-4 w-4 mr-2" />
+          Registrar lectura
+        </Button>
+      )}
     </div>
   );
 }

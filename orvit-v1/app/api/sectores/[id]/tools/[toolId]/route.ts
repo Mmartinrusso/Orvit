@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // DELETE - Eliminar una herramienta asignada a un sector
 export async function DELETE(
@@ -7,6 +8,9 @@ export async function DELETE(
   { params }: { params: { id: string; toolId: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const sectorId = parseInt(params.id);
     const toolId = parseInt(params.toolId);
 
@@ -60,6 +64,9 @@ export async function PUT(
   { params }: { params: { id: string; toolId: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const sectorId = parseInt(params.id);
     const toolId = parseInt(params.toolId);
     const body = await request.json();

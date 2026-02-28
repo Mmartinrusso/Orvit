@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +20,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   BookOpen,
   Plus,
   Search,
@@ -31,6 +40,11 @@ import {
   ThumbsUp,
   Calendar,
   User,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Send,
+  CheckCircle2,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -71,9 +85,63 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function KnowledgeBasePage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/knowledge?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Artículo eliminado');
+      queryClient.invalidateQueries({ queryKey: ['knowledge-articles'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al eliminar artículo'),
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch('/api/knowledge', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'publish' }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al publicar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Artículo publicado');
+      queryClient.invalidateQueries({ queryKey: ['knowledge-articles'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al publicar artículo'),
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch('/api/knowledge', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'review' }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al revisar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Artículo marcado como revisado');
+      queryClient.invalidateQueries({ queryKey: ['knowledge-articles'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al revisar artículo'),
+  });
+
+  const handleDelete = (id: number) => {
+    if (!confirm('¿Eliminar este artículo? Esta acción no se puede deshacer.')) return;
+    deleteMutation.mutate(id);
+  };
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['knowledge-articles', currentCompany?.id, categoryFilter, search],
@@ -112,6 +180,7 @@ export default function KnowledgeBasePage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          {hasPermission('knowledge.create') && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -175,6 +244,7 @@ export default function KnowledgeBasePage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -264,7 +334,50 @@ export default function KnowledgeBasePage() {
                         {categoryConfig.label}
                       </span>
                     </Badge>
-                    <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
+                      {(hasPermission('knowledge.edit') || hasPermission('knowledge.delete') || hasPermission('knowledge.publish') || hasPermission('knowledge.review')) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {hasPermission('knowledge.edit') && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toast.info('Edición de artículo próximamente'); }}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('knowledge.publish') && article.status === 'DRAFT' && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); publishMutation.mutate(article.id); }}>
+                                <Send className="h-4 w-4 mr-2" />
+                                Publicar
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('knowledge.review') && !article.reviewed_by_name && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); reviewMutation.mutate(article.id); }}>
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Marcar como revisado
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('knowledge.delete') && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(article.id); }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                   <CardTitle className="text-lg line-clamp-2">{article.title}</CardTitle>
                   {article.summary && (

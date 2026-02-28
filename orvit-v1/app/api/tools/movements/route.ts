@@ -1,40 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getCurrentUserId(): Promise<number | null> {
-  try {
-    const token = cookies().get('token')?.value;
-    if (!token) return null;
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return payload.userId as number;
-  } catch {
-    return null;
-  }
-}
 
 // GET - Obtener movimientos
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await requirePermission('panol.view_products');
+    if (error) return error;
+
+    // companyId always from JWT — ignore query param
+    const companyId = user!.companyId;
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
     const toolId = searchParams.get('toolId');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID requerido' }, { status: 400 });
-    }
-
     const whereClause: any = {
-      tool: {
-        companyId: parseInt(companyId)
-      }
+      tool: { companyId }
     };
 
     if (toolId) {
@@ -104,6 +88,9 @@ export async function GET(request: NextRequest) {
 // POST - Crear nuevo movimiento
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, error } = await requirePermission('panol.register_movement');
+    if (error) return error;
+
     const body = await request.json();
     const {
       toolId,
@@ -139,11 +126,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Obtener usuario autenticado (antes del tool lookup para 401 temprano)
-    const userId = await getCurrentUserId();
-    if (!userId) {
-      return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
-    }
+    const userId = authUser!.id;
 
     // Obtener la herramienta
     const tool = await prisma.tool.findFirst({

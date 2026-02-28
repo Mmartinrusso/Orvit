@@ -1,30 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateDailySessionSchema } from '@/lib/validations/daily-sessions';
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  const token = (await cookies()).get('token')?.value;
-  if (!token) throw new Error('No token provided');
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return { userId: payload.userId as number, companyId: payload.companyId as number };
-  } catch {
-    throw new Error('Invalid token');
-  }
-}
-
 // GET /api/production/daily-sessions - Get or auto-create session for a day/sector/shift
 export async function GET(request: Request) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.VIEW);
+    if (error) return error;
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
 
     const sectorId = searchParams.get('sectorId');
@@ -133,7 +121,9 @@ export async function GET(request: Request) {
 // POST /api/production/daily-sessions - Create session manually
 export async function POST(request: Request) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.CREATE);
+    if (error) return error;
+    const companyId = user!.companyId;
     const body = await request.json();
 
     const validation = validateRequest(CreateDailySessionSchema, body);

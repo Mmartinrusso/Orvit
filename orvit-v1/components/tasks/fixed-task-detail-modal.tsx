@@ -143,8 +143,8 @@ export function FixedTaskDetailModal({
   const [executionHistory, setExecutionHistory] = useState<ExecutionHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const { toast } = useToast();
-  const { hasPermission: canEditFixedTask } = usePermissionRobust('editar_tarea_fija');
-  const { hasPermission: canDeleteFixedTask } = usePermissionRobust('eliminar_tarea_fija');
+  const { hasPermission: canEditFixedTask } = usePermissionRobust('fixed_tasks.edit');
+  const { hasPermission: canDeleteFixedTask } = usePermissionRobust('fixed_tasks.delete');
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);

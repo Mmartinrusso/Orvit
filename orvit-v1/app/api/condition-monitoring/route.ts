@@ -2,23 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET: List condition monitors, readings, or alerts
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('condition_monitoring.view');
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const companyId = parseInt(searchParams.get('companyId') || '0');
@@ -113,20 +105,18 @@ export async function GET(request: NextRequest) {
 // POST: Create monitor or record reading
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
     const body = await request.json();
     const action = body.action || 'create_monitor'; // create_monitor, record_reading
+
+    // Determine required permission based on action
+    let permissionCheck;
+    if (action === 'record_reading') {
+      permissionCheck = await requirePermission('condition_monitoring.record');
+    } else {
+      permissionCheck = await requirePermission('condition_monitoring.create');
+    }
+    if (permissionCheck.error) return permissionCheck.error;
+    const user = permissionCheck.user!;
 
     if (action === 'create_monitor') {
       const {
@@ -206,7 +196,7 @@ export async function POST(request: NextRequest) {
         INSERT INTO "ConditionReading" (
           "monitorId", "value", "status", "recordedById", "source", "notes", "readingAt"
         ) VALUES (
-          ${monitorId}, ${numValue}, ${status}, ${payload.userId}, ${source || 'MANUAL'}, ${notes || null}, NOW()
+          ${monitorId}, ${numValue}, ${status}, ${user.id}, ${source || 'MANUAL'}, ${notes || null}, NOW()
         )
         RETURNING id
       `;
@@ -233,6 +223,144 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
   } catch (error) {
     console.error('Error in condition monitoring:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
+// PUT: Update monitor or manage alerts
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, action } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+
+    // Determine required permission based on action
+    let permissionName = 'condition_monitoring.edit';
+    if (action === 'acknowledge_alert' || action === 'resolve_alert') {
+      permissionName = 'condition_monitoring.alerts';
+    }
+
+    const { user, error } = await requirePermission(permissionName);
+    if (error) return error;
+
+    if (action === 'acknowledge_alert') {
+      await prisma.$executeRaw`
+        UPDATE "ConditionAlert" SET
+          "acknowledgedById" = ${user!.id},
+          "acknowledgedAt" = NOW()
+        WHERE id = ${id} AND "acknowledgedAt" IS NULL
+      `;
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'resolve_alert') {
+      const { resolution } = body;
+      await prisma.$executeRaw`
+        UPDATE "ConditionAlert" SET
+          "resolvedById" = ${user!.id},
+          "resolvedAt" = NOW(),
+          "resolution" = ${resolution || null}
+        WHERE id = ${id} AND "resolvedAt" IS NULL
+      `;
+      return NextResponse.json({ success: true });
+    }
+
+    // Default: edit monitor
+    const companyId = user!.companyId;
+
+    // Verify ownership
+    const existing = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "ConditionMonitor" WHERE id = ${id} AND "companyId" = ${companyId}
+    `;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Monitor no encontrado' }, { status: 404 });
+    }
+
+    const {
+      name,
+      monitorType,
+      unit,
+      normalMin,
+      normalMax,
+      warningMin,
+      warningMax,
+      criticalMin,
+      criticalMax,
+      measurementLocation,
+      measurementFrequency,
+      sensorId,
+    } = body;
+
+    await prisma.$executeRaw`
+      UPDATE "ConditionMonitor" SET
+        name = COALESCE(${name || null}, name),
+        "monitorType" = COALESCE(${monitorType || null}, "monitorType"),
+        unit = COALESCE(${unit || null}, unit),
+        "normalMin" = ${normalMin ?? null},
+        "normalMax" = ${normalMax ?? null},
+        "warningMin" = ${warningMin ?? null},
+        "warningMax" = ${warningMax ?? null},
+        "criticalMin" = ${criticalMin ?? null},
+        "criticalMax" = ${criticalMax ?? null},
+        "measurementLocation" = ${measurementLocation || null},
+        "measurementFrequency" = COALESCE(${measurementFrequency || null}, "measurementFrequency"),
+        "sensorId" = ${sensorId || null},
+        "updatedAt" = NOW()
+      WHERE id = ${id} AND "companyId" = ${companyId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating condition monitor:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
+// DELETE: Delete condition monitor
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error } = await requirePermission('condition_monitoring.delete');
+    if (error) return error;
+
+    const companyId = user!.companyId;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const existing = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "ConditionMonitor" WHERE id = ${parseInt(id)} AND "companyId" = ${companyId}
+    `;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Monitor no encontrado' }, { status: 404 });
+    }
+
+    // Delete related alerts
+    await prisma.$executeRaw`
+      DELETE FROM "ConditionAlert" WHERE "monitorId" = ${parseInt(id)}
+    `;
+    // Delete related readings
+    await prisma.$executeRaw`
+      DELETE FROM "ConditionReading" WHERE "monitorId" = ${parseInt(id)}
+    `;
+    // Delete related trends
+    await prisma.$executeRaw`
+      DELETE FROM "ConditionTrend" WHERE "monitorId" = ${parseInt(id)}
+    `;
+    // Delete the monitor
+    await prisma.$executeRaw`
+      DELETE FROM "ConditionMonitor" WHERE id = ${parseInt(id)} AND "companyId" = ${companyId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting condition monitor:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

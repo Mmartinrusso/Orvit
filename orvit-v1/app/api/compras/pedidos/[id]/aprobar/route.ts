@@ -1,61 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth/shared-helpers';
 import { verificarSoDPedidoAprobacion } from '@/lib/compras/pedidos-enforcement';
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        companies: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
-    });
-
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-// POST - Aprobar pedido (EN_APROBACION -> APROBADA)
+// POST - Aprobar/Rechazar pedido (EN_APROBACION -> APROBADA/RECHAZADA)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requireAnyPermission(['compras.pedidos.aprobar', 'compras.pedidos.rechazar']);
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
-
-    // Verificar permisos - roles que pueden aprobar
-    if (!['SUPERADMIN', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERVISOR'].includes(user.role)) {
-      return NextResponse.json({ error: 'No tiene permisos para aprobar' }, { status: 403 });
-    }
+    const companyId = user!.companyId;
 
     const { id } = await params;
     const pedidoId = parseInt(id);
@@ -106,7 +65,7 @@ export async function POST(
     }
 
     // ENFORCEMENT: SoD - Verificar que el creador no sea quien aprueba
-    const sodCheck = verificarSoDPedidoAprobacion(pedido.solicitanteId, user.id);
+    const sodCheck = verificarSoDPedidoAprobacion(pedido.solicitanteId, user!.id);
     if (!sodCheck.permitido) {
       console.log('[PEDIDOS APROBAR] ❌ Violación SoD:', sodCheck.mensaje);
       return NextResponse.json(
@@ -135,9 +94,9 @@ export async function POST(
             entidad: 'request',
             entidadId: pedidoId,
             tipo: 'SISTEMA',
-            contenido: `Pedido aprobado por ${user.name}${motivo ? `. Motivo: ${motivo}` : ''}`,
+            contenido: `Pedido aprobado por ${user!.name}${motivo ? `. Motivo: ${motivo}` : ''}`,
             companyId,
-            userId: user.id
+            userId: user!.id
           }
         })
       ]);
@@ -166,9 +125,9 @@ export async function POST(
             entidad: 'request',
             entidadId: pedidoId,
             tipo: 'SISTEMA',
-            contenido: `Pedido rechazado por ${user.name}. Motivo: ${motivo}`,
+            contenido: `Pedido rechazado por ${user!.name}. Motivo: ${motivo}`,
             companyId,
-            userId: user.id
+            userId: user!.id
           }
         })
       ]);

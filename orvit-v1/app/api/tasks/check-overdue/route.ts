@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 import { sendDailySummary, TaskReminderData } from '@/lib/discord/agenda-notifications';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -16,6 +17,9 @@ interface UserDiscordTasks {
 
 // POST /api/tasks/check-overdue
 export async function POST(request: NextRequest) {
+  const { user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
   try {
     console.log('📅 Iniciando verificación de tareas próximas a vencer...');
 

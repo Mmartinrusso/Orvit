@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Users,
   Plus,
@@ -104,6 +105,8 @@ export default function GremiosPage() {
   const confirm = useConfirm();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const canManageNominas = hasPermission('ingresar_nominas');
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<UnionCategory | null>(null);
   const [selectedUnionId, setSelectedUnionId] = useState<number | null>(null);
@@ -434,28 +437,30 @@ export default function GremiosPage() {
                             </div>
 
                             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={async () => {
-                                  if (union.employeeCount > 0) {
-                                    toast.error('No se puede eliminar un gremio con empleados');
-                                    return;
-                                  }
-                                  const ok = await confirm({
-                                    title: 'Eliminar gremio',
-                                    description: '¿Eliminar este gremio y todas sus categorías?',
-                                    confirmText: 'Eliminar',
-                                    variant: 'destructive',
-                                  });
-                                  if (ok) {
-                                    deleteUnionMutation.mutate(union.id);
-                                  }
-                                }}
-                                disabled={union.employeeCount > 0}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canManageNominas && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={async () => {
+                                    if (union.employeeCount > 0) {
+                                      toast.error('No se puede eliminar un gremio con empleados');
+                                      return;
+                                    }
+                                    const ok = await confirm({
+                                      title: 'Eliminar gremio',
+                                      description: '¿Eliminar este gremio y todas sus categorías?',
+                                      confirmText: 'Eliminar',
+                                      variant: 'destructive',
+                                    });
+                                    if (ok) {
+                                      deleteUnionMutation.mutate(union.id);
+                                    }
+                                  }}
+                                  disabled={union.employeeCount > 0}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                               <ChevronRight className="h-4 w-4 text-muted-foreground chevron transition-transform" />
                             </div>
                           </div>
@@ -467,14 +472,16 @@ export default function GremiosPage() {
                               <h4 className="text-sm font-medium text-muted-foreground">
                                 Categorias del Gremio
                               </h4>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenCategoryDialog(union.id)}
-                              >
-                                <Plus className="mr-1 h-3 w-3" />
-                                Nueva Categoria
-                              </Button>
+                              {canManageNominas && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenCategoryDialog(union.id)}
+                                >
+                                  <Plus className="mr-1 h-3 w-3" />
+                                  Nueva Categoria
+                                </Button>
+                              )}
                             </div>
 
                             {union.categories && union.categories.length > 0 ? (
@@ -515,40 +522,44 @@ export default function GremiosPage() {
                                         <DollarSign className="h-3.5 w-3.5 mr-1" />
                                         Tasas
                                       </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => handleOpenCategoryDialog(union.id, cat)}
-                                      >
-                                        <Edit className="h-3.5 w-3.5" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={async () => {
-                                          if (cat.employeeCount > 0) {
-                                            toast.error('No se puede eliminar una categoria con empleados');
-                                            return;
-                                          }
-                                          const ok = await confirm({
-                                            title: 'Eliminar categoría',
-                                            description: '¿Eliminar esta categoría?',
-                                            confirmText: 'Eliminar',
-                                            variant: 'destructive',
-                                          });
-                                          if (ok) {
-                                            deleteCategoryMutation.mutate({
-                                              unionId: union.id,
-                                              categoryId: cat.id,
+                                      {canManageNominas && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleOpenCategoryDialog(union.id, cat)}
+                                        >
+                                          <Edit className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                      {canManageNominas && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={async () => {
+                                            if (cat.employeeCount > 0) {
+                                              toast.error('No se puede eliminar una categoria con empleados');
+                                              return;
+                                            }
+                                            const ok = await confirm({
+                                              title: 'Eliminar categoría',
+                                              description: '¿Eliminar esta categoría?',
+                                              confirmText: 'Eliminar',
+                                              variant: 'destructive',
                                             });
-                                          }
-                                        }}
-                                        disabled={cat.employeeCount > 0}
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </Button>
+                                            if (ok) {
+                                              deleteCategoryMutation.mutate({
+                                                unionId: union.id,
+                                                categoryId: cat.id,
+                                              });
+                                            }
+                                          }}
+                                          disabled={cat.employeeCount > 0}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -623,7 +634,7 @@ export default function GremiosPage() {
                         <Button
                           className="w-full"
                           variant={template.isEnabled ? "outline" : "default"}
-                          disabled={template.isEnabled || enableGremioMutation.isPending}
+                          disabled={template.isEnabled || enableGremioMutation.isPending || !canManageNominas}
                           onClick={() => enableGremioMutation.mutate(template.id)}
                         >
                           {template.isEnabled ? (

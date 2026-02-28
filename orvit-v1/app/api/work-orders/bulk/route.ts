@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 // Schema de validación
 const bulkOperationSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1, 'Debe seleccionar al menos una orden'),
-  operation: z.enum(['assign', 'updatePriority', 'updateStatus', 'cancel', 'schedule']),
+  operation: z.enum(['assign', 'updatePriority', 'updateStatus', 'cancel', 'schedule', 'delete']),
   // Datos según la operación
   assignToId: z.number().int().positive().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: { in: data.ids },
         companyId,
-        status: { notIn: ['COMPLETED', 'CANCELLED'] }
+        ...(data.operation !== 'delete' && { status: { notIn: ['COMPLETED', 'CANCELLED'] } }),
       },
       select: {
         id: true,
@@ -137,6 +137,10 @@ export async function POST(request: NextRequest) {
           );
         }
         result = await bulkSchedule(validIds, data.scheduledDate);
+        break;
+
+      case 'delete':
+        result = await bulkDelete(validIds, companyId);
         break;
 
       default:
@@ -318,5 +322,19 @@ async function bulkSchedule(ids: number[], scheduledDate: string) {
   return {
     updated: result.count,
     details: `${result.count} OTs programadas para ${date.toLocaleDateString('es-AR')}`
+  };
+}
+
+/**
+ * Eliminar múltiples OTs
+ */
+async function bulkDelete(ids: number[], companyId: number) {
+  const result = await prisma.workOrder.deleteMany({
+    where: { id: { in: ids }, companyId },
+  });
+
+  return {
+    updated: result.count,
+    details: `${result.count} órdenes de trabajo eliminadas`,
   };
 }

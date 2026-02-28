@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { LOTOStatus, AuditAction } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,17 +15,8 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('loto.view');
+    if (error) return error;
 
     const execution = await prisma.lOTOExecution.findUnique({
       where: { id: parseInt(id) },
@@ -57,20 +49,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
     const body = await request.json();
     const { action, ...updateData } = body;
+
+    // Determine required permission based on action
+    let permissionCheck;
+    if (action === 'verify_zero_energy') {
+      permissionCheck = await requirePermission('loto.verify_zero_energy');
+    } else if (action === 'unlock' || action === 'partial_unlock') {
+      permissionCheck = await requirePermission('loto.release');
+    } else {
+      permissionCheck = await requirePermission('loto.execute');
+    }
+    if (permissionCheck.error) return permissionCheck.error;
 
     const execution = await prisma.lOTOExecution.findUnique({
       where: { id: parseInt(id) },
@@ -84,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Ejecución LOTO no encontrada' }, { status: 404 });
     }
 
-    const userId = payload.userId as number;
+    const userId = permissionCheck.user!.id;
     let data: any = {};
     let auditAction: AuditAction = AuditAction.UPDATE;
 

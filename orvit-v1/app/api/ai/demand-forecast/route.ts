@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@/lib/auth';
 import { generateDemandForecast, generateBulkForecast, generateAutoReorderSuggestions } from '@/lib/ai/demand-forecasting';
 import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,9 @@ const forecastRequestSchema = z.object({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function POST(req: NextRequest) {
+  const { user: authUser, error } = await requireAuth();
+  if (error) return error;
+
   try {
     // Verify authentication
     const token = req.cookies.get('token')?.value;
@@ -159,6 +163,9 @@ export async function POST(req: NextRequest) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function GET(req: NextRequest) {
+  const { error: getError } = await requireAuth();
+  if (getError) return getError;
+
   return NextResponse.json(
     { error: 'Endpoint no implementado aún' },
     { status: 501 }

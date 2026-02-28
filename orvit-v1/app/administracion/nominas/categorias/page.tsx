@@ -26,6 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Users,
   Plus,
@@ -81,6 +82,8 @@ export default function CategoriasPage() {
   const confirm = useConfirm();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const canManageNominas = hasPermission('ingresar_nominas');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
@@ -232,12 +235,14 @@ export default function CategoriasPage() {
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Categoría
-              </Button>
-            </DialogTrigger>
+            {canManageNominas && (
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva Categoría
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[500px]">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
@@ -329,10 +334,12 @@ export default function CategoriasPage() {
               <p className="text-muted-foreground mb-4">
                 Crea tu primera categoría de empleados para comenzar
               </p>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Crear Categoría
-              </Button>
+              {canManageNominas && (
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Crear Categoría
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -392,35 +399,39 @@ export default function CategoriasPage() {
                       <Settings className="h-4 w-4 mr-1" />
                       Conceptos
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleOpenDialog(category)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={async () => {
-                        if (category.employeeCount > 0) {
-                          toast.error('No se puede eliminar una categoría con empleados');
-                          return;
-                        }
-                        const ok = await confirm({
-                          title: 'Eliminar categoría',
-                          description: '¿Eliminar esta categoría?',
-                          confirmText: 'Eliminar',
-                          variant: 'destructive',
-                        });
-                        if (ok) {
-                          deleteMutation.mutate(category.id);
-                        }
-                      }}
-                      disabled={category.employeeCount > 0}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canManageNominas && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenDialog(category)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canManageNominas && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          if (category.employeeCount > 0) {
+                            toast.error('No se puede eliminar una categoría con empleados');
+                            return;
+                          }
+                          const ok = await confirm({
+                            title: 'Eliminar categoría',
+                            description: '¿Eliminar esta categoría?',
+                            confirmText: 'Eliminar',
+                            variant: 'destructive',
+                          });
+                          if (ok) {
+                            deleteMutation.mutate(category.id);
+                          }
+                        }}
+                        disabled={category.employeeCount > 0}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

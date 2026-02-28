@@ -225,7 +225,9 @@ export async function getSolutionHistory(params: SolutionHistoryParams) {
     offset = 0
   } = validated;
 
-  const where: any = { companyId };
+  // failureOccurrence filter forces an inner join, skipping any SolutionApplied
+  // rows with orphaned failureOccurrenceId FKs (referenced row was deleted)
+  const where: any = { companyId, failureOccurrence: { id: { gt: 0 } } };
 
   // Text search across diagnosis, solution, confirmedCause, and failure title
   if (search) {
@@ -291,12 +293,6 @@ export async function getSolutionHistory(params: SolutionHistoryParams) {
             machineId: true,
             reportedAt: true,
             machine: {
-              select: { id: true, name: true }
-            },
-            component: {
-              select: { id: true, name: true }
-            },
-            subComponent: {
               select: { id: true, name: true }
             }
           }

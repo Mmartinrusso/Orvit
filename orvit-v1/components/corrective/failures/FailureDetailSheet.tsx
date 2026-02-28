@@ -143,6 +143,7 @@ interface FailureDetail {
     performedBy?: { id?: number; name: string };
     workOrderId?: number;
   }>;
+  incidentType?: string;
 }
 
 const priorityColors: Record<string, string> = {
@@ -444,7 +445,12 @@ export function FailureDetailSheet({
                 </div>
                 <div className="flex items-center justify-between">
                   <SheetDescription className="flex flex-wrap gap-2">
-                    Falla #{failure.id}
+                    {failure.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'} #{failure.id}
+                    {failure.incidentType === 'ROTURA' && (
+                      <Badge variant="destructive" className="ml-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                        Rotura
+                      </Badge>
+                    )}
                     {failure.causedDowntime && (
                       <Badge variant="destructive" className="ml-2">
                         <Clock className="mr-1 h-3 w-3" />

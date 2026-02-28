@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { CreateVolumetricParamSchema, UpdateVolumetricParamSchema } from '@/lib/validations/costs';
 import { z } from 'zod';
 
@@ -9,6 +10,9 @@ export async function GET(
   { params }: { params: { productId: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const product = await prisma.costProduct.findUnique({
       where: { id: params.productId },
       include: {
@@ -60,6 +64,9 @@ export async function PUT(
   { params }: { params: { productId: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const validatedData = UpdateVolumetricParamSchema.parse(body);
 

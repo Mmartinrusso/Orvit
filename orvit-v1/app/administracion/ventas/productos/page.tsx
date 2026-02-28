@@ -8,7 +8,7 @@ import { usePermissionRobust } from '@/hooks/use-permissions-robust';
 export default function ProductosPage() {
   const { user: currentUser } = useAuth();
   const { currentCompany } = useCompany();
-  const { hasPermission, isLoading: loadingPerms } = usePermissionRobust('VIEW_PRODUCTS');
+  const { hasPermission, isLoading: loadingPerms } = usePermissionRobust('ventas.productos.view');
 
   // Wait for auth
   if (!currentUser || !currentCompany) {
@@ -41,7 +41,7 @@ export default function ProductosPage() {
         <div className="px-4 md:px-6 pt-4 pb-3">
           <h1 className="text-xl font-semibold text-foreground">Productos</h1>
           <p className="text-sm text-destructive mt-1">
-            No tienes permisos para ver esta página. Necesitas el permiso VIEW_PRODUCTS.
+            No tienes permisos para ver esta página. Necesitas el permiso ventas.productos.view.
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             Contacta al administrador para solicitar acceso.

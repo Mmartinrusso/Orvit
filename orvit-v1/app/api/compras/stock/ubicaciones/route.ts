@@ -6,6 +6,7 @@ import { JWT_SECRET } from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 import { getViewMode } from '@/lib/view-mode/get-mode';
 import { MODE } from '@/lib/view-mode/types';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -210,6 +211,10 @@ export async function GET(request: NextRequest) {
 // PUT - Actualizar parámetros de stock (mínimo, máximo, ubicación)
 export async function PUT(request: NextRequest) {
   try {
+    // Permission check: almacen.manage_locations
+    const { error: permError } = await requirePermission('almacen.manage_locations');
+    if (permError) return permError;
+
     const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

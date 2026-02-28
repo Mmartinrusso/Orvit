@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { checkCounterTriggers } from '@/lib/maintenance/counter-trigger-checker'
+import { requirePermission } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
 interface Params {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 /**
@@ -16,7 +17,11 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
-    const counterId = parseInt(params.id)
+    const { user, error } = await requirePermission('counters.view')
+    if (error) return error
+
+    const { id } = await params
+    const counterId = parseInt(id)
     if (isNaN(counterId)) {
       return NextResponse.json({ error: 'Invalid counter ID' }, { status: 400 })
     }
@@ -68,22 +73,14 @@ export async function GET(request: Request, { params }: Params) {
  */
 export async function POST(request: Request, { params }: Params) {
   try {
-    const counterId = parseInt(params.id)
+    const { id } = await params
+    const counterId = parseInt(id)
     if (isNaN(counterId)) {
       return NextResponse.json({ error: 'Invalid counter ID' }, { status: 400 })
     }
 
-    // Verificar autenticación
-    const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
-
-    const payload = await verifyToken(token)
-    if (!payload?.userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-    }
+    const { user, error } = await requirePermission('counters.record_reading')
+    if (error) return error
 
     const counter = await prisma.machineCounter.findUnique({
       where: { id: counterId }
@@ -125,7 +122,7 @@ export async function POST(request: Request, { params }: Params) {
           value: numericValue,
           previousValue: currentValue,
           delta,
-          recordedById: payload.userId,
+          recordedById: user!.id,
           source: source || 'MANUAL',
           notes
         }
@@ -137,7 +134,7 @@ export async function POST(request: Request, { params }: Params) {
         data: {
           currentValue: numericValue,
           lastReadingAt: new Date(),
-          lastReadingById: payload.userId
+          lastReadingById: user!.id
         }
       })
 

@@ -47,8 +47,15 @@ interface DespachosTabProps {
  */
 export function DespachosTab({ onNew, onView }: DespachosTabProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const currentUserId = parseInt(user?.id ?? '0');
+
+  // Permission flags
+  const canCreate = hasPermission('almacen.dispatch.create');
+  const canProcess = hasPermission('almacen.dispatch.process');
+  const canConfirm = hasPermission('almacen.dispatch.confirm');
+  const canReceive = hasPermission('almacen.dispatch.receive');
+  const canCancel = hasPermission('almacen.dispatch.cancel');
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filters, setFilters] = useState<DespachosFilters>({});
@@ -166,32 +173,32 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
           <Eye className="h-4 w-4 mr-2" />
           Ver detalle
         </DropdownMenuItem>
-        {despacho.estado === 'BORRADOR' && (
+        {canProcess && despacho.estado === 'BORRADOR' && (
           <DropdownMenuItem onClick={() => handlePrepare(despacho.id)}>
             <PackageCheck className="h-4 w-4 mr-2" />
             Preparar
           </DropdownMenuItem>
         )}
-        {despacho.estado === 'EN_PREPARACION' && (
+        {canProcess && despacho.estado === 'EN_PREPARACION' && (
           <DropdownMenuItem onClick={() => handleMarkReady(despacho.id)}>
             <PackageCheck className="h-4 w-4 mr-2" />
             Marcar Listo
           </DropdownMenuItem>
         )}
-        {despacho.estado === 'LISTO_DESPACHO' && (
+        {canConfirm && despacho.estado === 'LISTO_DESPACHO' && (
           <DropdownMenuItem onClick={() => handleDispatch(despacho.id)}>
             <Truck className="h-4 w-4 mr-2" />
             Despachar
           </DropdownMenuItem>
         )}
-        {despacho.estado === 'DESPACHADO' && (
+        {canReceive && despacho.estado === 'DESPACHADO' && (
           <DropdownMenuItem onClick={() => handleReceive(despacho.id)}>
             <CheckCircle className="h-4 w-4 mr-2" />
             Confirmar Recepción
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        {!['DESPACHADO', 'RECIBIDO', 'CANCELADO'].includes(despacho.estado) && (
+        {canCancel && !['DESPACHADO', 'RECIBIDO', 'CANCELADO'].includes(despacho.estado) && (
           <DropdownMenuItem
             onClick={() => handleCancel(despacho.id)}
             className="text-destructive"
@@ -206,25 +213,25 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
 
   // Botón de acción principal según estado (para mobile)
   const PrimaryAction = ({ despacho }: { despacho: any }) => {
-    if (despacho.estado === 'BORRADOR')
+    if (canProcess && despacho.estado === 'BORRADOR')
       return (
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handlePrepare(despacho.id); }}>
           <PackageCheck className="h-3 w-3 mr-1" /> Preparar
         </Button>
       );
-    if (despacho.estado === 'EN_PREPARACION')
+    if (canProcess && despacho.estado === 'EN_PREPARACION')
       return (
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleMarkReady(despacho.id); }}>
           <PackageCheck className="h-3 w-3 mr-1" /> Marcar Listo
         </Button>
       );
-    if (despacho.estado === 'LISTO_DESPACHO')
+    if (canConfirm && despacho.estado === 'LISTO_DESPACHO')
       return (
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleDispatch(despacho.id); }}>
           <Truck className="h-3 w-3 mr-1" /> Despachar
         </Button>
       );
-    if (despacho.estado === 'DESPACHADO')
+    if (canReceive && despacho.estado === 'DESPACHADO')
       return (
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleReceive(despacho.id); }}>
           <CheckCircle className="h-3 w-3 mr-1" /> Recibido
@@ -254,7 +261,7 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
         />
 
         <div className="flex items-center gap-2">
-          {selectedIds.length > 0 && (
+          {canProcess && selectedIds.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -265,11 +272,13 @@ export function DespachosTab({ onNew, onView }: DespachosTabProps) {
               Marcar Listos ({selectedIds.length})
             </Button>
           )}
-          <Button onClick={onNew} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Nuevo Despacho</span>
-            <span className="sm:hidden">Nuevo</span>
-          </Button>
+          {canCreate && (
+            <Button onClick={onNew} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Nuevo Despacho</span>
+              <span className="sm:hidden">Nuevo</span>
+            </Button>
+          )}
         </div>
       </div>
 

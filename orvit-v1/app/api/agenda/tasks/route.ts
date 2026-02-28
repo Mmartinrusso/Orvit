@@ -32,57 +32,65 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const groupId = searchParams.get('groupId');
 
-    // Construir where clause — incluye tareas creadas por o asignadas al usuario
-    const where: any = {
-      companyId,
+    // Acceso: el usuario ve sus tareas personales + todas las tareas de empresa (grupo o visibles)
+    const accessFilter = {
       OR: [
         { createdById: user.id },
         { assignedToUserId: user.id },
+        { isCompanyVisible: true },
+        { groupId: { not: null } },
       ],
     };
 
+    // Filtros adicionales acumulados en AND
+    const andFilters: any[] = [accessFilter];
+
     if (status && status !== 'all') {
-      where.status = status;
+      andFilters.push({ status });
     }
 
     if (priority && priority !== 'all') {
-      where.priority = priority;
+      andFilters.push({ priority });
     }
 
     if (assigneeId && assigneeType) {
       if (assigneeType === 'user') {
-        where.assignedToUserId = parseInt(assigneeId);
+        andFilters.push({ assignedToUserId: parseInt(assigneeId) });
       } else if (assigneeType === 'contact') {
-        where.assignedToContactId = parseInt(assigneeId);
+        andFilters.push({ assignedToContactId: parseInt(assigneeId) });
       }
     }
 
     if (startDate && endDate) {
-      where.dueDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
+      andFilters.push({ dueDate: { gte: new Date(startDate), lte: new Date(endDate) } });
     } else if (startDate) {
-      where.dueDate = { gte: new Date(startDate) };
+      andFilters.push({ dueDate: { gte: new Date(startDate) } });
     } else if (endDate) {
-      where.dueDate = { lte: new Date(endDate) };
+      andFilters.push({ dueDate: { lte: new Date(endDate) } });
     }
 
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { assignedToName: { contains: search, mode: 'insensitive' } },
-      ];
+      andFilters.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { assignedToName: { contains: search, mode: 'insensitive' } },
+        ],
+      });
     }
 
     if (category) {
-      where.category = category;
+      andFilters.push({ category });
     }
 
     if (groupId) {
-      where.groupId = groupId === 'null' ? null : parseInt(groupId);
+      andFilters.push({ groupId: groupId === 'null' ? null : parseInt(groupId) });
     }
+
+    const where: any = {
+      companyId,
+      AND: andFilters,
+    };
 
     // Pagination
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
@@ -107,6 +115,9 @@ export async function GET(request: NextRequest) {
           },
           reminders: {
             orderBy: { remindAt: 'asc' },
+          },
+          _count: {
+            select: { comments: true },
           },
         },
         orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
@@ -156,6 +167,10 @@ export async function GET(request: NextRequest) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
+      isCompanyVisible: (task as any).isCompanyVisible ?? false,
+      externalNotified: (task as any).externalNotified ?? false,
+      externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
+      _count: { comments: (task as any)._count?.comments ?? 0 },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     }));
@@ -223,6 +238,7 @@ export async function POST(request: NextRequest) {
         assignedToUserId: data.assignedToUserId,
         assignedToContactId: data.assignedToContactId,
         assignedToName,
+        isCompanyVisible: data.isCompanyVisible ?? false,
         reminders: data.reminders
           ? {
               create: data.reminders.map((r) => ({
@@ -293,6 +309,10 @@ export async function POST(request: NextRequest) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
+      isCompanyVisible: (task as any).isCompanyVisible ?? false,
+      externalNotified: (task as any).externalNotified ?? false,
+      externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
+      _count: { comments: 0 },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     };

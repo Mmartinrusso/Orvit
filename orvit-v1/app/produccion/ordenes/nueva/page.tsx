@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -83,6 +84,8 @@ interface User {
 export default function NewProductionOrderPage() {
   const router = useRouter();
   const { theme } = useTheme();
+  const { hasPermission } = useAuth();
+  const canCreateOrders = hasPermission('produccion.ordenes.create');
 
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -517,7 +520,7 @@ export default function NewProductionOrderPage() {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || !canCreateOrders}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -30,6 +30,20 @@ import { FailuresSummaryWidget } from './FailuresSummaryWidget';
 import { MaintenanceTrendsWidget } from './MaintenanceTrendsWidget';
 import { TasksByStatusWidget } from './TasksByStatusWidget';
 import { MachineStatusWidget } from './MachineStatusWidget';
+// Nuevos widgets de mantenimiento por rol
+import { MyWorkOrdersWidget } from './MyWorkOrdersWidget';
+import { MyControlsTimelineWidget } from './MyControlsTimelineWidget';
+import { MyRecentCompletionsWidget } from './MyRecentCompletionsWidget';
+import { TeamWorkloadWidget } from './TeamWorkloadWidget';
+import { FailuresOpenWidget } from './FailuresOpenWidget';
+import { TeamControlsTimelineWidget } from './TeamControlsTimelineWidget';
+import { TrendCompletion6mWidget } from './TrendCompletion6mWidget';
+import { TopFailingMachinesWidget } from './TopFailingMachinesWidget';
+import { CostByMonthWidget } from './CostByMonthWidget';
+import { CrossSectorComparisonWidget } from './CrossSectorComparisonWidget';
+import { SolutionEffectivenessWidget } from './SolutionEffectivenessWidget';
+import { HealthScoresOverviewWidget } from './HealthScoresOverviewWidget';
+import { PreventiveComplianceWidget } from './PreventiveComplianceWidget';
 
 // Mapeo de widgetId a componente
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
@@ -63,6 +77,20 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
   'today-schedule': UpcomingMaintenancesWidget,
   'critical-alerts': OverdueOrdersWidget,
   'maintenance-costs': QuickStatsWidget,
+  // Nuevos widgets de mantenimiento por rol
+  'my-work-orders': MyWorkOrdersWidget,
+  'my-controls-timeline': MyControlsTimelineWidget,
+  'my-recent-completions': MyRecentCompletionsWidget,
+  'team-workload': TeamWorkloadWidget,
+  'failures-open': FailuresOpenWidget,
+  'team-controls-timeline': TeamControlsTimelineWidget,
+  'trend-completion-6m': TrendCompletion6mWidget,
+  'top-failing-machines': TopFailingMachinesWidget,
+  'cost-by-month': CostByMonthWidget,
+  'cross-sector-comparison': CrossSectorComparisonWidget,
+  'solution-effectiveness': SolutionEffectivenessWidget,
+  'health-scores-overview': HealthScoresOverviewWidget,
+  'preventive-compliance': PreventiveComplianceWidget,
 };
 
 // Configuración adicional para widgets

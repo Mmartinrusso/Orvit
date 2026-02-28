@@ -142,6 +142,7 @@ export default function ProductionOrdersPage() {
   const canDelete = hasPermission('produccion.ordenes.delete');
   const canStart = hasPermission('produccion.ordenes.start');
   const canComplete = hasPermission('produccion.ordenes.complete');
+  const canRelease = hasPermission('produccion.ordenes.release');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -499,7 +500,7 @@ export default function ProductionOrdersPage() {
                               <DropdownMenuSeparator />
 
                               {/* Status transitions */}
-                              {order.status === 'DRAFT' && canStart && (
+                              {order.status === 'DRAFT' && canRelease && (
                                 <DropdownMenuItem
                                   onClick={(e) => {
                                     e.stopPropagation();

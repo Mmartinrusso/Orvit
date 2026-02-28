@@ -79,18 +79,34 @@ export function DateTimePicker({
     onChange?.(date);
   };
 
-  const handleTimeChange = (newHours: string, newMinutes: string) => {
-    const h = Math.min(23, Math.max(0, parseInt(newHours) || 0));
-    const m = Math.min(59, Math.max(0, parseInt(newMinutes) || 0));
+  const handleTimeChange = (field: 'h' | 'm', raw: string) => {
+    // Allow free typing — only strip non-digits
+    const clean = raw.replace(/\D/g, '').slice(0, 2);
+    if (field === 'h') setHours(clean);
+    else setMinutes(clean);
 
-    setHours(h.toString().padStart(2, '0'));
-    setMinutes(m.toString().padStart(2, '0'));
+    const h = field === 'h'
+      ? Math.min(23, Math.max(0, parseInt(clean) || 0))
+      : Math.min(23, Math.max(0, parseInt(hours) || 0));
+    const m = field === 'm'
+      ? Math.min(59, Math.max(0, parseInt(clean) || 0))
+      : Math.min(59, Math.max(0, parseInt(minutes) || 0));
 
     if (selectedDate) {
       const newDate = new Date(selectedDate);
       newDate.setHours(h, m, 0, 0);
       setSelectedDate(newDate);
       onChange?.(newDate);
+    }
+  };
+
+  const handleTimeBlur = (field: 'h' | 'm') => {
+    if (field === 'h') {
+      const h = Math.min(23, Math.max(0, parseInt(hours) || 0));
+      setHours(h.toString().padStart(2, '0'));
+    } else {
+      const m = Math.min(59, Math.max(0, parseInt(minutes) || 0));
+      setMinutes(m.toString().padStart(2, '0'));
     }
   };
 
@@ -129,21 +145,25 @@ export function DateTimePicker({
             <span className="text-sm text-muted-foreground">Hora:</span>
             <div className="flex items-center gap-1">
               <Input
-                type="number"
-                min={0}
-                max={23}
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                placeholder="HH"
                 value={hours}
-                onChange={(e) => handleTimeChange(e.target.value, minutes)}
-                className="w-14 h-8 text-center text-sm"
+                onChange={(e) => handleTimeChange('h', e.target.value)}
+                onBlur={() => handleTimeBlur('h')}
+                className="w-12 h-8 text-center text-sm tabular-nums"
               />
-              <span className="text-muted-foreground">:</span>
+              <span className="text-muted-foreground font-medium">:</span>
               <Input
-                type="number"
-                min={0}
-                max={59}
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                placeholder="MM"
                 value={minutes}
-                onChange={(e) => handleTimeChange(hours, e.target.value)}
-                className="w-14 h-8 text-center text-sm"
+                onChange={(e) => handleTimeChange('m', e.target.value)}
+                onBlur={() => handleTimeBlur('m')}
+                className="w-12 h-8 text-center text-sm tabular-nums"
               />
             </div>
           </div>

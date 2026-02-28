@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
     cookies().set('token', legacyToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24,
     });
 

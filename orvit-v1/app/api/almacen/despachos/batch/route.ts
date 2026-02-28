@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { DespachoStatus } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,10 @@ interface BatchResult {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Permission check: batch actions require almacen.dispatch.process
+    const { user, error: authError } = await requirePermission('almacen.dispatch.process');
+    if (authError) return authError;
+
     const body = await request.json();
     const { ids, action, userId, motivo, companyId } = body;
 

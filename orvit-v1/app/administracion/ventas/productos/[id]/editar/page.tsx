@@ -55,7 +55,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   if (loading) {
     return (
-      <PermissionGuard permission="EDIT_PRODUCT">
+      <PermissionGuard permission="ventas.productos.edit">
         <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
           <div className="animate-pulse">
             <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
@@ -72,7 +72,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   if (!product) {
     return (
-      <PermissionGuard permission="EDIT_PRODUCT">
+      <PermissionGuard permission="ventas.productos.edit">
         <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold mb-2">Producto no encontrado</h2>
@@ -86,7 +86,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   }
 
   return (
-    <PermissionGuard permission="EDIT_PRODUCT">
+    <PermissionGuard permission="ventas.productos.edit">
       <ProductForm product={product} isEditing={true} />
     </PermissionGuard>
   );

@@ -127,6 +127,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (overtimeRate !== undefined && overtimeRate !== null && overtimeRate <= 0) {
+      return NextResponse.json(
+        { error: 'La tarifa de horas extra debe ser mayor a 0' },
+        { status: 400 }
+      );
+    }
+
     // Verificar que el usuario existe
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) }

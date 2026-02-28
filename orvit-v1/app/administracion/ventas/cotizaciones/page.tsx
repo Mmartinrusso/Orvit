@@ -173,6 +173,8 @@ export default function CotizacionesPage() {
   const { hasPermission: canDelete } = usePermission('ventas.cotizaciones.delete');
   const { hasPermission: canExport } = usePermission('ventas.cotizaciones.export');
   const { hasPermission: canConvert } = usePermission('ventas.cotizaciones.convert');
+  const { hasPermission: canDuplicate } = usePermission('ventas.cotizaciones.duplicate');
+  const { hasPermission: canVersion } = usePermission('ventas.cotizaciones.version');
   const { hasPermission: canViewStats } = usePermission('ventas.cotizaciones.stats');
   const { hasPermission: canViewMargins } = usePermission('ventas.margins.view');
 
@@ -914,10 +916,12 @@ export default function CotizacionesPage() {
                                         <FileText className="w-4 h-4 mr-2" />
                                         Ver PDF
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleDuplicar(cot)}>
-                                        <Copy className="w-4 h-4 mr-2" />
-                                        Duplicar
-                                      </DropdownMenuItem>
+                                      {canDuplicate && (
+                                        <DropdownMenuItem onClick={() => handleDuplicar(cot)}>
+                                          <Copy className="w-4 h-4 mr-2" />
+                                          Duplicar
+                                        </DropdownMenuItem>
+                                      )}
                                       <DropdownMenuSeparator />
                                       {canEditCot(cot.estado) && (
                                         <DropdownMenuItem onClick={() => {

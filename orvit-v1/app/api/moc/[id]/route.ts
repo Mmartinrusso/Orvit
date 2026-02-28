@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
+import { requirePermission } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
 interface Params {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 /**
@@ -15,10 +16,14 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
-    const mocId = parseInt(params.id)
+    const { id } = await params
+    const mocId = parseInt(id)
     if (isNaN(mocId)) {
       return NextResponse.json({ error: 'Invalid MOC ID' }, { status: 400 })
     }
+
+    const { user, error } = await requirePermission('moc.view')
+    if (error) return error
 
     const moc = await prisma.managementOfChange.findUnique({
       where: { id: mocId },
@@ -73,21 +78,27 @@ export async function GET(request: Request, { params }: Params) {
  */
 export async function PATCH(request: Request, { params }: Params) {
   try {
-    const mocId = parseInt(params.id)
+    const { id } = await params
+    const mocId = parseInt(id)
     if (isNaN(mocId)) {
       return NextResponse.json({ error: 'Invalid MOC ID' }, { status: 400 })
     }
 
-    const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
+    const body = await request.json()
 
-    const payload = await verifyToken(token)
-    if (!payload?.userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    // Determine required permission based on status change
+    let permissionCheck
+    if (body.status === 'UNDER_REVIEW' || body.status === 'PENDING_REVIEW') {
+      permissionCheck = await requirePermission('moc.review')
+    } else if (body.status === 'APPROVED') {
+      permissionCheck = await requirePermission('moc.approve')
+    } else if (body.status === 'IMPLEMENTING' || body.status === 'COMPLETED') {
+      permissionCheck = await requirePermission('moc.implement')
+    } else {
+      permissionCheck = await requirePermission('moc.edit')
     }
+    if (permissionCheck.error) return permissionCheck.error
+    const user = permissionCheck.user!
 
     const moc = await prisma.managementOfChange.findUnique({
       where: { id: mocId }
@@ -96,8 +107,6 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!moc) {
       return NextResponse.json({ error: 'MOC not found' }, { status: 404 })
     }
-
-    const body = await request.json()
     const {
       title,
       description,
@@ -133,9 +142,9 @@ export async function PATCH(request: Request, { params }: Params) {
 
       // Set appropriate user/date based on status
       if (status === 'UNDER_REVIEW') {
-        statusData.reviewedById = payload.userId
+        statusData.reviewedById = user.id
       } else if (status === 'APPROVED') {
-        statusData.approvedById = payload.userId
+        statusData.approvedById = user.id
         statusData.approvalDate = new Date()
         statusData.approvalNotes = approvalNotes
       } else if (status === 'REJECTED') {
@@ -144,7 +153,7 @@ export async function PATCH(request: Request, { params }: Params) {
         statusData.actualStartDate = new Date()
       } else if (status === 'COMPLETED') {
         statusData.actualEndDate = new Date()
-        statusData.implementedById = payload.userId
+        statusData.implementedById = user.id
       }
 
       // Create history entry
@@ -153,7 +162,7 @@ export async function PATCH(request: Request, { params }: Params) {
           mocId,
           fromStatus: moc.status,
           toStatus: status,
-          changedById: payload.userId,
+          changedById: user.id,
           notes: body.statusNotes || null
         }
       })
@@ -207,13 +216,18 @@ export async function PATCH(request: Request, { params }: Params) {
  */
 export async function DELETE(request: Request, { params }: Params) {
   try {
-    const mocId = parseInt(params.id)
+    const { id } = await params
+    const mocId = parseInt(id)
     if (isNaN(mocId)) {
       return NextResponse.json({ error: 'Invalid MOC ID' }, { status: 400 })
     }
 
-    const moc = await prisma.managementOfChange.findUnique({
-      where: { id: mocId }
+    const { user, error } = await requirePermission('moc.delete')
+    if (error) return error
+    const companyId = user!.companyId
+
+    const moc = await prisma.managementOfChange.findFirst({
+      where: { id: mocId, companyId }
     })
 
     if (!moc) {

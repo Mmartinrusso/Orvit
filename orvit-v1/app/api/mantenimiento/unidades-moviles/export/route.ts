@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { companyId, format, estado, sectorId, tipo } = validation.data;
+    const { format, estado, sectorId, tipo } = validation.data;
+    const companyId = payload.companyId as number; // Siempre del JWT
 
     // 3. Construir filtro WHERE
     const where: any = { companyId };

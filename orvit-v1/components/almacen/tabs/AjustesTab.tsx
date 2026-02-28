@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { downloadCSV } from '@/lib/cargas/utils';
 import { AdjustmentTypeLabels, type AdjustmentType } from '@/lib/almacen/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AjustesTabProps {
   onNew: () => void;
@@ -48,6 +49,8 @@ interface AjustesTabProps {
  */
 export function AjustesTab({ onNew, onView }: AjustesTabProps) {
   const { toast } = useToast();
+  const { hasPermission } = useAuth();
+  const canAdjust = hasPermission('almacen.adjust');
 
   const [filters, setFilters] = useState<AjustesFilters>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 });
@@ -130,7 +133,7 @@ export function AjustesTab({ onNew, onView }: AjustesTabProps) {
           <Eye className="h-4 w-4 mr-2" />
           Ver detalle
         </DropdownMenuItem>
-        {ajuste.estado === 'BORRADOR' && (
+        {canAdjust && ajuste.estado === 'BORRADOR' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleConfirm(ajuste.id)}>
@@ -139,7 +142,7 @@ export function AjustesTab({ onNew, onView }: AjustesTabProps) {
             </DropdownMenuItem>
           </>
         )}
-        {ajuste.estado === 'PENDIENTE_APROBACION' && (
+        {canAdjust && ajuste.estado === 'PENDIENTE_APROBACION' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleApprove(ajuste.id)}>
@@ -183,11 +186,13 @@ export function AjustesTab({ onNew, onView }: AjustesTabProps) {
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleExportCSV} disabled={ajustes.length === 0} title="Exportar CSV">
             <Download className="h-4 w-4" />
           </Button>
-          <Button onClick={onNew} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Nuevo Ajuste</span>
-            <span className="sm:hidden">Nuevo</span>
-          </Button>
+          {canAdjust && (
+            <Button onClick={onNew} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Nuevo Ajuste</span>
+              <span className="sm:hidden">Nuevo</span>
+            </Button>
+          )}
         </div>
       </div>
 

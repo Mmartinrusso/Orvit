@@ -47,6 +47,7 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useBankReconciliation } from '@/hooks/use-bank-reconciliation';
 import ReconciliationSummary from '@/components/conciliacion/ReconciliationSummary';
 import BankReconciliation from '@/components/conciliacion/BankReconciliation';
@@ -59,6 +60,8 @@ import { Label } from '@/components/ui/label';
 export default function ConciliacionPage() {
   const { mode: viewMode } = useViewMode();
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const canReconcile = hasPermission('treasury.reconcile');
   const companyId = currentCompany?.id || 0;
 
   const reconciliation = useBankReconciliation(companyId, viewMode);
@@ -240,6 +243,7 @@ export default function ConciliacionPage() {
               <RefreshCcw className={cn('h-3.5 w-3.5', reconciliation.isFetching && 'animate-spin')} />
               Actualizar
             </button>
+            {canReconcile && (
             <Button
               size="sm"
               className="h-7 text-xs"
@@ -248,6 +252,7 @@ export default function ConciliacionPage() {
               <Upload className="h-3.5 w-3.5 mr-1" />
               Importar Extracto
             </Button>
+            )}
           </div>
         </div>
       </div>
@@ -397,10 +402,12 @@ export default function ConciliacionPage() {
                       <p className="text-muted-foreground text-sm mb-4">
                         Importe un extracto bancario para comenzar la conciliación
                       </p>
+                      {canReconcile && (
                       <Button onClick={() => setIsImportDialogOpen(true)}>
                         <Upload className="h-4 w-4 mr-2" />
                         Importar primer extracto
                       </Button>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -466,6 +473,7 @@ export default function ConciliacionPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
+                                {canReconcile && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -482,6 +490,7 @@ export default function ConciliacionPage() {
                                 >
                                   <Sparkles className="h-4 w-4 text-primary" />
                                 </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -518,7 +527,7 @@ export default function ConciliacionPage() {
                       <Download className="h-3.5 w-3.5" />
                       PDF
                     </Button>
-                    {!isClosed && (
+                    {!isClosed && canReconcile && (
                       <Button
                         variant="default"
                         size="sm"

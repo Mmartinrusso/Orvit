@@ -36,7 +36,7 @@ export default function UnifiedAgendaPage() {
   const [activeTab, setActiveTab] = useState<AgendaTab>('mi-agenda');
   const searchParams = useSearchParams();
 
-  const { hasPermission: canAccessTasks, isLoading: loadingTasksPerm } = usePermissionRobust('ingresar_tareas');
+  const { hasPermission: canAccessTasks, isLoading: loadingTasksPerm } = usePermissionRobust('tasks.view_all');
   const { hasPermission: canSeeHistorial, isLoading: loadingHistorialPerm } = usePermissionRobust('ver_historial_tareas');
   const { hasPermission: canSeeEstadisticas, isLoading: loadingEstadisticasPerm } = usePermissionRobust('ver_estadisticas');
 

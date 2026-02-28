@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const month = searchParams.get('month') || new Date().toISOString().slice(0, 7);
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.DASHBOARD_VIEW);
+    if (error) return error;
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
-    }
+    const { searchParams } = new URL(request.url);
+    const companyId = String(user!.companyId);
+    const month = searchParams.get('month') || new Date().toISOString().slice(0, 7);
 
     // Obtener datos de producción del mes
     const productionData = await prisma.$queryRaw`

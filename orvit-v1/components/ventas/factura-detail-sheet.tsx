@@ -60,6 +60,7 @@ import {
   Receipt,
   CreditCard,
 } from 'lucide-react';
+import { usePermission } from '@/hooks/use-permissions';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -154,6 +155,8 @@ function formatCurrency(amount: number, currency: string = 'ARS'): string {
 
 export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: FacturaDetailSheetProps) {
   const router = useRouter();
+  const { hasPermission: canSendInvoice } = usePermission('ventas.facturas.send');
+  const { hasPermission: canApplyPayment } = usePermission('ventas.pagos.apply');
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -349,7 +352,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                     Descargar PDF
                   </DropdownMenuItem>
 
-                  {invoice.estado === 'BORRADOR' && (
+                  {invoice.estado === 'BORRADOR' && canSendInvoice && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleAction('emitir')}>
@@ -359,7 +362,7 @@ export function FacturaDetailSheet({ invoiceId, open, onClose, onUpdate }: Factu
                     </>
                   )}
 
-                  {isPendiente && invoice.estado !== 'BORRADOR' && (
+                  {isPendiente && invoice.estado !== 'BORRADOR' && canApplyPayment && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleAction('registrar_pago')}>

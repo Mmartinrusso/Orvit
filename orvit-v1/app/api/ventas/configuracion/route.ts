@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requirePermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
+import { requirePermission, checkPermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -197,6 +197,19 @@ export async function PUT(req: NextRequest) {
     }
 
     const data = validation.data;
+
+    // Check if numeracion fields are being modified - require special permission
+    const numeracionFields = ['quotePrefix', 'salePrefix', 'deliveryPrefix', 'remitoPrefix', 'invoicePrefix', 'paymentPrefix', 'puntoVenta', 'acopioPrefix', 'retiroPrefix'];
+    const hasNumeracionChange = numeracionFields.some(field => data[field as keyof typeof data] !== undefined);
+    if (hasNumeracionChange) {
+      const canEditNumeracion = await checkPermission(user!.id, user!.companyId, VENTAS_PERMISSIONS.CONFIG_NUMERACION);
+      if (!canEditNumeracion) {
+        return NextResponse.json(
+          { error: 'Sin permisos para modificar numeración', requiredPermission: VENTAS_PERMISSIONS.CONFIG_NUMERACION },
+          { status: 403 }
+        );
+      }
+    }
 
     // Check if config exists
     let config = await prisma.salesConfig.findUnique({

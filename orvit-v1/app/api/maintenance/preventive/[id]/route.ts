@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { getUserName, getComponentNames } from '@/lib/maintenance-helpers';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import {
   getTemplateById,
   updateTemplate,
@@ -80,6 +81,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso de editar mantenimiento preventivo
+    const { user: permUser, error: permError } = await requirePermission('preventive_maintenance.edit');
+    if (permError) return permError;
+
     const payload = await getAuth();
     if (!payload || !payload.userId) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -221,6 +226,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso de eliminar mantenimiento preventivo
+    const { user: permUser, error: permError } = await requirePermission('preventive_maintenance.delete');
+    if (permError) return permError;
+
     const payload = await getAuth();
     if (!payload || !payload.userId) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

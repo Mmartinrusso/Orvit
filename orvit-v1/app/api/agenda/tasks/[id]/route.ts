@@ -13,9 +13,11 @@ const updateTaskSchema = z.object({
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   status: z.enum(['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED']).optional(),
   category: z.string().max(100).optional().nullable(),
+  groupId: z.number().int().positive().optional().nullable(),
   assignedToUserId: z.number().optional().nullable(),
   assignedToContactId: z.number().optional().nullable(),
   assignedToName: z.string().max(200).optional().nullable(),
+  isCompanyVisible: z.boolean().optional(),
   completedNote: z.string().max(1000).optional(),
   notes: z
     .array(
@@ -60,8 +62,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         assignedToContact: {
           select: { id: true, name: true, avatar: true },
         },
+        group: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
         reminders: {
           orderBy: { remindAt: 'asc' },
+        },
+        _count: {
+          select: { comments: true },
         },
       },
     });
@@ -70,8 +78,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
     }
 
-    // Verificar que el usuario sea el creador
-    if (task.createdById !== user.id) {
+    // Verificar que el usuario tenga acceso (creador, asignado, o tarea de empresa)
+    const userCompanyIds = [
+      ...(user.ownedCompanies ?? []).map((c: any) => c.id),
+      ...(user.companies ?? []).map((c: any) => c.companyId),
+    ];
+    const canAccess =
+      task.createdById === user.id ||
+      task.assignedToUserId === user.id ||
+      (task as any).isCompanyVisible ||
+      userCompanyIds.includes(task.companyId);
+    if (!canAccess) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -84,6 +101,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       priority: task.priority,
       status: task.status,
       category: task.category,
+      groupId: (task as any).groupId || null,
+      group: (task as any).group || null,
       createdById: task.createdById,
       createdBy: task.createdBy,
       assignedToUserId: task.assignedToUserId,
@@ -94,6 +113,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       source: task.source,
       discordMessageId: task.discordMessageId,
       companyId: task.companyId,
+      isCompanyVisible: (task as any).isCompanyVisible ?? false,
+      externalNotified: (task as any).externalNotified ?? false,
+      externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
       reminders: task.reminders.map((r) => ({
         id: r.id,
         title: r.title,
@@ -175,10 +197,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
     if (data.priority !== undefined) updateData.priority = data.priority;
     if (data.category !== undefined) updateData.category = data.category;
+    if (data.groupId !== undefined) updateData.groupId = data.groupId;
     if (data.assignedToUserId !== undefined) updateData.assignedToUserId = data.assignedToUserId;
     if (data.assignedToContactId !== undefined)
       updateData.assignedToContactId = data.assignedToContactId;
     if (data.assignedToName !== undefined) updateData.assignedToName = data.assignedToName;
+    if (data.isCompanyVisible !== undefined) updateData.isCompanyVisible = data.isCompanyVisible;
     if (data.notes !== undefined) updateData.notes = data.notes;
     if (data.completedNote !== undefined) updateData.completedNote = data.completedNote;
 
@@ -229,8 +253,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         assignedToContact: {
           select: { id: true, name: true, avatar: true },
         },
+        group: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
         reminders: {
           orderBy: { remindAt: 'asc' },
+        },
+        _count: {
+          select: { comments: true },
         },
       },
     });
@@ -244,6 +274,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       priority: task.priority,
       status: task.status,
       category: task.category,
+      groupId: (task as any).groupId || null,
+      group: (task as any).group || null,
       createdById: task.createdById,
       createdBy: task.createdBy,
       assignedToUserId: task.assignedToUserId,
@@ -254,6 +286,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       source: task.source,
       discordMessageId: task.discordMessageId,
       companyId: task.companyId,
+      isCompanyVisible: (task as any).isCompanyVisible ?? false,
+      externalNotified: (task as any).externalNotified ?? false,
+      externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
       reminders: task.reminders.map((r) => ({
         id: r.id,
         title: r.title,
@@ -273,6 +308,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
+      _count: { comments: (task as any)._count?.comments ?? 0 },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     };

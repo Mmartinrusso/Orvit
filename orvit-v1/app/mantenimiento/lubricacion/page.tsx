@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Droplet,
   Plus,
   Search,
@@ -36,6 +44,9 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -69,9 +80,74 @@ interface LubricationExecution {
 
 export default function LubricationPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('points');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const FORM_DEFAULT = { machineId: '', name: '', location: '', lubricantType: '', lubricantBrand: '', quantity: '', quantityUnit: 'ml', method: 'MANUAL', frequencyDays: '30', instructions: '' };
+  const [form, setForm] = useState(FORM_DEFAULT);
+  const patchForm = (patch: Partial<typeof FORM_DEFAULT>) => setForm(prev => ({ ...prev, ...patch }));
+
+  const { data: machinesData } = useQuery({
+    queryKey: ['machines-dropdown', currentCompany?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/machines?companyId=${currentCompany?.id}`);
+      if (!res.ok) return { machines: [] };
+      return res.json();
+    },
+    enabled: !!currentCompany?.id,
+  });
+  const machines = machinesData?.machines || [];
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/lubrication?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Punto de lubricación eliminado');
+      queryClient.invalidateQueries({ queryKey: ['lubrication-points'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al eliminar punto de lubricación'),
+  });
+
+  const handleDelete = (id: number) => {
+    if (!confirm('¿Eliminar este punto de lubricación? Esta acción no se puede deshacer.')) return;
+    deleteMutation.mutate(id);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof FORM_DEFAULT) => {
+      const res = await fetch('/api/lubrication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          machineId: parseInt(data.machineId),
+          name: data.name,
+          location: data.location || undefined,
+          lubricantType: data.lubricantType,
+          lubricantBrand: data.lubricantBrand || undefined,
+          quantity: data.quantity ? parseFloat(data.quantity) : undefined,
+          quantityUnit: data.quantityUnit,
+          method: data.method,
+          frequencyDays: parseInt(data.frequencyDays),
+          instructions: data.instructions || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al crear');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Punto de lubricación creado');
+      setIsDialogOpen(false);
+      setForm(FORM_DEFAULT);
+      queryClient.invalidateQueries({ queryKey: ['lubrication-points'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al crear punto de lubricación'),
+  });
 
   const { data: pointsData, isLoading: loadingPoints, refetch: refetchPoints } = useQuery({
     queryKey: ['lubrication-points', currentCompany?.id],
@@ -138,6 +214,7 @@ export default function LubricationPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          {hasPermission('lubrication.create') && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -151,31 +228,65 @@ export default function LubricationPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Nombre del Punto</Label>
-                  <Input placeholder="Ej: Rodamiento principal" />
+                  <Label>Máquina *</Label>
+                  <Select value={form.machineId} onValueChange={v => patchForm({ machineId: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar máquina..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {machines.map((m: any) => (
+                        <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Nombre del Punto *</Label>
+                  <Input
+                    placeholder="Ej: Rodamiento principal"
+                    value={form.name}
+                    onChange={e => patchForm({ name: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Ubicación</Label>
-                  <Input placeholder="Ej: Lado operador, parte superior" />
+                  <Input
+                    placeholder="Ej: Lado operador, parte superior"
+                    value={form.location}
+                    onChange={e => patchForm({ location: e.target.value })}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Tipo de Lubricante</Label>
-                    <Input placeholder="Ej: Grasa EP2" />
+                    <Label>Tipo de Lubricante *</Label>
+                    <Input
+                      placeholder="Ej: Grasa EP2"
+                      value={form.lubricantType}
+                      onChange={e => patchForm({ lubricantType: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Marca</Label>
-                    <Input placeholder="Ej: Shell Alvania" />
+                    <Input
+                      placeholder="Ej: Shell Alvania"
+                      value={form.lubricantBrand}
+                      onChange={e => patchForm({ lubricantBrand: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Cantidad</Label>
-                    <Input type="number" placeholder="50" />
+                    <Input
+                      type="number"
+                      placeholder="50"
+                      value={form.quantity}
+                      onChange={e => patchForm({ quantity: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Unidad</Label>
-                    <Select defaultValue="ml">
+                    <Select value={form.quantityUnit} onValueChange={v => patchForm({ quantityUnit: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -183,24 +294,38 @@ export default function LubricationPage() {
                         <SelectItem value="ml">ml</SelectItem>
                         <SelectItem value="g">gramos</SelectItem>
                         <SelectItem value="cc">cc</SelectItem>
+                        <SelectItem value="L">litros</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Frecuencia (días)</Label>
-                    <Input type="number" defaultValue={30} />
+                    <Input
+                      type="number"
+                      value={form.frequencyDays}
+                      onChange={e => patchForm({ frequencyDays: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Instrucciones</Label>
-                  <Textarea placeholder="Instrucciones detalladas para la lubricación..." />
+                  <Textarea
+                    placeholder="Instrucciones detalladas para la lubricación..."
+                    value={form.instructions}
+                    onChange={e => patchForm({ instructions: e.target.value })}
+                  />
                 </div>
-                <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
-                  Crear Punto
+                <Button
+                  className="w-full"
+                  onClick={() => createMutation.mutate(form)}
+                  disabled={!form.machineId || !form.name || !form.lubricantType || createMutation.isPending}
+                >
+                  {createMutation.isPending ? 'Creando...' : 'Crear Punto'}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -288,6 +413,9 @@ export default function LubricationPage() {
                     <TableHead>Método</TableHead>
                     <TableHead>Última Ejecución</TableHead>
                     <TableHead>Ejecuciones</TableHead>
+                    {(hasPermission('lubrication.edit') || hasPermission('lubrication.delete')) && (
+                      <TableHead className="w-[60px]">Acciones</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,6 +455,34 @@ export default function LubricationPage() {
                         <TableCell>
                           <Badge variant="outline">{point.execution_count}</Badge>
                         </TableCell>
+                        {(hasPermission('lubrication.edit') || hasPermission('lubrication.delete')) && (
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {hasPermission('lubrication.edit') && (
+                                  <DropdownMenuItem onClick={() => toast.info('Edición de punto próximamente')}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {hasPermission('lubrication.delete') && (
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleDelete(point.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

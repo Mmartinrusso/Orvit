@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { LayoutGrid, List, Search, X, Lightbulb, CheckCircle2, AlertTriangle, XCircle, ChevronDown } from 'lucide-react';
+import { LayoutGrid, List, Search, X, Lightbulb, CheckCircle2, AlertTriangle, XCircle, ChevronDown, CheckSquare, Trash2, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +21,7 @@ import { SolutionCard, Solution } from '@/components/solutions/SolutionCard';
 import { SolutionDetailDialog } from '@/components/solutions/SolutionDetailDialog';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 
 const PAGE_SIZE = 40;
 
@@ -49,12 +51,17 @@ function mapToSolution(sa: any): Solution {
 
 export default function SolucionesPage() {
   const { currentCompany } = useCompany();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [machineFilter, setMachineFilter] = useState<string>('ALL');
   const [outcomeFilter, setOutcomeFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null);
   const [activeKPI, setActiveKPI] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<(number | string)[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const confirm = useConfirm();
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
@@ -146,6 +153,39 @@ export default function SolucionesPage() {
     setActiveKPI(null);
   };
 
+  const handleBulkDelete = async () => {
+    const ok = await confirm({
+      title: 'Eliminar soluciones',
+      description: `¿Eliminar ${selectedIds.length} solución${selectedIds.length !== 1 ? 'es' : ''}? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (!ok) return;
+
+    setBulkDeleting(true);
+    toast.loading('Eliminando soluciones...', { id: 'bulk-delete-solutions' });
+
+    try {
+      const res = await fetch('/api/solutions-applied/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds.map(Number), operation: 'delete' }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+
+      toast.success(`${data.updated} solución${data.updated !== 1 ? 'es' : ''} eliminada${data.updated !== 1 ? 's' : ''}`, { id: 'bulk-delete-solutions' });
+      setSelectedIds([]);
+      setSelectionMode(false);
+      queryClient.invalidateQueries({ queryKey: ['solutions-applied'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar', { id: 'bulk-delete-solutions' });
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const kpiDefinitions = [
     {
       key: 'total',
@@ -211,6 +251,14 @@ export default function SolucionesPage() {
           </div>
 
           <div className="flex gap-2 items-center">
+            <Button
+              variant={selectionMode ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }}
+            >
+              <CheckSquare className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">{selectionMode ? 'Cancelar' : 'Seleccionar'}</span>
+            </Button>
             <ToggleGroup
               type="single"
               value={viewMode}
@@ -372,8 +420,15 @@ export default function SolucionesPage() {
                   <SolutionCard
                     key={solution.id}
                     solution={solution}
-                    onClick={setSelectedSolution}
+                    onClick={selectionMode ? undefined : setSelectedSolution}
                     variant={viewMode === 'list' ? 'compact' : 'default'}
+                    selectionMode={selectionMode}
+                    isSelected={selectedIds.includes(solution.id)}
+                    onToggleSelect={(id) =>
+                      setSelectedIds(prev =>
+                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                      )
+                    }
                   />
                 ))}
               </div>
@@ -396,6 +451,52 @@ export default function SolucionesPage() {
           )}
         </div>
       </div>
+
+      {/* Bulk bar */}
+      {selectionMode && selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className="flex items-center gap-3 px-4 py-3 bg-card border shadow-lg rounded-xl">
+            <div className="flex items-center gap-2 pr-3 border-r border-border">
+              <CheckSquare className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium whitespace-nowrap">
+                {selectedIds.length} de {solutions.length}
+              </span>
+              {selectedIds.length < solutions.length && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setSelectedIds(solutions.map(s => s.id))}
+                >
+                  Todos
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkDeleting}
+              className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+              onClick={handleBulkDelete}
+            >
+              {bulkDeleting ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              Eliminar
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 ml-1"
+              onClick={() => { setSelectedIds([]); setSelectionMode(false); }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Solution Detail Dialog */}
       <SolutionDetailDialog

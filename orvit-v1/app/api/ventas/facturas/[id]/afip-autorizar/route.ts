@@ -16,7 +16,7 @@ interface RouteParams {
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.FACTURAS_EDIT);
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.FACTURAS_EMIT);
     if (error) return error;
 
     const { id } = await params;

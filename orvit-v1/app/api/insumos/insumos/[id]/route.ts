@@ -1,13 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
+    const supplyId = parseInt(params.id);
+
+    const result = await prisma.$queryRaw`
+      SELECT
+        s.id,
+        s.code,
+        s.name,
+        s.unit_measure as "unitMeasure",
+        s.supplier_id as "supplierId",
+        s.company_id as "companyId",
+        s.is_active as "isActive",
+        s.created_at as "createdAt",
+        s.updated_at as "updatedAt",
+        sup.name as "supplierName",
+        sc.name as "categoryName",
+        sc.color as "categoryColor"
+      FROM supplies s
+      LEFT JOIN suppliers sup ON s.supplier_id = sup.id
+      LEFT JOIN supply_categories sc ON sc.id = s."categoryId"
+      WHERE s.id = ${supplyId}
+    `;
+
+    if (!(result as any[]).length) {
+      return NextResponse.json({ error: 'Insumo no encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json((result as any[])[0]);
+  } catch (error) {
+    console.error('Error obteniendo insumo:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const supplyId = parseInt(params.id);
     const body = await request.json();
     const { name, unitMeasure, supplierId, isActive } = body;
@@ -62,6 +107,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const supplyId = parseInt(params.id);
 
     // Eliminar precios asociados primero

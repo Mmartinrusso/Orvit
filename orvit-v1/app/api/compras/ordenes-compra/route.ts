@@ -10,6 +10,7 @@ import { puedeCrearOCDesdePedido } from '@/lib/compras/pedidos-enforcement';
 import { getViewMode, isExtendedMode } from '@/lib/view-mode/get-mode';
 import { withComprasGuards } from '@/lib/modules';
 import { ordenesCache, ORDENES_CACHE_TTL } from '@/lib/compras/cache';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -247,6 +248,10 @@ export const POST = withComprasGuards(async (request: NextRequest) => {
     if (!companyId) {
       return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
     }
+
+    // Permission check: ingresar_compras
+    const hasPerm = await hasUserPermission(user.id, companyId, 'ingresar_compras');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     // Get ViewMode from middleware header
     const viewMode = getViewMode(request);

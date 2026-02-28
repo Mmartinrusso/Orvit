@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { AllocationCategoryQuerySchema, AllocationsArraySchema } from '@/lib/validations/costs';
 import { z } from 'zod';
 
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic';
 // GET /api/costs/config/allocations - Get allocations by category
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
 

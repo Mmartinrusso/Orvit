@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
  * Elimina ~45 requests al cargar
  */
 export function useNavigationPermissions() {
-  const { user, loading, hasPermission } = useAuth();
+  const { user, loading, hasPermission, hasAnyPermission } = useAuth();
 
   // ✨ OPTIMIZACIÓN: Todos los permisos calculados en memoria
   const permissions = useMemo(() => {
@@ -24,6 +24,16 @@ export function useNavigationPermissions() {
         canAccessWorkStations: false,
         canAccessPanol: false,
         canAccessMaintenanceReports: false,
+        canAccessMaintenanceFallas: false,
+        canAccessMaintenanceOrdenes: false,
+        canAccessMaintenancePreventivo: false,
+        canAccessMaintenanceCostos: false,
+        canAccessPTW: false,
+        canAccessLOTO: false,
+        canAccessMOC: false,
+        canAccessSkills: false,
+        canAccessCalibration: false,
+        canAccessContractors: false,
 
         // Administración
         canAccessAdminDashboard: false,
@@ -41,7 +51,13 @@ export function useNavigationPermissions() {
         canAccessCosts: false,
         canAccessControls: false,
         canAccessCargas: false,
-        
+        canAccessCompras: false,
+        canAccessTesoreria: false,
+        canAccessNominas: false,
+        canAccessAuditoria: false,
+        canAccessAutomatizaciones: false,
+        canAccessCostosModule: false,
+
         // Grupos del sidebar de Administración
         canAccessPersonalGroup: false,
         canAccessVentasGroup: false,
@@ -86,10 +102,20 @@ export function useNavigationPermissions() {
       canAccessWorkStations: hasPermission('puestos_trabajo'),
       canAccessPanol: hasPermission('panol'),
       canAccessMaintenanceReports: hasPermission('reportes_mantenimiento'),
+      canAccessMaintenanceFallas: hasPermission('ingresar_mantenimiento'),
+      canAccessMaintenanceOrdenes: hasPermission('ordenes_de_trabajo'),
+      canAccessMaintenancePreventivo: hasPermission('preventive_maintenance.view'),
+      canAccessMaintenanceCostos: hasPermission('ingresar_mantenimiento'),
+      canAccessPTW: hasPermission('ptw.view'),
+      canAccessLOTO: hasPermission('loto.view'),
+      canAccessMOC: hasPermission('moc.view'),
+      canAccessSkills: hasPermission('skills.view'),
+      canAccessCalibration: hasPermission('calibration.view'),
+      canAccessContractors: hasPermission('contractors.view'),
 
       // Administración
       canAccessAdminDashboard: hasPermission('ingresar_dashboard_administracion'),
-      canAccessTasks: hasPermission('ingresar_tareas'),
+      canAccessTasks: hasAnyPermission(['tasks.view_all', 'ingresar_tareas']),
       canAccessPermissions: hasPermission('ingresar_permisos_roles'),
       canAccessUsers: hasPermission('ingresar_usuarios'),
       canAccessReports: hasPermission('ingresar_reportes'),
@@ -103,7 +129,13 @@ export function useNavigationPermissions() {
       canAccessCosts: hasPermission('costos'),
       canAccessControls: hasPermission('ingresar_controles'),
       canAccessCargas: hasPermission('cargas.view'),
-      
+      canAccessCompras: hasPermission('ingresar_compras'),
+      canAccessTesoreria: hasPermission('ingresar_tesoreria'),
+      canAccessNominas: hasPermission('ingresar_nominas'),
+      canAccessAuditoria: hasPermission('ingresar_auditoria'),
+      canAccessAutomatizaciones: hasPermission('ingresar_automatizaciones'),
+      canAccessCostosModule: hasPermission('ingresar_costos_modulo'),
+
       // Grupos del sidebar de Administración
       canAccessPersonalGroup: hasPermission('ingresar_personal'),
       canAccessVentasGroup: hasPermission('ingresar_ventas'),

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,8 +43,10 @@ function detectSeparator(firstLine: string): string {
 
 export async function POST(request: NextRequest) {
   console.log('🚀 POST /api/sales/monthly/bulk-upload - Iniciando...');
-  
+
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     console.log('🔍 Iniciando carga masiva de ventas mensuales...');
     
     console.log('📥 Parseando FormData...');

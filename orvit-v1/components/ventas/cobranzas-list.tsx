@@ -70,6 +70,7 @@ import { format } from 'date-fns';
 import { formatDate } from '@/lib/date-utils';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { usePermission } from '@/hooks/use-permissions';
 
 interface Pago {
   id: number;
@@ -143,6 +144,9 @@ export function CobranzasList({
 }: CobranzasListProps) {
   // ViewMode para auto-reload al cambiar modo
   const { mode } = useViewMode();
+
+  // Permission checks
+  const { hasPermission: canApplyPayment } = usePermission('ventas.pagos.apply');
 
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(true);
@@ -389,10 +393,12 @@ export function CobranzasList({
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
-          <Button size="sm" onClick={() => window.location.href = '/administracion/ventas/cobranzas/registrar'}>
-            <Plus className="w-4 h-4 mr-2" />
-            Registrar Pago
-          </Button>
+          {canApplyPayment && (
+            <Button size="sm" onClick={() => window.location.href = '/administracion/ventas/cobranzas/registrar'}>
+              <Plus className="w-4 h-4 mr-2" />
+              Registrar Pago
+            </Button>
+          )}
         </div>
       </div>
 

@@ -85,7 +85,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Obtener repuestos usados (reservas PICKED)
     const sparePartsUsed = await prisma.sparePartReservation.findMany({
       where: { workOrderId, status: 'PICKED' },
-      include: {
+      select: {
+        quantity: true,
+        usedQuantity: true,
         tool: {
           select: {
             id: true,
@@ -113,14 +115,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           ...tc,
           amount: Number(tc.amount)
         })),
-        sparePartsUsed: sparePartsUsed.map(sp => ({
-          toolId: sp.tool.id,
-          toolName: sp.tool.name,
-          quantity: sp.quantity,
-          unitCost: sp.tool.cost ? Number(sp.tool.cost) : 0,
-          totalCost: sp.quantity * (sp.tool.cost ? Number(sp.tool.cost) : 0),
-          unit: sp.tool.unit
-        }))
+        sparePartsUsed: sparePartsUsed.map(sp => {
+          const consumed = sp.usedQuantity ?? sp.quantity;
+          const unitCost = sp.tool.cost ? Number(sp.tool.cost) : 0;
+          return {
+            toolId: sp.tool.id,
+            toolName: sp.tool.name,
+            quantity: consumed,
+            unitCost,
+            totalCost: consumed * unitCost,
+            unit: sp.tool.unit
+          };
+        })
       }
     });
 

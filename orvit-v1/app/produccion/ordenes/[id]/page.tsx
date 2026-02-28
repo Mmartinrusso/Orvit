@@ -140,6 +140,7 @@ export default function ProductionOrderDetailPage() {
   });
 
   const canEdit = hasPermission('produccion.ordenes.edit');
+  const canRelease = hasPermission('produccion.ordenes.release');
   const canStart = hasPermission('produccion.ordenes.start');
   const canComplete = hasPermission('produccion.ordenes.complete');
 
@@ -255,7 +256,7 @@ export default function ProductionOrderDetailPage() {
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          {order.status === 'DRAFT' && canStart && (
+          {order.status === 'DRAFT' && canRelease && (
             <Button
               variant="outline"
               onClick={() => setStatusChangeDialog({ open: true, status: 'RELEASED' })}

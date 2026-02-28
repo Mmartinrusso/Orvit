@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // PUT /api/cost-distribution/[id] - Actualizar configuración de distribución de costos
 export async function PUT(
@@ -7,6 +8,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔄 API Cost Distribution PUT - Iniciando...');
     
     const { id } = params;
@@ -61,6 +65,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🗑️ API Cost Distribution DELETE - Iniciando...');
     
     const { id } = params;

@@ -262,14 +262,14 @@ function EnhancedMaintenancePanelContent({
  } = useMaintenanceDashboardContext();
  
  // Permisos de Mantenimientos
- const { hasPermission: canCreateMaintenance } = usePermissionRobust('crear_mantenimiento');
- const { hasPermission: canCreateChecklist } = usePermissionRobust('crear_checklist');
- const { hasPermission: canExecuteMaintenance } = usePermissionRobust('ejecucion_mantenimiento');
- const { hasPermission: canEditMaintenance } = usePermissionRobust('editar_mantenimiento');
- const { hasPermission: canDeleteMaintenance } = usePermissionRobust('eliminar_mantenimiento');
- const { hasPermission: canDuplicateMaintenance } = usePermissionRobust('duplicar_mantenimiento');
- const { hasPermission: canEditChecklist } = usePermissionRobust('editar_checklist');
- const { hasPermission: canDeleteChecklist } = usePermissionRobust('eliminar_checklist');
+ const { hasPermission: canCreateMaintenance } = usePermissionRobust('preventive_maintenance.create');
+ const { hasPermission: canCreateChecklist } = usePermissionRobust('preventive_maintenance.create');
+ const { hasPermission: canExecuteMaintenance } = usePermissionRobust('preventive_maintenance.complete');
+ const { hasPermission: canEditMaintenance } = usePermissionRobust('preventive_maintenance.edit');
+ const { hasPermission: canDeleteMaintenance } = usePermissionRobust('preventive_maintenance.delete');
+ const { hasPermission: canDuplicateMaintenance } = usePermissionRobust('preventive_maintenance.create');
+ const { hasPermission: canEditChecklist } = usePermissionRobust('preventive_maintenance.edit');
+ const { hasPermission: canDeleteChecklist } = usePermissionRobust('preventive_maintenance.delete');
  
  // log('EnhancedMaintenancePanel props:', {
  // machineId,

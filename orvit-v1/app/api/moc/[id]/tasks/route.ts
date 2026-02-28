@@ -6,7 +6,7 @@ import { verifyToken } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
 interface Params {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 /**
@@ -15,9 +15,16 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
-    const mocId = parseInt(params.id)
+    const { id } = await params
+    const mocId = parseInt(id)
     if (isNaN(mocId)) {
       return NextResponse.json({ error: 'Invalid MOC ID' }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const token = cookieStore.get('token')?.value
+    if (!token || !(await verifyToken(token))) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
     const tasks = await prisma.mOCTask.findMany({
@@ -53,9 +60,16 @@ export async function GET(request: Request, { params }: Params) {
  */
 export async function POST(request: Request, { params }: Params) {
   try {
-    const mocId = parseInt(params.id)
+    const { id } = await params
+    const mocId = parseInt(id)
     if (isNaN(mocId)) {
       return NextResponse.json({ error: 'Invalid MOC ID' }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const token = cookieStore.get('token')?.value
+    if (!token || !(await verifyToken(token))) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
     const moc = await prisma.managementOfChange.findUnique({
@@ -122,7 +136,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
+    const token = cookieStore.get('token')?.value
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
@@ -184,6 +198,12 @@ export async function PATCH(request: Request, { params }: Params) {
  */
 export async function DELETE(request: Request, { params }: Params) {
   try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('token')?.value
+    if (!token || !(await verifyToken(token))) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const taskId = searchParams.get('taskId')
 

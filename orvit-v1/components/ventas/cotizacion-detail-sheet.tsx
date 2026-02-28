@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import { CostBreakdownEditor } from '@/components/ventas/cost-breakdown-editor';
 import { QuoteCostComposition } from '@/components/ventas/quote-cost-composition';
+import { usePermission } from '@/hooks/use-permissions';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -177,6 +178,8 @@ function formatCurrency(amount: number, currency: string = 'ARS'): string {
 
 export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: CotizacionDetailSheetProps) {
   const router = useRouter();
+  const { hasPermission: canDuplicatePermission } = usePermission('ventas.cotizaciones.duplicate');
+  const { hasPermission: canVersionPermission } = usePermission('ventas.cotizaciones.version');
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -443,10 +446,12 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                     <FileText className="w-4 h-4 mr-2" />
                     Ver PDF
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAction('duplicar')}>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Duplicar
-                  </DropdownMenuItem>
+                  {canDuplicatePermission && (
+                    <DropdownMenuItem onClick={() => handleAction('duplicar')}>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Duplicar
+                    </DropdownMenuItem>
+                  )}
                   {canSend && (
                     <DropdownMenuItem onClick={() => handleAction('enviar')}>
                       <Send className="w-4 h-4 mr-2" />
@@ -508,7 +513,9 @@ export function CotizacionDetailSheet({ quoteId, open, onClose, onUpdate }: Coti
                 <TabsList className="w-full justify-start overflow-x-auto">
                   <TabsTrigger value="items">Items</TabsTrigger>
                   <TabsTrigger value="condiciones">Condiciones</TabsTrigger>
-                  <TabsTrigger value="versiones">Versiones</TabsTrigger>
+                  {canVersionPermission && (
+                    <TabsTrigger value="versiones">Versiones</TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContent value="items" className="mt-4">

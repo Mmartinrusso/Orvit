@@ -9,6 +9,7 @@ import { verifyJWT } from '@/lib/auth';
 import { createChatbot } from '@/lib/ai/chatbot';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +28,11 @@ const chatRequestSchema = z.object({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
-    // Get user from JWT (optional - chatbot can work for anonymous users too)
+    // Get user from JWT
     const token = req.cookies.get('token')?.value;
     let user: any = null;
     let clientId: number | undefined = undefined;
@@ -175,6 +179,9 @@ export async function POST(req: NextRequest) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function GET(req: NextRequest) {
+  const { error: getError } = await requireAuth();
+  if (getError) return getError;
+
   try {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');

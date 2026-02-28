@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,9 @@ interface GenerateRequest {
  * Generates a 3D model from an image using Meshy.ai
  */
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const body: GenerateRequest = await request.json();
     const { imageBase64, fileName, componentName, componentId } = body;

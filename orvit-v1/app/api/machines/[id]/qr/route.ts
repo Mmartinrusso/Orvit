@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import QRCode from 'qrcode'
+import { requireAuth } from '@/lib/auth/shared-helpers'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,9 @@ interface Params {
  */
 export async function GET(request: Request, { params }: Params) {
   try {
+    const { user, error: authError } = await requireAuth()
+    if (authError) return authError
+
     const machineId = parseInt(params.id)
     if (isNaN(machineId)) {
       return NextResponse.json({ error: 'Invalid machine ID' }, { status: 400 })
@@ -123,6 +127,9 @@ export async function GET(request: Request, { params }: Params) {
  */
 export async function POST(request: Request, { params }: Params) {
   try {
+    const { user, error: authError } = await requireAuth()
+    if (authError) return authError
+
     const machineId = parseInt(params.id)
     if (isNaN(machineId)) {
       return NextResponse.json({ error: 'Invalid machine ID' }, { status: 400 })

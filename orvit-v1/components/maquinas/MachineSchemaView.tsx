@@ -959,7 +959,7 @@ function DragPreview({ dragPreview }: { dragPreview: { x: number, y: number, nod
 
 export default function MachineSchemaView({ machine, components, onComponentClick, componentOrder, subcomponentOrder }: MachineSchemaViewProps) {
   // 🔍 PERMISOS DE MÁQUINAS
-  const { hasPermission: canEditMachine } = usePermissionRobust('editar_maquina');
+  const { hasPermission: canEditMachine } = usePermissionRobust('machines.edit');
   const confirm = useConfirm();
   
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);

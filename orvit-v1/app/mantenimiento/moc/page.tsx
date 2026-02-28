@@ -3,6 +3,7 @@
 import { useCompany } from '@/contexts/CompanyContext';
 import { MOCList } from '@/components/moc';
 import { Card, CardContent } from '@/components/ui/card';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Loader2 } from 'lucide-react';
 
 export default function MOCPage() {
@@ -33,8 +34,10 @@ export default function MOCPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <MOCList companyId={currentCompany.id} />
-    </div>
+    <PermissionGuard permission="moc.view" fallback={<div className="p-6 text-muted-foreground">No tienes permisos para ver esta página</div>}>
+      <div className="container mx-auto p-6">
+        <MOCList companyId={currentCompany.id} />
+      </div>
+    </PermissionGuard>
   );
 }

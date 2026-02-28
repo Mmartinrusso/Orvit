@@ -15,7 +15,9 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   ClipboardMinus,
+  FlaskConical,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Hooks
 import { useAlmacenModal, type AlmacenTab } from '@/components/almacen/hooks';
@@ -30,6 +32,7 @@ import { KardexTab } from '@/components/almacen/tabs/KardexTab';
 import { ReservasTab } from '@/components/almacen/tabs/ReservasTab';
 import { TransferenciasTab } from '@/components/almacen/tabs/TransferenciasTab';
 import { AjustesTab } from '@/components/almacen/tabs/AjustesTab';
+import { MaterialesTab } from '@/components/almacen/tabs/MaterialesTab';
 
 // Modales
 import { SolicitudFormModal } from '@/components/almacen/modals/SolicitudFormModal';
@@ -54,6 +57,11 @@ interface PreselectedItem {
 }
 
 function AlmacenPageContent() {
+  const { hasPermission } = useAuth();
+  const canEditRequest = hasPermission('almacen.request.edit');
+  const canCreateDispatch = hasPermission('almacen.dispatch.create');
+  const canProcessDispatch = hasPermission('almacen.dispatch.process');
+
   const {
     tab,
     setTab,
@@ -98,6 +106,7 @@ function AlmacenPageContent() {
     { value: 'reservas', label: 'Reservas', icon: Bookmark },
     { value: 'transferencias', label: 'Transferencias', icon: ArrowLeftRight },
     { value: 'ajustes', label: 'Ajustes', icon: ClipboardMinus },
+    { value: 'materiales', label: 'Materiales', icon: FlaskConical },
   ];
 
   return (
@@ -112,17 +121,21 @@ function AlmacenPageContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => openModal('solicitud', { mode: 'new' })}
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Nueva Solicitud
-            </Button>
-            <Button onClick={() => openModal('despacho', { mode: 'new' })}>
-              <PackageCheck className="h-4 w-4 mr-2" />
-              Nuevo Despacho
-            </Button>
+            {canEditRequest && (
+              <Button
+                variant="outline"
+                onClick={() => openModal('solicitud', { mode: 'new' })}
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Nueva Solicitud
+              </Button>
+            )}
+            {canCreateDispatch && (
+              <Button onClick={() => openModal('despacho', { mode: 'new' })}>
+                <PackageCheck className="h-4 w-4 mr-2" />
+                Nuevo Despacho
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -197,6 +210,10 @@ function AlmacenPageContent() {
             onNew={() => openModal('ajuste', { mode: 'new' })}
             onView={(id) => openModal('ajuste', { id, mode: 'view' })}
           />
+        </TabsContent>
+
+        <TabsContent value="materiales" className="mt-4">
+          <MaterialesTab />
         </TabsContent>
       </Tabs>
 

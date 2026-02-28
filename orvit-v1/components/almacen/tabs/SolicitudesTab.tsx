@@ -51,8 +51,14 @@ interface SolicitudesTabProps {
  */
 export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const currentUserId = parseInt(user?.id ?? '0');
+
+  // Permission flags
+  const canEdit = hasPermission('almacen.request.edit');
+  const canApprove = hasPermission('almacen.request.approve');
+  const canReject = hasPermission('almacen.request.reject');
+  const canCancel = hasPermission('almacen.request.cancel');
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filters, setFilters] = useState<SolicitudesFilters>({});
@@ -177,7 +183,7 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
           <Eye className="h-4 w-4 mr-2" />
           Ver detalle
         </DropdownMenuItem>
-        {request.estado === 'BORRADOR' && (
+        {canEdit && request.estado === 'BORRADOR' && (
           <DropdownMenuItem onClick={() => handleSubmit(request.id)}>
             <Send className="h-4 w-4 mr-2" />
             Enviar
@@ -185,18 +191,22 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
         )}
         {request.estado === 'PENDIENTE_APROBACION' && (
           <>
-            <DropdownMenuItem onClick={() => handleApprove(request.id, currentUserId)}>
-              <Check className="h-4 w-4 mr-2" />
-              Aprobar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleReject(request.id, currentUserId)}>
-              <X className="h-4 w-4 mr-2" />
-              Rechazar
-            </DropdownMenuItem>
+            {canApprove && (
+              <DropdownMenuItem onClick={() => handleApprove(request.id, currentUserId)}>
+                <Check className="h-4 w-4 mr-2" />
+                Aprobar
+              </DropdownMenuItem>
+            )}
+            {canReject && (
+              <DropdownMenuItem onClick={() => handleReject(request.id, currentUserId)}>
+                <X className="h-4 w-4 mr-2" />
+                Rechazar
+              </DropdownMenuItem>
+            )}
           </>
         )}
         <DropdownMenuSeparator />
-        {request.estado !== 'DESPACHADA' && request.estado !== 'CANCELADA' && (
+        {canCancel && request.estado !== 'DESPACHADA' && request.estado !== 'CANCELADA' && (
           <DropdownMenuItem
             onClick={() => handleCancel(request.id)}
             className="text-destructive"
@@ -230,7 +240,7 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
         />
 
         <div className="flex items-center gap-2">
-          {selectedIds.length > 0 && (
+          {canApprove && selectedIds.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -244,11 +254,13 @@ export function SolicitudesTab({ onNew, onView }: SolicitudesTabProps) {
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleExportCSV} disabled={requests.length === 0} title="Exportar CSV">
             <Download className="h-4 w-4" />
           </Button>
-          <Button onClick={onNew} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Nueva Solicitud</span>
-            <span className="sm:hidden">Nueva</span>
-          </Button>
+          {canEdit && (
+            <Button onClick={onNew} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Nueva Solicitud</span>
+              <span className="sm:hidden">Nueva</span>
+            </Button>
+          )}
         </div>
       </div>
 

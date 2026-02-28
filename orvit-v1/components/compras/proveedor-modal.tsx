@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Building2, Phone, Mail, MapPin, FileText, User, CreditCard, Search } from 'lucide-react';
+import { Loader2, Building2, Phone, Mail, MapPin, FileText, User, CreditCard, Search, Plus, Trash2, List } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
 import { validateCUIT } from '@/lib/ventas/cuit-validator';
@@ -103,6 +103,12 @@ export function ProveedorModal({
  const [isLoading, setIsLoading] = useState(false);
  const [isLoadingArca, setIsLoadingArca] = useState(false);
  const isEditing = !!proveedor;
+
+ // Conceptos de gasto predefinidos
+ const [conceptosProveedor, setConceptosProveedor] = useState<
+  Array<{ id?: number; descripcion: string; monto: string; isNew?: boolean; toDelete?: boolean }>
+ >([]);
+ const [conceptosOriginales, setConceptosOriginales] = useState<Array<{ id: number; descripcion: string; monto: string }>>([]);
 
  const {
  register,
@@ -200,9 +206,29 @@ export function ProveedorModal({
  ingresosBrutos: '',
  isActive: true
  });
+ setConceptosProveedor([]);
+ setConceptosOriginales([]);
  }
  }
  }, [proveedor, isOpen, reset]);
+
+ // Cargar conceptos al abrir en modo edición
+ useEffect(() => {
+ if (isOpen && proveedor?.id) {
+ fetch(`/api/compras/proveedores/${proveedor.id}/conceptos`)
+ .then(r => r.ok ? r.json() : [])
+ .then((data: Array<{ id: number; descripcion: string; monto: string | null }>) => {
+ const mapped = data.map(c => ({
+ id: c.id,
+ descripcion: c.descripcion,
+ monto: c.monto != null ? String(c.monto) : '',
+ }));
+ setConceptosProveedor(mapped);
+ setConceptosOriginales(mapped);
+ })
+ .catch(() => {});
+ }
+ }, [isOpen, proveedor?.id]);
 
  const formatCuit = (value: string) => {
  // Remover todo lo que no sea número
@@ -225,63 +251,46 @@ export function ProveedorModal({
  if (!response.ok) {
  throw new Error('Error al consultar ARCA');
  }
- 
+
  const data = await response.json();
- 
- // Autocompletar TODOS los campos con los datos de ARCA
- 
+
+ // Solo autocompletar campos que estén vacíos — no sobreescribir lo que el usuario ya escribió
+ const setIfEmpty = (field: keyof ProveedorFormData, value: string) => {
+ const current = watch(field) as string;
+ if (!current || current.trim() === '') {
+ setValue(field, value);
+ }
+ };
+
  // Información básica
  if (data.razonSocial) {
- setValue('razonSocial', data.razonSocial);
+ setIfEmpty('razonSocial', data.razonSocial);
  }
- // Si hay nombre de fantasía, usarlo como nombre comercial
  if (data.nombreFantasia) {
- setValue('nombre', data.nombreFantasia);
+ setIfEmpty('nombre', data.nombreFantasia);
  } else if (data.razonSocial) {
- // Si no hay nombre de fantasía, usar la razón social como nombre comercial
- setValue('nombre', data.razonSocial);
+ setIfEmpty('nombre', data.razonSocial);
  }
- 
- // Dirección completa - construir dirección completa si hay varios campos
+
+ // Dirección
  if (data.domicilio) {
  let direccionCompleta = data.domicilio;
- // Agregar piso si existe
- if (data.piso) {
- direccionCompleta += ` Piso ${data.piso}`;
+ if (data.piso) direccionCompleta += ` Piso ${data.piso}`;
+ if (data.departamento) direccionCompleta += ` Depto ${data.departamento}`;
+ setIfEmpty('direccion', direccionCompleta);
  }
- // Agregar departamento si existe
- if (data.departamento) {
- direccionCompleta += ` Depto ${data.departamento}`;
- }
- setValue('direccion', direccionCompleta);
- }
- if (data.localidad) {
- setValue('ciudad', data.localidad);
- }
- if (data.provincia) {
- setValue('provincia', data.provincia);
- }
- if (data.codigoPostal) {
- setValue('codigoPostal', data.codigoPostal);
- }
- 
+ if (data.localidad) setIfEmpty('ciudad', data.localidad);
+ if (data.provincia) setIfEmpty('provincia', data.provincia);
+ if (data.codigoPostal) setIfEmpty('codigoPostal', data.codigoPostal);
+
  // Datos fiscales
- if (data.condicionIva) {
- setValue('condicionIva', data.condicionIva);
- }
- if (data.ingresosBrutos) {
- setValue('ingresosBrutos', data.ingresosBrutos);
- }
- 
- // Información de contacto (si está disponible en ARCA)
- if (data.email) {
- setValue('email', data.email);
- }
- if (data.telefono) {
- setValue('telefono', data.telefono);
- }
- 
- // Contar cuántos campos se autocompletaron
+ if (data.condicionIva) setIfEmpty('condicionIva', data.condicionIva);
+ if (data.ingresosBrutos) setIfEmpty('ingresosBrutos', data.ingresosBrutos);
+
+ // Contacto
+ if (data.email) setIfEmpty('email', data.email);
+ if (data.telefono) setIfEmpty('telefono', data.telefono);
+
  const camposCargados = [
  data.razonSocial && 'Razón Social',
  data.nombreFantasia && 'Nombre Comercial',
@@ -294,11 +303,10 @@ export function ProveedorModal({
  data.email && 'Email',
  data.telefono && 'Teléfono',
  ].filter(Boolean);
- 
+
  toast.success(`Datos de ARCA cargados: ${camposCargados.length} campos autocompletados`);
  } catch (error) {
  logError('Error consultando ARCA:', error);
- // No mostrar error si es porque no se encontró el CUIT
  if (error instanceof Error && !error.message.includes('404')) {
  toast.error('Error al consultar ARCA. Puedes continuar completando los datos manualmente.');
  }
@@ -428,6 +436,37 @@ export function ProveedorModal({
  montoTotal: proveedor?.montoTotal || 0,
  };
 
+ // Sincronizar conceptos de gasto
+ const proveedorIdGuardado = String(saved.id || proveedor?.id || '');
+ if (proveedorIdGuardado) {
+ const conceptosActivos = conceptosProveedor.filter(c => !c.toDelete);
+ // Eliminar los marcados para borrar
+ const paraEliminar = conceptosProveedor.filter(c => c.toDelete && c.id);
+ await Promise.all(paraEliminar.map(c =>
+ fetch(`/api/compras/proveedores/${proveedorIdGuardado}/conceptos?conceptoId=${c.id}`, { method: 'DELETE' })
+ ));
+ // Crear los nuevos
+ const paraCrear = conceptosActivos.filter(c => !c.id && c.descripcion.trim());
+ await Promise.all(paraCrear.map((c, idx) =>
+ fetch(`/api/compras/proveedores/${proveedorIdGuardado}/conceptos`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ descripcion: c.descripcion.trim(), monto: c.monto || null, orden: idx }),
+ })
+ ));
+ // Actualizar los existentes que cambiaron
+ const paraActualizar = conceptosActivos.filter(c => c.id && !c.isNew);
+ await Promise.all(paraActualizar.map((c, idx) => {
+ const original = conceptosOriginales.find(o => o.id === c.id);
+ if (!original || (original.descripcion === c.descripcion && original.monto === c.monto)) return;
+ return fetch(`/api/compras/proveedores/${proveedorIdGuardado}/conceptos?conceptoId=${c.id}`, {
+ method: 'PUT',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ descripcion: c.descripcion.trim(), monto: c.monto || null, orden: idx }),
+ });
+ }));
+ }
+
  toast.success(isEditing ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente');
  log('[PROVEEDOR MODAL] 🔄 Ejecutando callback onProveedorSaved con:', savedProveedor);
  onProveedorSaved(savedProveedor);
@@ -435,7 +474,8 @@ export function ProveedorModal({
  onClose();
  } catch (error) {
  logError('[PROVEEDOR MODAL] ❌ Error saving proveedor:', error);
- toast.error(isEditing ? 'Error al actualizar proveedor' : 'Error al crear proveedor');
+ const msg = error instanceof Error ? error.message : null;
+ toast.error(msg && msg !== 'Error en la API de proveedores' ? msg : (isEditing ? 'Error al actualizar proveedor' : 'Error al crear proveedor'));
  } finally {
  setIsLoading(false);
  }
@@ -452,7 +492,7 @@ export function ProveedorModal({
  </DialogHeader>
 
  <DialogBody>
- <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+ <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
  <Tabs defaultValue="general" className="w-full">
  <TabsList className="w-full justify-start overflow-x-auto">
  <TabsTrigger value="general">
@@ -466,6 +506,10 @@ export function ProveedorModal({
  <TabsTrigger value="bancario">
  <CreditCard className="w-4 h-4 mr-2" />
  Datos Bancarios
+ </TabsTrigger>
+ <TabsTrigger value="conceptos">
+ <List className="w-4 h-4 mr-2" />
+ Conceptos de Gasto
  </TabsTrigger>
  </TabsList>
 
@@ -756,6 +800,80 @@ export function ProveedorModal({
  />
  </div>
  </div>
+ </div>
+ </TabsContent>
+
+ {/* Tab: Conceptos de Gasto */}
+ <TabsContent value="conceptos" className="space-y-4 mt-4">
+ <div className="space-y-3">
+ <p className="text-sm text-muted-foreground">
+ Estos conceptos se autocompletarán al seleccionar este proveedor en una factura de costo indirecto.
+ </p>
+
+ {conceptosProveedor.filter(c => !c.toDelete).length === 0 ? (
+ <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+ <List className="w-8 h-8 mx-auto mb-2 opacity-40" />
+ <p className="text-sm font-medium">Sin conceptos definidos</p>
+ <p className="text-xs mt-1 opacity-70">Agregá los conceptos habituales de este proveedor</p>
+ </div>
+ ) : (
+ <div className="space-y-2">
+ <div className="grid grid-cols-[1fr_120px_40px] gap-2 px-1">
+ <span className="text-xs text-muted-foreground font-medium">Descripción</span>
+ <span className="text-xs text-muted-foreground font-medium">Monto (opcional)</span>
+ <span />
+ </div>
+ {conceptosProveedor.map((concepto, realIdx) => {
+ if (concepto.toDelete) return null;
+ return (
+ <div key={concepto.id ?? `new-${realIdx}`} className="grid grid-cols-[1fr_120px_40px] gap-2 items-center">
+ <Input
+ value={concepto.descripcion}
+ onChange={(e) => setConceptosProveedor(prev =>
+ prev.map((c, i) => i === realIdx ? { ...c, descripcion: e.target.value } : c)
+ )}
+ placeholder="ej. Conectividad Dedicada"
+ />
+ <Input
+ value={concepto.monto}
+ onChange={(e) => setConceptosProveedor(prev =>
+ prev.map((c, i) => i === realIdx ? { ...c, monto: e.target.value } : c)
+ )}
+ placeholder="0.00"
+ type="number"
+ min="0"
+ step="0.01"
+ />
+ <Button
+ type="button"
+ variant="ghost"
+ size="icon"
+ className="text-muted-foreground hover:text-destructive"
+ onClick={() => {
+ if (concepto.id) {
+ setConceptosProveedor(prev => prev.map((c, i) => i === realIdx ? { ...c, toDelete: true } : c));
+ } else {
+ setConceptosProveedor(prev => prev.filter((_, i) => i !== realIdx));
+ }
+ }}
+ >
+ <Trash2 className="w-4 h-4" />
+ </Button>
+ </div>
+ );
+ })}
+ </div>
+ )}
+
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => setConceptosProveedor(prev => [...prev, { descripcion: '', monto: '', isNew: true }])}
+ >
+ <Plus className="w-4 h-4 mr-2" />
+ Agregar concepto
+ </Button>
  </div>
  </TabsContent>
 

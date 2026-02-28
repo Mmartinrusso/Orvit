@@ -78,7 +78,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
   if (loading) {
     return (
-      <PermissionGuard permission="VIEW_PRODUCTS">
+      <PermissionGuard permission="ventas.productos.view">
         <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
           <div className="animate-pulse">
             <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
@@ -94,7 +94,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
   if (!product) {
     return (
-      <PermissionGuard permission="VIEW_PRODUCTS">
+      <PermissionGuard permission="ventas.productos.view">
         <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
           <div className="text-center py-12">
             <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -115,7 +115,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const StatusIcon = stockStatus.icon;
 
   return (
-    <PermissionGuard permission="VIEW_PRODUCTS">
+    <PermissionGuard permission="ventas.productos.view">
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

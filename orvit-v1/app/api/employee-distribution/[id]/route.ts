@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,8 +10,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🔄 API Employee Distribution PUT - Iniciando...');
-    
+
     const { id } = params;
     const body = await request.json();
     
@@ -61,8 +65,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     console.log('🗑️ API Employee Distribution DELETE - Iniciando...');
-    
+
     const { id } = params;
 
     // Eliminar la configuración

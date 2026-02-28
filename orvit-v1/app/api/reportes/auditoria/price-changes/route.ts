@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthFromRequest } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/reportes/auditoria/price-changes - Reporte de auditoría de cambios de precios
 export async function GET(request: NextRequest) {
   try {
+    // Verificar permiso audit.view
+    const { user: authUser, error: authError } = await requirePermission('audit.view');
+    if (authError) return authError;
+
     const auth = await getAuthFromRequest(request);
     if (!auth) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

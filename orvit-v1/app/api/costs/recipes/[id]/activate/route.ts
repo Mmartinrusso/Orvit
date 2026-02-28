@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // PUT /api/costs/recipes/[id]/activate - Activate a recipe (deactivates others in same scope)
 export async function PUT(
@@ -7,6 +8,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     // Check if recipe exists
     const recipe = await prisma.recipe.findUnique({
       where: { id: params.id },

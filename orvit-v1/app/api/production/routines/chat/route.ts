@@ -6,6 +6,8 @@
  */
 
 import { NextResponse } from 'next/server';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import 'server-only';
 
 // Types for form items (matching the frontend schema)
@@ -130,6 +132,9 @@ Respuesta: { "actions": [{ "action": "add_item", "item": { "question": "Firma de
 
 export async function POST(request: Request) {
   try {
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.VIEW);
+    if (error) return error;
+
     const body = await request.json();
     const { message, currentItems, conversationHistory } = body;
 

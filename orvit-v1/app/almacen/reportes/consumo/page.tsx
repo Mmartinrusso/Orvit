@@ -3,6 +3,7 @@
 import { formatNumber } from '@/lib/utils';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,8 +59,21 @@ interface ConsumoItem {
 
 export default function ReporteConsumoPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('sector');
+
+  // Permission guard: almacen.view_costs
+  if (!hasPermission('almacen.view_costs')) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-lg font-medium text-muted-foreground">Sin acceso</p>
+          <p className="text-sm text-muted-foreground mt-1">No tiene permisos para ver costos de almacen.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Date filters
   const [dateFrom, setDateFrom] = useState(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'));

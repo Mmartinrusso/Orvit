@@ -3,16 +3,18 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, LayoutGrid, List } from 'lucide-react';
+import { Plus, LayoutGrid, List, CheckSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FailureKPIs } from '@/components/corrective/failures/FailureKPIs';
 import { FailureListTable } from '@/components/corrective/failures/FailureListTable';
 import { FailuresGrid } from '@/components/corrective/failures/FailuresGrid';
 import { FailureQuickReportDialog } from '@/components/corrective/failures/FailureQuickReportDialog';
+import { CreateIncidentDialog } from '@/components/corrective/failures/CreateIncidentDialog';
 import { FailureDetailSheet } from '@/components/corrective/failures/FailureDetailSheet';
 import { EditFailureDialog } from '@/components/corrective/failures/EditFailureDialog';
 import { DeleteFailureDialog } from '@/components/corrective/failures/DeleteFailureDialog';
@@ -29,6 +31,7 @@ import { FailuresViewSelector, useFailuresView } from '@/components/corrective/f
 import { FailuresSavedViewsBar, useFailurePresetFilters } from '@/components/corrective/failures/FailuresSavedViewsBar';
 import { FailuresReincidenciasView } from '@/components/corrective/failures/FailuresReincidenciasView';
 import { FailuresDuplicadosView } from '@/components/corrective/failures/FailuresDuplicadosView';
+import { FailuresBulkBar } from '@/components/corrective/failures/FailuresBulkBar';
 
 /**
  * Página principal de Mantenimiento Correctivo - Fallas V2
@@ -166,7 +169,32 @@ export default function FallasPage() {
     return combined;
   }, [filters, presetFilters]);
 
+  // Tab de tipo de incidente (Fallas / Roturas)
+  const incidentTab = (searchParams.get('type') || 'falla') as 'falla' | 'rotura';
+  const incidentTypeFilter = incidentTab === 'rotura' ? 'ROTURA' : 'FALLA';
+
+  const handleIncidentTabChange = useCallback((value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === 'falla') {
+      params.delete('type');
+    } else {
+      params.set('type', value);
+    }
+    const newUrl = params.toString()
+      ? `/mantenimiento/fallas?${params.toString()}`
+      : '/mantenimiento/fallas';
+    router.push(newUrl, { scroll: false });
+  }, [router, searchParams]);
+
+  // Agregar incidentType a los filtros que se pasan a la API
+  const filtersWithIncidentType = useMemo(() => ({
+    ...effectiveFilters,
+    incidentType: incidentTypeFilter,
+  }), [effectiveFilters, incidentTypeFilter]);
+
+  const [createIncidentOpen, setCreateIncidentOpen] = useState(false);
   const [quickReportOpen, setQuickReportOpen] = useState(false);
+  const [quickReportIncidentType, setQuickReportIncidentType] = useState<'FALLA' | 'ROTURA'>('FALLA');
   const [selectedFailure, setSelectedFailure] = useState<number | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
@@ -176,6 +204,8 @@ export default function FallasPage() {
   const [failureToDelete, setFailureToDelete] = useState<{ id: number; title?: string } | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   // Auto-open failure detail sheet from URL param (e.g., ?failure=123&tab=solutions)
   useEffect(() => {
@@ -314,7 +344,7 @@ export default function FallasPage() {
     : undefined;
 
   // Query para la vista grid (solo cuando viewMode === 'grid')
-  const buildQueryString = (filtersObj?: FailureFilters): string => {
+  const buildQueryString = (filtersObj?: FailureFilters & { incidentType?: string }): string => {
     const params = new URLSearchParams();
     params.append('limit', '50'); // Cargar 50 items para grid
     if (!filtersObj) return `?${params.toString()}`;
@@ -332,13 +362,14 @@ export default function FallasPage() {
     if (filtersObj.reportedById) params.append('reportedById', filtersObj.reportedById.toString());
     if (filtersObj.hasWorkOrder !== undefined) params.append('hasWorkOrder', filtersObj.hasWorkOrder.toString());
     if (filtersObj.hasDuplicates !== undefined) params.append('hasDuplicates', filtersObj.hasDuplicates.toString());
+    if (filtersObj.incidentType) params.append('incidentType', filtersObj.incidentType);
     return `?${params.toString()}`;
   };
 
   const { data: gridData, isLoading: isGridLoading } = useQuery({
-    queryKey: ['failures-grid', effectiveFilters],
+    queryKey: ['failures-grid', filtersWithIncidentType],
     queryFn: async () => {
-      const queryString = buildQueryString(effectiveFilters);
+      const queryString = buildQueryString(filtersWithIncidentType);
       const res = await fetch(`/api/failure-occurrences${queryString}`);
       if (!res.ok) throw new Error('Error al cargar fallas');
       const json = await res.json();
@@ -354,16 +385,19 @@ export default function FallasPage() {
       <div className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="px-4 md:px-6 pt-4 pb-3">
           <div className="flex items-center justify-between gap-4">
-            {/* Lado izquierdo: Título */}
-            <div className="flex items-center gap-3 min-w-0">
+            {/* Lado izquierdo: Título + Tabs de tipo */}
+            <div className="flex items-center gap-4 min-w-0">
               <div className="min-w-0">
                 <h1 className="text-xl font-semibold text-foreground truncate">
-                  Fallas
+                  Incidentes
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
-                  Sistema de Mantenimiento Correctivo
-                </p>
               </div>
+              <Tabs value={incidentTab} onValueChange={handleIncidentTabChange}>
+                <TabsList className="h-9">
+                  <TabsTrigger value="falla" className="text-sm px-4">Fallas</TabsTrigger>
+                  <TabsTrigger value="rotura" className="text-sm px-4">Roturas</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {/* Centro: View selector — solo desktop */}
@@ -373,10 +407,23 @@ export default function FallasPage() {
 
             {/* Lado derecho: Acciones */}
             <div className="flex gap-2 items-center">
+              {canDelete && currentView === 'reportes' && (
+                <Button
+                  variant={selectionMode ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setSelectionMode(!selectionMode);
+                    setSelectedIds([]);
+                  }}
+                >
+                  <CheckSquare className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{selectionMode ? 'Cancelar' : 'Seleccionar'}</span>
+                </Button>
+              )}
               {canCreate && (
-                <Button onClick={() => setQuickReportOpen(true)} size="sm" className="bg-black hover:bg-muted-foreground text-white">
+                <Button onClick={() => setCreateIncidentOpen(true)} size="sm" className="bg-black hover:bg-muted-foreground text-white">
                   <Plus className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Nueva Falla</span>
+                  <span className="hidden sm:inline">Crear Incidencia</span>
                   <span className="sm:hidden">Nueva</span>
                 </Button>
               )}
@@ -403,6 +450,7 @@ export default function FallasPage() {
               <FailureKPIs
                 activeFilter={effectiveFilters}
                 onFilterChange={handleFiltersChange}
+                incidentType={incidentTypeFilter}
               />
 
               <div className="border-t border-border" />
@@ -475,11 +523,18 @@ export default function FallasPage() {
                     canCreate={canCreate}
                     canEdit={canEdit}
                     canDelete={canDelete}
+                    selectionMode={selectionMode}
+                    selectedIds={selectedIds}
+                    onToggleSelect={(id) =>
+                      setSelectedIds(prev =>
+                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                      )
+                    }
                   />
                 )
               ) : (
                 <FailureListTable
-                  filters={effectiveFilters}
+                  filters={filtersWithIncidentType}
                   onSelectFailure={handleSelectFailure}
                   onCreateWorkOrder={handleCreateWorkOrder}
                   onResolveFailure={handleResolveFailure}
@@ -510,10 +565,32 @@ export default function FallasPage() {
         </div>
       </div>
 
+      {/* Bulk bar */}
+      {selectionMode && (
+        <FailuresBulkBar
+          selectedIds={selectedIds}
+          totalCount={gridData?.length || 0}
+          onSelectAll={() => setSelectedIds((gridData || []).map((f: any) => f.id))}
+          onClearSelection={() => { setSelectedIds([]); setSelectionMode(false); }}
+          onComplete={() => { setSelectedIds([]); setSelectionMode(false); }}
+        />
+      )}
+
       {/* Dialogs */}
+      <CreateIncidentDialog
+        open={createIncidentOpen}
+        onOpenChange={setCreateIncidentOpen}
+        onRequiresOT={(type) => {
+          setCreateIncidentOpen(false);
+          setQuickReportIncidentType(type);
+          setQuickReportOpen(true);
+        }}
+      />
+
       <FailureQuickReportDialog
         open={quickReportOpen}
         onOpenChange={setQuickReportOpen}
+        incidentType={quickReportIncidentType}
       />
 
       <FailureDetailSheet

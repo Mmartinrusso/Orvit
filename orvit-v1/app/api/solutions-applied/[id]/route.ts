@@ -65,6 +65,45 @@ export async function GET(
   }
 }
 
+// DELETE /api/solutions-applied/[id]
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const payload = await getAuth();
+    if (!payload || !payload.companyId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const companyId = payload.companyId as number;
+    const id = parseInt(params.id);
+    if (isNaN(id) || id <= 0) {
+      return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
+    }
+
+    const existing = await prisma.solutionApplied.findUnique({
+      where: { id },
+      select: { id: true, companyId: true }
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Solución no encontrada' }, { status: 404 });
+    }
+
+    if (existing.companyId !== companyId) {
+      return NextResponse.json({ error: 'No autorizado para esta solución' }, { status: 403 });
+    }
+
+    await prisma.solutionApplied.delete({ where: { id } });
+
+    return NextResponse.json({ success: true, message: 'Solución eliminada correctamente' });
+  } catch (error) {
+    console.error('❌ Error en DELETE /api/solutions-applied/[id]:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
 // PATCH /api/solutions-applied/[id]
 export async function PATCH(
   request: NextRequest,

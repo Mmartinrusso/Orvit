@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { getProductionCostsForMonth } from '@/lib/costs/integrations/production';
 
 export const dynamic = 'force-dynamic';
@@ -13,19 +13,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.REPORTES.VIEW);
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || !payload.companyId) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    const companyId = payload.companyId as number;
+    const companyId = user!.companyId;
 
     // Obtener mes de query params
     const month = request.nextUrl.searchParams.get('month');

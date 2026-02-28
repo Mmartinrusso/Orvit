@@ -7,8 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 import QRCode from 'qrcode';
 
 export const dynamic = 'force-dynamic';
@@ -35,19 +34,10 @@ interface ToolQR {
  */
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const { user, error } = await requirePermission('tools.view');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload || !payload.companyId) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
-    const companyId = payload.companyId as number;
+    const companyId = user!.companyId;
 
     const body = await request.json();
     const { toolIds, size = 150, includeUrl = true } = body;

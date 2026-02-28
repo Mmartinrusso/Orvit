@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Activity,
   Plus,
   Search,
@@ -37,6 +46,9 @@ import {
   CheckCircle2,
   Bell,
   TrendingUp,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -96,9 +108,63 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function ConditionMonitoringPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('monitors');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/condition-monitoring?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Monitor eliminado');
+      queryClient.invalidateQueries({ queryKey: ['condition-monitors'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al eliminar monitor'),
+  });
+
+  const acknowledgeAlertMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch('/api/condition-monitoring', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'acknowledge_alert' }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al reconocer');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Alerta reconocida');
+      queryClient.invalidateQueries({ queryKey: ['condition-alerts'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al reconocer alerta'),
+  });
+
+  const resolveAlertMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch('/api/condition-monitoring', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'resolve_alert' }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al resolver');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Alerta resuelta');
+      queryClient.invalidateQueries({ queryKey: ['condition-alerts'] });
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al resolver alerta'),
+  });
+
+  const handleDeleteMonitor = (id: number) => {
+    if (!confirm('¿Eliminar este monitor? Se eliminarán todas las lecturas y alertas asociadas.')) return;
+    deleteMutation.mutate(id);
+  };
 
   const { data: monitorsData, isLoading: loadingMonitors, refetch: refetchMonitors } = useQuery({
     queryKey: ['condition-monitors', currentCompany?.id],
@@ -149,6 +215,7 @@ export default function ConditionMonitoringPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          {hasPermission('condition_monitoring.create') && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -229,6 +296,7 @@ export default function ConditionMonitoringPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -332,9 +400,40 @@ export default function ConditionMonitoringPage() {
                           <span className={typeConfig.color}>{typeConfig.icon}</span>
                           <CardTitle className="text-lg">{monitor.name}</CardTitle>
                         </div>
-                        {monitor.active_alerts > 0 && (
-                          <Badge variant="destructive">{monitor.active_alerts} alertas</Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {monitor.active_alerts > 0 && (
+                            <Badge variant="destructive">{monitor.active_alerts} alertas</Badge>
+                          )}
+                          {(hasPermission('condition_monitoring.edit') || hasPermission('condition_monitoring.delete')) && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {hasPermission('condition_monitoring.edit') && (
+                                  <DropdownMenuItem onClick={() => toast.info('Edición de monitor próximamente')}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {hasPermission('condition_monitoring.delete') && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleDeleteMonitor(monitor.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Eliminar
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground">{monitor.machine_name}</p>
                     </CardHeader>
@@ -397,6 +496,9 @@ export default function ConditionMonitoringPage() {
                     <TableHead>Umbral</TableHead>
                     <TableHead>Severidad</TableHead>
                     <TableHead>Estado</TableHead>
+                    {hasPermission('condition_monitoring.alerts') && (
+                      <TableHead className="w-[120px]">Acciones</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -442,6 +544,34 @@ export default function ConditionMonitoringPage() {
                             <Badge variant="destructive">Activo</Badge>
                           )}
                         </TableCell>
+                        {hasPermission('condition_monitoring.alerts') && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {!alert.acknowledgedAt && !alert.resolvedAt && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => acknowledgeAlertMutation.mutate(alert.id)}
+                                  disabled={acknowledgeAlertMutation.isPending}
+                                >
+                                  Reconocer
+                                </Button>
+                              )}
+                              {!alert.resolvedAt && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => resolveAlertMutation.mutate(alert.id)}
+                                  disabled={resolveAlertMutation.isPending}
+                                >
+                                  Resolver
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

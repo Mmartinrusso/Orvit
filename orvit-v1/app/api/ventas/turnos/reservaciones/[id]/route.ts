@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requirePermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
+import { requirePermission, checkPermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,6 +163,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       }
 
       case 'complete': {
+        // Check granular complete permission
+        const completeCheck = await checkPermission(user!.id, user!.companyId, VENTAS_PERMISSIONS.TURNOS_COMPLETE);
+        if (!completeCheck) {
+          return NextResponse.json(
+            { error: 'Sin permisos para completar turnos', requiredPermission: VENTAS_PERMISSIONS.TURNOS_COMPLETE },
+            { status: 403 }
+          );
+        }
+
         if (reservation.estado !== 'EN_CARGA') {
           return NextResponse.json(
             { error: 'Solo se puede completar una carga en proceso' },

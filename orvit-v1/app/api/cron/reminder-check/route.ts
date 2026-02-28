@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
     loggers.cron.info('Starting automatic reminder check');
     
     // Llamar al endpoint de verificación de recordatorios
-    const checkResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/reminders-check`, {
+    const baseUrl = new URL(request.url).origin;
+    const checkResponse = await fetch(`${baseUrl}/api/notifications/reminders-check`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

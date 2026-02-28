@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { deleteS3File } from '@/lib/s3-utils';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -24,6 +25,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso sectors.edit
+    const { user: authUser, error: authError } = await requirePermission('sectors.edit');
+    if (authError) return authError;
+
     const userId = await getUserIdFromToken();
     const body = await request.json();
     const {
@@ -150,6 +155,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar permiso sectors.delete
+    const { user: authUser, error: authError } = await requirePermission('sectors.delete');
+    if (authError) return authError;
+
     const userId = await getUserIdFromToken();
 
     // Verificar si el sector existe y pertenece a una empresa del usuario

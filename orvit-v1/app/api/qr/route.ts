@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
+    // Verificar permiso qr.view
+    const { user: authUser, error: authError } = await requirePermission('qr.view');
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const companyId = parseInt(searchParams.get('companyId') || '0');
     const entityType = searchParams.get('entityType');
@@ -69,6 +73,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // Verificar permiso qr.generate
+    const { user: authUser, error: authError } = await requirePermission('qr.generate');
+    if (authError) return authError;
+
     const body = await request.json();
     const { companyId, entityType, entityId } = body;
 

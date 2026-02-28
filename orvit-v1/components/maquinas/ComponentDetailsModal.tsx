@@ -907,8 +907,8 @@ export default function ComponentDetailsModal({
   
   // Permisos - usar los mismos permisos que para máquinas
   const { hasPermission: canDeleteComponent } = usePermissionRobust('machines.delete_component');
-  const { hasPermission: canEditComponent } = usePermissionRobust('editar_maquina');
-  const { hasPermission: canCreateComponent } = usePermissionRobust('crear_maquina');
+  const { hasPermission: canEditComponent } = usePermissionRobust('machines.edit');
+  const { hasPermission: canCreateComponent } = usePermissionRobust('machines.create');
   const { hasPermission: canAddDocument } = usePermissionRobust('machines.add_document');
   const { hasPermission: canPromoteComponent } = usePermissionRobust('machines.promote_component');
   

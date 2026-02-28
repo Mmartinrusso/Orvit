@@ -163,7 +163,37 @@ export interface AgendaTask {
   completedAt: string | null;
   completedNote: string | null;
 
+  // Grupo
+  groupId: number | null;
+  group?: { id: number; name: string } | null;
+
+  // Visibilidad empresa
+  isCompanyVisible: boolean;
+
+  // Externos
+  externalNotified: boolean;
+  externalNotifiedAt: string | null;
+
+  // Comentarios
+  comments?: AgendaTaskComment[];
+  _count?: { comments: number };
+
   // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgendaTaskComment {
+  id: number;
+  content: string;
+  taskId: number;
+  authorId: number;
+  author: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  };
+  companyId: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -235,6 +265,7 @@ export interface CreateAgendaTaskInput {
   assignedToUserId?: number;
   assignedToContactId?: number;
   assignedToName?: string;
+  isCompanyVisible?: boolean;
   reminders?: CreateReminderInput[];
 }
 
@@ -245,11 +276,17 @@ export interface UpdateAgendaTaskInput {
   priority?: Priority;
   status?: AgendaTaskStatus;
   category?: string;
+  groupId?: number | null;
   assignedToUserId?: number | null;
   assignedToContactId?: number | null;
   assignedToName?: string | null;
+  isCompanyVisible?: boolean;
   completedNote?: string;
   notes?: TaskNote[];
+}
+
+export interface CreateAgendaTaskCommentInput {
+  content: string;
 }
 
 export interface CreateReminderInput {

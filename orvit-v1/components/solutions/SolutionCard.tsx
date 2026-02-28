@@ -4,6 +4,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Lightbulb,
   Cog,
@@ -67,6 +68,10 @@ interface SolutionCardProps {
   variant?: 'default' | 'compact' | 'mini';
   showMachine?: boolean;
   className?: string;
+  // Bulk selection
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: number | string) => void;
 }
 
 export function SolutionCard({
@@ -74,7 +79,10 @@ export function SolutionCard({
   onClick,
   variant = 'default',
   showMachine = true,
-  className
+  className,
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: SolutionCardProps) {
 
   const getPriorityBadge = (priority?: string) => {
@@ -136,11 +144,20 @@ export function SolutionCard({
       <Card
         className={cn(
           "p-3 cursor-pointer hover:bg-accent/50 transition-colors group border-l-4 border-l-warning-muted-foreground",
+          selectionMode && isSelected && 'ring-2 ring-primary bg-primary/5',
           className
         )}
-        onClick={() => onClick?.(solution)}
+        onClick={selectionMode ? () => onToggleSelect?.(solution.id) : () => onClick?.(solution)}
       >
         <div className="flex items-start gap-3">
+          {selectionMode && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect?.(solution.id)}
+              className="mt-0.5 shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
           <div className="p-2 rounded-lg bg-warning-muted text-warning-muted-foreground shrink-0">
             <Lightbulb className="h-4 w-4" />
           </div>
@@ -199,13 +216,22 @@ export function SolutionCard({
     <Card
       className={cn(
         "overflow-hidden cursor-pointer hover:shadow-md transition-all group",
+        selectionMode && isSelected && 'ring-2 ring-primary bg-primary/5',
         className
       )}
-      onClick={() => onClick?.(solution)}
+      onClick={selectionMode ? () => onToggleSelect?.(solution.id) : () => onClick?.(solution)}
     >
       {/* Header */}
       <div className="px-4 py-3 border-b bg-warning-muted/50">
         <div className="flex items-start gap-3">
+          {selectionMode && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect?.(solution.id)}
+              className="mt-1 shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
           <div className="p-2 rounded-lg bg-warning-muted text-warning-muted-foreground shrink-0">
             <Lightbulb className="h-5 w-5" />
           </div>
@@ -215,7 +241,7 @@ export function SolutionCard({
               <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-warning-muted-foreground transition-colors">
                 {solution.title}
               </h3>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-warning-muted-foreground transition-colors shrink-0 mt-0.5" />
+              {!selectionMode && <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-warning-muted-foreground transition-colors shrink-0 mt-0.5" />}
             </div>
 
             {showMachine && solution.machineName && (

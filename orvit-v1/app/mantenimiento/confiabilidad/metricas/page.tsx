@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import {
   Clock,
   TrendingUp,
@@ -97,60 +98,63 @@ function TrendChart({ data }: { data: ReliabilityData['trends'] }) {
   if (!data || data.length === 0) return null;
 
   const maxMtbf = Math.max(...data.map(d => d.mtbfHours || 0), 1);
-  const maxMttr = Math.max(...data.map(d => d.mttrMinutes || 0), 1);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Tendencia MTBF / MTTR (6 meses)
+          Tendencia MTBF / Fallas (6 meses)
         </CardTitle>
         <CardDescription>
-          Evolución de la confiabilidad en el tiempo
+          Evolución del tiempo medio entre fallas — mayor es mejor
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {/* Simple bar chart representation */}
+        <div className="space-y-2">
           <div className="grid grid-cols-6 gap-2">
-            {data.map((item, idx) => (
-              <div key={idx} className="text-center">
-                <div className="h-32 flex flex-col justify-end gap-1 mb-2">
-                  {/* MTBF bar */}
-                  <div
-                    className="bg-success/80 rounded-t w-full mx-auto"
-                    style={{
-                      height: `${item.mtbfHours ? (item.mtbfHours / maxMtbf) * 100 : 0}%`,
-                      minHeight: item.mtbfHours ? '4px' : '0'
-                    }}
-                    title={`MTBF: ${item.mtbfHours?.toFixed(1) || 'N/A'} hrs`}
-                  />
-                  {/* MTTR bar */}
-                  <div
-                    className="bg-info/80 rounded-t w-full mx-auto"
-                    style={{
-                      height: `${item.mttrMinutes ? (item.mttrMinutes / maxMttr) * 50 : 0}%`,
-                      minHeight: item.mttrMinutes ? '4px' : '0'
-                    }}
-                    title={`MTTR: ${item.mttrMinutes || 'N/A'} min`}
-                  />
+            {data.map((item, idx) => {
+              const barH = item.mtbfHours
+                ? Math.max((item.mtbfHours / maxMtbf) * 100, 3)
+                : 0;
+              return (
+                <div key={idx} className="text-center">
+                  <div className="h-32 flex flex-col justify-end mb-2">
+                    {item.mtbfHours ? (
+                      <div
+                        className="w-full rounded-t bg-success/80"
+                        style={{ height: `${barH}%` }}
+                        title={`MTBF: ${item.mtbfHours.toFixed(1)} hrs\nFallas: ${item.failureCount}\nDowntime: ${item.downtimeMinutes}m`}
+                      />
+                    ) : (
+                      <div className="w-full h-0.5 bg-border rounded" />
+                    )}
+                  </div>
+                  <div className="text-xs font-medium">{item.month}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {item.mtbfHours ? `${item.mtbfHours.toFixed(0)}h` : 'N/A'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {item.failureCount > 0 && (
+                      <span className="text-destructive/80">{item.failureCount} fallas</span>
+                    )}
+                    {item.failureCount === 0 && (
+                      <span className="text-success/80">Sin fallas</span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-xs font-medium">{item.month}</div>
-                <div className="text-xs text-muted-foreground">{item.failureCount} fallas</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {/* Legend */}
-          <div className="flex justify-center gap-6 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-success/80 rounded" />
-              <span className="text-sm">MTBF (hrs)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-info/80 rounded" />
-              <span className="text-sm">MTTR (min)</span>
-            </div>
+          <div className="flex items-center gap-6 text-xs text-muted-foreground pt-2 border-t justify-center">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-success/80" />
+              MTBF (horas entre fallas) — mayor = mejor
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-destructive/80" />
+              Fallas registradas
+            </span>
           </div>
         </div>
       </CardContent>
@@ -243,14 +247,14 @@ function ParetoTable({ data }: { data: ReliabilityData['pareto'] }) {
 }
 
 function MachineReliabilityTable({ data }: { data: ReliabilityData['byMachine'] }) {
-  const sortedData = [...data].sort((a, b) => (b.availability || 0) - (a.availability || 0));
+  const sortedData = [...data].sort((a, b) => (a.availability ?? 101) - (b.availability ?? 101));
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Confiabilidad por Máquina</CardTitle>
         <CardDescription>
-          Métricas individuales de cada máquina
+          Ordenado de menor a mayor disponibilidad — máquinas problemáticas primero
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -259,43 +263,66 @@ function MachineReliabilityTable({ data }: { data: ReliabilityData['byMachine'] 
             <TableRow>
               <TableHead>Máquina</TableHead>
               <TableHead className="text-right">Fallas</TableHead>
-              <TableHead className="text-right">MTBF (hrs)</TableHead>
-              <TableHead className="text-right">MTTR</TableHead>
-              <TableHead className="text-right">Disponibilidad</TableHead>
+              <TableHead className="text-right hidden sm:table-cell">MTBF</TableHead>
+              <TableHead className="text-right hidden sm:table-cell">MTTR</TableHead>
+              <TableHead>Disponibilidad</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedData.slice(0, 15).map((machine) => (
-              <TableRow key={machine.machineId}>
-                <TableCell className="font-medium">{machine.machineName}</TableCell>
-                <TableCell className="text-right">{machine.failureCount}</TableCell>
-                <TableCell className="text-right">
-                  {machine.mtbfHours !== null ? formatNumber(machine.mtbfHours, 1) : 'N/A'}
-                </TableCell>
-                <TableCell className="text-right">
-                  {machine.mttrMinutes !== null
-                    ? machine.mttrMinutes < 60
-                      ? `${machine.mttrMinutes}m`
-                      : `${Math.floor(machine.mttrMinutes / 60)}h ${machine.mttrMinutes % 60}m`
-                    : 'N/A'
-                  }
-                </TableCell>
-                <TableCell className="text-right">
-                  {machine.availability !== null ? (
-                    <Badge
-                      variant={
-                        machine.availability >= 95 ? "default" :
-                        machine.availability >= 85 ? "secondary" : "destructive"
-                      }
-                    >
-                      {machine.availability}%
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">N/A</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+            {sortedData.slice(0, 15).map((machine) => {
+              const avail = machine.availability;
+              const availColor =
+                avail === null ? '' :
+                avail < 85 ? '[&>div]:bg-destructive' :
+                avail < 95 ? '[&>div]:bg-yellow-500' : '';
+
+              return (
+                <TableRow key={machine.machineId}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {machine.failureCount > 3 && (
+                        <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      )}
+                      {machine.machineName}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {machine.failureCount > 0 ? (
+                      <Badge variant={machine.failureCount > 5 ? 'destructive' : 'secondary'}>
+                        {machine.failureCount}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">0</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right hidden sm:table-cell">
+                    {machine.mtbfHours !== null ? `${formatNumber(machine.mtbfHours, 1)}h` : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-right hidden sm:table-cell">
+                    {machine.mttrMinutes !== null
+                      ? machine.mttrMinutes < 60
+                        ? `${machine.mttrMinutes}m`
+                        : `${Math.floor(machine.mttrMinutes / 60)}h ${machine.mttrMinutes % 60}m`
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {avail !== null ? (
+                      <div className="flex items-center gap-2">
+                        <Progress
+                          value={avail}
+                          className={`h-2 w-20 shrink-0 ${availColor}`}
+                        />
+                        <span className="text-sm font-medium tabular-nums">
+                          {avail}%
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">N/A</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>

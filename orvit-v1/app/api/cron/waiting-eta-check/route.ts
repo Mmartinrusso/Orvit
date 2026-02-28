@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // 1. Buscar órdenes en espera con ETA vencida
     const overdueOrders = await prisma.workOrder.findMany({
       where: {
-        status: 'waiting',
+        status: 'WAITING',
         waitingETA: { lt: now }
       },
       select: {
@@ -78,10 +78,34 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<number, { company: any; orders: any[] }>);
 
-    // TODO: Crear notificaciones para ETAs vencidas
-    // for (const result of results) {
-    //   await prisma.notification.create({ ... });
-    // }
+    // Crear notificaciones para ETAs vencidas (anti-spam: 1 por OT cada 4 horas)
+    for (const result of results) {
+      const recentNotif = await prisma.notification.findFirst({
+        where: {
+          type: 'work_order_due_soon',
+          metadata: { string_contains: `"workOrderId":${result.workOrderId}` },
+          createdAt: { gte: new Date(now.getTime() - 4 * 60 * 60 * 1000) }
+        }
+      });
+      if (recentNotif) continue;
+
+      const recipients: number[] = [];
+      if (result.assignedTo?.id) recipients.push(result.assignedTo.id);
+
+      for (const userId of recipients) {
+        await prisma.notification.create({
+          data: {
+            userId,
+            type: 'work_order_due_soon',
+            title: `ETA vencida hace ${result.overdueHours}h`,
+            message: `OT #${result.workOrderId}: "${result.title}" sigue en espera con ETA vencida`,
+            metadata: JSON.stringify({ workOrderId: result.workOrderId, overdueHours: result.overdueHours }),
+            isRead: false,
+            companyId: result.company.id
+          }
+        });
+      }
+    }
 
     console.log(`✅ Waiting ETA check completado. ${results.length} ETAs vencidas encontradas.`);
 

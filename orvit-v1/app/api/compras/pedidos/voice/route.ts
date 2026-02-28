@@ -6,16 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { jwtVerify } from 'jose'
 import { prisma } from '@/lib/prisma'
-import { JWT_SECRET } from '@/lib/auth'
+import { requirePermission } from '@/lib/compras/auth'
 import { processVoiceToPurchaseRequest } from '@/lib/assistant/purchase-extractor'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET)
 
 // Configuración
 const MAX_AUDIO_SIZE = 10 * 1024 * 1024 // 10MB
@@ -29,32 +25,6 @@ const VALID_AUDIO_TYPES = [
   'audio/mp3',
 ]
 
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
-    if (!token) return null
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY)
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        companies: {
-          select: { companyId: true },
-          take: 1,
-        },
-      },
-    })
-
-    return user
-  } catch {
-    return null
-  }
-}
-
 /**
  * POST - Crear pedido de compra desde audio
  */
@@ -62,19 +32,11 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    // 1. Autenticación
-    const user = await getUserFromToken()
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    // 1. Autenticación y permisos
+    const { user, error } = await requirePermission('compras.pedidos.create')
+    if (error) return error
 
-    const companyId = user.companies?.[0]?.companyId
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'Usuario no tiene empresa asignada' },
-        { status: 400 }
-      )
-    }
+    const companyId = user!.companyId
 
     // 2. Obtener form data
     const formData = await request.formData()
@@ -115,7 +77,7 @@ export async function POST(request: NextRequest) {
     const voiceLog = await prisma.voicePurchaseLog.create({
       data: {
         companyId,
-        userId: user.id,
+        userId: user!.id,
         discordUserId: 'web-app', // Indicar que viene de la app web
         discordMessageId: `web-${Date.now()}-${audioHash.substring(0, 8)}`,
         discordAttachmentId: audioHash.substring(0, 20),
@@ -124,13 +86,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log(`[VoicePurchaseAPI] Log creado: ${voiceLog.id} por usuario ${user.id}`)
+    console.log(`[VoicePurchaseAPI] Log creado: ${voiceLog.id} por usuario ${user!.id}`)
 
     // 7. Procesar audio
     const result = await processVoiceToPurchaseRequest(
       audioBuffer,
       mimeType,
-      user.id,
+      user!.id,
       companyId,
       voiceLog.id
     )
@@ -189,10 +151,10 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken()
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const { user, error } = await requirePermission('compras.pedidos.view')
+    if (error) return error
+
+    const companyId = user!.companyId
 
     const { searchParams } = new URL(request.url)
     const logId = searchParams.get('logId')
@@ -200,7 +162,7 @@ export async function GET(request: NextRequest) {
     if (!logId) {
       // Listar últimos logs del usuario
       const logs = await prisma.voicePurchaseLog.findMany({
-        where: { userId: user.id },
+        where: { userId: user!.id },
         orderBy: { createdAt: 'desc' },
         take: 10,
         select: {
@@ -245,8 +207,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar que pertenece al usuario o su empresa
-    const companyId = user.companies?.[0]?.companyId
-    if (log.userId !== user.id && log.companyId !== companyId) {
+    if (log.userId !== user!.id && log.companyId !== companyId) {
       return NextResponse.json({ error: 'Sin acceso' }, { status: 403 })
     }
 

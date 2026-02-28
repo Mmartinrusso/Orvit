@@ -5,24 +5,8 @@
       "schedule": "* * * * *"
     },
     {
-      "path": "/api/tax-alerts/daily-check",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/telegram/daily-summary?type=start",
-      "schedule": "0 10 * * 1-5"
-    },
-    {
-      "path": "/api/telegram/daily-summary?type=end",
-      "schedule": "0 21 * * 1-5"
-    },
-    {
-      "path": "/api/telegram/daily-digest",
-      "schedule": "0 10 * * 1-5"
-    },
-    {
-      "path": "/api/cron/discord-daily-summary",
-      "schedule": "0 21 * * 1-5"
+      "path": "/api/cron/agenda-due-soon",
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/sla-check",
@@ -33,20 +17,112 @@
       "schedule": "*/15 * * * *"
     },
     {
-      "path": "/api/cron/recurrence-check",
-      "schedule": "0 12,18 * * 1-5"
+      "path": "/api/cron/counter-maintenance-check",
+      "schedule": "*/15 * * * *"
     },
     {
-      "path": "/api/cron/discord-day-start",
-      "schedule": "0 9 * * 1-5"
+      "path": "/api/cron/process-solution-controls",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/process-followups",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/afip-pending",
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/routine-completion-check",
       "schedule": "*/10 * * * *"
     },
     {
+      "path": "/api/cron/waiting-eta-check",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/stock-check",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/history-cleanup",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/health-score-update",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/billing",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/preventive-scheduler",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/warranty-check",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/check-overdue-invoices",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/vencimientos-check",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/collection-reminders",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/cotizaciones-ventas-vencimiento",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/tax-alerts/daily-check",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/task-due-check",
+      "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/cron/invoice-due-reminders",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/reminder-check",
+      "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/cron/recurrence-check",
+      "schedule": "0 15,21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/discord-day-start",
+      "schedule": "0 12 * * 1-5"
+    },
+    {
+      "path": "/api/telegram/daily-summary?type=start",
+      "schedule": "0 13 * * 1-5"
+    },
+    {
+      "path": "/api/telegram/daily-digest",
+      "schedule": "0 13 * * 1-5"
+    },
+    {
+      "path": "/api/telegram/daily-summary?type=end",
+      "schedule": "0 0 * * 2-6"
+    },
+    {
+      "path": "/api/cron/discord-daily-summary",
+      "schedule": "0 0 * * 2-6"
+    },
+    {
       "path": "/api/cron/balance-snapshot",
-      "schedule": "0 3 1 * *"
+      "schedule": "0 6 1 * *"
     }
   ]
 }

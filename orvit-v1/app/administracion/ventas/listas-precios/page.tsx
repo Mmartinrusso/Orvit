@@ -62,6 +62,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { cn, formatNumber } from '@/lib/utils';
+import { usePermission } from '@/hooks/use-permissions';
 
 interface PriceList {
   id: number;
@@ -104,6 +105,7 @@ interface Product {
 
 export default function ListasPreciosPage() {
   const { currentCompany } = useCompany();
+  const { hasPermission: canAssignPriceLists } = usePermission('ventas.listas_precios.assign');
 
   // Estado principal
   const [lists, setLists] = useState<PriceList[]>([]);

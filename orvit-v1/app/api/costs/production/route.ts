@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { CreateMonthlyProductionSchema, MonthQuerySchema } from '@/lib/validations/costs';
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +12,9 @@ export const dynamic = 'force-dynamic';
 // GET /api/costs/production - List monthly production
 export const GET = withGuards(async (request: NextRequest, { user }) => {
   try {
+    const { error: permError } = await requirePermission(PRODUCCION_PERMISSIONS.REPORTES.VIEW);
+    if (permError) return permError;
+
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month');
     const productId = searchParams.get('productId');
@@ -101,6 +106,9 @@ export const GET = withGuards(async (request: NextRequest, { user }) => {
 // POST /api/costs/production - Create or update monthly production
 export const POST = withGuards(async (request: NextRequest, { user }) => {
   try {
+    const { error: permError } = await requirePermission(PRODUCCION_PERMISSIONS.REPORTES.VIEW);
+    if (permError) return permError;
+
     const body = await request.json();
     const validation = validateRequest(CreateMonthlyProductionSchema, body);
     if (!validation.success) return validation.response;

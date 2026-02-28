@@ -25,21 +25,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Settings2, 
-  Plus, 
-  Save, 
-  RotateCcw, 
-  Layout, 
+import {
+  Settings2,
+  Plus,
+  Save,
+  RotateCcw,
+  Layout,
+  LayoutTemplate,
   X,
   Check,
   Search,
   GripVertical,
-  Move
+  Move,
+  Sparkles,
 } from 'lucide-react';
-import { 
-  WidgetDefinition, 
-  WidgetInstance, 
+import {
+  WidgetDefinition,
+  WidgetInstance,
   DashboardLayout,
   WidgetStyle,
   CATEGORY_LABELS,
@@ -47,6 +49,9 @@ import {
   STYLE_ICONS,
   getWidgetById,
   getDefaultLayoutForRole,
+  getTemplatesForRole,
+  applyTemplate,
+  DashboardTemplate,
 } from '@/lib/dashboard/widget-catalog';
 import { SortableWidget } from './SortableWidget';
 import { cn } from '@/lib/utils';
@@ -58,6 +63,8 @@ interface DashboardBuilderProps {
   userId: number;
   userRole: string;
   userName?: string;
+  /** Optional hero section rendered between header and widgets */
+  heroSection?: React.ReactNode;
 }
 
 export function DashboardBuilder({
@@ -66,6 +73,7 @@ export function DashboardBuilder({
   userId,
   userRole,
   userName,
+  heroSection,
 }: DashboardBuilderProps) {
   const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -74,6 +82,7 @@ export function DashboardBuilder({
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   // Sensores para drag & drop
   const sensors = useSensors(
@@ -229,6 +238,19 @@ export function DashboardBuilder({
     saveMutation.mutate(layout);
   };
 
+  // Aplicar plantilla
+  const handleApplyTemplate = useCallback((template: DashboardTemplate) => {
+    const newLayout = applyTemplate(template);
+    setLayout(newLayout);
+    setHasUnsavedChanges(true);
+    setIsTemplateDialogOpen(false);
+    // Auto-save la plantilla
+    saveMutation.mutate(newLayout);
+  }, [saveMutation]);
+
+  // Templates para el rol actual
+  const roleTemplates = getTemplatesForRole(userRole);
+
   // Renderizar icono
   const renderIcon = (iconName: string, className?: string) => {
     const Icon = (LucideIcons as any)[iconName];
@@ -295,6 +317,10 @@ export function DashboardBuilder({
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancelar
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsTemplateDialogOpen(true)}>
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Plantillas
                 </Button>
                 <Button variant="outline" size="sm" onClick={resetToDefault}>
                   <RotateCcw className="h-4 w-4 mr-2" />
@@ -398,13 +424,22 @@ export function DashboardBuilder({
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => setIsEditMode(true)}>
-                <Settings2 className="h-4 w-4 mr-2" />
-                Personalizar
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsTemplateDialogOpen(true)}>
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Plantillas
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsEditMode(true)}>
+                  <Settings2 className="h-4 w-4 mr-2" />
+                  Personalizar
+                </Button>
+              </>
             )}
           </div>
         </div>
+
+        {/* Hero Section (KPIs fijos por rol) */}
+        {heroSection && !isEditMode && heroSection}
 
         {/* Indicadores */}
         {hasUnsavedChanges && isEditMode && (
@@ -477,19 +512,97 @@ export function DashboardBuilder({
               <Layout className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Tu dashboard está vacío</h3>
               <p className="text-sm text-muted-foreground text-center mb-4">
-                Agrega widgets para personalizar tu dashboard
+                Elegí una plantilla para empezar o personalizá widget por widget
               </p>
-              <Button onClick={() => {
-                setIsEditMode(true);
-                setIsAddWidgetOpen(true);
-              }}>
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar widget
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button onClick={() => setIsTemplateDialogOpen(true)}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Elegir plantilla
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  setIsEditMode(true);
+                  setIsAddWidgetOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar widget
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* Dialog de plantillas (accesible desde cualquier estado) */}
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Elegí una Plantilla
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="text-sm text-muted-foreground mb-4">
+              Seleccioná una plantilla para configurar tu dashboard al instante. Después podés personalizarla.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {roleTemplates.map((template) => {
+                const widgetCount = template.widgets.length;
+                return (
+                  <button
+                    key={template.id}
+                    className="group relative p-4 rounded-xl border border-border/40 bg-card text-left transition-all hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    onClick={() => handleApplyTemplate(template)}
+                  >
+                    {/* Color accent bar */}
+                    <div
+                      className="absolute top-0 left-4 right-4 h-1 rounded-b-full opacity-60 group-hover:opacity-100 transition-opacity"
+                      style={{ backgroundColor: template.color }}
+                    />
+
+                    <div className="flex items-start gap-3 mt-1">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${template.color}20` }}
+                      >
+                        {renderIcon(template.icon, 'h-5 w-5')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm">{template.name}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {widgetCount} widgets
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {template.description}
+                        </p>
+                        {/* Mini preview grid */}
+                        <div className="flex items-center gap-1 mt-2.5">
+                          {template.widgets.slice(0, 8).map((tw, i) => {
+                            const def = getWidgetById(tw.widgetId);
+                            return (
+                              <div
+                                key={i}
+                                className="h-1.5 rounded-full bg-muted-foreground/20 group-hover:bg-primary/30 transition-colors"
+                                style={{ width: def?.cols === 3 ? '24px' : def?.cols === 1 ? '8px' : '16px' }}
+                                title={def?.name}
+                              />
+                            );
+                          })}
+                          {widgetCount > 8 && (
+                            <span className="text-xs text-muted-foreground ml-1">+{widgetCount - 8}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

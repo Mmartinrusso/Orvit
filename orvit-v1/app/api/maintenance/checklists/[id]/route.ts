@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // Flag de módulo: DDL se ejecuta solo una vez por proceso del servidor
 let instructiveTableInitialized = false;
@@ -34,6 +35,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const checklistId = parseInt(params.id);
 
     if (isNaN(checklistId)) {
@@ -134,6 +138,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const checklistId = parseInt(params.id);
     const body = await request.json();
 
@@ -316,6 +323,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const checklistId = parseInt(params.id);
     const body = await request.json();
 

@@ -95,6 +95,7 @@ interface FailureOccurrence {
     id: number;
     status: string;
   }>;
+  incidentType?: string;
 }
 
 interface PaginationInfo {
@@ -182,6 +183,7 @@ function buildQueryString(
   if (filters.reportedById) params.append('reportedById', filters.reportedById.toString());
   if (filters.hasWorkOrder !== undefined) params.append('hasWorkOrder', filters.hasWorkOrder.toString());
   if (filters.hasDuplicates !== undefined) params.append('hasDuplicates', filters.hasDuplicates.toString());
+  if ((filters as any).incidentType) params.append('incidentType', (filters as any).incidentType);
 
   const queryString = params.toString();
   return queryString ? `?${queryString}` : '';
@@ -394,6 +396,11 @@ export function FailureListTable({
                           <Badge variant="destructive" className="h-5 text-xs">
                             <AlertTriangle className="mr-1 h-3 w-3" />
                             Seguridad
+                          </Badge>
+                        )}
+                        {failure.incidentType === 'ROTURA' && (
+                          <Badge variant="destructive" className="h-5 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                            Rotura
                           </Badge>
                         )}
                       </div>

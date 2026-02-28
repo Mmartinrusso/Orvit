@@ -25,6 +25,7 @@ import {
   History,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PosicionData {
   cajas: Array<{
@@ -69,24 +70,31 @@ async function fetchPosicion(): Promise<PosicionData> {
 
 export default function TesoreriaPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canManageCash = hasPermission('treasury.manage_cash');
+  const canManageBank = hasPermission('treasury.manage_bank');
+  const canManageCheque = hasPermission('treasury.manage_cheque');
+  const canTransfer = hasPermission('treasury.transfer');
+  const canReconcile = hasPermission('treasury.reconcile');
+  const canViewReports = hasPermission('treasury.reports');
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['tesoreria', 'posicion'],
     queryFn: fetchPosicion,
   });
 
   const shortcuts = [
-    { label: 'Cajas', icon: Wallet, path: '/administracion/tesoreria/cajas' },
-    { label: 'Bancos', icon: Building2, path: '/administracion/tesoreria/bancos' },
-    { label: 'Cheques', icon: FileCheck, path: '/administracion/tesoreria/cheques' },
-    { label: 'Transferencias', icon: ArrowRightLeft, path: '/administracion/tesoreria/transferencias' },
-  ];
+    { label: 'Cajas', icon: Wallet, path: '/administracion/tesoreria/cajas', visible: canManageCash },
+    { label: 'Bancos', icon: Building2, path: '/administracion/tesoreria/bancos', visible: canManageBank },
+    { label: 'Cheques', icon: FileCheck, path: '/administracion/tesoreria/cheques', visible: canManageCheque },
+    { label: 'Transferencias', icon: ArrowRightLeft, path: '/administracion/tesoreria/transferencias', visible: canTransfer },
+  ].filter(s => s.visible);
 
   const advancedShortcuts = [
-    { label: 'Movimientos', icon: History, path: '/administracion/tesoreria/movimientos' },
-    { label: 'Depósitos', icon: ArrowDownToLine, path: '/administracion/tesoreria/depositos' },
-    { label: 'Cierres', icon: ClipboardCheck, path: '/administracion/tesoreria/cierres' },
-    { label: 'Conciliación', icon: FileSpreadsheet, path: '/administracion/tesoreria/conciliacion' },
-  ];
+    { label: 'Movimientos', icon: History, path: '/administracion/tesoreria/movimientos', visible: true },
+    { label: 'Depósitos', icon: ArrowDownToLine, path: '/administracion/tesoreria/depositos', visible: canManageCash },
+    { label: 'Cierres', icon: ClipboardCheck, path: '/administracion/tesoreria/cierres', visible: canManageCash },
+    { label: 'Conciliación', icon: FileSpreadsheet, path: '/administracion/tesoreria/conciliacion', visible: canReconcile },
+  ].filter(s => s.visible);
 
   if (isLoading) {
     return (
@@ -299,9 +307,11 @@ export default function TesoreriaPage() {
                 );
               })}
               <div className="h-8 w-px bg-border mx-1" />
+              {canViewReports && (
               <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => router.push('/administracion/tesoreria/flujo-caja')}>
                 Flujo de Caja <ChevronRight className="w-3 h-3 ml-1" />
               </Button>
+              )}
             </div>
           </CardContent>
         </Card>

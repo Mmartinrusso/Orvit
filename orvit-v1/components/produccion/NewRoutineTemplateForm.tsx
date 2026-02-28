@@ -68,6 +68,8 @@ import {
   EyeOff,
   ArrowLeft,
   ArrowRight,
+  RefreshCw,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,6 +90,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
@@ -207,6 +210,14 @@ const itemSchema = z.object({
   })).optional(),
 });
 
+const scheduleConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  resetType: z.enum(['DAILY', 'WEEKLY']).default('DAILY'),
+  resetTime: z.string().default('23:00'),
+  daysOfWeek: z.array(z.number()).default([1, 2, 3, 4, 5]),
+  notifyIncomplete: z.boolean().default(true),
+}).nullable().optional();
+
 const formSchema = z.object({
   name: z.string().min(1, 'Nombre requerido'),
   code: z.string().optional(),
@@ -217,6 +228,7 @@ const formSchema = z.object({
   isActive: z.boolean().default(true),
   maxCompletionTimeMinutes: z.number().min(1).default(60),
   enableCompletionReminders: z.boolean().default(true),
+  scheduleConfig: scheduleConfigSchema,
   sections: z.array(sectionSchema).default([]), // Secciones opcionales
   items: z.array(itemSchema).min(1, 'Debe tener al menos una pregunta'),
 });
@@ -275,11 +287,12 @@ const QUESTION_TYPES = [
 const generateId = () => `q_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 const generateOptionId = () => `opt_${Math.random().toString(36).substr(2, 6)}`;
 
-const createEmptyItem = (type: ItemType['type'] = 'CHECK'): ItemType => ({
+const createEmptyItem = (type: ItemType['type'] = 'CHECK', sectionId?: string): ItemType => ({
   id: generateId(),
   question: '',
   type,
   required: false,
+  sectionId,
   options: (type === 'SELECT' || type === 'CHECKBOX')
     ? [{ id: generateOptionId(), text: 'Opción 1' }]
     : undefined,
@@ -1447,6 +1460,16 @@ function QuestionCard({
           </div>
         </div>
       )}
+      {/* Section badge */}
+      {currentSectionId && sections.length > 0 && (
+        <div className="px-4 pt-2.5 pb-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/8 border border-primary/15 text-[10px] font-medium text-primary/70 max-w-[180px] truncate">
+            <Layers className="h-2.5 w-2.5 flex-shrink-0" />
+            {sections.find(s => s.id === currentSectionId)?.name || 'Sección'}
+          </span>
+        </div>
+      )}
+
       <div className="p-6 space-y-4">
         {/* Header: Question + Type dropdown */}
         <div className="flex items-start gap-4">
@@ -2134,165 +2157,119 @@ function QuestionCard({
         </div>
       )}
 
-      {/* Footer - Google Forms style */}
-      <div className="px-6 py-3 border-t border-border flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 text-muted-foreground hover:text-foreground"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDuplicate();
-          }}
-        >
-          <Copy className="h-5 w-5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 text-muted-foreground hover:text-destructive"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          disabled={!canRemove}
-        >
-          <Trash2 className="h-5 w-5" />
-        </Button>
-
-        <Separator orientation="vertical" className="h-6 mx-2" />
-
-        {/* Conditional toggle */}
-        {possibleParents.length > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-8 gap-1.5 text-xs",
-              conditionalDisplay ? "text-warning-muted-foreground bg-warning-muted" : "text-muted-foreground"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleConditional();
-            }}
-          >
-            <GitBranch className="h-4 w-4" />
-            Condicional
-          </Button>
-        )}
-
-        {/* Deadline toggle */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-8 gap-1.5 text-xs",
-            deadlineConfig ? "text-info-muted-foreground bg-info-muted" : "text-muted-foreground"
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (deadlineConfig) {
-              form.setValue(`items.${index}.deadlineConfig`, undefined);
-            } else {
-              form.setValue(`items.${index}.deadlineConfig`, { type: 'fixed', fixedTime: '12:00' });
-            }
-          }}
-        >
-          <Clock className="h-4 w-4" />
-          Recordatorio
-        </Button>
-
-        {/* Section selector */}
-        {sections.length > 0 && (
+      {/* Footer */}
+      <div className="px-4 py-2 border-t border-border flex items-center justify-between gap-2">
+        {/* Left: secondary actions overflow + section */}
+        <div className="flex items-center gap-1">
+          {/* Overflow menu: Condicional, Recordatorio, Deshabilitar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon"
                 className={cn(
-                  "h-8 gap-1.5 text-xs",
-                  currentSectionId ? "text-primary bg-primary/10" : "text-muted-foreground"
+                  "h-8 w-8",
+                  (conditionalDisplay || deadlineConfig || isDisabled)
+                    ? "text-primary"
+                    : "text-muted-foreground"
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Layers className="h-4 w-4" />
-                {currentSectionId
-                  ? sections.find(s => s.id === currentSectionId)?.name || 'Sección'
-                  : 'Sección'}
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={() => onMoveToSection(undefined)}>
-                <FolderOpen className="h-4 w-4 mr-2 text-muted-foreground" />
-                Sin sección
-              </DropdownMenuItem>
-              {sections.map((section) => (
+            <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+              {possibleParents.length > 0 && (
                 <DropdownMenuItem
-                  key={section.id}
-                  onClick={() => onMoveToSection(section.id)}
+                  onClick={(e) => { e.stopPropagation(); handleToggleConditional(); }}
+                  className={conditionalDisplay ? "text-warning-muted-foreground" : ""}
                 >
-                  <Layers className="h-4 w-4 mr-2 text-primary" />
-                  {section.name}
-                  {currentSectionId === section.id && (
-                    <span className="ml-auto text-primary">✓</span>
-                  )}
+                  <GitBranch className="h-4 w-4 mr-2" />
+                  Condicional
+                  {conditionalDisplay && <span className="ml-auto text-xs opacity-70">Activo</span>}
                 </DropdownMenuItem>
-              ))}
+              )}
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (deadlineConfig) {
+                    form.setValue(`items.${index}.deadlineConfig`, undefined);
+                  } else {
+                    form.setValue(`items.${index}.deadlineConfig`, { type: 'fixed', fixedTime: '12:00' });
+                  }
+                }}
+                className={deadlineConfig ? "text-info-muted-foreground" : ""}
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Recordatorio
+                {deadlineConfig && <span className="ml-auto text-xs opacity-70">Activo</span>}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); toggleDisabled(); }}
+              >
+                <EyeOff className="h-4 w-4 mr-2" />
+                {isDisabled ? 'Habilitar pregunta' : 'Deshabilitar'}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
 
-        {/* Disable toggle */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-8 gap-1.5 text-xs",
-            isDisabled ? "text-muted-foreground bg-muted" : "text-muted-foreground"
+          {/* Section selector */}
+          {sections.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-8 gap-1.5 text-xs max-w-[130px]",
+                    currentSectionId ? "text-primary/80" : "text-muted-foreground"
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Layers className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">
+                    {currentSectionId
+                      ? sections.find(s => s.id === currentSectionId)?.name || 'Sección'
+                      : 'Sin sección'}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={() => onMoveToSection(undefined)}>
+                  <FolderOpen className="h-4 w-4 mr-2 text-muted-foreground" />
+                  Sin sección
+                  {!currentSectionId && <span className="ml-auto text-primary">✓</span>}
+                </DropdownMenuItem>
+                {sections.map((section) => (
+                  <DropdownMenuItem
+                    key={section.id}
+                    onClick={() => onMoveToSection(section.id)}
+                  >
+                    <Layers className="h-4 w-4 mr-2 text-primary" />
+                    {section.name}
+                    {currentSectionId === section.id && (
+                      <span className="ml-auto text-primary">✓</span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleDisabled();
-          }}
-          title={isDisabled ? "Habilitar pregunta" : "Deshabilitar pregunta"}
-        >
-          <EyeOff className="h-4 w-4" />
-        </Button>
+        </div>
 
-        <Separator orientation="vertical" className="h-6 mx-2" />
-
-        {/* Required toggle - Google Forms style */}
-        <FormField
-          control={form.control}
-          name={`items.${index}.required`}
-          render={({ field }) => (
-            <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground">Obligatorio</Label>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </div>
-          )}
-        />
-
-        {/* SELECT display mode toggle */}
-        {type === 'SELECT' && (
-          <>
-            <Separator orientation="vertical" className="h-6 mx-2" />
-            <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground">Mostrar:</Label>
+        {/* Right: primary actions */}
+        <div className="flex items-center gap-1.5">
+          {/* SELECT display mode */}
+          {type === 'SELECT' && (
+            <>
               <Select
                 value={form.watch(`items.${index}.selectDisplayMode`) || 'list'}
                 onValueChange={(value) => form.setValue(`items.${index}.selectDisplayMode`, value)}
               >
-                <SelectTrigger className="h-8 w-[110px] text-xs">
+                <SelectTrigger className="h-7 w-[105px] text-xs border-border" onClick={(e) => e.stopPropagation()}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2300,10 +2277,206 @@ function QuestionCard({
                   <SelectItem value="dropdown">Desplegable</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </>
-        )}
+              <Separator orientation="vertical" className="h-5 mx-1" />
+            </>
+          )}
+
+          {/* Required toggle */}
+          <FormField
+            control={form.control}
+            name={`items.${index}.required`}
+            render={({ field }) => (
+              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <Label className="text-xs text-muted-foreground cursor-pointer select-none">Obligatorio</Label>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className="scale-90"
+                />
+              </div>
+            )}
+          />
+
+          <Separator orientation="vertical" className="h-5 mx-1" />
+
+          {/* Copy */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+
+          {/* Delete */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            disabled={!canRemove}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// SCHEDULE RESET CONFIG - Cierre automático de rutinas
+// ============================================================================
+
+const DAYS_OF_WEEK = [
+  { value: 1, label: 'Lu' },
+  { value: 2, label: 'Ma' },
+  { value: 3, label: 'Mi' },
+  { value: 4, label: 'Ju' },
+  { value: 5, label: 'Vi' },
+  { value: 6, label: 'Sá' },
+  { value: 0, label: 'Do' },
+];
+
+function ScheduleResetConfig({ form }: { form: any }) {
+  const scheduleConfig = form.watch('scheduleConfig');
+  const enabled = scheduleConfig?.enabled ?? false;
+
+  const updateConfig = (updates: Record<string, any>) => {
+    form.setValue('scheduleConfig', { ...(scheduleConfig || {}), ...updates });
+  };
+
+  const toggleEnabled = () => {
+    if (enabled) {
+      form.setValue('scheduleConfig', null);
+    } else {
+      form.setValue('scheduleConfig', {
+        enabled: true,
+        resetType: 'DAILY',
+        resetTime: '23:00',
+        daysOfWeek: [1, 2, 3, 4, 5],
+        notifyIncomplete: true,
+      });
+    }
+  };
+
+  const toggleDay = (day: number) => {
+    const current: number[] = scheduleConfig?.daysOfWeek || [];
+    const next = current.includes(day) ? current.filter((d: number) => d !== day) : [...current, day];
+    updateConfig({ daysOfWeek: next });
+  };
+
+  return (
+    <div className="bg-background rounded-lg border border-border shadow-sm p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-foreground flex items-center gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Cierre automático
+        </p>
+        <div className="flex items-center gap-2">
+          <Switch checked={enabled} onCheckedChange={toggleEnabled} />
+          <Label className="text-xs text-muted-foreground">{enabled ? 'Activado' : 'Desactivado'}</Label>
+        </div>
+      </div>
+
+      {enabled && (
+        <div className="space-y-3 pt-1">
+          <p className="text-xs text-muted-foreground">
+            Las ejecuciones en progreso serán cerradas automáticamente al horario configurado y quedarán marcadas como incompletas.
+          </p>
+
+          {/* Reset type */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">Frecuencia:</Label>
+            <div className="flex gap-1">
+              {(['DAILY', 'WEEKLY'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => updateConfig({ resetType: type })}
+                  className={cn(
+                    'px-3 py-1 rounded text-xs font-medium border transition-colors',
+                    scheduleConfig?.resetType === type
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                  )}
+                >
+                  {type === 'DAILY' ? 'Diario' : 'Semanal'}
+                </button>
+              ))}
+            </div>
+
+            {/* Time picker - custom selects to avoid 12h AM/PM issues */}
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">Hora de cierre:</Label>
+            <div className="flex items-center gap-1">
+              <select
+                value={(scheduleConfig?.resetTime || '23:00').split(':')[0]}
+                onChange={(e) => {
+                  const mins = (scheduleConfig?.resetTime || '23:00').split(':')[1] || '00';
+                  updateConfig({ resetTime: `${e.target.value}:${mins}` });
+                }}
+                className="text-xs border border-border rounded px-1 py-1 bg-background text-foreground h-8 w-14 cursor-pointer"
+              >
+                {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <span className="text-xs text-muted-foreground font-medium">:</span>
+              <select
+                value={(scheduleConfig?.resetTime || '23:00').split(':')[1] || '00'}
+                onChange={(e) => {
+                  const hrs = (scheduleConfig?.resetTime || '23:00').split(':')[0] || '23';
+                  updateConfig({ resetTime: `${hrs}:${e.target.value}` });
+                }}
+                className="text-xs border border-border rounded px-1 py-1 bg-background text-foreground h-8 w-14 cursor-pointer"
+              >
+                {['00', '15', '30', '45'].map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Days of week (only for WEEKLY) */}
+          {scheduleConfig?.resetType === 'WEEKLY' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Días:</Label>
+              {DAYS_OF_WEEK.map((day) => {
+                const selected = (scheduleConfig?.daysOfWeek || []).includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleDay(day.value)}
+                    className={cn(
+                      'w-8 h-8 rounded-full text-xs font-medium border transition-colors',
+                      selected
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                    )}
+                  >
+                    {day.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Notify on close */}
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={scheduleConfig?.notifyIncomplete ?? true}
+              onCheckedChange={(v) => updateConfig({ notifyIncomplete: v })}
+            />
+            <Label className="text-xs text-muted-foreground">
+              Notificar por Discord los ítems que quedaron sin completar
+            </Label>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3432,6 +3605,7 @@ export default function NewRoutineTemplateForm({
       isActive: template?.isActive !== false,
       maxCompletionTimeMinutes: (template as any)?.maxCompletionTimeMinutes || 60,
       enableCompletionReminders: (template as any)?.enableCompletionReminders !== false,
+      scheduleConfig: (template as any)?.scheduleConfig || null,
       sections: template?.sections || [],
       items: getTemplateItems(),
     },
@@ -3746,8 +3920,8 @@ export default function NewRoutineTemplateForm({
     }
   }, [form, fields.length, append, remove, move]);
 
-  const addQuestion = (type: ItemType['type'] = 'CHECK') => {
-    append(createEmptyItem(type));
+  const addQuestion = (type: ItemType['type'] = 'CHECK', sectionId?: string) => {
+    append(createEmptyItem(type, sectionId));
     setSelectedIndex(fields.length);
   };
 
@@ -4235,7 +4409,7 @@ export default function NewRoutineTemplateForm({
             {/* Add question button - Google Forms style */}
             <button
               type="button"
-              onClick={() => addQuestion()}
+              onClick={() => addQuestion('CHECK', activeSectionId ?? undefined)}
               className="w-full bg-background rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/10 transition-colors p-6 text-center text-muted-foreground hover:text-primary"
             >
               <Plus className="h-8 w-8 mx-auto mb-2" />
@@ -4278,6 +4452,9 @@ export default function NewRoutineTemplateForm({
                 />
               </div>
             </div>
+
+            {/* Cierre automático / Reseteo de rutina */}
+            <ScheduleResetConfig form={form} />
 
             {/* Action bar - at the end of the form */}
             <div className="bg-background rounded-lg border border-border shadow-sm p-4 flex items-center justify-between sticky bottom-4 z-10">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders, shouldDisableCache } from '@/lib/perf';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -910,8 +911,10 @@ async function calculateCostsInternal(
 
 export async function GET(request: NextRequest) {
   const perfCtx = startPerf();
-  
+
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const productionMonth = searchParams.get('productionMonth') || '2025-08';
@@ -2483,6 +2486,9 @@ async function calculateIndirectCosts(
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const { companyId, productionMonth, simulatedQuantities, placas, dias, bancos, diasViguetas } = body;
 

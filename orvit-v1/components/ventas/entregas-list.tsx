@@ -47,6 +47,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { usePermission } from '@/hooks/use-permissions';
 import { EntregasAdvancedFilters, AdvancedFilters } from './entregas-advanced-filters';
 
 interface Entrega {
@@ -111,6 +112,10 @@ export function EntregasList({
   showKPIs = true,
   title = 'Entregas',
 }: EntregasListProps) {
+  // Permission checks
+  const { hasPermission: canDispatch } = usePermission('ventas.entregas.dispatch');
+  const { hasPermission: canProgram } = usePermission('ventas.entregas.program');
+
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIs>({
@@ -597,14 +602,14 @@ export function EntregasList({
                             Ver detalle
                           </DropdownMenuItem>
 
-                          {entrega.status === 'PENDIENTE' && (
+                          {entrega.status === 'PENDIENTE' && canProgram && (
                             <DropdownMenuItem onClick={() => handlePreparar(entrega.id)}>
                               <Package className="w-4 h-4 mr-2" />
                               Iniciar preparación
                             </DropdownMenuItem>
                           )}
 
-                          {entrega.status === 'EN_PREPARACION' && (
+                          {entrega.status === 'EN_PREPARACION' && canProgram && (
                             <DropdownMenuItem onClick={() => handleListar(entrega.id)}>
                               <CheckCircle2 className="w-4 h-4 mr-2" />
                               Marcar como lista
@@ -613,18 +618,22 @@ export function EntregasList({
 
                           {entrega.status === 'LISTA_PARA_DESPACHO' && (
                             <>
-                              <DropdownMenuItem onClick={() => handleDespachar(entrega.id)}>
-                                <Truck className="w-4 h-4 mr-2" />
-                                Despachar (envío)
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleRetirar(entrega.id)}>
-                                <Package className="w-4 h-4 mr-2" />
-                                Marcar retirada
-                              </DropdownMenuItem>
+                              {canDispatch && (
+                                <DropdownMenuItem onClick={() => handleDespachar(entrega.id)}>
+                                  <Truck className="w-4 h-4 mr-2" />
+                                  Despachar (envío)
+                                </DropdownMenuItem>
+                              )}
+                              {canDispatch && (
+                                <DropdownMenuItem onClick={() => handleRetirar(entrega.id)}>
+                                  <Package className="w-4 h-4 mr-2" />
+                                  Marcar retirada
+                                </DropdownMenuItem>
+                              )}
                             </>
                           )}
 
-                          {entrega.status === 'EN_TRANSITO' && (
+                          {entrega.status === 'EN_TRANSITO' && canDispatch && (
                             <>
                               <DropdownMenuItem onClick={() => handleEntregar(entrega.id)}>
                                 <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -637,14 +646,14 @@ export function EntregasList({
                             </>
                           )}
 
-                          {entrega.status === 'RETIRADA' && (
+                          {entrega.status === 'RETIRADA' && canDispatch && (
                             <DropdownMenuItem onClick={() => handleEntregar(entrega.id)}>
                               <CheckCircle2 className="w-4 h-4 mr-2" />
                               Confirmar entrega
                             </DropdownMenuItem>
                           )}
 
-                          {entrega.status === 'ENTREGA_FALLIDA' && (
+                          {entrega.status === 'ENTREGA_FALLIDA' && canDispatch && (
                             <DropdownMenuItem onClick={() => handleReintentar(entrega.id)}>
                               <RefreshCw className="w-4 h-4 mr-2" />
                               Reintentar entrega

@@ -68,10 +68,11 @@ export async function GET(
     }
 
     const { limit, offset, tipo, desde, hasta } = validation.data;
+    const companyId = payload.companyId as number;
 
-    // 3. Verificar que la unidad existe
-    const unidad = await prisma.unidadMovil.findUnique({
-      where: { id: unidadId },
+    // 3. Verificar que la unidad existe y pertenece al company del JWT
+    const unidad = await prisma.unidadMovil.findFirst({
+      where: { id: unidadId, companyId },
       select: { id: true, nombre: true, kilometraje: true, companyId: true }
     });
 
@@ -191,10 +192,11 @@ export async function POST(
     }
 
     const data = validation.data;
+    const companyId = payload.companyId as number;
 
-    // 3. Verificar que la unidad existe y obtener kilometraje actual
-    const unidad = await prisma.unidadMovil.findUnique({
-      where: { id: unidadId },
+    // 3. Verificar que la unidad existe y pertenece al company del JWT
+    const unidad = await prisma.unidadMovil.findFirst({
+      where: { id: unidadId, companyId },
       select: { id: true, nombre: true, kilometraje: true, companyId: true }
     });
 

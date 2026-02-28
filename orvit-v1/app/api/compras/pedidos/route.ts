@@ -1,41 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/compras/auth';
 import { PurchaseRequestStatus, RequestPriority, Prisma } from '@prisma/client';
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache';
 import { evaluarRequiereAprobacion } from '@/lib/compras/pedidos-enforcement';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        companies: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
-    });
-
-    return user;
-  } catch {
-    return null;
-  }
-}
 
 // Generar número de pedido: REQ-2026-00001
 async function generateRequestNumber(companyId: number, tx?: any): Promise<string> {
@@ -84,15 +54,10 @@ async function createSystemComment(
 // GET - Listar pedidos de compra
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('compras.pedidos.view');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -128,7 +93,7 @@ export async function GET(request: NextRequest) {
         ]
       }),
       // Quick filters
-      ...(quickFilter === 'misPedidos' && { solicitanteId: user.id }),
+      ...(quickFilter === 'misPedidos' && { solicitanteId: user!.id }),
       ...(quickFilter === 'venceEstaSemana' && {
         fechaNecesidad: {
           gte: new Date(),
@@ -295,15 +260,10 @@ export async function GET(request: NextRequest) {
 // POST - Crear pedido de compra
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('compras.pedidos.create');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const body = await request.json();
     const {
@@ -356,7 +316,7 @@ export async function POST(request: NextRequest) {
           descripcion,
           estado: evaluacion.estadoInicial as PurchaseRequestStatus,
           prioridad: prioridad as RequestPriority,
-          solicitanteId: user.id,
+          solicitanteId: user!.id,
           departamento,
           fechaNecesidad: fechaNecesidad ? new Date(fechaNecesidad) : null,
           fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
@@ -395,7 +355,7 @@ export async function POST(request: NextRequest) {
           tipo: 'SISTEMA',
           contenido: comentarioContenido,
           companyId,
-          userId: user.id
+          userId: user!.id
         }
       });
 

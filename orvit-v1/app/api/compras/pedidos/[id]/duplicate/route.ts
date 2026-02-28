@@ -1,39 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/compras/auth';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        companies: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
-    });
-
-    return user;
-  } catch {
-    return null;
-  }
-}
 
 // Genera número de pedido: REQ-2026-00001
 async function generateRequestNumber(companyId: number): Promise<string> {
@@ -65,15 +34,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('compras.pedidos.create');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
+    const companyId = user!.companyId;
 
     const { id } = await params;
     const pedidoId = parseInt(id);
@@ -105,7 +69,7 @@ export async function POST(
         moneda: originalPedido.moneda,
         presupuestoEstimado: originalPedido.presupuestoEstimado,
         notas: originalPedido.notas,
-        solicitanteId: user.id, // El usuario actual es el solicitante
+        solicitanteId: user!.id, // El usuario actual es el solicitante
         companyId,
         // Duplicar items
         items: {
@@ -133,7 +97,7 @@ export async function POST(
         tipo: 'SISTEMA',
         contenido: `Pedido duplicado desde ${originalPedido.numero}`,
         companyId,
-        userId: user.id,
+        userId: user!.id,
       }
     });
 

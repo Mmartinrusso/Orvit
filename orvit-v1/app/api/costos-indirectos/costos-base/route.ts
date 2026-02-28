@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,15 +9,10 @@ export const dynamic = 'force-dynamic';
 // GET /api/costos-indirectos/costos-base - Obtener costos base
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const companyId = String(user!.companyId);
 
     // Usar SQL directo para evitar problemas con modelos
     const costosBase = await prisma.$queryRaw`
@@ -50,12 +46,16 @@ export async function GET(request: NextRequest) {
 // POST /api/costos-indirectos/costos-base - Crear nuevo costo base
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, description, categoryId, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!name || !companyId) {
+    const body = await request.json();
+    const { name, description, categoryId } = body;
+    const companyId = String(user!.companyId);
+
+    if (!name) {
       return NextResponse.json(
-        { error: 'Nombre y companyId son requeridos' },
+        { error: 'Nombre es requerido' },
         { status: 400 }
       );
     }
@@ -122,12 +122,16 @@ export async function POST(request: NextRequest) {
 // PUT /api/costos-indirectos/costos-base - Actualizar costo base
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, name, description, categoryId, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!id || !name || !companyId) {
+    const body = await request.json();
+    const { id, name, description, categoryId } = body;
+    const companyId = String(user!.companyId);
+
+    if (!id || !name) {
       return NextResponse.json(
-        { error: 'ID, nombre y companyId son requeridos' },
+        { error: 'ID y nombre son requeridos' },
         { status: 400 }
       );
     }

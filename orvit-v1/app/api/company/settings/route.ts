@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { requireAuth, requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,9 @@ const UpdateCompanySettingsSchema = z.object({
 
 // GET /api/company/settings - Obtener configuración de la empresa
 export async function GET(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -68,6 +72,9 @@ export async function GET(request: NextRequest) {
 
 // PUT /api/company/settings - Actualizar configuración de la empresa
 export async function PUT(request: NextRequest) {
+  const { error: permError } = await requirePermission('settings.edit');
+  if (permError) return permError;
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');

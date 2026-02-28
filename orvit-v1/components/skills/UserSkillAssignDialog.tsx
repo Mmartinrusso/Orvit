@@ -107,7 +107,7 @@ export function UserSkillAssignDialog({
     onSuccess: () => {
       toast.success('Habilidad asignada correctamente');
       queryClient.invalidateQueries({ queryKey: ['user-skills', userId] });
-      queryClient.invalidateQueries({ queryKey: ['skill-matrix'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-matrix', companyId] });
       handleClose();
     },
     onError: (error: Error) => {

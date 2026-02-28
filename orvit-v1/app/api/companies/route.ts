@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { UserRole } from '@/lib/permissions';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { requirePermission, requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,14 +16,14 @@ const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 async function getUserFromToken() {
   try {
     const token = cookies().get('token')?.value;
-    
+
     if (!token) {
       console.log('❌ No hay token JWT');
       return null;
     }
 
     const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    
+
     const user = await prisma.user.findUnique({
       where: { id: payload.userId as number }
     });
@@ -37,8 +38,12 @@ async function getUserFromToken() {
 // GET /api/companies - Obtener empresas reales de la base de datos
 export async function GET(request: Request) {
   try {
+    // Verificar permiso companies.view
+    const { user: authUser, error: authError } = await requirePermission('companies.view');
+    if (authError) return authError;
+
     console.log('📋 GET /api/companies - Solicitando empresas del usuario...');
-    
+
     // Obtener usuario autenticado
     const currentUser = await getUserFromToken();
     if (!currentUser) {
@@ -87,8 +92,12 @@ export async function GET(request: Request) {
 // POST /api/companies - Crear nueva empresa en la base de datos
 export async function POST(request: Request) {
   try {
+    // Verificar permiso companies.create
+    const { user: authUser, error: authError } = await requirePermission('companies.create');
+    if (authError) return authError;
+
     console.log('📝 POST /api/companies - Creando empresa en la base de datos...');
-    
+
     // Obtener usuario autenticado
     const currentUser = await getUserFromToken();
     if (!currentUser) {
@@ -97,16 +106,6 @@ export async function POST(request: Request) {
     }
 
     console.log('✅ Usuario autenticado:', currentUser.name, '| ID:', currentUser.id, '| Rol:', currentUser.role);
-    
-    // Verificar que el usuario tenga permisos para crear empresas
-    const allowedRoles = ['ADMIN_ENTERPRISE'];
-    if (!allowedRoles.includes(currentUser.role)) {
-      console.log('❌ Usuario sin permisos para crear empresas:', currentUser.role);
-      return NextResponse.json(
-        { error: 'No tienes permisos para crear empresas' },
-        { status: 403 }
-      );
-    }
     
     const body = await request.json();
     

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // GET - Ranking de productos más vendidos
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_VIEW);
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.REPORTES_ADVANCED);
     if (error) return error;
 
     const companyId = user!.companyId;

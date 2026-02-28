@@ -1,40 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/compras/auth';
 import { getViewMode } from '@/lib/view-mode/get-mode';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return null;
-
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId as number },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        companies: {
-          select: { companyId: true },
-          take: 1
-        }
-      }
-    });
-
-    return user;
-  } catch {
-    return null;
-  }
-}
 
 // Generar numero de OC automatico (acepta tx o prisma)
 async function generarNumeroOC(companyId: number, db: typeof prisma = prisma): Promise<string> {
@@ -64,20 +33,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('compras.cotizaciones.convertir_oc');
+    if (error) return error;
 
-    const companyId = user.companies?.[0]?.companyId;
-    if (!companyId) {
-      return NextResponse.json({ error: 'Usuario no tiene empresa asignada' }, { status: 400 });
-    }
-
-    // Verificar permisos
-    if (!['SUPERADMIN', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERVISOR'].includes(user.role)) {
-      return NextResponse.json({ error: 'No tiene permisos para crear OC' }, { status: 403 });
-    }
+    const companyId = user!.companyId;
 
     const { id } = await params;
     const cotizacionId = parseInt(id);
@@ -239,7 +198,7 @@ export async function POST(
         requiereAprobacion: false,
         docType: docType as 'T1' | 'T2',
         companyId,
-        createdBy: user.id,
+        createdBy: user!.id,
         costCenterId: bodyData.costCenterId ? parseInt(bodyData.costCenterId) : null,
         projectId: bodyData.projectId ? parseInt(bodyData.projectId) : null
       };
@@ -340,9 +299,9 @@ export async function POST(
           entidad: 'request',
           entidadId: cotizacion.requestId,
           tipo: 'SISTEMA',
-          contenido: `OC ${result.numero} creada desde cotizacion ${cotizacion.numero} por ${user.name}`,
+          contenido: `OC ${result.numero} creada desde cotizacion ${cotizacion.numero} por ${user!.name}`,
           companyId,
-          userId: user.id
+          userId: user!.id
         }
       });
     } catch (commentError) {

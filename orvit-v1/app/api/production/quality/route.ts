@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -23,10 +24,8 @@ const QualityControlSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const productionOrderId = searchParams.get('productionOrderId');
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
 
     if (productionOrderId) {
@@ -132,10 +131,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.CALIDAD.CREATE);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = QualityControlSchema.parse(body);
@@ -143,8 +140,8 @@ export async function POST(request: NextRequest) {
     const control = await prisma.productionQualityControl.create({
       data: {
         ...validatedData,
-        inspectedById: auth.user.id,
-        companyId: auth.companyId,
+        inspectedById: user!.id,
+        companyId: user!.companyId,
       },
       include: {
         productionOrder: {
@@ -176,7 +173,7 @@ export async function POST(request: NextRequest) {
           qualityStatus: 'BLOCKED',
           blockedReason: validatedData.rejectionReason || 'Rechazado en control de calidad',
           blockedAt: new Date(),
-          blockedById: auth.user.id,
+          blockedById: user!.id,
         },
       });
     }

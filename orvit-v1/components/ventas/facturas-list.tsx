@@ -64,6 +64,7 @@ import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { usePermission } from '@/hooks/use-permissions';
 
 interface Factura {
   id: number;
@@ -125,6 +126,10 @@ export function FacturasList({
   showKPIs = true,
   title = 'Facturas',
 }: FacturasListProps) {
+  // Permission checks
+  const { hasPermission: canSendInvoice } = usePermission('ventas.facturas.send');
+  const { hasPermission: canApplyPayment } = usePermission('ventas.pagos.apply');
+
   const [facturas, setFacturas] = useState<Factura[]>([]);
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIs>({
@@ -471,14 +476,16 @@ export function FacturasList({
             <div className="flex items-center justify-between">
               <span className="font-medium">{selectedFacturas.length} facturas seleccionadas</span>
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setBulkActionDialog({ open: true, action: 'emit' })}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Emitir
-                </Button>
+                {canSendInvoice && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBulkActionDialog({ open: true, action: 'emit' })}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Emitir
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -774,13 +781,13 @@ export function FacturasList({
                               <Eye className="w-4 h-4 mr-2" />
                               Ver detalle
                             </DropdownMenuItem>
-                            {canEmitir(factura.status) && (
+                            {canEmitir(factura.status) && canSendInvoice && (
                               <DropdownMenuItem onClick={() => handleEmitir(factura.id)}>
                                 <FileText className="w-4 h-4 mr-2" />
                                 Emitir
                               </DropdownMenuItem>
                             )}
-                            {Number(factura.saldoPendiente) > 0 && factura.status !== 'BORRADOR' && (
+                            {Number(factura.saldoPendiente) > 0 && factura.status !== 'BORRADOR' && canApplyPayment && (
                               <DropdownMenuItem onClick={() => window.location.href = `/administracion/ventas/cobranzas?facturaId=${factura.id}`}>
                                 <DollarSign className="w-4 h-4 mr-2" />
                                 Registrar cobro

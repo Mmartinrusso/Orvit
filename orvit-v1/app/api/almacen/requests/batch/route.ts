@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { MaterialRequestStatus } from '@prisma/client';
+import { requirePermission, requireAnyPermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,15 @@ interface BatchResult {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Permission check: batch actions require at least one request permission
+    const { user, error: authError } = await requireAnyPermission([
+      'almacen.request.approve',
+      'almacen.request.reject',
+      'almacen.request.cancel',
+      'almacen.request.edit',
+    ]);
+    if (authError) return authError;
+
     const body = await request.json();
     const { ids, action, userId, motivo, companyId } = body;
 

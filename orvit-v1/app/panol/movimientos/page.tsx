@@ -26,6 +26,7 @@ import { es } from 'date-fns/locale';
 import MovementDialog from '@/components/panol/MovementDialog';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
+import { usePanolPermissions } from '@/hooks/use-panol-permissions';
 import { cn } from '@/lib/utils';
 
 interface Movement {
@@ -70,6 +71,7 @@ async function fetchMovements(
 
 export default function MovimientosPage() {
   const { currentCompany } = useCompany();
+  const { canRegisterMovement } = usePanolPermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
@@ -167,10 +169,12 @@ export default function MovimientosPage() {
                 </TooltipTrigger>
                 <TooltipContent>Exportar CSV</TooltipContent>
               </Tooltip>
-              <Button size="sm" className="h-9" onClick={() => setMovementDialogOpen(true)}>
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Nuevo</span>
-              </Button>
+              {canRegisterMovement && (
+                <Button size="sm" className="h-9" onClick={() => setMovementDialogOpen(true)}>
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Nuevo</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -285,7 +289,7 @@ export default function MovimientosPage() {
               <p className="text-muted-foreground text-sm mb-4">
                 {movements.length === 0 ? 'No hay movimientos registrados aún' : 'Probá ajustando los filtros'}
               </p>
-              {movements.length === 0 && (
+              {movements.length === 0 && canRegisterMovement && (
                 <Button size="sm" onClick={() => setMovementDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />Registrar primer movimiento
                 </Button>

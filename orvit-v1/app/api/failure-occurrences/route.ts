@@ -15,6 +15,7 @@ import { detectDuplicates } from '@/lib/corrective/duplicate-detector';
 import { expandSymptoms } from '@/lib/corrective/symptoms';
 import { findSimilarSolutions } from '@/lib/corrective/solution-history';
 import { notifyNewFailure, notifyP1ToSectorTechnicians } from '@/lib/discord/notifications';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,9 @@ const createFailureOccurrenceSchema = z.object({
     subcomponentId: z.number().int().positive().optional(),
     severity: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional()
   })).optional(),
+
+  // Tipo de incidente
+  incidentType: z.enum(['FALLA', 'ROTURA']).optional().default('FALLA'),
 
   // Notas adicionales (OPCIONAL)
   notes: z.string().optional(),
@@ -104,6 +108,7 @@ export async function GET(request: NextRequest) {
     const hasWorkOrder = searchParams.get('hasWorkOrder');
     const hasDuplicates = searchParams.get('hasDuplicates');
     const isLinkedDuplicate = searchParams.get('isLinkedDuplicate');
+    const incidentType = searchParams.get('incidentType'); // FALLA | ROTURA
 
     // 3. Construir where clause
     const where: any = {
@@ -111,6 +116,11 @@ export async function GET(request: NextRequest) {
       // Por defecto solo casos principales, pero permite filtrar duplicados si se pide explícitamente
       isLinkedDuplicate: isLinkedDuplicate === 'true' ? true : false,
     };
+
+    // Filtrar por tipo de incidente (tab Fallas/Roturas)
+    if (incidentType) {
+      where.incidentType = incidentType;
+    }
 
     // Status (supports comma-separated values)
     if (status) {
@@ -377,6 +387,10 @@ export async function POST(request: NextRequest) {
     const companyId = payload.companyId as number;
     const userId = payload.userId as number;
 
+    // Permission check: ingresar_mantenimiento
+    const hasPerm = await hasUserPermission(userId, companyId, 'ingresar_mantenimiento');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
+
     // 2. Parsear y validar body
     const body = await request.json();
     const validationResult = createFailureOccurrenceSchema.safeParse(body);
@@ -434,6 +448,7 @@ export async function POST(request: NextRequest) {
         causedDowntime: data.causedDowntime,
         affectedComponents: data.affectedComponents ? JSON.stringify(data.affectedComponents) : null,
         notes: data.notes,
+        incidentType: data.incidentType,
         reportedBy: userId,
         reportedAt: new Date(),
         status: 'OPEN', // ✅ Usar OPEN según schema (no REPORTED)

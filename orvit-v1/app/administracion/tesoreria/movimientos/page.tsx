@@ -38,6 +38,7 @@ import {
 import { formatCurrency, cn } from '@/lib/utils';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useCompany } from '@/contexts/CompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -115,6 +116,8 @@ const MEDIOS_LABELS: Record<string, string> = {
 export default function MovimientosPage() {
   const { viewMode } = useViewMode();
   const { currentCompany } = useCompany();
+  const { hasPermission } = useAuth();
+  const canViewReports = hasPermission('treasury.reports');
   const companyId = currentCompany?.id || 0;
 
   const [filters, setFilters] = useState({
@@ -212,10 +215,12 @@ export default function MovimientosPage() {
               <RefreshCcw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
               Actualizar
             </button>
+            {canViewReports && (
             <Button variant="outline" size="sm" className="h-7 text-xs">
               <Download className="h-3.5 w-3.5 mr-1" />
               Exportar
             </Button>
+            )}
           </div>
         </div>
       </div>

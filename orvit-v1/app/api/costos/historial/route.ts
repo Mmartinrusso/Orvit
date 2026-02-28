@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { startPerf, endParse, startDb, endDb, startCompute, endCompute, startJson, endJson, withPerfHeaders, shouldDisableCache } from '@/lib/perf';
 
 export const dynamic = 'force-dynamic';
@@ -8,20 +9,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const perfCtx = startPerf();
-  
-  try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
-    const employeeId = searchParams.get('employeeId'); // Opcional para filtrar
-    
-    endParse(perfCtx);
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+  try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
+    const { searchParams } = new URL(request.url);
+    const companyId = String(user!.companyId);
+    const employeeId = searchParams.get('employeeId'); // Opcional para filtrar
+
+    endParse(perfCtx);
 
     startDb(perfCtx);
     // Obtener historial de planilla (employee_salary_history)
@@ -113,12 +110,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { employeeId, oldSalary, newSalary, changeReason, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!employeeId || !newSalary || !companyId) {
+    const body = await request.json();
+    const { employeeId, oldSalary, newSalary, changeReason } = body;
+    const companyId = String(user!.companyId);
+
+    if (!employeeId || !newSalary) {
       return NextResponse.json(
-        { error: 'employeeId, newSalary y companyId son requeridos' },
+        { error: 'employeeId y newSalary son requeridos' },
         { status: 400 }
       );
     }

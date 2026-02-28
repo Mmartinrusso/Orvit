@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PTWStatus, AuditAction } from '@prisma/client';
+import { requirePermission, requireAnyPermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,17 +15,8 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('ptw.view');
+    if (error) return error;
 
     const permit = await prisma.permitToWork.findUnique({
       where: { id: parseInt(id) },
@@ -66,20 +58,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
     const body = await request.json();
-    const { action, ...updateData } = body;
+    const { action } = body;
+
+    // Determine required permission based on action
+    let permissionCheck;
+    if (action === 'approve') {
+      permissionCheck = await requirePermission('ptw.approve');
+    } else if (action === 'reject') {
+      permissionCheck = await requirePermission('ptw.reject');
+    } else if (action === 'activate') {
+      permissionCheck = await requirePermission('ptw.activate');
+    } else if (action === 'suspend' || action === 'resume') {
+      permissionCheck = await requirePermission('ptw.suspend');
+    } else if (action === 'close') {
+      permissionCheck = await requirePermission('ptw.close');
+    } else if (action === 'verify_ppe') {
+      permissionCheck = await requirePermission('ptw.verify');
+    } else if (action === 'submit') {
+      permissionCheck = await requirePermission('ptw.edit');
+    } else {
+      permissionCheck = await requirePermission('ptw.edit');
+    }
+    if (permissionCheck.error) return permissionCheck.error;
+    const user = permissionCheck.user!;
+    const { action: _action, ...updateData } = body;
 
     const permit = await prisma.permitToWork.findUnique({
       where: { id: parseInt(id) },
@@ -89,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'PTW no encontrado' }, { status: 404 });
     }
 
-    const userId = payload.userId as number;
+    const userId = user.id;
     let auditAction: AuditAction = AuditAction.UPDATE;
     let data: any = {};
 
@@ -319,17 +322,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission('ptw.delete');
+    if (error) return error;
 
     const permit = await prisma.permitToWork.findUnique({
       where: { id: parseInt(id) },
@@ -357,7 +351,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         entityId: permit.id,
         action: AuditAction.DELETE,
         oldValue: { number: permit.number, title: permit.title },
-        performedById: payload.userId as number,
+        performedById: user!.id,
         companyId: permit.companyId,
       },
     });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { MachineStatus, MachineType, Machine, MachineComponent } from '@/lib/types';
 import MachineGrid, { ViewMode, SortField, SortOrder } from '@/components/maquinas/MachineGrid';
@@ -156,10 +156,15 @@ export default function MaquinasPage() {
   };
 
   // 🔍 PERMISOS DE MÁQUINAS
-  const { hasPermission: canCreateMachine } = usePermissionRobust('crear_maquina');
-  const { hasPermission: canEditMachine } = usePermissionRobust('editar_maquina');
-  const { hasPermission: canDeleteMachine } = usePermissionRobust('eliminar_maquina');
-  const { hasPermission: canViewMachineHistory } = usePermissionRobust('ver_historial_maquina');
+  const { hasPermission: canCreateMachine } = usePermissionRobust('machines.create');
+  const { hasPermission: canEditMachine } = usePermissionRobust('machines.edit');
+  const { hasPermission: canDeleteMachine } = usePermissionRobust('machines.delete');
+  const { hasPermission: canViewMachineHistory } = usePermissionRobust('machines.view');
+  const { hasPermission: canMaintainMachine } = usePermissionRobust('machines.maintain');
+  const { hasPermission: canDisassembleMachine } = usePermissionRobust('machines.disassemble');
+  const { hasPermission: canAddDocument } = usePermissionRobust('machines.add_document');
+  const { hasPermission: canDeleteComponent } = usePermissionRobust('machines.delete_component');
+  const { hasPermission: canPromoteComponent } = usePermissionRobust('machines.promote_component');
 
   // console.log('🔥🔥🔥 PERMISOS MAQUINAS (MANTENIMIENTO):', {
   //   usuario: currentUser?.name,
@@ -201,6 +206,7 @@ export default function MaquinasPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentEditMachine, setCurrentEditMachine] = useState<Machine | null>(null);
   const [machineOrder, setMachineOrder] = useState<{[key: string]: number}>({});
+  const machineOrderRef = useRef<{[key: string]: number}>({});
   const [isSavingMachineOrder, setIsSavingMachineOrder] = useState(false);
   const [selectedMachineForReorder, setSelectedMachineForReorder] = useState<Machine | null>(null);
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -323,11 +329,25 @@ export default function MaquinasPage() {
     { enabled: !!sectorIdNum }
   );
 
+  // Mantener ref sincronizado con el orden actual
+  useEffect(() => {
+    machineOrderRef.current = machineOrder;
+  }, [machineOrder]);
+
   // ✨ Sincronizar datos del hook con estados locales
   useEffect(() => {
     if (machinesData?.machines && !isLoading) {
       const machinesList = machinesData.machines as Machine[];
-      setMachines(machinesList);
+      const currentOrder = machineOrderRef.current;
+      if (Object.keys(currentOrder).length > 0) {
+        // Re-aplicar el orden guardado sobre la nueva lista (ej: después de eliminar)
+        const sorted = [...machinesList].sort((a, b) =>
+          (currentOrder[a.id.toString()] ?? 999) - (currentOrder[b.id.toString()] ?? 999)
+        );
+        setMachines(sorted);
+      } else {
+        setMachines(machinesList);
+      }
     }
   }, [machinesData?.machines, isLoading]);
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getPayrollAuth, hasPayrollAccess } from '@/lib/nominas/auth-helper';
+import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,6 +118,10 @@ export async function POST(request: NextRequest) {
     if (!auth || !hasPayrollAccess(auth.user)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+
+    // Permission check: ingresar_nominas
+    const hasPerm = await hasUserPermission(auth.user.id, auth.companyId, 'ingresar_nominas');
+    if (!hasPerm) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
 
     const body = await request.json();
     const { year, month, unionId } = body;

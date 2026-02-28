@@ -3,6 +3,7 @@
 import { useCompany } from '@/contexts/CompanyContext';
 import { MOCForm } from '@/components/moc';
 import { Card, CardContent } from '@/components/ui/card';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Loader2 } from 'lucide-react';
 
 export default function NuevoMOCPage() {
@@ -33,8 +34,10 @@ export default function NuevoMOCPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <MOCForm companyId={currentCompany.id} />
-    </div>
+    <PermissionGuard permission="moc.create" fallback={<div className="p-6 text-muted-foreground">No tienes permisos para crear MOCs</div>}>
+      <div className="container mx-auto p-6">
+        <MOCForm companyId={currentCompany.id} />
+      </div>
+    </PermissionGuard>
   );
 }

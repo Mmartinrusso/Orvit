@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import { MOCForm } from '@/components/moc';
 import { Card, CardContent } from '@/components/ui/card';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -102,12 +103,14 @@ export default function EditarMOCPage({ params }: Props) {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <MOCForm
-        companyId={currentCompany.id}
-        mocId={mocId}
-        initialData={data.moc}
-      />
-    </div>
+    <PermissionGuard permission="moc.edit" fallback={<div className="p-6 text-muted-foreground">No tienes permisos para editar MOCs</div>}>
+      <div className="container mx-auto p-6">
+        <MOCForm
+          companyId={currentCompany.id}
+          mocId={mocId}
+          initialData={data.moc}
+        />
+      </div>
+    </PermissionGuard>
   );
 }

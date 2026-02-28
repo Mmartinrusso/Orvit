@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 export const dynamic = 'force-dynamic';
 
 
 // GET - Obtener empleados usando SQL directo con paginación
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!companyId) {
-      return NextResponse.json(
-        { error: 'companyId es requerido' },
-        { status: 400 }
-      );
-    }
+    const { searchParams } = new URL(request.url);
+    const companyId = String(user!.companyId);
 
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
@@ -93,17 +90,21 @@ export async function GET(request: NextRequest) {
 // POST - Crear nuevo empleado usando SQL directo
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
-    const { name, role, grossSalary, payrollTaxes, categoryId, companyId, startDate } = body;
+    const { name, role, grossSalary, payrollTaxes, categoryId, startDate } = body;
+    const companyId = String(user!.companyId);
 
     // Log solo en desarrollo
     if (process.env.NODE_ENV === 'development') {
       console.log('Datos recibidos:', { name, role, grossSalary, payrollTaxes, categoryId, companyId, startDate });
     }
 
-    if (!name || !role || !companyId) {
+    if (!name || !role) {
       return NextResponse.json(
-        { error: 'Nombre, rol y companyId son requeridos' },
+        { error: 'Nombre y rol son requeridos' },
         { status: 400 }
       );
     }
@@ -159,12 +160,16 @@ export async function POST(request: NextRequest) {
 // DELETE - Eliminar empleado (marcar como inactivo)
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, companyId } = body;
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
-    if (!id || !companyId) {
+    const body = await request.json();
+    const { id } = body;
+    const companyId = String(user!.companyId);
+
+    if (!id) {
       return NextResponse.json(
-        { error: 'ID del empleado y companyId son requeridos' },
+        { error: 'ID del empleado es requerido' },
         { status: 400 }
       );
     }

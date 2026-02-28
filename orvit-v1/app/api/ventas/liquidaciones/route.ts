@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { requirePermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
+import { requirePermission, checkPermission, VENTAS_PERMISSIONS } from '@/lib/ventas/auth';
 import { createLiquidacionSchema, liquidacionFilterSchema } from '@/lib/ventas/validation-schemas';
 import { generateLiquidacionNumber } from '@/lib/ventas/document-number';
 
@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
     const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
 
+    // Check if user can view all comisiones or only own
+    const canViewAll = await checkPermission(user!.id, companyId, VENTAS_PERMISSIONS.COMISIONES_VIEW_ALL);
+
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const estado = searchParams.get('estado');
@@ -26,6 +29,8 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.SellerLiquidacionWhereInput = {
       companyId,
+      // If user cannot view all, restrict to own liquidaciones
+      ...(!canViewAll && { sellerId: user!.id }),
       ...(estado && { estado: estado as any }),
       ...(sellerId && { sellerId: parseInt(sellerId) }),
       ...(fechaDesde && { fechaDesde: { gte: new Date(fechaDesde) } }),

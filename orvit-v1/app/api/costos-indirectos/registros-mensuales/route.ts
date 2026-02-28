@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic';
 // GET /api/costos-indirectos/registros-mensuales - Obtener registros mensuales
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const fecha_imputacion = searchParams.get('fecha_imputacion');
@@ -74,6 +78,9 @@ export async function GET(request: NextRequest) {
 // POST /api/costos-indirectos/registros-mensuales - Crear nuevo registro mensual
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     const { costBaseId, fecha_imputacion, amount, status, dueDate, notes, companyId } = body;
 

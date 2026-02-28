@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // Helper: Obtener todos los descendientes de una zona
 async function getAllDescendantIds(zoneId: number): Promise<number[]> {
@@ -63,6 +64,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const zoneId = Number(params.id);
 
     const zone = await prisma.plantZone.findUnique({
@@ -154,6 +158,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const zoneId = Number(params.id);
     const body = await request.json();
     const { name, description, logo, photo, color, order, parentId } = body;
@@ -253,6 +260,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const zoneId = Number(params.id);
 
     // Verificar que la zona existe

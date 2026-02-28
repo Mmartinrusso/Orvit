@@ -2,34 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 // GET: List lubrication points and schedules
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('lubrication.view');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const { searchParams } = new URL(request.url);
-    const companyId = parseInt(searchParams.get('companyId') || '0');
     const machineId = searchParams.get('machineId');
     const view = searchParams.get('view') || 'points'; // points, schedules, executions
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId requerido' }, { status: 400 });
-    }
-
     if (view === 'points') {
+      const machineCondition = machineId
+        ? Prisma.sql`AND lp."machineId" = ${parseInt(machineId)}`
+        : Prisma.sql``;
       const points = await prisma.$queryRaw`
         SELECT
           lp.*,
@@ -39,7 +31,7 @@ export async function GET(request: NextRequest) {
         FROM "LubricationPoint" lp
         LEFT JOIN "Machine" m ON lp."machineId" = m.id
         WHERE lp."companyId" = ${companyId}
-        ${machineId ? prisma.$queryRaw`AND lp."machineId" = ${parseInt(machineId)}` : prisma.$queryRaw``}
+        ${machineCondition}
         ORDER BY m.name, lp.name
       `;
       return NextResponse.json({ points });
@@ -92,21 +84,12 @@ export async function GET(request: NextRequest) {
 // POST: Create lubrication point
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const { user, error } = await requirePermission('lubrication.create');
+    if (error) return error;
 
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
-    }
-
+    const companyId = user!.companyId;
     const body = await request.json();
     const {
-      companyId,
       machineId,
       componentId,
       name,
@@ -121,9 +104,9 @@ export async function POST(request: NextRequest) {
       instructions,
     } = body;
 
-    if (!companyId || !machineId || !name || !lubricantType) {
+    if (!machineId || !name || !lubricantType) {
       return NextResponse.json(
-        { error: 'companyId, machineId, name y lubricantType son requeridos' },
+        { error: 'machineId, name y lubricantType son requeridos' },
         { status: 400 }
       );
     }
@@ -145,6 +128,105 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error('Error creating lubrication point:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
+// PUT: Update lubrication point
+export async function PUT(request: NextRequest) {
+  try {
+    const { user, error } = await requirePermission('lubrication.edit');
+    if (error) return error;
+
+    const companyId = user!.companyId;
+    const body = await request.json();
+    const {
+      id,
+      name,
+      location,
+      lubricantType,
+      lubricantBrand,
+      quantity,
+      quantityUnit,
+      method,
+      frequencyHours,
+      frequencyDays,
+      instructions,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const existing = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "LubricationPoint" WHERE id = ${id} AND "companyId" = ${companyId}
+    `;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Punto de lubricación no encontrado' }, { status: 404 });
+    }
+
+    await prisma.$executeRaw`
+      UPDATE "LubricationPoint" SET
+        "name" = COALESCE(${name || null}, "name"),
+        "location" = ${location || null},
+        "lubricantType" = COALESCE(${lubricantType || null}, "lubricantType"),
+        "lubricantBrand" = ${lubricantBrand || null},
+        "quantity" = ${quantity || null},
+        "quantityUnit" = COALESCE(${quantityUnit || null}, "quantityUnit"),
+        "method" = COALESCE(${method || null}, "method"),
+        "frequencyHours" = ${frequencyHours || null},
+        "frequencyDays" = ${frequencyDays || null},
+        "instructions" = ${instructions || null},
+        "updatedAt" = NOW()
+      WHERE id = ${id} AND "companyId" = ${companyId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating lubrication point:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
+}
+
+// DELETE: Delete lubrication point
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error } = await requirePermission('lubrication.delete');
+    if (error) return error;
+
+    const companyId = user!.companyId;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id es requerido' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const existing = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "LubricationPoint" WHERE id = ${parseInt(id)} AND "companyId" = ${companyId}
+    `;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Punto de lubricación no encontrado' }, { status: 404 });
+    }
+
+    // Delete related executions first
+    await prisma.$executeRaw`
+      DELETE FROM "LubricationExecution" WHERE "lubricationPointId" = ${parseInt(id)}
+    `;
+    // Delete related schedules
+    await prisma.$executeRaw`
+      DELETE FROM "LubricationSchedule" WHERE "lubricationPointId" = ${parseInt(id)}
+    `;
+    // Delete the point
+    await prisma.$executeRaw`
+      DELETE FROM "LubricationPoint" WHERE id = ${parseInt(id)} AND "companyId" = ${companyId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting lubrication point:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

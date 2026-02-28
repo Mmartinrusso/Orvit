@@ -70,6 +70,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useViewMode } from '@/hooks/use-view-mode';
 import { useApiClient } from '@/hooks/use-api-client';
+import { usePermission } from '@/hooks/use-permissions';
 
 // Dynamic import for SaleModal
 const SaleModal = lazy(() => import('@/components/ventas/sale-modal').then(mod => ({ default: mod.SaleModal })));
@@ -144,6 +145,11 @@ export function OrdenesVentaList({
   title = 'Órdenes de Venta',
 }: OrdenesVentaListProps) {
   const { get, post: apiPost, del: apiDel } = useApiClient();
+
+  // Permission checks
+  const { hasPermission: permEditSale } = usePermission('ventas.ordenes.edit');
+  const { hasPermission: permDeleteSale } = usePermission('ventas.ordenes.delete');
+
   const [ordenes, setOrdenes] = useState<OrdenVenta[]>([]);
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIs>({
@@ -292,11 +298,11 @@ export function OrdenesVentaList({
     );
   };
 
-  const canEdit = (estado: string | undefined) => ['BORRADOR'].includes(estado?.toUpperCase() || '');
-  const canDelete = (estado: string | undefined) => ['BORRADOR'].includes(estado?.toUpperCase() || '');
-  const canConfirmar = (estado: string | undefined) => ['BORRADOR'].includes(estado?.toUpperCase() || '');
-  const canPreparar = (estado: string | undefined) => ['CONFIRMADA'].includes(estado?.toUpperCase() || '');
-  const canCancelar = (estado: string | undefined) => ['BORRADOR', 'CONFIRMADA', 'EN_PREPARACION'].includes(estado?.toUpperCase() || '');
+  const canEdit = (estado: string | undefined) => permEditSale && ['BORRADOR'].includes(estado?.toUpperCase() || '');
+  const canDelete = (estado: string | undefined) => permDeleteSale && ['BORRADOR'].includes(estado?.toUpperCase() || '');
+  const canConfirmar = (estado: string | undefined) => permEditSale && ['BORRADOR'].includes(estado?.toUpperCase() || '');
+  const canPreparar = (estado: string | undefined) => permEditSale && ['CONFIRMADA'].includes(estado?.toUpperCase() || '');
+  const canCancelar = (estado: string | undefined) => permEditSale && ['BORRADOR', 'CONFIRMADA', 'EN_PREPARACION'].includes(estado?.toUpperCase() || '');
 
   const clearFilters = () => {
     setSearchTerm('');

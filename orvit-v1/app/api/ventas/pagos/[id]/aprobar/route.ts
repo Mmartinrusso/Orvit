@@ -31,8 +31,8 @@ const approvalSchema = z.object({
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    // Require approval permission (higher than create)
-    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.PAGOS_EDIT);
+    // Require payment application permission
+    const { user, error } = await requirePermission(VENTAS_PERMISSIONS.PAGOS_APPLY);
     if (error) return error;
 
     const { id } = await params;

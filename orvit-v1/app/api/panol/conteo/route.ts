@@ -7,13 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth/shared-helpers';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const { user, error } = await requireAuth();
+    const { user, error } = await requirePermission('panol.view_products');
     if (error) return error;
 
     const companyId = user!.companyId;
@@ -36,7 +36,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error } = await requireAuth();
+    const { user, error } = await requirePermission('panol.register_movement');
     if (error) return error;
 
     const companyId = user!.companyId;

@@ -27,7 +27,8 @@ export type AlmacenTab =
   | 'kardex'
   | 'reservas'
   | 'transferencias'
-  | 'ajustes';
+  | 'ajustes'
+  | 'materiales';
 
 interface UseAlmacenModalReturn {
   // Estado actual

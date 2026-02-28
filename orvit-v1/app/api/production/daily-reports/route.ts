@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserAndCompany } from '@/lib/costs-auth';
+import { requirePermission, checkPermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
 
@@ -31,10 +32,8 @@ const DailyReportSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.VIEW);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const productionOrderId = searchParams.get('productionOrderId');
@@ -49,8 +48,14 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
-      companyId: auth.companyId,
+      companyId: user!.companyId,
     };
+
+    // If user does NOT have produccion.partes.view_all, filter to only their own reports
+    const canViewAll = await checkPermission(user!.id, user!.companyId, PRODUCCION_PERMISSIONS.PARTES.VIEW_ALL);
+    if (!canViewAll) {
+      whereClause.operatorId = user!.id;
+    }
 
     if (productionOrderId) {
       whereClause.productionOrderId = parseInt(productionOrderId);
@@ -64,7 +69,8 @@ export async function GET(request: NextRequest) {
       whereClause.shiftId = parseInt(shiftId);
     }
 
-    if (operatorId) {
+    // Only allow operatorId filter override if user has view_all permission
+    if (operatorId && canViewAll) {
       whereClause.operatorId = parseInt(operatorId);
     }
 
@@ -163,10 +169,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getUserAndCompany();
-    if (!auth || !auth.companyId || !auth.user?.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.PARTES.CREATE);
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = DailyReportSchema.parse(body);
@@ -175,7 +179,7 @@ export async function POST(request: NextRequest) {
     if (validatedData.offlineId) {
       const existingReport = await prisma.dailyProductionReport.findFirst({
         where: {
-          companyId: auth.companyId,
+          companyId: user!.companyId,
           offlineId: validatedData.offlineId,
         },
       });
@@ -194,7 +198,7 @@ export async function POST(request: NextRequest) {
     const shift = await prisma.workShift.findFirst({
       where: {
         id: validatedData.shiftId,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
     });
 
@@ -211,7 +215,7 @@ export async function POST(request: NextRequest) {
       productionOrder = await prisma.productionOrder.findFirst({
         where: {
           id: validatedData.productionOrderId,
-          companyId: auth.companyId,
+          companyId: user!.companyId,
         },
       });
 
@@ -254,7 +258,7 @@ export async function POST(request: NextRequest) {
         issues: validatedData.issues,
         offlineId: validatedData.offlineId,
         syncedAt: validatedData.offlineId ? new Date() : null,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       },
       include: {
         shift: {
@@ -307,9 +311,9 @@ export async function POST(request: NextRequest) {
           date: validatedData.date,
           shiftId: validatedData.shiftId,
         },
-        performedById: auth.user.id,
+        performedById: user!.id,
         productionOrderId: productionOrder.id,
-        companyId: auth.companyId,
+        companyId: user!.companyId,
       });
     }
 

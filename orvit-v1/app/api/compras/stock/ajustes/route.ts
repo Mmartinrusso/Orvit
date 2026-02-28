@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { logCreation } from '@/lib/compras/audit-helper';
 import { getViewMode } from '@/lib/view-mode/get-mode';
 import { MODE } from '@/lib/view-mode/types';
+import { requirePermission } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,6 +182,10 @@ export async function GET(request: NextRequest) {
 // POST - Crear ajuste
 export async function POST(request: NextRequest) {
   try {
+    // Permission check: almacen.adjust
+    const { error: permError } = await requirePermission('almacen.adjust');
+    if (permError) return permError;
+
     const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

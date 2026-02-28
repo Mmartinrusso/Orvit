@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 // Schema de validación
 const bulkOperationSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1, 'Debe seleccionar al menos una falla'),
-  operation: z.enum(['close', 'assign', 'updatePriority', 'updateStatus', 'createWorkOrders']),
+  operation: z.enum(['close', 'assign', 'updatePriority', 'updateStatus', 'createWorkOrders', 'delete']),
   // Datos según la operación
   assignToId: z.number().int().positive().optional(),
   priority: z.enum(['P1', 'P2', 'P3', 'P4']).optional(),
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: { in: data.ids },
         companyId,
-        isLinkedDuplicate: false,
+        ...(data.operation !== 'delete' && { isLinkedDuplicate: false }),
       },
       select: {
         id: true,
@@ -129,6 +129,10 @@ export async function POST(request: NextRequest) {
 
       case 'createWorkOrders':
         result = await bulkCreateWorkOrders(validIds, existingFailures, userId, companyId, data.assignToId);
+        break;
+
+      case 'delete':
+        result = await bulkDelete(validIds, companyId);
         break;
 
       default:
@@ -400,5 +404,19 @@ async function bulkCreateWorkOrders(
     updated: created,
     details: `${created} OTs creadas${alreadyWithOT.length > 0 ? `, ${alreadyWithOT.length} ya tenían OT` : ''}`,
     createdOTs,
+  };
+}
+
+/**
+ * Eliminar múltiples fallas
+ */
+async function bulkDelete(ids: number[], companyId: number) {
+  const result = await prisma.failureOccurrence.deleteMany({
+    where: { id: { in: ids }, companyId },
+  });
+
+  return {
+    updated: result.count,
+    details: `${result.count} fallas eliminadas`,
   };
 }

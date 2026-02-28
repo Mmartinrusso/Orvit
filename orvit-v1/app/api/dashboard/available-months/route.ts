@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 // Cache en memoria para meses disponibles (TTL: 1 hora)
 const monthsCache = new Map<string, { data: string[]; timestamp: number }>();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hora
 
 export async function GET(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');

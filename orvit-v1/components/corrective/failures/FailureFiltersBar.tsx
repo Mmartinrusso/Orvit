@@ -35,6 +35,7 @@ export interface FailureFilters {
   reportedById?: number;
   hasWorkOrder?: boolean;
   hasDuplicates?: boolean;
+  incidentType?: string;
 }
 
 interface FailureFiltersBarProps {

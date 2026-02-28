@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -167,6 +168,7 @@ export default function MiDiaPage() {
   }
 
   return (
+    <PermissionGuard permission="work_orders.view">
     <div className="min-h-screen bg-muted pb-20">
       {/* Header */}
       <div className="bg-primary text-white p-4 sticky top-0 z-10">
@@ -383,5 +385,6 @@ export default function MiDiaPage() {
         </SheetContent>
       </Sheet>
     </div>
+    </PermissionGuard>
   );
 }

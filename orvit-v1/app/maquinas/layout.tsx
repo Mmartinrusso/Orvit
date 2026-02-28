@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCompany } from '@/contexts/CompanyContext';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import MainLayout from '@/components/layout/MainLayout';
 
 interface MaquinasLayoutProps {
@@ -37,10 +38,12 @@ export default function MaquinasLayout({ children }: MaquinasLayoutProps) {
     return null;
   }
 
-  // Renderizar el contenido dentro del MainLayout
+  // Renderizar el contenido dentro del MainLayout con guard de permisos
   return (
     <MainLayout>
-      {children}
+      <PermissionGuard permission="machines.view">
+        {children}
+      </PermissionGuard>
     </MainLayout>
   );
 } 

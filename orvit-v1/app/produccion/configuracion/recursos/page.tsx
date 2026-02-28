@@ -56,6 +56,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useApiMutation } from '@/hooks/use-api-mutation';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 interface AttributeSchema {
@@ -117,6 +118,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ResourcesConfigPage() {
+  const { hasPermission } = useAuth();
+  const canManageConfig = hasPermission('produccion.config.edit');
   const [activeTab, setActiveTab] = useState('types');
   const [loading, setLoading] = useState(true);
 
@@ -506,10 +509,12 @@ export default function ResourcesConfigPage() {
         {/* Types Tab */}
         <TabsContent value="types" className="space-y-4">
           <div className="flex justify-end">
-            <Button onClick={openTypeCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Tipo
-            </Button>
+            {canManageConfig && (
+              <Button onClick={openTypeCreateDialog}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Tipo
+              </Button>
+            )}
           </div>
 
           <Card>
@@ -592,25 +597,27 @@ export default function ResourcesConfigPage() {
                               <Badge variant="secondary">{type._count?.resources || 0}</Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openTypeEditDialog(type)}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setDeleteTarget({ type: 'resourceType', item: type });
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
+                              {canManageConfig && (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openTypeEditDialog(type)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setDeleteTarget({ type: 'resourceType', item: type });
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
@@ -646,7 +653,7 @@ export default function ResourcesConfigPage() {
               </Select>
             </div>
 
-            <Button onClick={openResourceCreateDialog} disabled={resourceTypes.length === 0}>
+            <Button onClick={openResourceCreateDialog} disabled={resourceTypes.length === 0 || !canManageConfig}>
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Recurso
             </Button>
@@ -745,35 +752,37 @@ export default function ResourcesConfigPage() {
                                 <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => openResourceEditDialog(resource)}
-                                    title="Editar"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDuplicateResource(resource)}
-                                    title="Duplicar"
-                                  >
-                                    <Copy className="h-4 w-4 text-info-muted-foreground" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                      setDeleteTarget({ type: 'resource', item: resource });
-                                      setDeleteDialogOpen(true);
-                                    }}
-                                    title="Eliminar"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
+                                {canManageConfig && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => openResourceEditDialog(resource)}
+                                      title="Editar"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDuplicateResource(resource)}
+                                      title="Duplicar"
+                                    >
+                                      <Copy className="h-4 w-4 text-info-muted-foreground" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        setDeleteTarget({ type: 'resource', item: resource });
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                      title="Eliminar"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                )}
                               </TableCell>
                             </TableRow>
                           );

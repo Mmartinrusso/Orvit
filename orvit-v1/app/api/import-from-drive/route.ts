@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-2',
@@ -32,6 +33,9 @@ const MIME_TO_EXT: Record<string, string> = {
 // POST /api/import-from-drive
 // Descarga un archivo de Google Drive y lo sube a S3
 export async function POST(request: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const body = await request.json();
     const { fileId, fileName, mimeType, accessToken, entityType, entityId } = body;

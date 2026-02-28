@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Plus,
   Edit,
@@ -68,6 +69,8 @@ interface AvailableResponse {
 export default function SectoresPage() {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const canManageNominas = hasPermission('ingresar_nominas');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSector, setEditingSector] = useState<WorkSector | null>(null);
   const [selectedSectors, setSelectedSectors] = useState<AvailableSector[]>([]);
@@ -337,10 +340,12 @@ export default function SectoresPage() {
           {/* Tab: Mis Sectores */}
           <TabsContent value="mis-sectores" className="space-y-4">
             <div className="flex justify-end">
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Sector
-              </Button>
+              {canManageNominas && (
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Sector
+                </Button>
+              )}
             </div>
 
             {sectors.length === 0 ? (
@@ -389,37 +394,41 @@ export default function SectoresPage() {
                           <span>{sector.employeeCount} empleados</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleOpenDialog(sector)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={async () => {
-                              if (sector.employeeCount > 0) {
-                                toast.error('No se puede eliminar un sector con empleados');
-                                return;
-                              }
-                              const ok = await confirm({
-                                title: 'Eliminar sector',
-                                description: '¿Eliminar este sector?',
-                                confirmText: 'Eliminar',
-                                variant: 'destructive',
-                              });
-                              if (ok) {
-                                deleteMutation.mutate(sector.id);
-                              }
-                            }}
-                            disabled={sector.employeeCount > 0}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {canManageNominas && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleOpenDialog(sector)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canManageNominas && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={async () => {
+                                if (sector.employeeCount > 0) {
+                                  toast.error('No se puede eliminar un sector con empleados');
+                                  return;
+                                }
+                                const ok = await confirm({
+                                  title: 'Eliminar sector',
+                                  description: '¿Eliminar este sector?',
+                                  confirmText: 'Eliminar',
+                                  variant: 'destructive',
+                                });
+                                if (ok) {
+                                  deleteMutation.mutate(sector.id);
+                                }
+                              }}
+                              disabled={sector.employeeCount > 0}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -535,7 +544,7 @@ export default function SectoresPage() {
                 )}
 
                 {/* Boton de importar */}
-                {selectedSectors.length > 0 && (
+                {selectedSectors.length > 0 && canManageNominas && (
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted">
                     <span className="text-sm">
                       {selectedSectors.length} sector(es) seleccionado(s)

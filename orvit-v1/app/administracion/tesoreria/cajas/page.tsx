@@ -36,6 +36,7 @@ import { Plus, Wallet, ArrowUpCircle, ArrowDownCircle, RefreshCcw, Search, X } f
 import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CashAccount {
   id: number;
@@ -70,6 +71,8 @@ async function createCaja(data: Partial<CashAccount>) {
 export default function CajasPage() {
   const queryClient = useQueryClient();
   const { viewMode } = useViewMode();
+  const { hasPermission } = useAuth();
+  const canManageCash = hasPermission('treasury.manage_cash');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
@@ -176,6 +179,7 @@ export default function CajasPage() {
               <RefreshCcw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
               Actualizar
             </button>
+            {canManageCash && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-7 text-xs">
@@ -239,6 +243,7 @@ export default function CajasPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
         </div>
       </div>
@@ -376,6 +381,7 @@ export default function CajasPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
+                          {canManageCash && (
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Ingreso">
                               <ArrowUpCircle className="h-4 w-4 text-success" />
@@ -384,6 +390,7 @@ export default function CajasPage() {
                               <ArrowDownCircle className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

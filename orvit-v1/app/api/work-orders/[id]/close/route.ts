@@ -75,6 +75,24 @@ const closeWorkOrderSchema = z.object({
 
   // Modo de cierre
   closingMode: z.enum(['MINIMUM', 'PROFESSIONAL']).optional().default('MINIMUM'),
+
+  // Plan de controles de seguimiento (opcional)
+  controlPlan: z.array(z.object({
+    order: z.number().int().positive(),
+    delayMinutes: z.number().int().positive(),
+    description: z.string().min(1).max(500),
+  })).optional(),
+
+  // Corrección de falla (si el diagnóstico original no coincide)
+  correction: z.object({
+    title: z.string().max(100).optional(),
+    description: z.string().max(2000).optional(),
+    machineId: z.number().int().positive().optional(),
+    subcomponentId: z.number().int().positive().optional(),
+    affectedComponents: z.any().optional(),
+    failureCategory: z.string().max(50).optional(),
+    confirmedCause: z.string().max(255).optional(),
+  }).optional(),
 });
 
 /**
@@ -115,9 +133,16 @@ export async function POST(
         failureOccurrences: {
           select: {
             id: true,
-            title: true,  // ✅ Incluir para evitar query adicional
+            title: true,
+            description: true,
+            machineId: true,
+            subcomponentId: true,
+            affectedComponents: true,
+            failureCategory: true,
+            incidentType: true,
             causedDowntime: true,
-            priority: true
+            priority: true,
+            originalReport: true,
           }
         }
       }
@@ -220,6 +245,7 @@ export async function POST(
             effectiveness: data.effectiveness,
             attachments: data.attachments ? JSON.stringify(data.attachments) : null,
             notes: data.notes,
+            controlPlan: data.controlPlan ? data.controlPlan : undefined,
           },
           include: {
             performedBy: {
@@ -227,6 +253,28 @@ export async function POST(
             }
           }
         });
+
+        // Crear SolutionControlInstance records si hay plan de control
+        if (solutionApplied && data.controlPlan && data.controlPlan.length > 0) {
+          const performedAt = data.performedAt ? new Date(data.performedAt) : new Date();
+          const steps = data.controlPlan;
+          await prisma.solutionControlInstance.createMany({
+            data: steps.map((step, idx) => ({
+              solutionAppliedId: solutionApplied!.id,
+              order: step.order,
+              delayMinutes: step.delayMinutes,
+              description: step.description,
+              // Primera instancia: scheduledAt = performedAt + delayMinutes
+              // Siguientes: scheduledAt = null, status = WAITING
+              scheduledAt: idx === 0
+                ? new Date(performedAt.getTime() + step.delayMinutes * 60 * 1000)
+                : null,
+              status: idx === 0 ? 'PENDING' : 'WAITING',
+              companyId,
+            })),
+          });
+          console.log(`✅ Creados ${steps.length} controles de seguimiento para solución ${solutionApplied.id}`);
+        }
       } catch (solutionError: any) {
         console.warn('⚠️ No se pudo crear SolutionApplied:', solutionError?.message);
         // Continuar con el cierre de la OT aunque falle crear la solución
@@ -289,12 +337,42 @@ export async function POST(
     // 8. Actualizar FailureOccurrence a RESOLVED (solo si existe)
     if (failureOccurrence) {
       try {
+        const foUpdateData: Record<string, unknown> = {
+          status: 'RESOLVED',
+          resolvedAt: new Date(),
+        };
+
+        // 8b. Corrección de falla: snapshot original + actualizar con datos corregidos
+        if (data.correction) {
+          // Solo guardar snapshot la primera vez (no pisar si ya fue corregido antes)
+          if (!failureOccurrence.originalReport) {
+            foUpdateData.originalReport = {
+              title: failureOccurrence.title,
+              description: failureOccurrence.description,
+              machineId: failureOccurrence.machineId,
+              subcomponentId: failureOccurrence.subcomponentId,
+              affectedComponents: failureOccurrence.affectedComponents,
+              failureCategory: failureOccurrence.failureCategory,
+              incidentType: failureOccurrence.incidentType,
+            };
+          }
+          foUpdateData.correctedAt = new Date();
+          foUpdateData.correctedById = userId;
+
+          // Aplicar campos corregidos (solo los que vienen)
+          if (data.correction.title) foUpdateData.title = data.correction.title;
+          if (data.correction.description) foUpdateData.description = data.correction.description;
+          if (data.correction.machineId) foUpdateData.machineId = data.correction.machineId;
+          if (data.correction.subcomponentId) foUpdateData.subcomponentId = data.correction.subcomponentId;
+          if (data.correction.affectedComponents) foUpdateData.affectedComponents = data.correction.affectedComponents;
+          if (data.correction.failureCategory) foUpdateData.failureCategory = data.correction.failureCategory;
+
+          console.log('🔄 [CLOSE] Corrección de falla aplicada:', Object.keys(data.correction));
+        }
+
         await prisma.failureOccurrence.update({
           where: { id: failureOccurrence.id },
-          data: {
-            status: 'RESOLVED',
-            resolvedAt: new Date()
-          }
+          data: foUpdateData,
         });
       } catch (failureUpdateError: any) {
         console.warn('⚠️ No se pudo actualizar FailureOccurrence:', failureUpdateError?.message);

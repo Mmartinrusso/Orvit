@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 import { getUserAndCompany } from '@/lib/costs-auth';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +10,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   console.log('📝 POST /api/costs/recipe-cost-tests - Iniciando...');
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const auth = await getUserAndCompany();
     console.log('🔐 Auth obtenida:', { hasAuth: !!auth, companyId: auth?.companyId });
     if (!auth || !auth.companyId) {
@@ -185,6 +189,9 @@ export async function POST(request: NextRequest) {
 // GET /api/costs/recipe-cost-tests - Obtener pruebas guardadas
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const auth = await getUserAndCompany();
     if (!auth || !auth.companyId) {
       return NextResponse.json({ error: 'No autorizado o sin empresa asociada' }, { status: 401 });

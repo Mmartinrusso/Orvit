@@ -1,3 +1,6 @@
+'use client';
+
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import MainLayout from '@/components/layout/MainLayout';
 
 interface ProduccionLayoutProps {
@@ -6,8 +9,10 @@ interface ProduccionLayoutProps {
 
 export default function ProduccionLayout({ children }: ProduccionLayoutProps) {
   return (
-    <MainLayout>
-      {children}
-    </MainLayout>
+    <PermissionGuard permission="ingresar_produccion">
+      <MainLayout>
+        {children}
+      </MainLayout>
+    </PermissionGuard>
   );
 }

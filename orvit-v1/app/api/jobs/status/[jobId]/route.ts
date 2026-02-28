@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobStatus, QUEUE_NAMES, type QueueName } from '@/lib/jobs';
+import { requireAuth } from '@/lib/auth/shared-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ export async function GET(
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
     const { jobId } = await params;
     const { searchParams } = new URL(request.url);
     const queueName = searchParams.get('queue') as QueueName | null;

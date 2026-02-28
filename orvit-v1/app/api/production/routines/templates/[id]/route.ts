@@ -1,25 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/shared-helpers';
+import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateRoutineTemplateSchema } from '@/lib/validations/production';
 
 export const dynamic = 'force-dynamic';
-
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
-
-async function getUserFromToken() {
-  const token = cookies().get('token')?.value;
-  if (!token) throw new Error('No token provided');
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    return { userId: payload.userId as number, companyId: payload.companyId as number };
-  } catch {
-    throw new Error('Invalid token');
-  }
-}
 
 // GET /api/production/routines/templates/[id] - Get template by ID
 export async function GET(
@@ -27,7 +13,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.VIEW);
+    if (error) return error;
+    const companyId = user!.companyId;
     const id = parseInt(params.id);
 
     const template = await prisma.productionRoutineTemplate.findFirst({
@@ -71,6 +59,7 @@ export async function GET(
       groups: isNewFormat ? itemsData.groups : null,
       sections: isNewFormat ? itemsData.sections : [],
       preExecutionInputs: isNewFormat ? itemsData.preExecutionInputs : [],
+      scheduleConfig: isNewFormat ? itemsData.scheduleConfig : null,
     };
 
     return NextResponse.json({ success: true, template: transformedTemplate });
@@ -89,7 +78,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.MANAGE);
+    if (error) return error;
+    const companyId = user!.companyId;
     const id = parseInt(params.id);
     const body = await request.json();
 
@@ -123,15 +114,17 @@ export async function PUT(
       }
     }
 
-    // Prepare items data - store itemsStructure, items, groups, sections, and preExecutionInputs together
+    // Prepare items data - store itemsStructure, items, groups, sections, preExecutionInputs and scheduleConfig together
     let itemsData = existing.items;
-    if (validated.items !== undefined || validated.groups !== undefined || validated.sections !== undefined || validated.itemsStructure !== undefined || validated.preExecutionInputs !== undefined) {
+    if (validated.items !== undefined || validated.groups !== undefined || validated.sections !== undefined || validated.itemsStructure !== undefined || validated.preExecutionInputs !== undefined || validated.scheduleConfig !== undefined) {
+      const existingData = (existing.items as any) || {};
       itemsData = {
-        itemsStructure: validated.itemsStructure || 'flat',
-        items: validated.items || [],
-        groups: validated.groups || null,
-        sections: validated.sections || [],
-        preExecutionInputs: validated.preExecutionInputs || [],
+        itemsStructure: validated.itemsStructure || existingData.itemsStructure || 'flat',
+        items: validated.items !== undefined ? validated.items : (existingData.items || []),
+        groups: validated.groups !== undefined ? validated.groups : (existingData.groups || null),
+        sections: validated.sections !== undefined ? validated.sections : (existingData.sections || []),
+        preExecutionInputs: validated.preExecutionInputs !== undefined ? validated.preExecutionInputs : (existingData.preExecutionInputs || []),
+        scheduleConfig: validated.scheduleConfig !== undefined ? validated.scheduleConfig : (existingData.scheduleConfig || null),
       };
     }
 
@@ -175,6 +168,7 @@ export async function PUT(
       groups: (template.items as any)?.groups || null,
       sections: (template.items as any)?.sections || [],
       preExecutionInputs: (template.items as any)?.preExecutionInputs || [],
+      scheduleConfig: (template.items as any)?.scheduleConfig || null,
     };
 
     return NextResponse.json({ success: true, template: responseTemplate });
@@ -193,7 +187,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { companyId } = await getUserFromToken();
+    const { user, error } = await requirePermission(PRODUCCION_PERMISSIONS.RUTINAS.MANAGE);
+    if (error) return error;
+    const companyId = user!.companyId;
     const id = parseInt(params.id);
 
     const existing = await prisma.productionRoutineTemplate.findFirst({
@@ -208,26 +204,20 @@ export async function DELETE(
       );
     }
 
-    // Check if has executions
-    if (existing._count.executions > 0) {
-      // Soft delete - just deactivate
-      await prisma.productionRoutineTemplate.update({
-        where: { id },
-        data: { isActive: false },
-      });
+    const executionCount = existing._count.executions;
 
-      return NextResponse.json({
-        success: true,
-        message: 'Plantilla desactivada (tiene ejecuciones históricas)'
-      });
-    }
-
-    // Hard delete if no executions
-    await prisma.productionRoutineTemplate.delete({
-      where: { id },
+    // Cascade delete: remove executions first, then the template
+    await prisma.$transaction(async (tx) => {
+      await tx.productionRoutine.deleteMany({ where: { templateId: id } });
+      await tx.productionRoutineTemplate.delete({ where: { id } });
     });
 
-    return NextResponse.json({ success: true, message: 'Plantilla eliminada' });
+    return NextResponse.json({
+      success: true,
+      message: executionCount > 0
+        ? `Plantilla eliminada junto con ${executionCount} ejecución(es)`
+        : 'Plantilla eliminada',
+    });
   } catch (error) {
     console.error('Error deleting routine template:', error);
     return NextResponse.json(

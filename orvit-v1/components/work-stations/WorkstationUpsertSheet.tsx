@@ -71,7 +71,7 @@ interface WorkstationUpsertSheetProps {
     name: string;
     description?: string;
     code?: string;
-    status: 'ACTIVE' | 'INACTIVE';
+    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
     sectorId?: number;
   }) => Promise<void>;
   onSuccess?: () => void;
@@ -110,7 +110,7 @@ export function WorkstationUpsertSheet({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE',
     sectorId: undefined as number | undefined,
   });
   const [activeTab, setActiveTab] = useState('basica');
@@ -158,7 +158,7 @@ export function WorkstationUpsertSheet({
       setFormData({
         name: workstation.name,
         description: workstation.description || '',
-        status: workstation.status === 'MAINTENANCE' ? 'ACTIVE' : workstation.status,
+        status: workstation.status,
         sectorId: workstation.sectorId,
       });
     } else {
@@ -707,7 +707,7 @@ export function WorkstationUpsertSheet({
                     <Label htmlFor="status">Estado *</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value: 'ACTIVE' | 'INACTIVE') =>
+                      onValueChange={(value: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE') =>
                         setFormData({ ...formData, status: value })
                       }
                     >
@@ -717,6 +717,7 @@ export function WorkstationUpsertSheet({
                       <SelectContent>
                         <SelectItem value="ACTIVE">Activo</SelectItem>
                         <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                        <SelectItem value="MAINTENANCE">En mantenimiento</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
