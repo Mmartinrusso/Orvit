@@ -1,15 +1,19 @@
 -- Migration: add_solution_control_instances
 -- Adds follow-up control checkpoints to SolutionApplied
 
--- 1. Create enum
-CREATE TYPE "SolutionControlStatus" AS ENUM (
-  'WAITING',
-  'PENDING',
-  'NOTIFIED',
-  'COMPLETED',
-  'OVERDUE',
-  'SKIPPED'
-);
+-- 1. Create enum (safe: no-op if already exists)
+DO $$ BEGIN
+  CREATE TYPE "SolutionControlStatus" AS ENUM (
+    'WAITING',
+    'PENDING',
+    'NOTIFIED',
+    'COMPLETED',
+    'OVERDUE',
+    'SKIPPED'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- 2. Add controlPlan column to solutions_applied
 ALTER TABLE "solutions_applied"
