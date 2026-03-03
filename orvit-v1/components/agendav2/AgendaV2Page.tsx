@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAgendaV2Header } from './AgendaV2HeaderContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
 import type { AgendaTask, AgendaTaskStatus, AgendaStats, CreateAgendaTaskInput, UpdateAgendaTaskInput } from '@/lib/agenda/types';
 import { BoardView } from './BoardView';
-import { InboxView } from './InboxView';
-import { DashboardView } from './DashboardView';
-import { ReportingView } from './ReportingView';
-import { PortfolioView } from './PortfolioView';
-import { FixedTasksView } from './FixedTasksView';
-import { TaskDetailPanel } from './TaskDetailPanel';
 import { useIsMobile } from '@/hooks/use-is-mobile';
-import { AgendaMobilePage } from './mobile/AgendaMobilePage';
-import { CreateTaskModal } from './CreateTaskModal';
+
+const InboxView = dynamic(() => import('./InboxView').then(m => ({ default: m.InboxView })), { ssr: false });
+const DashboardView = dynamic(() => import('./DashboardView').then(m => ({ default: m.DashboardView })), { ssr: false });
+const ReportingView = dynamic(() => import('./ReportingView').then(m => ({ default: m.ReportingView })), { ssr: false });
+const PortfolioView = dynamic(() => import('./PortfolioView').then(m => ({ default: m.PortfolioView })), { ssr: false });
+const FixedTasksView = dynamic(() => import('./FixedTasksView').then(m => ({ default: m.FixedTasksView })), { ssr: false });
+const TaskDetailPanel = dynamic(() => import('./TaskDetailPanel').then(m => ({ default: m.TaskDetailPanel })), { ssr: false });
+const AgendaMobilePage = dynamic(() => import('./mobile/AgendaMobilePage').then(m => ({ default: m.AgendaMobilePage })), { ssr: false });
+const CreateTaskModal = dynamic(() => import('./CreateTaskModal').then(m => ({ default: m.CreateTaskModal })), { ssr: false });
 import { type TaskGroupItem } from './AgendaV2Sidebar';
 import { CreateGroupModal, type CreateGroupInput } from './CreateGroupModal';
 import { useAgendaSidebar } from '@/contexts/AgendaSidebarContext';
@@ -96,13 +99,26 @@ export function AgendaV2Page() {
   const queryClient = useQueryClient();
   const { setAgendaSidebar } = useAgendaSidebar();
   const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const [view, setView] = useState<ViewMode>('board');
+  const urlView = searchParams.get('view') as ViewMode | null;
+  const [view, setView] = useState<ViewMode>(urlView && VIEW_LABEL[urlView] ? urlView : 'board');
   const [viewAnimKey, setViewAnimKey] = useState(0);
   const agendaHeader = useAgendaV2Header();
   const search = agendaHeader?.search ?? '';
   const [selectedTask, setSelectedTask] = useState<AgendaTask | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+
+  const changeView = useCallback((newView: ViewMode) => {
+    setView(newView);
+    setSelectedGroupId(null);
+    setViewAnimKey(k => k + 1);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newView === 'board') params.delete('view');
+    else params.set('view', newView);
+    router.replace(`/administracion/agenda${params.size ? '?' + params.toString() : ''}`, { scroll: false });
+  }, [searchParams, router]);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [createGroupIsProject, setCreateGroupIsProject] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -225,9 +241,40 @@ export function AgendaV2Page() {
       queryClient.invalidateQueries({ queryKey: ['agendav2-groups', companyId] });
       toast.success(`${newGroup.isProject ? 'Proyecto' : 'Grupo'} "${newGroup.name}" creado`);
       setSelectedGroupId(newGroup.id);
-      setView('board');
+      changeView('board');
     },
     onError: () => toast.error('Error al crear grupo'),
+  });
+
+  const editGroupMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { name: string } }) => {
+      const res = await fetch(`/api/agenda/task-groups/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error al editar grupo');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-groups', companyId] });
+      toast.success('Grupo actualizado');
+    },
+    onError: () => toast.error('Error al editar grupo'),
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/agenda/task-groups/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar grupo');
+      return res.json().catch(() => null);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-groups', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
+      toast.success('Grupo eliminado');
+    },
+    onError: () => toast.error('Error al eliminar grupo'),
   });
 
   // Sync loading state to header context (shows spinner in PageHeader)
@@ -316,17 +363,29 @@ export function AgendaV2Page() {
       groups,
       selectedGroupId,
       loadingGroups: loadingGroups ?? false,
-      onViewChange: (v) => { setView(v); setSelectedGroupId(null); setViewAnimKey(k => k + 1); },
+      onViewChange: (v) => { changeView(v); },
       onCreateTask: () => handleCreateTask('PENDING'),
       onSelectGroup: setSelectedGroupId,
       onCreateGroup: (isProject) => {
         setCreateGroupIsProject(isProject);
         setIsCreateGroupOpen(true);
       },
+      onEditGroup: (group) => {
+        const newName = prompt('Nuevo nombre del grupo:', group.name);
+        if (newName && newName.trim() && newName.trim() !== group.name) {
+          editGroupMutation.mutate({ id: group.id, data: { name: newName.trim() } });
+        }
+      },
+      onDeleteGroup: (group) => {
+        if (confirm(`¿Eliminar el grupo "${group.name}"? Las tareas del grupo no se eliminarán.`)) {
+          deleteGroupMutation.mutate(group.id);
+          if (selectedGroupId === group.id) setSelectedGroupId(null);
+        }
+      },
     });
     return () => setAgendaSidebar(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, safeTasks, groups, selectedGroupId, loadingGroups, setAgendaSidebar]);
+  }, [view, safeTasks, groups, selectedGroupId, loadingGroups, setAgendaSidebar, changeView]);
 
   // ── Mobile render ──────────────────────────────────────────────────────────
   if (isMobile) {
@@ -444,7 +503,7 @@ export function AgendaV2Page() {
                 stats={stats}
                 isLoading={loadingTasks}
                 onCreateTask={() => setIsCreateOpen(true)}
-                onViewChange={(v) => setView(v as ViewMode)}
+                onViewChange={(v) => changeView(v as ViewMode)}
                 onTaskClick={handleTaskClick}
               />
             )}
@@ -463,8 +522,7 @@ export function AgendaV2Page() {
                 tasks={safeTasks}
                 onSelectGroup={(id) => {
                   setSelectedGroupId(id);
-                  setView('board');
-                  setViewAnimKey(k => k + 1);
+                  changeView('board');
                 }}
                 onCreateGroup={(isProject) => {
                   setCreateGroupIsProject(isProject);
@@ -488,6 +546,7 @@ export function AgendaV2Page() {
         onClose={() => { setIsDetailOpen(false); setIsPanelExpanded(false); }}
         expanded={isPanelExpanded}
         onExpandedChange={setIsPanelExpanded}
+        groups={groups}
         onStatusChange={async (task, status) => {
           await handleStatusChange(task.id, status);
         }}
@@ -496,6 +555,10 @@ export function AgendaV2Page() {
           handleEditTask(task);
         }}
         onDuplicate={handleDuplicateTask}
+        onDelete={handleTaskDelete}
+        onTaskUpdate={async (task, data) => {
+          await editMutation.mutateAsync({ id: task.id, data: data as Partial<UpdateAgendaTaskInput> });
+        }}
       />
 
       {/* Create task modal */}

@@ -155,103 +155,6 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
         }}
       >
 
-        {/* ── Quick action buttons (desktop hover only — touch devices never trigger onMouseEnter) ── */}
-        {isHovered && !isSelectMode && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '8px',
-              right: '36px', // offset to not overlap the DropdownMenu trigger
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              zIndex: 20,
-            }}
-            // Prevent dnd-kit drag listeners from triggering on quick actions area
-            onPointerDown={e => e.stopPropagation()}
-          >
-            <TooltipProvider>
-              {onStatusChange && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleQuickStatusChange}
-                      style={{
-                        height: '22px',
-                        width: '22px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '6px',
-                        border: '1px solid #E4E4E8',
-                        background: '#FFFFFF',
-                        color: '#6B7280',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        boxShadow: '0 1px 2px rgba(0,0,0,.08)',
-                        transition: 'all 100ms ease',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = '#F5F3FF';
-                        e.currentTarget.style.color = '#7C3AED';
-                        e.currentTarget.style.borderColor = '#C4B5FD';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = '#FFFFFF';
-                        e.currentTarget.style.color = '#6B7280';
-                        e.currentTarget.style.borderColor = '#E4E4E8';
-                      }}
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-xs">Avanzar estado</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleQuickOpen}
-                    style={{
-                      height: '22px',
-                      width: '22px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '6px',
-                      border: '1px solid #E4E4E8',
-                      background: '#FFFFFF',
-                      color: '#6B7280',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      boxShadow: '0 1px 2px rgba(0,0,0,.08)',
-                      transition: 'all 100ms ease',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = '#F5F3FF';
-                      e.currentTarget.style.color = '#7C3AED';
-                      e.currentTarget.style.borderColor = '#C4B5FD';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = '#FFFFFF';
-                      e.currentTarget.style.color = '#6B7280';
-                      e.currentTarget.style.borderColor = '#E4E4E8';
-                    }}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">Ver detalle</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        )}
-
         {/* Select checkbox */}
         {isSelectMode && (
           <div
@@ -301,17 +204,72 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
             )}
           </div>
 
-          {/* Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <button
-                style={{ height: '22px', width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: 'none', background: 'transparent', color: '#9CA3AF', cursor: 'pointer', flexShrink: 0, transition: 'all 120ms ease' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#111827'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </button>
-            </DropdownMenuTrigger>
+          {/* Quick actions + Menu */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <TooltipProvider>
+              {isHovered && !isSelectMode && onStatusChange && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleQuickStatusChange}
+                      style={{
+                        height: '24px', width: '24px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '6px', border: '1px solid #E4E4E8',
+                        background: '#FFFFFF', color: '#6B7280', cursor: 'pointer', flexShrink: 0,
+                        transition: 'all 100ms ease',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F5F3FF'; e.currentTarget.style.color = '#7C3AED'; e.currentTarget.style.borderColor = '#C4B5FD'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E4E4E8'; }}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top"><p className="text-xs">Avanzar estado</p></TooltipContent>
+                </Tooltip>
+              )}
+              {isHovered && !isSelectMode && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleQuickOpen}
+                      style={{
+                        height: '24px', width: '24px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '6px', border: '1px solid #E4E4E8',
+                        background: '#FFFFFF', color: '#6B7280', cursor: 'pointer', flexShrink: 0,
+                        transition: 'all 100ms ease',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F5F3FF'; e.currentTarget.style.color = '#7C3AED'; e.currentTarget.style.borderColor = '#C4B5FD'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E4E4E8'; }}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top"><p className="text-xs">Ver detalle</p></TooltipContent>
+                </Tooltip>
+              )}
+            </TooltipProvider>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <button
+                  style={{
+                    height: '24px', width: '24px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderRadius: '6px', border: '1px solid transparent',
+                    background: 'transparent', color: '#9CA3AF', cursor: 'pointer', flexShrink: 0,
+                    transition: 'all 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#111827'; e.currentTarget.style.borderColor = '#E4E4E8'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.borderColor = 'transparent'; }}
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem className="text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(task); }}>
                 <Pencil className="h-3 w-3 mr-2" /> Editar tarea
@@ -359,6 +317,7 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
               </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         {/* ── Divider ── */}

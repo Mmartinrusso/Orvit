@@ -17,6 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { AgendaTask, AgendaTaskStatus, Priority, CreateAgendaTaskInput } from '@/lib/agenda/types';
 import type { TaskGroupItem } from './AgendaV2Sidebar';
 
+const EMPTY_GROUPS: readonly TaskGroupItem[] = [];
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS: {
@@ -89,7 +91,7 @@ interface CreateTaskModalProps {
   defaultDate?: string;
   defaultGroupId?: number | null;
   editTask?: AgendaTask;
-  groups?: TaskGroupItem[];
+  groups?: readonly TaskGroupItem[];
   onSave: (data: CreateAgendaTaskInput & { status?: AgendaTaskStatus }) => Promise<void>;
   isSaving: boolean;
   onRequestCreateGroup?: () => void;
@@ -191,7 +193,7 @@ export function CreateTaskModal({
   defaultDate,
   defaultGroupId,
   editTask,
-  groups = [],
+  groups = EMPTY_GROUPS,
   onSave,
   isSaving,
   onRequestCreateGroup,

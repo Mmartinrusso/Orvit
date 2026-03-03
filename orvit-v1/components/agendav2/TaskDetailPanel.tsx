@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import {
   X,
   Plus,
   Check,
-  Calendar,
+  Calendar as CalendarIcon,
   User,
   Paperclip,
   MessageSquare,
@@ -23,6 +24,14 @@ import {
   UserCheck,
   Flame,
   Copy,
+  Trash2,
+  Eye,
+  EyeOff,
+  FolderOpen,
+  Bell,
+  Clock,
+  Archive,
+  ArchiveRestore,
   type LucideIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,8 +52,11 @@ import {
   getAssigneeName,
   isTaskOverdue,
 } from '@/lib/agenda/types';
+import type { TaskGroupItem } from './AgendaV2Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/use-users';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarUI } from '@/components/ui/calendar';
 
 // Exact spec hex colors
 const PRIORITY_CHIP: Record<Priority, { bg: string; text: string; label: string }> = {
@@ -61,6 +73,24 @@ const STATUS_CHIP: Record<AgendaTaskStatus, { bg: string; text: string; dot: str
   COMPLETED:   { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
   CANCELLED:   { bg: '#FEE2E2', text: '#DC2626', dot: '#DC2626' },
 };
+
+const FALLBACK_MENTION_PEOPLE = ['Juan P.', 'María G.', 'Carlos R.', 'Ana L.', 'Pedro M.'];
+
+const COMMENT_COLORS = [
+  { bg: '#F3F4F6', color: '#111827' },
+  { bg: '#ECFDF5', color: '#059669' },
+  { bg: '#FFFBEB', color: '#D97706' },
+  { bg: '#EEF2FF', color: '#6366F1' },
+  { bg: '#FFF1F2', color: '#DC2626' },
+];
+
+const AVATAR_COLORS = [
+  { bg: '#F3F4F6', color: '#111827' },
+  { bg: '#ECFDF5', color: '#059669' },
+  { bg: '#FFFBEB', color: '#D97706' },
+  { bg: '#EEF2FF', color: '#6366F1' },
+  { bg: '#FFF1F2', color: '#DC2626' },
+];
 
 
 interface CommentReply {
@@ -105,279 +135,7 @@ const ACTIVITY_CFG: Record<string, { Icon: LucideIcon; bg: string; color: string
 
 const PANEL_WIDTH_NORMAL = 750;
 
-interface TaskDetailPanelProps {
-  task: AgendaTask | null;
-  open: boolean;
-  onClose: () => void;
-  onStatusChange?: (task: AgendaTask, status: AgendaTaskStatus) => Promise<void>;
-  onEdit?: (task: AgendaTask) => void;
-  onDuplicate?: (task: AgendaTask) => Promise<void>;
-  expanded?: boolean;
-  onExpandedChange?: (v: boolean) => void;
-}
-
-export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expanded = false, onExpandedChange }: TaskDetailPanelProps) {
-  const { user: currentUser } = useAuth();
-  const { users: companyUsers } = useUsers();
-  const [subtasks, setSubtasks]     = useState<SubtaskItem[]>([]);
-  const [activeTab, setActiveTab]   = useState<'subtasks' | 'comments' | 'activities'>('subtasks');
-  const [tabAnimKey, setTabAnimKey] = useState(0);
-  const [tabDir, setTabDir]         = useState<'left' | 'right'>('right');
-  const [newCommentId, setNewCommentId] = useState<number | null>(null);
-  const [attachAnim, setAttachAnim]     = useState<string | null>(null);
-  const [subtaskAddingNew, setSubtaskAddingNew] = useState(false);
-  const [subtaskNewTitle, setSubtaskNewTitle]   = useState('');
-  const [localAttachments, setLocalAttachments] = useState<{ name: string; size: string; type: string; isNew?: boolean }[]>([]);
-  const [newAttachNames, setNewAttachNames]     = useState<Set<string>>(new Set());
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [openAnim,   setOpenAnim]   = useState(false);
-  const [expandAnim, setExpandAnim] = useState<'expand' | 'contract' | null>(null);
-  const [isFavorite, setIsFavorite]       = useState(false);
-  const [showAssigneePop, setShowAssigneePop] = useState(false);
-  const [showAssigneeHover, setShowAssigneeHover] = useState(false);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
-  const [localAssigneeNames, setLocalAssigneeNames] = useState<string[] | null>(null);
-  const assigneePopRef = useRef<HTMLDivElement>(null);
-  const [comments, setComments]     = useState<CommentItem[]>([]);
-  const prevOpenRef     = useRef(false);
-  const prevExpandedRef = useRef(expanded);
-
-  const MENTION_PEOPLE = companyUsers.length > 0
-    ? companyUsers.map(u => u.name)
-    : ['Juan P.', 'María G.', 'Carlos R.', 'Ana L.', 'Pedro M.'];
-
-  // Members list for MentionInput — uses real user IDs and names
-  const mentionMembers = companyUsers.map(u => ({ id: u.id, name: u.name, avatar: undefined }));
-
-  async function submitComment(content: string, mentionedUserIds?: number[]): Promise<void> {
-    if (!content.trim() || !task?.id) return;
-    // Optimistic — temp id uses negative timestamp
-    const tempId = -Date.now();
-    setNewCommentId(tempId);
-    setTimeout(() => setNewCommentId(null), 600);
-    const tempComment: CommentItem = {
-      id: tempId,
-      authorId: currentUser?.id ? Number(currentUser.id) : undefined,
-      authorAvatar: currentUser?.avatar ?? null,
-      author: currentUser?.name ?? 'Tú',
-      content: content.trim(),
-      time: 'Ahora',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      bg: '#F3F4F6', color: '#111827',
-      likes: 0, likedByMe: false,
-      mentions: [], replies: [],
-    };
-    setComments(prev => [...prev, tempComment]);
-    return fetch(`/api/agenda/tasks/${task.id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: content.trim(), mentionedUserIds: mentionedUserIds ?? [] }),
-    })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then((saved: any) => {
-        // Replace temp with real comment from server
-        setComments(prev => prev.map(c => c.id === tempId ? {
-          ...c,
-          id: saved.id,
-          authorId: saved.authorId,
-          authorAvatar: saved.author?.avatar ?? null,
-          createdAt: new Date(saved.createdAt),
-          updatedAt: new Date(saved.updatedAt),
-        } : c));
-      })
-      .catch(() => {
-        // Rollback optimistic on error
-        setComments(prev => prev.filter(c => c.id !== tempId));
-      });
-  }
-
-  async function handleEditComment(commentId: number, newContent: string): Promise<void> {
-    if (!task?.id) return;
-    const prevContent = comments.find(c => c.id === commentId)?.content;
-    // Optimistic update
-    setComments(prev => prev.map(c =>
-      c.id === commentId ? { ...c, content: newContent, isEdited: true, updatedAt: new Date() } : c
-    ));
-    const res = await fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: newContent }),
-    });
-    if (!res.ok) {
-      // Rollback
-      setComments(prev => prev.map(c =>
-        c.id === commentId ? { ...c, content: prevContent ?? c.content, isEdited: false } : c
-      ));
-      throw new Error(`${res.status}`);
-    }
-  }
-
-  async function handleDeleteComment(commentId: number): Promise<void> {
-    if (!task?.id) return;
-    // Optimistic remove
-    const backup = comments.find(c => c.id === commentId);
-    setComments(prev => prev.filter(c => c.id !== commentId));
-    const res = await fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      // Rollback on error
-      if (backup) {
-        setComments(prev => {
-          const existing = prev.find(c => c.id === commentId);
-          if (existing) return prev;
-          return [...prev, backup].sort((a, b) => {
-            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return aTime - bTime;
-          });
-        });
-      }
-      throw new Error(`${res.status}`);
-    }
-  }
-
-  // Fetch subtasks + comments from API whenever task changes
-  useEffect(() => {
-    setComments([]);
-    if (!task?.id) { setSubtasks([]); return; }
-    // Subtasks
-    fetch(`/api/agenda/tasks/${task.id}/subtasks`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: any[]) => {
-        setSubtasks(data.map(s => ({ id: s.id.toString(), title: s.title, completed: s.done, note: s.note ?? undefined })));
-      })
-      .catch(() => setSubtasks([]));
-    // Comments
-    fetch(`/api/agenda/tasks/${task.id}/comments`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: any[]) => {
-        const COMMENT_COLORS = [
-          { bg: '#F3F4F6', color: '#111827' },
-          { bg: '#ECFDF5', color: '#059669' },
-          { bg: '#FFFBEB', color: '#D97706' },
-          { bg: '#EEF2FF', color: '#6366F1' },
-          { bg: '#FFF1F2', color: '#DC2626' },
-        ];
-        setComments(data.map((c, i) => ({
-          id: c.id,
-          authorId: c.authorId,
-          authorAvatar: c.author?.avatar ?? null,
-          author: c.author?.name ?? 'Usuario',
-          content: c.content,
-          createdAt: new Date(c.createdAt),
-          updatedAt: new Date(c.updatedAt),
-          isEdited: c.updatedAt && c.createdAt && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000,
-          time: format(new Date(c.createdAt), 'HH:mm'),
-          bg: COMMENT_COLORS[i % COMMENT_COLORS.length].bg,
-          color: COMMENT_COLORS[i % COMMENT_COLORS.length].color,
-          likes: 0,
-          likedByMe: false,
-          mentions: [],
-          replies: [],
-        })));
-      })
-      .catch(() => setComments([]));
-  }, [task?.id]);
-
-  // Trigger slide-in animation when panel opens
-  useEffect(() => {
-    if (open && !prevOpenRef.current) {
-      setOpenAnim(true);
-      const t = setTimeout(() => setOpenAnim(false), 1100);
-      prevOpenRef.current = true;
-      return () => clearTimeout(t);
-    }
-    if (!open) prevOpenRef.current = false;
-  }, [open]);
-
-  // Trigger zoom animation when panel expands / contracts
-  useEffect(() => {
-    if (expanded !== prevExpandedRef.current) {
-      setExpandAnim(expanded ? 'expand' : 'contract');
-      const t = setTimeout(() => setExpandAnim(null), 700);
-      prevExpandedRef.current = expanded;
-      return () => clearTimeout(t);
-    }
-  }, [expanded]);
-
-  // Close on ESC
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  // Close assignee pop on outside click
-  useEffect(() => {
-    if (!showAssigneePop) return;
-    function handler(e: MouseEvent) {
-      if (assigneePopRef.current && !assigneePopRef.current.contains(e.target as Node)) {
-        setShowAssigneePop(false);
-        setAssigneeSearch('');
-      }
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showAssigneePop]);
-
-  const panelWidth = expanded ? undefined : `${PANEL_WIDTH_NORMAL}px`;
-
-  // Build assignee list from task participants
-  const AVATAR_COLORS = [
-    { bg: '#F3F4F6', color: '#111827' },
-    { bg: '#ECFDF5', color: '#059669' },
-    { bg: '#FFFBEB', color: '#D97706' },
-    { bg: '#EEF2FF', color: '#6366F1' },
-    { bg: '#FFF1F2', color: '#DC2626' },
-  ];
-  const taskAssigneesArr: AssigneeOption[] = (() => {
-    // Prefer real company users (have IDs for assignment)
-    if (companyUsers.length > 0) {
-      return companyUsers.map((u, i) => ({
-        id: u.id,
-        name: u.name,
-        initials: u.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
-        ...AVATAR_COLORS[i % AVATAR_COLORS.length],
-      }));
-    }
-    // Fallback: task participants (no IDs available)
-    if (localAssigneeNames !== null) {
-      return localAssigneeNames.map((name, i) => ({
-        name,
-        initials: name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
-        ...AVATAR_COLORS[i % AVATAR_COLORS.length],
-      }));
-    }
-    const people: { id?: number; name: string }[] = [];
-    if (task?.createdBy) people.push({ id: task.createdBy.id, name: task.createdBy.name });
-    const assignId = task?.assignedToUserId ?? undefined;
-    const assignName = task ? getAssigneeName(task) : '';
-    if (assignName && assignName !== 'Sin asignar' && !people.find(p => p.name === assignName))
-      people.push({ id: assignId, name: assignName });
-    return people.map((p, i) => ({
-      id: p.id,
-      name: p.name,
-      initials: p.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
-      ...AVATAR_COLORS[i % AVATAR_COLORS.length],
-    }));
-  })();
-
-  const statusConfig  = task ? TASK_STATUS_CONFIG[task.status] : null;
-  const statusChip    = task ? STATUS_CHIP[task.status]    : null;
-  const priorityChip  = task ? PRIORITY_CHIP[task.priority] : null;
-  const isOverdue     = task ? isTaskOverdue(task)          : false;
-  const assigneeName  = task ? getAssigneeName(task)        : '';
-  const assigneeInitials = assigneeName && assigneeName !== 'Sin asignar'
-    ? assigneeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-    : null;
-
-  const completedCount  = subtasks.filter(s => s.completed).length;
-  const subtaskProgress = subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0;
-
-  return (
-    <>
-    <style>{`
+const PANEL_STYLES = `
       /* ── Modal open — shared unfold animation ── */
       @keyframes modal-unfold {
         0%   { transform: scaleY(0);     opacity: 0; filter: blur(6px); }
@@ -444,7 +202,422 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
       [data-radix-scroll-area-scrollbar] { display: none !important; }
       .agenda-scroll { scrollbar-width: none; -ms-overflow-style: none; overflow-y: auto; height: 100%; flex: 1; min-height: 0; }
       .agenda-scroll::-webkit-scrollbar { display: none; }
-    `}</style>
+    `;
+
+interface TaskDetailPanelProps {
+  task: AgendaTask | null;
+  open: boolean;
+  onClose: () => void;
+  onStatusChange?: (task: AgendaTask, status: AgendaTaskStatus) => Promise<void>;
+  onTaskUpdate?: (task: AgendaTask, data: Record<string, unknown>) => Promise<void>;
+  onEdit?: (task: AgendaTask) => void;
+  onDuplicate?: (task: AgendaTask) => Promise<void>;
+  onDelete?: (task: AgendaTask) => Promise<void>;
+  groups?: TaskGroupItem[];
+  expanded?: boolean;
+  onExpandedChange?: (v: boolean) => void;
+}
+
+export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, onDelete, onTaskUpdate, groups, expanded = false, onExpandedChange }: TaskDetailPanelProps) {
+  const { user: currentUser } = useAuth();
+  const { users: companyUsers } = useUsers();
+  const queryClient = useQueryClient();
+  const [subtasks, setSubtasks]     = useState<SubtaskItem[]>([]);
+  const [activeTab, setActiveTab]   = useState<'subtasks' | 'comments' | 'activities'>('subtasks');
+  const [tabAnimKey, setTabAnimKey] = useState(0);
+  const [tabDir, setTabDir]         = useState<'left' | 'right'>('right');
+  const [newCommentId, setNewCommentId] = useState<number | null>(null);
+  const [attachAnim, setAttachAnim]     = useState<string | null>(null);
+  const [subtaskAddingNew, setSubtaskAddingNew] = useState(false);
+  const [subtaskNewTitle, setSubtaskNewTitle]   = useState('');
+  const [localAttachments, setLocalAttachments] = useState<{ name: string; size: string; type: string; isNew?: boolean }[]>([]);
+  const [newAttachNames, setNewAttachNames]     = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [openAnim,   setOpenAnim]   = useState(false);
+  const [expandAnim, setExpandAnim] = useState<'expand' | 'contract' | null>(null);
+  const [isFavorite, setIsFavorite]       = useState(false);
+  const [showAssigneePop, setShowAssigneePop] = useState(false);
+  const [showAssigneeHover, setShowAssigneeHover] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [localAssigneeNames, setLocalAssigneeNames] = useState<string[] | null>(null);
+  const assigneePopRef = useRef<HTMLDivElement>(null);
+
+  // Inline editing states
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [showPriorityPop, setShowPriorityPop] = useState(false);
+  const [showDatePop, setShowDatePop] = useState(false);
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [editDesc, setEditDesc] = useState('');
+  const [showGroupPop, setShowGroupPop] = useState(false);
+  const [showReminderForm, setShowReminderForm] = useState(false);
+  const [reminderDate, setReminderDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
+  const [comments, setComments]     = useState<CommentItem[]>([]);
+  const prevOpenRef     = useRef(false);
+  const prevExpandedRef = useRef(expanded);
+
+  const MENTION_PEOPLE = useMemo(
+    () => companyUsers.length > 0 ? companyUsers.map(u => u.name) : FALLBACK_MENTION_PEOPLE,
+    [companyUsers]
+  );
+
+  // Members list for MentionInput — uses real user IDs and names
+  const mentionMembers = useMemo(
+    () => companyUsers.map(u => ({ id: u.id, name: u.name, avatar: undefined })),
+    [companyUsers]
+  );
+
+  // ── Inline edit handlers ──────────────────────────────────────────────────
+  async function handleInlineUpdate(data: Record<string, unknown>) {
+    if (!task || !onTaskUpdate) return;
+    await onTaskUpdate(task, data);
+  }
+
+  async function handleTitleSave() {
+    const trimmed = editTitle.trim();
+    if (!trimmed || trimmed === task?.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+    await handleInlineUpdate({ title: trimmed });
+    setIsEditingTitle(false);
+  }
+
+  async function handlePriorityChange(priority: Priority) {
+    setShowPriorityPop(false);
+    await handleInlineUpdate({ priority });
+  }
+
+  async function handleDateChange(date: Date | undefined) {
+    setShowDatePop(false);
+    await handleInlineUpdate({ dueDate: date ? date.toISOString() : null });
+  }
+
+  async function handleAssigneeToggle(userId: number, userName: string) {
+    if (!task) return;
+    const isCurrentAssignee = task.assignedToUserId === userId;
+    await handleInlineUpdate({
+      assignedToUserId: isCurrentAssignee ? null : userId,
+      assignedToName: isCurrentAssignee ? null : userName,
+    });
+  }
+
+  async function handleDeleteTask() {
+    if (!task || !onDelete) return;
+    if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
+    await onDelete(task);
+  }
+
+  async function handleDescSave() {
+    const trimmed = editDesc.trim();
+    // Allow saving empty to clear description
+    if (trimmed === (task?.description ?? '')) {
+      setIsEditingDesc(false);
+      return;
+    }
+    await handleInlineUpdate({ description: trimmed || null });
+    setIsEditingDesc(false);
+  }
+
+  async function handleGroupChange(groupId: number | null) {
+    setShowGroupPop(false);
+    await handleInlineUpdate({ groupId });
+  }
+
+  async function handleVisibilityToggle() {
+    if (!task) return;
+    await handleInlineUpdate({ isCompanyVisible: !task.isCompanyVisible });
+  }
+
+  async function handleArchiveToggle() {
+    if (!task) return;
+    await handleInlineUpdate({ isArchived: !task.isArchived });
+    if (!task.isArchived) onClose();
+  }
+
+  async function handleAddReminder() {
+    if (!task || !reminderDate || !reminderTime) return;
+    const remindAt = new Date(`${reminderDate}T${reminderTime}:00`).toISOString();
+    try {
+      const res = await fetch('/api/agenda/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `Recordatorio: ${task.title}`,
+          remindAt,
+          taskId: task.id,
+          companyId: task.companyId,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks'] });
+      setShowReminderForm(false);
+      setReminderDate('');
+      setReminderTime('');
+    } catch {
+      // silently fail — toast handled by caller if needed
+    }
+  }
+
+  async function handleDeleteReminder(reminderId: number) {
+    try {
+      await fetch(`/api/agenda/reminders?id=${reminderId}`, { method: 'DELETE' });
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks'] });
+    } catch {
+      // silently fail
+    }
+  }
+
+  async function submitComment(content: string, mentionedUserIds?: number[]): Promise<void> {
+    if (!content.trim() || !task?.id) return;
+    // Optimistic — temp id uses negative timestamp
+    const tempId = -Date.now();
+    setNewCommentId(tempId);
+    setTimeout(() => setNewCommentId(null), 600);
+    const tempComment: CommentItem = {
+      id: tempId,
+      authorId: currentUser?.id ? Number(currentUser.id) : undefined,
+      authorAvatar: currentUser?.avatar ?? null,
+      author: currentUser?.name ?? 'Tú',
+      content: content.trim(),
+      time: 'Ahora',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      bg: '#F3F4F6', color: '#111827',
+      likes: 0, likedByMe: false,
+      mentions: [], replies: [],
+    };
+    setComments(prev => [...prev, tempComment]);
+    return fetch(`/api/agenda/tasks/${task.id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content.trim(), mentionedUserIds: mentionedUserIds ?? [] }),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((saved: any) => {
+        // Replace temp with real comment from server
+        setComments(prev => prev.map(c => c.id === tempId ? {
+          ...c,
+          id: saved.id,
+          authorId: saved.authorId,
+          authorAvatar: saved.author?.avatar ?? null,
+          createdAt: new Date(saved.createdAt),
+          updatedAt: new Date(saved.updatedAt),
+        } : c));
+        queryClient.invalidateQueries({ queryKey: ['agenda-comments', task.id] });
+      })
+      .catch(() => {
+        // Rollback optimistic on error
+        setComments(prev => prev.filter(c => c.id !== tempId));
+      });
+  }
+
+  async function handleEditComment(commentId: number, newContent: string): Promise<void> {
+    if (!task?.id) return;
+    const prevContent = comments.find(c => c.id === commentId)?.content;
+    // Optimistic update
+    setComments(prev => prev.map(c =>
+      c.id === commentId ? { ...c, content: newContent, isEdited: true, updatedAt: new Date() } : c
+    ));
+    const res = await fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: newContent }),
+    });
+    if (!res.ok) {
+      // Rollback
+      setComments(prev => prev.map(c =>
+        c.id === commentId ? { ...c, content: prevContent ?? c.content, isEdited: false } : c
+      ));
+      throw new Error(`${res.status}`);
+    }
+  }
+
+  async function handleDeleteComment(commentId: number): Promise<void> {
+    if (!task?.id) return;
+    // Optimistic remove
+    const backup = comments.find(c => c.id === commentId);
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    const res = await fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      // Rollback on error
+      if (backup) {
+        setComments(prev => {
+          const existing = prev.find(c => c.id === commentId);
+          if (existing) return prev;
+          return [...prev, backup].sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return aTime - bTime;
+          });
+        });
+      }
+      throw new Error(`${res.status}`);
+    }
+  }
+
+  // ── Fetch subtasks via React Query (cached across re-opens) ──
+  const taskId = task?.id;
+  const { data: subtasksData } = useQuery({
+    queryKey: ['agenda-subtasks', taskId],
+    queryFn: async () => {
+      const r = await fetch(`/api/agenda/tasks/${taskId}/subtasks`);
+      if (!r.ok) return [];
+      const data: any[] = await r.json();
+      return data.map(s => ({ id: s.id.toString(), title: s.title, completed: s.done, note: s.note ?? undefined }));
+    },
+    enabled: !!taskId && open,
+    staleTime: 2 * 60 * 1000, // 2 min cache
+  });
+  useEffect(() => { if (subtasksData) setSubtasks(subtasksData); }, [subtasksData]);
+  useEffect(() => { setSubtasks([]); setComments([]); }, [taskId]);
+
+  // ── Fetch comments via React Query (cached across re-opens) ──
+  const { data: commentsData } = useQuery({
+    queryKey: ['agenda-comments', taskId],
+    queryFn: async () => {
+      const r = await fetch(`/api/agenda/tasks/${taskId}/comments`);
+      if (!r.ok) return [];
+      const data: any[] = await r.json();
+      return data.map((c, i) => ({
+        id: c.id,
+        authorId: c.authorId,
+        authorAvatar: c.author?.avatar ?? null,
+        author: c.author?.name ?? 'Usuario',
+        content: c.content,
+        createdAt: new Date(c.createdAt),
+        updatedAt: new Date(c.updatedAt),
+        isEdited: c.updatedAt && c.createdAt && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000,
+        time: format(new Date(c.createdAt), 'HH:mm'),
+        bg: COMMENT_COLORS[i % COMMENT_COLORS.length].bg,
+        color: COMMENT_COLORS[i % COMMENT_COLORS.length].color,
+        likes: 0,
+        likedByMe: false,
+        mentions: [],
+        replies: [],
+      }));
+    },
+    enabled: !!taskId && open,
+    staleTime: 60 * 1000, // 1 min cache
+  });
+  useEffect(() => { if (commentsData) setComments(commentsData); }, [commentsData]);
+
+  // Trigger slide-in animation when panel opens
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setOpenAnim(true);
+      const t = setTimeout(() => setOpenAnim(false), 1100);
+      prevOpenRef.current = true;
+      return () => clearTimeout(t);
+    }
+    if (!open) prevOpenRef.current = false;
+  }, [open]);
+
+  // Trigger zoom animation when panel expands / contracts
+  useEffect(() => {
+    if (expanded !== prevExpandedRef.current) {
+      setExpandAnim(expanded ? 'expand' : 'contract');
+      const t = setTimeout(() => setExpandAnim(null), 700);
+      prevExpandedRef.current = expanded;
+      return () => clearTimeout(t);
+    }
+  }, [expanded]);
+
+  // Close on ESC
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  // Close assignee pop on outside click
+  useEffect(() => {
+    if (!showAssigneePop) return;
+    function handler(e: MouseEvent) {
+      if (assigneePopRef.current && !assigneePopRef.current.contains(e.target as Node)) {
+        setShowAssigneePop(false);
+        setAssigneeSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAssigneePop]);
+
+  const panelWidth = expanded ? undefined : `${PANEL_WIDTH_NORMAL}px`;
+
+  // Build assignee list from task participants
+  const taskAssigneesArr: AssigneeOption[] = useMemo(() => {
+    // Prefer real company users (have IDs for assignment)
+    if (companyUsers.length > 0) {
+      return companyUsers.map((u, i) => ({
+        id: u.id,
+        name: u.name,
+        initials: u.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+        ...AVATAR_COLORS[i % AVATAR_COLORS.length],
+      }));
+    }
+    // Fallback: task participants (no IDs available)
+    if (localAssigneeNames !== null) {
+      return localAssigneeNames.map((name, i) => ({
+        name,
+        initials: name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+        ...AVATAR_COLORS[i % AVATAR_COLORS.length],
+      }));
+    }
+    const people: { id?: number; name: string }[] = [];
+    if (task?.createdBy) people.push({ id: task.createdBy.id, name: task.createdBy.name });
+    const assignId = task?.assignedToUserId ?? undefined;
+    const assignName = task ? getAssigneeName(task) : '';
+    if (assignName && assignName !== 'Sin asignar' && !people.find(p => p.name === assignName))
+      people.push({ id: assignId, name: assignName });
+    return people.map((p, i) => ({
+      id: p.id,
+      name: p.name,
+      initials: p.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+      ...AVATAR_COLORS[i % AVATAR_COLORS.length],
+    }));
+  }, [companyUsers, localAssigneeNames, task]);
+
+  // Actual assigned person(s) for avatar display (not all company users)
+  const displayAssignees: AssigneeOption[] = useMemo(() => {
+    if (!task) return [];
+    const people: AssigneeOption[] = [];
+    if (task.assignedToUser) {
+      const idx = companyUsers.findIndex(u => u.id === task.assignedToUser?.id);
+      const col = AVATAR_COLORS[(idx >= 0 ? idx : 0) % AVATAR_COLORS.length];
+      people.push({
+        id: task.assignedToUser.id,
+        name: task.assignedToUser.name,
+        initials: task.assignedToUser.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+        ...col,
+      });
+    } else if (task.assignedToName && task.assignedToName !== 'Sin asignar') {
+      people.push({
+        name: task.assignedToName,
+        initials: task.assignedToName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+        ...AVATAR_COLORS[0],
+      });
+    }
+    return people;
+  }, [task, companyUsers]);
+
+  const statusConfig  = task ? TASK_STATUS_CONFIG[task.status] : null;
+  const statusChip    = task ? STATUS_CHIP[task.status]    : null;
+  const priorityChip  = task ? PRIORITY_CHIP[task.priority] : null;
+  const isOverdue     = task ? isTaskOverdue(task)          : false;
+  const assigneeName  = task ? getAssigneeName(task)        : '';
+  const assigneeInitials = assigneeName && assigneeName !== 'Sin asignar'
+    ? assigneeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+    : null;
+
+  const completedCount  = subtasks.filter(s => s.completed).length;
+  const subtaskProgress = subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0;
+
+  return (
+    <>
+    <style>{PANEL_STYLES}</style>
     {/* Backdrop — with blur like createTaskModal */}
     {open && (
       <div
@@ -557,6 +730,20 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                     <DropdownMenuItem className="text-xs gap-2" onClick={() => setShowAssigneePop(true)}>
                       <UserPlus className="h-3 w-3" /> Agregar personas
                     </DropdownMenuItem>
+                    <DropdownMenuItem className="text-xs gap-2" onClick={handleArchiveToggle}>
+                      {task?.isArchived
+                        ? <><ArchiveRestore className="h-3 w-3" /> Desarchivar tarea</>
+                        : <><Archive className="h-3 w-3" /> Archivar tarea</>
+                      }
+                    </DropdownMenuItem>
+                    {onDelete && (
+                      <>
+                        <div style={{ height: '1px', background: '#E4E4E8', margin: '4px 0' }} />
+                        <DropdownMenuItem className="text-xs gap-2 text-red-600 focus:text-red-600" onClick={handleDeleteTask}>
+                          <Trash2 className="h-3 w-3" /> Eliminar tarea
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <button
@@ -569,10 +756,29 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                 </button>
               </div>
 
-              {/* Title */}
-              <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#111827', lineHeight: 1.3, letterSpacing: '-0.02em', marginBottom: '14px' }}>
-                {task.title}
-              </h2>
+              {/* Title — click to edit */}
+              {isEditingTitle ? (
+                <input
+                  autoFocus
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleTitleSave();
+                    if (e.key === 'Escape') setIsEditingTitle(false);
+                  }}
+                  style={{ fontSize: '18px', fontWeight: 600, color: '#111827', lineHeight: 1.3, letterSpacing: '-0.02em', marginBottom: '14px', width: '100%', border: '1.5px solid #6366F1', borderRadius: '6px', padding: '2px 6px', outline: 'none', background: '#FAFAFE', fontFamily: 'inherit' }}
+                />
+              ) : (
+                <h2
+                  onClick={() => { if (onTaskUpdate) { setEditTitle(task.title); setIsEditingTitle(true); } }}
+                  style={{ fontSize: '18px', fontWeight: 600, color: '#111827', lineHeight: 1.3, letterSpacing: '-0.02em', marginBottom: '14px', cursor: onTaskUpdate ? 'text' : 'default', borderRadius: '6px', padding: '2px 6px', margin: '0 -6px 14px', transition: 'background 150ms' }}
+                  onMouseEnter={e => { if (onTaskUpdate) e.currentTarget.style.background = '#F4F4F6'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {task.title}
+                </h2>
+              )}
 
               {/* Bottom row: assignees + priority + due date */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
@@ -585,7 +791,7 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                     onMouseEnter={() => setShowAssigneeHover(true)}
                     onMouseLeave={() => setShowAssigneeHover(false)}
                   >
-                    {taskAssigneesArr.slice(0, 3).map((person, pi) => (
+                    {displayAssignees.slice(0, 3).map((person, pi) => (
                       <div
                         key={person.name}
                         style={{ width: '26px', height: '26px', borderRadius: '50%', background: person.bg, border: '2px solid #FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: pi > 0 ? '-8px' : '0', zIndex: 3 - pi, position: 'relative' }}
@@ -593,29 +799,24 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                         <span style={{ fontSize: '8px', fontWeight: 700, color: person.color }}>{person.initials}</span>
                       </div>
                     ))}
-                    {taskAssigneesArr.length > 3 && (
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#F4F4F6', border: '2px solid #FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '-8px', position: 'relative', zIndex: 0 }}>
-                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#6B7280' }}>+{taskAssigneesArr.length - 3}</span>
-                      </div>
-                    )}
-                    {taskAssigneesArr.length === 0 && (
+                    {displayAssignees.length === 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#9CA3AF' }}>
                         <UserPlus className="h-3.5 w-3.5" />
                         <span style={{ fontSize: '12px', fontWeight: 500 }}>Sin asignar</span>
                       </div>
                     )}
-                    {taskAssigneesArr.length > 0 && (
+                    {displayAssignees.length > 0 && (
                       <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280', marginLeft: '8px' }}>
-                        {taskAssigneesArr.length === 1 ? taskAssigneesArr[0].name : `${taskAssigneesArr[0].name} y ${taskAssigneesArr.length - 1} más`}
+                        {displayAssignees[0].name}
                       </span>
                     )}
                   </div>
 
                   {/* Hover tooltip with all names */}
                   {/* Hover tooltip — just shows current assignees, no add button */}
-                  {showAssigneeHover && !showAssigneePop && taskAssigneesArr.length > 0 && (
+                  {showAssigneeHover && !showAssigneePop && displayAssignees.length > 0 && (
                     <div style={{ position: 'absolute', top: '34px', left: 0, zIndex: 60, background: '#FFFFFF', border: '1.5px solid #D8D8DE', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,.10)', padding: '8px', minWidth: '160px', pointerEvents: 'none' }}>
-                      {taskAssigneesArr.map(person => (
+                      {displayAssignees.map(person => (
                         <div key={person.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 6px' }}>
                           <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: person.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <span style={{ fontSize: '8px', fontWeight: 700, color: person.color }}>{person.initials}</span>
@@ -646,35 +847,33 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                         )}
                       </div>
 
-                      {/* Unified list — all people, checkmark indicates selected */}
+                      {/* Unified list — company users with assign/unassign */}
                       <div style={{ overflowY: 'auto', flex: 1 }}>
                         {(() => {
-                          const filtered = MENTION_PEOPLE.filter(
-                            name => !assigneeSearch || name.toLowerCase().includes(assigneeSearch.toLowerCase())
+                          const filtered = companyUsers.filter(
+                            u => !assigneeSearch || u.name.toLowerCase().includes(assigneeSearch.toLowerCase())
                           );
                           if (filtered.length === 0) return (
                             <p style={{ fontSize: '12px', color: '#9CA3AF', padding: '8px', textAlign: 'center', fontFamily: 'inherit' }}>Sin resultados</p>
                           );
-                          return filtered.map((name, i) => {
-                            const isSelected = taskAssigneesArr.some(a => a.name === name);
+                          return filtered.map((u, i) => {
+                            const isSelected = task?.assignedToUserId === u.id;
                             const col = AVATAR_COLORS[i % AVATAR_COLORS.length];
                             return (
                               <button
-                                key={name}
+                                key={u.id}
                                 onClick={() => {
-                                  const current = localAssigneeNames ?? taskAssigneesArr.map(a => a.name);
-                                  setLocalAssigneeNames(
-                                    isSelected ? current.filter(n => n !== name) : [...current, name]
-                                  );
+                                  handleAssigneeToggle(u.id, u.name);
+                                  setShowAssigneePop(false);
                                 }}
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 6px', borderRadius: '7px', border: 'none', background: isSelected ? '#F0FDF4' : 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left', transition: 'background 120ms', fontFamily: 'inherit', marginBottom: '1px' }}
                                 onMouseEnter={e => (e.currentTarget.style.background = isSelected ? '#E6FAF0' : '#F4F4F6')}
                                 onMouseLeave={e => (e.currentTarget.style.background = isSelected ? '#F0FDF4' : 'transparent')}
                               >
                                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: col.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  <span style={{ fontSize: '8px', fontWeight: 700, color: col.color }}>{name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}</span>
+                                  <span style={{ fontSize: '8px', fontWeight: 700, color: col.color }}>{u.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}</span>
                                 </div>
-                                <span style={{ fontSize: '12px', fontWeight: isSelected ? 600 : 500, color: isSelected ? '#111827' : '#374151', flex: 1, fontFamily: 'inherit' }}>{name}</span>
+                                <span style={{ fontSize: '12px', fontWeight: isSelected ? 600 : 500, color: isSelected ? '#111827' : '#374151', flex: 1, fontFamily: 'inherit' }}>{u.name}</span>
                                 {/* Checkmark box */}
                                 <div style={{ width: '16px', height: '16px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: isSelected ? '#059669' : 'transparent', border: isSelected ? 'none' : '1.5px solid #D8D8DE', transition: 'all 150ms' }}>
                                   {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFFFFF' }} />}
@@ -691,29 +890,159 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                 {/* Divider */}
                 <div style={{ width: '1px', height: '18px', background: '#E4E4E8' }} />
 
-                {/* Priority */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280' }}>Prioridad</span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: priorityChip.bg, color: priorityChip.text }}>
-                    {priorityChip.label}
-                  </span>
-                </div>
+                {/* Priority — click to change */}
+                <Popover open={showPriorityPop} onOpenChange={setShowPriorityPop}>
+                  <PopoverTrigger asChild>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: onTaskUpdate ? 'pointer' : 'default', borderRadius: '6px', padding: '2px 4px', margin: '0 -4px', transition: 'background 150ms' }}
+                      onMouseEnter={e => { if (onTaskUpdate) e.currentTarget.style.background = '#F4F4F6'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280' }}>Prioridad</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: priorityChip.bg, color: priorityChip.text }}>
+                        {priorityChip.label}
+                      </span>
+                    </div>
+                  </PopoverTrigger>
+                  {onTaskUpdate && (
+                    <PopoverContent align="start" className="w-[140px] p-1">
+                      {(Object.entries(PRIORITY_CHIP) as [Priority, { bg: string; text: string; label: string }][]).map(([key, chip]) => (
+                        <button
+                          key={key}
+                          onClick={() => handlePriorityChange(key)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '6px 8px', borderRadius: '6px', border: 'none', background: task.priority === key ? '#F4F4F6' : 'transparent', cursor: 'pointer', transition: 'background 120ms', fontFamily: 'inherit' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#F4F4F6')}
+                          onMouseLeave={e => (e.currentTarget.style.background = task.priority === key ? '#F4F4F6' : 'transparent')}
+                        >
+                          <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: chip.bg, color: chip.text }}>{chip.label}</span>
+                          {task.priority === key && <Check className="h-3 w-3" style={{ color: '#059669' }} />}
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  )}
+                </Popover>
 
                 {/* Divider */}
                 <div style={{ width: '1px', height: '18px', background: '#E4E4E8' }} />
 
-                {/* Due date */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Calendar className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
-                  <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280' }}>Vencimiento</span>
-                  {task.dueDate ? (
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: isOverdue ? '#DC2626' : isToday(new Date(task.dueDate)) ? '#D97706' : '#111827' }}>
-                      {format(new Date(task.dueDate), "d 'de' MMMM", { locale: es })}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Sin fecha</span>
+                {/* Due date — click to change */}
+                <Popover open={showDatePop} onOpenChange={setShowDatePop}>
+                  <PopoverTrigger asChild>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: onTaskUpdate ? 'pointer' : 'default', borderRadius: '6px', padding: '2px 4px', margin: '0 -4px', transition: 'background 150ms' }}
+                      onMouseEnter={e => { if (onTaskUpdate) e.currentTarget.style.background = '#F4F4F6'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
+                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280' }}>Vencimiento</span>
+                      {task.dueDate ? (
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: isOverdue ? '#DC2626' : isToday(new Date(task.dueDate)) ? '#D97706' : '#111827' }}>
+                          {format(new Date(task.dueDate), "d 'de' MMMM", { locale: es })}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Sin fecha</span>
+                      )}
+                    </div>
+                  </PopoverTrigger>
+                  {onTaskUpdate && (
+                    <PopoverContent align="start" className="w-auto p-0">
+                      <CalendarUI
+                        mode="single"
+                        selected={task.dueDate ? new Date(task.dueDate) : undefined}
+                        onSelect={handleDateChange}
+                        locale={es}
+                      />
+                      {task.dueDate && (
+                        <div style={{ borderTop: '1px solid #E4E4E8', padding: '6px 8px' }}>
+                          <button
+                            onClick={() => handleDateChange(undefined)}
+                            style={{ fontSize: '12px', color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, fontFamily: 'inherit', padding: '4px 8px', borderRadius: '6px', width: '100%', textAlign: 'center', transition: 'background 120ms' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#FEE2E2')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            Quitar fecha
+                          </button>
+                        </div>
+                      )}
+                    </PopoverContent>
                   )}
-                </div>
+                </Popover>
+
+                {/* Group selector — click to change */}
+                {groups && groups.length > 0 && (
+                  <>
+                    <div style={{ width: '1px', height: '18px', background: '#E4E4E8' }} />
+                    <Popover open={showGroupPop} onOpenChange={setShowGroupPop}>
+                      <PopoverTrigger asChild>
+                        <div
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: onTaskUpdate ? 'pointer' : 'default', borderRadius: '6px', padding: '2px 4px', margin: '0 -4px', transition: 'background 150ms' }}
+                          onMouseEnter={e => { if (onTaskUpdate) e.currentTarget.style.background = '#F4F4F6'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <FolderOpen className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
+                          {task.group ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: task.group.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: '12px', fontWeight: 600, color: '#111827' }}>{task.group.name}</span>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Sin grupo</span>
+                          )}
+                        </div>
+                      </PopoverTrigger>
+                      {onTaskUpdate && (
+                        <PopoverContent align="start" className="w-[200px] p-1">
+                          <button
+                            onClick={() => handleGroupChange(null)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '6px 8px', borderRadius: '6px', border: 'none', background: !task.groupId ? '#F4F4F6' : 'transparent', cursor: 'pointer', transition: 'background 120ms', fontFamily: 'inherit' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#F4F4F6')}
+                            onMouseLeave={e => (e.currentTarget.style.background = !task.groupId ? '#F4F4F6' : 'transparent')}
+                          >
+                            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Sin grupo</span>
+                            {!task.groupId && <Check className="h-3 w-3 ml-auto" style={{ color: '#059669' }} />}
+                          </button>
+                          <div style={{ height: '1px', background: '#E4E4E8', margin: '4px 0' }} />
+                          {groups.map(g => (
+                            <button
+                              key={g.id}
+                              onClick={() => handleGroupChange(g.id)}
+                              style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '6px 8px', borderRadius: '6px', border: 'none', background: task.groupId === g.id ? '#F4F4F6' : 'transparent', cursor: 'pointer', transition: 'background 120ms', fontFamily: 'inherit' }}
+                              onMouseEnter={e => (e.currentTarget.style.background = '#F4F4F6')}
+                              onMouseLeave={e => (e.currentTarget.style.background = task.groupId === g.id ? '#F4F4F6' : 'transparent')}
+                            >
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: g.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: '12px', fontWeight: task.groupId === g.id ? 600 : 500, color: '#374151', flex: 1, textAlign: 'left' }}>{g.name}</span>
+                              {task.groupId === g.id && <Check className="h-3 w-3" style={{ color: '#059669' }} />}
+                            </button>
+                          ))}
+                        </PopoverContent>
+                      )}
+                    </Popover>
+                  </>
+                )}
+
+                {/* Visibility toggle */}
+                {onTaskUpdate && (
+                  <>
+                    <div style={{ width: '1px', height: '18px', background: '#E4E4E8' }} />
+                    <button
+                      onClick={handleVisibilityToggle}
+                      style={{ display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '6px', padding: '2px 6px', margin: '0 -4px', transition: 'background 150ms', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F4F4F6')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      title={task.isCompanyVisible ? 'Visible para toda la empresa' : 'Solo visible para asignados'}
+                    >
+                      {task.isCompanyVisible ? (
+                        <Eye className="h-3.5 w-3.5" style={{ color: '#059669' }} />
+                      ) : (
+                        <EyeOff className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
+                      )}
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: task.isCompanyVisible ? '#059669' : '#9CA3AF' }}>
+                        {task.isCompanyVisible ? 'Empresa' : 'Privada'}
+                      </span>
+                    </button>
+                  </>
+                )}
               </div>
 
             </div>
@@ -724,11 +1053,37 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
               {/* Description + Attachments — fixed top section */}
               <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0, borderBottom: '1px solid #F0F0F4' }}>
 
-                {/* Descripción */}
-                {task.description && (
-                  <p style={{ fontSize: '15px', color: '#374151', lineHeight: 1.7, margin: 0, letterSpacing: '-0.01em' }}>
-                    {task.description}
-                  </p>
+                {/* Descripción — click to edit */}
+                {isEditingDesc ? (
+                  <textarea
+                    autoFocus
+                    value={editDesc}
+                    onChange={e => setEditDesc(e.target.value)}
+                    onBlur={handleDescSave}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') setIsEditingDesc(false);
+                    }}
+                    rows={3}
+                    placeholder="Escribe una descripción..."
+                    style={{ fontSize: '14px', color: '#374151', lineHeight: 1.7, margin: 0, letterSpacing: '-0.01em', width: '100%', border: '1.5px solid #6366F1', borderRadius: '6px', padding: '6px 8px', outline: 'none', background: '#FAFAFE', fontFamily: 'inherit', resize: 'vertical', minHeight: '60px' }}
+                  />
+                ) : (
+                  <div
+                    onClick={() => { if (onTaskUpdate) { setEditDesc(task.description ?? ''); setIsEditingDesc(true); } }}
+                    style={{ cursor: onTaskUpdate ? 'text' : 'default', borderRadius: '6px', padding: '4px 6px', margin: '0 -6px', transition: 'background 150ms', minHeight: '24px' }}
+                    onMouseEnter={e => { if (onTaskUpdate) e.currentTarget.style.background = '#F4F4F6'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {task.description ? (
+                      <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.7, margin: 0, letterSpacing: '-0.01em' }}>
+                        {task.description}
+                      </p>
+                    ) : onTaskUpdate ? (
+                      <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, fontStyle: 'italic' }}>
+                        Agregar descripción...
+                      </p>
+                    ) : null}
+                  </div>
                 )}
 
                 {/* Attachments */}
@@ -834,6 +1189,81 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                     </button>
                   </div>
                 </div>
+
+                {/* Reminders */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#9CA3AF' }}>
+                      <Bell className="h-3 w-3" />
+                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#111827' }}>
+                        Recordatorios ({task?.reminders?.length ?? 0})
+                      </span>
+                    </div>
+                    {onTaskUpdate && (
+                      <button
+                        onClick={() => setShowReminderForm(!showReminderForm)}
+                        style={{ fontSize: '11px', color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        {showReminderForm ? 'Cancelar' : '+ Agregar'}
+                      </button>
+                    )}
+                  </div>
+                  {showReminderForm && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                      <input
+                        type="date"
+                        value={reminderDate}
+                        onChange={e => setReminderDate(e.target.value)}
+                        style={{ flex: 1, fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid #E4E4E8', outline: 'none' }}
+                      />
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={e => setReminderTime(e.target.value)}
+                        style={{ width: '90px', fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid #E4E4E8', outline: 'none' }}
+                      />
+                      <button
+                        onClick={handleAddReminder}
+                        disabled={!reminderDate || !reminderTime}
+                        style={{
+                          fontSize: '11px', fontWeight: 600, color: '#FFFFFF',
+                          background: reminderDate && reminderTime ? '#6366F1' : '#D1D5DB',
+                          border: 'none', borderRadius: '6px', padding: '5px 10px', cursor: reminderDate && reminderTime ? 'pointer' : 'default',
+                        }}
+                      >
+                        Crear
+                      </button>
+                    </div>
+                  )}
+                  {(task?.reminders ?? []).length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {task!.reminders!.map(r => (
+                        <div
+                          key={r.id}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '5px 8px', borderRadius: '6px',
+                            background: r.isSent ? '#F3F4F6' : '#EEF2FF',
+                            border: `1px solid ${r.isSent ? '#E5E7EB' : '#C7D2FE'}`,
+                          }}
+                        >
+                          <Clock className="h-3 w-3" style={{ color: r.isSent ? '#9CA3AF' : '#6366F1', flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: '12px', color: r.isSent ? '#9CA3AF' : '#111827', textDecoration: r.isSent ? 'line-through' : 'none' }}>
+                            {format(new Date(r.remindAt), "dd MMM yyyy 'a las' HH:mm", { locale: es })}
+                          </span>
+                          {!r.isSent && onTaskUpdate && (
+                            <button
+                              onClick={() => handleDeleteReminder(r.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#9CA3AF' }}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Tabs section — fills remaining height */}
@@ -908,7 +1338,10 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ title }),
                               }).then(r => r.ok ? r.json() : Promise.reject(r.status))
-                                .then(s => setSubtasks(prev => [...prev, { id: s.id.toString(), title: s.title, completed: s.done, note: s.note ?? undefined }]))
+                                .then(s => {
+                                  setSubtasks(prev => [...prev, { id: s.id.toString(), title: s.title, completed: s.done, note: s.note ?? undefined }]);
+                                  queryClient.invalidateQueries({ queryKey: ['agenda-subtasks', task!.id] });
+                                })
                                 .catch(err => console.error('[Subtask] create failed:', err));
                             }}
                             onUpdate={(id, updates) => {
@@ -1047,6 +1480,7 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                         members={mentionMembers}
                       />
                     </div>
+                  </div>
                   )}
 
                   {/* Actividades */}

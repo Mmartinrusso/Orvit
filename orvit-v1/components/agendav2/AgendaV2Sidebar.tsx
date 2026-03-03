@@ -22,7 +22,16 @@ import {
   Calendar,
   Briefcase,
   Repeat2,
+  Pencil,
+  Trash2,
+  MessageCircle,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,6 +75,8 @@ export interface AgendaV2SidebarProps {
   selectedGroupId: number | null;
   onSelectGroup: (id: number | null) => void;
   onCreateGroup: (isProject: boolean) => void;
+  onEditGroup?: (group: TaskGroupItem) => void;
+  onDeleteGroup?: (group: TaskGroupItem) => void;
   loadingGroups?: boolean;
   /** Override inline styles on the root <aside> element (e.g. to change width) */
   asideStyle?: CSSProperties;
@@ -79,78 +90,118 @@ function GroupRow({
   group,
   isSelected,
   onClick,
+  onEdit,
+  onDelete,
 }: {
   group: TaskGroupItem;
   isSelected: boolean;
   onClick: () => void;
+  onEdit?: (group: TaskGroupItem) => void;
+  onDelete?: (group: TaskGroupItem) => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150 group"
+    <div
+      className="w-full flex items-center gap-0 rounded-xl transition-all duration-150 group relative"
       style={{
         background: isSelected ? '#E8E8E8' : hovered ? '#EEEEEE' : 'transparent',
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* Color dot */}
-      <span
-        className="h-2 w-2 rounded-full shrink-0 transition-transform duration-150"
-        style={{
-          background: group.color,
-          transform: isSelected ? 'scale(1.3)' : 'scale(1)',
-        }}
-      />
-
-      {/* Name */}
-      <span
-        className="text-[13px] flex-1 truncate transition-colors"
-        style={{
-          color: isSelected ? '#111827' : '#6B7280',
-          fontWeight: isSelected ? 600 : 400,
-        }}
+      <button
+        onClick={onClick}
+        className="flex-1 flex items-center gap-2.5 px-3 py-2 text-left min-w-0"
       >
-        {group.name}
-      </span>
-
-      {/* Task count */}
-      {group.taskCount > 0 && (
+        {/* Color dot */}
         <span
-          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+          className="h-2 w-2 rounded-full shrink-0 transition-transform duration-150"
           style={{
-            background: isSelected ? '#111827' : '#F3F4F6',
-            color: isSelected ? '#fff' : '#9CA3AF',
+            background: group.color,
+            transform: isSelected ? 'scale(1.3)' : 'scale(1)',
+          }}
+        />
+
+        {/* Name */}
+        <span
+          className="text-[13px] flex-1 truncate transition-colors"
+          style={{
+            color: isSelected ? '#111827' : '#6B7280',
+            fontWeight: isSelected ? 600 : 400,
           }}
         >
-          {group.taskCount}
+          {group.name}
         </span>
-      )}
 
-      {/* Members (proyectos) */}
-      {group.isProject && group.members.length > 0 && (
-        <div className="flex -space-x-1 shrink-0">
-          {group.members.slice(0, 3).map((m) => (
-            <Avatar key={m.userId} className="h-4 w-4 border border-white">
-              {m.user.avatar && <AvatarImage src={m.user.avatar} />}
-              <AvatarFallback style={{ fontSize: '7px', background: '#EDE9FE', color: '#7C3AED' }}>
-                {getInitials(m.user.name)}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-          {group.members.length > 3 && (
-            <div
-              className="h-4 w-4 rounded-full border border-white flex items-center justify-center"
-              style={{ fontSize: '7px', background: '#E4E4E8', color: '#6B7280' }}
-            >
-              +{group.members.length - 3}
-            </div>
-          )}
+        {/* Task count */}
+        {group.taskCount > 0 && (
+          <span
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+            style={{
+              background: isSelected ? '#111827' : '#F3F4F6',
+              color: isSelected ? '#fff' : '#9CA3AF',
+            }}
+          >
+            {group.taskCount}
+          </span>
+        )}
+
+        {/* Members (proyectos) */}
+        {group.isProject && group.members.length > 0 && (
+          <div className="flex -space-x-1 shrink-0">
+            {group.members.slice(0, 3).map((m) => (
+              <Avatar key={m.userId} className="h-4 w-4 border border-white">
+                {m.user.avatar && <AvatarImage src={m.user.avatar} />}
+                <AvatarFallback style={{ fontSize: '7px', background: '#EDE9FE', color: '#7C3AED' }}>
+                  {getInitials(m.user.name)}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {group.members.length > 3 && (
+              <div
+                className="h-4 w-4 rounded-full border border-white flex items-center justify-center"
+                style={{ fontSize: '7px', background: '#E4E4E8', color: '#6B7280' }}
+              >
+                +{group.members.length - 3}
+              </div>
+            )}
+          </div>
+        )}
+      </button>
+
+      {/* Context menu — only visible on hover */}
+      {(onEdit || onDelete) && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-1.5 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="h-5 w-5 rounded-md flex items-center justify-center transition-colors hover:bg-[#D8D8DE]"
+                style={{ color: '#9CA3AF' }}
+                onClick={e => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[150px]">
+              {onEdit && (
+                <DropdownMenuItem className="text-xs gap-2" onClick={() => onEdit(group)}>
+                  <Pencil className="h-3 w-3" /> Renombrar
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  <div style={{ height: '1px', background: '#E4E4E8', margin: '4px 0' }} />
+                  <DropdownMenuItem className="text-xs gap-2 text-red-600 focus:text-red-600" onClick={() => onDelete(group)}>
+                    <Trash2 className="h-3 w-3" /> Eliminar
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -163,6 +214,8 @@ export function AgendaV2Sidebar({
   selectedGroupId,
   onSelectGroup,
   onCreateGroup,
+  onEditGroup,
+  onDeleteGroup,
   loadingGroups,
   asideStyle,
 }: AgendaV2SidebarProps) {
@@ -340,6 +393,8 @@ export function AgendaV2Sidebar({
                       onSelectGroup(selectedGroupId === g.id ? null : g.id);
                       if (view !== 'board') onViewChange('board');
                     }}
+                    onEdit={onEditGroup}
+                    onDelete={onDeleteGroup}
                   />
                 ))
               )}
@@ -401,6 +456,8 @@ export function AgendaV2Sidebar({
                       onSelectGroup(selectedGroupId === g.id ? null : g.id);
                       if (view !== 'board') onViewChange('board');
                     }}
+                    onEdit={onEditGroup}
+                    onDelete={onDeleteGroup}
                   />
                 ))
               )}

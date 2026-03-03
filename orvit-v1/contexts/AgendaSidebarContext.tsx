@@ -16,6 +16,8 @@ export interface AgendaSidebarState {
   onCreateTask: () => void;
   onSelectGroup: (id: number | null) => void;
   onCreateGroup: (isProject: boolean) => void;
+  onEditGroup?: (group: TaskGroupItem) => void;
+  onDeleteGroup?: (group: TaskGroupItem) => void;
 }
 
 interface AgendaSidebarContextValue {

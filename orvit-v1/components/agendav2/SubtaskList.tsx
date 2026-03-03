@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, GripVertical, Check, UserRound, X as XIcon, Trash2, SquarePen } from 'lucide-react';
 
+const EMPTY_ASSIGNEES: readonly AssigneeOption[] = [];
+
 export interface AssigneeOption {
   id?: number;
   name: string;
@@ -46,7 +48,7 @@ interface SubtaskListProps {
   readOnly?: boolean;
   hideFooter?: boolean;
   noAssign?: boolean;
-  taskAssignees?: AssigneeOption[];
+  taskAssignees?: readonly AssigneeOption[];
 }
 
 // Minimal sortable wrapper — just forwards drag refs + handle props
@@ -93,7 +95,7 @@ export function SubtaskList({
   readOnly = false,
   hideFooter = false,
   noAssign = false,
-  taskAssignees = [],
+  taskAssignees = EMPTY_ASSIGNEES,
 }: SubtaskListProps) {
   const [addingNew, setAddingNew]     = useState(false);
   const [newTitle, setNewTitle]       = useState('');

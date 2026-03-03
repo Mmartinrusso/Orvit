@@ -14981,6 +14981,10 @@ model AgendaTask {
   // Log de voz (si se creó por audio)
   voiceLog VoiceTaskLog?
 
+  // Archivado
+  isArchived  Boolean   @default(false)
+  archivedAt  DateTime?
+
   // Visibilidad y externos
   isCompanyVisible    Boolean   @default(false) // visible para todos los usuarios de la empresa
   externalNotified    Boolean   @default(false)
@@ -14998,6 +15002,7 @@ model AgendaTask {
   @@index([companyId, dueDate])
   @@index([companyId, status])
   @@index([companyId, isCompanyVisible])
+  @@index([companyId, isArchived])
   @@map("agenda_tasks")
 }
 

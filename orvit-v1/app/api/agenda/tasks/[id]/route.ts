@@ -28,6 +28,7 @@ const updateTaskSchema = z.object({
   assignedToContactId: z.number().optional().nullable(),
   assignedToName: z.string().max(200).optional().nullable(),
   isCompanyVisible: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
   completedNote: z.string().max(1000).optional(),
   notes: z
     .array(
@@ -60,7 +61,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    const task = await prisma.agendaTask.findUnique({
+    // Start both queries in parallel (subtasksDone only needs taskId, not task result)
+    const taskPromise = prisma.agendaTask.findUnique({
       where: { id: taskId },
       include: {
         createdBy: {
@@ -83,6 +85,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         },
       },
     });
+    const subtasksDonePromise = prisma.agendaSubtask.count({
+      where: { taskId, done: true },
+    });
+
+    const task = await taskPromise;
 
     if (!task) {
       return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
@@ -102,9 +109,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
-    const subtasksDone = await prisma.agendaSubtask.count({
-      where: { taskId: task.id, done: true },
-    });
+    const subtasksDone = await subtasksDonePromise;
 
     // Transformar respuesta
     const response = {
@@ -127,6 +132,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       source: task.source,
       discordMessageId: task.discordMessageId,
       companyId: task.companyId,
+      isArchived: (task as any).isArchived ?? false,
+      archivedAt: (task as any).archivedAt?.toISOString() || null,
       isCompanyVisible: (task as any).isCompanyVisible ?? false,
       externalNotified: (task as any).externalNotified ?? false,
       externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
@@ -264,6 +271,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Si se está archivando/desarchivando
+    if (data.isArchived !== undefined) {
+      updateData.isArchived = data.isArchived;
+      updateData.archivedAt = data.isArchived ? new Date() : null;
+    }
+
     // Resolver nombre del asignado si cambió
     if (
       (data.assignedToUserId !== undefined || data.assignedToContactId !== undefined) &&
@@ -286,35 +299,36 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Actualizar tarea
-    const task = await prisma.agendaTask.update({
-      where: { id: taskId },
-      data: updateData,
-      include: {
-        createdBy: {
-          select: { id: true, name: true, avatar: true },
+    // Actualizar tarea y contar subtareas completadas en paralelo
+    const [task, subtasksDone] = await Promise.all([
+      prisma.agendaTask.update({
+        where: { id: taskId },
+        data: updateData,
+        include: {
+          createdBy: {
+            select: { id: true, name: true, avatar: true },
+          },
+          assignedToUser: {
+            select: { id: true, name: true, avatar: true },
+          },
+          assignedToContact: {
+            select: { id: true, name: true, avatar: true },
+          },
+          group: {
+            select: { id: true, name: true, color: true, icon: true },
+          },
+          reminders: {
+            orderBy: { remindAt: 'asc' },
+          },
+          _count: {
+            select: { comments: true, subtasks: true },
+          },
         },
-        assignedToUser: {
-          select: { id: true, name: true, avatar: true },
-        },
-        assignedToContact: {
-          select: { id: true, name: true, avatar: true },
-        },
-        group: {
-          select: { id: true, name: true, color: true, icon: true },
-        },
-        reminders: {
-          orderBy: { remindAt: 'asc' },
-        },
-        _count: {
-          select: { comments: true, subtasks: true },
-        },
-      },
-    });
-
-    const subtasksDone = await prisma.agendaSubtask.count({
-      where: { taskId, done: true },
-    });
+      }),
+      prisma.agendaSubtask.count({
+        where: { taskId, done: true },
+      }),
+    ]);
 
     // Transformar respuesta
     const response = {
@@ -337,6 +351,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       source: task.source,
       discordMessageId: task.discordMessageId,
       companyId: task.companyId,
+      isArchived: (task as any).isArchived ?? false,
+      archivedAt: (task as any).archivedAt?.toISOString() || null,
       isCompanyVisible: (task as any).isCompanyVisible ?? false,
       externalNotified: (task as any).externalNotified ?? false,
       externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,

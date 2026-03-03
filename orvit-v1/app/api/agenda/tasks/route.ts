@@ -104,6 +104,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Archived filter: exclude archived by default, include only if explicitly requested
+    const includeArchived = searchParams.get('includeArchived') === 'true';
+    const archivedOnly = searchParams.get('archivedOnly') === 'true';
+    if (archivedOnly) {
+      andFilters.push({ isArchived: true });
+    } else if (!includeArchived) {
+      andFilters.push({ isArchived: false });
+    }
+
     const where: any = {
       companyId,
       AND: andFilters,
@@ -211,6 +220,8 @@ export async function GET(request: NextRequest) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
+      isArchived: (task as any).isArchived ?? false,
+      archivedAt: (task as any).archivedAt?.toISOString() || null,
       isCompanyVisible: (task as any).isCompanyVisible ?? false,
       externalNotified: (task as any).externalNotified ?? false,
       externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
@@ -284,7 +295,7 @@ export async function POST(request: NextRequest) {
         priority: data.priority,
         category: data.category,
         groupId: data.groupId || null,
-        status: 'PENDING',
+        status: data.status ?? 'PENDING',
         source: 'WEB',
         createdById: user.id,
         companyId: data.companyId,
@@ -362,6 +373,8 @@ export async function POST(request: NextRequest) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
+      isArchived: (task as any).isArchived ?? false,
+      archivedAt: (task as any).archivedAt?.toISOString() || null,
       isCompanyVisible: (task as any).isCompanyVisible ?? false,
       externalNotified: (task as any).externalNotified ?? false,
       externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,

@@ -167,6 +167,10 @@ export interface AgendaTask {
   groupId: number | null;
   group?: { id: number; name: string } | null;
 
+  // Archivado
+  isArchived: boolean;
+  archivedAt: string | null;
+
   // Visibilidad empresa
   isCompanyVisible: boolean;
 
@@ -302,6 +306,7 @@ export interface UpdateAgendaTaskInput {
   assignedToContactId?: number | null;
   assignedToName?: string | null;
   isCompanyVisible?: boolean;
+  isArchived?: boolean;
   completedNote?: string;
   notes?: TaskNote[];
 }

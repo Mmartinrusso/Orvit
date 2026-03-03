@@ -1215,6 +1215,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     selectedGroupId={agendaSidebar.selectedGroupId}
                     onSelectGroup={agendaSidebar.onSelectGroup}
                     onCreateGroup={agendaSidebar.onCreateGroup}
+                    onEditGroup={agendaSidebar.onEditGroup}
+                    onDeleteGroup={agendaSidebar.onDeleteGroup}
                     loadingGroups={agendaSidebar.loadingGroups}
                     asideStyle={{ width: '100%', borderRight: 'none' }}
                   />

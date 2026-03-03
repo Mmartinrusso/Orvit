@@ -22,7 +22,7 @@ import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import { SubtaskList, type SubtaskItem } from './SubtaskList';
 import type { AgendaTask, Priority, AgendaTaskStatus } from '@/lib/agenda/types';
 import { TASK_STATUS_CONFIG, isTaskOverdue } from '@/lib/agenda/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/use-users';
@@ -226,8 +226,11 @@ function InboxItem({
               <span style={{ fontSize: '10px', color: '#ADADAD' }}>{timeAgo(task.createdAt)}</span>
               {/* Quick complete — visible on hover */}
               {!isCompleted && (
-                <button
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={onQuickComplete}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onQuickComplete(e as any); } }}
                   title="Completar tarea"
                   style={{
                     height: '20px', width: '20px', borderRadius: '50%',
@@ -244,7 +247,7 @@ function InboxItem({
                     ? <Loader2 className="h-2.5 w-2.5 animate-spin" style={{ color: '#059669' }} />
                     : <Check className="h-2.5 w-2.5" style={{ color: '#059669' }} />
                   }
-                </button>
+                </div>
               )}
             </div>
           </div>
@@ -300,9 +303,10 @@ export function InboxView({ tasks, onTaskClick, onEdit }: InboxViewProps) {
   const { currentCompany } = useCompany();
   const { user: currentUser } = useAuth();
   const { users: companyUsers } = useUsers();
-  const MENTION_PEOPLE = companyUsers.length > 0
-    ? companyUsers.map(u => u.name)
-    : [];
+  const MENTION_PEOPLE = useMemo(
+    () => companyUsers.length > 0 ? companyUsers.map(u => u.name) : [],
+    [companyUsers]
+  );
 
   const [search,            setSearch]            = useState('');
   const [filter,            setFilter]            = useState<FilterTab>('all');
@@ -312,8 +316,6 @@ export function InboxView({ tasks, onTaskClick, onEdit }: InboxViewProps) {
   const [selectedTask,      setSelectedTask]      = useState<AgendaTask | null>(tasks[0] || null);
   const [subtasks,          setSubtasks]          = useState<SubtaskItem[]>([]);
   const [comments,          setComments]          = useState<CommentItem[]>([]);
-  const [loadingSubtasks,   setLoadingSubtasks]   = useState(false);
-  const [loadingComments,   setLoadingComments]   = useState(false);
   const [activeTab,         setActiveTab]         = useState<'subtasks'|'comments'|'activities'>('subtasks');
   const [activityEvents,    setActivityEvents]    = useState<ActivityEvent[]>([]);
   const [loadingActivity,   setLoadingActivity]   = useState(false);
@@ -329,10 +331,16 @@ export function InboxView({ tasks, onTaskClick, onEdit }: InboxViewProps) {
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Derived counts
-  const pendingCount   = tasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length;
-  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
-  const unreadCount    = tasks.filter(t => t.status === 'PENDING' && !readIds.has(t.id)).length;
+  // Derived counts — single pass over tasks array
+  const { pendingCount, completedCount, unreadCount } = useMemo(() => {
+    let pending = 0, completed = 0, unread = 0;
+    for (const t of tasks) {
+      if (t.status === 'COMPLETED') completed++;
+      else if (t.status !== 'CANCELLED') pending++;
+      if (t.status === 'PENDING' && !readIds.has(t.id)) unread++;
+    }
+    return { pendingCount: pending, completedCount: completed, unreadCount: unread };
+  }, [tasks, readIds]);
 
   // Filter + sort tasks
   const filteredTasks = useMemo(() => {
@@ -379,49 +387,49 @@ export function InboxView({ tasks, onTaskClick, onEdit }: InboxViewProps) {
     return Array.from(map.entries());
   }, [filteredTasks]);
 
-  // Fetch subtasks & comments when selected task changes
-  useEffect(() => {
-    if (!selectedTask) {
-      setSubtasks([]);
-      setComments([]);
-      return;
-    }
-    let cancelled = false;
-    setLoadingSubtasks(true);
-    setLoadingComments(true);
+  // Fetch subtasks & comments via React Query (cached, deduped, auto-cancelled)
+  const selectedTaskId = selectedTask?.id;
 
-    fetch(`/api/agenda/tasks/${selectedTask.id}/subtasks`)
-      .then(r => r.ok ? r.json() : [])
-      .then(subs => {
-        if (cancelled) return;
-        setSubtasks((subs || []).map((s: any) => ({
-          id: String(s.id),
-          title: s.title,
-          completed: s.done,
-          note: s.note ?? undefined,
-        })));
-        setLoadingSubtasks(false);
-      })
-      .catch(() => { if (!cancelled) setLoadingSubtasks(false); });
+  const { data: subtasksData, isLoading: loadingSubtasks } = useQuery({
+    queryKey: ['agenda-subtasks', selectedTaskId],
+    queryFn: async () => {
+      const r = await fetch(`/api/agenda/tasks/${selectedTaskId}/subtasks`);
+      if (!r.ok) return [];
+      const subs: any[] = await r.json();
+      return subs.map((s: any) => ({
+        id: String(s.id),
+        title: s.title,
+        completed: s.done,
+        note: s.note ?? undefined,
+      }));
+    },
+    enabled: !!selectedTaskId,
+    staleTime: 2 * 60 * 1000,
+  });
 
-    fetch(`/api/agenda/tasks/${selectedTask.id}/comments`)
-      .then(r => r.ok ? r.json() : [])
-      .then((cmts: any[]) => {
-        if (cancelled) return;
-        setComments((cmts || []).map((c: any) => ({
-          id: c.id,
-          authorId: c.authorId,
-          content: c.content,
-          createdAt: c.createdAt,
-          isEdited: c.updatedAt && c.createdAt && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000,
-          author: c.author,
-        })));
-        setLoadingComments(false);
-      })
-      .catch(() => { if (!cancelled) setLoadingComments(false); });
+  const { data: commentsData, isLoading: loadingComments } = useQuery({
+    queryKey: ['agenda-comments', selectedTaskId],
+    queryFn: async () => {
+      const r = await fetch(`/api/agenda/tasks/${selectedTaskId}/comments`);
+      if (!r.ok) return [];
+      const cmts: any[] = await r.json();
+      return cmts.map((c: any) => ({
+        id: c.id,
+        authorId: c.authorId,
+        content: c.content,
+        createdAt: c.createdAt,
+        isEdited: c.updatedAt && c.createdAt && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000,
+        author: c.author,
+      }));
+    },
+    enabled: !!selectedTaskId,
+    staleTime: 60 * 1000,
+  });
 
-    return () => { cancelled = true; };
-  }, [selectedTask?.id]);
+  // Sync query data to local state (keeps optimistic updates working)
+  useEffect(() => { if (subtasksData) setSubtasks(subtasksData); }, [subtasksData]);
+  useEffect(() => { if (commentsData) setComments(commentsData); }, [commentsData]);
+  useEffect(() => { setSubtasks([]); setComments([]); }, [selectedTaskId]);
 
   // Keyboard navigation (↑↓ arrows)
   useEffect(() => {
