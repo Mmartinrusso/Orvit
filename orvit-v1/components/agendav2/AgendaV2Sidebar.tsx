@@ -57,7 +57,7 @@ const NAV_ITEMS: NavItem[] = [
   { value: 'portfolio',    label: 'Portfolio',      icon: Briefcase },
 ];
 
-interface AgendaV2SidebarProps {
+export interface AgendaV2SidebarProps {
   view: ViewMode;
   onViewChange: (v: ViewMode) => void;
   onCreateTask: () => void;
