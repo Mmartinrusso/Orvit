@@ -6,6 +6,8 @@ export { BoardColumn } from './BoardColumn';
 export { TaskCard } from './TaskCard';
 export { TaskCalendarStrip } from './TaskCalendarStrip';
 export { TaskDetailPanel } from './TaskDetailPanel';
+export { TaskCommentThread } from './TaskCommentThread';
+export type { ThreadComment } from './TaskCommentThread';
 export { SubtaskList } from './SubtaskList';
 export { InboxView } from './InboxView';
 export { DashboardView } from './DashboardView';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import {
   X,
@@ -18,26 +18,24 @@ import {
   UserPlus,
   Pencil,
   Star,
-  Heart,
-  CornerDownRight,
   Send,
   AtSign,
   Sparkles,
   RefreshCw,
   UserCheck,
   Flame,
-  Trash2,
   Copy,
   type LucideIcon,
 } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TaskCommentThread } from './TaskCommentThread';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { format, isToday, formatDistanceToNow } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SubtaskList, type SubtaskItem, type AssigneeOption } from './SubtaskList';
 import type { AgendaTask, AgendaTaskStatus, Priority } from '@/lib/agenda/types';
@@ -80,9 +78,11 @@ interface CommentItem {
   id: number;
   authorId?: number;
   author: string;
+  authorAvatar?: string | null;
   content: string;
   time: string;
   createdAt?: Date;
+  updatedAt?: Date;
   isEdited?: boolean;
   bg: string;
   color: string;
@@ -125,7 +125,6 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
   const [tabAnimKey, setTabAnimKey] = useState(0);
   const [tabDir, setTabDir]         = useState<'left' | 'right'>('right');
   const [newCommentId, setNewCommentId] = useState<number | null>(null);
-  const [likeAnimId, setLikeAnimId]     = useState<string | null>(null);
   const [attachAnim, setAttachAnim]     = useState<string | null>(null);
   const [subtaskAddingNew, setSubtaskAddingNew] = useState(false);
   const [subtaskNewTitle, setSubtaskNewTitle]   = useState('');
@@ -143,47 +142,15 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
   const [localAssigneeNames, setLocalAssigneeNames] = useState<string[] | null>(null);
   const assigneePopRef = useRef<HTMLDivElement>(null);
   const [comments, setComments]     = useState<CommentItem[]>([]);
-  const [hoveredCommentId, setHoveredCommentId] = useState<number | null>(null);
   const [commentInput, setCommentInput] = useState('');
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
-  const [replyInput, setReplyInput] = useState('');
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
-  const [editingContent, setEditingContent] = useState('');
   const [showMentionDrop, setShowMentionDrop] = useState(false);
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const prevOpenRef     = useRef(false);
   const prevExpandedRef = useRef(expanded);
-  const doneAnimatingCommentIds = useRef(new Set<number>());
 
   const MENTION_PEOPLE = companyUsers.length > 0
     ? companyUsers.map(u => u.name)
     : ['Juan P.', 'María G.', 'Carlos R.', 'Ana L.', 'Pedro M.'];
-
-  const toggleLike = useCallback((commentId: number, replyId?: number) => {
-    const animKey = `${commentId}-${replyId ?? ''}`;
-    setLikeAnimId(animKey);
-    setTimeout(() => setLikeAnimId(null), 400);
-    setComments(prev => prev.map(c => {
-      if (c.id === commentId && replyId === undefined) {
-        return { ...c, likes: c.likedByMe ? c.likes - 1 : c.likes + 1, likedByMe: !c.likedByMe };
-      }
-      if (c.id === commentId && replyId !== undefined) {
-        return { ...c, replies: c.replies.map(r => r.id === replyId
-          ? { ...r, likes: r.likedByMe ? r.likes - 1 : r.likes + 1, likedByMe: !r.likedByMe }
-          : r) };
-      }
-      return c;
-    }));
-  }, []);
-
-  function renderCommentText(text: string) {
-    const parts = text.split(/(@\w[\w\s.]*)/g);
-    return parts.map((part, i) =>
-      part.startsWith('@')
-        ? <span key={i} style={{ color: '#111827', fontWeight: 600, background: '#F3F4F6', borderRadius: '4px', padding: '0 3px' }}>{part}</span>
-        : part
-    );
-  }
 
   function submitComment() {
     if ((!commentInput.trim() && !commentAttachment) || !task?.id) return;
@@ -195,10 +162,13 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
     setTimeout(() => setNewCommentId(null), 600);
     const tempComment: CommentItem = {
       id: tempId,
-      authorId: currentUser?.id,
+      authorId: currentUser?.id ? Number(currentUser.id) : undefined,
+      authorAvatar: currentUser?.avatar ?? null,
       author: currentUser?.name ?? 'Tú',
       content,
       time: 'Ahora',
+      createdAt: new Date(),
+      updatedAt: new Date(),
       bg: '#F3F4F6', color: '#111827',
       likes: 0, likedByMe: false,
       mentions: [], replies: [],
@@ -213,83 +183,70 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     })
-      .then(r => { if (!r.ok) return Promise.reject(r.status); })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((saved: any) => {
+        // Replace temp with real comment from server
+        setComments(prev => prev.map(c => c.id === tempId ? {
+          ...c,
+          id: saved.id,
+          authorId: saved.authorId,
+          authorAvatar: saved.author?.avatar ?? null,
+          createdAt: new Date(saved.createdAt),
+          updatedAt: new Date(saved.updatedAt),
+        } : c));
+      })
       .catch(() => {
         // Rollback optimistic on error
         setComments(prev => prev.filter(c => c.id !== tempId));
       });
   }
 
-  function deleteComment(commentId: number) {
+  async function handleEditComment(commentId: number, newContent: string): Promise<void> {
     if (!task?.id) return;
-    // Optimistic remove
-    setComments(prev => prev.filter(c => c.id !== commentId));
-    fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, { method: 'DELETE' })
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); })
-      .catch(() => {
-        // Re-fetch on error to restore
-        fetch(`/api/agenda/tasks/${task.id}/comments`)
-          .then(r => r.ok ? r.json() : [])
-          .then((data: any[]) => {
-            const COLORS = [
-              { bg: '#F3F4F6', color: '#111827' }, { bg: '#ECFDF5', color: '#059669' },
-              { bg: '#FFFBEB', color: '#D97706' }, { bg: '#EEF2FF', color: '#6366F1' }, { bg: '#FFF1F2', color: '#DC2626' },
-            ];
-            setComments(data.map((c, i) => ({
-              id: c.id, authorId: c.authorId, author: c.author?.name ?? 'Usuario', content: c.content,
-              createdAt: new Date(c.createdAt), time: format(new Date(c.createdAt), 'HH:mm'),
-              bg: COLORS[i % COLORS.length].bg, color: COLORS[i % COLORS.length].color,
-              likes: 0, likedByMe: false, mentions: [], replies: [],
-            })));
-          });
-      });
-  }
-
-  function startEditComment(comment: CommentItem) {
-    setEditingCommentId(comment.id);
-    setEditingContent(comment.content);
-  }
-
-  function cancelEditComment() {
-    setEditingCommentId(null);
-    setEditingContent('');
-  }
-
-  function saveEditComment(commentId: number) {
-    if (!editingContent.trim() || !task?.id) return;
     const prevContent = comments.find(c => c.id === commentId)?.content;
-    setComments(prev => prev.map(c => c.id === commentId ? { ...c, content: editingContent.trim(), isEdited: true } : c));
-    setEditingCommentId(null);
-    setEditingContent('');
-    fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, {
+    // Optimistic update
+    setComments(prev => prev.map(c =>
+      c.id === commentId ? { ...c, content: newContent, isEdited: true, updatedAt: new Date() } : c
+    ));
+    const res = await fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editingContent.trim() }),
-    })
-      .then(r => { if (!r.ok) return Promise.reject(r.status); })
-      .catch(() => {
-        setComments(prev => prev.map(c => c.id === commentId ? { ...c, content: prevContent ?? c.content, isEdited: false } : c));
-      });
+      body: JSON.stringify({ content: newContent }),
+    });
+    if (!res.ok) {
+      // Rollback
+      setComments(prev => prev.map(c =>
+        c.id === commentId ? { ...c, content: prevContent ?? c.content, isEdited: false } : c
+      ));
+      throw new Error(`${res.status}`);
+    }
   }
 
-  function submitReply(commentId: number) {
-    if (!replyInput.trim()) return;
-    const newReply: CommentReply = {
-      id: Date.now(),
-      author: 'Tú',
-      content: replyInput.trim(),
-      time: 'Ahora',
-      bg: '#F3F4F6', color: '#111827',
-      likes: 0, likedByMe: false,
-    };
-    setComments(prev => prev.map(c => c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c));
-    setReplyInput('');
-    setReplyingTo(null);
+  async function handleDeleteComment(commentId: number): Promise<void> {
+    if (!task?.id) return;
+    // Optimistic remove
+    const backup = comments.find(c => c.id === commentId);
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    const res = await fetch(`/api/agenda/tasks/${task.id}/comments/${commentId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      // Rollback on error
+      if (backup) {
+        setComments(prev => {
+          const existing = prev.find(c => c.id === commentId);
+          if (existing) return prev;
+          return [...prev, backup].sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return aTime - bTime;
+          });
+        });
+      }
+      throw new Error(`${res.status}`);
+    }
   }
 
   // Fetch subtasks + comments from API whenever task changes
   useEffect(() => {
-    doneAnimatingCommentIds.current.clear();
     setComments([]);
     if (!task?.id) { setSubtasks([]); return; }
     // Subtasks
@@ -313,9 +270,11 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
         setComments(data.map((c, i) => ({
           id: c.id,
           authorId: c.authorId,
+          authorAvatar: c.author?.avatar ?? null,
           author: c.author?.name ?? 'Usuario',
           content: c.content,
           createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt),
           isEdited: c.updatedAt && c.createdAt && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000,
           time: format(new Date(c.createdAt), 'HH:mm'),
           bg: COMMENT_COLORS[i % COMMENT_COLORS.length].bg,
@@ -1053,190 +1012,41 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                   {/* Comentarios */}
                   {activeTab === 'comments' && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    <div className="agenda-scroll">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', paddingBottom: '8px' }}>
-                      {comments.map((comment, ci) => {
-                        const isMe = currentUser?.id != null && comment.authorId != null
-                          ? String(comment.authorId) === String(currentUser.id)
-                          : comment.author === (currentUser?.name ?? '');
-                        const alreadyPlayed = doneAnimatingCommentIds.current.has(comment.id);
-                        const anim = alreadyPlayed
-                          ? undefined
-                          : comment.id === newCommentId
-                            ? 'comment-in 280ms cubic-bezier(0.22,1,0.36,1) both'
-                            : `item-stagger 240ms cubic-bezier(.22,1,.36,1) ${ci * 55}ms both`;
-                        const myAvatarEl = currentUser?.avatar
-                          ? <img src={currentUser.avatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, marginTop: 2, objectFit: 'cover' }} />
-                          : <Avatar className="h-8 w-8 shrink-0" style={{ marginTop: '2px' }}>
-                              <AvatarFallback className="text-[9px] font-bold" style={{ background: '#F3F4F6', color: '#111827' }}>
-                                {currentUser?.name ? currentUser.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : 'Tú'}
-                              </AvatarFallback>
-                            </Avatar>;
-                        const showActions = hoveredCommentId === comment.id || comment.likes > 0 || replyingTo === comment.id;
-                        return (
-                        <div key={comment.id}
-                          onAnimationEnd={() => { doneAnimatingCommentIds.current.add(comment.id); }}
-                          onMouseEnter={() => setHoveredCommentId(comment.id)}
-                          onMouseLeave={() => setHoveredCommentId(null)}
-                          style={{ paddingBottom: ci < comments.length - 1 ? '20px' : '8px', animation: anim }}>
-                          {/* Comment row */}
-                          <div style={{ display: 'flex', gap: '10px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                            {/* Avatar */}
-                            {isMe ? myAvatarEl : (
-                              <Avatar className="h-8 w-8 shrink-0" style={{ marginTop: '2px' }}>
-                                <AvatarFallback className="text-[9px] font-bold" style={{ background: comment.bg, color: comment.color }}>
-                                  {comment.author.split(' ').map(w => w[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
-                            {/* Bubble area */}
-                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                              {/* Name + time */}
-                              {!isMe ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{comment.author}</span>
-                                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{comment.time}{comment.isEdited ? ' (editado)' : ''}</span>
-                                </div>
-                              ) : (
-                                <div style={{ marginBottom: '4px' }}>
-                                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{comment.time}{comment.isEdited ? ' (editado)' : ''}</span>
-                                </div>
-                              )}
-                              {/* Bubble */}
-                              <div style={{ background: isMe ? '#111827' : '#F7F8FA', border: isMe ? 'none' : '1px solid #E4E4E8', borderRadius: isMe ? '8px 2px 8px 8px' : '2px 8px 8px', padding: '8px 12px', maxWidth: '80%' }}>
-                                {editingCommentId === comment.id ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <textarea
-                                      value={editingContent}
-                                      onChange={e => setEditingContent(e.target.value)}
-                                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEditComment(comment.id); } if (e.key === 'Escape') cancelEditComment(); }}
-                                      style={{ fontSize: '13px', color: '#374151', lineHeight: 1.55, background: '#FFFFFF', border: '1px solid #E4E4E8', borderRadius: '6px', padding: '6px 8px', resize: 'none', minHeight: '36px', outline: 'none', fontFamily: 'inherit' }}
-                                      autoFocus
-                                    />
-                                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                      <button onClick={cancelEditComment} style={{ fontSize: '11px', fontWeight: 600, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Cancelar</button>
-                                      <button onClick={() => saveEditComment(comment.id)} style={{ fontSize: '11px', fontWeight: 600, color: '#FFFFFF', background: '#111827', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 8px' }}>Guardar</button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <p style={{ fontSize: '13px', color: isMe ? '#FFFFFF' : '#374151', lineHeight: 1.55 }}>{renderCommentText(comment.content)}</p>
-                                )}
-                                {comment.attachment && editingCommentId !== comment.id && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '6px 8px', background: isMe ? 'rgba(255,255,255,0.15)' : '#FFFFFF', border: isMe ? 'none' : '1px solid #E4E4E8', borderRadius: '6px', cursor: 'pointer' }}>
-                                    <FileTypeIcon name={comment.attachment.type} />
-                                    <div>
-                                      <p style={{ fontSize: '12px', fontWeight: 600, color: isMe ? '#FFFFFF' : '#111827' }}>{comment.attachment.name}</p>
-                                      <p style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : '#9CA3AF' }}>{comment.attachment.size}</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Actions — visible on hover or when liked/replying */}
-                              {showActions && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '5px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                                <button
-                                  onClick={() => toggleLike(comment.id)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: comment.likedByMe ? '#DC2626' : '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 150ms' }}
-                                >
-                                  <Heart className="h-3 w-3" style={{ fill: comment.likedByMe ? '#DC2626' : 'none', transition: 'fill 150ms', animation: likeAnimId === `${comment.id}-` ? 'like-bounce 350ms cubic-bezier(0.22,1,0.36,1) both' : undefined }} />
-                                  {comment.likes > 0 && comment.likes}
-                                </button>
-                                <button
-                                  onClick={() => { setReplyingTo(replyingTo === comment.id ? null : comment.id); setReplyInput(''); }}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: replyingTo === comment.id ? '#111827' : '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 150ms' }}
-                                >
-                                  <CornerDownRight className="h-3 w-3" />
-                                  Responder
-                                </button>
-                                {isMe && comment.id > 0 && (
-                                  <>
-                                    <button
-                                      onClick={() => startEditComment(comment)}
-                                      style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 150ms' }}
-                                      onMouseEnter={e => (e.currentTarget.style.color = '#111827')}
-                                      onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
-                                      title="Editar comentario"
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => deleteComment(comment.id)}
-                                      style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 150ms' }}
-                                      onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
-                                      onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
-                                      title="Eliminar comentario"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                              )}
-
-                              {/* Replies */}
-                              {comment.replies.length > 0 && (
-                                <div style={{ marginTop: '10px', paddingLeft: '12px', borderLeft: '2px solid #E4E4E8', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                                  {comment.replies.map(reply => (
-                                    <div key={reply.id} style={{ display: 'flex', gap: '8px' }}>
-                                      <Avatar className="h-6 w-6 shrink-0" style={{ marginTop: '1px' }}>
-                                        <AvatarFallback className="text-[8px] font-bold" style={{ background: reply.bg, color: reply.color }}>
-                                          {reply.author.split(' ').map(w => w[0]).join('')}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827' }}>{reply.author}</span>
-                                          <span style={{ fontSize: '10px', color: '#9CA3AF' }}>{reply.time}</span>
-                                        </div>
-                                        <div style={{ background: '#F7F8FA', border: '1px solid #E4E4E8', borderRadius: '6px', borderTopLeftRadius: '2px', padding: '6px 10px' }}>
-                                          <p style={{ fontSize: '12px', color: '#374151', lineHeight: 1.5 }}>{renderCommentText(reply.content)}</p>
-                                        </div>
-                                        <button
-                                          onClick={() => toggleLike(comment.id, reply.id)}
-                                          style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '3px', fontSize: '10px', fontWeight: 600, color: reply.likedByMe ? '#DC2626' : '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                                        >
-                                          <Heart className="h-2.5 w-2.5" style={{ fill: reply.likedByMe ? '#DC2626' : 'none' }} />
-                                          {reply.likes > 0 && reply.likes}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Inline reply input */}
-                              {replyingTo === comment.id && (
-                                <div style={{ marginTop: '10px', paddingLeft: '12px', display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                                  {currentUser?.avatar
-                                    ? <img src={currentUser.avatar} alt="" style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }} />
-                                    : <Avatar className="h-6 w-6 shrink-0">
-                                        <AvatarFallback className="text-[8px] font-bold" style={{ background: '#F3F4F6', color: '#111827' }}>
-                                          {currentUser?.name ? currentUser.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : 'Tú'}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                  }
-                                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', border: '1.5px solid #111827', borderRadius: '6px', padding: '5px 8px', background: '#FAFAFA' }}>
-                                    <input
-                                      autoFocus
-                                      value={replyInput}
-                                      onChange={e => setReplyInput(e.target.value)}
-                                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(comment.id); } if (e.key === 'Escape') setReplyingTo(null); }}
-                                      placeholder={`Responder a ${comment.author}...`}
-                                      className="flex-1 outline-none bg-transparent"
-                                      style={{ fontSize: '12px', color: '#111827' }}
-                                    />
-                                    <button onClick={() => submitReply(comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 }}>
-                                      <Send className="h-3.5 w-3.5" style={{ color: '#111827' }} />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
+                    <div className="agenda-scroll" style={{ padding: '4px 0' }}>
+                      <TaskCommentThread
+                        comments={comments.filter(c => c.id > 0).map(c => ({
+                          id: c.id,
+                          content: c.content,
+                          createdAt: c.createdAt ?? new Date(),
+                          updatedAt: c.updatedAt,
+                          authorId: c.authorId ?? 0,
+                          author: c.authorId != null ? {
+                            id: c.authorId,
+                            name: c.author,
+                            avatar: c.authorAvatar,
+                          } : null,
+                        }))}
+                        onEditComment={handleEditComment}
+                        onDeleteComment={handleDeleteComment}
+                      />
+                      {/* Optimistic pending comment (temp id < 0) */}
+                      {comments.filter(c => c.id < 0).map(c => (
+                        <div key={c.id} className="flex gap-3 opacity-60 mt-4 px-1">
+                          <Avatar className="h-7 w-7 shrink-0 mt-0.5">
+                            {c.authorAvatar && <AvatarImage src={c.authorAvatar} />}
+                            <AvatarFallback className="text-[10px] font-bold">
+                              {c.author.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-semibold">{c.author}</span>
+                              <span className="text-xs text-muted-foreground">Enviando...</span>
                             </div>
+                            <p className="text-sm text-foreground whitespace-pre-wrap break-words">{c.content}</p>
                           </div>
                         </div>
-                      ); })}
-
-                    </div>
+                      ))}
                     </div>
                     {/* New comment input — fixed at bottom */}
                     <div style={{ flexShrink: 0, borderTop: '1px solid #E4E4E8', paddingTop: '12px', paddingBottom: '14px' }}>
