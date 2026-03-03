@@ -6,6 +6,9 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAssigneeName } from '@/lib/agenda/types';
 import type { Priority } from '@/lib/agenda/types';
+import { useCompany } from '@/contexts/CompanyContext';
+import { loadFilters, saveFilters, clearFilters as persistClearFilters } from '@/lib/agenda/filter-persistence';
+import type { AgendaFilters } from '@/lib/agenda/filter-persistence';
 import { BoardColumn } from './BoardColumn';
 import { TaskCalendarStrip } from './TaskCalendarStrip';
 import {
@@ -52,6 +55,9 @@ export function BoardView({
   isLoading,
   newestTaskId,
 }: BoardViewProps) {
+  const { currentCompany } = useCompany();
+  const companyId = currentCompany?.id;
+
   const [activeDragTask, setActiveDragTask] = useState<AgendaTask | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
@@ -66,6 +72,7 @@ export function BoardView({
   const [filterAssignees, setFilterAssignees] = useState<string[]>([]);
   const [filterProgress, setFilterProgress] = useState<('none' | 'in_progress' | 'done')[]>([]);
   const filterRef = useRef<HTMLDivElement>(null);
+  const filtersInitialized = useRef(false);
 
   useEffect(() => {
     if (!showFilter) return;
@@ -80,6 +87,34 @@ export function BoardView({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFilter]);
+
+  // Load persisted filters from localStorage on mount (once per companyId)
+  useEffect(() => {
+    if (!companyId || filtersInitialized.current) return;
+    filtersInitialized.current = true;
+    const saved = loadFilters(companyId);
+    if (saved.priorities.length > 0) setFilterPriorities(saved.priorities as Priority[]);
+    if (saved.dateFrom) setFilterDateFrom(saved.dateFrom);
+    if (saved.dateTo) setFilterDateTo(saved.dateTo);
+    if (saved.assigneeIds.length > 0) {
+      // assigneeIds are stored as numbers, but we filter by name — skip restoring assignees
+      // (names can change; priorities/dates are safe to restore)
+    }
+  }, [companyId]);
+
+  // Persist filters to localStorage whenever they change (after init)
+  useEffect(() => {
+    if (!companyId || !filtersInitialized.current) return;
+    const filters: AgendaFilters = {
+      priorities: filterPriorities,
+      statuses: [],
+      dateFrom: filterDateFrom || null,
+      dateTo: filterDateTo || null,
+      assigneeIds: [],
+      groupId: null,
+    };
+    saveFilters(companyId, filters);
+  }, [companyId, filterPriorities, filterDateFrom, filterDateTo]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -147,6 +182,7 @@ export function BoardView({
     setFilterDateTo('');
     setFilterAssignees([]);
     setFilterProgress([]);
+    if (companyId) persistClearFilters(companyId);
   }
 
   function toggleSelectMode() {
@@ -355,6 +391,26 @@ export function BoardView({
                 );
               })}
             </div>
+
+            {/* Clear filters button — only visible when filters are active */}
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  height: '34px', padding: '0 12px',
+                  border: '1px solid #E4E4E8', borderRadius: '8px',
+                  background: '#FAFAFA', color: '#6B7280',
+                  fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+                  transition: 'all 150ms ease', whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#111827'; e.currentTarget.style.borderColor = '#D1D5DB'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E4E4E8'; }}
+              >
+                <X className="h-3 w-3" />
+                Limpiar filtros
+              </button>
+            )}
 
             {/* Filter — standalone with popover */}
             <div ref={filterRef} style={{ position: 'relative', flexShrink: 0 }}>
