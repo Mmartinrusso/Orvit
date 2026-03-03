@@ -4,8 +4,8 @@ import { boundedString, optionalTrimmedString, optionalIsoDateString, coercePosi
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
 export const WorkOrderStatusSchema = z.enum(
-  ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
-  { errorMap: () => ({ message: 'Estado inválido. Valores permitidos: PENDING, IN_PROGRESS, COMPLETED, CANCELLED' }) }
+  ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'],
+  { errorMap: () => ({ message: 'Estado inválido. Valores permitidos: PENDING, IN_PROGRESS, COMPLETED, CANCELLED, ON_HOLD' }) }
 );
 
 export const WorkOrderPrioritySchema = z.enum(

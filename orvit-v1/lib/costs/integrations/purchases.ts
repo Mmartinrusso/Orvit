@@ -11,6 +11,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
+import { isT2AvailableForCompany } from '@/lib/view-mode/should-query-t2';
+import { getT2Client } from '@/lib/prisma-t2';
 
 export interface PurchaseCostData {
   totalPurchases: number;
@@ -59,7 +61,7 @@ export async function getPurchaseCostsForMonth(
       companyId,
       esIndirecto: false,
       estado: { not: 'cancelado' },
-      fechaImputacion: {
+      fechaEmision: {
         gte: startDate,
         lte: endDate,
       },
@@ -69,29 +71,22 @@ export async function getPurchaseCostsForMonth(
         select: { id: true, name: true, razon_social: true },
       },
     },
-    orderBy: [{ proveedorId: 'asc' }, { fechaImputacion: 'asc' }],
+    orderBy: [{ proveedorId: 'asc' }, { fechaEmision: 'asc' }],
   });
-
-  if (receipts.length === 0) {
-    return {
-      totalPurchases: 0,
-      receiptCount: 0,
-      itemCount: 0,
-      bySupplier: [],
-      details: [],
-    };
-  }
 
   let totalPurchases = 0;
   const supplierMap = new Map<number, SupplierPurchaseSummary>();
   const details: PurchaseDetail[] = [];
+  let totalReceiptCount = 0;
 
+  // --- Procesar compras T1 ---
   for (const receipt of receipts) {
     const neto = toNumber(receipt.neto);
     const supplierId = receipt.proveedorId;
     const supplierName = receipt.proveedor.razon_social || receipt.proveedor.name;
 
     totalPurchases += neto;
+    totalReceiptCount++;
 
     if (!supplierMap.has(supplierId)) {
       supplierMap.set(supplierId, {
@@ -111,7 +106,7 @@ export async function getPurchaseCostsForMonth(
       receiptNumber: `${receipt.numeroSerie ?? ''}-${receipt.numeroFactura ?? ''}`.replace(/^-|-$/, ''),
       supplierId,
       supplierName,
-      receiptDate: receipt.fechaImputacion,
+      receiptDate: receipt.fechaEmision,
       neto,
       total: toNumber(receipt.total),
       estado: receipt.estado,
@@ -119,12 +114,81 @@ export async function getPurchaseCostsForMonth(
     });
   }
 
+  // --- Incluir compras T2 si la empresa tiene T2 habilitado ---
+  if (await isT2AvailableForCompany(companyId)) {
+    try {
+      const prismaT2 = getT2Client();
+      const t2Receipts = await prismaT2.t2PurchaseReceipt.findMany({
+        where: {
+          companyId,
+          estado: { not: 'cancelado' },
+          fechaEmision: { gte: startDate, lte: endDate },
+        },
+      });
+
+      if (t2Receipts.length > 0) {
+        // Obtener nombres de proveedores del main DB
+        const t2SupplierIds: number[] = [];
+        for (const r of t2Receipts) {
+          const sid = r.supplierId as number;
+          if (!t2SupplierIds.includes(sid)) t2SupplierIds.push(sid);
+        }
+        const t2Suppliers = t2SupplierIds.length > 0
+          ? await prisma.suppliers.findMany({
+              where: { id: { in: t2SupplierIds } },
+              select: { id: true, name: true, razon_social: true },
+            })
+          : [];
+        const t2SupMap = new Map<number, { id: number; name: string; razon_social: string | null }>(
+          t2Suppliers.map(s => [s.id, s])
+        );
+
+        for (const receipt of t2Receipts) {
+          const neto = Number(receipt.neto) || 0;
+          const supplierId = receipt.supplierId as number;
+          const sup = t2SupMap.get(supplierId);
+          const supplierName = sup?.razon_social || sup?.name || `Proveedor ${supplierId}`;
+
+          totalPurchases += neto;
+          totalReceiptCount++;
+
+          if (!supplierMap.has(supplierId)) {
+            supplierMap.set(supplierId, {
+              supplierId,
+              supplierName,
+              total: 0,
+              receiptCount: 0,
+              itemCount: 0,
+            });
+          }
+          const s = supplierMap.get(supplierId)!;
+          s.total += neto;
+          s.receiptCount += 1;
+
+          details.push({
+            receiptId: receipt.id,
+            receiptNumber: `T2-${receipt.numeroSerie || ''}-${receipt.numeroFactura || ''}`.replace(/^T2--/, 'T2-'),
+            supplierId,
+            supplierName,
+            receiptDate: receipt.fechaEmision,
+            neto,
+            total: Number(receipt.total) || 0,
+            estado: receipt.estado,
+            tipo: receipt.tipo,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[Costs/Purchases] Error querying T2:', err);
+    }
+  }
+
   const bySupplier = Array.from(supplierMap.values()).sort((a, b) => b.total - a.total);
 
   return {
     totalPurchases,
-    receiptCount: receipts.length,
-    itemCount: receipts.length, // campo legacy, igual a receiptCount
+    receiptCount: totalReceiptCount,
+    itemCount: totalReceiptCount,
     bySupplier,
     details,
   };

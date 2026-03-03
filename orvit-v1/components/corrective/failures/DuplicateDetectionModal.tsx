@@ -105,7 +105,7 @@ export function DuplicateDetectionModal({
 
                   {/* Metadata */}
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span>🏭 {duplicate.machine.name}</span>
+                    {duplicate.machine && <span>🏭 {duplicate.machine.name}</span>}
                     {duplicate.component && (
                       <span>🔧 {duplicate.component.name}</span>
                     )}

@@ -85,10 +85,15 @@ export const GET = withGuards(async (request: NextRequest, { user, params: _p },
         select: {
           id: true,
           title: true,
+          description: true,
           causedDowntime: true,
           status: true,
           priority: true,
           affectedComponents: true,
+          incidentType: true,
+          failureCategory: true,
+          machineId: true,
+          originalReport: true,
         },
       };
     }
@@ -136,27 +141,68 @@ export const GET = withGuards(async (request: NextRequest, { user, params: _p },
               select: { id: true, name: true },
             })
           : Promise.resolve([]),
-        // Query solutionsApplied
-        failureIds.length > 0
-          ? prisma.solutionApplied.findMany({
-              where: { failureOccurrenceId: { in: failureIds } },
-              select: {
-                id: true,
-                diagnosis: true,
-                solution: true,
-                outcome: true,
-                performedAt: true,
-              },
-              orderBy: { performedAt: 'desc' },
-              take: 1,
-            })
-          : Promise.resolve([]),
+        // Query solutionsApplied (por failureOccurrenceId O workOrderId directo)
+        prisma.solutionApplied.findMany({
+          where: {
+            OR: [
+              ...(failureIds.length > 0 ? [{ failureOccurrenceId: { in: failureIds } }] : []),
+              { workOrderId: Number(id) },
+            ],
+          },
+          select: {
+            id: true,
+            diagnosis: true,
+            solution: true,
+            outcome: true,
+            performedAt: true,
+            actualMinutes: true,
+            confirmedCause: true,
+            fixType: true,
+            effectiveness: true,
+            notes: true,
+            repairAction: true,
+            toolsUsed: true,
+            sparePartsUsed: true,
+            finalComponentId: true,
+            finalSubcomponentId: true,
+          },
+          orderBy: { performedAt: 'desc' },
+          take: 1,
+        }),
       ]);
 
       // Procesar subcomponentes
       const subcomponentsMap: Map<number, { id: number; name: string }> = new Map();
       if (subcomponentsResult.status === 'fulfilled') {
         subcomponentsResult.value.forEach(s => subcomponentsMap.set(s.id, s));
+      }
+
+      // Procesar soluciones y resolver nombres de componentes finales
+      let solutionsWithComponents: any[] = [];
+      if (solutionsResult.status === 'fulfilled' && solutionsResult.value.length > 0) {
+        const solutions = solutionsResult.value as any[];
+
+        // Recopilar IDs únicos de componentes/subcomponentes finales
+        const finalCompIds = [...new Set(solutions.map((s: any) => s.finalComponentId).filter(Boolean))] as number[];
+        const finalSubIds = [...new Set(solutions.map((s: any) => s.finalSubcomponentId).filter(Boolean))] as number[];
+        const allFinalIds = [...new Set([...finalCompIds, ...finalSubIds])];
+
+        const finalComponents = allFinalIds.length > 0
+          ? await prisma.component.findMany({
+              where: { id: { in: allFinalIds } },
+              select: { id: true, name: true },
+            })
+          : [];
+
+        const finalCompMap = new Map(finalComponents.map(c => [c.id, c]));
+
+        solutionsWithComponents = solutions.map((s: any) => ({
+          ...s,
+          finalComponent: s.finalComponentId ? (finalCompMap.get(s.finalComponentId) ?? null) : null,
+          finalSubcomponent: s.finalSubcomponentId ? (finalCompMap.get(s.finalSubcomponentId) ?? null) : null,
+        }));
+      } else if (solutionsResult.status === 'rejected') {
+        console.error('Error en query solutionsApplied:', (solutionsResult as any).reason);
       }
 
       // Agregar subcomponents a cada failureOccurrence
@@ -171,7 +217,7 @@ export const GET = withGuards(async (request: NextRequest, { user, params: _p },
           };
         }),
         subcomponents: [...subcomponentsMap.values()],
-        solutionsApplied: solutionsResult.status === 'fulfilled' ? solutionsResult.value : [],
+        solutionsApplied: solutionsWithComponents,
       };
     }
 

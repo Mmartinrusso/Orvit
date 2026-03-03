@@ -10,7 +10,7 @@ import { MODE } from '@/lib/view-mode/types';
 import { applyViewMode } from '@/lib/view-mode/prisma-helper';
 import { shouldQueryT2, enrichT2Receipts } from '@/lib/view-mode';
 import { inicializarProntoPago } from '@/lib/compras/pronto-pago-helper';
-import { syncAllSupplyPrices } from '@/lib/costs/sync-supply-prices';
+import { syncAllSupplyPrices, syncSupplyPriceWithT2 } from '@/lib/costs/sync-supply-prices';
 import { hasUserPermission } from '@/lib/permissions-helpers';
 
 export const dynamic = 'force-dynamic';
@@ -578,6 +578,9 @@ export async function POST(request: NextRequest) {
       docType,  // T1 (documentado) o T2 (extendido)
       esIndirecto,
       indirectCategory,
+      prorratear,
+      prorrateoMeses,
+      prorrateoFechaInicio,
     } = body;
 
     // Validar docType - T2 solo se puede crear en modo Extended
@@ -606,7 +609,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validaciones básicas
-    if (!numeroSerie || !numeroFactura || !tipo || !proveedorId || !fechaEmision || !fechaImputacion) {
+    const tiposSinNumeracion = ['VEP', 'Boleta de Pago'];
+    const requiereNumeracion = !tiposSinNumeracion.includes(tipo);
+    if ((requiereNumeracion && (!numeroSerie || !numeroFactura)) || !tipo || !proveedorId || !fechaEmision) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
@@ -679,6 +684,28 @@ export async function POST(request: NextRequest) {
           // Nota: El historial de precios se crea al momento del PAGO, no aquí
         }
 
+        // Sync supply prices incluyendo T2 (best-effort)
+        try {
+          const processedSupplyIds = new Set<number>();
+          for (const item of items) {
+            if (!item.itemId) continue;
+            const si = await prisma.supplierItem.findUnique({
+              where: { id: parseInt(item.itemId) },
+              select: { supplyId: true },
+            });
+            if (si?.supplyId && !processedSupplyIds.has(si.supplyId)) {
+              processedSupplyIds.add(si.supplyId);
+              await syncSupplyPriceWithT2({
+                supplyId: si.supplyId,
+                fechaEmision,
+                companyId,
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('[T2] Supply price sync error:', err);
+        }
+
         // Enriquecer con datos del proveedor
         const [enriched] = await enrichT2Receipts([comprobanteT2]);
 
@@ -736,6 +763,9 @@ export async function POST(request: NextRequest) {
           docType: 'T1',  // Siempre T1 en BD principal
           esIndirecto: Boolean(esIndirecto),
           indirectCategory: esIndirecto ? (indirectCategory || null) : null,
+          prorratear: Boolean(prorratear),
+          prorrateoMeses: prorratear && prorrateoMeses ? parseInt(prorrateoMeses) : null,
+          prorrateoFechaInicio: prorratear && prorrateoFechaInicio ? new Date(prorrateoFechaInicio + '-01') : null,
           companyId,
           createdBy: user.id,
         },
@@ -773,11 +803,12 @@ export async function POST(request: NextRequest) {
           // El proveedor SIEMPRE es el de la factura, no confiamos en item.proveedorId
           const proveedorItemId = parseInt(proveedorId);
 
-          // Buscar o crear supply interno
+          // Buscar o crear supply interno (case-insensitive para evitar duplicados)
           let supply = await tx.supplies.findFirst({
             where: {
-              name: nombre,
+              name: { equals: nombre, mode: 'insensitive' },
               company_id: companyId,
+              is_active: true,
             },
           });
 
@@ -861,7 +892,7 @@ export async function POST(request: NextRequest) {
           await syncAllSupplyPrices(
             tx,
             resolvedItems,
-            body.fechaImputacion ?? body.fechaEmision,
+            body.fechaEmision,
             companyId,
             referencia
           );

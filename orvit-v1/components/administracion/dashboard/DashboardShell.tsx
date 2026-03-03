@@ -1,26 +1,23 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { WIDGETS_REGISTRY, canSeeWidget } from './registry';
 import { useAdminDashboardSummary, type RangeKey } from '@/hooks/use-admin-dashboard-summary';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, LayoutGrid } from 'lucide-react';
 
 const RANGE_OPTIONS: { value: RangeKey; label: string }[] = [
-  { value: '90d', label: 'Últimos 3 meses' },
-  { value: '30d', label: 'Últimos 30 días' },
-  { value: '7d', label: 'Últimos 7 días' },
-  { value: 'ytd', label: 'YTD' },
+  { value: '7d',  label: '7 días'    },
+  { value: '30d', label: '30 días'   },
+  { value: '90d', label: '3 meses'   },
+  { value: 'ytd', label: 'Este año'  },
 ];
 
 function pickTitleFromData(data: { tasks?: unknown; costs?: unknown; purchases?: unknown; system?: unknown }) {
-  if (data.system) return { title: 'Panel de Administración', subtitle: 'Métricas, tendencias y actividad según tus permisos.' };
-  if (data.purchases) return { title: 'Panel de Compras', subtitle: 'Estados, gasto y acciones rápidas.' };
-  if (data.costs) return { title: 'Panel de Costos', subtitle: 'Tendencias e impacto por categoría.' };
-  if (data.tasks) return { title: 'Panel de Tareas', subtitle: 'Pendientes, estado y tu día.' };
+  if (data.system)    return { title: 'Panel de Administración', subtitle: 'Métricas, tendencias y actividad del sistema.' };
+  if (data.purchases) return { title: 'Panel de Compras',        subtitle: 'Estados, gasto y acciones rápidas.' };
+  if (data.costs)     return { title: 'Panel de Costos',         subtitle: 'Tendencias e impacto por categoría.' };
+  if (data.tasks)     return { title: 'Panel de Tareas',         subtitle: 'Pendientes, estado y tu día.' };
   return { title: 'Panel', subtitle: 'Sin módulos habilitados.' };
 }
 
@@ -37,129 +34,182 @@ export function DashboardShell() {
     return WIDGETS_REGISTRY.filter((w) => canSeeWidget(w, perms, data)).sort((a, b) => a.order - b.order);
   }, [data, perms]);
 
-  const kpiDefs = useMemo(() => visibleWidgets.filter((w) => w.id.startsWith('kpi.')), [visibleWidgets]);
+  const kpiDefs    = useMemo(() => visibleWidgets.filter((w) =>  w.id.startsWith('kpi.')), [visibleWidgets]);
+  const otherDefs  = useMemo(() => visibleWidgets.filter((w) => !w.id.startsWith('kpi.')), [visibleWidgets]);
 
   const kpiSpan = useMemo(() => {
-    const count = kpiDefs.length;
-    if (count <= 1) return 'col-span-12';
-    if (count === 2) return 'col-span-12 md:col-span-6 lg:col-span-6';
-    if (count === 3) return 'col-span-12 md:col-span-6 lg:col-span-4';
+    const n = kpiDefs.length;
+    if (n <= 1) return 'col-span-12';
+    if (n === 2) return 'col-span-12 md:col-span-6 lg:col-span-6';
+    if (n === 3) return 'col-span-12 md:col-span-6 lg:col-span-4';
     return 'col-span-12 md:col-span-6 lg:col-span-3';
   }, [kpiDefs.length]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
-        <div className="px-4 md:px-6 py-3 flex items-start gap-4 justify-between">
-          <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-semibold tracking-tight">{title}</h1>
-            <div className="mt-1 flex flex-col gap-0.5">
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+    <>
+      <style>{`
+        @keyframes dash-header-in {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        @keyframes dash-kpi-in {
+          from { opacity: 0; transform: translateY(12px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+        @keyframes dash-widget-in {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        .dash-refresh-btn:hover { background: #F4F4F4 !important; }
+      `}</style>
+
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 56px)' }}>
+
+        {/* ── Sticky header ── */}
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 10,
+          background: 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          borderBottom: '1px solid #E8E8E8',
+          padding: '14px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+          flexWrap: 'wrap',
+          animation: 'dash-header-in 300ms cubic-bezier(0.22,1,0.36,1) both',
+        }}>
+          {/* Title */}
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#050505', margin: 0, lineHeight: 1.2 }}>
+              {title}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+              <p style={{ fontSize: '12px', color: '#9C9CAA', margin: 0 }}>{subtitle}</p>
               {data?.meta?.generatedAt && (
-                <p className="text-xs text-muted-foreground">
-                  Actualizado: {new Date(data.meta.generatedAt).toLocaleString('es-AR')}
-                </p>
+                <span style={{ fontSize: '11px', color: '#C8C8D0' }}>
+                  · {new Date(data.meta.generatedAt).toLocaleString('es-AR')}
+                </span>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            {/* Segmented control */}
-            <div
-              role="group"
-              className="flex items-center justify-center border border-border rounded-md p-0.5 bg-muted/40 gap-0 h-6"
-            >
-              {RANGE_OPTIONS.map((opt, idx) => {
-                const active = range === opt.value;
-                const isFirst = idx === 0;
-                const isLast = idx === RANGE_OPTIONS.length - 1;
 
+          {/* Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Range selector */}
+            <div style={{ display: 'flex', gap: '3px', padding: '4px', background: '#F4F4F4', borderRadius: '10px' }}>
+              {RANGE_OPTIONS.map(opt => {
+                const active = range === opt.value;
                 return (
                   <button
                     key={opt.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    data-state={active ? 'on' : 'off'}
                     onClick={() => setRange(opt.value)}
-                    className={cn(
-                      'inline-flex items-center justify-center ring-offset-background transition-colors',
-                      'hover:bg-muted hover:text-muted-foreground',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                      'disabled:pointer-events-none disabled:opacity-50',
-                      'data-[state=on]:text-accent-foreground data-[state=on]:bg-background data-[state=on]:shadow-sm',
-                      'gap-2 min-w-10 border-0 bg-transparent px-2 py-0.5 text-xs h-full font-normal',
-                      isFirst ? 'rounded-l-md rounded-r-none' : isLast ? 'rounded-r-md rounded-l-none' : 'rounded-none'
-                    )}
+                    style={{
+                      height: '28px', padding: '0 12px', borderRadius: '7px',
+                      border: 'none',
+                      background: active ? '#FFFFFF' : 'transparent',
+                      color: active ? '#050505' : '#9C9CAA',
+                      fontSize: '12px', fontWeight: active ? 600 : 500,
+                      cursor: 'pointer', transition: 'all 120ms ease',
+                      boxShadow: active ? '0 1px 4px rgba(0,0,0,.08)' : 'none',
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     {opt.label}
                   </button>
                 );
               })}
             </div>
+
+            {/* Refresh */}
             <button
-              type="button"
+              className="dash-refresh-btn"
               onClick={() => query.refetch()}
               disabled={query.isFetching}
-              className={cn(
-                'inline-flex items-center justify-center border border-border rounded-md p-0.5 bg-muted/40 h-6',
-                'px-2 text-xs font-normal gap-1.5',
-                'hover:bg-muted hover:text-muted-foreground',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                'disabled:pointer-events-none disabled:opacity-50',
-                query.isFetching && 'bg-background shadow-sm text-accent-foreground'
-              )}
-              aria-label="Actualizar"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                height: '36px', padding: '0 14px', borderRadius: '10px',
+                border: '1px solid #E4E4E4', background: '#FAFAFA',
+                color: '#575456', fontSize: '12px', fontWeight: 600,
+                cursor: query.isFetching ? 'not-allowed' : 'pointer',
+                opacity: query.isFetching ? 0.7 : 1,
+                transition: 'all 120ms ease',
+              }}
             >
-              <RefreshCcw className={cn('h-3.5 w-3.5', query.isFetching && 'animate-spin')} />
+              <RefreshCcw
+                style={{ width: 13, height: 13 }}
+                className={query.isFetching ? 'animate-spin' : ''}
+              />
               Actualizar
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Loading skeleton inicial */}
-      {query.isLoading && !data ? (
-        <div className="px-4 md:px-6 pb-6 grid grid-cols-12 gap-4 md:gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="col-span-12 md:col-span-6 lg:col-span-3">
-              <Card>
-                <CardContent className="p-6 space-y-3">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-8 w-40" />
-                  <Skeleton className="h-24 w-full" />
-                </CardContent>
-              </Card>
-            </div>
-          ))}
-        </div>
-      ) : data ? (
-        <div className="px-4 md:px-6 pb-6 grid grid-cols-12 gap-4 md:gap-6 items-start">
-          {/* KPI row */}
-          {kpiDefs.map((w) => (
-            <div key={w.id} className={kpiSpan}>
-              {w.component({ data, range })}
-            </div>
-          ))}
+        {/* ── Loading skeleton ── */}
+        {query.isLoading && !data && (
+          <div className="grid grid-cols-12 gap-4 md:gap-5" style={{ padding: '24px 24px 0' }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="col-span-12 md:col-span-6 lg:col-span-3 animate-pulse"
+                style={{
+                  height: '140px', borderRadius: '16px', background: '#F0F0F0',
+                  animation: `dash-kpi-in 300ms cubic-bezier(0.22,1,0.36,1) ${i * 55}ms both`,
+                }}
+              />
+            ))}
+            <div
+              className="col-span-12 lg:col-span-8 animate-pulse"
+              style={{
+                height: '340px', borderRadius: '16px', background: '#F0F0F0',
+                animation: 'dash-widget-in 340ms cubic-bezier(0.22,1,0.36,1) 300ms both',
+              }}
+            />
+          </div>
+        )}
 
-          {/* Rest widgets */}
-          {visibleWidgets
-            .filter((w) => !w.id.startsWith('kpi.'))
-            .map((w) => (
-              <div key={w.id} className={cn(w.layout.sm || 'col-span-12', w.layout.md, w.layout.lg)}>
+        {/* ── Widgets grid ── */}
+        {!query.isLoading && data && (
+          <div
+            className="grid grid-cols-12 items-start"
+            style={{ padding: '24px', gap: '16px', flex: 1 }}
+          >
+            {/* KPI row */}
+            {kpiDefs.map((w, i) => (
+              <div
+                key={w.id}
+                className={kpiSpan}
+                style={{ animation: `dash-kpi-in 340ms cubic-bezier(0.22,1,0.36,1) ${i * 65}ms both` }}
+              >
                 {w.component({ data, range })}
               </div>
             ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No hay datos para mostrar.
-          </CardContent>
-        </Card>
-      )}
-    </div>
+
+            {/* Other widgets */}
+            {otherDefs.map((w, i) => (
+              <div
+                key={w.id}
+                className={cn(w.layout.sm || 'col-span-12', w.layout.md, w.layout.lg)}
+                style={{ animation: `dash-widget-in 360ms cubic-bezier(0.22,1,0.36,1) ${(kpiDefs.length * 65) + i * 70 + 60}ms both` }}
+              >
+                {w.component({ data, range })}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Empty state ── */}
+        {!query.isLoading && !data && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                <LayoutGrid style={{ width: 24, height: 24, color: '#C0C0C8' }} />
+              </div>
+              <p style={{ fontSize: '15px', fontWeight: 600, color: '#050505', margin: '0 0 4px' }}>Sin datos disponibles</p>
+              <p style={{ fontSize: '13px', color: '#9C9CAA', margin: 0 }}>No hay módulos habilitados para mostrar.</p>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </>
   );
 }
-
-

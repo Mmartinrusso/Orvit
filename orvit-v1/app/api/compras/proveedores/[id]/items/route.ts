@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { isT2AvailableForCompany } from '@/lib/view-mode/should-query-t2';
+import { getT2Client } from '@/lib/prisma-t2';
 
 export const dynamic = 'force-dynamic';
 
@@ -212,9 +214,64 @@ export async function GET(
       }
     }
 
+    // --- Incluir compras T2 en el historial de precios (solo en Extended mode) ---
+    const t2PriceMap = new Map<number, Array<{ precioUnitario: number; fecha: Date; comprobanteNum: string }>>();
+    if (!isStandardMode && await isT2AvailableForCompany(companyId)) {
+      try {
+        const prismaT2 = getT2Client();
+        const t2Items = await prismaT2.t2PurchaseReceiptItem.findMany({
+          where: {
+            supplierItemId: { in: supplierItemIds },
+            receipt: {
+              companyId,
+              estado: { not: 'cancelado' },
+            },
+          },
+          select: {
+            supplierItemId: true,
+            precioUnitario: true,
+            receipt: {
+              select: {
+                id: true,
+                numeroSerie: true,
+                numeroFactura: true,
+                fechaEmision: true,
+              },
+            },
+          },
+          orderBy: { receipt: { fechaEmision: 'desc' } },
+        });
+
+        for (const t2Item of t2Items) {
+          const sid = t2Item.supplierItemId;
+          if (!t2PriceMap.has(sid)) t2PriceMap.set(sid, []);
+          t2PriceMap.get(sid)!.push({
+            precioUnitario: Number(t2Item.precioUnitario),
+            fecha: t2Item.receipt.fechaEmision,
+            comprobanteNum: `T2-${t2Item.receipt.numeroSerie || ''}-${t2Item.receipt.numeroFactura || ''}`.replace(/^T2--/, 'T2-'),
+          });
+        }
+      } catch (err) {
+        console.error('[Items/T2] Error querying T2 price history:', err);
+      }
+    }
+
     // Procesar items para agregar información de variación y stock
     let itemsConVariacion = items.map(item => {
-      const historial = item.priceHistory || [];
+      // Merge T1 priceHistory con T2 data
+      const t1Historial = (item.priceHistory || []).map(h => ({
+        precioUnitario: Number(h.precioUnitario),
+        fecha: h.fecha,
+        source: 'T1' as const,
+      }));
+      const t2Historial = (t2PriceMap.get(item.id) || []).map(h => ({
+        precioUnitario: h.precioUnitario,
+        fecha: h.fecha,
+        source: 'T2' as const,
+      }));
+      const historial = [...t1Historial, ...t2Historial].sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+      );
       const ultimoPrecio = historial[0];
       const penultimoPrecio = historial[1];
 
@@ -329,7 +386,7 @@ export async function POST(
     const { id } = await params;
     const proveedorId = parseInt(id);
     const body = await request.json();
-    const { nombre, descripcion, unidad, precioUnitario, supplyId, codigoProveedor, toolId } = body;
+    const { nombre, descripcion, unidad, precioUnitario, supplyId, codigoProveedor, toolId, esGastoIndirecto, categoriaIndirecta, esServicio } = body;
 
     if (!nombre || !nombre.trim()) {
       return NextResponse.json(
@@ -350,37 +407,17 @@ export async function POST(
       return NextResponse.json({ error: 'Proveedor no encontrado' }, { status: 404 });
     }
 
-    // Resolver el supply:
-    // - Si viene supplyId, usar ese (validando que exista)
-    // - Si no viene, crear un supply nuevo para este item
-    let resolvedSupplyId: number;
-
+    // Validar supplyId si viene
     if (supplyId) {
       const existingSupply = await prisma.supplies.findFirst({
-        where: {
-          id: parseInt(supplyId),
-          company_id: companyId,
-        },
+        where: { id: parseInt(supplyId), company_id: companyId },
       });
-
       if (!existingSupply) {
         return NextResponse.json({ error: 'Supply no encontrado' }, { status: 404 });
       }
-
-      resolvedSupplyId = existingSupply.id;
-    } else {
-      const newSupply = await prisma.supplies.create({
-        data: {
-          name: nombre.trim(),
-          unit_measure: unidad || 'UN',
-          company_id: companyId,
-          is_active: true,
-        },
-      });
-      resolvedSupplyId = newSupply.id;
     }
 
-    // Validar toolId si viene
+    // Validar toolId si viene (dirección B: vincular a Tool existente)
     if (toolId) {
       const tool = await prisma.tool.findFirst({
         where: { id: parseInt(toolId), companyId },
@@ -390,70 +427,135 @@ export async function POST(
       }
     }
 
-    // Verificar que no existe ya este item para este proveedor (mismo supply)
-    const itemExistente = await prisma.supplierItem.findFirst({
-      where: {
-        supplierId: proveedorId,
-        supplyId: resolvedSupplyId,
-        companyId: companyId,
-      },
+    // Todo en una transacción: Supply + SupplierItem + Tool auto-creado
+    const result = await prisma.$transaction(async (tx) => {
+      // Resolver supply: buscar existente por nombre (case-insensitive) o crear nuevo
+      let resolvedSupplyId: number;
+      if (supplyId) {
+        resolvedSupplyId = parseInt(supplyId);
+      } else {
+        // Buscar supply existente con el mismo nombre en la misma empresa
+        const existingSupply = await tx.supplies.findFirst({
+          where: {
+            name: { equals: nombre.trim(), mode: 'insensitive' },
+            company_id: companyId,
+            is_active: true,
+          },
+          select: { id: true },
+        });
+
+        if (existingSupply) {
+          resolvedSupplyId = existingSupply.id;
+        } else {
+          const newSupply = await tx.supplies.create({
+            data: {
+              name: nombre.trim(),
+              unit_measure: unidad || 'UN',
+              company_id: companyId,
+              is_active: true,
+            },
+          });
+          resolvedSupplyId = newSupply.id;
+        }
+      }
+
+      // Verificar duplicado (mismo supply + proveedor)
+      const itemExistente = await tx.supplierItem.findFirst({
+        where: { supplierId: proveedorId, supplyId: resolvedSupplyId, companyId },
+      });
+      if (itemExistente) {
+        throw new Error('DUPLICATE_ITEM');
+      }
+
+      // Unidad final
+      let unidadFinal = unidad;
+      if (!unidadFinal) {
+        const supplyData = await tx.supplies.findUnique({
+          where: { id: resolvedSupplyId },
+          select: { unit_measure: true }
+        });
+        unidadFinal = supplyData?.unit_measure || 'UN';
+      }
+
+      // Crear SupplierItem
+      const nuevoItem = await tx.supplierItem.create({
+        data: {
+          supplierId: proveedorId,
+          supplyId: resolvedSupplyId,
+          nombre: nombre.trim(),
+          descripcion: descripcion?.trim() || null,
+          codigoProveedor: codigoProveedor?.trim() || null,
+          unidad: unidadFinal,
+          precioUnitario: precioUnitario ? parseFloat(precioUnitario) : null,
+          toolId: toolId ? parseInt(toolId) : null,
+          activo: true,
+          companyId,
+          esGastoIndirecto: esGastoIndirecto === true,
+          categoriaIndirecta: categoriaIndirecta || null,
+          esServicio: esServicio === true,
+        },
+      });
+
+      // Auto-vincular o crear Tool en pañol si no es servicio y no se vinculó manualmente
+      if (!toolId && esServicio !== true) {
+        // Buscar Tool existente con nombre similar (case-insensitive)
+        // Esto permite que "Filtro Aceite", "FILTRO ACEITE" y "filtro aceite" matcheen
+        const existingTool = await tx.tool.findFirst({
+          where: {
+            name: { equals: nombre.trim(), mode: 'insensitive' },
+            companyId
+          },
+          select: { id: true }
+        });
+
+        let resolvedToolId: number;
+        if (existingTool) {
+          // Reusar el Tool existente (mismo item, posiblemente de otro proveedor)
+          resolvedToolId = existingTool.id;
+        } else {
+          // Crear Tool nuevo
+          const autoTool = await tx.tool.create({
+            data: {
+              name: nombre.trim(),
+              itemType: 'SPARE_PART',
+              companyId,
+              stockQuantity: 0,
+              unit: unidadFinal || 'UN',
+              code: codigoProveedor?.trim() || null,
+              supplier: proveedor.name || null,
+            }
+          });
+          resolvedToolId = autoTool.id;
+        }
+
+        await tx.supplierItem.update({
+          where: { id: nuevoItem.id },
+          data: { toolId: resolvedToolId }
+        });
+      }
+
+      // Re-fetch con includes para la response (incluye el Tool auto-creado)
+      return tx.supplierItem.findUnique({
+        where: { id: nuevoItem.id },
+        include: {
+          supply: { select: { id: true, name: true, unit_measure: true } },
+          tool: { select: { id: true, name: true, code: true, itemType: true } },
+        },
+      });
     });
 
-    if (itemExistente) {
+    return NextResponse.json(result, { status: 201 });
+  } catch (error: any) {
+    if (error?.message === 'DUPLICATE_ITEM') {
       return NextResponse.json(
         { error: 'Este item ya existe para este proveedor' },
         { status: 400 }
       );
     }
-
-    // Obtener la unidad del supply si no se proporciona
-    let unidadFinal = unidad;
-    if (!unidadFinal) {
-      const supplyData = await prisma.supplies.findUnique({
-        where: { id: resolvedSupplyId },
-        select: { unit_measure: true }
-      });
-      unidadFinal = supplyData?.unit_measure || 'UN';
-    }
-
-    // Crear el item
-    const nuevoItem = await prisma.supplierItem.create({
-      data: {
-        supplierId: proveedorId,
-        supplyId: resolvedSupplyId,
-        nombre: nombre.trim(),
-        descripcion: descripcion?.trim() || null,
-        codigoProveedor: codigoProveedor?.trim() || null,
-        unidad: unidadFinal,
-        precioUnitario: precioUnitario ? parseFloat(precioUnitario) : null,
-        toolId: toolId ? parseInt(toolId) : null,
-        activo: true,
-        companyId: companyId,
-      },
-      include: {
-        supply: {
-          select: {
-            id: true,
-            name: true,
-            unit_measure: true,
-          }
-        },
-        tool: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            itemType: true,
-          }
-        },
-      },
-    });
-
-    return NextResponse.json(nuevoItem, { status: 201 });
-  } catch (error) {
     console.error('Error creating supplier item:', error);
+    const errorDetail = error?.message || error?.code || String(error);
     return NextResponse.json(
-      { error: 'Error al crear el item' },
+      { error: 'Error al crear el item', detail: errorDetail },
       { status: 500 }
     );
   }

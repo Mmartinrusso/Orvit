@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
+import { hasPermission } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateAgendaTaskSchema } from '@/lib/validations/agenda-tasks';
+import { logTaskActivity } from '@/lib/agenda/activity-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +33,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const category = searchParams.get('category');
     const groupId = searchParams.get('groupId');
+    const source = searchParams.get('source');
+    const overdue = searchParams.get('overdue');
+    const sortBy = searchParams.get('sortBy'); // createdAt, dueDate, priority, updatedAt, title
+    const sortOrder = searchParams.get('sortOrder') as 'asc' | 'desc' | null;
 
     // Acceso: el usuario ve sus tareas personales + todas las tareas de empresa (grupo o visibles)
     const accessFilter = {
@@ -87,6 +93,17 @@ export async function GET(request: NextRequest) {
       andFilters.push({ groupId: groupId === 'null' ? null : parseInt(groupId) });
     }
 
+    if (source && ['WEB', 'DISCORD_TEXT', 'DISCORD_VOICE', 'API'].includes(source)) {
+      andFilters.push({ source });
+    }
+
+    if (overdue === 'true') {
+      andFilters.push({
+        status: { notIn: ['COMPLETED', 'CANCELLED'] },
+        dueDate: { lt: new Date() },
+      });
+    }
+
     const where: any = {
       companyId,
       AND: andFilters,
@@ -120,12 +137,39 @@ export async function GET(request: NextRequest) {
             select: { comments: true },
           },
         },
-        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+        orderBy: sortBy && ['createdAt', 'dueDate', 'priority', 'updatedAt', 'title'].includes(sortBy)
+          ? [{ [sortBy]: sortOrder || 'desc' }]
+          : [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
         take: pageSize,
         skip: (page - 1) * pageSize,
       }),
       prisma.agendaTask.count({ where }),
     ]);
+
+    // Obtener conteo de subtareas (total y completadas) por tarea
+    const taskIds = tasks.map(t => t.id);
+    let totalCountMap = new Map<number, number>();
+    let doneCountMap = new Map<number, number>();
+    if (taskIds.length > 0) {
+      try {
+        const [subtaskAllCounts, subtaskDoneCounts] = await Promise.all([
+          prisma.agendaSubtask.groupBy({
+            by: ['taskId'],
+            where: { taskId: { in: taskIds } },
+            _count: { id: true },
+          }),
+          prisma.agendaSubtask.groupBy({
+            by: ['taskId'],
+            where: { taskId: { in: taskIds }, done: true },
+            _count: { id: true },
+          }),
+        ]);
+        totalCountMap = new Map(subtaskAllCounts.map(s => [s.taskId, s._count.id]));
+        doneCountMap = new Map(subtaskDoneCounts.map(s => [s.taskId, s._count.id]));
+      } catch (subtaskErr) {
+        console.error('[API] Error counting subtasks:', subtaskErr);
+      }
+    }
 
     // Transformar respuesta
     const transformedTasks = tasks.map((task) => ({
@@ -170,7 +214,11 @@ export async function GET(request: NextRequest) {
       isCompanyVisible: (task as any).isCompanyVisible ?? false,
       externalNotified: (task as any).externalNotified ?? false,
       externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
-      _count: { comments: (task as any)._count?.comments ?? 0 },
+      _count: {
+        comments: (task as any)._count?.comments ?? 0,
+        subtasks: totalCountMap.get(task.id) ?? 0,
+        subtasksDone: doneCountMap.get(task.id) ?? 0,
+      },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     }));
@@ -196,6 +244,11 @@ export async function POST(request: NextRequest) {
     const user = await getUserFromToken();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    // Verificar permiso de rol
+    if (!hasPermission('tasks.create', { userId: user.id, userRole: user.role })) {
+      return NextResponse.json({ error: 'No tienes permiso para crear tareas' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -312,10 +365,38 @@ export async function POST(request: NextRequest) {
       isCompanyVisible: (task as any).isCompanyVisible ?? false,
       externalNotified: (task as any).externalNotified ?? false,
       externalNotifiedAt: (task as any).externalNotifiedAt?.toISOString() || null,
-      _count: { comments: 0 },
+      _count: { comments: 0, subtasks: 0, subtasksDone: 0 },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     };
+
+    // Registrar actividad de creación
+    logTaskActivity({
+      taskId: task.id,
+      companyId: task.companyId,
+      userId: user.id,
+      eventType: 'CREATED',
+      description: `Creó la tarea "${task.title}"`,
+    });
+
+    // Notificar al asignado (si es un usuario diferente al creador)
+    if (task.assignedToUserId && task.assignedToUserId !== user.id) {
+      try {
+        await prisma.notification.create({
+          data: {
+            type: 'task_assigned',
+            title: 'Te asignaron una tarea',
+            message: `${user.name || 'Alguien'} te asignó la tarea "${task.title}"`,
+            userId: task.assignedToUserId,
+            companyId: task.companyId,
+            priority: task.priority as any,
+            metadata: { taskId: task.id, assignedBy: user.id, taskTitle: task.title },
+          },
+        });
+      } catch (notifErr) {
+        console.error('[API] Error creating assignment notification:', notifErr);
+      }
+    }
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {

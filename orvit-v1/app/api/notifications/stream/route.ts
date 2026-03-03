@@ -11,23 +11,30 @@ export const dynamic = 'force-dynamic';
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 // Helper function para obtener usuario desde JWT
-async function getUserFromToken(request: NextRequest) {
-  try {
-    const cookieStore = cookies();
-    const token = cookieStore.get('token')?.value;
-    
-    // console.log('🔍 Debugging SSE auth:') // Log reducido;
-    console.log('  - Cookies disponibles:', cookieStore.getAll().map(c => c.name));
-    console.log('  - Token encontrado:', token ? 'SÍ' : 'NO');
-    
-    if (!token) {
-      console.log('❌ No hay token JWT para SSE');
-      return null;
-    }
+// Retorna: { user, error? } — separa errores de auth (401) de errores de DB (500)
+async function getUserFromToken(request: NextRequest): Promise<
+  { user: any; error?: undefined } | { user: null; error: 'no_token' | 'invalid_token' | 'db_error' }
+> {
+  const cookieStore = cookies();
+  const token =
+    cookieStore.get('accessToken')?.value ||
+    cookieStore.get('token')?.value;
 
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    // console.log('✅ Token JWT válido para usuario:', payload.userId); // Log reducido
-    
+  if (!token) {
+    return { user: null, error: 'no_token' };
+  }
+
+  // Verificar JWT — si falla, es error de auth (401)
+  let payload;
+  try {
+    const result = await jwtVerify(token, JWT_SECRET_KEY);
+    payload = result.payload;
+  } catch {
+    return { user: null, error: 'invalid_token' };
+  }
+
+  // Buscar usuario en DB — si Prisma falla, es error de servidor (500)
+  try {
     const user = await prisma.user.findUnique({
       where: { id: payload.userId as number },
       include: {
@@ -40,20 +47,25 @@ async function getUserFromToken(request: NextRequest) {
       }
     });
 
-    return user;
+    if (!user) return { user: null, error: 'invalid_token' };
+    return { user };
   } catch (error) {
-    console.error('❌ Error obteniendo usuario desde JWT para SSE:', error);
-    return null;
+    console.error('Error de DB en SSE getUserFromToken:', error);
+    return { user: null, error: 'db_error' };
   }
 }
 
 
 
 export async function GET(request: NextRequest) {
-  const user = await getUserFromToken(request);
-  if (!user) {
+  const result = await getUserFromToken(request);
+  if (result.error) {
+    if (result.error === 'db_error') {
+      return new NextResponse('Error interno del servidor', { status: 500 });
+    }
     return new NextResponse('Unauthorized', { status: 401 });
   }
+  const user = result.user;
 
   // Obtener empresa del usuario
   let companyId: number;

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FileViewer } from '@/components/ui/file-viewer';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 
 interface FileAttachment {
   url: string;
@@ -223,7 +224,7 @@ export function InstructiveFileUpload({
                 className="flex items-center justify-between p-2 bg-muted/50 rounded-lg border"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {getFileIcon(attachment.name, attachment.type)}
+                  <FileTypeIcon name={attachment.name} size={24} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {attachment.name}

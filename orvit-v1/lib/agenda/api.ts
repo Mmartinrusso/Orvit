@@ -53,6 +53,21 @@ export async function fetchAgendaTasks(
     if (filters.category) {
       params.append('category', filters.category);
     }
+    if (filters.groupId !== undefined) {
+      params.append('groupId', filters.groupId === null ? 'null' : String(filters.groupId));
+    }
+    if (filters.source) {
+      params.append('source', filters.source);
+    }
+    if (filters.overdue) {
+      params.append('overdue', 'true');
+    }
+    if (filters.sortBy) {
+      params.append('sortBy', filters.sortBy);
+    }
+    if (filters.sortOrder) {
+      params.append('sortOrder', filters.sortOrder);
+    }
   }
 
   const res = await fetch(`${BASE_URL}/tasks?${params.toString()}`);
@@ -158,6 +173,55 @@ export async function addTaskNote(
 }
 
 // =============================================================================
+// BULK ACTIONS
+// =============================================================================
+
+export interface BulkActionInput {
+  taskIds: number[];
+  action: 'updateStatus' | 'delete' | 'assignUser' | 'changePriority';
+  status?: string;
+  assignedToUserId?: number | null;
+  priority?: string;
+}
+
+export interface BulkActionResult {
+  success: boolean;
+  affected: number;
+  requested: number;
+  accessible: number;
+}
+
+/**
+ * Ejecutar acción masiva sobre tareas
+ */
+export async function bulkTaskAction(data: BulkActionInput): Promise<BulkActionResult> {
+  const res = await fetch(`${BASE_URL}/tasks/bulk`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Error desconocido' }));
+    throw new Error(error.error || 'Error en acción masiva');
+  }
+  return res.json();
+}
+
+/**
+ * Duplicar tarea
+ */
+export async function duplicateAgendaTask(taskId: number): Promise<AgendaTask> {
+  const res = await fetch(`${BASE_URL}/tasks/${taskId}/duplicate`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Error desconocido' }));
+    throw new Error(error.error || 'Error al duplicar tarea');
+  }
+  return res.json();
+}
+
+// =============================================================================
 // RECORDATORIOS
 // =============================================================================
 
@@ -209,7 +273,7 @@ export async function createAgendaReminder(
  * Eliminar recordatorio
  */
 export async function deleteAgendaReminder(reminderId: number): Promise<void> {
-  const res = await fetch(`${BASE_URL}/reminders/${reminderId}`, {
+  const res = await fetch(`${BASE_URL}/reminders?id=${reminderId}`, {
     method: 'DELETE',
   });
   if (!res.ok) {

@@ -33,6 +33,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 
 // ===== TIPOS =====
 export type FileType = 'pdf' | 'image' | 'video' | 'office' | 'other';
@@ -668,7 +669,7 @@ export function FileViewer({ url, fileName, open, onClose, onDownload }: FileVie
         {/* Header - responsive */}
         <DialogHeader className="flex flex-row items-center justify-between p-2 sm:p-3 border-b shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="shrink-0">{getFileIcon(fileName)}</div>
+            <div className="shrink-0"><FileTypeIcon name={fileName} size={20} /></div>
             <DialogTitle className="text-xs sm:text-sm font-medium truncate">
               {fileName}
             </DialogTitle>

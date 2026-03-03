@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -45,32 +46,31 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
   // Buscar parada activa cuando el sector cambie
   useEffect(() => {
-    // Por ahora no hay estado de sector, así que no buscamos paradas activas
-    // En el futuro se puede implementar un sistema de estado de sector
-    setActivePlantStopId(null);
-  }, [currentSector, currentCompany]);
+    if (currentSector && currentCompany) {
+      fetchActivePlantStop();
+    } else {
+      setActivePlantStopId(null);
+    }
+  }, [currentSector?.id, currentCompany?.id]);
 
   const fetchActivePlantStop = async () => {
     try {
       const response = await fetch(`/api/plant/stop?companyId=${currentCompany?.id}&sectorId=${currentSector?.id}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.length > 0) {
-          setActivePlantStopId(data[0].id);
-        }
+        setActivePlantStopId(data.length > 0 ? data[0].id : null);
       }
-    } catch (error) {
-
+    } catch {
+      // silently fail — plant stop is not critical
     }
   };
 
   // Solo mostrar el botón si el usuario tiene permisos y hay un sector seleccionado
   const canShowPlantControls = user && canStopPlant && currentSector;
-  // Por ahora la planta nunca está parada ya que no hay campo estado
-  const isPlantStopped = false;
+  const isPlantStopped = activePlantStopId !== null;
   
   return (
-    <header className="border-b border-border h-24 px-4 flex items-center bg-background">
+    <header className="border-b border-border h-14 px-4 flex items-center bg-background">
       <div className="flex items-center md:hidden mr-2">
         <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <Menu className="h-5 w-5" />
@@ -135,7 +135,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
         {/* Settings shortcut */}
         {currentCompany && currentArea && (
           <Button variant="ghost" size="icon" asChild>
-            <a
+            <Link
               href={
                 currentArea.name === 'Administración'
                   ? '/administracion/configuracion'
@@ -146,7 +146,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
               aria-label="Configuración"
             >
               <Settings className="h-5 w-5" />
-            </a>
+            </Link>
           </Button>
         )}
 
@@ -169,10 +169,10 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a href="/administracion/configuracion" className="flex items-center">
+              <Link href="/administracion/configuracion" className="flex items-center">
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
-              </a>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />

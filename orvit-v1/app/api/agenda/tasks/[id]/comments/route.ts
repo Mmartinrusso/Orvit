@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { CreateAgendaTaskCommentSchema } from '@/lib/validations/agenda-tasks';
 import { validateRequest } from '@/lib/validations/helpers';
+import { logTaskActivity } from '@/lib/agenda/activity-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const task = await prisma.agendaTask.findUnique({
       where: { id: taskId },
       select: {
+        title: true,
         companyId: true,
         createdById: true,
         assignedToUserId: true,
@@ -141,6 +143,41 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         },
       },
     });
+
+    // Registrar actividad
+    logTaskActivity({
+      taskId,
+      companyId: task.companyId,
+      userId: user.id,
+      eventType: 'COMMENTED',
+      description: `Agregó un comentario`,
+      metadata: { commentId: comment.id },
+    });
+
+    // Notificar al creador y asignado de la tarea (si no es el mismo autor del comentario)
+    try {
+      const notifyUserIds = new Set<number>();
+      if (task.createdById !== user.id) notifyUserIds.add(task.createdById);
+      if (task.assignedToUserId && task.assignedToUserId !== user.id) notifyUserIds.add(task.assignedToUserId);
+
+      if (notifyUserIds.size > 0) {
+        const preview = validation.data.content.length > 80
+          ? validation.data.content.slice(0, 80) + '…'
+          : validation.data.content;
+        await prisma.notification.createMany({
+          data: [...notifyUserIds].map((uid) => ({
+            type: 'task_commented' as any,
+            title: 'Nuevo comentario en tarea',
+            message: `${user.name || 'Alguien'} comentó en "${task.title}": ${preview}`,
+            userId: uid,
+            companyId: task.companyId,
+            metadata: { taskId, commentId: comment.id, authorId: user.id },
+          })),
+        });
+      }
+    } catch (notifErr) {
+      console.error('[API] Error creating comment notification:', notifErr);
+    }
 
     return NextResponse.json(
       {

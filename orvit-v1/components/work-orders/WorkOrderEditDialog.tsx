@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogBody,
 } from '@/components/ui/dialog';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -263,33 +262,30 @@ export default function WorkOrderEditDialog({
         <DialogContent
           size="lg"
           className="p-0 rounded-2xl border-border bg-card shadow-lg"
+          hideCloseButton
         >
-          <div className="flex flex-col h-full">
-            <WorkOrderDialogHeaderSticky
-              workOrder={workOrder}
-              onClose={handleClose}
-            />
+          <WorkOrderDialogHeaderSticky
+            workOrder={workOrder}
+            onClose={handleClose}
+          />
 
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <div className="h-full p-6 overflow-y-auto">
-                <WorkOrderFormSections
-                  formData={formData}
-                  onFieldChange={handleFieldChange}
-                  machines={machines}
-                  users={users}
-                  components={components}
-                />
-              </div>
-            </div>
-
-            <WorkOrderDialogFooterSticky
-              onCancel={handleClose}
-              onSave={handleSave}
-              loading={loading}
-              hasChanges={hasChanges}
-              lastSaved={lastSaved}
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">
+            <WorkOrderFormSections
+              formData={formData}
+              onFieldChange={handleFieldChange}
+              machines={machines}
+              users={users}
+              components={components}
             />
           </div>
+
+          <WorkOrderDialogFooterSticky
+            onCancel={handleClose}
+            onSave={handleSave}
+            loading={loading}
+            hasChanges={hasChanges}
+            lastSaved={lastSaved}
+          />
         </DialogContent>
       </Dialog>
 

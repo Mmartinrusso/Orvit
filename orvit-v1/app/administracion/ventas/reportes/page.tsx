@@ -46,7 +46,7 @@ import {
   FileSpreadsheet,
   Printer,
 } from 'lucide-react';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, subDays, startOfYear, endOfYear, subQuarters, startOfQuarter, endOfQuarter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { usePermission } from '@/hooks/use-permissions';
@@ -93,6 +93,7 @@ export default function ReportesPage() {
   const [generando, setGenerando] = useState(false);
   const [reporteActivo, setReporteActivo] = useState<string | null>(null);
   const [resultados, setResultados] = useState<any>(null);
+  const [resultsKey, setResultsKey] = useState(0);
 
   // Filtros
   const [fechaDesde, setFechaDesde] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
@@ -170,6 +171,7 @@ export default function ReportesPage() {
       if (res.ok) {
         const data = await res.json();
         setResultados(data);
+        setResultsKey(k => k + 1);
         toast.success('Reporte generado exitosamente');
       } else {
         const error = await res.json();
@@ -223,6 +225,23 @@ export default function ReportesPage() {
     }
   };
 
+  const applyDatePreset = (preset: string) => {
+    const now = new Date();
+    const fmt = (d: Date) => format(d, 'yyyy-MM-dd');
+    const presets: Record<string, [Date, Date]> = {
+      hoy:       [now, now],
+      semana:    [subDays(now, 6), now],
+      mes:       [startOfMonth(now), endOfMonth(now)],
+      mes_ant:   [startOfMonth(subMonths(now, 1)), endOfMonth(subMonths(now, 1))],
+      trimestre: [startOfQuarter(now), endOfQuarter(now)],
+      trim_ant:  [startOfQuarter(subQuarters(now, 1)), endOfQuarter(subQuarters(now, 1))],
+      año:       [startOfYear(now), endOfYear(now)],
+    };
+    const [desde, hasta] = presets[preset] ?? [now, now];
+    setFechaDesde(fmt(desde));
+    setFechaHasta(fmt(hasta));
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
@@ -266,7 +285,28 @@ export default function ReportesPage() {
             Filtros
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {/* Date presets */}
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { key: 'hoy',       label: 'Hoy' },
+              { key: 'semana',    label: 'Últimos 7 días' },
+              { key: 'mes',       label: 'Este mes' },
+              { key: 'mes_ant',   label: 'Mes anterior' },
+              { key: 'trimestre', label: 'Este trimestre' },
+              { key: 'trim_ant',  label: 'Trim. anterior' },
+              { key: 'año',       label: 'Este año' },
+            ].map(p => (
+              <button
+                key={p.key}
+                onClick={() => applyDatePreset(p.key)}
+                className="px-2.5 py-1 rounded-full text-xs font-medium border border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-150"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">Fecha Desde</label>
@@ -422,7 +462,7 @@ export default function ReportesPage() {
           )}
 
           {resultados && !generando && (
-            <div className="space-y-4">
+            <div key={resultsKey} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Acciones */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -489,77 +529,128 @@ export default function ReportesPage() {
 // Componentes de visualización para cada tipo de reporte
 
 function ResumenEjecutivoView({ data, formatCurrency, getVariacionIcon }: any) {
+  const kpis = [
+    {
+      label: 'Ventas',
+      value: formatCurrency(data.kpis.ventas.valor),
+      sub: `${data.kpis.ventas.ordenes} órdenes`,
+      variacion: data.kpis.ventas.variacion,
+      icon: TrendingUp,
+      accent: '#7C3AED',
+    },
+    {
+      label: 'Facturado',
+      value: formatCurrency(data.kpis.facturado.valor),
+      sub: `${data.kpis.facturado.facturas} facturas`,
+      variacion: data.kpis.facturado.variacion,
+      icon: FileText,
+      accent: '#3070A8',
+    },
+    {
+      label: 'Cobrado',
+      value: formatCurrency(data.kpis.cobrado.valor),
+      sub: null,
+      variacion: data.kpis.cobrado.variacion,
+      icon: DollarSign,
+      accent: '#059669',
+    },
+    {
+      label: 'Pendiente',
+      value: formatCurrency(data.kpis.pendiente.valor),
+      sub: `${data.kpis.pendiente.facturas} facturas`,
+      variacion: null,
+      icon: Clock,
+      accent: '#D97706',
+    },
+  ];
+
   return (
     <div className="space-y-4">
       {/* KPIs principales */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Ventas</p>
-              {getVariacionIcon(data.kpis.ventas.variacion)}
-            </div>
-            <p className="text-xl font-bold">{formatCurrency(data.kpis.ventas.valor)}</p>
-            <p className="text-xs text-muted-foreground">{data.kpis.ventas.ordenes} órdenes</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Facturado</p>
-              {getVariacionIcon(data.kpis.facturado.variacion)}
-            </div>
-            <p className="text-xl font-bold">{formatCurrency(data.kpis.facturado.valor)}</p>
-            <p className="text-xs text-muted-foreground">{data.kpis.facturado.facturas} facturas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Cobrado</p>
-              {getVariacionIcon(data.kpis.cobrado.variacion)}
-            </div>
-            <p className="text-xl font-bold text-success">{formatCurrency(data.kpis.cobrado.valor)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Pendiente</p>
-            <p className="text-xl font-bold text-warning-muted-foreground">{formatCurrency(data.kpis.pendiente.valor)}</p>
-            <p className="text-xs text-muted-foreground">{data.kpis.pendiente.facturas} facturas</p>
-          </CardContent>
-        </Card>
+        {kpis.map((kpi, i) => (
+          <Card key={kpi.label} className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{kpi.label}</p>
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${kpi.accent}15` }}>
+                  <kpi.icon className="h-4 w-4" style={{ color: kpi.accent }} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
+              <div className="flex items-center justify-between mt-1.5">
+                {kpi.sub && <p className="text-xs text-muted-foreground">{kpi.sub}</p>}
+                {kpi.variacion !== null && kpi.variacion !== undefined && (
+                  <div className="flex items-center gap-1">
+                    {getVariacionIcon(kpi.variacion)}
+                    <span className={`text-xs font-medium ${kpi.variacion > 0 ? 'text-success' : kpi.variacion < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      {kpi.variacion > 0 ? '+' : ''}{kpi.variacion?.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Top Clientes y Vendedores */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top Clientes</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Top Clientes
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {data.topClientes?.map((c: any, i: number) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="truncate">{c.cliente}</span>
-                  <span className="font-medium">{formatCurrency(c.total)}</span>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {data.topClientes?.map((c: any, i: number) => {
+                const maxTotal = data.topClientes[0]?.total ?? 1;
+                const pct = Math.round((c.total / maxTotal) * 100);
+                const colors = ['#7C3AED', '#3070A8', '#059669', '#D97706', '#C05060'];
+                const color = colors[i % colors.length];
+                return (
+                  <div key={i}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium truncate max-w-[180px]">{c.cliente}</span>
+                      <span className="text-xs font-semibold text-muted-foreground ml-2 shrink-0">{formatCurrency(c.total)}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top Vendedores</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+              Top Vendedores
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {data.topVendedores?.map((v: any, i: number) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="truncate">{v.vendedor}</span>
-                  <span className="font-medium">{formatCurrency(v.total)}</span>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {data.topVendedores?.map((v: any, i: number) => {
+                const maxTotal = data.topVendedores[0]?.total ?? 1;
+                const pct = Math.round((v.total / maxTotal) * 100);
+                const colors = ['#059669', '#7C3AED', '#D97706', '#3070A8', '#C05060'];
+                const color = colors[i % colors.length];
+                return (
+                  <div key={i}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium truncate max-w-[180px]">{v.vendedor}</span>
+                      <span className="text-xs font-semibold text-muted-foreground ml-2 shrink-0">{formatCurrency(v.total)}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

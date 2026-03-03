@@ -142,43 +142,37 @@ async function resolveUser(userId: number) {
     return cached.data;
   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        companies: {
-          where: { isActive: true },
-          select: { companyId: true },
-          take: 1,
-        },
+  // No atrapar errores de Prisma aquí — dejar que propaguen a withGuards
+  // para que se devuelva 500 (server error) en vez de 401 (auth error)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      companies: {
+        where: { isActive: true },
+        select: { companyId: true },
+        take: 1,
       },
-    });
+    },
+  });
 
-    if (user) {
-      userCache.set(userId, { data: user, ts: Date.now() });
-      // Evict old entries periodically
-      if (userCache.size > 200) {
-        const now = Date.now();
-        const keysToDelete: number[] = [];
-        userCache.forEach((v, k) => {
-          if (now - v.ts > USER_CACHE_TTL) keysToDelete.push(k);
-        });
-        keysToDelete.forEach((k) => userCache.delete(k));
-      }
+  if (user) {
+    userCache.set(userId, { data: user, ts: Date.now() });
+    // Evict old entries periodically
+    if (userCache.size > 200) {
+      const now = Date.now();
+      const keysToDelete: number[] = [];
+      userCache.forEach((v, k) => {
+        if (now - v.ts > USER_CACHE_TTL) keysToDelete.push(k);
+      });
+      keysToDelete.forEach((k) => userCache.delete(k));
     }
-
-    return user;
-  } catch (err) {
-    loggers.auth.error(
-      { userId, err },
-      'Database error in resolveUser'
-    );
-    return null;
   }
+
+  return user;
 }
 
 // ─── Core middleware ─────────────────────────────────────────────────────────
@@ -246,7 +240,21 @@ export function withGuards(
     }
 
     // ── 3. Resolve user from DB ──────────────────────────────────────────
-    const user = await resolveUser(userId);
+    let user;
+    try {
+      user = await resolveUser(userId);
+    } catch (dbErr) {
+      // Error de Prisma (cold start, DB caída) → 500, NO 401
+      loggers.auth.error(
+        { endpoint, userId, err: dbErr },
+        'Database error resolving user in withGuards'
+      );
+      return NextResponse.json(
+        { error: 'Error interno del servidor' },
+        { status: 500 }
+      );
+    }
+
     if (!user) {
       loggers.auth.warn(
         { endpoint, userId, reason: 'user_not_found' },

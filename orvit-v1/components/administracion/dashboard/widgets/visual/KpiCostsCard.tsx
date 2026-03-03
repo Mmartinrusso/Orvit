@@ -24,20 +24,20 @@ export function KpiCostsCard({ data }: { data: DashboardSummary; range: RangeKey
       title="Costos"
       pill={
         <KpiPill>
-          <DeltaIcon className="h-3 w-3 mr-1" />
+          <DeltaIcon className="h-3 w-3" />
           {`${k.deltaPct >= 0 ? '+' : ''}${Math.round(k.deltaPct * 100)}%`}
         </KpiPill>
       }
     >
-      <div data-slot="kpi-value" className="text-3xl font-normal leading-none tabular-nums mb-0.5">{formatCurrencyARS(k.monthCost)}</div>
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5 leading-tight">
-        <DeltaIcon className="h-3 w-3" />
-        <span className="font-medium">Mayor impacto: {k.topImpact}</span>
+      <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', lineHeight: 1, margin: '0 0 8px' }}>
+        {formatCurrencyARS(k.monthCost)}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+        <DeltaIcon style={{ width: 12, height: 12, color: '#9CA3AF', flexShrink: 0 }} />
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#6B7280' }}>Mayor impacto: {k.topImpact}</span>
       </div>
-      <p className="text-xs text-muted-foreground leading-tight">Últ. calc: {k.lastCalcHuman}</p>
-      <div className="mt-1.5">
-        <Sparkline data={trend} />
-      </div>
+      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '0 0 10px' }}>Últ. calc: {k.lastCalcHuman}</p>
+      <Sparkline data={trend} />
     </KpiCardFrame>
   );
 }

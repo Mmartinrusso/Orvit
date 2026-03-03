@@ -12,6 +12,8 @@ export { DashboardView } from './DashboardView';
 export { ReportingView } from './ReportingView';
 export { PortfolioView } from './PortfolioView';
 export { FixedTasksView } from './FixedTasksView';
+export { FixedTaskFormSheet } from './FixedTaskFormSheet';
+export { FixedTaskDetailSheet } from './FixedTaskDetailSheet';
 export { CreateTaskModal } from './CreateTaskModal';
 export { CreateGroupModal } from './CreateGroupModal';
 export type { CreateGroupInput } from './CreateGroupModal';

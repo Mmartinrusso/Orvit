@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Factory, Wrench, Users, Building2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,11 +57,18 @@ export default function UnifiedAreaSectorSelector({
   // Cache de sectores para áreas que no son la actual (lazy load)
   const [otherAreaSectors, setOtherAreaSectors] = useState<Record<number, any[]>>({});
   const [loadingAreaSectors, setLoadingAreaSectors] = useState<Record<number, boolean>>({});
+  // Ref para dedup: evita fetch duplicados aunque el estado sea stale (async)
+  const fetchingRef = useRef<Set<number>>(new Set());
 
   // Fetch sectores de un área que no es la actual
   const fetchSectorsForArea = useCallback(async (area: any) => {
-    if (!currentCompany || loadingAreaSectors[area.id] || otherAreaSectors[area.id]) return;
+    if (!currentCompany) return;
+    // Guard via ref (síncrono, nunca stale) — evita race condition con loadingAreaSectors state
+    if (fetchingRef.current.has(area.id)) return;
+    // Ya cargados previamente (undefined = nunca cargado, array = ya cargado incluso si vacío)
+    if (otherAreaSectors[area.id] !== undefined) return;
 
+    fetchingRef.current.add(area.id);
     setLoadingAreaSectors(prev => ({ ...prev, [area.id]: true }));
     try {
       const isProduction = area.name?.trim().toUpperCase() === 'PRODUCCIÓN';
@@ -74,11 +81,12 @@ export default function UnifiedAreaSectorSelector({
         setOtherAreaSectors(prev => ({ ...prev, [area.id]: sectors }));
       }
     } catch {
-      // silenciar error
+      // silenciar error — no setear otherAreaSectors para permitir reintento
     } finally {
+      fetchingRef.current.delete(area.id);
       setLoadingAreaSectors(prev => ({ ...prev, [area.id]: false }));
     }
-  }, [currentCompany, loadingAreaSectors, otherAreaSectors]);
+  }, [currentCompany, otherAreaSectors]);
 
   const getSectorsForArea = (area: any) => {
     if (area.id === currentArea?.id) return availableSectors;
@@ -127,11 +135,21 @@ export default function UnifiedAreaSectorSelector({
             const sectors = getSectorsForArea(area);
             const isLoading = loadingAreaSectors[area.id];
             return (
-              <DropdownMenuSub key={area.id}>
+              <DropdownMenuSub
+                key={area.id}
+                onOpenChange={(open) => {
+                  // Cargar sectores en cuanto se abre el sub-menú (click O hover)
+                  // Esto garantiza que siempre hay sectores aunque el hover sea muy rápido
+                  if (open && !isCurrentArea) {
+                    fetchSectorsForArea(area);
+                  }
+                }}
+              >
                 <DropdownMenuSubTrigger
                   className={cn("text-sm gap-2", isCurrentArea && "bg-accent/50")}
                   onPointerEnter={() => {
-                    if (!isCurrentArea && !otherAreaSectors[area.id]) {
+                    // Pre-cargar en hover para que estén listos antes de abrir
+                    if (!isCurrentArea) {
                       fetchSectorsForArea(area);
                     }
                   }}

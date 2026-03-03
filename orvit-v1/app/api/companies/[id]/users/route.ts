@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
-
-const prisma = new PrismaClient();
 
 // GET /api/companies/[id]/users - Obtener usuarios reales de la empresa
 export async function GET(

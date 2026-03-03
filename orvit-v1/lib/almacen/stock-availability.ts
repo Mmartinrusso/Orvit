@@ -28,6 +28,9 @@ export interface StockAvailability {
   itemName?: string;
   itemCode?: string;
   unit?: string;
+  supplyId?: number;
+  supplyName?: string;
+  supplierName?: string;
   onHand: number;          // StockLocation.cantidad
   reserved: number;        // Sum of active reservations
   available: number;       // onHand - reserved
@@ -443,6 +446,7 @@ export async function getCompanyAvailability(
     where.OR = [
       { supplierItem: { nombre: { contains: search, mode: 'insensitive' } } },
       { supplierItem: { codigoProveedor: { contains: search, mode: 'insensitive' } } },
+      { supplierItem: { supply: { name: { contains: search, mode: 'insensitive' } } } },
       { codigoPropio: { contains: search, mode: 'insensitive' } },
       { codigoProveedor: { contains: search, mode: 'insensitive' } },
     ];
@@ -462,6 +466,13 @@ export async function getCompanyAvailability(
           nombre: true,
           codigoProveedor: true,
           unidad: true,
+          supplyId: true,
+          supply: {
+            select: { id: true, name: true, unit_measure: true },
+          },
+          supplier: {
+            select: { id: true, name: true, razon_social: true },
+          },
         },
       },
     },
@@ -519,6 +530,9 @@ export async function getCompanyAvailability(
       itemName: loc.supplierItem?.nombre,
       itemCode: loc.supplierItem?.codigoProveedor,
       unit: loc.supplierItem?.unidad,
+      supplyId: (loc.supplierItem as any)?.supplyId ?? undefined,
+      supplyName: (loc.supplierItem as any)?.supply?.name ?? undefined,
+      supplierName: ((loc.supplierItem as any)?.supplier?.razon_social || (loc.supplierItem as any)?.supplier?.name) ?? undefined,
       onHand,
       reserved,
       available,

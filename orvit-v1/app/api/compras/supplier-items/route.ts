@@ -127,18 +127,30 @@ export async function GET(request: NextRequest) {
       // Si no existe y autoCreate está habilitado, crear el item
       if (!item && autoCreate) {
         try {
-          // Buscar supply existente por codigo propio o por codigo de cotización
+          // Buscar supply existente por codigo propio, por codigo de cotización, o por nombre
           const codeToUse = codigoPropio || `COT-${codigo}`;
+          const itemName = descripcion || `Item ${codigo}`;
           let supply = await prisma.supplies.findFirst({
             where: { company_id: companyId, code: codeToUse }
           });
 
+          // Si no se encontró por código, buscar por nombre exacto (case-insensitive)
           if (!supply) {
-            // Crear nuevo supply
+            supply = await prisma.supplies.findFirst({
+              where: {
+                company_id: companyId,
+                name: { equals: itemName, mode: 'insensitive' },
+                is_active: true,
+              }
+            });
+          }
+
+          if (!supply) {
+            // Crear nuevo supply solo si no existe ninguno con ese nombre
             supply = await prisma.supplies.create({
               data: {
                 code: codeToUse,
-                name: descripcion || `Item ${codigo}`,
+                name: itemName,
                 unit_measure: unidad || 'UN',
                 company_id: companyId,
                 is_active: true

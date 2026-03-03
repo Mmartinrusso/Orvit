@@ -20,187 +20,13 @@ import { CreateGroupModal, type CreateGroupInput } from './CreateGroupModal';
 export type ViewMode = 'board' | 'inbox' | 'dashboard' | 'reporting' | 'portfolio' | 'fixed-tasks';
 
 const VIEW_LABEL: Record<ViewMode, string> = {
-  board:         'Mi Tarea',
-  inbox:         'Inbox',
+  board:         'Mis Tareas',
+  inbox:         'Bandeja',
   dashboard:     'Dashboard',
-  reporting:     'Reporting',
+  reporting:     'Reportes',
   portfolio:     'Portfolio',
   'fixed-tasks': 'Tareas Fijas',
 };
-
-// ── Demo data (shown when API returns no tasks) ───────────────────────────────
-// Dynamic dates relative to today so calendar shows populated + "today" indicator
-function demoDate(offset: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().split('T')[0];
-}
-const DEMO_TASKS: AgendaTask[] = [
-  // ── PENDING (To-do · 4) ── dates spread: D+4, D-2, D-3, D-1 ──────────────
-  {
-    id: 1001, title: 'Create Wireframe', description: 'Design low-fidelity wireframes for the main dashboard page', dueDate: demoDate(4),
-    priority: 'HIGH', status: 'PENDING', category: 'ABC Dashboard',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 2, assignedToUser: { id: 2, name: 'Jhon Els' },
-    assignedToContactId: null, assignedToName: 'Jhon Els',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-10T09:00:00Z', updatedAt: '2026-02-12T10:00:00Z',
-  },
-  {
-    id: 1002, title: 'Client Feedback', description: 'Collect feedback from the client about the visual proposal', dueDate: demoDate(-2),
-    priority: 'MEDIUM', status: 'PENDING', category: 'Twinkle Website',
-    createdById: 2, createdBy: { id: 2, name: 'Jhon Els' },
-    assignedToUserId: 3, assignedToUser: { id: 3, name: 'Nando Endae' },
-    assignedToContactId: null, assignedToName: 'Nando Endae',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-11T10:00:00Z', updatedAt: '2026-02-13T09:00:00Z',
-  },
-  {
-    id: 1003, title: 'Draft Client Proposal', description: 'Prepare the initial proposal document for the client', dueDate: demoDate(-3),
-    priority: 'MEDIUM', status: 'PENDING', category: 'Lumino Project',
-    createdById: 3, createdBy: { id: 3, name: 'Nando Endae' },
-    assignedToUserId: 1, assignedToUser: { id: 1, name: 'Joe Doe' },
-    assignedToContactId: null, assignedToName: 'Joe Doe',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-12T11:00:00Z', updatedAt: '2026-02-12T11:00:00Z',
-  },
-  {
-    id: 1004, title: 'Define Color Palette', description: 'Define brand colors and typography system', dueDate: demoDate(-1),
-    priority: 'LOW', status: 'PENDING', category: 'Nila Project',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 2, assignedToUser: { id: 2, name: 'Jhon Els' },
-    assignedToContactId: null, assignedToName: 'Jhon Els',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-13T08:00:00Z', updatedAt: '2026-02-13T08:00:00Z',
-  },
-  // ── IN_PROGRESS (5) ── dates: D-1, D+0, D+1, D-2, D-1 ────────────────────
-  {
-    id: 1005, title: 'UI Testing', description: 'Test all navigation menu states and topbar interactions', dueDate: demoDate(-1),
-    priority: 'HIGH', status: 'IN_PROGRESS', category: 'Sinen Dashboard',
-    createdById: 2, createdBy: { id: 2, name: 'Jhon Els' },
-    assignedToUserId: 3, assignedToUser: { id: 3, name: 'Nando Endae' },
-    assignedToContactId: null, assignedToName: 'Nando Endae',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-08T09:00:00Z', updatedAt: '2026-02-14T08:00:00Z',
-  },
-  {
-    id: 1006, title: 'Prototype Testing', description: 'Validate the full onboarding flow with real users', dueDate: demoDate(0),
-    priority: 'HIGH', status: 'IN_PROGRESS', category: 'ABC Dashboard',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 2, assignedToUser: { id: 2, name: 'Jhon Els' },
-    assignedToContactId: null, assignedToName: 'Jhon Els',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-09T10:00:00Z', updatedAt: '2026-02-14T09:00:00Z',
-  },
-  {
-    id: 1007, title: 'Finalize UI Screens', description: 'Export and deliver all final screens in Figma and PDF format', dueDate: demoDate(1),
-    priority: 'MEDIUM', status: 'IN_PROGRESS', category: 'Sinen Dashboard',
-    createdById: 3, createdBy: { id: 3, name: 'Nando Endae' },
-    assignedToUserId: 1, assignedToUser: { id: 1, name: 'Joe Doe' },
-    assignedToContactId: null, assignedToName: 'Joe Doe',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-10T14:00:00Z', updatedAt: '2026-02-14T16:00:00Z',
-  },
-  {
-    id: 1008, title: 'Submit Final Screens', description: 'Submit all finalized screen designs for client approval', dueDate: demoDate(-2),
-    priority: 'URGENT', status: 'IN_PROGRESS', category: 'Twinkle Website',
-    createdById: 2, createdBy: { id: 2, name: 'Jhon Els' },
-    assignedToUserId: 3, assignedToUser: { id: 3, name: 'Nando Endae' },
-    assignedToContactId: null, assignedToName: 'Nando Endae',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-07T09:00:00Z', updatedAt: '2026-02-14T07:00:00Z',
-  },
-  {
-    id: 1009, title: 'Client Feedback Meeting', description: 'Conduct feedback session with the client team', dueDate: demoDate(-1),
-    priority: 'MEDIUM', status: 'IN_PROGRESS', category: 'Lumino Project',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 2, assignedToUser: { id: 2, name: 'Jhon Els' },
-    assignedToContactId: null, assignedToName: 'Jhon Els',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-11T12:00:00Z', updatedAt: '2026-02-14T12:00:00Z',
-  },
-  // ── WAITING (In Review · 3) ── dates: D+3, D+1, D+2 ──────────────────────
-  {
-    id: 1010, title: 'Update Style', description: 'Update the style guide with new design tokens and color system', dueDate: demoDate(3),
-    priority: 'MEDIUM', status: 'WAITING', category: 'Twinkle Website',
-    createdById: 2, createdBy: { id: 2, name: 'Jhon Els' },
-    assignedToUserId: 3, assignedToUser: { id: 3, name: 'Nando Endae' },
-    assignedToContactId: null, assignedToName: 'Nando Endae',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-05T10:00:00Z', updatedAt: '2026-02-13T14:00:00Z',
-  },
-  {
-    id: 1011, title: 'Create Hi-Fi Design', description: 'Create high-fidelity prototype for the 5 key screens', dueDate: demoDate(1),
-    priority: 'HIGH', status: 'WAITING', category: 'Sosro Mobile App',
-    createdById: 3, createdBy: { id: 3, name: 'Nando Endae' },
-    assignedToUserId: 1, assignedToUser: { id: 1, name: 'Joe Doe' },
-    assignedToContactId: null, assignedToName: 'Joe Doe',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-06T11:00:00Z', updatedAt: '2026-02-14T10:00:00Z',
-  },
-  {
-    id: 1012, title: 'Review Transitions', description: 'Review all micro-animation and transition specs', dueDate: demoDate(2),
-    priority: 'LOW', status: 'WAITING', category: 'ABC Dashboard',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 2, assignedToUser: { id: 2, name: 'Jhon Els' },
-    assignedToContactId: null, assignedToName: 'Jhon Els',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: null, completedNote: null,
-    createdAt: '2026-02-07T15:00:00Z', updatedAt: '2026-02-13T11:00:00Z',
-  },
-  // ── COMPLETED (4) ── dates: D-3, D-2, D+4, D+2 ──────────────────────────
-  {
-    id: 1013, title: 'Create Wireframe', description: 'Low-fidelity wireframes for the landing page', dueDate: demoDate(-3),
-    priority: 'MEDIUM', status: 'COMPLETED', category: 'ABC Dashboard',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 2, assignedToUser: { id: 2, name: 'Jhon Els' },
-    assignedToContactId: null, assignedToName: 'Jhon Els',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: '2026-02-12T16:00:00Z', completedNote: 'Approved by client',
-    createdAt: '2026-02-01T09:00:00Z', updatedAt: '2026-02-12T16:00:00Z',
-  },
-  {
-    id: 1014, title: 'Client Feedback', description: 'Collect and document client feedback on all screens', dueDate: demoDate(-2),
-    priority: 'HIGH', status: 'COMPLETED', category: 'ABC Dashboard',
-    createdById: 2, createdBy: { id: 2, name: 'Jhon Els' },
-    assignedToUserId: 3, assignedToUser: { id: 3, name: 'Nando Endae' },
-    assignedToContactId: null, assignedToName: 'Nando Endae',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: '2026-02-13T14:00:00Z', completedNote: null,
-    createdAt: '2026-02-02T10:00:00Z', updatedAt: '2026-02-13T14:00:00Z',
-  },
-  {
-    id: 1015, title: 'Design System Setup', description: 'Set up the base component library and design tokens', dueDate: demoDate(4),
-    priority: 'HIGH', status: 'COMPLETED', category: 'Sinen Dashboard',
-    createdById: 3, createdBy: { id: 3, name: 'Nando Endae' },
-    assignedToUserId: 1, assignedToUser: { id: 1, name: 'Joe Doe' },
-    assignedToContactId: null, assignedToName: 'Joe Doe',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: '2026-02-11T14:00:00Z', completedNote: null,
-    createdAt: '2026-01-28T10:00:00Z', updatedAt: '2026-02-11T14:00:00Z',
-  },
-  {
-    id: 1016, title: 'Brand Guidelines', description: 'Document full brand guidelines for Twinkle Website', dueDate: demoDate(2),
-    priority: 'MEDIUM', status: 'COMPLETED', category: 'Twinkle Website',
-    createdById: 1, createdBy: { id: 1, name: 'Joe Doe' },
-    assignedToUserId: 3, assignedToUser: { id: 3, name: 'Nando Endae' },
-    assignedToContactId: null, assignedToName: 'Nando Endae',
-    source: 'WEB', discordMessageId: null, companyId: 1,
-    notes: null, completedAt: '2026-02-10T17:00:00Z', completedNote: null,
-    createdAt: '2026-01-30T10:00:00Z', updatedAt: '2026-02-10T17:00:00Z',
-  },
-];
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 
@@ -208,7 +34,7 @@ async function fetchTasks(companyId: number): Promise<AgendaTask[]> {
   const res = await fetch(`/api/agenda/tasks?companyId=${companyId}&pageSize=200`);
   if (!res.ok) throw new Error('Error al cargar tareas');
   const data = await res.json();
-  const raw = data?.tasks ?? data;
+  const raw = data?.data ?? data?.tasks ?? data;
   return Array.isArray(raw) ? raw : [];
 }
 
@@ -244,6 +70,12 @@ async function deleteTask(taskId: number) {
   return res.json().catch(() => null);
 }
 
+async function duplicateTask(taskId: number) {
+  const res = await fetch(`/api/agenda/tasks/${taskId}/duplicate`, { method: 'POST' });
+  if (!res.ok) throw new Error('Error al duplicar tarea');
+  return res.json();
+}
+
 async function updateTask(taskId: number, data: Partial<UpdateAgendaTaskInput>) {
   const res = await fetch(`/api/agenda/tasks/${taskId}`, {
     method: 'PUT',
@@ -275,6 +107,7 @@ export function AgendaV2Page() {
   const [createDefaultDate, setCreateDefaultDate] = useState<string | undefined>(undefined);
   const [editingTask, setEditingTask] = useState<AgendaTask | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [newestTaskId, setNewestTaskId] = useState<number | null>(null);
 
   const companyId = currentCompany?.id;
 
@@ -310,20 +143,25 @@ export function AgendaV2Page() {
   const statusMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: number; status: AgendaTaskStatus }) =>
       updateTaskStatus(taskId, status),
-    onSuccess: () => {
+    onSuccess: (updatedTask) => {
       queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
       queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
+      if (updatedTask?.id && selectedTask?.id === updatedTask.id) setSelectedTask(updatedTask);
     },
     onError: () => toast.error('Error al actualizar el estado'),
   });
 
   const createMutation = useMutation({
     mutationFn: createTask,
-    onSuccess: () => {
+    onSuccess: (newTask) => {
       queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
       queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
       setIsCreateOpen(false);
       toast.success('Tarea creada');
+      if (newTask?.id) {
+        setNewestTaskId(newTask.id);
+        setTimeout(() => setNewestTaskId(null), 1500);
+      }
     },
     onError: () => toast.error('Error al crear la tarea'),
   });
@@ -349,14 +187,25 @@ export function AgendaV2Page() {
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<UpdateAgendaTaskInput> }) =>
       updateTask(id, data),
-    onSuccess: () => {
+    onSuccess: (updatedTask) => {
       queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
       queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
       setIsEditOpen(false);
       setEditingTask(null);
       toast.success('Tarea actualizada');
+      if (updatedTask?.id && selectedTask?.id === updatedTask.id) setSelectedTask(updatedTask);
     },
     onError: () => toast.error('Error al actualizar la tarea'),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (id: number) => duplicateTask(id),
+    onSuccess: (newTask) => {
+      queryClient.invalidateQueries({ queryKey: ['agendav2-tasks', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['agendav2-stats', companyId] });
+      toast.success(`Tarea duplicada${newTask?.title ? `: "${newTask.title}"` : ''}`);
+    },
+    onError: () => toast.error('Error al duplicar la tarea'),
   });
 
   const createGroupMutation = useMutation({
@@ -383,9 +232,7 @@ export function AgendaV2Page() {
   useEffect(() => { setIsLoading?.(loadingTasks); }, [loadingTasks, setIsLoading]);
 
   // ── Derived data ───────────────────────────────────────────────────────────
-  const apiTasks: AgendaTask[] = Array.isArray(rawTasks) ? rawTasks : [];
-  // Use demo tasks when API returns no tasks (for visual preview)
-  const safeTasks: AgendaTask[] = apiTasks.length > 0 ? apiTasks : DEMO_TASKS;
+  const safeTasks: AgendaTask[] = Array.isArray(rawTasks) ? rawTasks : [];
 
   const filteredTasks = useMemo(() => {
     let tasks = safeTasks;
@@ -450,6 +297,10 @@ export function AgendaV2Page() {
     setIsCreateOpen(true);
   }
 
+  async function handleDuplicateTask(task: AgendaTask) {
+    await duplicateMutation.mutateAsync(task.id);
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
@@ -504,14 +355,14 @@ export function AgendaV2Page() {
                     }}
                   />
                 )}
-                <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#050505' }}>{pageTitle}</h1>
+                <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{pageTitle}</h1>
                 {selectedGroupId && (
-                  <span style={{ fontSize: '11px', color: '#9C9CAA', background: '#F0F0F0', padding: '2px 8px', borderRadius: '20px' }}>
+                  <span style={{ fontSize: '11px', color: '#9CA3AF', background: '#F3F4F6', padding: '2px 8px', borderRadius: '20px' }}>
                     {groups.find(g => g.id === selectedGroupId)?.isProject ? 'Proyecto' : 'Grupo'}
                   </span>
                 )}
               </div>
-              <p style={{ fontSize: '12px', color: '#9C9CAA' }}>
+              <p style={{ fontSize: '12px', color: '#9CA3AF' }}>
                 {filteredTasks.length} tarea{filteredTasks.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -524,8 +375,10 @@ export function AgendaV2Page() {
                 onTaskDelete={handleTaskDelete}
                 onEditTask={handleEditTask}
                 onBulkDelete={handleBulkDelete}
+                onDuplicateTask={handleDuplicateTask}
                 onCreateTask={handleCreateTask}
                 isLoading={loadingTasks}
+                newestTaskId={newestTaskId}
               />
             )}
 
@@ -533,6 +386,7 @@ export function AgendaV2Page() {
               <InboxView
                 tasks={filteredTasks}
                 onTaskClick={handleTaskClick}
+                onEdit={handleEditTask}
               />
             )}
 
@@ -541,6 +395,9 @@ export function AgendaV2Page() {
                 tasks={filteredTasks}
                 stats={stats}
                 isLoading={loadingTasks}
+                onCreateTask={() => setIsCreateOpen(true)}
+                onViewChange={(v) => setView(v as ViewMode)}
+                onTaskClick={handleTaskClick}
               />
             )}
 
@@ -570,32 +427,28 @@ export function AgendaV2Page() {
             )}
 
             {view === 'fixed-tasks' && (
-              <FixedTasksView
-                tasks={filteredTasks}
-                onTaskClick={handleTaskClick}
-                onCreateTask={handleCreateTask}
-                isLoading={loadingTasks}
-              />
+              <FixedTasksView />
             )}
           </div>
-
-          {/* Inline detail panel — slides in from the right without overlay */}
-          <TaskDetailPanel
-            task={selectedTask}
-            open={isDetailOpen}
-            onClose={() => { setIsDetailOpen(false); setIsPanelExpanded(false); }}
-            expanded={isPanelExpanded}
-            onExpandedChange={setIsPanelExpanded}
-            onStatusChange={async (task, status) => {
-              await handleStatusChange(task.id, status);
-            }}
-            onEdit={(task) => {
-              setIsDetailOpen(false);
-              handleEditTask(task);
-            }}
-          />
         </div>
       </div>
+
+      {/* Task detail modal — centered overlay */}
+      <TaskDetailPanel
+        task={selectedTask}
+        open={isDetailOpen}
+        onClose={() => { setIsDetailOpen(false); setIsPanelExpanded(false); }}
+        expanded={isPanelExpanded}
+        onExpandedChange={setIsPanelExpanded}
+        onStatusChange={async (task, status) => {
+          await handleStatusChange(task.id, status);
+        }}
+        onEdit={(task) => {
+          setIsDetailOpen(false);
+          handleEditTask(task);
+        }}
+        onDuplicate={handleDuplicateTask}
+      />
 
       {/* Create task modal */}
       <CreateTaskModal
@@ -605,8 +458,9 @@ export function AgendaV2Page() {
         defaultDate={createDefaultDate}
         defaultGroupId={selectedGroupId}
         groups={groups}
-        onSave={async (data) => { await createMutation.mutateAsync(data); }}
+        onSave={async (data) => { await createMutation.mutateAsync({ ...data, companyId: companyId! }); }}
         isSaving={createMutation.isPending}
+        onRequestCreateGroup={() => setIsCreateGroupOpen(true)}
       />
 
       {/* Edit task modal */}
@@ -633,6 +487,7 @@ export function AgendaV2Page() {
           });
         }}
         isSaving={editMutation.isPending}
+        onRequestCreateGroup={() => setIsCreateGroupOpen(true)}
       />
 
       {/* Create group / project modal */}

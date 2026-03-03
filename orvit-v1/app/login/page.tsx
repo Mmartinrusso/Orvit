@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ function OrvitLogo() {
 }
 
 export default function LoginPage() {
-  const { login, logout, isLoading, isAuthenticated, user } = useAuth();
+  const { login, isLoading, isAuthenticated, user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -57,20 +57,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
+  // Si ya está autenticado, redirigir directo sin mostrar nada
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
 
-  const handleContinue = () => {
-    if (user?.role === 'SUPERADMIN') {
+    if (user.role === 'SUPERADMIN') {
       window.location.href = '/superadmin';
       return;
     }
-    // Restaurar sesión previa si existe
     const savedCompany = localStorage.getItem('currentCompany');
     const savedArea = localStorage.getItem('currentArea');
     const savedSector = localStorage.getItem('currentSector');
@@ -92,74 +86,11 @@ export default function LoginPage() {
     } else {
       window.location.href = '/empresas';
     }
-  };
+  }, [isAuthenticated, user]);
 
-  // Si el usuario ya está autenticado, mostrar mensaje de sesión activa
+  // Mientras redirige, no mostrar nada
   if (isAuthenticated && user) {
-    return (
-      <div className="min-h-screen grid grid-rows-[1fr_auto] relative overflow-hidden bg-background">
-        {/* Patrón de puntos sutiles - solo desde md: y con opacidad reducida */}
-        <div 
-          className="hidden md:block absolute inset-0 opacity-[0.08] dark:opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)`,
-            backgroundSize: '30px 30px',
-          }}
-        />
-
-        {/* Main - centrado verticalmente */}
-        <main className="grid place-items-center px-4 py-8 relative z-10">
-          <div className="w-full max-w-[420px]">
-            <Card className="border shadow-sm md:-translate-y-6">
-              <CardHeader className="space-y-2 pb-4">
-                <div className="flex justify-center">
-              <OrvitLogo />
-            </div>
-                <CardTitle className="text-2xl text-center">
-              Sesión Activa
-                </CardTitle>
-                <CardDescription className="text-center">
-              Ya tienes una sesión iniciada
-                </CardDescription>
-              </CardHeader>
-          
-              <CardContent>
-            <div className="text-center mb-6">
-                  <p className="text-foreground mb-6">
-                    Has iniciado sesión como <strong className="text-foreground">{user.name}</strong>
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-                  <Button
-                onClick={handleContinue}
-                    variant="default"
-                    className="w-full"
-              >
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Continuar con la sesión
-                  </Button>
-              
-                  <Button
-                onClick={handleLogout}
-                    variant="outline"
-                    className="w-full"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Cerrar sesión
-                  </Button>
-            </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-          
-        {/* Footer */}
-        <footer className="pb-6 text-center text-xs text-muted-foreground relative z-10">
-            © 2025 ORVIT. Todos los derechos reservados.
-          </footer>
-      </div>
-    );
+    return null;
   }
 
   return (

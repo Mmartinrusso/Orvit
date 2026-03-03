@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { LayoutGrid, AlignJustify, BarChart2, SlidersHorizontal, AlertCircle, X, Check, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { LayoutGrid, AlignJustify, BarChart2, SlidersHorizontal, AlertCircle, X, Check, CheckSquare, Square, Trash2, ChevronDown } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAssigneeName } from '@/lib/agenda/types';
@@ -32,9 +32,13 @@ interface BoardViewProps {
   onTaskDelete: (task: AgendaTask) => void;
   onEditTask?: (task: AgendaTask) => void;
   onBulkDelete?: (ids: number[]) => void;
+  onDuplicateTask?: (task: AgendaTask) => Promise<void>;
   onCreateTask: (status: AgendaTaskStatus, date?: string) => void;
   isLoading: boolean;
+  newestTaskId?: number | null;
 }
+
+const DELETE_ANIM_MS = 300;
 
 export function BoardView({
   tasks,
@@ -43,11 +47,15 @@ export function BoardView({
   onTaskDelete,
   onEditTask,
   onBulkDelete,
+  onDuplicateTask,
   onCreateTask,
   isLoading,
+  newestTaskId,
 }: BoardViewProps) {
   const [activeDragTask, setActiveDragTask] = useState<AgendaTask | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
   const [subView, setSubView] = useState<'kanban' | 'spreadsheet' | 'timeline'>('kanban');
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -164,10 +172,31 @@ export function BoardView({
     setIsSelectMode(false);
   }
 
+  function handleDeleteWithAnimation(task: AgendaTask) {
+    setDeletingIds(prev => new Set([...prev, task.id]));
+    setTimeout(() => {
+      onTaskDelete(task);
+      setDeletingIds(prev => { const n = new Set(prev); n.delete(task.id); return n; });
+    }, DELETE_ANIM_MS);
+  }
+
   function handleBulkDelete() {
     if (selectedIds.size === 0) return;
-    onBulkDelete?.(Array.from(selectedIds));
+    const ids = Array.from(selectedIds);
+    setDeletingIds(prev => new Set([...prev, ...ids]));
     clearSelection();
+    setTimeout(() => {
+      onBulkDelete?.(ids);
+      setDeletingIds(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n; });
+    }, DELETE_ANIM_MS);
+  }
+
+  async function handleBulkStatusChange(status: AgendaTaskStatus) {
+    if (selectedIds.size === 0) return;
+    setShowBulkStatusMenu(false);
+    const ids = Array.from(selectedIds);
+    clearSelection();
+    await Promise.all(ids.map(id => onTaskStatusChange(id, status)));
   }
 
   const tasksByStatus = useMemo(() => {
@@ -254,18 +283,28 @@ export function BoardView({
       <TaskCalendarStrip tasks={tasks} onTaskClick={onTaskClick} onHoverDate={setHoveredDate} />
 
       {/* All Task — card container */}
-      <div style={{ background: '#FFFFFF', border: '1px solid #E4E4E4', borderRadius: '16px', overflow: 'hidden' }}>
+      <div style={{ background: '#FFFFFF', border: '1.5px solid #D8D8DE', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)', overflow: 'hidden' }}>
 
         {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #F0F0F0' }}>
-          <span style={{ fontSize: '16px', fontWeight: 700, color: '#050505' }}>
-            All Task
-            {hoveredDate && (
-              <span style={{ fontSize: '12px', fontWeight: 500, color: '#9C9CAA', marginLeft: '10px' }}>
-                — {format(parseISO(hoveredDate), 'd MMM yyyy')}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #E4E4E8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', letterSpacing: '-0.01em' }}>
+              Todas las tareas
+              {hoveredDate && (
+                <span style={{ fontSize: '12px', fontWeight: 500, color: '#9CA3AF', marginLeft: '10px' }}>
+                  — {format(parseISO(hoveredDate), 'd MMM yyyy')}
+                </span>
+              )}
+            </span>
+            {(activeFilterCount > 0 || hoveredDate) && (
+              <span style={{
+                fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px',
+                background: '#111827', color: '#FFFFFF',
+              }}>
+                {visibleTasks.length} visible{visibleTasks.length !== 1 ? 's' : ''}
               </span>
             )}
-          </span>
+          </div>
 
           {/* View switcher + filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -276,21 +315,21 @@ export function BoardView({
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 height: '34px', width: '34px',
-                border: `1px solid ${isSelectMode ? '#3070A8' : '#E4E4E4'}`,
-                borderRadius: '10px',
-                background: isSelectMode ? '#EBF2FB' : '#FAFAFA',
-                color: isSelectMode ? '#3070A8' : '#9C9CAA',
+                border: `1px solid ${isSelectMode ? '#111827' : '#E4E4E8'}`,
+                borderRadius: '8px',
+                background: isSelectMode ? '#111827' : '#FAFAFA',
+                color: isSelectMode ? '#FFFFFF' : '#9CA3AF',
                 cursor: 'pointer', transition: 'all 150ms ease',
               }}
-              onMouseEnter={e => { if (!isSelectMode) { e.currentTarget.style.background = '#F0F0F0'; e.currentTarget.style.color = '#575456'; } }}
-              onMouseLeave={e => { if (!isSelectMode) { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.color = '#9C9CAA'; } }}
+              onMouseEnter={e => { if (!isSelectMode) { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#6B7280'; } }}
+              onMouseLeave={e => { if (!isSelectMode) { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.color = '#9CA3AF'; } }}
             >
               {isSelectMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #E4E4E4', borderRadius: '10px', overflow: 'hidden', background: '#FAFAFA' }}>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #E4E4E8', borderRadius: '8px', overflow: 'hidden', background: '#FAFAFA' }}>
               {([
-                { v: 'spreadsheet', Icon: AlignJustify, label: 'Spreadsheet' },
-                { v: 'timeline',    Icon: BarChart2,    label: 'Timeline' },
+                { v: 'spreadsheet', Icon: AlignJustify, label: 'Lista' },
+                { v: 'timeline',    Icon: BarChart2,    label: 'Cronograma' },
                 { v: 'kanban',      Icon: LayoutGrid,   label: 'Kanban' },
               ] as const).map(({ v, Icon, label }, i) => {
                 const active = subView === v;
@@ -301,9 +340,9 @@ export function BoardView({
                     style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
                       padding: '7px 14px', border: 'none',
-                      borderRight: i < 2 ? '1px solid #E4E4E4' : 'none',
+                      borderRight: i < 2 ? '1px solid #E4E4E8' : 'none',
                       background: active ? '#FFFFFF' : 'transparent',
-                      color: active ? '#050505' : '#9C9CAA',
+                      color: active ? '#111827' : '#9CA3AF',
                       fontSize: '12px', fontWeight: active ? 600 : 500,
                       cursor: 'pointer',
                       boxShadow: active ? '0 1px 4px rgba(0,0,0,.06)' : 'none',
@@ -321,13 +360,13 @@ export function BoardView({
             <div ref={filterRef} style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 onClick={() => setShowFilter(p => !p)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '34px', width: '34px', border: `1px solid ${activeFilterCount > 0 ? '#3070A8' : '#E4E4E4'}`, borderRadius: '10px', background: activeFilterCount > 0 ? '#EBF2FB' : '#FAFAFA', color: activeFilterCount > 0 ? '#3070A8' : '#9C9CAA', cursor: 'pointer', transition: 'all 150ms ease', position: 'relative' }}
-                onMouseEnter={e => { if (!activeFilterCount) { e.currentTarget.style.background = '#F0F0F0'; e.currentTarget.style.color = '#575456'; } }}
-                onMouseLeave={e => { if (!activeFilterCount) { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.color = '#9C9CAA'; } }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '34px', width: '34px', border: `1px solid ${activeFilterCount > 0 ? '#111827' : '#E4E4E8'}`, borderRadius: '8px', background: activeFilterCount > 0 ? '#111827' : '#FAFAFA', color: activeFilterCount > 0 ? '#FFFFFF' : '#9CA3AF', cursor: 'pointer', transition: 'all 150ms ease', position: 'relative' }}
+                onMouseEnter={e => { if (!activeFilterCount) { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#6B7280'; } }}
+                onMouseLeave={e => { if (!activeFilterCount) { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.color = '#9CA3AF'; } }}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 {activeFilterCount > 0 && (
-                  <span style={{ position: 'absolute', top: '-5px', right: '-5px', width: '14px', height: '14px', borderRadius: '50%', background: '#3070A8', color: '#FFF', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ position: 'absolute', top: '-5px', right: '-5px', width: '14px', height: '14px', borderRadius: '50%', background: '#111827', color: '#FFF', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {activeFilterCount}
                   </span>
                 )}
@@ -335,29 +374,29 @@ export function BoardView({
 
               {/* Filter panel */}
               {showFilter && (
-                <div style={{ position: 'absolute', top: '42px', right: 0, width: '260px', background: '#FFFFFF', border: '1px solid #E4E4E4', borderRadius: '14px', boxShadow: '0 8px 28px rgba(0,0,0,.11)', zIndex: 50, padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ position: 'absolute', top: '42px', right: 0, width: '260px', background: '#FFFFFF', border: '1.5px solid #D8D8DE', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,.08)', zIndex: 50, padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#050505' }}>Filtros</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>Filtros</span>
                     {activeFilterCount > 0 && (
-                      <button onClick={clearFilters} style={{ fontSize: '11px', color: '#3070A8', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Limpiar todo</button>
+                      <button onClick={clearFilters} style={{ fontSize: '11px', color: '#111827', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Limpiar todo</button>
                     )}
                   </div>
 
                   {/* Priority */}
                   <div>
-                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#9C9CAA', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Prioridad</p>
+                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Prioridad</p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {([
                         { v: 'LOW',    label: 'Baja',    color: '#6B7280' },
-                        { v: 'MEDIUM', label: 'Media',   color: '#3070A8' },
+                        { v: 'MEDIUM', label: 'Media',   color: '#7C3AED' },
                         { v: 'HIGH',   label: 'Alta',    color: '#D97706' },
                         { v: 'URGENT', label: 'Urgente', color: '#DC2626' },
                       ] as const).map(({ v, label, color }) => {
                         const active = filterPriorities.includes(v);
                         return (
-                          <button key={v} onClick={() => togglePriority(v)} style={{ padding: '4px 10px', borderRadius: '999px', border: `1.5px solid ${active ? color : '#DDDDE0'}`, background: active ? `${color}18` : 'transparent', color: active ? color : '#9C9CAA', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'all 120ms ease' }}>
+                          <button key={v} onClick={() => togglePriority(v)} style={{ padding: '4px 10px', borderRadius: '6px', border: `1.5px solid ${active ? color : '#D8D8DE'}`, background: active ? `${color}18` : 'transparent', color: active ? color : '#9CA3AF', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'all 120ms ease' }}>
                             {label}
                           </button>
                         );
@@ -367,7 +406,7 @@ export function BoardView({
 
                   {/* Date range */}
                   <div>
-                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#9C9CAA', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fecha de vencimiento</p>
+                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fecha de vencimiento</p>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <DatePicker
@@ -392,18 +431,18 @@ export function BoardView({
                   {/* Assignees — dropdown selector */}
                   {assigneeOptions.length > 0 && (
                     <div>
-                      <p style={{ fontSize: '10px', fontWeight: 700, color: '#9C9CAA', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Asignado a</p>
+                      <p style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Asignado a</p>
 
                       {/* Selected chips */}
                       {filterAssignees.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
                           {filterAssignees.map(name => (
-                            <span key={name} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px 2px 4px', borderRadius: '999px', background: '#EBF2FB', border: '1px solid #BFCFE8', fontSize: '11px', fontWeight: 600, color: '#1A4A80' }}>
-                              <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#3070A8', color: '#FFF', fontSize: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span key={name} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px 2px 4px', borderRadius: '6px', background: '#F3F4F6', border: '1px solid #E5E7EB', fontSize: '11px', fontWeight: 600, color: '#374151' }}>
+                              <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#6B7280', color: '#FFF', fontSize: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 {name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                               </span>
                               {name}
-                              <button onClick={() => toggleAssignee(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#3070A8', marginLeft: '1px' }}>
+                              <button onClick={() => toggleAssignee(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#9CA3AF', marginLeft: '1px' }}>
                                 <X className="h-2.5 w-2.5" />
                               </button>
                             </span>
@@ -423,7 +462,7 @@ export function BoardView({
                           {assigneeOptions.filter(n => !filterAssignees.includes(n)).map(name => (
                             <SelectItem key={name} value={name} className="text-xs">
                               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#E0E0E6', color: '#9C9CAA', fontSize: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#E0E0E6', color: '#9CA3AF', fontSize: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                   {name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                 </span>
                                 {name}
@@ -440,16 +479,16 @@ export function BoardView({
 
                   {/* Progress */}
                   <div>
-                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#9C9CAA', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Progreso</p>
+                    <p style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Progreso</p>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {([
                         { v: 'none',        label: '0%',       color: '#6B6B78' },
-                        { v: 'in_progress', label: 'En curso', color: '#3070A8' },
+                        { v: 'in_progress', label: 'En curso', color: '#7C3AED' },
                         { v: 'done',        label: '100%',     color: '#2E7A5E' },
                       ] as const).map(({ v, label, color }) => {
                         const active = filterProgress.includes(v);
                         return (
-                          <button key={v} onClick={() => toggleProgress(v)} style={{ flex: 1, padding: '5px 0', borderRadius: '8px', border: `1.5px solid ${active ? color : '#DDDDE0'}`, background: active ? `${color}18` : 'transparent', color: active ? color : '#9C9CAA', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'all 120ms ease' }}>
+                          <button key={v} onClick={() => toggleProgress(v)} style={{ flex: 1, padding: '5px 0', borderRadius: '8px', border: `1.5px solid ${active ? color : '#DDDDE0'}`, background: active ? `${color}18` : 'transparent', color: active ? color : '#9CA3AF', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'all 120ms ease' }}>
                             {label}
                           </button>
                         );
@@ -476,31 +515,81 @@ export function BoardView({
               position: 'fixed', bottom: '32px', left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 100,
-              display: 'flex', alignItems: 'center', gap: '16px',
+              display: 'flex', alignItems: 'center', gap: '12px',
               padding: '10px 20px',
               background: '#FFFFFF',
-              border: '1px solid #E4E4E4',
+              border: '1px solid #E4E4E8',
               borderRadius: '999px',
               boxShadow: '0 8px 32px rgba(0,0,0,.14)',
               animation: 'sel-bar-up 260ms cubic-bezier(0.22,1,0.36,1)',
             }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#050505' }}>
-                <CheckSquare className="h-4 w-4" style={{ color: '#3070A8' }} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                <CheckSquare className="h-4 w-4" style={{ color: '#111827' }} />
                 {selectedIds.size} tarea{selectedIds.size !== 1 ? 's' : ''} seleccionada{selectedIds.size !== 1 ? 's' : ''}
               </span>
-              <div style={{ width: '1px', height: '16px', background: '#E4E4E4' }} />
+              <div style={{ width: '1px', height: '16px', background: '#E4E4E8' }} />
               <button
                 onClick={selectAllVisible}
-                style={{ fontSize: '12px', fontWeight: 600, color: '#3070A8', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontSize: '12px', fontWeight: 600, color: '#111827', background: 'none', border: 'none', cursor: 'pointer' }}
               >
-                Seleccionar todas ({visibleTasks.length})
+                Todas ({visibleTasks.length})
               </button>
               <button
                 onClick={clearSelection}
-                style={{ fontSize: '12px', fontWeight: 600, color: '#9C9CAA', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontSize: '12px', fontWeight: 600, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Cancelar
               </button>
+              <div style={{ width: '1px', height: '16px', background: '#E4E4E8' }} />
+              {/* Bulk status change */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowBulkStatusMenu(p => !p)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '7px 14px', borderRadius: '999px',
+                    border: '1px solid #E4E4E8', background: '#FAFAFA',
+                    color: '#111827', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 150ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#FAFAFA'; }}
+                >
+                  Cambiar estado
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {showBulkStatusMenu && (
+                  <div style={{
+                    position: 'absolute', bottom: '44px', left: '50%', transform: 'translateX(-50%)',
+                    background: '#FFFFFF', border: '1.5px solid #E4E4E8', borderRadius: '10px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,.10)', zIndex: 200,
+                    minWidth: '160px', overflow: 'hidden',
+                  }}>
+                    {([
+                      { status: 'PENDING' as AgendaTaskStatus,     label: 'Por hacer',   dot: '#9CA3AF' },
+                      { status: 'IN_PROGRESS' as AgendaTaskStatus, label: 'En progreso', dot: '#7C3AED' },
+                      { status: 'WAITING' as AgendaTaskStatus,     label: 'En revisión', dot: '#D97706' },
+                      { status: 'COMPLETED' as AgendaTaskStatus,   label: 'Completado',  dot: '#059669' },
+                    ]).map(({ status, label, dot }) => (
+                      <button
+                        key={status}
+                        onClick={() => handleBulkStatusChange(status)}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '9px 14px', border: 'none', background: 'transparent',
+                          cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: '#374151',
+                          textAlign: 'left', transition: 'background 100ms ease',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F9FAFB'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, flexShrink: 0 }} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleBulkDelete}
                 style={{
@@ -552,15 +641,15 @@ export function BoardView({
                   {/* Date header */}
                   <div style={{ display: 'flex', borderBottom: '1px solid #F0F0F0', position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 2 }}>
                     {isSelectMode && <div style={{ width: 40, flexShrink: 0, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div onClick={() => selectedIds.size === tasksWithDate.length ? setSelectedIds(new Set()) : setSelectedIds(new Set(tasksWithDate.map(t => t.id)))} style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 ? '#3070A8' : '#CCCCCC'}`, background: selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 ? '#3070A8' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div onClick={() => selectedIds.size === tasksWithDate.length ? setSelectedIds(new Set()) : setSelectedIds(new Set(tasksWithDate.map(t => t.id)))} style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 ? '#111827' : '#CCCCCC'}`, background: selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 ? '#111827' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
                       </div>
                     </div>}
-                    <div style={{ width: LABEL_W, flexShrink: 0, padding: '8px 16px', fontWeight: 600, fontSize: '11px', color: '#9C9CAA' }}>Tarea</div>
+                    <div style={{ width: LABEL_W, flexShrink: 0, padding: '8px 16px', fontWeight: 600, fontSize: '11px', color: '#9CA3AF' }}>Tarea</div>
                     {cols.map(day => {
                       const today = isToday(day);
                       return (
-                        <div key={day.toISOString()} style={{ width: COL_W, flexShrink: 0, textAlign: 'center', padding: '8px 0', fontWeight: today ? 700 : 500, color: today ? '#050505' : '#9C9CAA', borderLeft: '1px solid #F6F6F6', background: today ? '#F8F8F8' : 'transparent' }}>
+                        <div key={day.toISOString()} style={{ width: COL_W, flexShrink: 0, textAlign: 'center', padding: '8px 0', fontWeight: today ? 700 : 500, color: today ? '#111827' : '#9CA3AF', borderLeft: '1px solid #F4F4F6', background: today ? '#F8F8F8' : 'transparent' }}>
                           <div style={{ fontSize: '10px' }}>{format(day, 'EEE').slice(0, 2)}</div>
                           <div style={{ fontSize: '11px' }}>{format(day, 'd')}</div>
                         </div>
@@ -569,43 +658,43 @@ export function BoardView({
                   </div>
                   {/* Task rows */}
                   {tasksWithDate.length === 0 ? (
-                    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9C9CAA' }}>Sin tareas con fecha</div>
+                    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9CA3AF' }}>Sin tareas con fecha</div>
                   ) : tasksWithDate.map((task, i) => {
                     const due = parseISO(task.dueDate!);
                     const dayIdx = differenceInCalendarDays(due, start);
                     const inRange = dayIdx >= 0 && dayIdx < DAYS;
-                    const STATUS_COLOR: Record<string, string> = { PENDING: '#575456', IN_PROGRESS: '#3070A8', WAITING: '#907840', COMPLETED: '#568177', CANCELLED: '#ED8A94' };
+                    const STATUS_COLOR: Record<string, string> = { PENDING: '#9CA3AF', IN_PROGRESS: '#7C3AED', WAITING: '#D97706', COMPLETED: '#059669', CANCELLED: '#9CA3AF' };
                     return (
-                      <div key={task.id} onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)} style={{ display: 'flex', alignItems: 'center', borderBottom: i < tasksWithDate.length - 1 ? '1px solid #F6F6F6' : 'none', height: ROW_H, cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 340ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 8) * 45}ms`, background: selectedIds.has(task.id) ? '#EBF2FB' : 'transparent' }}
-                        onMouseEnter={e => { if (!selectedIds.has(task.id)) e.currentTarget.style.background = '#FAFAFA'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = selectedIds.has(task.id) ? '#EBF2FB' : 'transparent'; }}
+                      <div key={task.id} onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)} style={{ display: 'flex', alignItems: 'center', borderBottom: i < tasksWithDate.length - 1 ? '1px solid #F3F4F6' : 'none', height: ROW_H, cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 340ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 8) * 45}ms`, background: selectedIds.has(task.id) ? '#F3F4F6' : 'transparent' }}
+                        onMouseEnter={e => { if (!selectedIds.has(task.id)) e.currentTarget.style.background = '#F9FAFB'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = selectedIds.has(task.id) ? '#F3F4F6' : 'transparent'; }}
                       >
                         {/* Checkbox in select mode */}
                         {isSelectMode && (
                           <div style={{ width: 40, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.has(task.id) ? '#3070A8' : '#CCCCCC'}`, background: selectedIds.has(task.id) ? '#3070A8' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.has(task.id) ? '#111827' : '#CCCCCC'}`, background: selectedIds.has(task.id) ? '#111827' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               {selectedIds.has(task.id) && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
                             </div>
                           </div>
                         )}
                         {/* Label */}
-                        <div style={{ width: LABEL_W, flexShrink: 0, padding: '0 16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 500, color: '#050505' }}>{task.title}</div>
+                        <div style={{ width: LABEL_W, flexShrink: 0, padding: '0 16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 500, color: '#111827' }}>{task.title}</div>
                         {/* Grid cells */}
                         {cols.map((day, ci) => {
                           const today = isToday(day);
                           const isDue = ci === dayIdx;
                           return (
-                            <div key={ci} style={{ width: COL_W, flexShrink: 0, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #F6F6F6', background: today ? '#FAFAFA' : 'transparent', position: 'relative' }}>
-                              {today && <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: '#050505', opacity: 0.12, transform: 'translateX(-50%)' }} />}
+                            <div key={ci} style={{ width: COL_W, flexShrink: 0, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #F4F4F6', background: today ? '#FAFAFA' : 'transparent', position: 'relative' }}>
+                              {today && <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: '#111827', opacity: 0.12, transform: 'translateX(-50%)' }} />}
                               {isDue && inRange && (
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLOR[task.status] ?? '#9C9CAA', boxShadow: `0 0 0 3px ${STATUS_COLOR[task.status] ?? '#9C9CAA'}22`, zIndex: 1 }} />
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLOR[task.status] ?? '#9CA3AF', boxShadow: `0 0 0 3px ${STATUS_COLOR[task.status] ?? '#9CA3AF'}22`, zIndex: 1 }} />
                               )}
                             </div>
                           );
                         })}
                         {/* Out-of-range badge */}
                         {!inRange && (
-                          <div style={{ position: 'absolute', right: 16, fontSize: '10px', color: '#9C9CAA', fontWeight: 500 }}>
+                          <div style={{ position: 'absolute', right: 16, fontSize: '10px', color: '#9CA3AF', fontWeight: 500 }}>
                             {format(due, 'd MMM')}
                           </div>
                         )}
@@ -631,13 +720,16 @@ export function BoardView({
                       tasks={tasksByStatus[status]}
                       onTaskClick={onTaskClick}
                       onStatusChange={(task, newStatus) => onTaskStatusChange(task.id, newStatus)}
-                      onDelete={onTaskDelete}
+                      onDelete={handleDeleteWithAnimation}
                       onEdit={onEditTask}
+                      onDuplicate={onDuplicateTask}
                       onCreateTask={(status) => onCreateTask(status, hoveredDate ?? undefined)}
                       isSelectMode={isSelectMode}
                       selectedIds={selectedIds}
                       onToggleSelect={toggleTaskSelection}
                       columnIndex={i}
+                      deletingIds={deletingIds}
+                      newestTaskId={newestTaskId}
                     />
                   </div>
                 ))}
@@ -664,39 +756,39 @@ export function BoardView({
                     <th style={{ padding: '10px 12px', width: '40px' }}>
                       <div
                         onClick={() => selectedIds.size === visibleTasks.length ? setSelectedIds(new Set()) : selectAllVisible()}
-                        style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#3070A8' : '#CCCCCC'}`, background: selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#3070A8' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#111827' : '#CCCCCC'}`, background: selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#111827' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {selectedIds.size === visibleTasks.length && visibleTasks.length > 0 && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
                       </div>
                     </th>
                   )}
                   {['Tarea', 'Estado', 'Prioridad', 'Vencimiento', 'Asignado a'].map(col => (
-                    <th key={col} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#9C9CAA', whiteSpace: 'nowrap' }}>{col}</th>
+                    <th key={col} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{col}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {visibleTasks.length === 0 ? (
-                  <tr><td colSpan={isSelectMode ? 6 : 5} style={{ padding: '32px 16px', textAlign: 'center', color: '#9C9CAA', fontSize: '13px' }}>Sin tareas</td></tr>
+                  <tr><td colSpan={isSelectMode ? 6 : 5} style={{ padding: '32px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>Sin tareas</td></tr>
                 ) : visibleTasks.map((task, i) => {
                   const isSelected = selectedIds.has(task.id);
                   return (
                     <tr
                       key={task.id}
                       onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)}
-                      style={{ borderBottom: i < visibleTasks.length - 1 ? '1px solid #F6F6F6' : 'none', cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 320ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 10) * 35}ms`, background: isSelected ? '#EBF2FB' : 'transparent' }}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#FAFAFA'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isSelected ? '#EBF2FB' : 'transparent'; }}
+                      style={{ borderBottom: i < visibleTasks.length - 1 ? '1px solid #F3F4F6' : 'none', cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 320ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 10) * 35}ms`, background: isSelected ? '#F3F4F6' : 'transparent' }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#F9FAFB'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isSelected ? '#F3F4F6' : 'transparent'; }}
                     >
                       {isSelectMode && (
                         <td style={{ padding: '10px 12px', width: '40px' }}>
-                          <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${isSelected ? '#3070A8' : '#CCCCCC'}`, background: isSelected ? '#3070A8' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${isSelected ? '#111827' : '#CCCCCC'}`, background: isSelected ? '#111827' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
                           </div>
                         </td>
                       )}
-                      <td style={{ padding: '10px 16px', fontWeight: 500, color: '#050505', maxWidth: '260px' }}>
+                      <td style={{ padding: '10px 16px', fontWeight: 500, color: '#111827', maxWidth: '260px' }}>
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{task.title}</span>
-                        {task.category && <span style={{ fontSize: '11px', color: '#9C9CAA' }}>{task.category}</span>}
+                        {task.category && <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{task.category}</span>}
                       </td>
                       <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px', border: '1.5px solid #D8D8D8' }}>
@@ -704,14 +796,14 @@ export function BoardView({
                         </span>
                       </td>
                       <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px', border: '1.5px solid #D8D8D8', color: { LOW: '#6B7280', MEDIUM: '#3070A8', HIGH: '#D97706', URGENT: '#DC2626' }[task.priority] }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px', border: '1.5px solid #E5E7EB', color: { LOW: '#6B7280', MEDIUM: '#7C3AED', HIGH: '#D97706', URGENT: '#DC2626' }[task.priority] }}>
                           {{ LOW: 'Baja', MEDIUM: 'Media', HIGH: 'Alta', URGENT: 'Urgente' }[task.priority]}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 16px', color: task.dueDate ? '#575456' : '#C8C8D0', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                      <td style={{ padding: '10px 16px', color: task.dueDate ? '#6B7280' : '#D1D5DB', whiteSpace: 'nowrap', fontSize: '12px' }}>
                         {task.dueDate ? format(parseISO(task.dueDate), 'd MMM yyyy') : '—'}
                       </td>
-                      <td style={{ padding: '10px 16px', color: '#575456', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '10px 16px', color: '#6B7280', fontSize: '12px', whiteSpace: 'nowrap' }}>
                         {getAssigneeName(task)}
                       </td>
                     </tr>

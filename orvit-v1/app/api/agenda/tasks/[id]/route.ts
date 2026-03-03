@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
+import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
+import { logTaskUpdateActivity } from '@/lib/agenda/activity-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +11,15 @@ export const dynamic = 'force-dynamic';
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).optional().nullable(),
-  dueDate: z.string().datetime().optional().nullable(),
+  dueDate: z.preprocess(
+    (val) => {
+      if (!val || typeof val !== 'string') return val;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return `${val}T00:00:00.000Z`;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(val)) return `${val}.000Z`;
+      return val;
+    },
+    z.string().datetime().optional().nullable()
+  ),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   status: z.enum(['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED']).optional(),
   category: z.string().max(100).optional().nullable(),
@@ -69,7 +79,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           orderBy: { remindAt: 'asc' },
         },
         _count: {
-          select: { comments: true },
+          select: { comments: true, subtasks: true },
         },
       },
     });
@@ -91,6 +101,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (!canAccess) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
+
+    const subtasksDone = await prisma.agendaSubtask.count({
+      where: { taskId: task.id, done: true },
+    });
 
     // Transformar respuesta
     const response = {
@@ -135,6 +149,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
+      _count: {
+        comments: (task as any)._count?.comments ?? 0,
+        subtasks: (task as any)._count?.subtasks ?? 0,
+        subtasksDone,
+      },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     };
@@ -161,17 +180,33 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // Verificar que la tarea existe y es del usuario
+    // Verificar permiso de rol
+    if (!hasPermission('tasks.edit', { userId: user.id, userRole: user.role })) {
+      return NextResponse.json({ error: 'No tienes permiso para editar tareas' }, { status: 403 });
+    }
+
+    // Verificar que la tarea existe y determinar rol del usuario
     const existingTask = await prisma.agendaTask.findUnique({
       where: { id: taskId },
-      select: { createdById: true },
+      select: {
+        createdById: true,
+        assignedToUserId: true,
+        companyId: true,
+        title: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+      },
     });
 
     if (!existingTask) {
       return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
     }
 
-    if (existingTask.createdById !== user.id) {
+    const isCreator = existingTask.createdById === user.id;
+    const isAssignee = existingTask.assignedToUserId === user.id;
+
+    if (!isCreator && !isAssignee) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -186,6 +221,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const data = validation.data;
+
+    // Asignado solo puede cambiar status y completedNote
+    if (!isCreator) {
+      const ASSIGNEE_ALLOWED = new Set(['status', 'completedNote']);
+      const forbidden = Object.keys(data).filter(f => !ASSIGNEE_ALLOWED.has(f));
+      if (forbidden.length > 0) {
+        return NextResponse.json(
+          { error: `No autorizado para modificar: ${forbidden.join(', ')}` },
+          { status: 403 }
+        );
+      }
+    }
 
     // Preparar datos de actualización
     const updateData: any = {};
@@ -260,9 +307,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           orderBy: { remindAt: 'asc' },
         },
         _count: {
-          select: { comments: true },
+          select: { comments: true, subtasks: true },
         },
       },
+    });
+
+    const subtasksDone = await prisma.agendaSubtask.count({
+      where: { taskId, done: true },
     });
 
     // Transformar respuesta
@@ -308,10 +359,80 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       notes: task.notes,
       completedAt: task.completedAt?.toISOString() || null,
       completedNote: task.completedNote,
-      _count: { comments: (task as any)._count?.comments ?? 0 },
+      _count: {
+        comments: (task as any)._count?.comments ?? 0,
+        subtasks: (task as any)._count?.subtasks ?? 0,
+        subtasksDone,
+      },
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
     };
+
+    // Registrar actividad de cambios
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (data.status && data.status !== existingTask.status) {
+      changes.status = { old: existingTask.status, new: data.status };
+    }
+    if (data.assignedToUserId !== undefined && data.assignedToUserId !== existingTask.assignedToUserId) {
+      changes.assignedToUserId = { old: existingTask.assignedToUserId, new: data.assignedToUserId };
+    }
+    if (data.priority && data.priority !== existingTask.priority) {
+      changes.priority = { old: existingTask.priority, new: data.priority };
+    }
+    if (data.dueDate !== undefined) {
+      const oldDate = existingTask.dueDate?.toISOString() || null;
+      if (data.dueDate !== oldDate) {
+        changes.dueDate = { old: oldDate, new: data.dueDate };
+      }
+    }
+    if (data.title && data.title !== existingTask.title) {
+      changes.title = { old: existingTask.title, new: data.title };
+    }
+    if (Object.keys(changes).length > 0) {
+      logTaskUpdateActivity(taskId, existingTask.companyId, user.id, changes);
+    }
+
+    // Notificaciones según cambios
+    try {
+      const notifications: any[] = [];
+
+      // Notificar reasignación
+      if (
+        data.assignedToUserId !== undefined &&
+        data.assignedToUserId !== existingTask.assignedToUserId &&
+        data.assignedToUserId &&
+        data.assignedToUserId !== user.id
+      ) {
+        notifications.push({
+          type: 'task_assigned',
+          title: 'Te asignaron una tarea',
+          message: `${user.name || 'Alguien'} te asignó la tarea "${task.title}"`,
+          userId: data.assignedToUserId,
+          companyId: task.companyId,
+          priority: task.priority as any,
+          metadata: { taskId: task.id, assignedBy: user.id, taskTitle: task.title },
+        });
+      }
+
+      // Notificar cambio de status al creador (si el asignado cambia el status)
+      if (data.status && !isCreator && existingTask.createdById !== user.id) {
+        notifications.push({
+          type: 'task_updated',
+          title: `Tarea ${data.status === 'COMPLETED' ? 'completada' : 'actualizada'}`,
+          message: `${user.name || 'Alguien'} cambió el estado de "${task.title}" a ${data.status}`,
+          userId: existingTask.createdById,
+          companyId: task.companyId,
+          priority: task.priority as any,
+          metadata: { taskId: task.id, updatedBy: user.id, taskTitle: task.title, newStatus: data.status },
+        });
+      }
+
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({ data: notifications });
+      }
+    } catch (notifErr) {
+      console.error('[API] Error creating update notifications:', notifErr);
+    }
 
     return NextResponse.json(response);
   } catch (error) {
@@ -335,17 +456,31 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // Verificar que la tarea existe y es del usuario
+    // Verificar permiso de rol
+    if (!hasPermission('tasks.delete', { userId: user.id, userRole: user.role })) {
+      return NextResponse.json({ error: 'No tienes permiso para eliminar tareas' }, { status: 403 });
+    }
+
+    // Verificar que la tarea existe y que el usuario tiene acceso
     const existingTask = await prisma.agendaTask.findUnique({
       where: { id: taskId },
-      select: { createdById: true },
+      select: { createdById: true, assignedToUserId: true, companyId: true },
     });
 
     if (!existingTask) {
       return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
     }
 
-    if (existingTask.createdById !== user.id) {
+    const userCompanyIds = [
+      ...(user.ownedCompanies ?? []).map((c: any) => c.id),
+      ...(user.companies ?? []).map((c: any) => c.companyId),
+    ];
+    const canDelete =
+      existingTask.createdById === user.id ||
+      existingTask.assignedToUserId === user.id ||
+      userCompanyIds.includes(existingTask.companyId);
+
+    if (!canDelete) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 

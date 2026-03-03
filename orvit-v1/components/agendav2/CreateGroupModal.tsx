@@ -14,9 +14,9 @@ import { useAuth } from '@/contexts/AuthContext';
 // ── Presets ──────────────────────────────────────────────────────────────────
 
 const COLOR_PRESETS = [
-  '#3070A8', // blue (default)
-  '#568177', // green
-  '#907840', // amber
+  '#7C3AED', // blue (default)
+  '#059669', // green
+  '#D97706', // amber
   '#C05060', // rose
   '#7040A8', // purple
   '#E09458', // orange
@@ -150,28 +150,30 @@ export function CreateGroupModal({
         style={{
           maxWidth: '480px',
           width: '100%',
-          borderRadius: '20px',
-          border: '1px solid #E4E4E4',
-          boxShadow: '0 24px 60px rgba(0,0,0,.12)',
-          animation: mounted ? 'cgm-in 220ms cubic-bezier(0.22,1,0.36,1)' : 'none',
+          borderRadius: '8px',
+          border: '1.5px solid #D8D8DE',
+          boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)',
+          animation: mounted ? 'cgm-in 950ms cubic-bezier(.22,1,.36,1) both' : 'none',
+          transformOrigin: 'center center',
         }}
       >
         <style>{`
           @keyframes cgm-in {
-            from { opacity: 0; transform: scale(0.94) translateY(6px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
+            0%   { opacity: 0; transform: translate(-50%,-50%) scaleY(0);     filter: blur(6px); }
+            10%  { opacity: 1; transform: translate(-50%,-50%) scaleY(0.006); filter: blur(4px); }
+            100% { opacity: 1; transform: translate(-50%,-50%) scaleY(1);     filter: blur(0px); }
           }
           @keyframes cgm-row-in {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateX(-18px); filter: blur(8px); }
+            to   { opacity: 1; transform: translateX(0);     filter: blur(0); }
           }
-          .cgm-row { animation: cgm-row-in 200ms ease both; }
+          .cgm-row { animation: cgm-row-in 420ms cubic-bezier(.22,1,.36,1) both; }
         `}</style>
 
         {/* ── Header ────────────────────────────────────────────── */}
         <div
           className="flex items-center gap-3 px-6 pt-6 pb-5"
-          style={{ borderBottom: '1px solid #F0F0F0' }}
+          style={{ borderBottom: '1px solid #E4E4E8' }}
         >
           {/* Icon preview */}
           <div
@@ -182,10 +184,10 @@ export function CreateGroupModal({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] font-bold" style={{ color: '#050505' }}>
+            <h2 className="text-[15px] font-bold" style={{ color: '#111827' }}>
               {isProject ? 'Nuevo Proyecto' : 'Nuevo Grupo'}
             </h2>
-            <p className="text-[12px]" style={{ color: '#9C9CAA' }}>
+            <p className="text-[12px]" style={{ color: '#9CA3AF' }}>
               {isProject
                 ? 'Proyecto compartido con tu equipo'
                 : 'Grupo de tareas personales o de empresa'}
@@ -194,8 +196,8 @@ export function CreateGroupModal({
 
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-full flex items-center justify-center transition-colors hover:bg-[#F0F0F0]"
-            style={{ color: '#9C9CAA' }}
+            className="h-8 w-8 rounded-md flex items-center justify-center transition-colors hover:bg-[#F4F4F6]"
+            style={{ color: '#9CA3AF' }}
           >
             <X className="h-4 w-4" />
           </button>
@@ -207,8 +209,8 @@ export function CreateGroupModal({
           {/* Type toggle */}
           <div className="cgm-row" style={{ animationDelay: '40ms' }}>
             <div
-              className="flex rounded-xl p-1 gap-1"
-              style={{ background: '#F0F0F0' }}
+              className="flex rounded-lg p-1 gap-1"
+              style={{ background: '#F4F4F6' }}
             >
               {[
                 { label: 'Grupo', value: false, icon: Hash },
@@ -220,7 +222,7 @@ export function CreateGroupModal({
                   className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150"
                   style={{
                     background: isProject === value ? '#FFFFFF' : 'transparent',
-                    color: isProject === value ? '#050505' : '#9C9CAA',
+                    color: isProject === value ? '#111827' : '#9CA3AF',
                     boxShadow: isProject === value ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
                   }}
                 >
@@ -233,7 +235,7 @@ export function CreateGroupModal({
 
           {/* Name */}
           <div className="cgm-row" style={{ animationDelay: '70ms' }}>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9C9CAA' }}>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9CA3AF' }}>
               Nombre *
             </label>
             <input
@@ -245,12 +247,12 @@ export function CreateGroupModal({
               className="w-full px-4 py-3 text-[14px] outline-none transition-all duration-150"
               style={{
                 background: '#FAFAFA',
-                border: error ? '1.5px solid #E05060' : '1.5px solid #E8E8E8',
+                border: error ? '1.5px solid #E05060' : '1.5px solid #E4E4E8',
                 borderRadius: '12px',
-                color: '#050505',
+                color: '#111827',
               }}
-              onFocus={e => { if (!error) e.target.style.borderColor = '#3070A8'; }}
-              onBlur={e => { if (!error) e.target.style.borderColor = '#E8E8E8'; }}
+              onFocus={e => { if (!error) e.target.style.borderColor = '#7C3AED'; }}
+              onBlur={e => { if (!error) e.target.style.borderColor = '#E4E4E8'; }}
             />
             {error && (
               <p className="text-[11px] mt-1" style={{ color: '#E05060' }}>{error}</p>
@@ -261,7 +263,7 @@ export function CreateGroupModal({
           <div className="cgm-row flex gap-4" style={{ animationDelay: '100ms' }}>
             {/* Color */}
             <div className="flex-1">
-              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9C9CAA' }}>
+              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9CA3AF' }}>
                 Color
               </label>
               <div className="flex flex-wrap gap-2">
@@ -285,7 +287,7 @@ export function CreateGroupModal({
 
             {/* Icon */}
             <div className="flex-1">
-              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9C9CAA' }}>
+              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9CA3AF' }}>
                 Ícono
               </label>
               <div className="flex flex-wrap gap-1.5">
@@ -298,11 +300,11 @@ export function CreateGroupModal({
                       title={preset.label}
                       className="h-7 w-7 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90"
                       style={{
-                        background: iconIdx === i ? `${color}18` : '#F0F0F0',
+                        background: iconIdx === i ? `${color}18` : '#F4F4F6',
                         border: iconIdx === i ? `1.5px solid ${color}60` : '1.5px solid transparent',
                       }}
                     >
-                      <Ic className="h-3.5 w-3.5" style={{ color: iconIdx === i ? color : '#9C9CAA' }} />
+                      <Ic className="h-3.5 w-3.5" style={{ color: iconIdx === i ? color : '#9CA3AF' }} />
                     </button>
                   );
                 })}
@@ -312,7 +314,7 @@ export function CreateGroupModal({
 
           {/* Description */}
           <div className="cgm-row" style={{ animationDelay: '130ms' }}>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9C9CAA' }}>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9CA3AF' }}>
               Descripción <span style={{ color: '#C4C4C4', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span>
             </label>
             <textarea
@@ -323,12 +325,12 @@ export function CreateGroupModal({
               className="w-full px-4 py-3 text-[13px] outline-none resize-none transition-all duration-150"
               style={{
                 background: '#FAFAFA',
-                border: '1.5px solid #E8E8E8',
+                border: '1.5px solid #E4E4E8',
                 borderRadius: '12px',
-                color: '#050505',
+                color: '#111827',
               }}
-              onFocus={e => (e.target.style.borderColor = '#3070A8')}
-              onBlur={e => (e.target.style.borderColor = '#E8E8E8')}
+              onFocus={e => (e.target.style.borderColor = '#7C3AED')}
+              onBlur={e => (e.target.style.borderColor = '#E4E4E8')}
             />
           </div>
 
@@ -338,7 +340,7 @@ export function CreateGroupModal({
             style={{ maxHeight: isProject ? '400px' : '0', opacity: isProject ? 1 : 0 }}
           >
             <div className="pt-1">
-              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9C9CAA' }}>
+              <label className="block text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#9CA3AF' }}>
                 <Users className="h-3 w-3 inline mr-1" />
                 Miembros del Proyecto
               </label>
@@ -349,7 +351,7 @@ export function CreateGroupModal({
                   {selectedUserObjs.map(u => (
                     <div
                       key={u.id}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all duration-150"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-all duration-150"
                       style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}
                     >
                       <Avatar className="h-4 w-4">
@@ -381,12 +383,12 @@ export function CreateGroupModal({
                   className="w-full px-4 py-2.5 text-[13px] outline-none transition-all duration-150"
                   style={{
                     background: '#FAFAFA',
-                    border: '1.5px solid #E8E8E8',
+                    border: '1.5px solid #E4E4E8',
                     borderRadius: '10px',
-                    color: '#050505',
+                    color: '#111827',
                   }}
-                  onFocusCap={e => (e.currentTarget.style.borderColor = '#3070A8')}
-                  onBlurCapture={e => (e.currentTarget.style.borderColor = '#E8E8E8')}
+                  onFocusCap={e => (e.currentTarget.style.borderColor = '#7C3AED')}
+                  onBlurCapture={e => (e.currentTarget.style.borderColor = '#E4E4E8')}
                 />
 
                 {/* Dropdown */}
@@ -395,7 +397,7 @@ export function CreateGroupModal({
                     className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-10"
                     style={{
                       background: '#FFFFFF',
-                      border: '1px solid #E4E4E4',
+                      border: '1px solid #E4E4E8',
                       boxShadow: '0 8px 24px rgba(0,0,0,.10)',
                       animation: 'cgm-in 120ms ease',
                     }}
@@ -414,13 +416,13 @@ export function CreateGroupModal({
                           >
                             <Avatar className="h-7 w-7 shrink-0">
                               {u.avatar && <AvatarImage src={u.avatar} />}
-                              <AvatarFallback style={{ fontSize: '10px', background: '#D0E0F0', color: '#3070A8' }}>
+                              <AvatarFallback style={{ fontSize: '10px', background: '#EDE9FE', color: '#7C3AED' }}>
                                 {getInitials(u.name)}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-medium truncate" style={{ color: '#050505' }}>{u.name}</p>
-                              {u.email && <p className="text-[11px] truncate" style={{ color: '#9C9CAA' }}>{u.email}</p>}
+                              <p className="text-[13px] font-medium truncate" style={{ color: '#111827' }}>{u.name}</p>
+                              {u.email && <p className="text-[11px] truncate" style={{ color: '#9CA3AF' }}>{u.email}</p>}
                             </div>
                             {selected && (
                               <Check className="h-4 w-4 shrink-0" style={{ color }} />
@@ -438,8 +440,8 @@ export function CreateGroupModal({
           {/* ── Preview strip ──────────────────────────────────── */}
           {name.trim() && (
             <div
-              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
-              style={{ background: '#F6F6F6', border: '1px solid #EEEEEE' }}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+              style={{ background: '#F4F4F6', border: '1px solid #E4E4E8' }}
             >
               <div
                 className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
@@ -448,10 +450,10 @@ export function CreateGroupModal({
                 <SelectedIcon className="h-4 w-4" style={{ color }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold truncate" style={{ color: '#050505' }}>
+                <p className="text-[13px] font-semibold truncate" style={{ color: '#111827' }}>
                   {name.trim()}
                 </p>
-                <p className="text-[11px]" style={{ color: '#9C9CAA' }}>
+                <p className="text-[11px]" style={{ color: '#9CA3AF' }}>
                   {isProject
                     ? `Proyecto · ${selectedMembers.length + 1} miembro${selectedMembers.length !== 0 ? 's' : ''}`
                     : 'Grupo de tareas'}
@@ -469,17 +471,17 @@ export function CreateGroupModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="flex-1 h-11 rounded-xl text-[14px] font-semibold transition-all duration-150 active:scale-[0.97]"
-              style={{ background: '#F0F0F0', color: '#575456' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#E8E8E8')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#F0F0F0')}
+              className="flex-1 h-11 rounded-md text-[13px] font-semibold transition-all duration-150 active:scale-[0.97]"
+              style={{ background: '#F4F4F6', color: '#6B7280', border: '1px solid #E4E4E8' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#E4E4E8')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#F4F4F6')}
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !name.trim()}
-              className="flex-1 h-11 rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97] disabled:opacity-50"
+              className="flex-1 h-11 rounded-md text-[13px] font-semibold text-white flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97] disabled:opacity-50"
               style={{ background: color, boxShadow: `0 2px 8px ${color}40` }}
               onMouseEnter={e => { if (!saving && name.trim()) e.currentTarget.style.opacity = '0.9'; }}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}

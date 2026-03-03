@@ -306,6 +306,38 @@ async function matchInvoiceItems(
     });
   }
 
+  // FASE 4: Service auto-matching
+  // Si la mayoría de items no matcheó y el proveedor tiene items de servicio,
+  // auto-matchear los no-matcheados al item de servicio para consolidar al guardar
+  const unmatchedCount = results.filter(r => !r.match).length;
+  const serviceItems = allSupplierItems.filter(si => si.esServicio === true);
+
+  if (unmatchedCount > 0 && serviceItems.length > 0) {
+    const unmatchedRatio = unmatchedCount / results.length;
+
+    // Solo consolidar si >60% no matcheó (señal de factura de servicio con detalle)
+    if (unmatchedRatio > 0.6) {
+      const serviceItem = serviceItems[0];
+
+      for (let i = 0; i < results.length; i++) {
+        if (!results[i].match) {
+          results[i] = {
+            ...results[i],
+            match: {
+              supplierItemId: serviceItem.id,
+              nombre: serviceItem.nombre,
+              supplyId: serviceItem.supplyId,
+              supplyName: serviceItem.supply.name,
+              supplySku: serviceItem.supply.code,
+            },
+            matchType: 'service_consolidated',
+            needsMapping: false,
+          };
+        }
+      }
+    }
+  }
+
   return results;
 }
 
@@ -695,7 +727,7 @@ export async function POST(request: NextRequest) {
 
     // Matching de items si hay proveedor encontrado
     let itemsWithMatches = extraction.items || [];
-    let itemMatchingSummary = { total: 0, matched: 0, needsMapping: 0, aiAssisted: 0 };
+    let itemMatchingSummary = { total: 0, matched: 0, needsMapping: 0, aiAssisted: 0, serviceConsolidated: 0 };
 
     if (matchedSupplier && extraction.items && extraction.items.length > 0) {
       const matchedItems = await matchInvoiceItems(
@@ -710,6 +742,7 @@ export async function POST(request: NextRequest) {
         matched: matchedItems.filter(i => i.match).length,
         needsMapping: matchedItems.filter(i => !i.match).length,
         aiAssisted: matchedItems.filter(i => i.matchType === 'ai_assisted').length,
+        serviceConsolidated: matchedItems.filter(i => (i as any).matchType === 'service_consolidated').length,
       };
     }
 

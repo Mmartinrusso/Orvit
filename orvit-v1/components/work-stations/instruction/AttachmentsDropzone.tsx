@@ -17,6 +17,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import { AttachmentDraft } from './types';
 import { cn, formatNumber } from '@/lib/utils';
 import { GoogleDrivePicker, GoogleDriveFile } from '@/components/ui/google-drive-picker';
@@ -292,7 +293,7 @@ export function AttachmentsDropzone({
               {activeAttachments.map((attachment) => (
                 <Card key={attachment.id} className="p-3">
                   <div className="flex items-center gap-3">
-                    {getFileIcon(attachment.mime, attachment.name)}
+                    <FileTypeIcon name={attachment.name ?? ''} size={24} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{attachment.name}</p>
                       <div className="flex items-center gap-2">

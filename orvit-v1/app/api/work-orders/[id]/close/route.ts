@@ -73,6 +73,9 @@ const closeWorkOrderSchema = z.object({
 
   notes: z.string().optional(),
 
+  // Acción de reparación (solo para ROTURA)
+  repairAction: z.enum(['CAMBIO', 'REPARACION']).optional(),
+
   // Modo de cierre
   closingMode: z.enum(['MINIMUM', 'PROFESSIONAL']).optional().default('MINIMUM'),
 
@@ -80,6 +83,7 @@ const closeWorkOrderSchema = z.object({
   controlPlan: z.array(z.object({
     order: z.number().int().positive(),
     delayMinutes: z.number().int().positive(),
+    delayFrom: z.enum(['close', 'previous']).default('previous'),
     description: z.string().min(1).max(500),
   })).optional(),
 
@@ -88,9 +92,11 @@ const closeWorkOrderSchema = z.object({
     title: z.string().max(100).optional(),
     description: z.string().max(2000).optional(),
     machineId: z.number().int().positive().optional(),
+    componentId: z.number().int().positive().optional(),
     subcomponentId: z.number().int().positive().optional(),
     affectedComponents: z.any().optional(),
     failureCategory: z.string().max(50).optional(),
+    incidentType: z.string().max(20).optional(),
     confirmedCause: z.string().max(255).optional(),
   }).optional(),
 });
@@ -234,17 +240,19 @@ export async function POST(
             actualMinutes: data.actualMinutes,
 
             // OPCIONAL (PROFESSIONAL)
-            finalComponentId: data.finalComponentId,
-            finalSubcomponentId: data.finalSubcomponentId,
+            // Fallback: si no se especificó componente final, usar el de la OT / failureOccurrence
+            finalComponentId: data.finalComponentId ?? workOrder.componentId ?? undefined,
+            finalSubcomponentId: data.finalSubcomponentId ?? failureOccurrence.subcomponentId ?? undefined,
             confirmedCause: data.confirmedCause,
             fixType: data.fixType,
             templateUsedId: data.templateUsedId,
             sourceSolutionId: data.sourceSolutionId,
-            toolsUsed: data.toolsUsed ? JSON.stringify(data.toolsUsed) : null,
-            sparePartsUsed: data.sparePartsUsed ? JSON.stringify(data.sparePartsUsed) : null,
+            toolsUsed: data.toolsUsed ?? null,
+            sparePartsUsed: data.sparePartsUsed ?? null,
             effectiveness: data.effectiveness,
-            attachments: data.attachments ? JSON.stringify(data.attachments) : null,
+            attachments: data.attachments ?? null,
             notes: data.notes,
+            repairAction: data.repairAction,
             controlPlan: data.controlPlan ? data.controlPlan : undefined,
           },
           include: {
@@ -258,21 +266,33 @@ export async function POST(
         if (solutionApplied && data.controlPlan && data.controlPlan.length > 0) {
           const performedAt = data.performedAt ? new Date(data.performedAt) : new Date();
           const steps = data.controlPlan;
-          await prisma.solutionControlInstance.createMany({
-            data: steps.map((step, idx) => ({
+
+          // Calcular scheduledAt según delayFrom de cada paso
+          const controlInstancesData = steps.map((step) => {
+            let scheduledAt: Date | null = null;
+            if (step.delayFrom === 'close') {
+              // Siempre desde el cierre de la OT
+              scheduledAt = new Date(performedAt.getTime() + step.delayMinutes * 60 * 1000);
+            } else {
+              // 'previous': step 1 también desde cierre, pasos siguientes se programan al completar el anterior
+              if (step.order === 1) {
+                scheduledAt = new Date(performedAt.getTime() + step.delayMinutes * 60 * 1000);
+              } else {
+                scheduledAt = null; // Se programa cuando el anterior se completa
+              }
+            }
+            return {
               solutionAppliedId: solutionApplied!.id,
               order: step.order,
               delayMinutes: step.delayMinutes,
               description: step.description,
-              // Primera instancia: scheduledAt = performedAt + delayMinutes
-              // Siguientes: scheduledAt = null, status = WAITING
-              scheduledAt: idx === 0
-                ? new Date(performedAt.getTime() + step.delayMinutes * 60 * 1000)
-                : null,
-              status: idx === 0 ? 'PENDING' : 'WAITING',
+              scheduledAt,
+              status: scheduledAt ? 'PENDING' : 'WAITING',
               companyId,
-            })),
+            };
           });
+
+          await prisma.solutionControlInstance.createMany({ data: controlInstancesData });
           console.log(`✅ Creados ${steps.length} controles de seguimiento para solución ${solutionApplied.id}`);
         }
       } catch (solutionError: any) {
@@ -364,8 +384,17 @@ export async function POST(
           if (data.correction.description) foUpdateData.description = data.correction.description;
           if (data.correction.machineId) foUpdateData.machineId = data.correction.machineId;
           if (data.correction.subcomponentId) foUpdateData.subcomponentId = data.correction.subcomponentId;
-          if (data.correction.affectedComponents) foUpdateData.affectedComponents = data.correction.affectedComponents;
           if (data.correction.failureCategory) foUpdateData.failureCategory = data.correction.failureCategory;
+          if (data.correction.incidentType) foUpdateData.incidentType = data.correction.incidentType;
+          // Actualizar affectedComponents si viene componentId o subcomponentId
+          if (data.correction.componentId || data.correction.affectedComponents) {
+            const existing = (failureOccurrence.affectedComponents as any) || {};
+            foUpdateData.affectedComponents = data.correction.affectedComponents ?? {
+              ...existing,
+              componentIds: data.correction.componentId ? [data.correction.componentId] : (existing.componentIds || []),
+              subcomponentIds: data.correction.subcomponentId ? [data.correction.subcomponentId] : (existing.subcomponentIds || []),
+            };
+          }
 
           console.log('🔄 [CLOSE] Corrección de falla aplicada:', Object.keys(data.correction));
         }

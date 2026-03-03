@@ -25,6 +25,14 @@ function computeInitialOffset(tasks: AgendaTask[]) {
 // Column Y-offsets create the scatter / staggered timeline look (matches Synchro)
 const COL_STAGGER = [35, 8, 25, 0, 40, 0, 6, 28];
 
+// Priority → left border accent color (matches TaskCard / TaskDetailPanel palette)
+const PRIORITY_COLOR: Record<string, string> = {
+  LOW:    '#9CA3AF',
+  MEDIUM: '#7C3AED',
+  HIGH:   '#D97706',
+  URGENT: '#DC2626',
+};
+
 export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalendarStripProps) {
   const [weekOffset, setWeekOffset] = useState(() => computeInitialOffset(tasks));
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
@@ -72,8 +80,9 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
   return (
     <div style={{
       background: '#FFFFFF',
-      border: '1px solid #E4E4E4',
-      borderRadius: '16px',
+      border: '1.5px solid #D8D8DE',
+      borderRadius: '8px',
+      boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)',
       overflow: 'hidden',
     }}>
       {/* ── Header ─────────────────────────────────────────────────── */}
@@ -81,7 +90,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 20px',
       }}>
-        <span style={{ fontSize: '15px', fontWeight: 700, color: '#050505' }}>Task Calendar</span>
+        <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', letterSpacing: '-0.01em' }}>Calendario de tareas</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           <NavBtn onClick={() => setWeekOffset(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></NavBtn>
           <NavBtn onClick={() => setWeekOffset(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></NavBtn>
@@ -109,7 +118,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
               onMouseEnter={() => handleHover(key)}
               onClick={() => handleClick(key)}
               style={{
-                borderLeft: idx > 0 ? '1px solid #F0F0F0' : 'none',
+                borderLeft: idx > 0 ? '1px solid #E4E4E8' : 'none',
                 position: 'relative',
                 minHeight: '190px',
                 transition: 'opacity 300ms ease, background 300ms ease',
@@ -122,12 +131,12 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
               <div style={{
                 padding: '10px 6px 8px',
                 textAlign: 'center',
-                borderBottom: '1px solid #F0F0F0',
+                borderBottom: '1px solid #E4E4E8',
               }}>
                 <span style={{
                   fontSize: '12px',
                   fontWeight: (todayCol || isThis) ? 700 : 500,
-                  color: (todayCol || isThis) ? '#050505' : '#9C9CAA',
+                  color: (todayCol || isThis) ? '#111827' : '#9CA3AF',
                 }}>
                   {format(day, 'd MMM')}
                 </span>
@@ -135,7 +144,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                 {isSelected && (
                   <div style={{
                     width: '4px', height: '4px', borderRadius: '50%',
-                    background: '#050505', margin: '3px auto 0',
+                    background: '#111827', margin: '3px auto 0',
                   }} />
                 )}
               </div>
@@ -147,7 +156,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                   <>
                     <div style={{
                       position: 'absolute', left: '50%', top: '38px', bottom: '0',
-                      width: '2px', background: '#050505',
+                      width: '2px', background: '#111827',
                       transform: `translateX(-50%) scaleY(${showLine ? 1 : 0})`,
                       transformOrigin: 'bottom',
                       transition: 'transform 600ms cubic-bezier(.4,0,.2,1)',
@@ -156,7 +165,7 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                     <div style={{
                       position: 'absolute', left: '50%', top: '34px',
                       width: '8px', height: '8px', borderRadius: '50%',
-                      background: '#050505',
+                      background: '#111827',
                       transform: `translateX(-50%) scale(${showLine ? 1 : 0})`,
                       opacity: showLine ? 1 : 0,
                       transition: 'transform 350ms ease 400ms, opacity 350ms ease 400ms',
@@ -196,25 +205,23 @@ export function TaskCalendarStrip({ tasks, onTaskClick, onHoverDate }: TaskCalen
                         padding: '5px 8px', borderRadius: '8px',
                         fontSize: '11px', fontWeight: 500, lineHeight: 1.35,
                         border: isActive ? 'none' : '1px solid #EDEDED',
-                        background: isActive ? '#050505' : '#FFFFFF',
-                        color: isActive ? '#FFFFFF' : '#575456',
+                        borderLeft: isActive ? `3px solid ${PRIORITY_COLOR[(task as any).priority ?? 'LOW'] ?? '#9CA3AF'}` : `3px solid ${PRIORITY_COLOR[(task as any).priority ?? 'LOW'] ?? '#9CA3AF'}`,
+                        background: isActive ? '#111827' : '#FFFFFF',
+                        color: isActive ? '#FFFFFF' : '#374151',
                         cursor: 'pointer',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         boxShadow: isActive ? '0 2px 8px rgba(0,0,0,.18)' : '0 1px 3px rgba(0,0,0,.04)',
-                        opacity: isActive ? 1 : 0.65,
+                        opacity: isActive ? 1 : 0.75,
                         transition: `background 350ms ease ${pillDelay}ms, color 350ms ease ${pillDelay}ms, border 350ms ease ${pillDelay}ms, box-shadow 350ms ease ${pillDelay}ms, opacity 350ms ease ${pillDelay}ms`,
                       }}
                     >
-                      <span style={{ fontWeight: 700, marginRight: '6px', fontSize: '10px' }}>
-                        {format(day, 'd MMM')}
-                      </span>
                       {task.title}
                     </button>
                   );
                 })}
                 {dayTasks.length > 3 && (
-                  <p style={{ fontSize: '9px', color: '#9C9CAA', padding: '0 4px', fontWeight: 500 }}>
-                    +{dayTasks.length - 3} more
+                  <p style={{ fontSize: '9px', color: '#9CA3AF', padding: '0 4px', fontWeight: 500 }}>
+                    +{dayTasks.length - 3} más
                   </p>
                 )}
               </div>
@@ -234,11 +241,11 @@ function NavBtn({ onClick, children }: { onClick: () => void; children: React.Re
       style={{
         height: '28px', width: '28px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#9C9CAA', background: 'transparent',
+        color: '#9CA3AF', background: 'transparent',
         border: 'none', borderRadius: '8px', cursor: 'pointer',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; e.currentTarget.style.color = '#575456'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
+      onMouseEnter={e => { e.currentTarget.style.background = '#F4F4F6'; e.currentTarget.style.color = '#6B7280'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
     >
       {children}
     </button>

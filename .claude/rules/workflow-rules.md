@@ -84,9 +84,6 @@ Skills disponibles:
 | `orvit-agx` | Pipeline AGX, generación de código con IA |
 | `commit` | Crear un commit con formato estándar |
 | `pr` | Crear un Pull Request con formato estándar |
-| `vercel-composition-patterns` | Patrones de composición React |
-| `vercel-react-best-practices` | Performance optimization React/Next.js |
-| `web-design-guidelines` | Auditoría de UI/UX |
 
 **Paso 2 — Aplicar skills que coincidan**
 

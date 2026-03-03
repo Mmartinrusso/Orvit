@@ -209,9 +209,9 @@ export function WorkOrderDetailDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         size="xl"
-        className="p-0 rounded-2xl border border-border bg-card shadow-xl [&>button:last-child]:hidden"
+        className="p-0 rounded-2xl border border-border bg-card shadow-xl"
+        hideCloseButton
       >
-        <div className="flex h-full flex-col">
           {/* Header sticky premium */}
           <div className="flex-shrink-0 border-b border-border bg-card px-6 py-4">
             <div className="flex items-start justify-between gap-4">
@@ -539,13 +539,13 @@ export function WorkOrderDetailDialog({
                           <div className="flex items-center justify-between">
                             <dt className="text-xs text-muted-foreground">Horas estimadas</dt>
                             <dd className="text-xs text-foreground tabular-nums">
-                              {formatHours(workOrder.estimatedHours)}
+                              {formatHours(workOrder.estimatedHours != null ? workOrder.estimatedHours * 60 : null)}
                             </dd>
                           </div>
                           <div className="flex items-center justify-between">
                             <dt className="text-xs text-muted-foreground">Horas reales</dt>
                             <dd className="text-xs text-foreground tabular-nums">
-                              {formatHours(workOrder.actualHours)}
+                              {formatHours(workOrder.actualHours != null ? workOrder.actualHours * 60 : null)}
                             </dd>
                           </div>
                           <div className="flex items-center justify-between">
@@ -649,7 +649,6 @@ export function WorkOrderDetailDialog({
               </TabsContent>
             </div>
           </Tabs>
-        </div>
       </DialogContent>
     </Dialog>
 

@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Upload, X, File, AlertCircle } from 'lucide-react';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -292,7 +293,7 @@ export function TaskFileUpload({
                 className="flex items-center justify-between p-3 bg-muted rounded-lg border"
               >
                 <div className="flex items-center space-x-3 min-w-0 flex-1">
-                  <span className="text-lg">{getFileIcon(file.type)}</span>
+                  <FileTypeIcon name={file.name} size={28} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground truncate">
                       {file.name}

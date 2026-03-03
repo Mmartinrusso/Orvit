@@ -32,17 +32,17 @@ export function KpiPurchasesCard({ data }: { data: DashboardSummary; range: Rang
         </KpiPill>
       }
     >
-      <div data-slot="kpi-value" className="text-3xl font-normal leading-none tabular-nums mb-0.5">{k.openOrders}</div>
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5 leading-tight">
-        <TrendingUp className="h-3 w-3" />
-        <span className="font-medium">{k.pendingApprovals} aprobaciones pendientes</span>
-      </div>
-      <p className="text-xs text-muted-foreground leading-tight">
-        Gasto mes: {formatCurrencyARS(k.monthSpend)} · Proveedores activos: {k.activeSuppliers}
+      <p style={{ fontSize: '32px', fontWeight: 700, color: '#111827', lineHeight: 1, margin: '0 0 8px' }}>
+        {k.openOrders}
       </p>
-      <div className="mt-1.5">
-        <Sparkline data={fauxTrend} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+        <TrendingUp style={{ width: 12, height: 12, color: '#9CA3AF', flexShrink: 0 }} />
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#6B7280' }}>{k.pendingApprovals} aprobaciones pendientes</span>
       </div>
+      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '0 0 10px' }}>
+        Gasto mes: {formatCurrencyARS(k.monthSpend)} · Proveedores: {k.activeSuppliers}
+      </p>
+      <Sparkline data={fauxTrend} />
     </KpiCardFrame>
   );
 }

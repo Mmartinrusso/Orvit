@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Building2, Phone, Mail, MapPin, FileText, User, CreditCard, Search, Plus, Trash2, List } from 'lucide-react';
+import { Loader2, Building2, Phone, Mail, MapPin, FileText, User, CreditCard, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCompany } from '@/contexts/CompanyContext';
 import { validateCUIT } from '@/lib/ventas/cuit-validator';
@@ -103,12 +103,6 @@ export function ProveedorModal({
  const [isLoading, setIsLoading] = useState(false);
  const [isLoadingArca, setIsLoadingArca] = useState(false);
  const isEditing = !!proveedor;
-
- // Conceptos de gasto predefinidos
- const [conceptosProveedor, setConceptosProveedor] = useState<
-  Array<{ id?: number; descripcion: string; monto: string; isNew?: boolean; toDelete?: boolean }>
- >([]);
- const [conceptosOriginales, setConceptosOriginales] = useState<Array<{ id: number; descripcion: string; monto: string }>>([]);
 
  const {
  register,
@@ -206,29 +200,9 @@ export function ProveedorModal({
  ingresosBrutos: '',
  isActive: true
  });
- setConceptosProveedor([]);
- setConceptosOriginales([]);
  }
  }
  }, [proveedor, isOpen, reset]);
-
- // Cargar conceptos al abrir en modo edición
- useEffect(() => {
- if (isOpen && proveedor?.id) {
- fetch(`/api/compras/proveedores/${proveedor.id}/conceptos`)
- .then(r => r.ok ? r.json() : [])
- .then((data: Array<{ id: number; descripcion: string; monto: string | null }>) => {
- const mapped = data.map(c => ({
- id: c.id,
- descripcion: c.descripcion,
- monto: c.monto != null ? String(c.monto) : '',
- }));
- setConceptosProveedor(mapped);
- setConceptosOriginales(mapped);
- })
- .catch(() => {});
- }
- }, [isOpen, proveedor?.id]);
 
  const formatCuit = (value: string) => {
  // Remover todo lo que no sea número
@@ -436,37 +410,6 @@ export function ProveedorModal({
  montoTotal: proveedor?.montoTotal || 0,
  };
 
- // Sincronizar conceptos de gasto
- const proveedorIdGuardado = String(saved.id || proveedor?.id || '');
- if (proveedorIdGuardado) {
- const conceptosActivos = conceptosProveedor.filter(c => !c.toDelete);
- // Eliminar los marcados para borrar
- const paraEliminar = conceptosProveedor.filter(c => c.toDelete && c.id);
- await Promise.all(paraEliminar.map(c =>
- fetch(`/api/compras/proveedores/${proveedorIdGuardado}/conceptos?conceptoId=${c.id}`, { method: 'DELETE' })
- ));
- // Crear los nuevos
- const paraCrear = conceptosActivos.filter(c => !c.id && c.descripcion.trim());
- await Promise.all(paraCrear.map((c, idx) =>
- fetch(`/api/compras/proveedores/${proveedorIdGuardado}/conceptos`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ descripcion: c.descripcion.trim(), monto: c.monto || null, orden: idx }),
- })
- ));
- // Actualizar los existentes que cambiaron
- const paraActualizar = conceptosActivos.filter(c => c.id && !c.isNew);
- await Promise.all(paraActualizar.map((c, idx) => {
- const original = conceptosOriginales.find(o => o.id === c.id);
- if (!original || (original.descripcion === c.descripcion && original.monto === c.monto)) return;
- return fetch(`/api/compras/proveedores/${proveedorIdGuardado}/conceptos?conceptoId=${c.id}`, {
- method: 'PUT',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ descripcion: c.descripcion.trim(), monto: c.monto || null, orden: idx }),
- });
- }));
- }
-
  toast.success(isEditing ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente');
  log('[PROVEEDOR MODAL] 🔄 Ejecutando callback onProveedorSaved con:', savedProveedor);
  onProveedorSaved(savedProveedor);
@@ -506,10 +449,6 @@ export function ProveedorModal({
  <TabsTrigger value="bancario">
  <CreditCard className="w-4 h-4 mr-2" />
  Datos Bancarios
- </TabsTrigger>
- <TabsTrigger value="conceptos">
- <List className="w-4 h-4 mr-2" />
- Conceptos de Gasto
  </TabsTrigger>
  </TabsList>
 
@@ -800,80 +739,6 @@ export function ProveedorModal({
  />
  </div>
  </div>
- </div>
- </TabsContent>
-
- {/* Tab: Conceptos de Gasto */}
- <TabsContent value="conceptos" className="space-y-4 mt-4">
- <div className="space-y-3">
- <p className="text-sm text-muted-foreground">
- Estos conceptos se autocompletarán al seleccionar este proveedor en una factura de costo indirecto.
- </p>
-
- {conceptosProveedor.filter(c => !c.toDelete).length === 0 ? (
- <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
- <List className="w-8 h-8 mx-auto mb-2 opacity-40" />
- <p className="text-sm font-medium">Sin conceptos definidos</p>
- <p className="text-xs mt-1 opacity-70">Agregá los conceptos habituales de este proveedor</p>
- </div>
- ) : (
- <div className="space-y-2">
- <div className="grid grid-cols-[1fr_120px_40px] gap-2 px-1">
- <span className="text-xs text-muted-foreground font-medium">Descripción</span>
- <span className="text-xs text-muted-foreground font-medium">Monto (opcional)</span>
- <span />
- </div>
- {conceptosProveedor.map((concepto, realIdx) => {
- if (concepto.toDelete) return null;
- return (
- <div key={concepto.id ?? `new-${realIdx}`} className="grid grid-cols-[1fr_120px_40px] gap-2 items-center">
- <Input
- value={concepto.descripcion}
- onChange={(e) => setConceptosProveedor(prev =>
- prev.map((c, i) => i === realIdx ? { ...c, descripcion: e.target.value } : c)
- )}
- placeholder="ej. Conectividad Dedicada"
- />
- <Input
- value={concepto.monto}
- onChange={(e) => setConceptosProveedor(prev =>
- prev.map((c, i) => i === realIdx ? { ...c, monto: e.target.value } : c)
- )}
- placeholder="0.00"
- type="number"
- min="0"
- step="0.01"
- />
- <Button
- type="button"
- variant="ghost"
- size="icon"
- className="text-muted-foreground hover:text-destructive"
- onClick={() => {
- if (concepto.id) {
- setConceptosProveedor(prev => prev.map((c, i) => i === realIdx ? { ...c, toDelete: true } : c));
- } else {
- setConceptosProveedor(prev => prev.filter((_, i) => i !== realIdx));
- }
- }}
- >
- <Trash2 className="w-4 h-4" />
- </Button>
- </div>
- );
- })}
- </div>
- )}
-
- <Button
- type="button"
- variant="outline"
- size="sm"
- onClick={() => setConceptosProveedor(prev => [...prev, { descripcion: '', monto: '', isNew: true }])}
- >
- <Plus className="w-4 h-4 mr-2" />
- Agregar concepto
- </Button>
  </div>
  </TabsContent>
 

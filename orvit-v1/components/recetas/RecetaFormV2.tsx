@@ -24,7 +24,7 @@ import { useSubcategories } from '@/hooks/use-subcategories';
 import { useCompany } from '@/contexts/CompanyContext';
 import {
   Plus, Trash2, Package, Scale, BookOpen, Loader2, Factory, Layers, Boxes, ShoppingCart,
-  ChevronDown, Search, Tag, X
+  ChevronDown, Search, Tag, X, ArrowLeftRight
 } from 'lucide-react';
 import { cn, formatNumber } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -97,6 +97,10 @@ export default function RecetaFormV2({
   const [supplyPopoverOpen, setSupplyPopoverOpen] = useState(false);
   const [supplySearch, setSupplySearch] = useState('');
   const [supplyCategoryFilter, setSupplyCategoryFilter] = useState<string>('all');
+
+  // Inline edit: cambiar insumo de un ingrediente existente
+  const [editSupplyPopoverIndex, setEditSupplyPopoverIndex] = useState<number | null>(null);
+  const [editSupplySearch, setEditSupplySearch] = useState('');
 
   // Subcategories
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
@@ -191,6 +195,15 @@ export default function RecetaFormV2({
   }, [supplies, ingredients, supplyCategoryFilter, supplySearch]);
 
   const selectedSupplyData = supplies.find(s => s.id.toString() === selectedSupplyId);
+
+  // Supplies filtrados para el picker inline de edición
+  const filteredSuppliesForEdit = useMemo(() => {
+    return supplies
+      .filter(s => {
+        if (editSupplySearch && !s.name.toLowerCase().includes(editSupplySearch.toLowerCase())) return false;
+        return true;
+      });
+  }, [supplies, editSupplySearch]);
 
   // Calculate costs
   const totalCost = ingredients.reduce((sum, ing) => {
@@ -287,6 +300,59 @@ export default function RecetaFormV2({
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
+  const handleUpdateIngredient = (index: number, field: 'quantity' | 'pulsos' | 'kgPorPulso', value: string) => {
+    setIngredients(prev => prev.map((ing, i) => {
+      if (i !== index) return ing;
+      const numVal = parseFloat(value) || 0;
+      if (field === 'quantity') {
+        return { ...ing, quantity: numVal };
+      }
+      if (field === 'pulsos') {
+        const newPulsos = numVal;
+        const newQty = newPulsos * (ing.kgPorPulso || 0);
+        return { ...ing, pulsos: newPulsos, quantity: newQty };
+      }
+      if (field === 'kgPorPulso') {
+        const newKg = numVal;
+        const newQty = (ing.pulsos || 0) * newKg;
+        return { ...ing, kgPorPulso: newKg, quantity: newQty };
+      }
+      return ing;
+    }));
+  };
+
+  const handleChangeIngredientSupply = (index: number, newSupplyId: number, listType: 'batch' | 'bank' = 'batch') => {
+    const supply = supplies.find(s => s.id === newSupplyId);
+    if (!supply) return;
+
+    const targetList = listType === 'batch' ? ingredients : bankIngredients;
+    // No permitir duplicados
+    if (targetList.some((ing, i) => i !== index && ing.supplyId === newSupplyId)) {
+      toast.error('Este insumo ya está en la receta');
+      return;
+    }
+
+    const setter = listType === 'batch' ? setIngredients : setBankIngredients;
+    setter(prev => prev.map((ing, i) => {
+      if (i !== index) return ing;
+      return {
+        ...ing,
+        supplyId: supply.id,
+        supplyName: supply.name,
+        unitMeasure: supply.unitMeasure,
+      };
+    }));
+    setEditSupplyPopoverIndex(null);
+    setEditSupplySearch('');
+  };
+
+  const handleUpdateBankIngredient = (index: number, value: string) => {
+    setBankIngredients(prev => prev.map((ing, i) => {
+      if (i !== index) return ing;
+      return { ...ing, quantity: parseFloat(value) || 0 };
+    }));
+  };
+
   const handleRemoveBankIngredient = (index: number) => {
     setBankIngredients(bankIngredients.filter((_, i) => i !== index));
   };
@@ -372,7 +438,7 @@ export default function RecetaFormV2({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col min-h-0 overflow-hidden flex-1">
             <DialogBody>
               <div className="space-y-6">
                 {/* Basic Info */}
@@ -837,18 +903,106 @@ export default function RecetaFormV2({
                             )}
                           >
                             <div className="col-span-5">
-                              <div className="flex items-center gap-1.5">
-                                {tieneStock ? (
-                                  <Boxes className="h-3.5 w-3.5 text-success shrink-0" />
-                                ) : (supplyData?.supplierItemCount ?? 0) > 0 ? (
-                                  <ShoppingCart className="h-3.5 w-3.5 text-warning shrink-0" />
-                                ) : null}
-                                <p className="font-medium">{ing.supplyName}</p>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {formatNumber(cantidadUsada, 2)} {ing.unitMeasure}
-                                {ing.pulsos && ` (${ing.pulsos} pulsos × ${ing.kgPorPulso} kg)`}
-                              </p>
+                              <Popover
+                                open={editSupplyPopoverIndex === index}
+                                onOpenChange={(open) => {
+                                  setEditSupplyPopoverIndex(open ? index : null);
+                                  if (!open) setEditSupplySearch('');
+                                }}
+                              >
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-1.5 group text-left w-full"
+                                  >
+                                    {tieneStock ? (
+                                      <Boxes className="h-3.5 w-3.5 text-success shrink-0" />
+                                    ) : (supplyData?.supplierItemCount ?? 0) > 0 ? (
+                                      <ShoppingCart className="h-3.5 w-3.5 text-warning shrink-0" />
+                                    ) : null}
+                                    <p className="font-medium group-hover:underline">{ing.supplyName}</p>
+                                    <ArrowLeftRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[340px] p-0" align="start">
+                                  <div className="p-2 border-b">
+                                    <div className="relative">
+                                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                      <Input
+                                        placeholder="Buscar insumo..."
+                                        value={editSupplySearch}
+                                        onChange={(e) => setEditSupplySearch(e.target.value)}
+                                        className="pl-8 h-8 text-sm"
+                                        autoFocus
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="overflow-y-auto max-h-[240px] p-1">
+                                    {filteredSuppliesForEdit.length === 0 ? (
+                                      <div className="py-6 text-center text-sm text-muted-foreground">Sin resultados</div>
+                                    ) : (
+                                      filteredSuppliesForEdit.map(s => {
+                                        const isCurrentSupply = s.id === ing.supplyId;
+                                        return (
+                                          <button
+                                            key={s.id}
+                                            type="button"
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm",
+                                              isCurrentSupply ? "bg-accent font-medium" : "hover:bg-accent"
+                                            )}
+                                            onClick={() => handleChangeIngredientSupply(index, s.id, 'batch')}
+                                          >
+                                            {(s.stockCantidad ?? 0) > 0 ? (
+                                              <Boxes className="h-3.5 w-3.5 text-success shrink-0" />
+                                            ) : (s.supplierItemCount ?? 0) > 0 ? (
+                                              <ShoppingCart className="h-3.5 w-3.5 text-warning shrink-0" />
+                                            ) : (
+                                              <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                            )}
+                                            <span className="truncate">{s.name}</span>
+                                            <span className="text-xs text-muted-foreground ml-auto shrink-0">{s.unitMeasure}</span>
+                                          </button>
+                                        );
+                                      })
+                                    )}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                              {ing.pulsos != null ? (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Input
+                                    type="number"
+                                    value={ing.pulsos || ''}
+                                    onChange={(e) => handleUpdateIngredient(index, 'pulsos', e.target.value)}
+                                    className="h-6 w-16 px-1.5 text-xs"
+                                    min={0}
+                                  />
+                                  <span className="text-xs text-muted-foreground">pulsos ×</span>
+                                  <Input
+                                    type="number"
+                                    value={ing.kgPorPulso || ''}
+                                    onChange={(e) => handleUpdateIngredient(index, 'kgPorPulso', e.target.value)}
+                                    className="h-6 w-16 px-1.5 text-xs"
+                                    min={0}
+                                    step="any"
+                                  />
+                                  <span className="text-xs text-muted-foreground">kg</span>
+                                  <span className="text-xs text-muted-foreground ml-1">= {formatNumber(cantidadUsada, 2)} {ing.unitMeasure}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Input
+                                    type="number"
+                                    value={ing.quantity || ''}
+                                    onChange={(e) => handleUpdateIngredient(index, 'quantity', e.target.value)}
+                                    className="h-6 w-20 px-1.5 text-xs"
+                                    min={0}
+                                    step="any"
+                                  />
+                                  <span className="text-xs text-muted-foreground">{ing.unitMeasure}</span>
+                                </div>
+                              )}
                               {tieneStock && (
                                 <p className={cn(
                                   "text-xs mt-0.5",
@@ -957,10 +1111,65 @@ export default function RecetaFormV2({
                                 style={{ backgroundColor: `${userColors.chart2}15` }}
                               >
                                 <div>
-                                  <p className="font-medium">{ing.supplyName}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatNumber(Number(ing.quantity || 0), 2)} {ing.unitMeasure}
-                                  </p>
+                                  <Popover
+                                    open={editSupplyPopoverIndex === 1000 + index}
+                                    onOpenChange={(open) => {
+                                      setEditSupplyPopoverIndex(open ? 1000 + index : null);
+                                      if (!open) setEditSupplySearch('');
+                                    }}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <button type="button" className="flex items-center gap-1.5 group text-left">
+                                        <p className="font-medium group-hover:underline">{ing.supplyName}</p>
+                                        <ArrowLeftRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                      </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[340px] p-0" align="start">
+                                      <div className="p-2 border-b">
+                                        <div className="relative">
+                                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                          <Input
+                                            placeholder="Buscar insumo..."
+                                            value={editSupplySearch}
+                                            onChange={(e) => setEditSupplySearch(e.target.value)}
+                                            className="pl-8 h-8 text-sm"
+                                            autoFocus
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="overflow-y-auto max-h-[240px] p-1">
+                                        {filteredSuppliesForEdit.length === 0 ? (
+                                          <div className="py-6 text-center text-sm text-muted-foreground">Sin resultados</div>
+                                        ) : (
+                                          filteredSuppliesForEdit.map(s => (
+                                            <button
+                                              key={s.id}
+                                              type="button"
+                                              className={cn(
+                                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm",
+                                                s.id === ing.supplyId ? "bg-accent font-medium" : "hover:bg-accent"
+                                              )}
+                                              onClick={() => handleChangeIngredientSupply(index, s.id, 'bank')}
+                                            >
+                                              <span className="truncate">{s.name}</span>
+                                              <span className="text-xs text-muted-foreground ml-auto shrink-0">{s.unitMeasure}</span>
+                                            </button>
+                                          ))
+                                        )}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Input
+                                      type="number"
+                                      value={ing.quantity || ''}
+                                      onChange={(e) => handleUpdateBankIngredient(index, e.target.value)}
+                                      className="h-6 w-20 px-1.5 text-xs"
+                                      min={0}
+                                      step="any"
+                                    />
+                                    <span className="text-xs text-muted-foreground">{ing.unitMeasure}</span>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <span className="font-medium" style={{ color: userColors.chart2 }}>

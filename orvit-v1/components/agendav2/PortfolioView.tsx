@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Users, Plus, MoreHorizontal, CheckCircle2, Clock, Circle, ChevronRight, Briefcase } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Users, Plus, MoreHorizontal, CheckCircle2, Clock, Circle, ChevronRight, Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
 import type { AgendaTask } from '@/lib/agenda/types';
@@ -13,21 +13,13 @@ function getInitials(name: string) {
   return name.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
 }
 
-const STATUS_COLORS = {
-  PENDING:     '#E8E8E8',
-  IN_PROGRESS: '#D0E0F0',
-  WAITING:     '#F9F0DB',
-  COMPLETED:   '#D0EFE0',
-  CANCELLED:   '#F9E4E2',
-};
-
-const STATUS_FG = {
-  PENDING:     '#9C9CAA',
-  IN_PROGRESS: '#3070A8',
-  WAITING:     '#907840',
-  COMPLETED:   '#568177',
-  CANCELLED:   '#C05060',
-};
+function fadeStyle(mounted: boolean, delay = 0): React.CSSProperties {
+  return {
+    opacity: mounted ? 1 : 0,
+    transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+    transition: `opacity 350ms ease ${delay}ms, transform 350ms ease ${delay}ms`,
+  };
+}
 
 // ── MiniDonut ─────────────────────────────────────────────────────────────────
 
@@ -51,16 +43,85 @@ function MiniDonut({ pct, color }: { pct: number; color: string }) {
   );
 }
 
+// ── Summary KPI Bar ────────────────────────────────────────────────────────────
+
+function SummaryBar({
+  totalProjects,
+  totalTasks,
+  completedTasks,
+  overdueCount,
+  mounted,
+}: {
+  totalProjects: number;
+  totalTasks: number;
+  completedTasks: number;
+  overdueCount: number;
+  mounted: boolean;
+}) {
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const kpis = [
+    { label: 'Proyectos', value: totalProjects, icon: Briefcase, accent: '#7C3AED' },
+    { label: 'Tareas totales', value: totalTasks, icon: BarChart2, accent: '#3070A8' },
+    { label: 'Completadas', value: completedTasks, icon: CheckCircle2, accent: '#059669' },
+    { label: 'Vencidas', value: overdueCount, icon: Clock, accent: overdueCount > 0 ? '#C05060' : '#9CA3AF' },
+  ];
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '12px',
+        ...fadeStyle(mounted, 0),
+      }}
+    >
+      {kpis.map((kpi, i) => (
+        <div
+          key={kpi.label}
+          style={{
+            background: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            borderRadius: '12px',
+            padding: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            boxShadow: '0 1px 3px rgba(0,0,0,.03)',
+            ...fadeStyle(mounted, i * 50),
+          }}
+        >
+          <div
+            style={{
+              width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+              background: `${kpi.accent}15`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <kpi.icon className="h-4 w-4" style={{ color: kpi.accent }} />
+          </div>
+          <div>
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{kpi.label}</p>
+            <p style={{ fontSize: '22px', fontWeight: 800, color: '#111827', lineHeight: 1, marginTop: '2px' }}>{kpi.value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── ProjectCard ───────────────────────────────────────────────────────────────
 
 function ProjectCard({
   group,
   tasks,
   onClick,
+  animStyle,
 }: {
   group: TaskGroupItem;
   tasks: AgendaTask[];
   onClick: () => void;
+  animStyle?: React.CSSProperties;
 }) {
   const total     = tasks.length;
   const completed = tasks.filter(t => t.status === 'COMPLETED').length;
@@ -81,8 +142,8 @@ function ProjectCard({
       onMouseLeave={() => setHovered(false)}
       style={{
         background: '#FFFFFF',
-        border: `1.5px solid ${hovered ? group.color + '50' : '#EEEEEE'}`,
-        borderRadius: '18px',
+        border: `1.5px solid ${hovered ? group.color + '50' : '#EBEBEB'}`,
+        borderRadius: '16px',
         padding: '20px',
         cursor: 'pointer',
         transition: 'all 200ms cubic-bezier(0.22,1,0.36,1)',
@@ -91,6 +152,7 @@ function ProjectCard({
         display: 'flex',
         flexDirection: 'column',
         gap: '16px',
+        ...animStyle,
       }}
     >
       {/* Header */}
@@ -105,7 +167,7 @@ function ProjectCard({
               border: `1.5px solid ${group.color}30`,
             }}
           >
-            <Briefcase className="h-4.5 w-4.5" style={{ color: group.color }} />
+            <Briefcase className="h-4 w-4" style={{ color: group.color }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: '13px', fontWeight: 700, color: '#050505', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -136,7 +198,6 @@ function ProjectCard({
 
       {/* Progress */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Mini donut */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <MiniDonut pct={pct} color={group.color} />
           <div
@@ -149,7 +210,6 @@ function ProjectCard({
           </div>
         </div>
 
-        {/* Status breakdown */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
           {[
             { label: 'Completadas', count: completed, color: '#568177' },
@@ -184,7 +244,6 @@ function ProjectCard({
 
       {/* Members + action */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {/* Member avatars */}
         {group.members.length > 0 ? (
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {group.members.slice(0, 4).map((m, i) => (
@@ -222,7 +281,6 @@ function ProjectCard({
           </div>
         )}
 
-        {/* Arrow */}
         <div
           style={{
             display: 'flex', alignItems: 'center', gap: '2px',
@@ -245,10 +303,12 @@ function SimpleGroupCard({
   group,
   tasks,
   onClick,
+  animStyle,
 }: {
   group: TaskGroupItem;
   tasks: AgendaTask[];
   onClick: () => void;
+  animStyle?: React.CSSProperties;
 }) {
   const completed = tasks.filter(t => t.status === 'COMPLETED').length;
   const total     = tasks.length;
@@ -259,13 +319,14 @@ function SimpleGroupCard({
       onClick={onClick}
       style={{
         width: '100%', textAlign: 'left',
-        background: '#FAFAFA', border: '1px solid #EEEEEE',
+        background: '#FFFFFF', border: '1px solid #EBEBEB',
         borderRadius: '12px', padding: '14px 16px',
         cursor: 'pointer', transition: 'all 150ms ease',
         display: 'flex', alignItems: 'center', gap: '12px',
+        ...animStyle,
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = '#F5F5F5'; e.currentTarget.style.borderColor = '#E0E0E0'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.borderColor = '#EEEEEE'; }}
+      onMouseEnter={e => { e.currentTarget.style.background = '#F8F8F8'; e.currentTarget.style.borderColor = '#E0E0E0'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#EBEBEB'; }}
     >
       <span
         style={{
@@ -275,7 +336,7 @@ function SimpleGroupCard({
       />
       <span style={{ fontSize: '13px', fontWeight: 600, color: '#050505', flex: 1 }}>{group.name}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '60px', height: '4px', background: '#EEEEEE', borderRadius: '999px', overflow: 'hidden' }}>
+        <div style={{ width: '60px', height: '4px', background: '#EBEBEB', borderRadius: '999px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${pct}%`, background: group.color, borderRadius: '999px' }} />
         </div>
         <span style={{ fontSize: '11px', color: '#9C9CAA', minWidth: '28px', textAlign: 'right' }}>{total}</span>
@@ -302,6 +363,13 @@ export function PortfolioView({
   onCreateGroup,
   loadingGroups,
 }: PortfolioViewProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
   const projects     = groups.filter(g => g.isProject);
   const simpleGroups = groups.filter(g => !g.isProject);
 
@@ -309,27 +377,50 @@ export function PortfolioView({
     return tasks.filter(t => t.groupId === groupId);
   }
 
+  // Summary metrics
+  const summary = useMemo(() => {
+    const totalTasks    = tasks.length;
+    const completedAll  = tasks.filter(t => t.status === 'COMPLETED').length;
+    const overdueAll    = tasks.filter(t => {
+      if (!t.dueDate || t.status === 'COMPLETED' || t.status === 'CANCELLED') return false;
+      return new Date(t.dueDate) < new Date();
+    }).length;
+    return { totalTasks, completedAll, overdueAll };
+  }, [tasks]);
+
   if (loadingGroups) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-        {[1, 2, 3].map(i => (
-          <div
-            key={i}
-            style={{
-              height: '220px', borderRadius: '18px',
-              background: '#F0F0F0', animation: 'pulse 1.5s infinite',
-            }}
-          />
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{ height: '72px', borderRadius: '12px', background: '#F0F0F0' }} />
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ height: '220px', borderRadius: '16px', background: '#F0F0F0' }} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+      {/* ── Summary KPI bar ──────────────────────────────────────────── */}
+      {groups.length > 0 && (
+        <SummaryBar
+          totalProjects={projects.length}
+          totalTasks={summary.totalTasks}
+          completedTasks={summary.completedAll}
+          overdueCount={summary.overdueAll}
+          mounted={mounted}
+        />
+      )}
 
       {/* ── Projects ──────────────────────────────────────────────── */}
-      <div>
+      <div style={fadeStyle(mounted, 200)}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
             <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#050505' }}>Proyectos</h2>
@@ -357,7 +448,7 @@ export function PortfolioView({
           <div
             style={{
               background: '#FAFAFA', border: '1.5px dashed #E0E0E0',
-              borderRadius: '18px', padding: '48px 24px', textAlign: 'center',
+              borderRadius: '16px', padding: '48px 24px', textAlign: 'center',
             }}
           >
             <div
@@ -385,12 +476,13 @@ export function PortfolioView({
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-            {projects.map(group => (
+            {projects.map((group, i) => (
               <ProjectCard
                 key={group.id}
                 group={group}
                 tasks={tasksForGroup(group.id)}
                 onClick={() => onSelectGroup(group.id)}
+                animStyle={fadeStyle(mounted, 260 + i * 60)}
               />
             ))}
             {/* New project card */}
@@ -398,9 +490,10 @@ export function PortfolioView({
               onClick={() => onCreateGroup(true)}
               style={{
                 background: 'transparent', border: '1.5px dashed #E0E0E0',
-                borderRadius: '18px', padding: '20px', cursor: 'pointer',
+                borderRadius: '16px', padding: '20px', cursor: 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 gap: '8px', minHeight: '180px', transition: 'all 150ms ease',
+                ...fadeStyle(mounted, 260 + projects.length * 60),
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = '#C0C0C8'; e.currentTarget.style.background = '#FAFAFA'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = '#E0E0E0'; e.currentTarget.style.background = 'transparent'; }}
@@ -421,7 +514,7 @@ export function PortfolioView({
 
       {/* ── Groups ────────────────────────────────────────────────── */}
       {simpleGroups.length > 0 && (
-        <div>
+        <div style={fadeStyle(mounted, 320)}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#050505' }}>Grupos</h2>
             <button
@@ -441,12 +534,13 @@ export function PortfolioView({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {simpleGroups.map(group => (
+            {simpleGroups.map((group, i) => (
               <SimpleGroupCard
                 key={group.id}
                 group={group}
                 tasks={tasksForGroup(group.id)}
                 onClick={() => onSelectGroup(group.id)}
+                animStyle={fadeStyle(mounted, 360 + i * 40)}
               />
             ))}
           </div>
@@ -455,7 +549,7 @@ export function PortfolioView({
 
       {/* Empty state when no groups at all */}
       {groups.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+        <div style={{ textAlign: 'center', padding: '24px 0', ...fadeStyle(mounted, 100) }}>
           <p style={{ fontSize: '13px', color: '#9C9CAA' }}>
             Creá grupos y proyectos desde el sidebar para verlos aquí
           </p>

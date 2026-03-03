@@ -815,6 +815,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       items,
       esIndirecto,
       indirectCategory,
+      prorratear,
+      prorrateoMeses,
+      prorrateoFechaInicio,
     } = body;
 
     // Actualizar el comprobante principal
@@ -850,6 +853,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (typeof esIndirecto === 'boolean') {
       data.esIndirecto = esIndirecto;
       data.indirectCategory = esIndirecto ? (indirectCategory || null) : null;
+    }
+    if (typeof prorratear === 'boolean') {
+      data.prorratear = prorratear;
+      data.prorrateoMeses = prorratear && prorrateoMeses ? parseInt(prorrateoMeses) : null;
+      data.prorrateoFechaInicio = prorratear && prorrateoFechaInicio ? new Date(prorrateoFechaInicio + '-01') : null;
     }
 
     console.log('[COMPROBANTES ID] PUT - Data a actualizar:', data);
@@ -1007,7 +1015,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           await syncAllSupplyPrices(
             tx,
             syncItems,
-            fechaImputacion ?? fechaEmision,
+            fechaEmision,
             companyId,
             syncRef
           );

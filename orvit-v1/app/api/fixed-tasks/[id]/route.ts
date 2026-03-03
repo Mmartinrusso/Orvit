@@ -210,23 +210,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
     }
 
-    // Eliminar en transacción: instructivos + notificaciones + tarea
-    await prisma.$transaction(async (tx) => {
-      await (tx as any).fixedTaskInstructive.deleteMany({ where: { fixedTaskId: taskId } });
+    // Eliminar tarea (cascadea a executions e instructives via onDelete: Cascade)
+    await (prisma as any).fixedTask.delete({ where: { id: taskId } });
 
-      // Limpiar notificaciones relacionadas (best-effort)
-      try {
-        await tx.$executeRaw`
-          DELETE FROM "Notification"
-          WHERE "metadata"->>'taskId' = ${taskId.toString()}
-            OR ("type" = 'TASK_AUTO_RESET' AND "metadata"->>'fixedTaskId' = ${taskId.toString()})
-        `;
-      } catch {
-        // No bloquear la eliminación si falla la limpieza de notificaciones
-      }
-
-      await (tx as any).fixedTask.delete({ where: { id: taskId } });
-    });
+    // Limpiar notificaciones relacionadas (best-effort, fuera de transacción)
+    try {
+      await prisma.$executeRaw`
+        DELETE FROM "Notification"
+        WHERE "metadata"->>'taskId' = ${taskId.toString()}
+          OR ("type" = 'TASK_AUTO_RESET' AND "metadata"->>'fixedTaskId' = ${taskId.toString()})
+      `;
+    } catch {
+      // No bloquear si falla la limpieza de notificaciones
+    }
 
     return NextResponse.json({ success: true, message: 'Tarea eliminada exitosamente' });
   } catch (error) {

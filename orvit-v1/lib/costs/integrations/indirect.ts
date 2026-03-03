@@ -8,11 +8,21 @@
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
+export interface ItemAggregate {
+  supplierItemId: number;
+  nombre: string;
+  category: string;
+  amount: number;
+  count: number;
+}
+
 export interface IndirectCostData {
   total: number;
   itemCount: number;
   byCategory: Record<string, CategorySummary>;
   details: IndirectDetail[];
+  /** Items de proveedores marcados como esGastoIndirecto, sumados por item+categoría en el mes */
+  itemAggregates: Record<string, ItemAggregate[]>;
 }
 
 export interface CategorySummary {
@@ -41,10 +51,14 @@ export interface IndirectDetail {
   sourceType: 'COMPRAS';
   receiptId: number;
   facturaNumero: string;
-  fechaImputacion: string | null;
+  fechaEmision: string | null;
   proveedorNombre: string;
   // Conceptos del gasto (items con itemId=null)
   conceptos: IndirectConcept[];
+  // Prorrateo
+  prorratear: boolean;
+  prorrateoMeses: number | null;
+  montoTotal: number; // monto original sin prorratear
 }
 
 // Mapeo de categorías a nombres legibles
@@ -59,7 +73,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 /**
  * Obtiene los costos indirectos para un mes específico.
- * Lee facturas de Compras marcadas como esIndirecto=true con fechaImputacion en el mes indicado.
+ * Lee facturas de Compras marcadas como esIndirecto=true con fechaEmision en el mes indicado.
  *
  * @param companyId - ID de la empresa
  * @param month - Mes en formato "YYYY-MM" (ej: "2026-01")
@@ -72,36 +86,67 @@ export async function getIndirectCostsForMonth(
   const startOfMonth = new Date(year, monthNum - 1, 1);
   const endOfMonth = new Date(year, monthNum, 0, 23, 59, 59, 999);
 
-  const receipts = await prisma.purchaseReceipt.findMany({
+  const includeConfig = {
+    proveedor: {
+      select: { id: true, name: true, razon_social: true }
+    },
+    items: {
+      select: {
+        id: true,
+        descripcion: true,
+        precioUnitario: true,
+        cantidad: true,
+        itemId: true,
+        subtotal: true,
+        supplierItem: {
+          select: { id: true, nombre: true, esGastoIndirecto: true, categoriaIndirecta: true }
+        }
+      },
+      orderBy: { id: 'asc' as const },
+    },
+  };
+
+  // Query 1: comprobantes normales (no prorrateados) cuya fechaEmision cae en el mes
+  const normalReceipts = await prisma.purchaseReceipt.findMany({
     where: {
       companyId,
       esIndirecto: true,
-      fechaImputacion: {
-        gte: startOfMonth,
-        lte: endOfMonth
-      }
+      prorratear: false,
+      fechaEmision: { gte: startOfMonth, lte: endOfMonth }
     },
-    include: {
-      proveedor: {
-        select: { id: true, name: true, razon_social: true }
-      },
-      items: {
-        select: { id: true, descripcion: true, precioUnitario: true, cantidad: true, itemId: true },
-        orderBy: { id: 'asc' as const },
-      },
-    },
-    orderBy: [
-      { indirectCategory: 'asc' },
-      { fechaImputacion: 'asc' }
-    ]
+    include: includeConfig,
+    orderBy: [{ indirectCategory: 'asc' }, { fechaEmision: 'asc' }]
   });
+
+  // Query 2: comprobantes prorrateados cuyo período cubre el mes consultado
+  const candidatosProrrateo = await prisma.purchaseReceipt.findMany({
+    where: {
+      companyId,
+      esIndirecto: true,
+      prorratear: true,
+      prorrateoFechaInicio: { lte: endOfMonth }
+    },
+    include: includeConfig,
+    orderBy: [{ indirectCategory: 'asc' }, { fechaEmision: 'asc' }]
+  });
+
+  // Filtrar solo los que todavía están dentro del período de prorrateo
+  const prorrateoReceipts = candidatosProrrateo.filter(r => {
+    if (!r.prorrateoFechaInicio || !r.prorrateoMeses) return false;
+    const inicio = new Date(r.prorrateoFechaInicio);
+    const fin = new Date(inicio.getFullYear(), inicio.getMonth() + r.prorrateoMeses, 0, 23, 59, 59, 999);
+    return fin >= startOfMonth;
+  });
+
+  const receipts = [...normalReceipts, ...prorrateoReceipts];
 
   if (receipts.length === 0) {
     return {
       total: 0,
       itemCount: 0,
       byCategory: {},
-      details: []
+      details: [],
+      itemAggregates: {}
     };
   }
 
@@ -110,7 +155,11 @@ export async function getIndirectCostsForMonth(
   const details: IndirectDetail[] = [];
 
   for (const receipt of receipts) {
-    const amount = toNumber(receipt.neto);
+    // Si está prorrateado, el monto del mes es neto / cantidad de meses
+    const netoTotal = toNumber(receipt.neto);
+    const amount = receipt.prorratear && receipt.prorrateoMeses
+      ? Math.round((netoTotal / receipt.prorrateoMeses) * 100) / 100
+      : netoTotal;
     const category = receipt.indirectCategory ?? 'OTHER';
 
     const proveedorNombre = receipt.proveedor.razon_social || receipt.proveedor.name;
@@ -128,10 +177,13 @@ export async function getIndirectCostsForMonth(
       sourceType: 'COMPRAS',
       receiptId: receipt.id,
       facturaNumero: `${receipt.numeroSerie ?? ''}-${receipt.numeroFactura ?? ''}`.replace(/^-|-$/, ''),
-      fechaImputacion: receipt.fechaImputacion
-        ? receipt.fechaImputacion.toISOString().split('T')[0]
+      fechaEmision: receipt.fechaEmision
+        ? receipt.fechaEmision.toISOString().split('T')[0]
         : null,
       proveedorNombre,
+      prorratear: receipt.prorratear,
+      prorrateoMeses: receipt.prorrateoMeses,
+      montoTotal: netoTotal,
       // Conceptos: items con itemId=null (descriptivos, sin supply vinculado)
       conceptos: receipt.items
         .filter(it => it.itemId === null)
@@ -153,11 +205,44 @@ export async function getIndirectCostsForMonth(
     byCategory[category].items.push(detail);
   }
 
+  // Agregación por item: items con esGastoIndirecto=true se suman por supplierItemId+category dentro del mes
+  const itemAggMap = new Map<string, ItemAggregate>();
+  for (const receipt of receipts) {
+    for (const item of receipt.items) {
+      if (item.itemId && item.supplierItem?.esGastoIndirecto) {
+        const cat = item.supplierItem.categoriaIndirecta ?? receipt.indirectCategory ?? 'OTHER';
+        const key = `${cat}::${item.itemId}`;
+        const amount = toNumber(item.subtotal);
+        const existing = itemAggMap.get(key);
+        if (existing) {
+          existing.amount += amount;
+          existing.count += 1;
+        } else {
+          itemAggMap.set(key, {
+            supplierItemId: item.itemId,
+            nombre: item.supplierItem.nombre,
+            category: String(cat),
+            amount,
+            count: 1,
+          });
+        }
+      }
+    }
+  }
+
+  // Agrupar aggregates por categoría
+  const itemAggregates: Record<string, ItemAggregate[]> = {};
+  for (const agg of itemAggMap.values()) {
+    if (!itemAggregates[agg.category]) itemAggregates[agg.category] = [];
+    itemAggregates[agg.category].push(agg);
+  }
+
   return {
     total,
     itemCount: receipts.length,
     byCategory,
-    details
+    details,
+    itemAggregates
   };
 }
 

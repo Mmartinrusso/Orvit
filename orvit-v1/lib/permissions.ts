@@ -2995,7 +2995,7 @@ function applyContextualRules(permission: Permission, context: PermissionContext
     case 'ingresar_tareas':
     case 'tasks.edit':
     case 'tasks.complete':
-      if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') return true;
+      if (userRole === 'SUPERADMIN' || userRole === 'ADMIN' || userRole === 'ADMIN_ENTERPRISE') return true;
       if (userRole === 'SUPERVISOR') {
         // Supervisores pueden ver/editar tareas de su área
         return companyId === targetCompanyId;
@@ -3007,7 +3007,7 @@ function applyContextualRules(permission: Permission, context: PermissionContext
       return false;
 
     case 'tasks.view_all':
-      if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') return true;
+      if (userRole === 'SUPERADMIN' || userRole === 'ADMIN' || userRole === 'ADMIN_ENTERPRISE') return true;
       if (userRole === 'SUPERVISOR') {
         return companyId === targetCompanyId;
       }

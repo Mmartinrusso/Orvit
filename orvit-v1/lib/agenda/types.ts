@@ -176,7 +176,10 @@ export interface AgendaTask {
 
   // Comentarios
   comments?: AgendaTaskComment[];
-  _count?: { comments: number };
+
+  // Subtareas
+  subtasks?: AgendaSubtask[];
+  _count?: { comments: number; subtasks: number; subtasksDone: number };
 
   // Timestamps
   createdAt: string;
@@ -193,6 +196,24 @@ export interface AgendaTaskComment {
     name: string;
     avatar?: string | null;
   };
+  companyId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgendaSubtask {
+  id: number;
+  title: string;
+  done: boolean;
+  note: string | null;
+  sortOrder: number;
+  taskId: number;
+  assigneeId: number | null;
+  assignee?: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  } | null;
   companyId: number;
   createdAt: string;
   updatedAt: string;
@@ -305,6 +326,11 @@ export interface AgendaTaskFilters {
   endDate?: string;
   search?: string;
   category?: string;
+  groupId?: number | null;
+  source?: TaskSource;
+  overdue?: boolean;
+  sortBy?: 'createdAt' | 'dueDate' | 'priority' | 'updatedAt' | 'title';
+  sortOrder?: 'asc' | 'desc';
 }
 
 // =============================================================================

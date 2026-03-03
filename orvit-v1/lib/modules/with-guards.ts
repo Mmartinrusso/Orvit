@@ -119,65 +119,43 @@ export function withGuards(
   const { modules, skipModuleCheck = false, requireAuth = true } = options;
 
   return async (request: NextRequest, context?: { params?: Record<string, string> }) => {
-    console.log('[withGuards] Iniciando para:', request.url);
     try {
-      // 1. Get auth context
-      console.log('[withGuards] Paso 1: Obteniendo auth context...');
       const auth = await getAuthContext(request);
-      console.log('[withGuards] Auth obtenido:', auth ? `userId=${auth.userId}, companyId=${auth.companyId}, role=${auth.role}` : 'null');
 
       if (requireAuth && !auth) {
-        console.log('[withGuards] Rechazando: no auth');
         return unauthorized();
       }
 
-      // 2. SUPERADMIN bypasses all checks
+      // SUPERADMIN bypasses all checks
       if (auth && isSuperAdmin(auth.role)) {
-        console.log('[withGuards] SUPERADMIN bypass, ejecutando handler');
         return handler(request, context);
       }
 
-      // 3. Module verification (if not skipped and user is authenticated)
+      // Module verification (if not skipped and user is authenticated)
       if (!skipModuleCheck && auth) {
-        console.log('[withGuards] Paso 3: Verificando módulos...');
-        // Determine required modules
         let requiredModules = modules;
 
         if (!requiredModules) {
-          // Auto-detect from route path
           const pathname = new URL(request.url).pathname;
           requiredModules = getRouteModules(pathname);
         }
 
-        // Check modules if any are required
         if (requiredModules && requiredModules.length > 0) {
-          console.log('[withGuards] Módulos requeridos:', requiredModules);
           const { allowed, missing } = await checkModulesEnabled(
             auth.companyId,
             requiredModules
           );
-          console.log('[withGuards] Resultado verificación:', { allowed, missing });
 
           if (!allowed) {
-            console.log('[withGuards] Módulos faltantes:', missing);
             return createModuleDisabledResponse(missing, auth.companyId);
           }
         }
       }
 
-      // 4. Execute handler
-      console.log('[withGuards] Paso 4: Ejecutando handler...');
       return handler(request, context);
     } catch (error) {
-      console.error('='.repeat(60));
-      console.error('[WithGuards] ERROR DETALLADO:');
-      console.error('Error:', error);
-      console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
-      console.error('Message:', error instanceof Error ? error.message : String(error));
-      console.error('URL:', request.url);
-      console.error('='.repeat(60));
       return NextResponse.json(
-        { error: 'Error interno del servidor', code: 'INTERNAL_ERROR', details: error instanceof Error ? error.message : String(error) },
+        { error: 'Error interno del servidor', code: 'INTERNAL_ERROR' },
         { status: 500 }
       );
     }

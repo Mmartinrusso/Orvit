@@ -105,7 +105,6 @@ export function WorkOrderFormSections({
                     <SelectItem value={Priority.LOW}>Baja</SelectItem>
                     <SelectItem value={Priority.MEDIUM}>Media</SelectItem>
                     <SelectItem value={Priority.HIGH}>Alta</SelectItem>
-                    <SelectItem value={Priority.CRITICAL}>Crítica</SelectItem>
                     <SelectItem value={Priority.URGENT}>Urgente</SelectItem>
                   </SelectContent>
                 </Select>

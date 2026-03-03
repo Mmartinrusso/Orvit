@@ -102,7 +102,7 @@ interface ExtractedItem {
     supplyName: string;
     supplySku?: string;
   };
-  matchType?: 'exact_alias' | 'exact_code' | 'fuzzy' | 'ai_assisted' | 'none';
+  matchType?: 'exact_alias' | 'exact_code' | 'fuzzy' | 'ai_assisted' | 'service_consolidated' | 'none';
   needsMapping?: boolean;
   usedAI?: boolean; // Si se usó IA para el matching
   // Campo para mapeo manual del usuario
@@ -763,16 +763,56 @@ export default function CargaMasivaPage() {
         const tipoDisplay = mapTipoToDisplay(ext.tipo_sistema || '');
         const fechaEmisionValue = ext.fecha_emision || new Date().toISOString().split('T')[0];
 
-        // Preparar items - si no hay items, crear uno genérico con el total
-        let itemsPayload = ext.items?.map(item => ({
-          descripcion: item.descripcion,
-          cantidad: item.cantidad,
-          precioUnitario: item.precio_unitario,
-          subtotal: item.subtotal,
-          codigo: item.codigo || null,
-          unidad: item.unidad || 'UN',
-          ivaPorcentaje: item.iva_porcentaje || 21
-        })) || [];
+        // Preparar items - consolidar servicios si corresponde
+        let itemsPayload: Array<{ descripcion: string; cantidad: number; precioUnitario: number; subtotal: number; codigo: string | null; unidad: string; ivaPorcentaje: number; itemId?: string | null }>;
+
+        const serviceConsolidatedItems = (ext.items || []).filter(
+          (item: any) => item.matchType === 'service_consolidated'
+        );
+        const normalItems = (ext.items || []).filter(
+          (item: any) => item.matchType !== 'service_consolidated'
+        );
+
+        if (serviceConsolidatedItems.length > 0) {
+          // Consolidar items de servicio en 1 solo
+          const totalServicio = serviceConsolidatedItems.reduce(
+            (sum: number, item: any) => sum + (Number(item.subtotal) || 0), 0
+          );
+          const serviceMatch = serviceConsolidatedItems[0].match;
+
+          itemsPayload = [
+            ...normalItems.map((item: any) => ({
+              descripcion: item.descripcion,
+              cantidad: item.cantidad,
+              precioUnitario: item.precio_unitario,
+              subtotal: item.subtotal,
+              codigo: item.codigo || null,
+              unidad: item.unidad || 'UN',
+              ivaPorcentaje: item.iva_porcentaje || 21,
+            })),
+            {
+              descripcion: serviceMatch?.nombre || serviceConsolidatedItems[0].descripcion,
+              cantidad: 1,
+              precioUnitario: totalServicio,
+              subtotal: totalServicio,
+              codigo: null,
+              unidad: 'UN',
+              ivaPorcentaje: serviceConsolidatedItems[0].iva_porcentaje || 21,
+              itemId: serviceMatch?.supplierItemId ? String(serviceMatch.supplierItemId) : null,
+            },
+          ];
+        } else {
+          // Sin consolidación — flujo normal
+          itemsPayload = (ext.items || []).map((item: any) => ({
+            descripcion: item.descripcion,
+            cantidad: item.cantidad,
+            precioUnitario: item.precio_unitario,
+            subtotal: item.subtotal,
+            codigo: item.codigo || null,
+            unidad: item.unidad || 'UN',
+            ivaPorcentaje: item.iva_porcentaje || 21,
+          }));
+        }
 
         // Si no hay items, crear uno genérico
         if (itemsPayload.length === 0) {
@@ -1383,6 +1423,11 @@ export default function CargaMasivaPage() {
                           {file.itemMatching.needsMapping} sin mapear
                         </Badge>
                       )}
+                      {file.itemMatching.serviceConsolidated > 0 && (
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs">
+                          📦 {file.itemMatching.serviceConsolidated} → 1 servicio
+                        </Badge>
+                      )}
                     </div>
                   )}
                 </h4>
@@ -1417,16 +1462,19 @@ export default function CargaMasivaPage() {
                                 <div className="flex items-center gap-1 mt-1">
                                   <CheckCircle className={cn(
                                     "h-3 w-3",
-                                    item.matchType === 'ai_assisted' ? "text-info-muted-foreground" : "text-success"
+                                    item.matchType === 'ai_assisted' ? "text-info-muted-foreground" :
+                                    item.matchType === 'service_consolidated' ? "text-blue-600 dark:text-blue-400" : "text-success"
                                   )} />
                                   <span className={cn(
                                     "text-xs",
-                                    item.matchType === 'ai_assisted' ? "text-info-muted-foreground" : "text-success"
+                                    item.matchType === 'ai_assisted' ? "text-info-muted-foreground" :
+                                    item.matchType === 'service_consolidated' ? "text-blue-600 dark:text-blue-400" : "text-success"
                                   )}>
                                     {item.matchType === 'exact_alias' ? 'Match por nombre' :
                                      item.matchType === 'exact_code' ? 'Match por código' :
                                      item.matchType === 'fuzzy' ? 'Match automático (similar)' :
-                                     item.matchType === 'ai_assisted' ? '✨ Match con IA' : 'Match'}
+                                     item.matchType === 'ai_assisted' ? '✨ Match con IA' :
+                                     item.matchType === 'service_consolidated' ? '📦 Consolidado como servicio' : 'Match'}
                                   </span>
                                 </div>
                               )}

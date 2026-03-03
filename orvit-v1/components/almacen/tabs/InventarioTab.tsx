@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -34,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Search, RefreshCw, AlertTriangle, Package, ArrowUpRight, Download } from 'lucide-react';
+import { Search, RefreshCw, AlertTriangle, Package, ArrowUpRight, Download, ChevronRight, Building2 } from 'lucide-react';
 import { useInventario, useWarehouses, type InventarioFilters } from '../hooks';
 import { EmptyState } from '../shared/EmptyState';
 import { cn, formatNumber } from '@/lib/utils';
@@ -55,15 +55,65 @@ interface InventarioTabProps {
   onDispatchItem?: (item: PreselectedItem) => void;
 }
 
+interface SupplyGroup {
+  supplyId: number | null;
+  supplyName: string;
+  unit: string;
+  totalStock: number;
+  totalReservado: number;
+  totalDisponible: number;
+  totalMinimo: number;
+  totalReorden: number;
+  isBelowMinimum: boolean;
+  isBelowReorder: boolean;
+  items: any[];
+}
+
+function groupBySupply(items: any[]): SupplyGroup[] {
+  const map = new Map<string, SupplyGroup>();
+
+  for (const item of items) {
+    const key = item.supplyId ? `supply-${item.supplyId}` : `si-${item.supplierItemId}`;
+    let group = map.get(key);
+    if (!group) {
+      group = {
+        supplyId: item.supplyId || null,
+        supplyName: item.supplyName || item.supplierItem?.nombre || '-',
+        unit: item.supplierItem?.unidad || '',
+        totalStock: 0,
+        totalReservado: 0,
+        totalDisponible: 0,
+        totalMinimo: 0,
+        totalReorden: 0,
+        isBelowMinimum: false,
+        isBelowReorder: false,
+        items: [],
+      };
+      map.set(key, group);
+    }
+    group.items.push(item);
+    group.totalStock += item.stockActual || 0;
+    group.totalReservado += item.stockReservado || 0;
+    group.totalDisponible += item.stockDisponible || 0;
+    group.totalMinimo += item.stockMinimo || 0;
+    group.totalReorden += item.stockReorden || 0;
+    if (item.isBelowMinimum) group.isBelowMinimum = true;
+    if (item.isBelowReorder) group.isBelowReorder = true;
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.supplyName.localeCompare(b.supplyName));
+}
+
 /**
  * Tab de Inventario / Disponibilidad
- * Incluye acción rápida para despachar items y Sheet de detalle al hacer click
+ * Agrupado por Supply (insumo interno) con detalle expandible por proveedor
  */
 export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps) {
   const [filters, setFilters] = useState<InventarioFilters>({});
   const [localSearch, setLocalSearch] = useState('');
   const [pagination, setPagination] = useState({ page: 1, pageSize: 50 });
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const { data: warehouses = [] } = useWarehouses();
   const { data, isLoading, isFetching, refetch } = useInventario({
@@ -74,6 +124,20 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
   const items = data?.items || [];
   const total = data?.total || 0;
   const totalPages = data?.totalPages || 1;
+
+  const groups = useMemo(() => groupBySupply(items), [items]);
+
+  const toggleGroup = useCallback((key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
   // Handlers de filtros
   const handleSearch = useCallback(() => {
@@ -100,10 +164,10 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
   }, []);
 
   const handleExportCSV = useCallback(() => {
-    const headers = ['Código', 'Nombre', 'Depósito', 'Unidad', 'Stock Actual', 'Reservado', 'Disponible', 'Mínimo', 'Reorden', 'Estado'];
+    const headers = ['Insumo', 'Proveedor', 'Depósito', 'Unidad', 'Stock Actual', 'Reservado', 'Disponible', 'Mínimo', 'Reorden', 'Estado'];
     const rows = items.map((item: any) => [
-      item.supplierItem?.codigoProveedor || '',
-      item.supplierItem?.nombre || '',
+      item.supplyName || item.supplierItem?.nombre || '',
+      item.supplierName || '',
       item.warehouse?.nombre || '',
       item.supplierItem?.unidad || '',
       item.stockActual ?? 0,
@@ -130,7 +194,7 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
           <div className="relative flex-1 min-w-[180px] max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar item..."
+              placeholder="Buscar insumo..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -200,76 +264,90 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
 
         {/* Contenido */}
         {isLoading ? (
-          <SkeletonTable rows={5} cols={10} />
+          <SkeletonTable rows={5} cols={8} />
         ) : items.length === 0 ? (
           <EmptyState type="inventario" />
         ) : (
           <>
             {/* Cards mobile */}
             <div className="space-y-2 md:hidden">
-              {items.map((item: any, index: number) => (
-                <div
-                  key={`${item.supplierItem?.id}-${item.warehouseId}-${index}`}
-                  className={cn(
-                    'p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/30 transition-colors',
-                    item.isBelowMinimum && 'border-destructive/40 bg-destructive/5',
-                    item.isBelowReorder && !item.isBelowMinimum && 'border-amber-300/50 bg-amber-50/50'
-                  )}
-                  onClick={() => handleRowClick(item)}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.supplierItem?.nombre || '-'}</p>
-                      <p className="text-xs font-mono text-muted-foreground mt-0.5">
-                        {item.supplierItem?.codigoProveedor || '-'} · {item.warehouse?.nombre || '-'}
-                      </p>
+              {groups.map((group) => {
+                const groupKey = group.supplyId ? `supply-${group.supplyId}` : `si-${group.items[0]?.supplierItemId}`;
+                const isExpanded = expandedGroups.has(groupKey);
+                const hasMultiple = group.items.length > 1;
+
+                return (
+                  <div key={groupKey} className="space-y-1">
+                    <div
+                      className={cn(
+                        'p-3 rounded-lg border bg-card transition-colors',
+                        group.isBelowMinimum && 'border-destructive/40 bg-destructive/5',
+                        group.isBelowReorder && !group.isBelowMinimum && 'border-amber-300/50 bg-amber-50/50',
+                        hasMultiple && 'cursor-pointer hover:bg-muted/30'
+                      )}
+                      onClick={() => hasMultiple ? toggleGroup(groupKey) : handleRowClick(group.items[0])}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            {hasMultiple && (
+                              <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform shrink-0', isExpanded && 'rotate-90')} />
+                            )}
+                            <p className="font-medium text-sm truncate">{group.supplyName}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {group.unit}
+                            {hasMultiple && <span className="ml-1.5">({group.items.length} proveedores)</span>}
+                          </p>
+                        </div>
+                        <StockStatusBadge item={group} />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                        <div className="p-1.5 rounded bg-muted/40">
+                          <p className="text-xs text-muted-foreground">Stock</p>
+                          <p className="text-sm font-bold">{formatNumber(group.totalStock, 2)}</p>
+                        </div>
+                        <div className="p-1.5 rounded bg-muted/40">
+                          <p className="text-xs text-muted-foreground">Disponible</p>
+                          <p className={cn('text-sm font-bold', group.isBelowMinimum ? 'text-destructive' : '')}>
+                            {formatNumber(group.totalDisponible, 2)}
+                          </p>
+                        </div>
+                        <div className="p-1.5 rounded bg-muted/40">
+                          <p className="text-xs text-muted-foreground">Reservado</p>
+                          <p className="text-sm font-bold text-muted-foreground">{formatNumber(group.totalReservado, 2)}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <StockStatusBadge item={item} />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            disabled={!item.stockDisponible || item.stockDisponible <= 0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDispatchItem?.({
-                                supplierItemId: item.supplierItemId || item.supplierItem?.id,
-                                warehouseId: item.warehouseId,
-                                nombre: item.supplierItem?.nombre || '',
-                                codigo: item.supplierItem?.codigoProveedor || '',
-                                unidad: item.supplierItem?.unidad || '',
-                                stockDisponible: item.stockDisponible || 0,
-                              });
-                            }}
-                          >
-                            <ArrowUpRight className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Despacho rápido</TooltipContent>
-                      </Tooltip>
-                    </div>
+
+                    {/* Sub-items expanded (mobile) */}
+                    {isExpanded && group.items.map((item: any, idx: number) => (
+                      <div
+                        key={`${item.supplierItemId}-${item.warehouseId}-${idx}`}
+                        className="ml-4 p-2.5 rounded-lg border border-dashed bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors"
+                        onClick={() => handleRowClick(item)}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium flex items-center gap-1.5">
+                              <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                              {item.supplierName || item.supplierItem?.nombre || '-'}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground font-mono mt-0.5 ml-[18px]">
+                              {item.warehouse?.nombre || '-'}
+                              {item.supplierItem?.codigoProveedor && ` · ${item.supplierItem.codigoProveedor}`}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold">{formatNumber(item.stockDisponible, 2)}</p>
+                            <p className="text-[11px] text-muted-foreground">de {formatNumber(item.stockActual, 2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-                    <div className="p-1.5 rounded bg-muted/40">
-                      <p className="text-xs text-muted-foreground">Stock</p>
-                      <p className="text-sm font-bold">{formatNumber(item.stockActual, 2)}</p>
-                    </div>
-                    <div className="p-1.5 rounded bg-muted/40">
-                      <p className="text-xs text-muted-foreground">Disponible</p>
-                      <p className={cn('text-sm font-bold', item.isBelowMinimum ? 'text-destructive' : '')}>
-                        {formatNumber(item.stockDisponible, 2)}
-                      </p>
-                    </div>
-                    <div className="p-1.5 rounded bg-muted/40">
-                      <p className="text-xs text-muted-foreground">Reservado</p>
-                      <p className="text-sm font-bold text-muted-foreground">{formatNumber(item.stockReservado, 2)}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Tabla desktop */}
@@ -277,86 +355,38 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Nombre</TableHead>
+                    <TableHead className="w-[32px]"></TableHead>
+                    <TableHead>Insumo</TableHead>
                     <TableHead>Depósito</TableHead>
                     <TableHead className="text-right">Stock Actual</TableHead>
                     <TableHead className="text-right">Reservado</TableHead>
                     <TableHead className="text-right">Disponible</TableHead>
                     <TableHead className="text-right">Mínimo</TableHead>
-                    <TableHead className="text-right">Reorden</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead className="text-center w-[100px]">Acciones</TableHead>
+                    <TableHead className="text-center w-[80px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item: any, index: number) => (
-                    <TableRow
-                      key={`${item.supplierItem?.id}-${item.warehouseId}-${index}`}
-                      className={cn(
-                        'cursor-pointer hover:bg-muted/50',
-                        item.isBelowMinimum && 'bg-destructive/10',
-                        item.isBelowReorder && !item.isBelowMinimum && 'bg-warning-muted'
-                      )}
-                      onClick={() => handleRowClick(item)}
-                    >
-                      <TableCell className="font-mono text-sm">
-                        {item.supplierItem?.codigoProveedor || '-'}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {item.supplierItem?.nombre || '-'}
-                      </TableCell>
-                      <TableCell>{item.warehouse?.nombre || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        {formatNumber(item.stockActual, 2)} {item.supplierItem?.unidad}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatNumber(item.stockReservado, 2)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatNumber(item.stockDisponible, 2)}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatNumber(item.stockMinimo, 2)}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatNumber(item.stockReorden, 2)}
-                      </TableCell>
-                      <TableCell>
-                        <StockStatusBadge item={item} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                disabled={!item.stockDisponible || item.stockDisponible <= 0}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDispatchItem?.({
-                                    supplierItemId: item.supplierItemId || item.supplierItem?.id,
-                                    warehouseId: item.warehouseId,
-                                    nombre: item.supplierItem?.nombre || '',
-                                    codigo: item.supplierItem?.codigoProveedor || '',
-                                    unidad: item.supplierItem?.unidad || '',
-                                    stockDisponible: item.stockDisponible || 0,
-                                  });
-                                }}
-                              >
-                                <ArrowUpRight className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Despachar (salida rápida)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {groups.map((group) => {
+                    const groupKey = group.supplyId ? `supply-${group.supplyId}` : `si-${group.items[0]?.supplierItemId}`;
+                    const isExpanded = expandedGroups.has(groupKey);
+                    const hasMultiple = group.items.length > 1;
+                    const singleItem = !hasMultiple ? group.items[0] : null;
+
+                    return (
+                      <GroupRows
+                        key={groupKey}
+                        group={group}
+                        groupKey={groupKey}
+                        isExpanded={isExpanded}
+                        hasMultiple={hasMultiple}
+                        singleItem={singleItem}
+                        onToggle={() => toggleGroup(groupKey)}
+                        onRowClick={handleRowClick}
+                        onDispatchItem={onDispatchItem}
+                      />
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -364,7 +394,7 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
             {/* Paginación */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>
-                {items.length} de {total} items
+                {groups.length} insumos ({items.length} items) de {total} total
               </span>
               <div className="flex items-center gap-2">
                 <Button
@@ -399,8 +429,16 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
             <>
               <SheetHeader className="pb-4">
                 <SheetTitle className="text-base">{selectedItem.supplierItem?.nombre || '-'}</SheetTitle>
-                <p className="text-xs font-mono text-muted-foreground">
-                  {selectedItem.supplierItem?.codigoProveedor || '-'}
+                <p className="text-xs text-muted-foreground">
+                  {selectedItem.supplierName && (
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {selectedItem.supplierName}
+                    </span>
+                  )}
+                  {selectedItem.supplierItem?.codigoProveedor && (
+                    <span className="font-mono mt-0.5 block">{selectedItem.supplierItem.codigoProveedor}</span>
+                  )}
                 </p>
               </SheetHeader>
 
@@ -495,6 +533,206 @@ export function InventarioTab({ onViewItem, onDispatchItem }: InventarioTabProps
         </SheetContent>
       </Sheet>
     </TooltipProvider>
+  );
+}
+
+/** Fila agrupada de supply + sub-filas de proveedores */
+function GroupRows({
+  group,
+  groupKey,
+  isExpanded,
+  hasMultiple,
+  singleItem,
+  onToggle,
+  onRowClick,
+  onDispatchItem,
+}: {
+  group: SupplyGroup;
+  groupKey: string;
+  isExpanded: boolean;
+  hasMultiple: boolean;
+  singleItem: any;
+  onToggle: () => void;
+  onRowClick: (item: any) => void;
+  onDispatchItem?: (item: PreselectedItem) => void;
+}) {
+  // Si es un solo item, mostrar fila simple (sin expand)
+  if (!hasMultiple && singleItem) {
+    return (
+      <TableRow
+        className={cn(
+          'cursor-pointer hover:bg-muted/50',
+          singleItem.isBelowMinimum && 'bg-destructive/10',
+          singleItem.isBelowReorder && !singleItem.isBelowMinimum && 'bg-warning-muted'
+        )}
+        onClick={() => onRowClick(singleItem)}
+      >
+        <TableCell className="w-[32px]" />
+        <TableCell>
+          <p className="font-medium">{group.supplyName}</p>
+          {singleItem.supplierName && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Building2 className="h-3 w-3" />
+              {singleItem.supplierName}
+              {singleItem.warehouse?.nombre && ` · ${singleItem.warehouse.nombre}`}
+            </p>
+          )}
+        </TableCell>
+        <TableCell className="text-muted-foreground">{singleItem.warehouse?.nombre || '-'}</TableCell>
+        <TableCell className="text-right">
+          {formatNumber(singleItem.stockActual, 2)} {group.unit}
+        </TableCell>
+        <TableCell className="text-right text-muted-foreground">
+          {formatNumber(singleItem.stockReservado, 2)}
+        </TableCell>
+        <TableCell className="text-right font-medium">
+          {formatNumber(singleItem.stockDisponible, 2)}
+        </TableCell>
+        <TableCell className="text-right text-muted-foreground">
+          {formatNumber(singleItem.stockMinimo, 2)}
+        </TableCell>
+        <TableCell>
+          <StockStatusBadge item={singleItem} />
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center justify-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={!singleItem.stockDisponible || singleItem.stockDisponible <= 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDispatchItem?.({
+                      supplierItemId: singleItem.supplierItemId || singleItem.supplierItem?.id,
+                      warehouseId: singleItem.warehouseId,
+                      nombre: singleItem.supplierItem?.nombre || '',
+                      codigo: singleItem.supplierItem?.codigoProveedor || '',
+                      unidad: singleItem.supplierItem?.unidad || '',
+                      stockDisponible: singleItem.stockDisponible || 0,
+                    });
+                  }}
+                >
+                  <ArrowUpRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Despacho rápido</TooltipContent>
+            </Tooltip>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  // Grupo con múltiples items: fila resumen expandible
+  return (
+    <>
+      <TableRow
+        className={cn(
+          'cursor-pointer hover:bg-muted/50',
+          group.isBelowMinimum && 'bg-destructive/10',
+          group.isBelowReorder && !group.isBelowMinimum && 'bg-warning-muted'
+        )}
+        onClick={onToggle}
+      >
+        <TableCell className="w-[32px] px-2">
+          <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <p className="font-medium">{group.supplyName}</p>
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              {group.items.length} prov.
+            </Badge>
+          </div>
+        </TableCell>
+        <TableCell className="text-muted-foreground text-xs">
+          {[...new Set(group.items.map((i: any) => i.warehouse?.nombre).filter(Boolean))].join(', ') || '-'}
+        </TableCell>
+        <TableCell className="text-right font-semibold">
+          {formatNumber(group.totalStock, 2)} {group.unit}
+        </TableCell>
+        <TableCell className="text-right text-muted-foreground font-semibold">
+          {formatNumber(group.totalReservado, 2)}
+        </TableCell>
+        <TableCell className="text-right font-bold">
+          {formatNumber(group.totalDisponible, 2)}
+        </TableCell>
+        <TableCell className="text-right text-muted-foreground">
+          {formatNumber(group.totalMinimo, 2)}
+        </TableCell>
+        <TableCell>
+          <StockStatusBadge item={group} />
+        </TableCell>
+        <TableCell />
+      </TableRow>
+
+      {/* Sub-filas expandidas por proveedor */}
+      {isExpanded && group.items.map((item: any, idx: number) => (
+        <TableRow
+          key={`${groupKey}-${item.supplierItemId}-${item.warehouseId}-${idx}`}
+          className="cursor-pointer hover:bg-muted/30 bg-muted/10"
+          onClick={() => onRowClick(item)}
+        >
+          <TableCell className="w-[32px]" />
+          <TableCell className="pl-8">
+            <p className="text-sm flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              {item.supplierName || item.supplierItem?.nombre || '-'}
+            </p>
+            {item.supplierItem?.codigoProveedor && (
+              <p className="text-[11px] text-muted-foreground font-mono ml-5">{item.supplierItem.codigoProveedor}</p>
+            )}
+          </TableCell>
+          <TableCell className="text-muted-foreground text-sm">{item.warehouse?.nombre || '-'}</TableCell>
+          <TableCell className="text-right text-sm">
+            {formatNumber(item.stockActual, 2)} {item.supplierItem?.unidad}
+          </TableCell>
+          <TableCell className="text-right text-muted-foreground text-sm">
+            {formatNumber(item.stockReservado, 2)}
+          </TableCell>
+          <TableCell className="text-right font-medium text-sm">
+            {formatNumber(item.stockDisponible, 2)}
+          </TableCell>
+          <TableCell className="text-right text-muted-foreground text-sm">
+            {formatNumber(item.stockMinimo, 2)}
+          </TableCell>
+          <TableCell>
+            <StockStatusBadge item={item} />
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center justify-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={!item.stockDisponible || item.stockDisponible <= 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDispatchItem?.({
+                        supplierItemId: item.supplierItemId || item.supplierItem?.id,
+                        warehouseId: item.warehouseId,
+                        nombre: item.supplierItem?.nombre || '',
+                        codigo: item.supplierItem?.codigoProveedor || '',
+                        unidad: item.supplierItem?.unidad || '',
+                        stockDisponible: item.stockDisponible || 0,
+                      });
+                    }}
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Despacho rápido</TooltipContent>
+              </Tooltip>
+            </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
   );
 }
 

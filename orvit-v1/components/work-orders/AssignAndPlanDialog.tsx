@@ -9,6 +9,7 @@ import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -147,10 +148,10 @@ export function AssignAndPlanDialog({
     enabled: open,
   });
 
-  // Nombre del responsable seleccionado
+  // Nombre del responsable seleccionado (la API retorna id como string)
   const selectedUserName = useMemo(() => {
     if (!assignedToId || !users) return null;
-    const u = users.find((u: any) => u.id === assignedToId);
+    const u = users.find((u: any) => Number(u.id) === Number(assignedToId));
     return u?.name || null;
   }, [assignedToId, users]);
 
@@ -225,15 +226,16 @@ export function AssignAndPlanDialog({
         size="default"
         className="p-0 flex flex-col max-h-[90vh]"
         hideCloseButton
+        aria-describedby={undefined}
       >
         {/* ── Header: Info de la OT ── */}
         <div className="flex-shrink-0 bg-background border-b">
           <div className="px-5 py-4 flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-base font-semibold truncate">
+                <DialogTitle className="text-base font-semibold truncate">
                   Asignar y Planificar
-                </h2>
+                </DialogTitle>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
                   OT #{workOrder.id}
                 </Badge>
@@ -323,7 +325,7 @@ export function AssignAndPlanDialog({
                                     key={user.id}
                                     value={user.name}
                                     onSelect={() => {
-                                      field.onChange(user.id);
+                                      field.onChange(Number(user.id));
                                       setResponsableOpen(false);
                                     }}
                                   >
@@ -338,7 +340,7 @@ export function AssignAndPlanDialog({
                                     <Check
                                       className={cn(
                                         'h-4 w-4 shrink-0',
-                                        field.value === user.id ? 'opacity-100' : 'opacity-0'
+                                        Number(field.value) === Number(user.id) ? 'opacity-100' : 'opacity-0'
                                       )}
                                     />
                                   </CommandItem>
@@ -403,6 +405,7 @@ export function AssignAndPlanDialog({
                             inputMode="numeric"
                             placeholder="60"
                             {...field}
+                            value={field.value ?? ''}
                             onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                           />
                         </FormControl>

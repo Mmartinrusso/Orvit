@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export function KpiCardFrame({
   title,
@@ -11,22 +10,41 @@ export function KpiCardFrame({
   children: ReactNode;
 }) {
   return (
-    <Card className="h-full rounded-lg border border-border shadow-sm bg-gradient-to-t from-muted/50 via-muted/20 to-background">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 pt-1.5 px-4">
-        <div className="text-muted-foreground text-xs font-normal">{title}</div>
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E5E7EB',
+      borderRadius: '12px',
+      padding: '20px',
+      height: '100%',
+      boxShadow: '0 1px 4px rgba(0,0,0,.04)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <span style={{
+          fontSize: '12px', fontWeight: 500, color: '#9CA3AF',
+          letterSpacing: '0.01em',
+        }}>
+          {title}
+        </span>
         {pill}
-      </CardHeader>
-      <CardContent className="px-4 pb-1.5 pt-0">{children}</CardContent>
-    </Card>
+      </div>
+      <div style={{ flex: 1 }}>
+        {children}
+      </div>
+    </div>
   );
 }
 
 export function KpiPill({ children }: { children: ReactNode }) {
   return (
-    <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground text-xs">
+    <div style={{
+      display: 'inline-flex', alignItems: 'center',
+      padding: '3px 10px', borderRadius: '999px',
+      background: '#EDE9FE',
+      fontSize: '12px', fontWeight: 500, color: '#7C3AED',
+      gap: '4px',
+    }}>
       {children}
     </div>
   );
 }
-
-

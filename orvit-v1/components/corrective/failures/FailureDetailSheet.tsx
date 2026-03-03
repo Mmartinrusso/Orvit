@@ -38,6 +38,11 @@ import {
   Users,
   MoreVertical,
   Pencil,
+  Wrench,
+  Package,
+  Star,
+  Paperclip,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -139,11 +144,55 @@ interface FailureDetail {
     id: number;
     diagnosis: string;
     solution: string;
+    outcome?: string;
     performedAt: string;
+    actualMinutes?: number;
+    fixType?: string;
+    effectiveness?: number;
+    confirmedCause?: string;
+    repairAction?: string;
+    toolsUsed?: Array<{ id: number; name: string; quantity?: number }> | null;
+    sparePartsUsed?: Array<{ id: number; name: string; quantity: number }> | null;
+    attachments?: Array<{ url: string; type: string; filename: string }> | null;
+    notes?: string;
+    finalComponentId?: number;
+    finalSubcomponentId?: number;
+    finalComponent?: { id: number; name: string } | null;
+    finalSubcomponent?: { id: number; name: string } | null;
+    closingMode?: string;
     performedBy?: { id?: number; name: string };
     workOrderId?: number;
+    controlInstances?: Array<{
+      id: number;
+      order: number;
+      description: string;
+      scheduledAt?: string | null;
+      completedAt?: string | null;
+      status: string;
+      delayMinutes: number;
+    }>;
   }>;
   incidentType?: string;
+  failureCategory?: string;
+  correctedAt?: string;
+  originalReport?: {
+    title?: string;
+    description?: string;
+    machineId?: number;
+    subcomponentId?: number;
+    failureCategory?: string;
+    incidentType?: string;
+  } | null;
+}
+
+/** Safely parse a JSON field that may come back as string or already-parsed object/array */
+function parseJsonArr<T>(field: T[] | string | null | undefined): T[] {
+  if (!field) return [];
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'string') {
+    try { const parsed = JSON.parse(field); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+  }
+  return [];
 }
 
 const priorityColors: Record<string, string> = {
@@ -518,6 +567,43 @@ export function FailureDetailSheet({
 
                 {/* Tab: Información */}
                 <TabsContent value="info" className="space-y-3 mt-4">
+                  {/* Corrección: mostrar reporte original si fue corregido */}
+                  {failure.originalReport && (
+                    <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 p-3 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
+                        <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">
+                          Falla corregida al cierre
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-orange-600 dark:text-orange-500">
+                        Lo que se pensaba inicialmente:
+                      </p>
+                      {failure.originalReport.title && (
+                        <p className="text-xs font-medium text-orange-800 dark:text-orange-300 line-through decoration-orange-400">
+                          {failure.originalReport.title}
+                        </p>
+                      )}
+                      {failure.originalReport.description && (
+                        <p className="text-xs text-orange-700 dark:text-orange-400 line-clamp-2">
+                          {failure.originalReport.description}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {failure.originalReport.incidentType && (
+                          <span className="text-[10px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5">
+                            {failure.originalReport.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'}
+                          </span>
+                        )}
+                        {failure.originalReport.failureCategory && (
+                          <span className="text-[10px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5">
+                            {failure.originalReport.failureCategory}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="rounded-lg border p-4 space-y-3">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Descripción</p>
@@ -786,46 +872,232 @@ export function FailureDetailSheet({
                       </p>
                     </div>
                   ) : (
-                    failure.solutionsApplied?.map((solution, idx) => (
-                      <div
-                        key={solution.id}
-                        className={cn('rounded-lg border bg-success-muted/50 p-4', solution.workOrderId && 'cursor-pointer hover:bg-success-muted transition-colors')}
-                        onClick={() => {
-                          if (solution.workOrderId) {
-                            handleGoToMaintenance(solution.workOrderId);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge className="bg-success">Solución #{idx + 1}</Badge>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {format(
-                                new Date(solution.performedAt),
-                                "d 'de' MMM, HH:mm",
-                                { locale: es }
+                    failure.solutionsApplied?.map((solution, idx) => {
+                      const outcomeColors: Record<string, string> = {
+                        'FUNCIONÓ': 'bg-success text-white',
+                        'PARCIAL': 'bg-warning text-white',
+                        'NO_FUNCIONÓ': 'bg-destructive text-white',
+                      };
+                      const outcomeLabels: Record<string, string> = {
+                        'FUNCIONÓ': 'Funcionó',
+                        'PARCIAL': 'Parcial',
+                        'NO_FUNCIONÓ': 'No Funcionó',
+                      };
+                      const toolsArr = parseJsonArr(solution.toolsUsed);
+                      const partsArr = parseJsonArr(solution.sparePartsUsed);
+                      const attachArr = parseJsonArr(solution.attachments);
+                      const controlsArr = solution.controlInstances || [];
+
+                      return (
+                        <div key={solution.id} className="rounded-lg border bg-card p-4 space-y-3">
+                          {/* Header */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className="bg-success">Solución #{idx + 1}</Badge>
+                              {solution.outcome && (
+                                <Badge className={cn('text-xs', outcomeColors[solution.outcome] || 'bg-muted')}>
+                                  {outcomeLabels[solution.outcome] || solution.outcome}
+                                </Badge>
                               )}
-                            </span>
-                            {solution.workOrderId && (
-                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                            )}
+                              {solution.fixType && (
+                                <Badge variant="outline" className="text-xs">
+                                  {solution.fixType === 'DEFINITIVA' ? 'Definitiva' : 'Parche'}
+                                </Badge>
+                              )}
+                              {solution.repairAction && (
+                                <Badge variant="outline" className="text-xs">
+                                  {solution.repairAction === 'CAMBIO' ? 'Cambio' : 'Reparación'}
+                                </Badge>
+                              )}
+                              {solution.closingMode === 'PROFESSIONAL' && (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">Profesional</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {solution.effectiveness && (
+                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                  <Star className="h-3 w-3 fill-warning text-warning" />
+                                  {solution.effectiveness}/5
+                                </span>
+                              )}
+                              {solution.actualMinutes && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  {solution.actualMinutes >= 60
+                                    ? `${Math.floor(solution.actualMinutes / 60)}h ${solution.actualMinutes % 60}m`
+                                    : `${solution.actualMinutes}min`}
+                                </span>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(solution.performedAt), "d 'de' MMM, HH:mm", { locale: es })}
+                              </span>
+                              {solution.workOrderId && (
+                                <button
+                                  onClick={() => solution.workOrderId && handleGoToMaintenance(solution.workOrderId)}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="space-y-2">
+
+                          {/* Diagnóstico */}
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Diagnóstico</p>
                             <p className="text-sm">{solution.diagnosis}</p>
                           </div>
+
+                          {/* Solución */}
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Solución aplicada</p>
                             <p className="text-sm">{solution.solution}</p>
                           </div>
+
+                          {/* Causa confirmada */}
+                          {solution.confirmedCause && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Causa confirmada</p>
+                              <p className="text-sm">{solution.confirmedCause}</p>
+                            </div>
+                          )}
+
+                          {/* Notas */}
+                          {solution.notes && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Notas adicionales</p>
+                              <p className="text-sm text-muted-foreground">{solution.notes}</p>
+                            </div>
+                          )}
+
+                          {/* Herramientas */}
+                          {toolsArr.length > 0 && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <Wrench className="h-3 w-3" /> Herramientas usadas
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {toolsArr.map((t, i) => (
+                                  <span key={i} className="text-xs bg-muted rounded px-2 py-0.5">
+                                    {t.name}{t.quantity && t.quantity > 1 ? ` ×${t.quantity}` : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Repuestos */}
+                          {partsArr.length > 0 && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <Package className="h-3 w-3" /> Repuestos usados
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {partsArr.map((p, i) => (
+                                  <span key={i} className="text-xs bg-muted rounded px-2 py-0.5">
+                                    {p.name} ×{p.quantity}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Componente / Subcomponente */}
+                          {(solution.finalComponent || solution.finalSubcomponent) && (
+                            <div className="flex flex-wrap gap-4">
+                              {solution.finalComponent && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Componente</p>
+                                  <p className="text-sm">{solution.finalComponent.name}</p>
+                                </div>
+                              )}
+                              {solution.finalSubcomponent && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Subcomponente</p>
+                                  <p className="text-sm">{solution.finalSubcomponent.name}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Archivos adjuntos */}
+                          {attachArr.length > 0 && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <Paperclip className="h-3 w-3" /> Archivos adjuntos
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {attachArr.map((att, i) => (
+                                  att.type === 'IMAGE' ? (
+                                    <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+                                      <img
+                                        src={att.url}
+                                        alt={att.filename}
+                                        className="h-16 w-16 object-cover rounded-md border hover:opacity-80 transition-opacity"
+                                      />
+                                    </a>
+                                  ) : (
+                                    <a
+                                      key={i}
+                                      href={att.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-xs text-primary hover:underline bg-muted rounded px-2 py-1"
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                      {att.filename}
+                                    </a>
+                                  )
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Plan de controles */}
+                          {controlsArr.length > 0 && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <ClipboardCheck className="h-3 w-3" /> Controles de seguimiento
+                              </p>
+                              <div className="space-y-1">
+                                {controlsArr.map((ctrl) => {
+                                  const statusColors: Record<string, string> = {
+                                    PENDING: 'text-warning',
+                                    WAITING: 'text-muted-foreground',
+                                    COMPLETED: 'text-success',
+                                    SKIPPED: 'text-muted-foreground line-through',
+                                  };
+                                  return (
+                                    <div key={ctrl.id} className="flex items-center gap-2 text-xs">
+                                      <span className="text-muted-foreground w-4 text-right shrink-0">{ctrl.order}.</span>
+                                      <span className={cn('flex-1', statusColors[ctrl.status] || '')}>
+                                        {ctrl.description}
+                                      </span>
+                                      {ctrl.scheduledAt && (
+                                        <span className="text-muted-foreground shrink-0">
+                                          {format(new Date(ctrl.scheduledAt), "d MMM HH:mm", { locale: es })}
+                                        </span>
+                                      )}
+                                      <Badge
+                                        variant="outline"
+                                        className={cn('text-[10px] px-1 py-0 h-4', statusColors[ctrl.status] || '')}
+                                      >
+                                        {ctrl.status === 'PENDING' ? 'Pendiente' : ctrl.status === 'WAITING' ? 'Esperando' : ctrl.status === 'COMPLETED' ? 'Completado' : ctrl.status}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Footer: técnico */}
                           <p className="text-xs text-muted-foreground pt-2 border-t">
                             Por {solution.performedBy?.name || 'Técnico'}
                           </p>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </TabsContent>
 

@@ -114,6 +114,7 @@ import { RecepcionDetalleModal } from '@/components/compras/recepcion-detalle-mo
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ToolSearchCombobox } from '@/components/panol/ToolSearchCombobox';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface Proveedor {
   id: string;
@@ -313,7 +314,27 @@ export default function ProveedorDetailPage() {
     unidad: 'UN',
     precioUnitario: '',
     toolId: null as number | null,
+    esGastoIndirecto: false,
+    categoriaIndirecta: '',
+    esServicio: false,
   });
+
+  // Sugerencia proactiva de Tool existente en pañol
+  const [toolSuggestions, setToolSuggestions] = useState<Array<{ id: number; name: string; code: string | null; stockQuantity: number }>>([]);
+  const debouncedNombre = useDebounce(nuevoItemForm.nombre, 400);
+
+  useEffect(() => {
+    if (!debouncedNombre.trim() || debouncedNombre.trim().length < 3 || nuevoItemForm.toolId || nuevoItemForm.esServicio) {
+      setToolSuggestions([]);
+      return;
+    }
+    const controller = new AbortController();
+    fetch(`/api/tools/search?q=${encodeURIComponent(debouncedNombre.trim())}&limit=5`, { signal: controller.signal })
+      .then(res => res.ok ? res.json() : [])
+      .then(tools => setToolSuggestions(tools))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [debouncedNombre, nuevoItemForm.toolId, nuevoItemForm.esServicio]);
 
   // Estados para vincular SupplierItem ↔ Tool del Pañol
   const [linkingItemId, setLinkingItemId] = useState<number | null>(null);
@@ -422,13 +443,16 @@ export default function ProveedorDetailPage() {
           unidad: nuevoItemForm.unidad || 'UN',
           precioUnitario: nuevoItemForm.precioUnitario ? parseFloat(nuevoItemForm.precioUnitario) : null,
           toolId: nuevoItemForm.toolId || null,
+          esGastoIndirecto: nuevoItemForm.esGastoIndirecto,
+          categoriaIndirecta: nuevoItemForm.categoriaIndirecta || null,
+          esServicio: nuevoItemForm.esServicio,
         }),
       });
 
       if (response.ok) {
         toast.success('Item creado correctamente');
         setIsNuevoItemOpen(false);
-        setNuevoItemForm({ nombre: '', descripcion: '', codigoProveedor: '', unidad: 'UN', precioUnitario: '', toolId: null });
+        setNuevoItemForm({ nombre: '', descripcion: '', codigoProveedor: '', unidad: 'UN', precioUnitario: '', toolId: null, esGastoIndirecto: false, categoriaIndirecta: '', esServicio: false });
         // Recargar items
         loadItemsProveedor(params.id as string);
       } else {
@@ -440,6 +464,34 @@ export default function ProveedorDetailPage() {
       toast.error('Error al crear el item');
     } finally {
       setIsSubmittingItem(false);
+    }
+  };
+
+  // Toggle esServicio de un item existente
+  const handleToggleServicio = async (item: any) => {
+    const nuevoValor = !item.esServicio;
+    try {
+      const response = await fetch(
+        `/api/compras/proveedores/${params.id}/items/${item.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: item.nombre,
+            unidad: item.unidad,
+            esServicio: nuevoValor,
+            esGastoIndirecto: nuevoValor ? true : item.esGastoIndirecto,
+          }),
+        }
+      );
+      if (response.ok) {
+        toast.success(nuevoValor ? 'Marcado como servicio' : 'Marcado como item físico');
+        loadItemsProveedor(params.id as string);
+      } else {
+        toast.error('Error al actualizar el item');
+      }
+    } catch {
+      toast.error('Error al actualizar el item');
     }
   };
 
@@ -2684,6 +2736,7 @@ export default function ProveedorDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nombre</TableHead>
+                        <TableHead className="text-center">Tipo</TableHead>
                         <TableHead>Código</TableHead>
                         <TableHead className="text-right">Precio Actual</TableHead>
                         <TableHead className="text-center">Variación</TableHead>
@@ -2715,6 +2768,35 @@ export default function ProveedorDetailPage() {
                               )}
                             </div>
                             <span className="text-xs text-muted-foreground">{item.unidad}</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="inline-flex"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleServicio(item);
+                                    }}
+                                  >
+                                    {item.esServicio ? (
+                                      <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                                        Servicio
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-xs cursor-pointer hover:bg-muted">
+                                        Físico
+                                      </Badge>
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Click para cambiar a {item.esServicio ? 'item físico' : 'servicio'}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </TableCell>
                           <TableCell>
                             {(item.stockLocations?.[0]?.codigoProveedor || item.codigoProveedor) ? (
@@ -2766,18 +2848,20 @@ export default function ProveedorDetailPage() {
                           </TableCell>
                           <TableCell className="text-center">
                             {item.tool ? (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="secondary" className="text-xs gap-1 cursor-default">
-                                    <Link2 className="w-3 h-3" />
-                                    {item.tool.code || item.tool.name.substring(0, 12)}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="font-medium">{item.tool.name}</p>
-                                  <p className="text-xs">Stock: {item.tool.stockQuantity} u.</p>
-                                </TooltipContent>
-                              </Tooltip>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="secondary" className="text-xs gap-1 cursor-default">
+                                      <Link2 className="w-3 h-3" />
+                                      {item.tool.code || item.tool.name.substring(0, 12)}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-medium">{item.tool.name}</p>
+                                    <p className="text-xs">Stock: {item.tool.stockQuantity} u.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ) : (
                               <Button
                                 variant="ghost"
@@ -4676,6 +4760,35 @@ export default function ProveedorDetailPage() {
                 value={nuevoItemForm.nombre}
                 onChange={(e) => setNuevoItemForm(prev => ({ ...prev, nombre: e.target.value }))}
               />
+              {toolSuggestions.length > 0 && !nuevoItemForm.toolId && (
+                <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-2.5 mt-1.5">
+                  <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1.5 flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5" />
+                    Ya existe en pañol — se vinculará automáticamente:
+                  </p>
+                  <div className="space-y-1">
+                    {toolSuggestions.map(tool => (
+                      <button
+                        key={tool.id}
+                        type="button"
+                        className="w-full text-left text-xs px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 flex items-center justify-between group transition-colors"
+                        onClick={() => setNuevoItemForm(prev => ({ ...prev, toolId: tool.id }))}
+                      >
+                        <span className="text-blue-800 dark:text-blue-300">
+                          {tool.code && <span className="font-mono text-blue-500 mr-1.5">{tool.code}</span>}
+                          {tool.name}
+                        </span>
+                        <span className="text-blue-500 dark:text-blue-400 text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">
+                          Vincular
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-blue-500 dark:text-blue-500 mt-1">
+                    Si no seleccionás ninguno, se creará uno nuevo en pañol.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="item-descripcion">Descripción</Label>
@@ -4741,17 +4854,59 @@ export default function ProveedorDetailPage() {
                 El precio se actualizará automáticamente con cada factura cargada
               </p>
             </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label className="text-sm font-medium">¿Es servicio?</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  No genera movimiento de stock (internet, VPS, seguros, honorarios, etc.)
+                </p>
+              </div>
+              <Switch
+                checked={nuevoItemForm.esServicio}
+                onCheckedChange={(v) => setNuevoItemForm(prev => ({ ...prev, esServicio: v, esGastoIndirecto: v ? true : prev.esGastoIndirecto }))}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label className="text-sm font-medium">¿Es gasto indirecto?</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Se clasifica como costo indirecto en Costos V2
+                </p>
+              </div>
+              <Switch
+                checked={nuevoItemForm.esGastoIndirecto}
+                onCheckedChange={(v) => setNuevoItemForm(prev => ({ ...prev, esGastoIndirecto: v, categoriaIndirecta: v ? prev.categoriaIndirecta : '' }))}
+              />
+            </div>
+            {nuevoItemForm.esGastoIndirecto && (
+              <Select
+                value={nuevoItemForm.categoriaIndirecta}
+                onValueChange={(v) => setNuevoItemForm(prev => ({ ...prev, categoriaIndirecta: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Categoría de costo indirecto..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IMP_SERV">Impuestos y Servicios</SelectItem>
+                  <SelectItem value="SOCIAL">Cargas Sociales</SelectItem>
+                  <SelectItem value="VEHICLES">Vehículos</SelectItem>
+                  <SelectItem value="MKT">Marketing</SelectItem>
+                  <SelectItem value="UTILITIES">Servicios Públicos</SelectItem>
+                  <SelectItem value="OTHER">Otros</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-muted-foreground">
-                Vincular con Pañol (opcional)
+                Vincular a item existente en pañol (opcional)
               </Label>
               <ToolSearchCombobox
                 value={nuevoItemForm.toolId}
                 onSelect={(id) => setNuevoItemForm(prev => ({ ...prev, toolId: id }))}
-                placeholder="Buscar repuesto en pañol..."
+                placeholder="Buscar item en pañol..."
               />
               <p className="text-xs text-muted-foreground">
-                Si vinculas con un item del pañol, las recepciones actualizarán el stock automáticamente
+                Si dejás vacío, se crea automáticamente en el pañol. Usá este campo solo si el item ya existe en el pañol y querés vincularlo.
               </p>
             </div>
           </div>
@@ -4775,8 +4930,8 @@ export default function ProveedorDetailPage() {
               Vincular con Pañol
             </DialogTitle>
             <DialogDescription>
-              Selecciona el item del pañol que corresponde a este producto del proveedor.
-              Las futuras recepciones actualizarán el stock del pañol automáticamente.
+              Si este item ya existe en el pañol, seleccionalo para vincularlos.
+              El stock se actualiza automáticamente al confirmar recepciones.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { cn, formatNumber } from '@/lib/utils';
-import { Clock, FileText, CheckCircle, Upload, X, Loader2 } from "lucide-react";
+import { formatNumber } from '@/lib/utils';
+import { Clock, FileText, CheckCircle, Upload, X, Loader2, Minus, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,28 +12,36 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+
+// ── Design tokens (equal to FixedTaskDetailSheet) ────────────────────────────
+
+const FREQ_CONF: Record<string, { label: string; short: string; bg: string; border: string; color: string }> = {
+  diaria:     { label: 'Diaria',     short: 'D',  bg: '#EDF4F0', border: '#C2D4C8', color: '#305848' },
+  semanal:    { label: 'Semanal',    short: 'S',  bg: '#EEF3F8', border: '#CCDAE8', color: '#3A5878' },
+  quincenal:  { label: 'Quincenal',  short: 'Q',  bg: '#F5F2EA', border: '#DED5B0', color: '#685C30' },
+  mensual:    { label: 'Mensual',    short: 'M',  bg: '#F3EFF8', border: '#D8CBE8', color: '#584878' },
+  trimestral: { label: 'Trimestral', short: 'T',  bg: '#FAF0EB', border: '#E8D0C0', color: '#784838' },
+  semestral:  { label: 'Semestral',  short: 'Se', bg: '#EBF4F4', border: '#B8D8D8', color: '#305858' },
+  anual:      { label: 'Anual',      short: 'A',  bg: '#F0EEF8', border: '#C8C4D8', color: '#484858' },
+};
+
+const PRIORITY_CONF: Record<string, { label: string; bg: string; text: string }> = {
+  baja:  { label: 'Baja',  bg: '#F3F4F6', text: '#6B7280' },
+  media: { label: 'Media', bg: '#EFF6FF', text: '#1D4ED8' },
+  alta:  { label: 'Alta',  bg: '#FEF3C7', text: '#D97706' },
+};
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface FixedTask {
   id: string;
   title: string;
   description: string;
   frequency: 'diaria' | 'semanal' | 'quincenal' | 'mensual' | 'trimestral' | 'semestral' | 'anual';
-  assignedTo: {
-    id: string;
-    name: string;
-  };
+  assignedTo: { id: string; name: string };
   department: string;
-  instructives: {
-    id: string;
-    title: string;
-    content: string;
-    attachments?: string[];
-  }[];
+  instructives: { id: string; title: string; content: string; attachments?: string[] }[];
   estimatedTime: number;
   priority: 'baja' | 'media' | 'alta';
   isActive: boolean;
@@ -59,28 +67,18 @@ interface ExecutionData {
   completedAt: string;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 function formatTime(minutes: number): string {
-  if (minutes < 60) return `${minutes} minutos`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}min` : `${hours} horas`;
+  if (minutes < 60) return `${minutes}min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h}h ${m}min` : `${h}h`;
 }
 
-function getPriorityColor(priority: string) {
-  switch (priority) {
-    case 'alta': return 'bg-destructive/10 text-destructive border-destructive/30';
-    case 'media': return 'bg-warning-muted text-warning-muted-foreground border-warning-muted';
-    case 'baja': return 'bg-success-muted text-success-muted-foreground border-success-muted';
-    default: return 'bg-muted text-muted-foreground border-border';
-  }
-}
+// ── Component ────────────────────────────────────────────────────────────────
 
-export function TaskExecutionModal({ 
-  task, 
-  isOpen, 
-  onClose, 
-  onComplete 
-}: TaskExecutionModalProps) {
+export function TaskExecutionModal({ task, isOpen, onClose, onComplete }: TaskExecutionModalProps) {
   const [actualTime, setActualTime] = useState<number>(task?.estimatedTime || 0);
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -88,6 +86,13 @@ export function TaskExecutionModal({
   const [startTime] = useState<Date>(new Date());
 
   if (!task) return null;
+
+  const freqCfg = FREQ_CONF[task.frequency] ?? FREQ_CONF.mensual;
+  const priCfg = PRIORITY_CONF[task.priority] ?? PRIORITY_CONF.baja;
+
+  const timeDiff = actualTime - task.estimatedTime;
+  const isOverTime = timeDiff > 0;
+  const isUnderTime = timeDiff < 0;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -100,23 +105,18 @@ export function TaskExecutionModal({
 
   const handleComplete = async () => {
     setIsCompleting(true);
-    
     const executionData: ExecutionData = {
       actualTime,
       notes,
       attachments,
-      executedBy: "Usuario Actual", // En la app real, esto vendría del contexto de auth
-      completedAt: new Date().toISOString()
+      executedBy: "Usuario Actual",
+      completedAt: new Date().toISOString(),
     };
-
     try {
       await onComplete(task.id, executionData);
-      
-      // Reset form
       setActualTime(task.estimatedTime);
       setNotes("");
       setAttachments([]);
-      
       onClose();
     } catch (error) {
       console.error("Error al completar tarea:", error);
@@ -125,196 +125,231 @@ export function TaskExecutionModal({
     }
   };
 
-  const timeDifference = actualTime - task.estimatedTime;
-  const isOverTime = timeDifference > 0;
-  const isUnderTime = timeDifference < 0;
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <DialogTitle className="text-xl font-semibold text-foreground">
-                Ejecutar Tarea
-              </DialogTitle>
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant="outline" 
-                  className={getPriorityColor(task.priority)}
-                >
-                  Prioridad {task.priority}
-                </Badge>
-                <Badge variant="outline">
-                  {task.department}
-                </Badge>
+          {/* Compact task header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                {/* Frequency badge */}
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  padding: '3px 10px', borderRadius: '999px',
+                  background: freqCfg.bg, border: `1px solid ${freqCfg.border}`,
+                  fontSize: '11px', fontWeight: 700, color: freqCfg.color,
+                }}>
+                  {freqCfg.short} · {freqCfg.label}
+                </span>
+                {/* Priority badge */}
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  padding: '3px 10px', borderRadius: '999px',
+                  background: priCfg.bg,
+                  fontSize: '11px', fontWeight: 700, color: priCfg.text,
+                }}>
+                  {priCfg.label}
+                </span>
               </div>
+              <DialogTitle style={{ fontSize: '17px', fontWeight: 700, color: '#111827', lineHeight: 1.3, letterSpacing: '-0.02em' }}>
+                {task.title}
+              </DialogTitle>
+              {task.description && (
+                <p style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px', lineHeight: 1.5 }}>
+                  {task.description}
+                </p>
+              )}
             </div>
-            
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Iniciado:</p>
-              <p className="text-sm font-medium text-foreground">
-                {startTime.toLocaleTimeString()}
+            {/* Start time */}
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <p style={{ fontSize: '10px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Inicio</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginTop: '2px' }}>
+                {startTime.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           </div>
         </DialogHeader>
 
-        <DialogBody className="space-y-6">
-          {/* Información de la tarea */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {task.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{task.description}</p>
-            </CardContent>
-          </Card>
+        <DialogBody className="space-y-5">
 
           {/* Tiempo de ejecución */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Tiempo de Ejecución
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div style={{ border: '1px solid #E4E4E8', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #F0F0F4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock style={{ height: '14px', width: '14px', color: '#9CA3AF', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', letterSpacing: '-0.01em' }}>Tiempo de ejecución</span>
+            </div>
+            <div style={{ padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Tiempo estimado
-                  </label>
-                  <p className="text-foreground font-medium">
-                    {formatTime(task.estimatedTime)}
-                  </p>
+                  <p style={{ fontSize: '10px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Estimado</p>
+                  <p style={{ fontSize: '20px', fontWeight: 700, color: '#111827' }}>{formatTime(task.estimatedTime)}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Tiempo real (minutos)
-                  </label>
-                  <Input
-                    type="number"
-                    value={actualTime}
-                    onChange={(e) => setActualTime(Number(e.target.value))}
-                    min="1"
-                    className="mt-1"
-                  />
+                {/* +/- time control */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tiempo real</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={() => setActualTime(t => Math.max(1, t - 5))}
+                      style={{
+                        width: '30px', height: '30px', borderRadius: '8px',
+                        border: '1px solid #E4E4E8', background: '#FAFAFA',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', transition: 'all 120ms ease', color: '#374151',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#FAFAFA'; }}
+                    >
+                      <Minus style={{ height: '12px', width: '12px' }} />
+                    </button>
+                    <div style={{ textAlign: 'center', minWidth: '72px' }}>
+                      <p style={{ fontSize: '20px', fontWeight: 700, color: '#111827' }}>{formatTime(actualTime)}</p>
+                      <p style={{ fontSize: '10px', color: '#9CA3AF' }}>{actualTime} min</p>
+                    </div>
+                    <button
+                      onClick={() => setActualTime(t => t + 5)}
+                      style={{
+                        width: '30px', height: '30px', borderRadius: '8px',
+                        border: '1px solid #E4E4E8', background: '#FAFAFA',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', transition: 'all 120ms ease', color: '#374151',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#FAFAFA'; }}
+                    >
+                      <Plus style={{ height: '12px', width: '12px' }} />
+                    </button>
+                  </div>
                 </div>
               </div>
-              
-              {timeDifference !== 0 && (
-                <div className={cn('p-3 rounded-lg border', isOverTime ? 'bg-destructive/10 border-destructive/30 text-destructive' : 'bg-success-muted border-success-muted text-success')}>
-                  <p className="text-sm font-medium">
-                    {isOverTime 
-                      ? `⚠️ Tiempo excedido en ${Math.abs(timeDifference)} minutos` 
-                      : `✅ Completado ${Math.abs(timeDifference)} minutos antes`
-                    }
+
+              {/* Time diff indicator */}
+              {timeDiff !== 0 && (
+                <div style={{
+                  padding: '8px 12px', borderRadius: '8px',
+                  background: isOverTime ? '#FEF2F2' : '#ECFDF5',
+                  border: `1px solid ${isOverTime ? '#FECACA' : '#A7F3D0'}`,
+                }}>
+                  <p style={{ fontSize: '12px', fontWeight: 600, color: isOverTime ? '#DC2626' : '#059669' }}>
+                    {isOverTime
+                      ? `⚠ Tiempo excedido en ${Math.abs(timeDiff)} min`
+                      : `✓ Completado ${Math.abs(timeDiff)} min antes del estimado`}
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Notas de ejecución */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Notas de Ejecución</CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Notas */}
+          <div style={{ border: '1px solid #E4E4E8', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #F0F0F4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText style={{ height: '14px', width: '14px', color: '#9CA3AF', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', letterSpacing: '-0.01em' }}>Notas de ejecución</span>
+              <span style={{ fontSize: '11px', color: '#C8C8D0', marginLeft: 'auto' }}>Opcional</span>
+            </div>
+            <div style={{ padding: '14px 16px' }}>
               <Textarea
-                placeholder="Describe cómo se realizó la tarea, observaciones, problemas encontrados, etc."
+                placeholder="Observaciones, problemas encontrados, acciones tomadas..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-                className="resize-none"
+                rows={3}
+                style={{
+                  resize: 'none', border: '1px solid #E4E4E8', borderRadius: '8px',
+                  fontSize: '13px', color: '#374151', padding: '10px 12px',
+                  outline: 'none', width: '100%', background: '#FAFAFA',
+                }}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Archivos adjuntos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Archivos Adjuntos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-muted/50 transition-colors">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Clic para subir archivos (PDF, DOC, imágenes)
-                    </p>
-                  </div>
-                </label>
-              </div>
+          {/* Adjuntos */}
+          <div style={{ border: '1px solid #E4E4E8', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #F0F0F4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Upload style={{ height: '14px', width: '14px', color: '#9CA3AF', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', letterSpacing: '-0.01em' }}>Archivos adjuntos</span>
+              {attachments.length > 0 && (
+                <span style={{ fontSize: '11px', fontWeight: 600, padding: '1px 7px', borderRadius: '999px', background: '#F3F4F6', color: '#6B7280', marginLeft: 'auto' }}>
+                  {attachments.length}
+                </span>
+              )}
+            </div>
+            <div style={{ padding: '14px 16px' }}>
+              <input type="file" multiple onChange={handleFileUpload} className="hidden" id="exec-file-upload" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+              <label htmlFor="exec-file-upload" style={{ cursor: 'pointer', display: 'block' }}>
+                <div style={{
+                  border: '1.5px dashed #D8D8DE', borderRadius: '8px',
+                  padding: '16px', textAlign: 'center',
+                  transition: 'all 150ms ease', background: '#FAFAFA',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F3F4F6'; (e.currentTarget as HTMLDivElement).style.borderColor = '#B8B8C0'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '#FAFAFA'; (e.currentTarget as HTMLDivElement).style.borderColor = '#D8D8DE'; }}
+                >
+                  <Upload style={{ height: '20px', width: '20px', margin: '0 auto 6px', color: '#C8C8D0' }} />
+                  <p style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 500 }}>PDF, DOC, JPG, PNG</p>
+                </div>
+              </label>
 
               {attachments.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">Archivos seleccionados:</p>
+                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {attachments.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded border">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        <span className="text-sm text-foreground">{file.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ({formatNumber(file.size / 1024, 1)} KB)
-                        </span>
+                    <div key={index} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 10px', borderRadius: '8px',
+                      background: '#F9FAFB', border: '1px solid #F0F0F4',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <FileText style={{ height: '14px', width: '14px', color: '#6B7280', flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', color: '#374151', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                        <span style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>({formatNumber(file.size / 1024, 1)} KB)</span>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      <button
                         onClick={() => removeAttachment(index)}
-                        className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                        style={{ height: '20px', width: '20px', borderRadius: '4px', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', flexShrink: 0, transition: 'all 100ms ease' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
+                        <X style={{ height: '11px', width: '11px' }} />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose} disabled={isCompleting}>
             Cancelar
           </Button>
-          <Button
-            size="sm"
+          <button
             onClick={handleComplete}
             disabled={isCompleting}
-            className="bg-success hover:bg-success/90 text-white"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '8px 20px', borderRadius: '8px', border: 'none',
+              background: isCompleting ? '#374151' : '#111827',
+              color: '#FFFFFF', fontSize: '13px', fontWeight: 600,
+              cursor: isCompleting ? 'not-allowed' : 'pointer',
+              transition: 'background 150ms ease', opacity: isCompleting ? 0.7 : 1,
+            }}
+            onMouseEnter={e => { if (!isCompleting) e.currentTarget.style.background = '#374151'; }}
+            onMouseLeave={e => { if (!isCompleting) e.currentTarget.style.background = '#111827'; }}
           >
             {isCompleting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 style={{ height: '14px', width: '14px', animation: 'spin 1s linear infinite' }} />
                 Completando...
               </>
             ) : (
               <>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Completar Tarea
+                <CheckCircle style={{ height: '14px', width: '14px' }} />
+                Completar tarea
               </>
             )}
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-} 
+}

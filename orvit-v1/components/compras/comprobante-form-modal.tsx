@@ -49,13 +49,15 @@ import {
  Edit,
  CheckCircle,
  FileText,
- AlertCircle
+ AlertCircle,
+ Package
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { cn, formatNumber } from '@/lib/utils';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface Proveedor {
  id: string;
@@ -72,6 +74,9 @@ interface ProveedorItem {
  unidad: string;
  precioUnitario?: number;
  proveedorId: string;
+ esGastoIndirecto?: boolean;
+ categoriaIndirecta?: string | null;
+ esServicio?: boolean;
  // Datos de stock (para mostrar nombre real usado en recepciones)
  stockLocations?: Array<{
  descripcionItem?: string;
@@ -128,6 +133,8 @@ const tiposComprobantesT1 = [
  'Recibo A',
  'Recibo B',
  'Recibo C',
+ 'VEP',
+ 'Boleta de Pago',
 ];
 
 // Additional document types available for configuration
@@ -217,6 +224,10 @@ export default function ComprobanteFormModal({
  // Clasificación como Costo Indirecto (Costos V2)
  esIndirecto: false,
  indirectCategory: '' as string,
+ // Devengamiento / Prorrateo
+ prorratear: false,
+ prorrateoMeses: 12 as number,
+ prorrateoFechaInicio: '' as string, // YYYY-MM
  });
 
  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -234,7 +245,27 @@ export default function ComprobanteFormModal({
  codigoProveedor: '',
  unidad: '',
  precioUnitario: '',
+ esGastoIndirecto: false,
+ categoriaIndirecta: '',
+ esServicio: false,
  });
+ // Sugerencia proactiva de Tool existente en pañol
+ const [toolSuggestions, setToolSuggestions] = useState<Array<{ id: number; name: string; code: string | null; stockQuantity: number }>>([]);
+ const debouncedNewItemNombre = useDebounce(newItemForm.nombre, 400);
+
+ useEffect(() => {
+ if (!debouncedNewItemNombre.trim() || debouncedNewItemNombre.trim().length < 3 || newItemForm.esServicio) {
+   setToolSuggestions([]);
+   return;
+ }
+ const controller = new AbortController();
+ fetch(`/api/tools/search?q=${encodeURIComponent(debouncedNewItemNombre.trim())}&limit=5`, { signal: controller.signal })
+   .then(res => res.ok ? res.json() : [])
+   .then(tools => setToolSuggestions(tools))
+   .catch(() => {});
+ return () => controller.abort();
+ }, [debouncedNewItemNombre, newItemForm.esServicio]);
+
  const [cuentas, setCuentas] = useState<Array<{ id: string; nombre: string; descripcion?: string; activa: boolean }>>([]);
  const [loadingCuentas, setLoadingCuentas] = useState(false);
  const [cuentaPopoverOpen, setCuentaPopoverOpen] = useState(false);
@@ -246,15 +277,13 @@ export default function ComprobanteFormModal({
  });
  const [cuentaSearch, setCuentaSearch] = useState('');
  const [iva21Manual, setIva21Manual] = useState(false);
+ const [netoManual, setNetoManual] = useState(false);
  // Buffer de tipeo para campos monetarios — evita que formatMoney interfiera mientras se tipea
  const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
  const startRawEdit = (id: string, raw: string) =>
    setRawInputs(prev => ({ ...prev, [id]: raw }));
  const stopRawEdit = (id: string) =>
    setRawInputs(prev => { const n = { ...prev }; delete n[id]; return n; });
-
- // Estado para Conceptos del Gasto Indirecto
- const [conceptos, setConceptos] = useState<Array<{ id: string; descripcion: string; monto: string }>>([]);
 
  // Estado para Notas de Crédito/Débito
  const [devoluciones, setDevoluciones] = useState<Array<{
@@ -470,6 +499,11 @@ export default function ComprobanteFormModal({
  observaciones: c.observaciones || '',
  esIndirecto: c.esIndirecto ?? false,
  indirectCategory: c.indirectCategory ?? '',
+ prorratear: c.prorratear ?? false,
+ prorrateoMeses: c.prorrateoMeses ?? 12,
+ prorrateoFechaInicio: c.prorrateoFechaInicio
+   ? c.prorrateoFechaInicio.substring(0, 7) // YYYY-MM-DD → YYYY-MM
+   : '',
  };
 
  // Inicializar dateInputValues para mostrar fechas en formato dd/mm/yyyy
@@ -495,18 +529,6 @@ export default function ComprobanteFormModal({
 
  // Establecer el formData
  setFormData(mappedFormData);
-
- // Cargar conceptos indirectos (items con itemId=null)
- const conceptosIniciales = (c.items || [])
- .filter((i: any) => i.itemId === null)
- .map((i: any) => ({
- id: String(i.id),
- descripcion: i.descripcion || '',
- monto: i.precioUnitario != null && Number(i.precioUnitario) > 0
- ? Number(i.precioUnitario).toFixed(2)
- : '',
- }));
- setConceptos(conceptosIniciales);
 
  // Recalcular totales con los datos mapeados directamente
  calculateTotal(mappedFormData, isIva21Manual);
@@ -642,6 +664,9 @@ export default function ComprobanteFormModal({
  precioUnitario: item.precioUnitario ? Number(item.precioUnitario) : undefined,
  proveedorId: String(item.supplierId),
  stockLocations: item.stockLocations || [],
+ esGastoIndirecto: item.esGastoIndirecto ?? false,
+ categoriaIndirecta: item.categoriaIndirecta ?? null,
+ esServicio: item.esServicio ?? false,
  }));
  setProveedorItems(mapped);
  } catch (error) {
@@ -667,22 +692,6 @@ export default function ComprobanteFormModal({
  }
  };
 
- const loadConceptosProveedor = async (proveedorId: string, esIndirectoActual: boolean) => {
- if (!esIndirectoActual) return;
- try {
- const res = await fetch(`/api/compras/proveedores/${proveedorId}/conceptos`);
- if (!res.ok) return;
- const data: Array<{ id: number; descripcion: string; monto: string | null }> = await res.json();
- if (data.length > 0 && conceptos.length === 0) {
- setConceptos(data.map((c) => ({
- id: `prefill-${c.id}`,
- descripcion: c.descripcion,
- monto: c.monto ? String(c.monto) : '',
- })));
- }
- } catch { /* silencioso */ }
- };
-
  const selectProveedor = (proveedor: Proveedor) => {
  setFormData({
  ...formData,
@@ -693,7 +702,6 @@ export default function ComprobanteFormModal({
  });
  setProveedorPopoverOpen(false);
  loadProveedorItems(proveedor.id);
- loadConceptosProveedor(proveedor.id, formData.esIndirecto);
  // Si es NCA_DEVOLUCION, cargar devoluciones del proveedor
  if (formData.tipoNca === 'NCA_DEVOLUCION') {
  loadDevolucionesProveedor(proveedor.id);
@@ -768,12 +776,16 @@ export default function ComprobanteFormModal({
  codigoProveedor: newItemForm.codigoProveedor || undefined,
  unidad: newItemForm.unidad,
  precioUnitario: newItemForm.precioUnitario || undefined,
+ esGastoIndirecto: newItemForm.esGastoIndirecto,
+ categoriaIndirecta: newItemForm.categoriaIndirecta || null,
+ esServicio: newItemForm.esServicio,
  }),
  });
 
  if (!response.ok) {
  const errorData = await response.json().catch(() => null);
- throw new Error(errorData?.error || 'Error al crear el item');
+ const msg = errorData?.detail ? `${errorData.error}: ${errorData.detail}` : (errorData?.error || 'Error al crear el item');
+ throw new Error(msg);
  }
 
  const saved = await response.json();
@@ -785,6 +797,9 @@ export default function ComprobanteFormModal({
  unidad: saved.unidad,
  precioUnitario: saved.precioUnitario ? Number(saved.precioUnitario) : undefined,
  proveedorId: String(saved.supplierId),
+ esGastoIndirecto: saved.esGastoIndirecto ?? false,
+ categoriaIndirecta: saved.categoriaIndirecta ?? null,
+ esServicio: saved.esServicio ?? false,
  };
 
  if (editingProveedorItem) {
@@ -813,9 +828,9 @@ export default function ComprobanteFormModal({
  setItemPopoverOpen(prev => ({ ...prev, [creatingItemFor]: false }));
 
  toast.success(editingProveedorItem ? 'Item actualizado exitosamente' : 'Item creado exitosamente');
- } catch (error) {
+ } catch (error: any) {
  console.error('Error creating item:', error);
- toast.error('Error al crear el item');
+ toast.error(error?.message || 'Error al crear el item');
  }
  };
 
@@ -840,9 +855,17 @@ export default function ComprobanteFormModal({
  }
  return item;
  });
- const updatedFormData = { ...formData, items: updatedItems };
- setFormData(updatedFormData);
- calculateTotal(updatedFormData);
+ let finalFormData = { ...formData, items: updatedItems };
+ // Auto-marcar como costo indirecto si el item es servicio o está configurado como gasto indirecto
+ if (proveedorItem.esGastoIndirecto || proveedorItem.esServicio) {
+ finalFormData = {
+ ...finalFormData,
+ esIndirecto: true,
+ indirectCategory: finalFormData.indirectCategory || proveedorItem.categoriaIndirecta || '',
+ };
+ }
+ setFormData(finalFormData);
+ calculateTotal(finalFormData);
  };
 
  const handleCodigoProveedorChange = (itemId: string, value: string) => {
@@ -883,16 +906,19 @@ export default function ComprobanteFormModal({
  calculateTotal(updatedFormData);
  };
 
- const calculateTotal = (formDataToCalculate?: typeof formData, useIva21Manual?: boolean) => {
+ const calculateTotal = (formDataToCalculate?: typeof formData, useIva21Manual?: boolean, useNetoManual?: boolean) => {
  const data = formDataToCalculate || formData;
  const shouldUseManualIva = useIva21Manual !== undefined ? useIva21Manual : iva21Manual;
+ const shouldUseManualNeto = useNetoManual !== undefined ? useNetoManual : netoManual;
  const itemsToCalculate = data.items;
- 
+
  const subtotalItems = itemsToCalculate.reduce((sum, item) => {
  return sum + (parseFloat(item.subtotal) || 0);
  }, 0);
 
- const neto = subtotalItems;
+ const neto = shouldUseManualNeto
+ ? (parseFloat(String(data.neto || '0')) || 0)
+ : subtotalItems;
  
  const iva21 = shouldUseManualIva
  ? (parseFloat(String(data.iva21 || '0')) || 0)
@@ -924,6 +950,7 @@ export default function ComprobanteFormModal({
 
  // Normalizar campos monetarios para permitir puntos como separador de miles
  const moneyFields = [
+ 'neto',
  'iva21',
  'noGravado',
  'impInter',
@@ -1288,6 +1315,9 @@ export default function ComprobanteFormModal({
  // Costo Indirecto
  esIndirecto: false,
  indirectCategory: '',
+ prorratear: false,
+ prorrateoMeses: 12,
+ prorrateoFechaInicio: '',
  });
  setDateInputValues({
  fechaEmision: formatDateToDDMMYYYY(todayISO),
@@ -1305,7 +1335,7 @@ export default function ComprobanteFormModal({
  precioUnitario: '',
  });
  setIva21Manual(false);
- setConceptos([]);
+ setNetoManual(false);
  // Reset NCA/NDA state
  setDevoluciones([]);
  setFacturasProveedor([]);
@@ -1319,7 +1349,9 @@ export default function ComprobanteFormModal({
  return;
  }
 
- if (!formData.numeroSerie || !formData.numeroFactura) {
+ const tiposSinSerie = ['VEP', 'Boleta de Pago'];
+ const requiereNumeracion = !tiposSinSerie.includes(formData.tipo);
+ if (requiereNumeracion && (!formData.numeroSerie || !formData.numeroFactura)) {
  toast.error('Debes completar número de serie y número de factura');
  return;
  }
@@ -1395,19 +1427,6 @@ export default function ComprobanteFormModal({
  subtotal: item.subtotal,
  proveedorId: item.proveedorId || formData.proveedorId,
  })),
- // Conceptos del gasto indirecto (solo si esIndirecto)
- ...(formData.esIndirecto
- ? conceptos
- .filter(c => c.descripcion.trim())
- .map(c => ({
- descripcion: c.descripcion,
- cantidad: '1',
- unidad: 'UN',
- precioUnitario: c.monto || '0',
- subtotal: c.monto || '0',
- isIndirectConcept: true,
- }))
- : []),
  ];
 
  // Si es Nota de Crédito o Nota de Débito, usar API especializada
@@ -1492,6 +1511,10 @@ export default function ComprobanteFormModal({
  // Costo Indirecto (Costos V2)
  esIndirecto: formData.esIndirecto,
  indirectCategory: formData.esIndirecto ? (formData.indirectCategory || null) : null,
+ // Prorrateo / Devengamiento
+ prorratear: formData.esIndirecto ? formData.prorratear : false,
+ prorrateoMeses: formData.esIndirecto && formData.prorratear ? formData.prorrateoMeses : null,
+ prorrateoFechaInicio: formData.esIndirecto && formData.prorratear ? (formData.prorrateoFechaInicio || null) : null,
  };
 
  const docType = getDocTypeFromTipo(formData.tipo);
@@ -1751,15 +1774,20 @@ export default function ComprobanteFormModal({
  {/* Número de Serie y Número de Factura */}
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
- <Label htmlFor="numeroSerie">Número de Serie *</Label>
+ <Label htmlFor="numeroSerie">{['VEP', 'Boleta de Pago'].includes(formData.tipo) ? 'N° Referencia (opcional)' : 'Número de Serie *'}</Label>
  <Input
  id="numeroSerie"
  value={formData.numeroSerie}
  onChange={(e) => {
+ if (['VEP', 'Boleta de Pago'].includes(formData.tipo)) {
+ setFormData({ ...formData, numeroSerie: e.target.value });
+ } else {
  const value = e.target.value.replace(/\D/g, '');
  setFormData({ ...formData, numeroSerie: value });
+ }
  }}
  onBlur={(e) => {
+ if (['VEP', 'Boleta de Pago'].includes(formData.tipo)) return;
  const value = e.target.value.replace(/\D/g, '');
  if (value) {
  const padded = value.padStart(5, '0');
@@ -1770,29 +1798,35 @@ export default function ComprobanteFormModal({
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
+ if (!['VEP', 'Boleta de Pago'].includes(formData.tipo)) {
  const value = formData.numeroSerie.replace(/\D/g, '');
  if (value) {
  const padded = value.padStart(5, '0');
  const finalValue = padded.length > 5 ? padded.slice(-5) : padded;
  setFormData({ ...formData, numeroSerie: finalValue });
  }
+ }
  moveToNextField('numeroSerie');
  }
  }}
- placeholder="00001"
- required
+ placeholder={['VEP', 'Boleta de Pago'].includes(formData.tipo) ? 'Ej: referencia interna' : '00001'}
  />
  </div>
  <div className="space-y-2">
- <Label htmlFor="numeroFactura">Número de Factura *</Label>
+ <Label htmlFor="numeroFactura">{['VEP', 'Boleta de Pago'].includes(formData.tipo) ? 'N° VEP / Boleta *' : 'Número de Factura *'}</Label>
  <Input
  id="numeroFactura"
  value={formData.numeroFactura}
  onChange={(e) => {
+ if (['VEP', 'Boleta de Pago'].includes(formData.tipo)) {
+ setFormData({ ...formData, numeroFactura: e.target.value });
+ } else {
  const value = e.target.value.replace(/\D/g, '');
  setFormData({ ...formData, numeroFactura: value });
+ }
  }}
  onBlur={(e) => {
+ if (['VEP', 'Boleta de Pago'].includes(formData.tipo)) return;
  const value = e.target.value.replace(/\D/g, '');
  if (value) {
  const padded = value.padStart(8, '0');
@@ -1803,17 +1837,18 @@ export default function ComprobanteFormModal({
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
  e.preventDefault();
+ if (!['VEP', 'Boleta de Pago'].includes(formData.tipo)) {
  const value = formData.numeroFactura.replace(/\D/g, '');
  if (value) {
  const padded = value.padStart(8, '0');
  const finalValue = padded.length > 8 ? padded.slice(-8) : padded;
  setFormData({ ...formData, numeroFactura: finalValue });
  }
+ }
  moveToNextField('numeroFactura');
  }
  }}
- placeholder="00001234"
- required
+ placeholder={['VEP', 'Boleta de Pago'].includes(formData.tipo) ? 'Número completo del VEP' : '00001234'}
  />
  </div>
  </div>
@@ -2033,7 +2068,7 @@ export default function ComprobanteFormModal({
  />
  </TableCell>
  <TableCell>
- {formData.proveedorId && proveedorItems.length > 0 ? (
+ {formData.proveedorId ? (
  <Popover 
  open={itemPopoverOpen[item.id] || false}
  onOpenChange={(open) => {
@@ -2128,6 +2163,9 @@ export default function ComprobanteFormModal({
  precioUnitario: proveedorItem.precioUnitario
  ? String(proveedorItem.precioUnitario)
  : '',
+ esGastoIndirecto: proveedorItem.esGastoIndirecto ?? false,
+ categoriaIndirecta: proveedorItem.categoriaIndirecta ?? '',
+ esServicio: proveedorItem.esServicio ?? false,
  });
  setCreatingItemFor(item.id);
  setIsCreateItemModalOpen(true);
@@ -2157,7 +2195,7 @@ export default function ComprobanteFormModal({
  <Input
  value={item.descripcion}
  onChange={(e) => updateItem(item.id, 'descripcion', e.target.value)}
- placeholder={formData.proveedorId ? "Selecciona un proveedor primero" : "Nombre del item"}
+ placeholder={!formData.proveedorId ? "Selecciona un proveedor primero" : "Escribí el nombre del item"}
  disabled={!formData.proveedorId}
  required
  />
@@ -2304,14 +2342,47 @@ export default function ComprobanteFormModal({
  <div className="space-y-4 border-t pt-4">
  <div className="grid grid-cols-3 gap-4">
  <div className="space-y-2">
- <Label htmlFor="neto">Neto *</Label>
+ <Label htmlFor="neto">
+ Neto *
+ {netoManual && (
+ <span className="ml-1 text-xs text-amber-600 font-normal">(manual)</span>
+ )}
+ </Label>
  <Input
  id="neto"
  type="text"
- value={formatMoney(formData.neto || '0')}
- readOnly
- className="bg-muted"
- placeholder="0.00"
+ value={rawInputs['neto'] !== undefined ? rawInputs['neto'] : (formData.neto ? formatMoney(formData.neto) : '')}
+ onFocus={(e) => { startRawEdit('neto', e.target.value); e.target.select(); }}
+ onChange={(e) => {
+ startRawEdit('neto', e.target.value);
+ setNetoManual(true);
+ handleFieldChange('neto', e.target.value);
+ }}
+ onBlur={(e) => {
+ stopRawEdit('neto');
+ if (!e.target.value || e.target.value === '0' || e.target.value === '0,00') {
+ setNetoManual(false);
+ calculateTotal(undefined, undefined, false);
+ }
+ }}
+ onKeyDown={(e) => {
+ if (e.key === '.' || e.code === 'NumpadDecimal') {
+ e.preventDefault();
+ const input = e.currentTarget;
+ const pos = input.selectionStart ?? input.value.length;
+ const end = input.selectionEnd ?? pos;
+ const curVal = rawInputs['neto'] ?? input.value;
+ const newValue = curVal.slice(0, pos) + ',' + curVal.slice(end);
+ startRawEdit('neto', newValue);
+ requestAnimationFrame(() => { input.setSelectionRange(pos + 1, pos + 1); });
+ return;
+ }
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ moveToNextField('neto');
+ }
+ }}
+ placeholder="0,00"
  required
  />
  </div>
@@ -2330,8 +2401,9 @@ export default function ComprobanteFormModal({
  onBlur={(e) => {
  stopRawEdit('iva21');
  if (!e.target.value) {
- setIva21Manual(false);
- calculateTotal();
+ // Usuario borró IVA 21 intencionalmente — mantener en 0
+ setIva21Manual(true);
+ handleFieldChange('iva21', '0');
  }
  }}
  onKeyDown={(e) => {
@@ -2784,15 +2856,13 @@ export default function ComprobanteFormModal({
  <Switch
  id="esIndirecto"
  checked={formData.esIndirecto}
- onCheckedChange={(checked) => {
- setFormData({ ...formData, esIndirecto: checked, indirectCategory: checked ? formData.indirectCategory : '' });
- if (checked && formData.proveedorId) {
- loadConceptosProveedor(formData.proveedorId, true);
+ onCheckedChange={(checked) =>
+ setFormData({ ...formData, esIndirecto: checked, indirectCategory: checked ? formData.indirectCategory : '' })
  }
- }}
  />
  </div>
  {formData.esIndirecto && (
+ <div className="space-y-3">
  <div className="space-y-1.5">
  <Label htmlFor="indirectCategory">Categoría de costo indirecto</Label>
  <Select
@@ -2812,74 +2882,58 @@ export default function ComprobanteFormModal({
  </SelectContent>
  </Select>
  </div>
- )}
- {formData.esIndirecto && (
- <div className="space-y-2 pt-1">
- <div className="flex items-center justify-between">
- <Label className="text-sm font-medium">Conceptos del gasto</Label>
- <Button
- type="button"
- variant="outline"
- size="sm"
- className="h-7 text-xs gap-1"
- onClick={() =>
- setConceptos(prev => [
- ...prev,
- { id: Date.now().toString(), descripcion: '', monto: '' },
- ])
- }
- >
- <Plus className="h-3 w-3" />
- Agregar concepto
- </Button>
+ {/* Prorrateo / Devengamiento */}
+ <div className="flex items-center justify-between rounded-md border px-3 py-2">
+ <div>
+ <p className="text-sm font-medium">Prorratear en varios meses</p>
+ <p className="text-xs text-muted-foreground mt-0.5">Seguros anuales, VEPs trimestrales, cuotas...</p>
  </div>
- {conceptos.length === 0 && (
- <p className="text-xs text-muted-foreground italic">
- Opcional: indicá en qué se usó esta factura (ej: &quot;Seguro auto&quot;, &quot;Luz planta&quot;)
+ <Switch
+ checked={formData.prorratear}
+ onCheckedChange={(checked) => setFormData({
+ ...formData,
+ prorratear: checked,
+ prorrateoFechaInicio: checked && !formData.prorrateoFechaInicio
+ ? formData.fechaEmision?.substring(0, 7) || ''
+ : formData.prorrateoFechaInicio,
+ })}
+ />
+ </div>
+ {formData.prorratear && (
+ <div className="grid grid-cols-2 gap-3">
+ <div className="space-y-1.5">
+ <Label>Distribuir en</Label>
+ <Select
+ value={String(formData.prorrateoMeses)}
+ onValueChange={(val) => setFormData({ ...formData, prorrateoMeses: parseInt(val) })}
+ >
+ <SelectTrigger>
+ <SelectValue />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="2">2 meses</SelectItem>
+ <SelectItem value="3">3 meses (trimestral)</SelectItem>
+ <SelectItem value="6">6 meses (semestral)</SelectItem>
+ <SelectItem value="12">12 meses (anual)</SelectItem>
+ <SelectItem value="24">24 meses (2 años)</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
+ <div className="space-y-1.5">
+ <Label>Mes de inicio</Label>
+ <Input
+ type="month"
+ value={formData.prorrateoFechaInicio}
+ onChange={(e) => setFormData({ ...formData, prorrateoFechaInicio: e.target.value })}
+ />
+ </div>
+ </div>
+ )}
+ {formData.prorratear && formData.prorrateoMeses && formData.neto && (
+ <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
+ ${(parseFloat(formData.neto || '0') / formData.prorrateoMeses).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mes × {formData.prorrateoMeses} meses
  </p>
  )}
- {conceptos.map((concepto, idx) => (
- <div key={concepto.id} className="flex items-center gap-2">
- <Input
- placeholder="Descripción del concepto"
- value={concepto.descripcion}
- onChange={(e) =>
- setConceptos(prev =>
- prev.map((c, i) =>
- i === idx ? { ...c, descripcion: e.target.value } : c
- )
- )
- }
- className="flex-1 h-8 text-sm"
- />
- <Input
- placeholder="Monto"
- value={concepto.monto}
- onChange={(e) =>
- setConceptos(prev =>
- prev.map((c, i) =>
- i === idx ? { ...c, monto: e.target.value } : c
- )
- )
- }
- className="w-28 h-8 text-sm"
- type="number"
- min="0"
- step="0.01"
- />
- <Button
- type="button"
- variant="ghost"
- size="sm"
- className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
- onClick={() =>
- setConceptos(prev => prev.filter((_, i) => i !== idx))
- }
- >
- <Trash2 className="h-3.5 w-3.5" />
- </Button>
- </div>
- ))}
  </div>
  )}
  </div>
@@ -2927,8 +2981,12 @@ export default function ComprobanteFormModal({
  setNewItemForm({
  nombre: '',
  descripcion: '',
+ codigoProveedor: '',
  unidad: '',
  precioUnitario: '',
+ esGastoIndirecto: false,
+ categoriaIndirecta: '',
+ esServicio: false,
  });
  setEditingProveedorItem(null);
  }
@@ -2957,6 +3015,22 @@ export default function ComprobanteFormModal({
  placeholder="Nombre interno del item"
  required
  />
+ {toolSuggestions.length > 0 && !newItemForm.esServicio && (
+ <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-2 mt-1">
+ <p className="text-xs font-medium text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+   <Package className="w-3.5 h-3.5" />
+   Ya existe en pañol — se vinculará automáticamente
+ </p>
+ <div className="mt-1 space-y-0.5">
+ {toolSuggestions.map(tool => (
+   <div key={tool.id} className="text-xs px-2 py-0.5 text-blue-800 dark:text-blue-300">
+   {tool.code && <span className="font-mono text-blue-500 mr-1">{tool.code}</span>}
+   {tool.name} <span className="text-blue-400">({tool.stockQuantity} u.)</span>
+   </div>
+ ))}
+ </div>
+ </div>
+ )}
  </div>
  <div className="space-y-2">
  <Label htmlFor="itemCodigoProveedor">Código del proveedor</Label>
@@ -3013,6 +3087,54 @@ export default function ComprobanteFormModal({
  placeholder="0.00"
  />
  </div>
+ {/* Clasificación */}
+ <div className="flex items-center justify-between rounded-lg border p-3">
+ <div>
+ <Label className="text-sm font-medium">¿Es servicio?</Label>
+ <p className="text-xs text-muted-foreground mt-0.5">
+ No genera movimiento de stock (internet, VPS, seguros, honorarios...)
+ </p>
+ </div>
+ <Switch
+ checked={newItemForm.esServicio}
+ onCheckedChange={(v) => setNewItemForm({ ...newItemForm, esServicio: v, esGastoIndirecto: v ? true : newItemForm.esGastoIndirecto })}
+ />
+ </div>
+ <div className="flex items-center justify-between rounded-lg border p-3">
+ <div>
+ <Label className="text-sm font-medium">¿Es gasto indirecto?</Label>
+ <p className="text-xs text-muted-foreground mt-0.5">
+ Al usar este item en una factura, se marcará como costo indirecto automáticamente
+ </p>
+ </div>
+ <Switch
+ checked={newItemForm.esGastoIndirecto}
+ onCheckedChange={(v) =>
+ setNewItemForm({ ...newItemForm, esGastoIndirecto: v, categoriaIndirecta: v ? newItemForm.categoriaIndirecta : '' })
+ }
+ />
+ </div>
+ {newItemForm.esGastoIndirecto && (
+ <div className="space-y-2">
+ <Label>Categoría de costo indirecto</Label>
+ <Select
+ value={newItemForm.categoriaIndirecta}
+ onValueChange={(v) => setNewItemForm({ ...newItemForm, categoriaIndirecta: v })}
+ >
+ <SelectTrigger>
+ <SelectValue placeholder="Seleccionar categoría..." />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="IMP_SERV">Impuestos y Servicios</SelectItem>
+ <SelectItem value="SOCIAL">Cargas Sociales</SelectItem>
+ <SelectItem value="VEHICLES">Vehículos</SelectItem>
+ <SelectItem value="MKT">Marketing</SelectItem>
+ <SelectItem value="UTILITIES">Servicios Públicos</SelectItem>
+ <SelectItem value="OTHER">Otros</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
+ )}
  </div>
  </div>
  </DialogBody>

@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { SupplyProvidersModal } from '@/components/insumos/SupplyProvidersModal';
 
 interface Insumo {
   id: number;
@@ -160,6 +161,7 @@ export default function MateriaPrimaPage() {
   });
   const [selectedInsumoForHistorial, setSelectedInsumoForHistorial] = useState<Insumo | null>(null);
   const [estadisticasInsumo, setEstadisticasInsumo] = useState<EstadisticasPrecio | null>(null);
+  const [supplyProvidersId, setSupplyProvidersId] = useState<number | null>(null);
 
   // Estados para edición de categorías
   const [editingCategoria, setEditingCategoria] = useState<CategoriaInsumo | null>(null);
@@ -832,6 +834,17 @@ export default function MateriaPrimaPage() {
                           }}
                         >
                           <BarChart3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          title="Ver proveedores y precios"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSupplyProvidersId(insumo.id);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -1697,6 +1710,13 @@ export default function MateriaPrimaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal: Ver proveedores y precios de un insumo */}
+      <SupplyProvidersModal
+        supplyId={supplyProvidersId}
+        open={supplyProvidersId !== null}
+        onOpenChange={(open) => { if (!open) setSupplyProvidersId(null); }}
+      />
     </div>
   );
-} 
+}

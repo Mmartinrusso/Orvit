@@ -304,6 +304,7 @@ model Company {
   agendaReminders      AgendaReminder[]
   voiceTaskLogs        VoiceTaskLog[]
   agendaTaskComments   AgendaTaskComment[] @relation("AgendaTaskCommentCompany")
+  agendaSubtasks       AgendaSubtask[]     @relation("AgendaSubtaskCompany")
 
   // Mantenimiento Preventivo
   preventiveTemplates PreventiveTemplate[] @relation("PreventiveTemplateCompany")
@@ -356,8 +357,6 @@ model Company {
   // Controles de Seguimiento de Soluciones
   solutionControlInstances SolutionControlInstance[]
 
-  // Conceptos de gasto predefinidos por proveedor
-  supplierExpenseConcepts SupplierExpenseConcept[]
 
   @@index([subscriptionId])
   @@index([primaryAdminId])
@@ -701,8 +700,9 @@ model User {
   agendaTasksAssigned AgendaTask[]      @relation("AgendaTasksAssignedToUser")
   agendaReminders     AgendaReminder[]  @relation("AgendaRemindersUser")
   voiceTaskLogs       VoiceTaskLog[]    @relation("VoiceTaskLogsUser")
-  agendaTaskComments   AgendaTaskComment[] @relation("AgendaTaskCommentAuthor")
-  taskGroupMemberships TaskGroupMember[]   @relation("TaskGroupMemberships")
+  agendaTaskComments       AgendaTaskComment[] @relation("AgendaTaskCommentAuthor")
+  agendaSubtaskAssignments AgendaSubtask[]     @relation("AgendaSubtaskAssignee")
+  taskGroupMemberships     TaskGroupMember[]   @relation("TaskGroupMemberships")
 
   // Módulo Almacén
   stockReservationsCreated     StockReservation[]   @relation("StockReservationCreatedBy")
@@ -1292,6 +1292,10 @@ model Component {
 
   // === CMMS: FMEA - Modos de falla ===
   failureModes ComponentFailureMode[]
+
+  // Soluciones donde este componente fue el componente/subcomponente final
+  solutionsAsFinalComponent    SolutionApplied[] @relation("SolutionFinalComponent")
+  solutionsAsFinalSubcomponent SolutionApplied[] @relation("SolutionFinalSubcomponent")
 
   // === CMMS: Management of Change (MOC) ===
   managementOfChanges ManagementOfChange[]
@@ -3691,8 +3695,6 @@ model suppliers {
   grniAccruals             GRNIAccrual[]
   // Solicitudes de cambio (doble aprobación)
   changeRequests           SupplierChangeRequest[]
-  // Conceptos de gasto predefinidos
-  expenseConcepts          SupplierExpenseConcept[]
 
   @@index([company_id], map: "idx_suppliers_company_id")
   @@index([cuit])
@@ -4902,6 +4904,11 @@ model PurchaseReceipt {
   esIndirecto      Boolean           @default(false)
   indirectCategory IndirectCategory?
 
+  // Devengamiento / Prorrateo de costos indirectos
+  prorratear           Boolean   @default(false)
+  prorrateoMeses       Int?      // Cantidad de meses a distribuir (2, 3, 6, 12, 24)
+  prorrateoFechaInicio DateTime? @db.Date // Primer mes desde donde devengar
+
   // Relaciones de control
   ingresoConfirmadoByUser User?         @relation("ReceiptIngresoConfirmado", fields: [ingresoConfirmadoPor], references: [id])
   pagoForzadoByUser       User?         @relation("ReceiptPagoForzado", fields: [pagoForzadoPor], references: [id])
@@ -4933,6 +4940,7 @@ model PurchaseReceipt {
   // Índice compuesto para listados optimizados por proveedor y fecha
   @@index([companyId, proveedorId, fechaEmision], map: "idx_purchase_receipt_provider_date")
   @@index([companyId, esIndirecto], map: "idx_purchase_receipt_indirect")
+  @@index([prorratear, prorrateoFechaInicio])
   @@map("PurchaseReceipt")
 }
 
@@ -5007,6 +5015,10 @@ model SupplierItem {
   inputItems               InputItem[]               @relation("InputItemSupply")
   // Documentos por proveedor (SDS, certificados, fichas del proveedor)
   supplierDocuments        Json                      @default("[]")
+  // Clasificación: gastos indirectos y servicios
+  esGastoIndirecto         Boolean                   @default(false)
+  categoriaIndirecta       IndirectCategory?
+  esServicio               Boolean                   @default(false)
 
   @@unique([supplierId, supplyId])
   @@index([supplierId, codigoProveedor])
@@ -6006,6 +6018,8 @@ model SolutionApplied {
   template          Template?         @relation(fields: [templateUsedId], references: [id])
   company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   controlInstances  SolutionControlInstance[]
+  finalComponent    Component?        @relation("SolutionFinalComponent", fields: [finalComponentId], references: [id])
+  finalSubcomponent Component?        @relation("SolutionFinalSubcomponent", fields: [finalSubcomponentId], references: [id])
 
   // Plan de controles de seguimiento (JSON: [{order, delayMinutes, description}])
   controlPlan       Json?
@@ -14975,6 +14989,9 @@ model AgendaTask {
   // Comentarios
   comments AgendaTaskComment[]
 
+  // Subtareas
+  subtasks AgendaSubtask[]
+
   @@index([createdById, status])
   @@index([assignedToUserId])
   @@index([assignedToContactId])
@@ -15006,6 +15023,36 @@ model AgendaTaskComment {
   @@index([authorId])
   @@index([companyId])
   @@map("agenda_task_comments")
+}
+
+model AgendaSubtask {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(200)
+  done      Boolean  @default(false)
+  note      String?  @db.VarChar(1000)
+  sortOrder Int      @default(0)
+
+  // Tarea padre
+  taskId Int
+  task   AgendaTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Asignado opcional
+  assigneeId Int?
+  assignee   User? @relation("AgendaSubtaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  // Multi-tenant
+  companyId Int
+  company   Company @relation("AgendaSubtaskCompany", fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId, sortOrder])
+  @@index([taskId])
+  @@index([assigneeId])
+  @@index([companyId])
+  @@map("agenda_subtasks")
 }
 
 model AgendaReminder {
@@ -16347,25 +16394,3 @@ model StockCountItem {
   @@map("stock_count_items")
 }
 
-// =====================================================
-// CONCEPTOS DE GASTO PREDEFINIDOS POR PROVEEDOR
-// Permiten autocompletar los conceptos al cargar
-// comprobantes indirectos de un proveedor recurrente
-// =====================================================
-
-model SupplierExpenseConcept {
-  id          Int      @id @default(autoincrement())
-  supplierId  Int
-  descripcion String   @db.VarChar(255)
-  monto       Decimal? @db.Decimal(15, 2)
-  orden       Int      @default(0)
-  companyId   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  supplier suppliers @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@map("supplier_expense_concepts")
-  @@index([supplierId])
-}

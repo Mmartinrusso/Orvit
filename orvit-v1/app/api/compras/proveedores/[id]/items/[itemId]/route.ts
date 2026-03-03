@@ -58,13 +58,16 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { nombre, descripcion, unidad, precioUnitario, codigoProveedor, toolId } = body as {
+    const { nombre, descripcion, unidad, precioUnitario, codigoProveedor, toolId, esGastoIndirecto, categoriaIndirecta, esServicio } = body as {
       nombre?: string;
       descripcion?: string;
       unidad?: string;
       precioUnitario?: string;
       codigoProveedor?: string;
       toolId?: number | null;
+      esGastoIndirecto?: boolean;
+      categoriaIndirecta?: string | null;
+      esServicio?: boolean;
     };
 
     if (!nombre || !unidad) {
@@ -90,6 +93,9 @@ export async function PUT(
             ? parseFloat(precioUnitario)
             : null,
         ...(toolId !== undefined && { toolId: toolId ? parseInt(String(toolId)) : null }),
+        ...(esGastoIndirecto !== undefined && { esGastoIndirecto: esGastoIndirecto === true }),
+        ...(categoriaIndirecta !== undefined && { categoriaIndirecta: categoriaIndirecta || null }),
+        ...(esServicio !== undefined && { esServicio: esServicio === true }),
       },
     });
 

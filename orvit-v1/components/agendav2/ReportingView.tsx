@@ -1,32 +1,42 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts';
 import { TrendingUp, CheckCircle2, Clock, AlertCircle, Users, BarChart2 } from 'lucide-react';
 import type { AgendaTask, AgendaStats } from '@/lib/agenda/types';
 import { isTaskOverdue } from '@/lib/agenda/types';
-import { format, subDays, parseISO, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const STATUS_COLORS = {
-  PENDING:     '#9C9CAA',
-  IN_PROGRESS: '#3070A8',
-  WAITING:     '#907840',
-  COMPLETED:   '#568177',
+  PENDING:     '#9CA3AF',
+  IN_PROGRESS: '#7C3AED',
+  WAITING:     '#D97706',
+  COMPLETED:   '#059669',
   CANCELLED:   '#ED8A94',
 };
 
 const PRIORITY_COLORS = {
   LOW:    '#C4C4C4',
-  MEDIUM: '#3070A8',
-  HIGH:   '#907840',
+  MEDIUM: '#7C3AED',
+  HIGH:   '#D97706',
   URGENT: '#C05060',
 };
+
+// ── Fade-in animation util ────────────────────────────────────────────────────
+
+function fadeStyle(mounted: boolean, delay = 0): React.CSSProperties {
+  return {
+    opacity: mounted ? 1 : 0,
+    transform: mounted ? 'translateY(0)' : 'translateY(10px)',
+    transition: `opacity 350ms ease ${delay}ms, transform 350ms ease ${delay}ms`,
+  };
+}
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 
@@ -36,28 +46,31 @@ function KpiCard({
   sub,
   icon: Icon,
   accent,
+  animStyle,
 }: {
   label: string;
   value: number | string;
   sub?: string;
   icon: typeof CheckCircle2;
   accent: string;
+  animStyle?: React.CSSProperties;
 }) {
   return (
     <div
       style={{
         background: '#FFFFFF',
-        border: '1px solid #EEEEEE',
-        borderRadius: '16px',
+        border: '1px solid #EBEBEB',
+        borderRadius: '12px',
         padding: '20px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+        boxShadow: '0 1px 4px rgba(0,0,0,.04)',
+        ...animStyle,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '12px', fontWeight: 600, color: '#9C9CAA' }}>{label}</span>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
         <div
           style={{
             width: '34px', height: '34px', borderRadius: '10px',
@@ -68,8 +81,8 @@ function KpiCard({
         </div>
       </div>
       <div>
-        <p style={{ fontSize: '28px', fontWeight: 800, color: '#050505', lineHeight: 1 }}>{value}</p>
-        {sub && <p style={{ fontSize: '11px', color: '#9C9CAA', marginTop: '4px' }}>{sub}</p>}
+        <p style={{ fontSize: '28px', fontWeight: 800, color: '#111827', lineHeight: 1 }}>{value}</p>
+        {sub && <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>{sub}</p>}
       </div>
     </div>
   );
@@ -77,18 +90,19 @@ function KpiCard({
 
 // ── Section wrapper ───────────────────────────────────────────────────────────
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, animStyle }: { title: string; children: React.ReactNode; animStyle?: React.CSSProperties }) {
   return (
     <div
       style={{
         background: '#FFFFFF',
-        border: '1px solid #EEEEEE',
-        borderRadius: '16px',
+        border: '1px solid #EBEBEB',
+        borderRadius: '12px',
         padding: '20px',
-        boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+        boxShadow: '0 1px 4px rgba(0,0,0,.04)',
+        ...animStyle,
       }}
     >
-      <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#050505', marginBottom: '16px' }}>
+      <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#111827', marginBottom: '16px' }}>
         {title}
       </h3>
       {children}
@@ -103,7 +117,7 @@ function ChartTooltip({ active, payload, label }: any) {
   return (
     <div
       style={{
-        background: '#050505', borderRadius: '8px', padding: '8px 12px',
+        background: '#111827', borderRadius: '8px', padding: '8px 12px',
         fontSize: '12px', color: '#FFFFFF',
         boxShadow: '0 4px 12px rgba(0,0,0,.2)',
       }}
@@ -127,25 +141,29 @@ interface ReportingViewProps {
 }
 
 export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
 
   // ── Computed metrics ───────────────────────────────────────────────────────
 
   const metrics = useMemo(() => {
-    const total     = tasks.length;
-    const completed = tasks.filter(t => t.status === 'COMPLETED').length;
-    const overdue   = tasks.filter(t => isTaskOverdue(t)).length;
+    const total      = tasks.length;
+    const completed  = tasks.filter(t => t.status === 'COMPLETED').length;
+    const overdue    = tasks.filter(t => isTaskOverdue(t)).length;
     const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS').length;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // Tasks per status for bar chart
     const byStatus = [
       { name: 'Pendiente',   value: tasks.filter(t => t.status === 'PENDING').length,     fill: STATUS_COLORS.PENDING },
       { name: 'En Progreso', value: tasks.filter(t => t.status === 'IN_PROGRESS').length, fill: STATUS_COLORS.IN_PROGRESS },
-      { name: 'Esperando',   value: tasks.filter(t => t.status === 'WAITING').length,     fill: STATUS_COLORS.WAITING },
+      { name: 'En revisión', value: tasks.filter(t => t.status === 'WAITING').length,     fill: STATUS_COLORS.WAITING },
       { name: 'Completada',  value: tasks.filter(t => t.status === 'COMPLETED').length,   fill: STATUS_COLORS.COMPLETED },
     ];
 
-    // Tasks per priority for pie chart
     const byPriority = [
       { name: 'Baja',    value: tasks.filter(t => t.priority === 'LOW').length,    fill: PRIORITY_COLORS.LOW },
       { name: 'Media',   value: tasks.filter(t => t.priority === 'MEDIUM').length, fill: PRIORITY_COLORS.MEDIUM },
@@ -153,11 +171,10 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
       { name: 'Urgente', value: tasks.filter(t => t.priority === 'URGENT').length, fill: PRIORITY_COLORS.URGENT },
     ].filter(d => d.value > 0);
 
-    // Last 7 days activity
     const last7 = Array.from({ length: 7 }).map((_, i) => {
       const d = subDays(new Date(), 6 - i);
       const dateStr = format(d, 'yyyy-MM-dd');
-      const created   = tasks.filter(t => t.createdAt.startsWith(dateStr)).length;
+      const created    = tasks.filter(t => t.createdAt.startsWith(dateStr)).length;
       const completed2 = tasks.filter(t => t.completedAt?.startsWith(dateStr)).length;
       return {
         day: format(d, 'EEE', { locale: es }),
@@ -166,7 +183,6 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
       };
     });
 
-    // Top assignees
     const assigneeMap = new Map<string, number>();
     tasks.forEach(t => {
       const name = t.assignedToUser?.name || t.assignedToContact?.name || t.assignedToName || 'Sin asignar';
@@ -182,10 +198,17 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} style={{ height: '100px', borderRadius: '16px', background: '#F0F0F0', animation: 'pulse 1.5s infinite' }} />
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{ height: '100px', borderRadius: '12px', background: 'linear-gradient(90deg,#F0F0F0 25%,#E8E8E8 50%,#F0F0F0 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          {[1, 2].map(i => (
+            <div key={i} style={{ height: '260px', borderRadius: '12px', background: '#F0F0F0' }} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -200,63 +223,65 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
           value={metrics.total}
           sub="en tu agenda"
           icon={BarChart2}
-          accent="#3070A8"
+          accent="#7C3AED"
+          animStyle={fadeStyle(mounted, 0)}
         />
         <KpiCard
           label="Completadas"
           value={metrics.completed}
           sub={`${metrics.completionRate}% del total`}
           icon={CheckCircle2}
-          accent="#568177"
+          accent="#059669"
+          animStyle={fadeStyle(mounted, 60)}
         />
         <KpiCard
           label="En progreso"
           value={metrics.inProgress}
           sub="activas ahora"
           icon={TrendingUp}
-          accent="#907840"
+          accent="#D97706"
+          animStyle={fadeStyle(mounted, 120)}
         />
         <KpiCard
           label="Vencidas"
           value={metrics.overdue}
           sub={metrics.overdue > 0 ? 'requieren atención' : 'todo al día'}
           icon={AlertCircle}
-          accent={metrics.overdue > 0 ? '#C05060' : '#568177'}
+          accent={metrics.overdue > 0 ? '#C05060' : '#059669'}
+          animStyle={fadeStyle(mounted, 180)}
         />
       </div>
 
       {/* ── Charts row ──────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
 
-        {/* Activity last 7 days */}
-        <Section title="Actividad — últimos 7 días">
+        <Section title="Actividad — últimos 7 días" animStyle={fadeStyle(mounted, 240)}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={metrics.last7} barSize={10} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#9C9CAA' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#9C9CAA' }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="Creadas"    fill="#D0E0F0" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Completadas" fill="#568177" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Creadas"    fill="#EDE9FE" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Completadas" fill="#059669" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', gap: '16px', marginTop: '8px', justifyContent: 'center' }}>
-            {[{ color: '#D0E0F0', label: 'Creadas' }, { color: '#568177', label: 'Completadas' }].map(l => (
+            {[{ color: '#EDE9FE', label: 'Creadas' }, { color: '#059669', label: 'Completadas' }].map(l => (
               <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.color, display: 'inline-block' }} />
-                <span style={{ fontSize: '11px', color: '#9C9CAA' }}>{l.label}</span>
+                <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{l.label}</span>
               </div>
             ))}
           </div>
         </Section>
 
-        {/* By status */}
-        <Section title="Distribución por estado">
+        <Section title="Distribución por estado" animStyle={fadeStyle(mounted, 300)}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={metrics.byStatus} layout="vertical" barSize={12}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#9C9CAA' }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#9C9CAA' }} axisLine={false} tickLine={false} width={75} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={75} />
               <Tooltip content={<ChartTooltip />} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                 {metrics.byStatus.map((entry, index) => (
@@ -271,11 +296,10 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
       {/* ── Bottom row ──────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
 
-        {/* By priority (pie) */}
-        <Section title="Distribución por prioridad">
+        <Section title="Distribución por prioridad" animStyle={fadeStyle(mounted, 360)}>
           {metrics.byPriority.length === 0 ? (
             <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ color: '#9C9CAA', fontSize: '12px' }}>Sin datos</p>
+              <p style={{ color: '#9CA3AF', fontSize: '12px' }}>Sin datos</p>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -301,8 +325,8 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
                 {metrics.byPriority.map(item => (
                   <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.fill, flexShrink: 0 }} />
-                    <span style={{ fontSize: '12px', color: '#575456', flex: 1 }}>{item.name}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#050505' }}>{item.value}</span>
+                    <span style={{ fontSize: '12px', color: '#6B7280', flex: 1 }}>{item.name}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -310,18 +334,17 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
           )}
         </Section>
 
-        {/* Top assignees */}
-        <Section title="Más tareas por persona">
+        <Section title="Más tareas por persona" animStyle={fadeStyle(mounted, 420)}>
           {metrics.topAssignees.length === 0 ? (
             <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ color: '#9C9CAA', fontSize: '12px' }}>Sin datos</p>
+              <p style={{ color: '#9CA3AF', fontSize: '12px' }}>Sin datos</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {metrics.topAssignees.map((item, i) => {
                 const maxCount = metrics.topAssignees[0]?.count ?? 1;
                 const pct = Math.round((item.count / maxCount) * 100);
-                const colors = ['#3070A8', '#568177', '#907840', '#C05060', '#7040A8'];
+                const colors = ['#7C3AED', '#059669', '#D97706', '#C05060', '#7040A8'];
                 const color = colors[i % colors.length];
                 return (
                   <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -337,8 +360,8 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#050505', truncate: true }}>{item.name}</span>
-                        <span style={{ fontSize: '11px', color: '#9C9CAA', fontWeight: 700 }}>{item.count}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{item.name}</span>
+                        <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 700 }}>{item.count}</span>
                       </div>
                       <div style={{ height: '4px', background: '#F0F0F0', borderRadius: '999px', overflow: 'hidden' }}>
                         <div
@@ -360,16 +383,18 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
       {/* ── Completion rate bar ──────────────────────────────────────── */}
       <div
         style={{
-          background: '#FFFFFF', border: '1px solid #EEEEEE',
-          borderRadius: '16px', padding: '20px',
-          boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+          background: '#FFFFFF', border: '1px solid #EBEBEB',
+          borderRadius: '12px', padding: '20px',
+          boxShadow: '0 1px 4px rgba(0,0,0,.04)',
+          ...fadeStyle(mounted, 480),
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#050505' }}>Tasa de completación</h3>
+          <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>Tasa de completación</h3>
           <span
             style={{
-              fontSize: '20px', fontWeight: 800, color: metrics.completionRate >= 70 ? '#568177' : '#907840',
+              fontSize: '20px', fontWeight: 800,
+              color: metrics.completionRate >= 70 ? '#059669' : metrics.completionRate >= 40 ? '#D97706' : '#C05060',
             }}
           >
             {metrics.completionRate}%
@@ -379,19 +404,21 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
           <div
             style={{
               height: '100%', borderRadius: '999px',
-              background: metrics.completionRate >= 70 ? '#568177' : metrics.completionRate >= 40 ? '#907840' : '#C05060',
-              width: `${metrics.completionRate}%`,
-              transition: 'width 800ms cubic-bezier(0.22,1,0.36,1)',
+              background: metrics.completionRate >= 70 ? '#059669' : metrics.completionRate >= 40 ? '#D97706' : '#C05060',
+              width: mounted ? `${metrics.completionRate}%` : '0%',
+              transition: 'width 900ms cubic-bezier(0.22,1,0.36,1) 500ms',
             }}
           />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-          <span style={{ fontSize: '11px', color: '#9C9CAA' }}>
+          <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
             {metrics.completed} completadas de {metrics.total} totales
           </span>
           <span
             style={{
-              fontSize: '11px', color: metrics.completionRate >= 70 ? '#568177' : '#9C9CAA', fontWeight: 600,
+              fontSize: '11px',
+              color: metrics.completionRate >= 70 ? '#059669' : '#9CA3AF',
+              fontWeight: 600,
             }}
           >
             {metrics.completionRate >= 70 ? '¡Excelente ritmo!' : metrics.completionRate >= 40 ? 'Buen progreso' : 'Por mejorar'}

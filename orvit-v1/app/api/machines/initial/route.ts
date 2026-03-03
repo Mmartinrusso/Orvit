@@ -195,7 +195,7 @@ async function getStats(companyId: number, sectorId: number | null) {
       SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE status = 'ACTIVE') as active,
-        COUNT(*) FILTER (WHERE status = 'INACTIVE') as inactive,
+        COUNT(*) FILTER (WHERE status IN ('OUT_OF_SERVICE', 'DECOMMISSIONED')) as inactive,
         COUNT(*) FILTER (WHERE status = 'MAINTENANCE') as maintenance,
         COUNT(DISTINCT CASE
           WHEN EXISTS (

@@ -50,14 +50,10 @@ export async function POST(
         await tx.fixedTaskExecution.create({
           data: {
             fixedTaskId: parseInt(taskId),
-            executedById: executionData.userId ? parseInt(executionData.userId) : null,
-            executedByWorkerId: null,
-            duration: executionData.duration || null,
+            userId: executionData.userId ? parseInt(executionData.userId) : null,
+            workerId: null,
+            actualDuration: executionData.duration || null,
             notes: executionData.notes || '',
-            attachments:
-              executionData.attachments?.length > 0
-                ? JSON.stringify(executionData.attachments)
-                : undefined,
             status: 'completed',
             executedAt: completedAt,
           },

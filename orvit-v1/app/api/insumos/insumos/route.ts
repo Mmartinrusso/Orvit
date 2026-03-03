@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         WHERE company_id = ${cid}
         ORDER BY supply_id, month_year DESC
       ) smp_last ON smp_last.supply_id = s.id
-      WHERE s.company_id = ${cid}
+      WHERE s.company_id = ${cid} AND s.is_active = true
       ORDER BY
         CASE WHEN COALESCE(stock_agg.stock_cantidad, 0) > 0 THEN 0
              WHEN COALESCE(stock_agg.supplier_item_count, 0) > 0 THEN 1

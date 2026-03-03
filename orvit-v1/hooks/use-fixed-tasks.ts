@@ -34,6 +34,7 @@ interface UseFixedTasksReturn {
   error: string | null;
   createTask: (taskData: any) => Promise<FixedTask>;
   updateTask: (taskId: string, taskData: any) => Promise<FixedTask>;
+  completeTask: (taskId: string, executionData: any) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   refetch: () => void;
 }
@@ -191,6 +192,27 @@ export function useFixedTasks(): UseFixedTasksReturn {
     }
   };
 
+  const completeTask = async (taskId: string, executionData: any): Promise<void> => {
+    try {
+      const response = await fetch(`/api/fixed-tasks/${taskId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ executionData }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al completar tarea fija');
+      }
+
+      await fetchTasks();
+    } catch (err) {
+      console.error('Error completing fixed task:', err);
+      throw err;
+    }
+  };
+
   const deleteTask = async (taskId: string): Promise<void> => {
     try {
       const response = await fetch(`/api/fixed-tasks/${taskId}`, {
@@ -226,6 +248,7 @@ export function useFixedTasks(): UseFixedTasksReturn {
     error,
     createTask,
     updateTask,
+    completeTask,
     deleteTask,
     refetch: fetchTasks
   };

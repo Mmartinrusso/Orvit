@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
         categoryCount: Object.keys(data.byCategory).length
       },
       byCategory: data.byCategory,
-      details: data.details
+      details: data.details,
+      itemAggregates: data.itemAggregates
     });
 
   } catch (error) {

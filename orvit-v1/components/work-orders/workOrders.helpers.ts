@@ -13,9 +13,12 @@ import { es } from 'date-fns/locale';
 // LABELS EN ESPAÑOL (nunca mostrar enums crudos)
 // =============================================================================
 
-export const statusLabels: Record<WorkOrderStatus, string> = {
+export const statusLabels: Record<string, string> = {
   PENDING: 'Pendiente',
+  INCOMING: 'Pendiente',
+  SCHEDULED: 'Programada',
   IN_PROGRESS: 'En proceso',
+  WAITING: 'En espera',
   COMPLETED: 'Completada',
   CANCELLED: 'Cancelada',
   ON_HOLD: 'En espera',
@@ -79,9 +82,12 @@ export function getMaintenanceTypeLabel(type: MaintenanceType): string {
 // ESTILOS DE BADGES (suaves, sin colores chillones)
 // =============================================================================
 
-export const statusColors: Record<WorkOrderStatus, string> = {
+export const statusColors: Record<string, string> = {
   PENDING: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  INCOMING: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
+  SCHEDULED: 'bg-warning-muted text-warning-muted-foreground border-warning-muted',
   IN_PROGRESS: 'bg-info-muted text-info-muted-foreground border-info-muted',
+  WAITING: 'bg-primary/10 text-primary border-primary/20',
   COMPLETED: 'bg-success-muted text-success border-success-muted',
   CANCELLED: 'bg-muted text-muted-foreground border-border',
   ON_HOLD: 'bg-primary/10 text-primary border-primary/20',
@@ -102,9 +108,12 @@ export const maintenanceTypeColors: Record<MaintenanceType, string> = {
 };
 
 // Colores para indicadores laterales de estado (barra izquierda de cards)
-export const statusIndicatorColors: Record<WorkOrderStatus, string> = {
+export const statusIndicatorColors: Record<string, string> = {
   PENDING: 'bg-warning',
+  INCOMING: 'bg-warning',
+  SCHEDULED: 'bg-warning',
   IN_PROGRESS: 'bg-info',
+  WAITING: 'bg-primary',
   COMPLETED: 'bg-success',
   CANCELLED: 'bg-muted-foreground',
   ON_HOLD: 'bg-primary',
@@ -211,10 +220,10 @@ export function relativeTimeShort(date: Date | string | null | undefined): strin
  */
 export function isOverdue(
   scheduledDate: Date | string | null | undefined,
-  status: WorkOrderStatus
+  status: string
 ): boolean {
   if (!scheduledDate) return false;
-  if (status === WorkOrderStatus.COMPLETED || status === WorkOrderStatus.CANCELLED) {
+  if (status === WorkOrderStatus.COMPLETED || status === WorkOrderStatus.CANCELLED || status === 'CANCELLED') {
     return false;
   }
   try {
@@ -243,7 +252,7 @@ export function daysUntilDue(date: Date | string | null | undefined): number | n
  */
 export function getDueText(
   date: Date | string | null | undefined,
-  status: WorkOrderStatus
+  status: string
 ): string | null {
   if (!date) return null;
   if (status === WorkOrderStatus.COMPLETED || status === WorkOrderStatus.CANCELLED) {
@@ -468,10 +477,13 @@ export const defaultFilters: WorkOrderFilters = {
 };
 
 // Labels para los selectores de filtros
-export const filterStatusLabels: Record<WorkOrderStatus | 'ALL', string> = {
+export const filterStatusLabels: Record<string, string> = {
   ALL: 'Todos los estados',
   PENDING: 'Pendiente',
+  INCOMING: 'Pendiente',
+  SCHEDULED: 'Programada',
   IN_PROGRESS: 'En proceso',
+  WAITING: 'En espera',
   COMPLETED: 'Completada',
   CANCELLED: 'Cancelada',
   ON_HOLD: 'En espera',

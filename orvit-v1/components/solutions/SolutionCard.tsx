@@ -59,6 +59,11 @@ export interface Solution {
   priority?: string;
   status?: string;
   attachments?: SolutionAttachment[];
+  toolsUsed?: Array<{ id: number; name: string; quantity: number }>;
+  sparePartsUsed?: Array<{ id: number; name: string; quantity: number }>;
+  actualMinutes?: number | null;
+  notes?: string | null;
+  fixType?: string | null;
   _workOrder?: any;
 }
 

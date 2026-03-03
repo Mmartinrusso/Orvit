@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { formatDate } from '@/lib/date-utils';
 import { Card, CardContent } from '@/components/ui/card';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -479,7 +480,7 @@ export function DocumentFolderViewer({
       {canEdit && (
         <GripVertical className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
       )}
-      <span className="flex-shrink-0">{getFileIcon(doc.originalName || doc.fileName)}</span>
+      <span className="flex-shrink-0"><FileTypeIcon name={doc.originalName || doc.fileName} size={24} /></span>
       <button
         className="flex-1 text-left text-sm font-medium hover:text-primary transition truncate"
         onClick={() => handleViewDocument(doc.url, doc.originalName || doc.fileName)}

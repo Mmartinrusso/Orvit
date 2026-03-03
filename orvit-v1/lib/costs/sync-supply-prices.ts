@@ -1,49 +1,40 @@
 /**
  * Sincronización automática de precios de insumos desde Compras
  *
- * Cuando se crea o edita un comprobante de compra, actualiza automáticamente
- * `supply_monthly_prices` con el precio real pagado por cada insumo.
+ * Cuando se crea o edita un comprobante de compra, recalcula el precio
+ * mensual como PROMEDIO PONDERADO de todas las compras del mes para ese insumo.
  *
- * Esto evita tener que ingresar el precio manualmente en el módulo de Insumos
- * cada vez que llega una factura.
+ * Ejemplo:
+ *   Cantesur:          10 TN × $25.000 = $250.000
+ *   Canteras Diquecito: 5 TN × $24.000 = $120.000
+ *   Promedio ponderado: $370.000 / 15 TN = $24.666,67/TN
  */
 
 import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { isT2AvailableForCompany } from '@/lib/view-mode/should-query-t2';
+import { getT2Client } from '@/lib/prisma-t2';
 
 interface SyncSupplyPriceArgs {
   /** ID del SupplierItem (PurchaseReceiptItem.itemId) */
   itemId: number;
-  /** Precio unitario del ítem en el comprobante */
-  precioUnitario: number;
-  /** Costo de flete a incluir (opcional, default 0) */
-  freightCost?: number;
-  /** Fecha de imputación del comprobante (Date o string YYYY-MM-DD) */
-  fechaImputacion: Date | string | null | undefined;
+  /** Fecha de emisión del comprobante (Date o string YYYY-MM-DD) */
+  fechaEmision: Date | string | null | undefined;
   /** ID de la empresa */
   companyId: number;
-  /** Texto identificador para el campo notes, ej: "FC 0001-00000123" */
-  referencia?: string;
 }
 
 /**
- * Hace upsert del precio mensual de un insumo a partir de un ítem de comprobante.
+ * Recalcula el precio mensual de un insumo como promedio ponderado
+ * de TODAS las compras del mes (todos los proveedores).
  *
- * - Si ya existe un precio para ese (supply_id, mes) → lo sobreescribe con el precio real pagado.
- * - Si no existe → crea el registro.
- * - Si el ítem no tiene supplyId vinculado (sin insumo asociado) → no hace nada.
+ * Fórmula: SUM(cantidad × precioUnitario) / SUM(cantidad)
  *
  * Debe llamarse dentro de la misma transacción Prisma del comprobante.
  */
 export async function syncSupplyPrice(
   tx: Prisma.TransactionClient,
-  {
-    itemId,
-    precioUnitario,
-    freightCost = 0,
-    fechaImputacion,
-    companyId,
-    referencia = '',
-  }: SyncSupplyPriceArgs
+  { itemId, fechaEmision, companyId }: SyncSupplyPriceArgs
 ): Promise<void> {
   // 1. Obtener supplyId desde SupplierItem
   const supplierItem = await tx.supplierItem.findUnique({
@@ -51,74 +42,220 @@ export async function syncSupplyPrice(
     select: { supplyId: true },
   });
 
-  // Si el ítem no tiene un insumo vinculado, no hay nada que sincronizar
   if (!supplierItem?.supplyId) return;
 
-  // 2. Determinar el mes de imputación
-  //    Usar fechaImputacion del comprobante; si no viene, usar fecha actual
+  // 2. Determinar el rango del mes
   let date: Date;
-  if (!fechaImputacion) {
+  if (!fechaEmision) {
     date = new Date();
-  } else if (fechaImputacion instanceof Date) {
-    date = fechaImputacion;
+  } else if (fechaEmision instanceof Date) {
+    date = fechaEmision;
   } else {
-    date = new Date(fechaImputacion);
-    // Evitar timezone offset (new Date('2026-02-01') puede ser Jan 31 en UTC-3)
+    date = new Date(fechaEmision);
     if (isNaN(date.getTime())) {
       date = new Date();
     }
   }
 
-  // Primer día del mes, sin componente horario
-  const monthYear = new Date(date.getFullYear(), date.getMonth(), 1);
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-  const notes = referencia ? `Auto: ${referencia}` : 'Auto: compras';
+  // 3. Calcular promedio ponderado de TODAS las compras del mes para este supply
+  //    JOIN PurchaseReceiptItem → SupplierItem (para filtrar por supplyId)
+  //    JOIN PurchaseReceipt (para filtrar por mes de emisión)
+  const result = await tx.$queryRaw<Array<{
+    weighted_total: number | null;
+    total_qty: number | null;
+    supplier_count: number | null;
+  }>>`
+    SELECT
+      SUM(pri."precioUnitario" * pri.cantidad) as weighted_total,
+      SUM(pri.cantidad) as total_qty,
+      COUNT(DISTINCT pri."proveedorId") as supplier_count
+    FROM "PurchaseReceiptItem" pri
+    JOIN "SupplierItem" si ON si.id = pri."itemId"
+    JOIN "PurchaseReceipt" pr ON pr.id = pri."comprobanteId"
+    WHERE si."supplyId" = ${supplierItem.supplyId}
+      AND pr."fechaEmision" >= ${monthStart}
+      AND pr."fechaEmision" < ${monthEnd}
+      AND pri."companyId" = ${companyId}
+      AND pri."precioUnitario" > 0
+      AND pri.cantidad > 0
+  `;
 
-  // 3. UPSERT en supply_monthly_prices
-  //    La tabla es legacy (sin model Prisma formal), se accede con raw SQL.
-  //    El unique constraint es (supply_id, month_year).
+  const row = result[0];
+  if (!row?.weighted_total || !row?.total_qty || Number(row.total_qty) === 0) return;
+
+  const avgPrice = Number(row.weighted_total) / Number(row.total_qty);
+  const supplierCount = Number(row.supplier_count) || 1;
+  const notes = supplierCount > 1
+    ? `Promedio ponderado (${supplierCount} proveedores)`
+    : 'Auto: compras';
+
+  // 4. UPSERT en supply_monthly_prices
   await tx.$executeRaw`
     INSERT INTO supply_monthly_prices
       (supply_id, month_year, fecha_imputacion, price_per_unit, freight_cost, notes, company_id, created_at, updated_at)
     VALUES
-      (${supplierItem.supplyId}, ${monthYear}, ${fechaStr},
-       ${precioUnitario}, ${freightCost},
+      (${supplierItem.supplyId}, ${monthStart}, ${fechaStr},
+       ${avgPrice}, ${0},
        ${notes}, ${companyId}, NOW(), NOW())
     ON CONFLICT (supply_id, month_year)
     DO UPDATE SET
-      price_per_unit = EXCLUDED.price_per_unit,
-      freight_cost   = EXCLUDED.freight_cost,
-      notes          = EXCLUDED.notes,
+      price_per_unit = ${avgPrice},
+      freight_cost   = ${0},
+      notes          = ${notes},
       updated_at     = NOW()
   `;
 }
 
 /**
- * Sincroniza todos los ítems de un comprobante en un solo loop.
- * Conveniencia para llamar desde la route de POST/PUT.
+ * Sincroniza todos los ítems de un comprobante.
+ * Para cada supply único, recalcula el promedio ponderado del mes.
  *
  * @param tx - Transacción Prisma activa
  * @param items - Array de ítems procesados del comprobante
- * @param fechaImputacion - Fecha de imputación del comprobante
+ * @param fechaEmision - Fecha de emisión del comprobante
  * @param companyId - ID de la empresa
- * @param referencia - Número de comprobante para trazabilidad
+ * @param _referencia - (legacy, ya no se usa — el notes se genera automáticamente)
  */
 export async function syncAllSupplyPrices(
   tx: Prisma.TransactionClient,
   items: Array<{ itemId?: number | null; precioUnitario?: number | null }>,
-  fechaImputacion: Date | string | null | undefined,
+  fechaEmision: Date | string | null | undefined,
   companyId: number,
-  referencia: string
+  _referencia?: string
 ): Promise<void> {
+  // Obtener supplyIds únicos para no recalcular el mismo supply múltiples veces
+  const processedSupplyIds = new Set<number>();
+
   for (const item of items) {
     if (!item.itemId || !item.precioUnitario || item.precioUnitario <= 0) continue;
+
+    // Obtener supplyId para dedup
+    const si = await tx.supplierItem.findUnique({
+      where: { id: item.itemId },
+      select: { supplyId: true },
+    });
+    if (!si?.supplyId || processedSupplyIds.has(si.supplyId)) continue;
+    processedSupplyIds.add(si.supplyId);
+
     await syncSupplyPrice(tx, {
       itemId: item.itemId,
-      precioUnitario: item.precioUnitario,
-      fechaImputacion,
+      fechaEmision,
       companyId,
-      referencia,
     });
   }
+}
+
+/**
+ * Recalcula precio de un supply incluyendo compras T1 + T2.
+ * Se llama al crear comprobante T2 (fuera de transacción T1).
+ *
+ * A diferencia de syncSupplyPrice() que corre dentro de una tx,
+ * esta función es standalone y usa el prisma client directo.
+ */
+export async function syncSupplyPriceWithT2({
+  supplyId,
+  fechaEmision,
+  companyId,
+}: {
+  supplyId: number;
+  fechaEmision: Date | string;
+  companyId: number;
+}): Promise<void> {
+  // Determinar rango del mes
+  let date = fechaEmision instanceof Date ? fechaEmision : new Date(String(fechaEmision));
+  if (isNaN(date.getTime())) date = new Date();
+
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+  // Query T1 (misma raw SQL que syncSupplyPrice)
+  const t1Result = await prisma.$queryRaw<Array<{
+    weighted_total: number | null;
+    total_qty: number | null;
+    supplier_count: number | null;
+  }>>`
+    SELECT
+      SUM(pri."precioUnitario" * pri.cantidad) as weighted_total,
+      SUM(pri.cantidad) as total_qty,
+      COUNT(DISTINCT pri."proveedorId") as supplier_count
+    FROM "PurchaseReceiptItem" pri
+    JOIN "SupplierItem" si ON si.id = pri."itemId"
+    JOIN "PurchaseReceipt" pr ON pr.id = pri."comprobanteId"
+    WHERE si."supplyId" = ${supplyId}
+      AND pr."fechaEmision" >= ${monthStart}
+      AND pr."fechaEmision" < ${monthEnd}
+      AND pri."companyId" = ${companyId}
+      AND pri."precioUnitario" > 0
+      AND pri.cantidad > 0
+  `;
+
+  let totalWeighted = Number(t1Result[0]?.weighted_total) || 0;
+  let totalQty = Number(t1Result[0]?.total_qty) || 0;
+  let supplierCount = Number(t1Result[0]?.supplier_count) || 0;
+
+  // Query T2 si está disponible
+  if (await isT2AvailableForCompany(companyId)) {
+    try {
+      const prismaT2 = getT2Client();
+      const relatedItems = await prisma.supplierItem.findMany({
+        where: { supplyId, companyId },
+        select: { id: true },
+      });
+      const itemIds = relatedItems.map(i => i.id);
+
+      if (itemIds.length > 0) {
+        const t2Items = await prismaT2.t2PurchaseReceiptItem.findMany({
+          where: {
+            supplierItemId: { in: itemIds },
+            receipt: {
+              companyId,
+              fechaEmision: { gte: monthStart, lt: monthEnd },
+              estado: { not: 'cancelado' },
+            },
+          },
+          include: { receipt: { select: { supplierId: true } } },
+        });
+
+        const t2Suppliers = new Set<number>();
+        for (const item of t2Items) {
+          const precio = Number(item.precioUnitario);
+          const cantidad = Number(item.cantidad);
+          if (precio > 0 && cantidad > 0) {
+            totalWeighted += precio * cantidad;
+            totalQty += cantidad;
+            t2Suppliers.add(item.receipt.supplierId);
+          }
+        }
+        supplierCount += t2Suppliers.size;
+      }
+    } catch (err) {
+      console.warn('[syncSupplyPriceWithT2] T2 query error:', err);
+    }
+  }
+
+  if (totalQty === 0) return;
+
+  const avgPrice = totalWeighted / totalQty;
+  const notes = supplierCount > 1
+    ? `Promedio ponderado (${supplierCount} proveedores)`
+    : 'Auto: compras';
+
+  // Upsert en supply_monthly_prices
+  await prisma.$executeRaw`
+    INSERT INTO supply_monthly_prices
+      (supply_id, month_year, fecha_imputacion, price_per_unit, freight_cost, notes, company_id, created_at, updated_at)
+    VALUES
+      (${supplyId}, ${monthStart}, ${fechaStr}, ${avgPrice}, ${0}, ${notes}, ${companyId}, NOW(), NOW())
+    ON CONFLICT (supply_id, month_year)
+    DO UPDATE SET
+      price_per_unit = ${avgPrice},
+      freight_cost   = ${0},
+      notes          = ${notes},
+      updated_at     = NOW()
+  `;
 }

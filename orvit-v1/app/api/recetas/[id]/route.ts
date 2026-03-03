@@ -123,12 +123,14 @@ export async function PUT(
     console.log('🔍 API Recetas PUT - Iniciando...');
     
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId');
     const recipeId = params.id;
-    
+
     const body = await request.json();
     console.log('📥 Body recibido:', JSON.stringify(body, null, 2));
-    
+
+    // companyId puede venir en query params O en el body
+    const companyId = searchParams.get('companyId') || (body.companyId ? String(body.companyId) : null);
+
     const {
       name,
       productId,

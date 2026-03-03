@@ -42,8 +42,6 @@ export async function GET(
             machineId: true,
             reportedAt: true,
             machine: { select: { id: true, name: true } },
-            component: { select: { id: true, name: true } },
-            subComponent: { select: { id: true, name: true } },
           }
         },
         workOrder: { select: { id: true, title: true, status: true, completedDate: true } },
@@ -58,7 +56,27 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado para esta solución' }, { status: 403 });
     }
 
-    return NextResponse.json({ success: true, solution });
+    // Resolver nombres de componente/subcomponente final
+    const finalIds = [...new Set([
+      solution.finalComponentId,
+      solution.finalSubcomponentId,
+    ].filter(Boolean))] as number[];
+
+    const finalComponents = finalIds.length > 0
+      ? await prisma.component.findMany({
+          where: { id: { in: finalIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const finalCompMap = new Map(finalComponents.map(c => [c.id, c]));
+
+    const enrichedSolution = {
+      ...solution,
+      finalComponent: solution.finalComponentId ? (finalCompMap.get(solution.finalComponentId) ?? null) : null,
+      finalSubcomponent: solution.finalSubcomponentId ? (finalCompMap.get(solution.finalSubcomponentId) ?? null) : null,
+    };
+
+    return NextResponse.json({ success: true, solution: enrichedSolution });
   } catch (error) {
     console.error('❌ Error en GET /api/solutions-applied/[id]:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });

@@ -9,6 +9,7 @@ import {
   SheetTitle,
   SheetBody,
 } from '@/components/ui/sheet';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -761,7 +762,7 @@ export function UnitDetailSheet({
                         className="flex items-center justify-between p-2 bg-muted/50 rounded-lg border"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {getFileIcon(doc.originalName || doc.fileName)}
+                          <FileTypeIcon name={doc.originalName || doc.fileName} size={24} />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate">
                               {doc.originalName || doc.fileName || 'Documento'}

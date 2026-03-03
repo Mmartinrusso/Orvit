@@ -958,8 +958,8 @@ export function IndirectViewV2({
                                 {item.facturaNumero || '—'}
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
-                                {item.fechaImputacion
-                                  ? formatDate(item.fechaImputacion + 'T00:00:00')
+                                {item.fechaEmision
+                                  ? formatDate(item.fechaEmision + 'T00:00:00')
                                   : '—'}
                               </TableCell>
                               <TableCell>

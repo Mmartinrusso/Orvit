@@ -276,7 +276,7 @@ export async function getSolutionHistory(params: SolutionHistoryParams) {
     if (endDate) where.performedAt.lte = endDate;
   }
 
-  const [solutions, total] = await Promise.all([
+  const [solutionsRaw, total] = await Promise.all([
     prisma.solutionApplied.findMany({
       where,
       include: {
@@ -314,6 +314,26 @@ export async function getSolutionHistory(params: SolutionHistoryParams) {
     }),
     prisma.solutionApplied.count({ where })
   ]);
+
+  // Resolver nombres de componente/subcomponente final
+  const allFinalIds = [...new Set([
+    ...solutionsRaw.map((s: any) => s.finalComponentId).filter(Boolean),
+    ...solutionsRaw.map((s: any) => s.finalSubcomponentId).filter(Boolean),
+  ])] as number[];
+
+  const finalComponents = allFinalIds.length > 0
+    ? await prisma.component.findMany({
+        where: { id: { in: allFinalIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const finalCompMap = new Map(finalComponents.map(c => [c.id, c]));
+
+  const solutions = solutionsRaw.map((s: any) => ({
+    ...s,
+    finalComponent: s.finalComponentId ? (finalCompMap.get(s.finalComponentId) ?? null) : null,
+    finalSubcomponent: s.finalSubcomponentId ? (finalCompMap.get(s.finalSubcomponentId) ?? null) : null,
+  }));
 
   return {
     solutions,

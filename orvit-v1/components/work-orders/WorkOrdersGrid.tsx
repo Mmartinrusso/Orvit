@@ -73,10 +73,13 @@ export function WorkOrdersGrid({
   className,
 }: WorkOrdersGridProps) {
   const getPrimaryAction = (order: WorkOrder) => {
+    const status = order.status as string;
+    const isPendingLike = ['PENDING', 'INCOMING', 'SCHEDULED'].includes(status);
+    const isInProgressLike = ['IN_PROGRESS', 'WAITING'].includes(status);
+    const isDone = status === 'COMPLETED' || status === 'CANCELLED';
+
     // Si no está asignada y hay handler, mostrar "Asignar"
-    if (!order.assignedToId && onAssign && 
-        order.status !== WorkOrderStatus.COMPLETED && 
-        order.status !== WorkOrderStatus.CANCELLED) {
+    if (!order.assignedToId && onAssign && !isDone) {
       return {
         label: 'Asignar',
         icon: UserPlus,
@@ -87,38 +90,39 @@ export function WorkOrdersGrid({
 
     if (!onStatusChange) return null;
 
-    switch (order.status) {
-      case WorkOrderStatus.PENDING:
-        return {
-          label: 'Iniciar',
-          icon: Play,
-          onClick: () => onStatusChange(order, WorkOrderStatus.IN_PROGRESS),
-          variant: 'default' as const,
-        };
-      case WorkOrderStatus.IN_PROGRESS:
-        return {
-          label: 'Completar',
-          icon: CheckCircle2,
-          onClick: () => onStatusChange(order, WorkOrderStatus.COMPLETED),
-          variant: 'default' as const,
-        };
-      case WorkOrderStatus.COMPLETED:
-        return {
-          label: 'Reabrir',
-          icon: RotateCcw,
-          onClick: () => onStatusChange(order, WorkOrderStatus.PENDING),
-          variant: 'outline' as const,
-        };
-      case WorkOrderStatus.ON_HOLD:
-        return {
-          label: 'Reanudar',
-          icon: Play,
-          onClick: () => onStatusChange(order, WorkOrderStatus.IN_PROGRESS),
-          variant: 'default' as const,
-        };
-      default:
-        return null;
+    if (isPendingLike) {
+      return {
+        label: 'Iniciar',
+        icon: Play,
+        onClick: () => onStatusChange(order, WorkOrderStatus.IN_PROGRESS),
+        variant: 'default' as const,
+      };
     }
+    if (isInProgressLike) {
+      return {
+        label: 'Completar',
+        icon: CheckCircle2,
+        onClick: () => onStatusChange(order, WorkOrderStatus.COMPLETED),
+        variant: 'default' as const,
+      };
+    }
+    if (status === WorkOrderStatus.COMPLETED) {
+      return {
+        label: 'Reabrir',
+        icon: RotateCcw,
+        onClick: () => onStatusChange(order, WorkOrderStatus.PENDING),
+        variant: 'outline' as const,
+      };
+    }
+    if (status === WorkOrderStatus.ON_HOLD) {
+      return {
+        label: 'Reanudar',
+        icon: Play,
+        onClick: () => onStatusChange(order, WorkOrderStatus.IN_PROGRESS),
+        variant: 'default' as const,
+      };
+    }
+    return null;
   };
 
   if (workOrders.length === 0) {
@@ -205,7 +209,7 @@ export function WorkOrdersGrid({
                         Duplicar
                       </DropdownMenuItem>
                     )}
-                    {onStatusChange && order.status === WorkOrderStatus.IN_PROGRESS && (
+                    {onStatusChange && ['IN_PROGRESS', 'WAITING'].includes(order.status as string) && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 

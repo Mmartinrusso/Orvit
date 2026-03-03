@@ -539,6 +539,46 @@ export function SolutionDetailDialog({
                   </Card>
                 )}
 
+                {/* Herramientas y Repuestos */}
+                {((solution.toolsUsed && solution.toolsUsed.length > 0) || (solution.sparePartsUsed && solution.sparePartsUsed.length > 0)) && (
+                  <Card className="p-3">
+                    <div className="space-y-2">
+                      {solution.sparePartsUsed && solution.sparePartsUsed.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Repuestos usados</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {solution.sparePartsUsed.map((part) => (
+                              <span key={part.id} className="text-xs bg-muted px-2 py-1 rounded-md border">
+                                {part.name} <span className="text-muted-foreground">×{part.quantity}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {solution.toolsUsed && solution.toolsUsed.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Herramientas</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {solution.toolsUsed.map((tool) => (
+                              <span key={tool.id} className="text-xs bg-muted px-2 py-1 rounded-md border">
+                                {tool.name}{tool.quantity > 1 && <span className="text-muted-foreground"> ×{tool.quantity}</span>}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Notas adicionales */}
+                {solution.notes && (
+                  <Card className="p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Notas</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{solution.notes}</p>
+                  </Card>
+                )}
+
                 {/* Acciones Preventivas */}
                 {solution.preventiveActions && (
                   <Card className="p-3 border-l-4 border-l-primary">

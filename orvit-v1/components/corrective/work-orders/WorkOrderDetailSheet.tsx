@@ -113,7 +113,18 @@ interface WorkOrderDetail {
     solution: string;
     outcome: string;
     performedAt: string;
+    actualMinutes?: number | null;
+    confirmedCause?: string | null;
+    fixType?: string | null;
+    effectiveness?: number | null;
+    notes?: string | null;
+    repairAction?: string | null;
+    toolsUsed?: Array<{ id: number; name: string; quantity: number }> | null;
+    sparePartsUsed?: Array<{ id: number; name: string; quantity: number }> | null;
+    finalComponent?: { id: number; name: string } | null;
+    finalSubcomponent?: { id: number; name: string } | null;
   }>;
+  estimatedHours?: number | null;
   assignedTo?: {
     id: number;
     name: string;
@@ -610,6 +621,24 @@ export function WorkOrderDetailSheet({
                           {format(new Date(workOrder.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
                         </p>
                       </div>
+                      {workOrder.scheduledDate && (
+                        <div className={cn("p-3 border-t", !workOrder.estimatedHours && "col-span-2")}>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Planificada</p>
+                          <p className="text-sm">
+                            {format(new Date(workOrder.scheduledDate), "d MMM yyyy, HH:mm", { locale: es })}
+                          </p>
+                        </div>
+                      )}
+                      {workOrder.estimatedHours && (
+                        <div className={cn("p-3 border-t", !workOrder.scheduledDate && "col-span-2")}>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">T. estimado</p>
+                          <p className="text-sm font-medium">
+                            {Math.floor(workOrder.estimatedHours) > 0 && `${Math.floor(workOrder.estimatedHours)}h`}
+                            {workOrder.estimatedHours % 1 > 0 && ` ${Math.round((workOrder.estimatedHours % 1) * 60)}min`}
+                            {Math.floor(workOrder.estimatedHours) === 0 && `${Math.round(workOrder.estimatedHours * 60)}min`}
+                          </p>
+                        </div>
+                      )}
                       {workOrder.completedDate && (
                         <div className="p-3 col-span-2 border-t">
                           <p className="text-xs font-medium text-muted-foreground mb-1">Completada</p>
@@ -708,6 +737,69 @@ export function WorkOrderDetailSheet({
                                       {outcomeLabels[solution.outcome] || solution.outcome}
                                     </Badge>
                                   </div>
+                                  {solution.confirmedCause && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-0.5">Causa confirmada:</p>
+                                      <p className="text-sm">{solution.confirmedCause}</p>
+                                    </div>
+                                  )}
+                                  {(solution.finalComponent || solution.finalSubcomponent) && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-0.5">Ubicación de la falla:</p>
+                                      <p className="text-sm">
+                                        {solution.finalComponent?.name}
+                                        {solution.finalSubcomponent && ` › ${solution.finalSubcomponent.name}`}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {solution.fixType && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Tipo:{' '}
+                                      <span className="font-medium text-foreground">
+                                        {solution.fixType === 'DEFINITIVA' ? 'Solución definitiva' : 'Parche temporal'}
+                                      </span>
+                                    </p>
+                                  )}
+                                  {solution.actualMinutes && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Tiempo trabajado:{' '}
+                                      <span className="font-medium text-foreground">
+                                        {solution.actualMinutes >= 60
+                                          ? `${Math.floor(solution.actualMinutes / 60)}h ${solution.actualMinutes % 60}min`
+                                          : `${solution.actualMinutes} min`}
+                                      </span>
+                                    </p>
+                                  )}
+                                  {(Array.isArray(solution.sparePartsUsed) && solution.sparePartsUsed.length > 0) && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-0.5">Repuestos usados:</p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {(solution.sparePartsUsed as Array<{id: number; name: string; quantity: number}>).map((part) => (
+                                          <span key={part.id} className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                            {part.name} ×{part.quantity}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {(Array.isArray(solution.toolsUsed) && solution.toolsUsed.length > 0) && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-0.5">Herramientas:</p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {(solution.toolsUsed as Array<{id: number; name: string; quantity: number}>).map((tool) => (
+                                          <span key={tool.id} className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                            {tool.name}{tool.quantity > 1 && ` ×${tool.quantity}`}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {solution.notes && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-0.5">Notas:</p>
+                                      <p className="text-sm text-muted-foreground">{solution.notes}</p>
+                                    </div>
+                                  )}
                                 </div>
                                 <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
                               </div>

@@ -36,6 +36,7 @@ import { WorkOrdersCalendarView } from '@/components/work-orders/WorkOrdersCalen
 import { WorkOrdersBulkBar } from '@/components/work-orders/WorkOrdersBulkBar';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { GuidedCloseDialog } from '@/components/corrective/work-orders/GuidedCloseDialog';
+import { AssignAndPlanDialog } from '@/components/work-orders/AssignAndPlanDialog';
 
 export default function OrdenesTrabajo() {
   const { currentCompany } = useCompany();
@@ -85,6 +86,7 @@ export default function OrdenesTrabajo() {
   const [isCorrectiveSheetOpen, setIsCorrectiveSheetOpen] = useState(false);
   const [correctiveSheetAction, setCorrectiveSheetAction] = useState<'close' | 'assign' | null>(null);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
 
   // Bulk selection
   const [selectionMode, setSelectionMode] = useState(false);
@@ -276,7 +278,7 @@ export default function OrdenesTrabajo() {
     return filtered;
   }, [workOrders, filters, presetFilters, user?.id]);
 
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = async (retries = 3) => {
     if (!currentCompany) return;
     try {
       const response = await fetch(`/api/companies/${currentCompany.id}/users`);
@@ -291,13 +293,17 @@ export default function OrdenesTrabajo() {
           }));
           setAvailableUsers(formattedUsers);
         }
+      } else if (response.status >= 500 && retries > 0) {
+        // Cold start: reintentar con backoff
+        await new Promise(r => setTimeout(r, 2000));
+        fetchAvailableUsers(retries - 1);
       }
     } catch (error) {
       console.error('Error fetching available users:', error);
     }
   };
 
-  const fetchAvailableMachines = async () => {
+  const fetchAvailableMachines = async (retries = 3) => {
     if (!currentCompany) return;
     try {
       const response = await fetch(`/api/machines?companyId=${currentCompany.id}`);
@@ -306,6 +312,10 @@ export default function OrdenesTrabajo() {
         if (Array.isArray(data)) {
           setAvailableMachines(data.map((m: any) => ({ id: m.id, name: m.name })));
         }
+      } else if (response.status >= 500 && retries > 0) {
+        // Cold start: reintentar con backoff
+        await new Promise(r => setTimeout(r, 2000));
+        fetchAvailableMachines(retries - 1);
       }
     } catch (error) {
       console.error('Error fetching machines:', error);
@@ -489,12 +499,11 @@ export default function OrdenesTrabajo() {
       if (currentOrder.type === 'CORRECTIVE') {
         console.log('🔧 OT Correctiva:', { status: currentOrder.status, newStatus, assignedTo: currentOrder.assignedToId });
 
-        // INICIAR: Si no tiene responsable, abrir dialog de asignación
+        // INICIAR: Si no tiene responsable, abrir AssignAndPlanDialog directamente
         if (newStatus === WorkOrderStatus.IN_PROGRESS && !currentOrder.assignedToId) {
-          console.log('→ Abriendo AssignAndPlanDialog (sin responsable)');
+          console.log('→ Abriendo AssignAndPlanDialog directamente');
           setSelectedOrder(currentOrder);
-          setCorrectiveSheetAction('assign');
-          setIsCorrectiveSheetOpen(true); // El sheet tiene el flujo de asignación
+          setIsAssignDialogOpen(true);
           return;
         }
 
@@ -905,6 +914,23 @@ export default function OrdenesTrabajo() {
             }}
           />
         )}
+
+        {/* AssignAndPlanDialog — se abre directo desde botón "Iniciar" */}
+        <AssignAndPlanDialog
+          open={isAssignDialogOpen}
+          onOpenChange={(open) => {
+            setIsAssignDialogOpen(open);
+            if (!open) {
+              refetchDashboard();
+              setSelectedOrder(null);
+            }
+          }}
+          workOrder={selectedOrder}
+          onSuccess={() => {
+            setIsAssignDialogOpen(false);
+            refetchDashboard();
+          }}
+        />
 
         {/* Sheet para OTs Correctivas con tabs de Logs, Chat, etc */}
         {selectedOrder && (

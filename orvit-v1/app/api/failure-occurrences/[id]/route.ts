@@ -146,12 +146,38 @@ export async function GET(
             actualMinutes: true,
             fixType: true,
             effectiveness: true,
+            confirmedCause: true,
+            repairAction: true,
+            toolsUsed: true,
+            sparePartsUsed: true,
+            attachments: true,
+            notes: true,
+            finalComponentId: true,
+            finalSubcomponentId: true,
+            finalComponent: {
+              select: { id: true, name: true },
+            },
+            finalSubcomponent: {
+              select: { id: true, name: true },
+            },
             workOrderId: true,
             performedBy: {
               select: {
                 id: true,
                 name: true,
               },
+            },
+            controlInstances: {
+              select: {
+                id: true,
+                order: true,
+                description: true,
+                scheduledAt: true,
+                completedAt: true,
+                status: true,
+                delayMinutes: true,
+              },
+              orderBy: { order: 'asc' },
             },
           },
           orderBy: {

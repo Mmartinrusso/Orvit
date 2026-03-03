@@ -22,6 +22,7 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import {
   Tabs,
   TabsContent,
@@ -1869,7 +1870,7 @@ export const DocumentListViewer: React.FC<{
             <li key={doc.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 p-2 border rounded-lg hover:bg-muted/30 transition group">
               {/* Fila principal: icono + nombre */}
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="flex-shrink-0">{getFileIcon(doc.originalName || doc.fileName)}</span>
+                <span className="flex-shrink-0"><FileTypeIcon name={doc.originalName || doc.fileName} size={24} /></span>
                 <button
                   className="flex-1 text-left underline text-primary text-xs md:text-sm font-medium hover:text-primary/80 transition truncate"
                   onClick={() => handleViewDocument(doc.url, doc.originalName || doc.fileName)}

@@ -470,10 +470,7 @@ export function FailureQuickReportDialog({
         >
           <Form {...form}>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleValidateAndSubmit();
-              }}
+              onSubmit={(e) => e.preventDefault()}
               className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
               {/* ── Sticky Header: Título + Stepper ── */}
@@ -873,8 +870,9 @@ export function FailureQuickReportDialog({
                       </Button>
                     ) : (
                       <Button
-                        type="submit"
+                        type="button"
                         size="sm"
+                        onClick={handleValidateAndSubmit}
                         disabled={quickReportMutation.isPending}
                       >
                         {quickReportMutation.isPending && (

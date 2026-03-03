@@ -108,7 +108,7 @@ export async function POST(
           include: {
             purchaseOrderItem: true,
             supplierItem: {
-              select: { id: true, nombre: true, codigoProveedor: true, precioUnitario: true, toolId: true, supply: { select: { code: true } } }
+              select: { id: true, nombre: true, codigoProveedor: true, unidad: true, precioUnitario: true, toolId: true, esServicio: true, supply: { select: { code: true } } }
             }
           }
         },
@@ -177,6 +177,43 @@ export async function POST(
         const cantidadAceptada = new Decimal(item.cantidadAceptada);
 
         if (cantidadAceptada.lte(0)) continue;
+
+        // Items de servicio no generan movimiento de stock
+        if (item.supplierItem?.esServicio) continue;
+
+        // Auto-vincular o crear Tool en pañol para items sin toolId
+        if (item.supplierItem && !item.supplierItem.toolId) {
+          // Buscar Tool existente con nombre similar (case-insensitive)
+          const existingTool = await tx.tool.findFirst({
+            where: {
+              name: { equals: item.supplierItem.nombre, mode: 'insensitive' },
+              companyId
+            },
+            select: { id: true }
+          });
+
+          let resolvedToolId: number;
+          if (existingTool) {
+            resolvedToolId = existingTool.id;
+          } else {
+            const autoTool = await tx.tool.create({
+              data: {
+                name: item.supplierItem.nombre,
+                itemType: 'SPARE_PART',
+                companyId,
+                stockQuantity: 0,
+                unit: item.supplierItem.unidad ?? 'UN',
+              }
+            });
+            resolvedToolId = autoTool.id;
+          }
+
+          await tx.supplierItem.update({
+            where: { id: item.supplierItemId },
+            data: { toolId: resolvedToolId }
+          });
+          (item.supplierItem as any).toolId = resolvedToolId;
+        }
 
         // Obtener stock actual en el depósito
         let stockLocation = await tx.stockLocation.findUnique({

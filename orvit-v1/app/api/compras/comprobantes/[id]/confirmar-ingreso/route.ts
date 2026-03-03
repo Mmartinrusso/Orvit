@@ -114,15 +114,116 @@ export async function POST(
           },
         });
 
-        console.log('[Confirmar Ingreso T2] Remito cargado para comprobante T2:', comprobanteId);
+        // ============================================================
+        // Crear stock en main DB (StockLocation + StockMovement)
+        // ============================================================
+        const t2Items = await prismaT2.t2PurchaseReceiptItem.findMany({
+          where: { receiptId: comprobanteId },
+        });
+
+        let stockItemsCreated = 0;
+        if (t2Items.length > 0 && depositoId) {
+          await prisma.$transaction(async (tx) => {
+            for (const item of t2Items) {
+              if (!item.supplierItemId || Number(item.cantidad) <= 0) continue;
+
+              const cantidadNueva = Number(item.cantidad);
+
+              // Upsert StockLocation en main DB
+              const existing = await tx.stockLocation.findUnique({
+                where: {
+                  warehouseId_supplierItemId: {
+                    warehouseId: depositoId,
+                    supplierItemId: item.supplierItemId,
+                  },
+                },
+              });
+
+              const cantidadAnterior = existing ? Number(existing.cantidad) : 0;
+              const cantidadPosterior = cantidadAnterior + cantidadNueva;
+
+              if (existing) {
+                await tx.stockLocation.update({
+                  where: { id: existing.id },
+                  data: {
+                    cantidad: cantidadPosterior,
+                    costoUnitario: Number(item.precioUnitario) || undefined,
+                  },
+                });
+              } else {
+                await tx.stockLocation.create({
+                  data: {
+                    warehouseId: depositoId,
+                    supplierItemId: item.supplierItemId,
+                    cantidad: cantidadNueva,
+                    cantidadReservada: 0,
+                    costoUnitario: Number(item.precioUnitario) || 0,
+                    companyId,
+                  },
+                });
+              }
+
+              // Crear StockMovement con docType T2
+              await tx.stockMovement.create({
+                data: {
+                  tipo: 'ENTRADA_RECEPCION',
+                  cantidad: cantidadNueva,
+                  cantidadAnterior,
+                  cantidadPosterior,
+                  costoUnitario: Number(item.precioUnitario) || 0,
+                  costoTotal: Number(item.subtotal) || 0,
+                  supplierItemId: item.supplierItemId,
+                  warehouseId: depositoId,
+                  docType: 'T2',
+                  sourceNumber: `T2-${updatedT2.numeroFactura}`,
+                  motivo: `Ingreso comprobante T2 #${comprobanteId}`,
+                  companyId,
+                  createdBy: user.id,
+                },
+              });
+
+              stockItemsCreated++;
+            }
+          });
+
+          // También crear T2StockMovement en T2 DB (audit trail)
+          for (const item of t2Items) {
+            if (!item.supplierItemId || Number(item.cantidad) <= 0) continue;
+            try {
+              await prismaT2.t2StockMovement.create({
+                data: {
+                  companyId,
+                  supplierItemId: item.supplierItemId,
+                  warehouseId: depositoId,
+                  createdBy: user.id,
+                  tipo: 'ENTRADA_RECEPCION',
+                  cantidad: Number(item.cantidad),
+                  cantidadAnterior: 0,
+                  cantidadPosterior: Number(item.cantidad),
+                  costoUnitario: Number(item.precioUnitario) || 0,
+                  costoTotal: Number(item.subtotal) || 0,
+                  receiptId: comprobanteId,
+                  sourceNumber: updatedT2.numeroFactura,
+                },
+              });
+            } catch (e) {
+              console.warn('[T2 Stock] Error creating T2StockMovement:', e);
+            }
+          }
+        }
+
+        console.log(`[Confirmar Ingreso T2] Remito cargado para comprobante T2: ${comprobanteId}, stock items: ${stockItemsCreated}`);
 
         return NextResponse.json({
           success: true,
-          message: 'Remito cargado correctamente.',
+          message: depositoId && stockItemsCreated > 0
+            ? `Remito cargado correctamente. ${stockItemsCreated} items ingresados a stock.`
+            : 'Remito cargado correctamente.',
           comprobante: updatedT2,
           resumen: {
             remitoCargado: true,
             fromT2: true,
+            stockItemsCreated,
           },
         });
       } catch (t2Error: any) {

@@ -55,8 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           credentials: 'include',
         });
 
-        // Si el token expiró, intentar refresh automático
+        // Si el token expiró o el servidor está arrancando (cold start), intentar refresh
         if (response.status === 401) {
+          let genuineLogout = false;
           try {
             const refreshResponse = await fetch('/api/auth/refresh', {
               method: 'POST',
@@ -64,14 +65,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (refreshResponse.ok) {
-              // Reintentar /api/auth/me con el nuevo token
+              // Token renovado: reintentar /api/auth/me
               response = await fetch('/api/auth/me', {
                 method: 'GET',
                 credentials: 'include',
               });
+              // Si sigue fallando después de un refresh exitoso → sesión inválida
+              genuineLogout = !response.ok;
+            } else if (refreshResponse.status === 401) {
+              // Refresh token inválido o expirado → desloguear
+              genuineLogout = true;
             }
+            // Si refresh devuelve 5xx → error del servidor (cold start) → NO desloguear
           } catch {
-            // Refresh falló, continuar con el 401 original
+            // Error de red durante refresh → NO desloguear (puede ser transitorio)
+          }
+
+          // Si no pudo resolverse y no es un logout genuino, conservar la sesión
+          if (!response.ok && !genuineLogout) {
+            setLoading(false);
+            return;
           }
         }
 
@@ -101,8 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else if (realUser.role === 'ADMIN' && currentPath === '/login') {
             router.push('/empresas');
           }
+        } else if (response.status >= 500) {
+          // Error del servidor (cold start, Prisma arrancando) — preservar sesión
+          // No limpiar localStorage ni redirigir a login
+          setLoading(false);
+          return;
         } else {
-          // Limpiar cualquier dato residual
+          // 401 genuino después de agotar reintentos — sesión inválida
           localStorage.removeItem('token');
           localStorage.removeItem('userId');
           localStorage.removeItem('userEmail');
@@ -165,6 +183,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar: userData.avatar || null,
             permissions: userData.permissions || [],
           });
+        } else if (response.status >= 500) {
+          // Error del servidor (cold start, reinicio) — no tocar la sesión
+          return;
         } else {
           // Sesión muerta, redirigir a login
           setUser(null);

@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 export interface ControlStep {
   order: number;
   delayMinutes: number;
+  /** Desde dónde se cuenta el delay: 'close' = desde el cierre de OT, 'previous' = desde el control anterior completado */
+  delayFrom: 'close' | 'previous';
   description: string;
 }
 
@@ -59,7 +61,9 @@ export function SolutionControlPlan({
 
   const addStep = () => {
     const newOrder = value.length + 1;
-    onChange([...value, { order: newOrder, delayMinutes: 60, description: '' }]);
+    // Default: primer paso desde cierre, siguientes desde anterior
+    const delayFrom: 'close' | 'previous' = value.length === 0 ? 'close' : 'previous';
+    onChange([...value, { order: newOrder, delayMinutes: 60, delayFrom, description: '' }]);
     setTimeInputs([...timeInputs, { value: '1', unit: 'hs' }]);
   };
 
@@ -86,6 +90,11 @@ export function SolutionControlPlan({
       i === idx ? { value: rawValue, unit } : t
     );
     setTimeInputs(newInputs);
+  };
+
+  const updateDelayFrom = (idx: number, delayFrom: 'close' | 'previous') => {
+    const updated = value.map((s, i) => (i === idx ? { ...s, delayFrom } : s));
+    onChange(updated);
   };
 
   const clearPlan = () => {
@@ -131,6 +140,7 @@ export function SolutionControlPlan({
             <thead className="bg-muted/50 border-b">
               <tr>
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium w-8">#</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium w-28">Desde</th>
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium w-32">Esperar</th>
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium">Descripción</th>
                 <th className="w-10" />
@@ -143,11 +153,25 @@ export function SolutionControlPlan({
                   <tr key={idx} className="border-b last:border-b-0">
                     <td className="px-3 py-2 text-muted-foreground font-medium">{step.order}</td>
                     <td className="px-2 py-2">
+                      <Select
+                        value={step.delayFrom || 'previous'}
+                        onValueChange={(v) => updateDelayFrom(idx, v as 'close' | 'previous')}
+                      >
+                        <SelectTrigger className="h-7 w-24 text-xs px-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="close" className="text-xs">Al cierre</SelectItem>
+                          <SelectItem value="previous" className="text-xs">Ant. completado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-2 py-2">
                       <div className="flex gap-1">
                         <Input
                           type="number"
                           min={1}
-                          className="h-7 w-16 text-xs px-2"
+                          className="h-7 w-14 text-xs px-2"
                           value={ti.value}
                           onChange={e => updateTime(idx, e.target.value, ti.unit)}
                         />
@@ -193,6 +217,13 @@ export function SolutionControlPlan({
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Leyenda */}
+      {value.length > 0 && (
+        <p className="text-[10px] text-muted-foreground">
+          <strong>Al cierre</strong>: se programa desde que se cierra la OT. <strong>Ant. completado</strong>: se programa cuando el control anterior es completado.
+        </p>
       )}
 
       {/* Add step */}

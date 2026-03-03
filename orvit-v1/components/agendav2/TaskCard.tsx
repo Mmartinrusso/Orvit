@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, Link2, MoreHorizontal, AlertCircle, Check, Pencil } from 'lucide-react';
+import { MessageSquare, MoreHorizontal, AlertCircle, Check, Pencil, ClipboardList, Copy } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import {
   DropdownMenu,
@@ -15,37 +15,6 @@ import { getAssigneeName } from '@/lib/agenda/types';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Colored bar-chart SVG per category (matches Synchro screenshot)
-function CategoryBarChart({ color }: { color: string }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-      <rect x="1"   y="9"  width="2.2" height="4.5" rx="0.5" fill={color} opacity="0.5" />
-      <rect x="4.3" y="6"  width="2.2" height="7.5" rx="0.5" fill={color} opacity="0.75" />
-      <rect x="7.6" y="3"  width="2.2" height="10.5" rx="0.5" fill={color} />
-      <rect x="10.9" y="6.5" width="2.2" height="7" rx="0.5" fill={color} opacity="0.6" />
-    </svg>
-  );
-}
-
-// Category → chart color (matches Synchro color coding)
-const CATEGORY_COLOR: Record<string, string> = {
-  'ABC Dashboard':   '#E05A4C',
-  'Sinen Dashboard': '#568177',
-  'Twinkle Website': '#3070A8',
-  'Sosro Mobile App':'#3070A8',
-  'Lumino Project':  '#907840',
-  'Nila Project':    '#575456',
-};
-
-// Mock comment/attachment counts per category (matches screenshot values)
-const CATEGORY_COUNTS: Record<string, { comments: number; links: number }> = {
-  'ABC Dashboard':   { comments: 3,  links: 2 },
-  'Sinen Dashboard': { comments: 14, links: 4 },
-  'Twinkle Website': { comments: 7,  links: 1 },
-  'Sosro Mobile App':{ comments: 5,  links: 2 },
-  'Lumino Project':  { comments: 2,  links: 1 },
-  'Nila Project':    { comments: 4,  links: 3 },
-};
 
 const STATUS_MOVE_LABEL: Record<AgendaTaskStatus, string> = {
   PENDING:    'Por hacer',
@@ -55,33 +24,15 @@ const STATUS_MOVE_LABEL: Record<AgendaTaskStatus, string> = {
   CANCELLED:  'Cancelado',
 };
 
-const STATUS_BAR_COLOR: Record<AgendaTaskStatus, string> = {
-  PENDING:    '#E4E4E4',
-  IN_PROGRESS:'#568177',
-  WAITING:    '#568177',
-  COMPLETED:  '#568177',
-  CANCELLED:  '#E4E4E4',
+// Status dot color for top row
+const STATUS_DOT: Record<AgendaTaskStatus, string> = {
+  PENDING:    '#9CA3AF',
+  IN_PROGRESS:'#7C3AED',
+  WAITING:    '#D97706',
+  COMPLETED:  '#059669',
+  CANCELLED:  '#E5E7EB',
 };
 
-// Exact progress values matching Synchro screenshot
-const STATUS_PROGRESS: Record<AgendaTaskStatus, number> = {
-  PENDING:    0,
-  IN_PROGRESS:25,
-  WAITING:    55,
-  COMPLETED:  100,
-  CANCELLED:  0,
-};
-
-// Map demo user names to consistent pravatar.cc photo IDs
-const AVATAR_PHOTO: Record<string, string> = {
-  'Joe Doe':    'https://i.pravatar.cc/40?img=12',
-  'Jhon Els':   'https://i.pravatar.cc/40?img=3',
-  'Nando Endae':'https://i.pravatar.cc/40?img=8',
-};
-
-function getAvatarUrl(name: string) {
-  return AVATAR_PHOTO[name] ?? `https://i.pravatar.cc/40?u=${encodeURIComponent(name)}`;
-}
 
 interface TaskCardProps {
   task: AgendaTask;
@@ -89,14 +40,16 @@ interface TaskCardProps {
   onStatusChange?: (task: AgendaTask, status: AgendaTaskStatus) => void;
   onDelete?: (task: AgendaTask) => void;
   onEdit?: (task: AgendaTask) => void;
+  onDuplicate?: (task: AgendaTask) => Promise<void>;
   progress?: number;
   isSelectMode?: boolean;
   isSelected?: boolean;
   onSelect?: (id: number) => void;
   animationDelay?: number;
+  isNew?: boolean;
 }
 
-export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, progress, isSelectMode, isSelected, onSelect, animationDelay = 0 }: TaskCardProps) {
+export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDuplicate, isSelectMode, isSelected, onSelect, animationDelay = 0, isNew = false }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -119,182 +72,224 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, prog
   const assigneeName = getAssigneeName(task);
   const hasAssignee = assigneeName !== 'Sin asignar';
 
-  const groupLabel   = task.category || 'General';
-  const chartColor   = CATEGORY_COLOR[groupLabel] ?? '#9C9CAA';
-  const mockCounts   = CATEGORY_COUNTS[groupLabel] ?? { comments: 1, links: 1 };
-  const displayProgress = progress !== undefined ? progress : STATUS_PROGRESS[task.status];
-  const barFill      = STATUS_BAR_COLOR[task.status];
+  const commentCount = task._count?.comments ?? 0;
+  const subtasks = { total: task._count?.subtasks ?? 0, done: task._count?.subtasksDone ?? 0 };
 
   const availableStatuses: AgendaTaskStatus[] = ['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'];
 
   return (
-    /* Outer: DnD positioning only */
     <div ref={setNodeRef} style={style}>
       <style>{`
         @keyframes card-cascade-in {
           from { transform: translate(-10px, -10px); opacity: 0; }
           to   { transform: translate(0, 0);          opacity: 1; }
         }
+        @keyframes card-new-in {
+          0%   { opacity: 0; transform: translateY(-14px) scale(0.97); }
+          100% { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
       `}</style>
-      {/* Inner: visual card + diagonal cascade animation on mount */}
+
       <div
         style={{
           position: 'relative',
-          background: isSelected ? '#EBF2FB' : '#FFFFFF',
-          border: `1px solid ${isSelected ? '#3070A8' : '#E8E8E8'}`,
-          borderRadius: '16px',
-          padding: '16px',
+          background: isSelected ? '#F5F3FF' : '#FFFFFF',
+          border: `1.5px solid ${isSelected ? '#7C3AED' : '#D8D8DE'}`,
+          borderRadius: '8px',
+          padding: '16px 18px',
           cursor: 'pointer',
           userSelect: 'none',
-          boxShadow: '0 1px 4px rgba(0,0,0,.05)',
-          animationName: 'card-cascade-in',
-          animationDuration: '1300ms',
+          boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)',
+          animationName: isNew ? 'card-new-in' : 'card-cascade-in',
+          animationDuration: isNew ? '420ms' : '1300ms',
           animationTimingFunction: 'cubic-bezier(0.22,1,0.36,1)',
           animationFillMode: 'both',
-          animationDelay: `${animationDelay}ms`,
+          animationDelay: isNew ? '0ms' : `${animationDelay}ms`,
           transition: 'background 120ms ease, border-color 120ms ease, box-shadow 150ms ease',
         }}
         {...(isSelectMode ? {} : { ...attributes, ...listeners })}
         onClick={() => {
-          if (isSelectMode) {
-            onSelect?.(task.id);
-          } else {
-            onClick(task);
-          }
+          if (isSelectMode) { onSelect?.(task.id); }
+          else { onClick(task); }
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,.09)';
-          e.currentTarget.style.borderColor = '#D8D8D8';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.08), 0 8px 28px rgba(0,0,0,.10)';
+          e.currentTarget.style.borderColor = isSelected ? '#7C3AED' : '#D8D8E0';
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,.05)';
-          e.currentTarget.style.borderColor = '#E8E8E8';
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)';
+          e.currentTarget.style.borderColor = isSelected ? '#7C3AED' : '#E8E8EC';
         }}
       >
-      {/* Select mode checkbox overlay */}
-      {isSelectMode && (
-        <div
-          style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}
-          onClick={e => { e.stopPropagation(); onSelect?.(task.id); }}
-        >
-          <div style={{
-            width: '18px', height: '18px', borderRadius: '5px',
-            border: `2px solid ${isSelected ? '#3070A8' : '#CCCCCC'}`,
-            background: isSelected ? '#3070A8' : '#FFFFFF',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 120ms ease',
-          }}>
-            {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFFFFF' }} />}
-          </div>
-        </div>
-      )}
 
-      {/* Row 1: project/category name + menu */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '10px', paddingLeft: isSelectMode ? '22px' : '0', transition: 'padding 150ms ease' }}>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: '#050505', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-          {groupLabel}
-        </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <button
-              style={{ height: '20px', width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: 'none', background: 'transparent', color: '#9C9CAA', cursor: 'pointer', flexShrink: 0 }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F6'; e.currentTarget.style.color = '#575456'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9C9CAA'; }}
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem className="text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(task); }}>
-              <Pencil className="h-3 w-3 mr-2" /> Editar tarea
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {availableStatuses.filter(s => s !== task.status).map(s => (
-              <DropdownMenuItem key={s} onClick={(e) => { e.stopPropagation(); onStatusChange?.(task, s); }} className="text-xs">
-                Mover a {STATUS_MOVE_LABEL[s]}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-xs text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(task); }}>
-              Eliminar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Row 2: colored chart icon + date pill */}
-      {task.dueDate && (
-        <div style={{ marginBottom: '12px' }}>
+        {/* Select checkbox */}
+        {isSelectMode && (
           <div
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '4px 10px',
-              border: '1px solid #E8E8E8',
-              borderRadius: '999px',
-              background: isOverdue ? '#FAF7F7' : '#FFFFFF',
-            }}
+            style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10 }}
+            onClick={e => { e.stopPropagation(); onSelect?.(task.id); }}
           >
-            {isOverdue
-              ? <AlertCircle className="h-3 w-3" style={{ color: '#B09098', flexShrink: 0 }} />
-              : <CategoryBarChart color={chartColor} />
-            }
-            <span style={{ fontSize: '11px', fontWeight: 500, color: isOverdue ? '#A08088' : '#9C9CAA', whiteSpace: 'nowrap' }}>
-              {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+            <div style={{
+              width: '18px', height: '18px', borderRadius: '5px',
+              border: `2px solid ${isSelected ? '#7C3AED' : '#D1D5DB'}`,
+              background: isSelected ? '#7C3AED' : '#FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 120ms ease',
+            }}>
+              {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFFFFF' }} />}
+            </div>
+          </div>
+        )}
+
+        {/* ── Row 1: status dot + date + menu ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: '10px',
+          paddingLeft: isSelectMode ? '24px' : '0',
+          transition: 'padding 150ms ease',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+            {/* Status dot */}
+            <span style={{
+              width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0,
+              background: STATUS_DOT[task.status],
+            }} />
+            {/* Date */}
+            {task.dueDate ? (
+              <span style={{
+                fontSize: '13px', fontWeight: 400,
+                color: isOverdue ? '#DC2626' : '#6B7280',
+                whiteSpace: 'nowrap',
+              }}>
+                {isOverdue && <AlertCircle className="h-3 w-3 inline mr-1 mb-0.5" style={{ color: '#DC2626' }} />}
+                {format(new Date(task.dueDate), 'dd MMM, yyyy')}
+              </span>
+            ) : (
+              <span style={{ fontSize: '13px', color: '#D1D5DB' }}>Sin fecha</span>
+            )}
+          </div>
+
+          {/* Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <button
+                style={{ height: '22px', width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: 'none', background: 'transparent', color: '#9CA3AF', cursor: 'pointer', flexShrink: 0, transition: 'all 120ms ease' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#111827'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem className="text-xs" onClick={(e) => { e.stopPropagation(); onEdit?.(task); }}>
+                <Pencil className="h-3 w-3 mr-2" /> Editar tarea
+              </DropdownMenuItem>
+              {onDuplicate && (
+                <DropdownMenuItem className="text-xs" onClick={(e) => { e.stopPropagation(); onDuplicate(task); }}>
+                  <Copy className="h-3 w-3 mr-2" /> Duplicar tarea
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {availableStatuses.filter(s => s !== task.status).map(s => (
+                <DropdownMenuItem key={s} onClick={(e) => { e.stopPropagation(); onStatusChange?.(task, s); }} className="text-xs">
+                  Mover a {STATUS_MOVE_LABEL[s]}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-xs text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(task); }}>
+                Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* ── Divider ── */}
+        <div style={{ borderTop: '1px solid #E4E4E8', marginBottom: '12px' }} />
+
+        {/* ── Row 2: Title ── */}
+        <p className="line-clamp-2" style={{
+          fontSize: '18px', fontWeight: 600, color: '#111827',
+          lineHeight: 1.3, letterSpacing: '-0.02em',
+          marginBottom: task.description ? '6px' : '14px',
+        }}>
+          {task.title}
+        </p>
+
+        {/* ── Row 3: Description ── */}
+        {task.description && (
+          <p className="line-clamp-2" style={{
+            fontSize: '13px', color: '#6B7280',
+            lineHeight: 1.55, marginBottom: '14px',
+          }}>
+            {task.description}
+          </p>
+        )}
+
+        {/* ── Row 4: Subtask progress — caja con borde (solo si hay subtareas) ── */}
+        {subtasks.total > 0 && (
+          <div style={{
+            background: 'transparent', borderRadius: '8px',
+            border: '1px solid #D8D8DE',
+            padding: '10px 12px', marginBottom: '14px',
+          }}>
+            {/* Label row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <ClipboardList className="h-3.5 w-3.5" style={{ color: '#9CA3AF', flexShrink: 0 }} />
+                <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>Subtareas</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>
+                {subtasks.done}/{subtasks.total}
+              </span>
+            </div>
+            {/* Segmented bar */}
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {Array.from({ length: subtasks.total }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: 1, height: '5px', borderRadius: '999px',
+                    background: i < subtasks.done ? '#111827' : '#E4E4E8',
+                    transition: 'background 300ms ease',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Row 5: counts LEFT + avatars RIGHT ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          paddingTop: '12px', borderTop: '1px solid #E4E4E8',
+        }}>
+
+          {/* Counts — left */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: '#6B7280' }}>
+              <MessageSquare className="h-4 w-4" />
+              {commentCount}
             </span>
           </div>
-        </div>
-      )}
 
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid #F0F0F0', marginBottom: '12px' }} />
-
-      {/* Row 3: task title */}
-      <p className="line-clamp-2" style={{ fontSize: '13px', fontWeight: 700, color: '#1A1A1A', lineHeight: 1.4, marginBottom: '14px' }}>
-        {task.title}
-      </p>
-
-      {/* Row 4: progress bar */}
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ width: '100%', height: '5px', borderRadius: '999px', background: '#EBEBEB', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${displayProgress}%`, borderRadius: '999px', background: barFill, transition: 'width 500ms ease' }} />
-        </div>
-        <p style={{ fontSize: '11px', color: '#9C9CAA', marginTop: '5px' }}>
-          <span style={{ fontWeight: 700, color: '#6B6B78' }}>Progreso</span> : {displayProgress}%
-        </p>
-      </div>
-
-      {/* Row 5: avatars + comment/link counts */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {/* Avatar group */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {hasAssignee && (
-            <Avatar style={{ height: '28px', width: '28px', border: '2px solid #FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,.12)' }}>
-              <AvatarImage src={getAvatarUrl(assigneeName)} />
-              <AvatarFallback style={{ background: '#D0E0F0', color: '#3070A8', fontSize: '9px', fontWeight: 700 }}>
-                {assigneeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+          {/* Avatars — right */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {hasAssignee && (
+              <Avatar style={{ height: '26px', width: '26px', border: '2px solid #FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,.10)' }}>
+                <AvatarImage src={task.assignedToUser?.avatar || task.assignedToContact?.avatar || undefined} />
+                <AvatarFallback style={{ background: '#EDE9FE', color: '#7C3AED', fontSize: '8px', fontWeight: 700 }}>
+                  {assigneeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <Avatar style={{ height: '26px', width: '26px', border: '2px solid #FFFFFF', marginLeft: hasAssignee ? '-7px' : '0', boxShadow: '0 1px 3px rgba(0,0,0,.10)' }}>
+              <AvatarImage src={task.createdBy.avatar || undefined} />
+              <AvatarFallback style={{ background: '#EDE9FE', color: '#7C3AED', fontSize: '8px', fontWeight: 700 }}>
+                {task.createdBy.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-          )}
-          <Avatar style={{ height: '28px', width: '28px', border: '2px solid #FFFFFF', marginLeft: hasAssignee ? '-8px' : '0', boxShadow: '0 1px 3px rgba(0,0,0,.12)' }}>
-            <AvatarImage src={getAvatarUrl(task.createdBy.name)} />
-            <AvatarFallback style={{ background: '#D0EFE0', color: '#568177', fontSize: '9px', fontWeight: 700 }}>
-              {task.createdBy.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          </div>
         </div>
 
-        {/* Counts */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#050505' }}>
-            <MessageSquare className="h-[13px] w-[13px]" />
-            {mockCounts.comments}
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#050505' }}>
-            <Link2 className="h-[13px] w-[13px]" />
-            {mockCounts.links}
-          </span>
-        </div>
-      </div>
       </div>
     </div>
   );

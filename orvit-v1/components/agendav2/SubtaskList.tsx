@@ -1,7 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, GripVertical, Check, User } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, GripVertical, Check, UserRound, X as XIcon, Trash2, SquarePen } from 'lucide-react';
+
+export interface AssigneeOption {
+  id?: number;
+  name: string;
+  initials: string;
+  bg: string;
+  color: string;
+}
 import {
   DndContext,
   closestCenter,
@@ -23,6 +31,7 @@ export interface SubtaskItem {
   title: string;
   note?: string;
   assignee?: string;
+  assigneeId?: number;
   completed: boolean;
 }
 
@@ -32,8 +41,12 @@ interface SubtaskListProps {
   onToggle?: (id: string, completed: boolean) => void;
   onAdd?: (title: string) => void;
   onUpdate?: (id: string, updates: Partial<SubtaskItem>) => void;
+  onDelete?: (id: string) => void;
   onReorder?: (items: SubtaskItem[]) => void;
   readOnly?: boolean;
+  hideFooter?: boolean;
+  noAssign?: boolean;
+  taskAssignees?: AssigneeOption[];
 }
 
 // Minimal sortable wrapper — just forwards drag refs + handle props
@@ -75,15 +88,52 @@ export function SubtaskList({
   onToggle,
   onAdd,
   onUpdate,
+  onDelete,
   onReorder,
   readOnly = false,
+  hideFooter = false,
+  noAssign = false,
+  taskAssignees = [],
 }: SubtaskListProps) {
-  const [addingNew, setAddingNew]       = useState(false);
-  const [newTitle, setNewTitle]         = useState('');
-  const [noteEditId, setNoteEditId]     = useState<string | null>(null);
-  const [noteText, setNoteText]         = useState('');
-  const [assignEditId, setAssignEditId] = useState<string | null>(null);
-  const [assignText, setAssignText]     = useState('');
+  const [addingNew, setAddingNew]     = useState(false);
+  const [newTitle, setNewTitle]       = useState('');
+  const [hoveredId, setHoveredId]     = useState<string | null>(null);
+  const [focusedId, setFocusedId]     = useState<string | null>(null);
+  const [noteTexts, setNoteTexts]     = useState<Record<string, string>>({});
+  const [assignPopId, setAssignPopId] = useState<string | null>(null);
+  const [poppingId, setPoppingId]     = useState<string | null>(null);
+  const [editingId, setEditingId]     = useState<string | null>(null);
+  const [editTitle, setEditTitle]     = useState('');
+  const assignPopRef                  = useRef<HTMLDivElement>(null);
+  const noteInputRef                  = useRef<HTMLInputElement>(null);
+  const titleInputRef                 = useRef<HTMLInputElement>(null);
+
+  function startEdit(subtask: SubtaskItem) {
+    if (readOnly || subtask.completed) return;
+    setEditingId(subtask.id);
+    setEditTitle(subtask.title);
+    setTimeout(() => { titleInputRef.current?.select(); }, 0);
+  }
+
+  function commitEdit(subtask: SubtaskItem) {
+    const val = editTitle.trim();
+    setEditingId(null);
+    if (val && val !== subtask.title) {
+      onUpdate?.(subtask.id, { title: val });
+    }
+  }
+
+  // Close assignee popover on outside click
+  useEffect(() => {
+    if (!assignPopId) return;
+    function handler(e: MouseEvent) {
+      if (assignPopRef.current && !assignPopRef.current.contains(e.target as Node)) {
+        setAssignPopId(null);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [assignPopId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
@@ -105,191 +155,346 @@ export function SubtaskList({
     setAddingNew(false);
   }
 
-  function openNoteEdit(subtask: SubtaskItem) {
-    setAssignEditId(null);
-    setNoteEditId(subtask.id);
-    setNoteText(subtask.note ?? '');
+  function getNoteText(subtask: SubtaskItem): string {
+    return noteTexts[subtask.id] !== undefined ? noteTexts[subtask.id] : (subtask.note ?? '');
   }
 
-  function submitNote(id: string) {
-    onUpdate?.(id, { note: noteText.trim() || undefined });
-    setNoteEditId(null);
-    setNoteText('');
+  function handleNoteChange(id: string, val: string) {
+    setNoteTexts(prev => ({ ...prev, [id]: val }));
   }
 
-  function openAssignEdit(subtask: SubtaskItem) {
-    setNoteEditId(null);
-    setAssignEditId(subtask.id);
-    setAssignText(subtask.assignee ?? '');
+  function submitNote(subtask: SubtaskItem) {
+    const val = getNoteText(subtask).trim();
+    onUpdate?.(subtask.id, { note: val || undefined });
+    // Clear local draft
+    setNoteTexts(prev => { const n = { ...prev }; delete n[subtask.id]; return n; });
   }
 
-  function submitAssign(id: string) {
-    onUpdate?.(id, { assignee: assignText.trim() || undefined });
-    setAssignEditId(null);
-    setAssignText('');
+  function handleAddNote(subtask: SubtaskItem) {
+    submitNote(subtask);
+  }
+
+  function toggleAssignPop(subtask: SubtaskItem) {
+    setAssignPopId(prev => prev === subtask.id ? null : subtask.id);
+  }
+
+  function assignPerson(subtaskId: string, person: AssigneeOption | null) {
+    onUpdate?.(subtaskId, { assignee: person?.name ?? undefined, assigneeId: person?.id ?? undefined });
+    setAssignPopId(null);
   }
 
   return (
     <div className="space-y-2">
+      <style>{`
+        @keyframes checkbox-pop {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.5); }
+          70%  { transform: scale(0.85); }
+          100% { transform: scale(1); }
+        }
+        @keyframes subtask-in {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes subtask-expand {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
       {/* Subtask items — wrapped in DnD context for reordering */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={subtasks.map(s => s.id)} strategy={verticalListSortingStrategy}>
-          {subtasks.map((subtask) => (
-            <SortableItem key={subtask.id} id={subtask.id}>
-              {({ listeners, attributes, isDragging }) => (
-                <div
-                  className="group transition-colors"
-                  style={{
-                    background: isDragging ? '#FBFBFB' : '#FFFFFF',
-                    border: isDragging ? '1px solid #568177' : '1px solid #E4E4E4',
-                    borderRadius: '14px',
-                    padding: '12px 14px',
-                    opacity: subtask.completed ? 0.65 : 1,
-                    boxShadow: isDragging ? '0 4px 16px rgba(0,0,0,.10)' : 'none',
-                  }}
-                  onMouseEnter={e => { if (!isDragging) (e.currentTarget as HTMLDivElement).style.background = '#FBFBFB'; }}
-                  onMouseLeave={e => { if (!isDragging) (e.currentTarget as HTMLDivElement).style.background = '#FFFFFF'; }}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Drag handle */}
-                    {!readOnly && (
-                      <GripVertical
-                        {...listeners}
-                        {...attributes}
-                        className="h-4 w-4 mt-0.5 shrink-0 opacity-30 group-hover:opacity-60 transition-opacity"
-                        style={{ color: '#9C9CAA', cursor: isDragging ? 'grabbing' : 'grab' }}
-                      />
+          {subtasks.map((subtask) => {
+            // Panel expands ONLY on explicit action (click note bubble / click note icon / assign pop)
+            const isHovered  = hoveredId === subtask.id;
+            const isExpanded = !readOnly && !subtask.completed && (
+              focusedId === subtask.id ||
+              assignPopId === subtask.id
+            );
+            const noteVal    = getNoteText(subtask);
+
+            return (
+              <SortableItem key={subtask.id} id={subtask.id}>
+                {({ listeners, attributes, isDragging }) => (
+                  <div
+                    onMouseEnter={() => { if (!isDragging) setHoveredId(subtask.id); }}
+                    onMouseLeave={() => setHoveredId(null)}
+                    style={{
+                      background: '#FFFFFF',
+                      border: `1px solid ${isDragging ? '#059669' : isExpanded ? '#D8D8DE' : isHovered ? '#D1D5DB' : '#E4E4E8'}`,
+                      borderRadius: '10px',
+                      padding: '8px 12px',
+                      opacity: subtask.completed ? 0.65 : 1,
+                      boxShadow: isDragging ? '0 4px 16px rgba(0,0,0,.10)' : isExpanded ? '0 2px 8px rgba(0,0,0,.06)' : 'none',
+                      transition: 'border-color 120ms, box-shadow 120ms',
+                    }}
+                  >
+                    {/* ── Main row ── */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {/* Drag handle */}
+                      {!readOnly && (
+                        <GripVertical
+                          {...listeners}
+                          {...attributes}
+                          style={{ width: '14px', height: '14px', flexShrink: 0, color: '#C8C8D0', cursor: isDragging ? 'grabbing' : 'grab', opacity: isHovered || isExpanded ? 0.7 : 0.3 }}
+                        />
+                      )}
+
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => {
+                          if (!subtask.completed) {
+                            setPoppingId(subtask.id);
+                            setTimeout(() => setPoppingId(null), 400);
+                          }
+                          onToggle?.(subtask.id, !subtask.completed);
+                        }}
+                        disabled={readOnly}
+                        style={{
+                          width: '16px', height: '16px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: subtask.completed ? 'none' : '1.5px solid #D1D5DB',
+                          borderRadius: '4px',
+                          background: subtask.completed ? '#059669' : 'transparent',
+                          cursor: readOnly ? 'default' : 'pointer',
+                          transition: 'background 200ms, border-color 150ms',
+                          animation: poppingId === subtask.id ? 'checkbox-pop 350ms cubic-bezier(0.22,1,0.36,1) both' : undefined,
+                        }}
+                        onMouseEnter={e => { if (!subtask.completed && !readOnly) e.currentTarget.style.borderColor = '#059669'; }}
+                        onMouseLeave={e => { if (!subtask.completed && !readOnly) e.currentTarget.style.borderColor = '#D1D5DB'; }}
+                      >
+                        {subtask.completed && <Check style={{ width: '10px', height: '10px', color: '#FFF' }} />}
+                      </button>
+
+                      {/* Title — click to edit */}
+                      {editingId === subtask.id ? (
+                        <input
+                          ref={titleInputRef}
+                          value={editTitle}
+                          onChange={e => setEditTitle(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitEdit(subtask);
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          onBlur={() => commitEdit(subtask)}
+                          style={{
+                            flex: 1, minWidth: 0, border: 'none', outline: 'none',
+                            fontSize: '13px', fontWeight: 500, color: '#111827', lineHeight: 1.4,
+                            background: 'transparent', padding: 0,
+                          }}
+                        />
+                      ) : (
+                        <p
+                          onClick={() => startEdit(subtask)}
+                          style={{
+                            flex: 1, minWidth: 0,
+                            fontSize: '13px', fontWeight: 500, color: '#111827', lineHeight: 1.4,
+                            textDecoration: subtask.completed ? 'line-through' : 'none',
+                            cursor: readOnly || subtask.completed ? 'default' : 'text',
+                          }}
+                        >
+                          {subtask.title}
+                        </p>
+                      )}
+
+                      {/* Right — assignee chip + trash */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        {subtask.assignee && (() => {
+                          const found = taskAssignees.find(a => a.name === subtask.assignee);
+                          return (
+                            <div
+                              onClick={() => !readOnly && toggleAssignPop(subtask)}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                padding: '2px 6px 2px 4px', borderRadius: '4px',
+                                background: found?.bg ?? '#EDE9FE', cursor: readOnly ? 'default' : 'pointer',
+                              }}
+                            >
+                              <div style={{ width: '13px', height: '13px', borderRadius: '50%', background: found?.color ?? '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '7px', fontWeight: 700, color: '#FFF' }}>{found?.initials ?? subtask.assignee![0]}</span>
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: found?.color ?? '#7C3AED' }}>{subtask.assignee}</span>
+                              {!readOnly && (
+                                <XIcon
+                                  style={{ width: '10px', height: '10px', color: found?.color ?? '#7C3AED', opacity: 0.6, marginLeft: '1px' }}
+                                  onClick={e => { e.stopPropagation(); assignPerson(subtask.id, null); }}
+                                />
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Note icon — only when no note and no expanded panel */}
+                        {!readOnly && !subtask.completed && !subtask.note && !isExpanded && (
+                          <button
+                            onClick={() => setFocusedId(subtask.id)}
+                            style={{
+                              width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              borderRadius: '5px', border: 'none', background: 'transparent', color: '#C8C8D0',
+                              cursor: 'pointer', flexShrink: 0,
+                              opacity: isHovered ? 1 : 0, transition: 'opacity 150ms, color 120ms, background 120ms',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = '#F4F4F6'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#C8C8D0'; e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <SquarePen style={{ width: '11px', height: '11px' }} />
+                          </button>
+                        )}
+                        {!readOnly && (
+                          <button
+                            onClick={() => onDelete?.(subtask.id)}
+                            style={{
+                              width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              borderRadius: '5px', border: 'none', background: 'transparent', color: '#C8C8D0',
+                              cursor: 'pointer', flexShrink: 0,
+                              opacity: isHovered || isExpanded ? 1 : 0, transition: 'opacity 150ms, color 120ms, background 120ms',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.background = '#FEE2E2'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#C8C8D0'; e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <Trash2 style={{ width: '11px', height: '11px' }} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Expanded panel: note input + action buttons ── */}
+                    {!readOnly && !subtask.completed && isExpanded && (
+                      <div
+                        style={{
+                          marginTop: '10px',
+                          paddingLeft: '26px',
+                          animation: 'subtask-expand 160ms cubic-bezier(0.22,1,0.36,1) both',
+                        }}
+                      >
+                        {/* Note input — comment style */}
+                        <div style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', marginBottom: '6px' }}>
+                          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#F0F0F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                            <SquarePen style={{ width: '10px', height: '10px', color: '#6B7280' }} />
+                          </div>
+                          <div style={{ flex: 1, border: '1.5px solid #E4E4E8', borderRadius: '6px', background: '#FAFAFA', overflow: 'hidden', transition: 'border-color 120ms' }}
+                            onFocusCapture={e => (e.currentTarget.style.borderColor = '#374151')}
+                            onBlurCapture={e => (e.currentTarget.style.borderColor = '#E4E4E8')}
+                          >
+                            <input
+                              ref={noteInputRef}
+                              value={noteVal}
+                              onChange={e => handleNoteChange(subtask.id, e.target.value)}
+                              placeholder="Agregar una nota..."
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') { handleAddNote(subtask); setHoveredId(null); setFocusedId(null); }
+                                if (e.key === 'Escape') { setHoveredId(null); setFocusedId(null); }
+                              }}
+                              style={{
+                                width: '100%', border: 'none', outline: 'none',
+                                padding: '6px 10px', fontSize: '12px', color: '#374151',
+                                background: 'transparent', boxSizing: 'border-box',
+                              }}
+                              onFocus={e => setFocusedId(subtask.id)}
+                              onBlur={e => { setFocusedId(null); submitNote(subtask); }}
+                            />
+                          </div>
+                          <button
+                            onMouseDown={e => { e.preventDefault(); handleAddNote(subtask); setHoveredId(null); setFocusedId(null); }}
+                            style={{
+                              height: '28px', padding: '0 10px', borderRadius: '6px',
+                              border: 'none', background: noteVal.trim() ? '#111827' : '#E4E4E8',
+                              color: noteVal.trim() ? '#FFFFFF' : '#9CA3AF',
+                              fontSize: '11px', fontWeight: 600, cursor: noteVal.trim() ? 'pointer' : 'default',
+                              flexShrink: 0, transition: 'background 150ms, color 150ms',
+                            }}
+                          >
+                            Guardar
+                          </button>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '29px' }}>
+                          {/* Add Assign */}
+                          {!noAssign && (
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                onMouseDown={e => { e.preventDefault(); toggleAssignPop(subtask); }}
+                                style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                  height: '26px', padding: '0 10px', borderRadius: '6px',
+                                  border: '1px solid #E4E4E8', background: '#FFFFFF',
+                                  fontSize: '12px', fontWeight: 500, color: '#6B7280',
+                                  cursor: 'pointer', transition: 'background 100ms, border-color 100ms',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#F4F4F6'; e.currentTarget.style.borderColor = '#D1D5DB'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E4E4E8'; }}
+                              >
+                                <UserRound style={{ width: '12px', height: '12px' }} />
+                                Add Assign
+                              </button>
+
+                              {/* Assignee dropdown */}
+                              {assignPopId === subtask.id && (
+                                <div
+                                  ref={assignPopRef}
+                                  style={{
+                                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20,
+                                    background: '#FFFFFF', border: '1.5px solid #D8D8DE', borderRadius: '10px',
+                                    boxShadow: '0 4px 16px rgba(0,0,0,.10)', padding: '6px',
+                                    minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '2px',
+                                  }}
+                                >
+                                  {taskAssignees.length === 0 ? (
+                                    <p style={{ fontSize: '11px', color: '#9CA3AF', padding: '4px 8px' }}>Sin personas en la tarea</p>
+                                  ) : taskAssignees.map(person => (
+                                    <button
+                                      key={person.name}
+                                      onClick={() => assignPerson(subtask.id, person)}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        padding: '6px 8px', borderRadius: '7px', border: 'none',
+                                        background: subtask.assignee === person.name ? person.bg : 'transparent',
+                                        cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'background 100ms',
+                                      }}
+                                      onMouseEnter={e => { if (subtask.assignee !== person.name) e.currentTarget.style.background = '#F4F4F6'; }}
+                                      onMouseLeave={e => { if (subtask.assignee !== person.name) e.currentTarget.style.background = 'transparent'; }}
+                                    >
+                                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: person.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <span style={{ fontSize: '9px', fontWeight: 700, color: person.color }}>{person.initials}</span>
+                                      </div>
+                                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#111827' }}>{person.name}</span>
+                                      {subtask.assignee === person.name && <Check style={{ width: '12px', height: '12px', marginLeft: 'auto', color: person.color }} />}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
 
-                    {/* Checkbox */}
-                    <button
-                      onClick={() => onToggle?.(subtask.id, !subtask.completed)}
-                      disabled={readOnly}
-                      className="mt-0.5 h-4 w-4 flex items-center justify-center shrink-0 transition-colors duration-150"
-                      style={{
-                        border: subtask.completed ? 'none' : '1.5px solid #E4E4E4',
-                        borderRadius: '4px',
-                        background: subtask.completed ? '#568177' : 'transparent',
-                      }}
-                      onMouseEnter={e => { if (!subtask.completed) e.currentTarget.style.borderColor = '#568177'; }}
-                      onMouseLeave={e => { if (!subtask.completed) e.currentTarget.style.borderColor = '#E4E4E4'; }}
-                    >
-                      {subtask.completed && <Check className="h-2.5 w-2.5 text-white" />}
-                    </button>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="text-[13px] leading-snug"
-                        style={{ fontWeight: 500, color: '#050505', textDecoration: subtask.completed ? 'line-through' : 'none' }}
+                    {/* Note display when collapsed — click to edit */}
+                    {subtask.note && !isExpanded && (
+                      <div
+                        onClick={() => !readOnly && setFocusedId(subtask.id)}
+                        style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', marginTop: '5px', cursor: readOnly ? 'default' : 'pointer' }}
                       >
-                        {subtask.title}
-                      </p>
-
-                      {/* Assignee chip */}
-                      {subtask.assignee && assignEditId !== subtask.id && (
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <User className="h-3 w-3" style={{ color: '#3070A8' }} />
-                          <span className="text-[11px] font-medium" style={{ color: '#3070A8' }}>{subtask.assignee}</span>
+                        <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#F0F0F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                          <SquarePen style={{ width: '10px', height: '10px', color: '#6B7280' }} />
                         </div>
-                      )}
-
-                      {/* Note */}
-                      {subtask.note && noteEditId !== subtask.id && (
-                        <div className="mt-1.5 px-2 py-1" style={{ background: '#F6F6F6', borderRadius: '8px' }}>
-                          <p className="text-[11px]" style={{ color: '#9C9CAA' }}>{subtask.note}</p>
+                        <div style={{ background: '#F4F4F6', border: '1px solid #E4E4E8', borderRadius: '6px 8px 8px 6px', padding: '5px 10px', maxWidth: 'calc(100% - 30px)' }}>
+                          <p style={{ fontSize: '12px', color: '#374151', margin: 0, lineHeight: 1.4 }}>{subtask.note}</p>
                         </div>
-                      )}
-
-                      {/* Inline note editor */}
-                      {noteEditId === subtask.id && (
-                        <div className="mt-2" style={{ border: '1px solid #D0E0F0', borderRadius: '8px', overflow: 'hidden' }}>
-                          <textarea
-                            autoFocus
-                            rows={2}
-                            value={noteText}
-                            onChange={e => setNoteText(e.target.value)}
-                            placeholder="Escribir nota..."
-                            className="w-full outline-none resize-none px-2.5 py-1.5 bg-transparent"
-                            style={{ fontSize: '12px', color: '#050505' }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitNote(subtask.id); }
-                              if (e.key === 'Escape') { setNoteEditId(null); }
-                            }}
-                          />
-                          <div className="flex justify-end gap-2 px-2 py-1" style={{ borderTop: '1px solid #E4E4E4', background: '#F6F6F6' }}>
-                            <button
-                              onClick={() => setNoteEditId(null)}
-                              className="text-[11px] px-2 py-0.5 rounded"
-                              style={{ color: '#9C9CAA' }}
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => submitNote(subtask.id)}
-                              className="text-[11px] px-2.5 py-0.5 rounded font-semibold text-white"
-                              style={{ background: '#568177' }}
-                            >
-                              Guardar
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Inline assign editor */}
-                      {assignEditId === subtask.id && (
-                        <div className="mt-2 flex items-center gap-2" style={{ border: '1px solid #D0E0F0', borderRadius: '8px', padding: '6px 10px' }}>
-                          <User className="h-3.5 w-3.5 shrink-0" style={{ color: '#9C9CAA' }} />
-                          <input
-                            autoFocus
-                            value={assignText}
-                            onChange={e => setAssignText(e.target.value)}
-                            placeholder="Nombre del responsable..."
-                            className="flex-1 outline-none bg-transparent"
-                            style={{ fontSize: '12px', color: '#050505' }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') submitAssign(subtask.id);
-                              if (e.key === 'Escape') setAssignEditId(null);
-                            }}
-                            onBlur={() => submitAssign(subtask.id)}
-                          />
-                        </div>
-                      )}
-
-                      {/* Hover action buttons */}
-                      {!readOnly && !subtask.completed && noteEditId !== subtask.id && assignEditId !== subtask.id && (
-                        <div className="flex items-center gap-3 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                          <button
-                            onClick={() => openNoteEdit(subtask)}
-                            className="text-[11px] flex items-center gap-0.5 transition-colors"
-                            style={{ color: '#9C9CAA' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = '#575456')}
-                            onMouseLeave={e => (e.currentTarget.style.color = '#9C9CAA')}
-                          >
-                            <Plus className="h-2.5 w-2.5" /> Agregar nota
-                          </button>
-                          <button
-                            onClick={() => openAssignEdit(subtask)}
-                            className="text-[11px] flex items-center gap-0.5 transition-colors"
-                            style={{ color: '#9C9CAA' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = '#575456')}
-                            onMouseLeave={e => (e.currentTarget.style.color = '#9C9CAA')}
-                          >
-                            <Plus className="h-2.5 w-2.5" /> Asignar
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </SortableItem>
-          ))}
+                )}
+              </SortableItem>
+            );
+          })}
         </SortableContext>
       </DndContext>
 
-      {/* Inline add new */}
-      <div
+      {/* Inline add new — hidden when hideFooter */}
+      {!hideFooter && <div
         style={{
           overflow: 'hidden',
           maxHeight: addingNew ? '80px' : '0',
@@ -299,9 +504,9 @@ export function SubtaskList({
       >
         <div
           className="flex items-center gap-3"
-          style={{ background: '#FFFFFF', border: '1px dashed #568177', borderRadius: '14px', padding: '12px 14px' }}
+          style={{ background: '#FFFFFF', border: '1px dashed #059669', borderRadius: '8px', padding: '8px 12px' }}
         >
-          <div style={{ width: '16px', height: '16px', border: '1.5px solid #E4E4E4', borderRadius: '4px', flexShrink: 0 }} />
+          <div style={{ width: '16px', height: '16px', border: '1.5px solid #E4E4E8', borderRadius: '4px', flexShrink: 0 }} />
           <input
             autoFocus={addingNew}
             value={newTitle}
@@ -313,38 +518,22 @@ export function SubtaskList({
             onBlur={handleAddSubmit}
             placeholder="Nombre de la subtarea..."
             className="flex-1 outline-none bg-transparent"
-            style={{ fontSize: '13px', color: '#050505' }}
+            style={{ fontSize: '13px', color: '#111827' }}
           />
         </div>
-      </div>
+      </div>}
 
-      {/* Footer */}
-      {!readOnly && (
-        <div className="flex items-center gap-4 pt-2" style={{ borderTop: '1px dashed #E4E4E4' }}>
+      {/* Footer — hidden when hideFooter (controlled externally) */}
+      {!readOnly && !hideFooter && (
+        <div className="flex items-center gap-4 pt-2" style={{ borderTop: '1px dashed #E4E4E8', marginBottom: '8px' }}>
           <button
             onClick={() => setAddingNew(true)}
             className="flex items-center gap-1 transition-colors"
-            style={{ fontSize: '12px', color: '#9C9CAA' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#575456')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#9C9CAA')}
+            style={{ fontSize: '12px', color: '#9CA3AF' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#6B7280')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
           >
             <Plus className="h-3 w-3" /> Nueva subtarea
-          </button>
-          <button
-            className="flex items-center gap-1 transition-colors"
-            style={{ fontSize: '12px', color: '#9C9CAA' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#575456')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#9C9CAA')}
-          >
-            ≡ Agregar descripción
-          </button>
-          <button
-            className="flex items-center gap-1 transition-colors"
-            style={{ fontSize: '12px', color: '#9C9CAA' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#575456')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#9C9CAA')}
-          >
-            <Plus className="h-3 w-3" /> Asignar
           </button>
         </div>
       )}

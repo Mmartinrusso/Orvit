@@ -51,15 +51,6 @@ export async function GET(request: NextRequest) {
 
     logger.debug('Buscando tareas fijas para empresa', { companyId });
 
-    // Verificar que la empresa existe
-    const company = await prisma.company.findUnique({
-      where: { id: companyId }
-    });
-
-    if (!company) {
-      return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 });
-    }
-
     // Obtener tareas fijas usando Prisma ORM (más seguro)
     const fixedTasks = await (prisma as any).fixedTask.findMany({
       where: { companyId },
