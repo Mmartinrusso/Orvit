@@ -1,6 +1,7 @@
 'use client';
 
-import { MessageSquare, MoreHorizontal, Check, Pencil, ClipboardList, Copy, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquare, MoreHorizontal, Check, Pencil, ClipboardList, Copy, Trash2, ExternalLink, RefreshCw } from 'lucide-react';
 import { formatDueDate } from '@/lib/agenda/date-utils';
 import {
   DropdownMenu,
@@ -21,6 +22,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { AgendaTask, AgendaTaskStatus } from '@/lib/agenda/types';
 import { getAssigneeName } from '@/lib/agenda/types';
 import { useSortable } from '@dnd-kit/sortable';
@@ -76,6 +83,8 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
     opacity: isSortableDragging ? 0.4 : 1,
   };
 
+  const [isHovered, setIsHovered] = useState(false);
+
   const assigneeName = getAssigneeName(task);
   const hasAssignee = assigneeName !== 'Sin asignar';
 
@@ -83,6 +92,21 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
   const subtasks = { total: task._count?.subtasks ?? 0, done: task._count?.subtasksDone ?? 0 };
 
   const availableStatuses: AgendaTaskStatus[] = ['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'];
+
+  // Cycles to the next status in the list (skips CANCELLED as a quick-cycle target)
+  const handleQuickStatusChange = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onStatusChange) return;
+    const cycleOrder: AgendaTaskStatus[] = ['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED'];
+    const currentIndex = cycleOrder.indexOf(task.status);
+    const nextStatus = cycleOrder[(currentIndex + 1) % cycleOrder.length];
+    onStatusChange(task, nextStatus);
+  };
+
+  const handleQuickOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick(task);
+  };
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -122,12 +146,111 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
         onMouseEnter={e => {
           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.08), 0 8px 28px rgba(0,0,0,.10)';
           e.currentTarget.style.borderColor = isSelected ? '#7C3AED' : '#D8D8E0';
+          setIsHovered(true);
         }}
         onMouseLeave={e => {
           e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)';
           e.currentTarget.style.borderColor = isSelected ? '#7C3AED' : '#E8E8EC';
+          setIsHovered(false);
         }}
       >
+
+        {/* ── Quick action buttons (desktop hover only — touch devices never trigger onMouseEnter) ── */}
+        {isHovered && !isSelectMode && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '8px',
+              right: '36px', // offset to not overlap the DropdownMenu trigger
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              zIndex: 20,
+            }}
+            // Prevent dnd-kit drag listeners from triggering on quick actions area
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <TooltipProvider>
+              {onStatusChange && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleQuickStatusChange}
+                      style={{
+                        height: '22px',
+                        width: '22px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '6px',
+                        border: '1px solid #E4E4E8',
+                        background: '#FFFFFF',
+                        color: '#6B7280',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        boxShadow: '0 1px 2px rgba(0,0,0,.08)',
+                        transition: 'all 100ms ease',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = '#F5F3FF';
+                        e.currentTarget.style.color = '#7C3AED';
+                        e.currentTarget.style.borderColor = '#C4B5FD';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = '#FFFFFF';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#E4E4E8';
+                      }}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-xs">Avanzar estado</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleQuickOpen}
+                    style={{
+                      height: '22px',
+                      width: '22px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '6px',
+                      border: '1px solid #E4E4E8',
+                      background: '#FFFFFF',
+                      color: '#6B7280',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      boxShadow: '0 1px 2px rgba(0,0,0,.08)',
+                      transition: 'all 100ms ease',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#F5F3FF';
+                      e.currentTarget.style.color = '#7C3AED';
+                      e.currentTarget.style.borderColor = '#C4B5FD';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = '#FFFFFF';
+                      e.currentTarget.style.color = '#6B7280';
+                      e.currentTarget.style.borderColor = '#E4E4E8';
+                    }}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">Ver detalle</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
 
         {/* Select checkbox */}
         {isSelectMode && (
