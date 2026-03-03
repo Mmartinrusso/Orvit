@@ -8,6 +8,7 @@ import {
 import { TrendingUp, CheckCircle2, Clock, AlertCircle, Users, BarChart2 } from 'lucide-react';
 import type { AgendaTask, AgendaStats } from '@/lib/agenda/types';
 import { isTaskOverdue } from '@/lib/agenda/types';
+import { ReportingViewSkeleton } from './TaskCardSkeleton';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -197,20 +198,7 @@ export function ReportingView({ tasks, stats, isLoading }: ReportingViewProps) {
   }, [tasks]);
 
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} style={{ height: '100px', borderRadius: '12px', background: 'linear-gradient(90deg,#F0F0F0 25%,#E8E8E8 50%,#F0F0F0 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {[1, 2].map(i => (
-            <div key={i} style={{ height: '260px', borderRadius: '12px', background: '#F0F0F0' }} />
-          ))}
-        </div>
-      </div>
-    );
+    return <ReportingViewSkeleton />;
   }
 
   return (

@@ -27,6 +27,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useFixedTasks } from '@/hooks/use-fixed-tasks';
+import { FixedTasksViewSkeleton } from './TaskCardSkeleton';
 import { FixedTaskFormSheet } from './FixedTaskFormSheet';
 import { FixedTaskDetailSheet } from './FixedTaskDetailSheet';
 import { TaskExecutionModal } from '@/components/tasks/task-execution-modal';
@@ -614,21 +615,7 @@ export function FixedTasksView() {
   // ── Loading skeleton ───────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse" style={{ flex: '1 1 140px', height: '72px', borderRadius: '16px', background: '#E8E8E8' }} />)}
-        </div>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} style={{ width: '300px', flexShrink: 0 }}>
-              <div className="animate-pulse" style={{ height: '44px', borderRadius: '10px', background: '#E8E8E8', marginBottom: '10px' }} />
-              {[1, 2].map(j => <div key={j} className="animate-pulse" style={{ height: '140px', borderRadius: '12px', background: '#E8E8E8', marginBottom: '8px' }} />)}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <FixedTasksViewSkeleton />;
   }
 
   // ── Empty state ───────────────────────────────────────────────────────

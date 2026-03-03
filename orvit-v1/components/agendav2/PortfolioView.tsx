@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
 import type { AgendaTask } from '@/lib/agenda/types';
 import type { TaskGroupItem } from './AgendaV2Sidebar';
+import { PortfolioViewSkeleton } from './TaskCardSkeleton';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -389,20 +390,7 @@ export function PortfolioView({
   }, [tasks]);
 
   if (loadingGroups) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} style={{ height: '72px', borderRadius: '12px', background: '#F0F0F0' }} />
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          {[1, 2, 3].map(i => (
-            <div key={i} style={{ height: '220px', borderRadius: '16px', background: '#F0F0F0' }} />
-          ))}
-        </div>
-      </div>
-    );
+    return <PortfolioViewSkeleton />;
   }
 
   return (

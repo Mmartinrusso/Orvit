@@ -11,6 +11,7 @@ import { loadFilters, saveFilters, clearFilters as persistClearFilters } from '@
 import type { AgendaFilters } from '@/lib/agenda/filter-persistence';
 import { BoardColumn } from './BoardColumn';
 import { TaskCalendarStrip } from './TaskCalendarStrip';
+import { BoardViewSkeleton } from './TaskCardSkeleton';
 import {
   DndContext,
   DragEndEvent,
@@ -294,23 +295,7 @@ export function BoardView({
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {/* Calendar skeleton */}
-        <div className="bg-muted/30 rounded-xl h-32 animate-pulse" />
-        {/* Board skeleton */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {BOARD_COLUMNS.map(col => (
-            <div key={col} className="space-y-2">
-              <div className="h-8 bg-muted/40 rounded-lg animate-pulse" />
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-28 bg-muted/30 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <BoardViewSkeleton />;
   }
 
   return (

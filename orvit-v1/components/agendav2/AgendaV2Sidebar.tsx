@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import type { AgendaTask } from '@/lib/agenda/types';
+import { SidebarGroupsSkeleton, SidebarProjectSkeleton } from './TaskCardSkeleton';
 
 type ViewMode = 'board' | 'inbox' | 'dashboard' | 'reporting' | 'portfolio' | 'fixed-tasks';
 
@@ -314,11 +315,7 @@ export function AgendaV2Sidebar({
           >
             <div className="space-y-0.5">
               {loadingGroups ? (
-                <div className="px-3 py-2">
-                  {[1, 2].map(i => (
-                    <div key={i} className="h-7 rounded-xl animate-pulse mb-1" style={{ background: '#E8E8E8' }} />
-                  ))}
-                </div>
+                <SidebarGroupsSkeleton />
               ) : simpleGroups.length === 0 ? (
                 <button
                   onClick={() => onCreateGroup(false)}
@@ -379,9 +376,7 @@ export function AgendaV2Sidebar({
           >
             <div className="space-y-0.5">
               {loadingGroups ? (
-                <div className="px-3 py-2">
-                  <div className="h-7 rounded-xl animate-pulse" style={{ background: '#E8E8E8' }} />
-                </div>
+                <SidebarProjectSkeleton />
               ) : projects.length === 0 ? (
                 <button
                   onClick={() => onCreateGroup(true)}

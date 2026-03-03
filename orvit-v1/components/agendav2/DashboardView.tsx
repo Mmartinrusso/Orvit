@@ -13,6 +13,7 @@ import {
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import type { AgendaTask } from '@/lib/agenda/types';
+import { DashboardViewSkeleton } from './TaskCardSkeleton';
 
 /* ─── Constants ────────────────────────────────────────── */
 
@@ -286,13 +287,7 @@ export function DashboardView({ tasks, stats, isLoading, onCreateTask, onViewCha
   const chatComments: any[] = [];
 
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {[1, 2, 3].map(i => (
-          <div key={i} style={{ height: '80px', background: '#F4F4F6', borderRadius: '16px', animationName: 'pulse', animationDuration: '1.5s', animationIterationCount: 'infinite' }} />
-        ))}
-      </div>
-    );
+    return <DashboardViewSkeleton />;
   }
 
   return (
