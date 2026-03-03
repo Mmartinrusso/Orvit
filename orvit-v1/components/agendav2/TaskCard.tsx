@@ -1,7 +1,7 @@
 'use client';
 
-import { MessageSquare, MoreHorizontal, AlertCircle, Check, Pencil, ClipboardList, Copy } from 'lucide-react';
-import { format, isPast } from 'date-fns';
+import { MessageSquare, MoreHorizontal, Check, Pencil, ClipboardList, Copy, Trash2 } from 'lucide-react';
+import { formatDueDate } from '@/lib/agenda/date-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +9,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { AgendaTask, AgendaTaskStatus } from '@/lib/agenda/types';
 import { getAssigneeName } from '@/lib/agenda/types';
@@ -64,10 +75,6 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
     transition,
     opacity: isSortableDragging ? 0.4 : 1,
   };
-
-  const isOverdue = task.dueDate &&
-    !['COMPLETED', 'CANCELLED'].includes(task.status) &&
-    isPast(new Date(task.dueDate));
 
   const assigneeName = getAssigneeName(task);
   const hasAssignee = assigneeName !== 'Sin asignar';
@@ -154,16 +161,19 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
               background: STATUS_DOT[task.status],
             }} />
             {/* Date */}
-            {task.dueDate ? (
-              <span style={{
-                fontSize: '13px', fontWeight: 400,
-                color: isOverdue ? '#DC2626' : '#6B7280',
-                whiteSpace: 'nowrap',
-              }}>
-                {isOverdue && <AlertCircle className="h-3 w-3 inline mr-1 mb-0.5" style={{ color: '#DC2626' }} />}
-                {format(new Date(task.dueDate), 'dd MMM, yyyy')}
-              </span>
-            ) : (
+            {task.dueDate ? (() => {
+              const { label, urgent } = formatDueDate(task.dueDate);
+              if (!label) return <span style={{ fontSize: '13px', color: '#D1D5DB' }}>Sin fecha</span>;
+              return (
+                <span style={{
+                  fontSize: '13px', fontWeight: urgent ? 600 : 400,
+                  color: urgent ? '#DC2626' : '#6B7280',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {label}
+                </span>
+              );
+            })() : (
               <span style={{ fontSize: '13px', color: '#D1D5DB' }}>Sin fecha</span>
             )}
           </div>
@@ -195,9 +205,35 @@ export function TaskCard({ task, onClick, onStatusChange, onDelete, onEdit, onDu
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-xs text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(task); }}>
-                Eliminar
-              </DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    className="text-xs text-destructive focus:text-destructive"
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar esta tarea?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. La tarea y todos sus datos serán eliminados permanentemente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive hover:bg-destructive/90"
+                      onClick={() => onDelete?.(task)}
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

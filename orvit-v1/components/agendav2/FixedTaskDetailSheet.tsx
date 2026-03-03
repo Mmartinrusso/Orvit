@@ -7,6 +7,16 @@ import { FileTypeIcon } from '@/components/ui/file-type-icon';
 import { format, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // ── Design tokens ─────────────────────────────────────────────────────────
 
@@ -99,6 +109,7 @@ export function FixedTaskDetailSheet({ task, isOpen, onClose, onEdit, onExecute,
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [execLoading, setExecLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [histFilter, setHistFilter] = useState<'todos' | 'este-mes' | 'mes-anterior' | 'ultimos-3m'>('todos');
   const [histFilterOpen, setHistFilterOpen] = useState(false);
@@ -259,7 +270,7 @@ export function FixedTaskDetailSheet({ task, isOpen, onClose, onEdit, onExecute,
                 <Edit2 style={{ width: '14px', height: '14px' }} />
               </button>
               <button
-                onClick={handleDelete}
+                onClick={() => setDeleteConfirmOpen(true)}
                 disabled={deleting}
                 style={{ height: '28px', width: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#9CA3AF', cursor: deleting ? 'not-allowed' : 'pointer', transition: '150ms' }}
                 onMouseEnter={e => { if (!deleting) { (e.currentTarget as HTMLButtonElement).style.background = '#FEE2E2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626'; }}}
@@ -267,6 +278,25 @@ export function FixedTaskDetailSheet({ task, isOpen, onClose, onEdit, onExecute,
               >
                 <Trash2 style={{ width: '14px', height: '14px' }} />
               </button>
+              <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar esta tarea fija?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. La tarea fija y todos sus datos serán eliminados permanentemente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive hover:bg-destructive/90"
+                      onClick={handleDelete}
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <button
                 onClick={onClose}
                 style={{ height: '28px', width: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer', transition: '150ms' }}
