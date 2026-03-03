@@ -13,6 +13,8 @@ import { ReportingView } from './ReportingView';
 import { PortfolioView } from './PortfolioView';
 import { FixedTasksView } from './FixedTasksView';
 import { TaskDetailPanel } from './TaskDetailPanel';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import { AgendaMobilePage } from './mobile/AgendaMobilePage';
 import { CreateTaskModal } from './CreateTaskModal';
 import { type TaskGroupItem } from './AgendaV2Sidebar';
 import { CreateGroupModal, type CreateGroupInput } from './CreateGroupModal';
@@ -93,6 +95,7 @@ export function AgendaV2Page() {
   const { currentCompany } = useCompany();
   const queryClient = useQueryClient();
   const { setAgendaSidebar } = useAgendaSidebar();
+  const isMobile = useIsMobile();
 
   const [view, setView] = useState<ViewMode>('board');
   const [viewAnimKey, setViewAnimKey] = useState(0);
@@ -324,6 +327,43 @@ export function AgendaV2Page() {
     return () => setAgendaSidebar(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, safeTasks, groups, selectedGroupId, loadingGroups, setAgendaSidebar]);
+
+  // ── Mobile render ──────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <>
+        <AgendaMobilePage
+          tasks={safeTasks}
+          onToggleComplete={(taskId) => {
+            const task = safeTasks.find((t) => t.id === taskId);
+            const newStatus: AgendaTaskStatus =
+              task?.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+            statusMutation.mutate({ taskId, status: newStatus });
+          }}
+          onCreateTask={() => setIsCreateOpen(true)}
+        />
+        {/* Create task modal — shared with desktop */}
+        <CreateTaskModal
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          defaultStatus={createDefaultStatus}
+          defaultDate={createDefaultDate}
+          defaultGroupId={selectedGroupId}
+          groups={groups}
+          onSave={async (data) => { await createMutation.mutateAsync({ ...data, companyId: companyId! }); }}
+          isSaving={createMutation.isPending}
+          onRequestCreateGroup={() => setIsCreateGroupOpen(true)}
+        />
+        <CreateGroupModal
+          open={isCreateGroupOpen}
+          defaultIsProject={createGroupIsProject}
+          companyId={companyId ?? 0}
+          onClose={() => setIsCreateGroupOpen(false)}
+          onConfirm={async (data) => { await createGroupMutation.mutateAsync(data); }}
+        />
+      </>
+    );
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
