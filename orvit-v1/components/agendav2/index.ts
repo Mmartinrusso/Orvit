@@ -8,6 +8,7 @@ export { TaskCalendarStrip } from './TaskCalendarStrip';
 export { TaskDetailPanel } from './TaskDetailPanel';
 export { TaskCommentThread } from './TaskCommentThread';
 export type { ThreadComment } from './TaskCommentThread';
+export { MentionInput } from './MentionInput';
 export { SubtaskList } from './SubtaskList';
 export { InboxView } from './InboxView';
 export { DashboardView } from './DashboardView';

@@ -18,8 +18,6 @@ import {
   UserPlus,
   Pencil,
   Star,
-  Send,
-  AtSign,
   Sparkles,
   RefreshCw,
   UserCheck,
@@ -29,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TaskCommentThread } from './TaskCommentThread';
+import { MentionInput } from './MentionInput';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,8 +130,6 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
   const [localAttachments, setLocalAttachments] = useState<{ name: string; size: string; type: string; isNew?: boolean }[]>([]);
   const [newAttachNames, setNewAttachNames]     = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const commentFileInputRef = useRef<HTMLInputElement>(null);
-  const [commentAttachment, setCommentAttachment] = useState<{ name: string; size: string; type: string } | null>(null);
   const [openAnim,   setOpenAnim]   = useState(false);
   const [expandAnim, setExpandAnim] = useState<'expand' | 'contract' | null>(null);
   const [isFavorite, setIsFavorite]       = useState(false);
@@ -142,9 +139,6 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
   const [localAssigneeNames, setLocalAssigneeNames] = useState<string[] | null>(null);
   const assigneePopRef = useRef<HTMLDivElement>(null);
   const [comments, setComments]     = useState<CommentItem[]>([]);
-  const [commentInput, setCommentInput] = useState('');
-  const [showMentionDrop, setShowMentionDrop] = useState(false);
-  const commentRef = useRef<HTMLTextAreaElement>(null);
   const prevOpenRef     = useRef(false);
   const prevExpandedRef = useRef(expanded);
 
@@ -152,10 +146,11 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
     ? companyUsers.map(u => u.name)
     : ['Juan P.', 'María G.', 'Carlos R.', 'Ana L.', 'Pedro M.'];
 
-  function submitComment() {
-    if ((!commentInput.trim() && !commentAttachment) || !task?.id) return;
-    const content = commentInput.trim() || (commentAttachment ? commentAttachment.name : '');
-    const attach = commentAttachment;
+  // Members list for MentionInput — uses real user IDs and names
+  const mentionMembers = companyUsers.map(u => ({ id: u.id, name: u.name, avatar: undefined }));
+
+  async function submitComment(content: string, mentionedUserIds?: number[]): Promise<void> {
+    if (!content.trim() || !task?.id) return;
     // Optimistic — temp id uses negative timestamp
     const tempId = -Date.now();
     setNewCommentId(tempId);
@@ -165,23 +160,19 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
       authorId: currentUser?.id ? Number(currentUser.id) : undefined,
       authorAvatar: currentUser?.avatar ?? null,
       author: currentUser?.name ?? 'Tú',
-      content,
+      content: content.trim(),
       time: 'Ahora',
       createdAt: new Date(),
       updatedAt: new Date(),
       bg: '#F3F4F6', color: '#111827',
       likes: 0, likedByMe: false,
       mentions: [], replies: [],
-      ...(attach ? { attachment: attach } : {}),
     };
     setComments(prev => [...prev, tempComment]);
-    setCommentInput('');
-    setCommentAttachment(null);
-    setShowMentionDrop(false);
-    fetch(`/api/agenda/tasks/${task.id}/comments`, {
+    return fetch(`/api/agenda/tasks/${task.id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content: content.trim(), mentionedUserIds: mentionedUserIds ?? [] }),
     })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then((saved: any) => {
@@ -1048,106 +1039,13 @@ export function TaskDetailPanel({ task, open, onClose, onEdit, onDuplicate, expa
                         </div>
                       ))}
                     </div>
-                    {/* New comment input — fixed at bottom */}
+                    {/* New comment input — MentionInput with @mention support */}
                     <div style={{ flexShrink: 0, borderTop: '1px solid #E4E4E8', paddingTop: '12px', paddingBottom: '14px' }}>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                          {currentUser?.avatar
-                            ? <img src={currentUser.avatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, marginTop: 2, objectFit: 'cover' }} />
-                            : <Avatar className="h-8 w-8 shrink-0" style={{ marginTop: '2px' }}>
-                                <AvatarFallback className="text-[9px] font-bold" style={{ background: '#F3F4F6', color: '#111827' }}>
-                                  {currentUser?.name ? currentUser.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : 'Tú'}
-                                </AvatarFallback>
-                              </Avatar>
-                          }
-                          <div style={{ flex: 1, border: '1.5px solid #E4E4E8', borderRadius: '8px', overflow: 'hidden', background: '#FAFAFA', transition: 'border-color 150ms' }}
-                            onFocusCapture={e => (e.currentTarget.style.borderColor = '#111827')}
-                            onBlurCapture={e => (e.currentTarget.style.borderColor = '#E4E4E8')}
-                          >
-                            {/* Mention dropdown */}
-                            {showMentionDrop && (
-                              <div style={{ padding: '8px', borderBottom: '1px solid #E4E4E8', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                {MENTION_PEOPLE.map(person => (
-                                  <button
-                                    key={person}
-                                    onClick={() => { setCommentInput(p => p.slice(0, p.lastIndexOf('@')) + `@${person} `); setShowMentionDrop(false); commentRef.current?.focus(); }}
-                                    style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#F3F4F6', color: '#111827', border: 'none', cursor: 'pointer' }}
-                                  >
-                                    @{person}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            <textarea
-                              ref={commentRef}
-                              rows={2}
-                              value={commentInput}
-                              onChange={e => {
-                                setCommentInput(e.target.value);
-                                const lastAt = e.target.value.lastIndexOf('@');
-                                setShowMentionDrop(lastAt >= 0 && e.target.value.slice(lastAt + 1).indexOf(' ') === -1);
-                              }}
-                              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
-                              placeholder="Escribe un comentario... Usa @ para mencionar"
-                              className="w-full outline-none resize-none bg-transparent"
-                              style={{ fontSize: '13px', color: '#111827', padding: '10px 12px', display: 'block' }}
-                            />
-                            {/* Attachment preview chip */}
-                            {commentAttachment && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderTop: '1px solid #E4E4E8', background: '#F9F9FB' }}>
-                                <FileTypeIcon type={commentAttachment.type} />
-                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{commentAttachment.name}</span>
-                                <span style={{ fontSize: '10px', color: '#9CA3AF', flexShrink: 0 }}>{commentAttachment.size}</span>
-                                <button onClick={() => setCommentAttachment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', display: 'flex', padding: 0, flexShrink: 0 }}>
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderTop: '1px solid #E4E4E8', background: '#F4F4F6' }}>
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                <button
-                                  onClick={() => { setCommentInput(p => p + '@'); setShowMentionDrop(true); commentRef.current?.focus(); }}
-                                  style={{ height: '26px', width: '26px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}
-                                  onMouseEnter={e => { e.currentTarget.style.background = '#E4E4E8'; e.currentTarget.style.color = '#6B7280'; }}
-                                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-                                  title="Mencionar alguien"
-                                >
-                                  <AtSign className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => commentFileInputRef.current?.click()}
-                                  style={{ height: '26px', width: '26px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: commentAttachment ? '#F3F4F6' : 'transparent', border: 'none', cursor: 'pointer', color: commentAttachment ? '#111827' : '#9CA3AF' }}
-                                  onMouseEnter={e => { if (!commentAttachment) { e.currentTarget.style.background = '#E4E4E8'; e.currentTarget.style.color = '#6B7280'; } }}
-                                  onMouseLeave={e => { if (!commentAttachment) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; } }}
-                                  title="Adjuntar archivo"
-                                >
-                                  <Paperclip className="h-3.5 w-3.5" />
-                                </button>
-                                <input
-                                  ref={commentFileInputRef}
-                                  type="file"
-                                  style={{ display: 'none' }}
-                                  onChange={e => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const sizeKB = file.size / 1024;
-                                    const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
-                                    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
-                                    setCommentAttachment({ name: file.name, size: sizeStr, type: ext });
-                                    e.target.value = '';
-                                  }}
-                                />
-                              </div>
-                              <button
-                                onClick={submitComment}
-                                disabled={!commentInput.trim() && !commentAttachment}
-                                style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '26px', padding: '0 10px', borderRadius: '6px', border: 'none', background: (commentInput.trim() || commentAttachment) ? '#111827' : '#E4E4E8', color: (commentInput.trim() || commentAttachment) ? '#FFFFFF' : '#9CA3AF', fontSize: '12px', fontWeight: 600, cursor: (commentInput.trim() || commentAttachment) ? 'pointer' : 'default', transition: 'all 150ms' }}
-                              >
-                                <Send className="h-3 w-3" /> Enviar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <MentionInput
+                        onSubmit={submitComment}
+                        placeholder="Escribe un comentario... Usa @ para mencionar"
+                        members={mentionMembers}
+                      />
                     </div>
                   )}
 

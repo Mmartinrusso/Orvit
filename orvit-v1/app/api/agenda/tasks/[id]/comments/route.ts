@@ -4,6 +4,7 @@ import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { CreateAgendaTaskCommentSchema } from '@/lib/validations/agenda-tasks';
 import { validateRequest } from '@/lib/validations/helpers';
 import { logTaskActivity } from '@/lib/agenda/activity-logger';
+import { sendDMByDiscordIdViaBotService } from '@/lib/discord/bot-service-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,6 +178,54 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     } catch (notifErr) {
       console.error('[API] Error creating comment notification:', notifErr);
+    }
+
+    // Notificar a usuarios mencionados (fire-and-forget)
+    const mentionedUserIds: number[] = Array.isArray(body.mentionedUserIds)
+      ? (body.mentionedUserIds as number[]).filter((id) => typeof id === 'number' && id !== user.id)
+      : [];
+
+    if (mentionedUserIds.length > 0) {
+      const preview = validation.data.content.length > 100
+        ? validation.data.content.slice(0, 100) + '…'
+        : validation.data.content;
+
+      // In-app notifications for mentioned users
+      prisma.notification.createMany({
+        data: mentionedUserIds.map((uid) => ({
+          type: 'task_mentioned' as any,
+          title: 'Te mencionaron en un comentario',
+          message: `${user.name || 'Alguien'} te mencionó en "${task.title}": ${preview}`,
+          userId: uid,
+          companyId: task.companyId,
+          metadata: { taskId, commentId: comment.id, authorId: user.id },
+        })),
+      }).catch((err) => console.error('[API] Error creating mention notifications:', err));
+
+      // Discord DM notifications for mentioned users (needs discordUserId on User)
+      prisma.user.findMany({
+        where: { id: { in: mentionedUserIds }, discordUserId: { not: null } },
+        select: { id: true, discordUserId: true },
+      }).then((discordUsers) => {
+        if (discordUsers.length === 0) return;
+        return Promise.all(
+          discordUsers.map((u) =>
+            sendDMByDiscordIdViaBotService(u.discordUserId!, {
+              embed: {
+                title: `Mencionado en tarea: ${task.title}`,
+                description: preview,
+                color: 0x6366f1,
+                fields: [
+                  { name: '👤 Por', value: user.name || 'Alguien', inline: true },
+                  { name: '📋 Tarea', value: task.title, inline: true },
+                ],
+                footer: `Tarea #${taskId}`,
+                timestamp: true,
+              },
+            })
+          )
+        );
+      }).catch(() => {}); // never block the response
     }
 
     return NextResponse.json(
