@@ -11,6 +11,7 @@ import { NavigationProvider } from '@/contexts/NavigationContext';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
 import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog-provider';
 import { ModulesProvider } from '@/contexts/ModulesContext';
+import { AgendaSidebarProvider } from '@/contexts/AgendaSidebarContext';
 import MobileBottomBar from '@/components/layout/MobileBottomBar';
 import { ThemeForce } from '@/components/ThemeForce';
 import { AssistantWrapper } from '@/components/assistant';
@@ -131,6 +132,7 @@ export default function RootLayout({
               <AuthProvider>
                 <CompanyProvider>
                   <ModulesProvider>
+                    <AgendaSidebarProvider>
                     <NotificationProvider>
                       <NavigationProvider>
                         <ViewModeProvider>
@@ -152,6 +154,7 @@ export default function RootLayout({
                         </ViewModeProvider>
                       </NavigationProvider>
                     </NotificationProvider>
+                    </AgendaSidebarProvider>
                   </ModulesProvider>
                 </CompanyProvider>
               </AuthProvider>

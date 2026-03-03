@@ -14,8 +14,9 @@ import { PortfolioView } from './PortfolioView';
 import { FixedTasksView } from './FixedTasksView';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { CreateTaskModal } from './CreateTaskModal';
-import { AgendaV2Sidebar, type TaskGroupItem } from './AgendaV2Sidebar';
+import { type TaskGroupItem } from './AgendaV2Sidebar';
 import { CreateGroupModal, type CreateGroupInput } from './CreateGroupModal';
+import { useAgendaSidebar } from '@/contexts/AgendaSidebarContext';
 
 export type ViewMode = 'board' | 'inbox' | 'dashboard' | 'reporting' | 'portfolio' | 'fixed-tasks';
 
@@ -91,6 +92,7 @@ async function updateTask(taskId: number, data: Partial<UpdateAgendaTaskInput>) 
 export function AgendaV2Page() {
   const { currentCompany } = useCompany();
   const queryClient = useQueryClient();
+  const { setAgendaSidebar } = useAgendaSidebar();
 
   const [view, setView] = useState<ViewMode>('board');
   const [viewAnimKey, setViewAnimKey] = useState(0);
@@ -136,8 +138,6 @@ export function AgendaV2Page() {
     enabled: !!companyId,
     staleTime: 30_000,
   });
-
-  const groups: TaskGroupItem[] = rawGroups ?? [];
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const statusMutation = useMutation({
@@ -231,8 +231,12 @@ export function AgendaV2Page() {
   const setIsLoading = agendaHeader?.setIsLoading;
   useEffect(() => { setIsLoading?.(loadingTasks); }, [loadingTasks, setIsLoading]);
 
-  // ── Derived data ───────────────────────────────────────────────────────────
-  const safeTasks: AgendaTask[] = Array.isArray(rawTasks) ? rawTasks : [];
+  // ── Derived data (early, needed for context sync) ──────────────────────────
+  const safeTasks: AgendaTask[] = useMemo(
+    () => Array.isArray(rawTasks) ? rawTasks : [],
+    [rawTasks]
+  );
+  const groups: TaskGroupItem[] = useMemo(() => rawGroups ?? [], [rawGroups]);
 
   const filteredTasks = useMemo(() => {
     let tasks = safeTasks;
@@ -301,6 +305,26 @@ export function AgendaV2Page() {
     await duplicateMutation.mutateAsync(task.id);
   }
 
+  // ── Sync agenda sidebar state to context (renders in main Sidebar.tsx) ─────
+  useEffect(() => {
+    setAgendaSidebar({
+      view,
+      tasks: safeTasks,
+      groups,
+      selectedGroupId,
+      loadingGroups: loadingGroups ?? false,
+      onViewChange: (v) => { setView(v); setSelectedGroupId(null); setViewAnimKey(k => k + 1); },
+      onCreateTask: () => handleCreateTask('PENDING'),
+      onSelectGroup: setSelectedGroupId,
+      onCreateGroup: (isProject) => {
+        setCreateGroupIsProject(isProject);
+        setIsCreateGroupOpen(true);
+      },
+    });
+    return () => setAgendaSidebar(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, safeTasks, groups, selectedGroupId, loadingGroups, setAgendaSidebar]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
@@ -311,22 +335,6 @@ export function AgendaV2Page() {
         background: '#FFFFFF',
       }}
     >
-      {/* Inner sidebar */}
-      <AgendaV2Sidebar
-        view={view}
-        onViewChange={(v) => { setView(v); setSelectedGroupId(null); setViewAnimKey(k => k + 1); }}
-        onCreateTask={() => handleCreateTask('PENDING')}
-        tasks={safeTasks}
-        groups={groups}
-        selectedGroupId={selectedGroupId}
-        onSelectGroup={setSelectedGroupId}
-        onCreateGroup={(isProject) => {
-          setCreateGroupIsProject(isProject);
-          setIsCreateGroupOpen(true);
-        }}
-        loadingGroups={loadingGroups}
-      />
-
       {/* Main panel — position:relative so expanded panel covers only this area */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden', position: 'relative' }}>
         {/* Content + inline detail panel */}

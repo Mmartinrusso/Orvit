@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -67,6 +67,8 @@ interface AgendaV2SidebarProps {
   onSelectGroup: (id: number | null) => void;
   onCreateGroup: (isProject: boolean) => void;
   loadingGroups?: boolean;
+  /** Override inline styles on the root <aside> element (e.g. to change width) */
+  asideStyle?: CSSProperties;
 }
 
 function getInitials(name: string) {
@@ -162,6 +164,7 @@ export function AgendaV2Sidebar({
   onSelectGroup,
   onCreateGroup,
   loadingGroups,
+  asideStyle,
 }: AgendaV2SidebarProps) {
   const { user } = useAuth();
   const [groupsExpanded, setGroupsExpanded] = useState(true);
@@ -181,7 +184,7 @@ export function AgendaV2Sidebar({
   return (
     <aside
       className="flex flex-col shrink-0 h-full overflow-hidden"
-      style={{ width: '244px', background: '#F5F5F5', borderRight: '1px solid #E4E4E8' }}
+      style={{ width: '244px', background: '#F5F5F5', borderRight: '1px solid #E4E4E8', ...asideStyle }}
     >
       {/* ── User profile ───────────────────────────────────────── */}
       <div className="px-4 pt-5 pb-4">
